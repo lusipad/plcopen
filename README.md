@@ -12,7 +12,7 @@ PLCOpen  运动控制标准定义了一套用于运动控制的标准函数库�
 PLCOpen 运动控制包括以下几个部分：
 
 1. **Part 1 - PLCopen Function Blocks for Motion Control**：提供了运动控制的基础函数块。
-2. **Part 2 - PLCopen Motion Control - Extensions**：在2.0版本中与Part 1合并，提供额外的功能。
+2. **Part 2 - PLCopen Motion Control - Extensions**：在 2.0 版本中与 Part 1 合并，提供额外的功能。
 3. **Part 3 - PLCopen Motion Control - User Guidelines**：用户指南和示例。
 4. **Part 4 - PLCopen Motion Control - Coordinated Motion**：协调运动控制。
 5. **Part 5 - PLCopen Motion Control - Homing Procedures**：回原点程序。
@@ -26,7 +26,7 @@ PLCOpen 运动控制包括以下几个部分：
 
 
 
-这个仓库 fork 自 `i5cnc`， 但是之前问过沈阳机床的人，他们也不知道自己还有这么一个开源的仓库（黑人问号），整个仓库也处于一个无人维护的状态。所以我 fork 了一份，闲暇之余按照自己的想法调整调整。
+这个仓库 fork 自 `i5cnc`，但是之前问过沈阳机床的人，他们也不知道自己还有这么一个开源的仓库（黑人问号），整个仓库也处于一个无人维护的状态。所以我 fork 了一份，闲暇之余按照自己的想法调整调整。
 
 
 
@@ -127,16 +127,14 @@ make
 
 ## 其他
 
-1. 目前算法仅支持了加速度减速度运动规划(加速度直线型)，不支持 Jerk 运动规划。
+1. 目前算法仅支持了加速度减速度运动规划 (加速度直线型)，不支持 Jerk 运动规划。
 
 
 
 ## 参考资料
 
 1. PLCOpen Motion Control 相关资料，可以在 [PLCOpen 官网](https://plcopen.org/technical-activities/motion-control) 下载。
-2. 由于 PLCOpen 的资料都是英文的，所以丢到 AI 智能体做了一个知识库，可以通过大模型进行交互。
-
-[![](media/PLC智答.jpeg)](https://chatglm.cn/agentShare?id=66c8b6c8b3232fbf83b14ecb)
+2. 由于 PLCOpen 的资料都是英文的，所以丢到 AI 智能体做了一个[知识库](https://chatglm.cn/agentShare?id=66c8b6c8b3232fbf83b14ecb)，可以通过大模型进行交互。
 
 
 
