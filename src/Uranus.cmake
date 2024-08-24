@@ -19,8 +19,6 @@
 # under the License.
 # 
 
-set(CMAKE_CXX_STANDARD 11)
-
 INCLUDE_DIRECTORIES(
     include
     motion
