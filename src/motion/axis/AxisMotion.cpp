@@ -27,22 +27,22 @@
 namespace Uranus
 {
 
-AxisMotion::AxisMotion()
-{
-}
+    AxisMotion::AxisMotion()
+    {
+    }
 
-AxisMotion::~AxisMotion()
-{
-}
+    AxisMotion::~AxisMotion()
+    {
+    }
 
-double AxisMotion::cmdPosition(void) const
-{
-    return sysPosToUser(AxisBase::cmdPosition());
-}
+    double AxisMotion::cmdPosition(void) const
+    {
+        return sysPosToUser(AxisBase::cmdPosition());
+    }
 
-double AxisMotion::actPosition(void) const
-{
-    return sysPosToUser(AxisBase::actPosition());
-}
+    double AxisMotion::actPosition(void) const
+    {
+        return sysPosToUser(AxisBase::actPosition());
+    }
 
 } // namespace Uranus

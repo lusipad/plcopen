@@ -31,7 +31,7 @@
 #include <iomanip>
 #include <iostream>
 #include <stdio.h>
-//#include <unistd.h>
+// #include <unistd.h>
 #include <thread>
 #include <chrono>
 
@@ -40,11 +40,11 @@ using namespace std;
 
 class MyServo : public Servo
 {
-  public:
+public:
     uint8_t homingSwitch = false;             // 定义“物理”回零点
     int32_t homingSwitchPosition = 50 * 8192; // 定义回零点的“编码器位置”
 
-  protected:
+protected:
     virtual void runCycle(double freq) override;
 };
 

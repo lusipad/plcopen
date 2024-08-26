@@ -30,40 +30,40 @@
 namespace Uranus
 {
 
-Axis::Axis()
-{
-}
+    Axis::Axis()
+    {
+    }
 
-Axis::~Axis()
-{
-}
+    Axis::~Axis()
+    {
+    }
 
-double Axis::frequency(void)
-{
-    return mSched->frequency();
-}
+    double Axis::frequency(void)
+    {
+        return mSched->frequency();
+    }
 
-uint32_t Axis::tick(void)
-{
-    return mSched->tick();
-}
+    uint32_t Axis::tick(void)
+    {
+        return mSched->tick();
+    }
 
-void Axis::vprintLog(MC_LogLevel level, const char* fmt, va_list ap)
-{
-    // 定义一个足够大的常量，确保不会超出实际需要的大小
-    const size_t BUFFER_SIZE = 1024;
-    char fmtAxis[BUFFER_SIZE];
+    void Axis::vprintLog(MC_LogLevel level, const char *fmt, va_list ap)
+    {
+        // 定义一个足够大的常量，确保不会超出实际需要的大小
+        const size_t BUFFER_SIZE = 1024;
+        char fmtAxis[BUFFER_SIZE];
 
-    // 使用 snprintf 安全地格式化字符串
-    snprintf(fmtAxis, BUFFER_SIZE, "Axis %d: %s", axisId(), fmt);
+        // 使用 snprintf 安全地格式化字符串
+        snprintf(fmtAxis, BUFFER_SIZE, "Axis %d: %s", axisId(), fmt);
 
-    // 调用 mSched 的 vprintLog 方法
-    mSched->vprintLog(level, fmtAxis, ap);
-}
+        // 调用 mSched 的 vprintLog 方法
+        mSched->vprintLog(level, fmtAxis, ap);
+    }
 
-int32_t Axis::axisId(void)
-{
-    return mAxisId;
-}
+    int32_t Axis::axisId(void)
+    {
+        return mAxisId;
+    }
 
 } // namespace Uranus

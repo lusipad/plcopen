@@ -34,3 +34,4 @@
 .vs
 build
 out
+.cache

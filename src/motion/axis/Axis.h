@@ -1,6 +1,6 @@
 /*
  * Axis.h
- * 
+ *
  * Copyright 2020 (C) SYMG(Shanghai) Intelligence System Co.,Ltd
  *
  * Licensed to the Apache Software Foundation (ASF) under one
@@ -10,16 +10,16 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- * 
+ *
  *   http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
  * under the License.
- * 
+ *
  */
 
 #ifndef _URANUS_AXIS_HPP_
@@ -27,27 +27,27 @@
 
 #include "AxisMotion.h"
 
-namespace Uranus {
-
-class Scheduler;
-class Axis : public AxisMotion
+namespace Uranus
 {
-public:
-    Axis();
-    virtual ~Axis();
-    
-    int32_t axisId(void);
-    
-private:
-    double frequency(void) override final;
-    uint32_t tick(void) override final;
-    void vprintLog(MC_LogLevel level, const char* fmt, va_list ap) override final;
+    class Scheduler;
+    class Axis : public AxisMotion
+    {
+    public:
+        Axis();
+        virtual ~Axis();
 
-private:
-    Scheduler* mSched = nullptr;
-    int32_t mAxisId = 0;
-    friend class Scheduler;
-};
+        int32_t axisId(void);
+
+    private:
+        double frequency(void) override final;
+        uint32_t tick(void) override final;
+        void vprintLog(MC_LogLevel level, const char *fmt, va_list ap) override final;
+
+    private:
+        Scheduler *mSched = nullptr;
+        int32_t mAxisId = 0;
+        friend class Scheduler;
+    };
 
 }
 

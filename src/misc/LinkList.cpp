@@ -14,9 +14,9 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may
  * obtain a copy of the License at
- * 
+ *
  *   http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by
  * applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -34,57 +34,57 @@
 namespace Uranus
 {
 
-LinkNode::LinkNode()
-{
-    mPrev = mNext = 0;
-}
+    LinkNode::LinkNode()
+    {
+        mPrev = mNext = 0;
+    }
 
-LinkNode::~LinkNode()
-{
-    takeOut();
-}
+    LinkNode::~LinkNode()
+    {
+        takeOut();
+    }
 
-void LinkNode::takeOut(void)
-{
-    if (mNext)
-        mNext->mPrev = mPrev;
-    if (mPrev)
-        mPrev->mNext = mNext;
-    mNext = mPrev = 0;
-}
+    void LinkNode::takeOut(void)
+    {
+        if (mNext)
+            mNext->mPrev = mPrev;
+        if (mPrev)
+            mPrev->mNext = mNext;
+        mNext = mPrev = 0;
+    }
 
-void LinkNode::insertBack(LinkNode *one)
-{
-    takeOut();
+    void LinkNode::insertBack(LinkNode *one)
+    {
+        takeOut();
 
-    mNext = one->mNext;
-    mPrev = one;
+        mNext = one->mNext;
+        mPrev = one;
 
-    if (mNext)
-        mNext->mPrev = this;
-    one->mNext = this;
-}
+        if (mNext)
+            mNext->mPrev = this;
+        one->mNext = this;
+    }
 
-void LinkNode::insertFront(LinkNode *one)
-{
-    takeOut();
+    void LinkNode::insertFront(LinkNode *one)
+    {
+        takeOut();
 
-    mPrev = one->mPrev;
-    mNext = one;
+        mPrev = one->mPrev;
+        mNext = one;
 
-    if (mPrev)
-        mPrev->mNext = this;
-    one->mPrev = this;
-}
+        if (mPrev)
+            mPrev->mNext = this;
+        one->mPrev = this;
+    }
 
-LinkNode *LinkNode::next(void) const
-{
-    return mNext;
-}
+    LinkNode *LinkNode::next(void) const
+    {
+        return mNext;
+    }
 
-LinkNode *LinkNode::prev(void) const
-{
-    return mPrev;
-}
+    LinkNode *LinkNode::prev(void) const
+    {
+        return mPrev;
+    }
 
 } // namespace Uranus

@@ -27,213 +27,213 @@
 namespace Uranus
 {
 
-void FbBaseType::onOperationError(MC_ErrorCode errorCode, int32_t customId)
-{
-    mError = true;
-    mErrorID = errorCode;
-}
-
-void FbBaseType::clearError(void)
-{
-    mError = false;
-    mErrorID = MC_ERRORCODE_GOOD;
-}
-
-////////////////////////////////////////////////////////////
-
-void FbEnableType::call(void)
-{
-    MC_ErrorCode err = mEnable ? onEnableTrue() : onEnableFalse();
-    if (err)
-        onOperationError(err, 0);
-    else
-        clearError();
-}
-
-////////////////////////////////////////////////////////////
-
-void FbComExecuteType::call(void)
-{
-    if (mExecute)
+    void FbBaseType::onOperationError(MC_ErrorCode errorCode, int32_t customId)
     {
-        if (mDone || mError)
-            return;
+        mError = true;
+        mErrorID = errorCode;
+    }
 
-        bool isDone = false;
-        MC_ErrorCode err = onExecTriggered(isDone);
+    void FbBaseType::clearError(void)
+    {
+        mError = false;
+        mErrorID = MC_ERRORCODE_GOOD;
+    }
+
+    ////////////////////////////////////////////////////////////
+
+    void FbEnableType::call(void)
+    {
+        MC_ErrorCode err = mEnable ? onEnableTrue() : onEnableFalse();
         if (err)
-        {
             onOperationError(err, 0);
-            return;
-        }
+        else
+            clearError();
+    }
 
-        if (isDone)
+    ////////////////////////////////////////////////////////////
+
+    void FbComExecuteType::call(void)
+    {
+        if (mExecute)
         {
-            mDone = true;
-            mBusy = false;
+            if (mDone || mError)
+                return;
+
+            bool isDone = false;
+            MC_ErrorCode err = onExecTriggered(isDone);
+            if (err)
+            {
+                onOperationError(err, 0);
+                return;
+            }
+
+            if (isDone)
+            {
+                mDone = true;
+                mBusy = false;
+            }
+            else
+            {
+                mDone = false;
+                mBusy = true;
+            }
         }
         else
         {
             mDone = false;
-            mBusy = true;
+            mBusy = false;
         }
+
+        clearError();
     }
-    else
+
+    void FbComExecuteType::onOperationError(MC_ErrorCode errorCode, int32_t customId)
     {
-        mDone = false;
-        mBusy = false;
+        mDone = mBusy = false;
+        FbBaseType::onOperationError(errorCode, customId);
     }
 
-    clearError();
-}
+    ////////////////////////////////////////////////////////////
 
-void FbComExecuteType::onOperationError(MC_ErrorCode errorCode, int32_t customId)
-{
-    mDone = mBusy = false;
-    FbBaseType::onOperationError(errorCode, customId);
-}
-
-////////////////////////////////////////////////////////////
-
-void FbSeqExecuteType::call(void)
-{
-    if (mExecute && !mExecuteTrigger)
-    { // 上升沿
-        MC_ErrorCode err = onExecPosedge();
-        if (err)
-        {
-            onOperationError(err, 0);
+    void FbSeqExecuteType::call(void)
+    {
+        if (mExecute && !mExecuteTrigger)
+        { // 上升沿
+            MC_ErrorCode err = onExecPosedge();
+            if (err)
+            {
+                onOperationError(err, 0);
+            }
+            else
+            {
+                mDone = mActive = mCommandAborted = false;
+                mBusy = true;
+                mOkFlag = false;
+                clearError();
+            }
+        }
+        else if (mExecute && mExecuteTrigger)
+        { // 高值
+        }
+        else if (!mExecute && mExecuteTrigger)
+        { // 下降沿
+            if ((mDone || mCommandAborted || mError) && !mBusy)
+            {
+                mDone = mCommandAborted = mBusy = mActive = false;
+                clearError();
+            }
+            mOkFlag = false;
+            onExecNegedge();
         }
         else
-        {
-            mDone = mActive = mCommandAborted = false;
-            mBusy = true;
+        { // 低值
+            if (!mBusy && !mOkFlag)
+            {
+                mDone = mCommandAborted = mBusy = mActive = false;
+                clearError();
+            }
             mOkFlag = false;
-            clearError();
         }
-    }
-    else if (mExecute && mExecuteTrigger)
-    { // 高值
-    }
-    else if (!mExecute && mExecuteTrigger)
-    { // 下降沿
-        if ((mDone || mCommandAborted || mError) && !mBusy)
-        {
-            mDone = mCommandAborted = mBusy = mActive = false;
-            clearError();
-        }
-        mOkFlag = false;
-        onExecNegedge();
-    }
-    else
-    { // 低值
-        if (!mBusy && !mOkFlag)
-        {
-            mDone = mCommandAborted = mBusy = mActive = false;
-            clearError();
-        }
-        mOkFlag = false;
+
+        mExecuteTrigger = mExecute;
     }
 
-    mExecuteTrigger = mExecute;
-}
+    void FbSeqExecuteType::onOperationActive(int32_t customId)
+    {
+        mDone = mCommandAborted = false;
+        mBusy = mActive = true;
+        clearError();
+    }
 
-void FbSeqExecuteType::onOperationActive(int32_t customId)
-{
-    mDone = mCommandAborted = false;
-    mBusy = mActive = true;
-    clearError();
-}
+    void FbSeqExecuteType::onOperationAborted(int32_t customId)
+    {
+        mDone = mBusy = mActive = false;
+        mCommandAborted = true;
+        mOkFlag = !mExecute;
+        clearError();
+    }
 
-void FbSeqExecuteType::onOperationAborted(int32_t customId)
-{
-    mDone = mBusy = mActive = false;
-    mCommandAborted = true;
-    mOkFlag = !mExecute;
-    clearError();
-}
+    void FbSeqExecuteType::onOperationDone(int32_t customId)
+    {
+        mCommandAborted = mBusy = mActive = false;
+        mDone = true;
+        mOkFlag = !mExecute;
+        clearError();
+    }
 
-void FbSeqExecuteType::onOperationDone(int32_t customId)
-{
-    mCommandAborted = mBusy = mActive = false;
-    mDone = true;
-    mOkFlag = !mExecute;
-    clearError();
-}
+    void FbSeqExecuteType::onOperationError(MC_ErrorCode errorCode, int32_t customId)
+    {
+        mDone = mBusy = mActive = mCommandAborted = false;
+        mOkFlag = !mExecute;
+        FbBaseType::onOperationError(errorCode, customId);
+    }
 
-void FbSeqExecuteType::onOperationError(MC_ErrorCode errorCode, int32_t customId)
-{
-    mDone = mBusy = mActive = mCommandAborted = false;
-    mOkFlag = !mExecute;
-    FbBaseType::onOperationError(errorCode, customId);
-}
+    ////////////////////////////////////////////////////////////
 
-////////////////////////////////////////////////////////////
+    MC_ErrorCode FbReadInfoType::onEnableTrue(void)
+    {
+        bool isDone = false;
+        MC_ErrorCode err = onEnable(isDone);
+        if (err)
+            return err;
+        mValid = isDone;
+        mBusy = !isDone;
+        return MC_ERRORCODE_GOOD;
+    }
 
-MC_ErrorCode FbReadInfoType::onEnableTrue(void)
-{
-    bool isDone = false;
-    MC_ErrorCode err = onEnable(isDone);
-    if (err)
-        return err;
-    mValid = isDone;
-    mBusy = !isDone;
-    return MC_ERRORCODE_GOOD;
-}
+    MC_ErrorCode FbReadInfoType::onEnableFalse(void)
+    {
+        mValid = false;
+        mBusy = false;
+        onDisable();
+        return MC_ERRORCODE_GOOD;
+    }
 
-MC_ErrorCode FbReadInfoType::onEnableFalse(void)
-{
-    mValid = false;
-    mBusy = false;
-    onDisable();
-    return MC_ERRORCODE_GOOD;
-}
+    void FbReadInfoType::onOperationError(MC_ErrorCode errorCode, int32_t customId)
+    {
+        mValid = false;
+        mBusy = false;
+        onDisable();
+        FbBaseType::onOperationError(errorCode, customId);
+    }
 
-void FbReadInfoType::onOperationError(MC_ErrorCode errorCode, int32_t customId)
-{
-    mValid = false;
-    mBusy = false;
-    onDisable();
-    FbBaseType::onOperationError(errorCode, customId);
-}
+    ////////////////////////////////////////////////////////////
 
-////////////////////////////////////////////////////////////
+    MC_ErrorCode FbExecAxisType::onExecPosedge(void)
+    {
+        return mAxis ? onAxisExecPosedge() : MC_ERRORCODE_AXISNOTEXIST;
+    }
 
-MC_ErrorCode FbExecAxisType::onExecPosedge(void)
-{
-    return mAxis ? onAxisExecPosedge() : MC_ERRORCODE_AXISNOTEXIST;
-}
+    ////////////////////////////////////////////////////////////
 
-////////////////////////////////////////////////////////////
+    void FbExecAxisBufferContType::onOperationDone(int32_t customId)
+    {
+        mCommandAborted = false;
+        mBusy = mActive = mDone = true;
+        clearError();
+    }
 
-void FbExecAxisBufferContType::onOperationDone(int32_t customId)
-{
-    mCommandAborted = false;
-    mBusy = mActive = mDone = true;
-    clearError();
-}
+    ////////////////////////////////////////////////////////////
 
-////////////////////////////////////////////////////////////
+    MC_ErrorCode FbReadInfoAxisType::onEnable(bool &isDone)
+    {
+        return mAxis ? onAxisEnable(isDone) : MC_ERRORCODE_AXISNOTEXIST;
+    }
 
-MC_ErrorCode FbReadInfoAxisType::onEnable(bool &isDone)
-{
-    return mAxis ? onAxisEnable(isDone) : MC_ERRORCODE_AXISNOTEXIST;
-}
+    ////////////////////////////////////////////////////////////
 
-////////////////////////////////////////////////////////////
+    MC_ErrorCode FbWriteInfoAxisType::onExecTriggered(bool &isDone)
+    {
+        return mAxis ? onAxisTriggered(isDone) : MC_ERRORCODE_AXISNOTEXIST;
+    }
 
-MC_ErrorCode FbWriteInfoAxisType::onExecTriggered(bool &isDone)
-{
-    return mAxis ? onAxisTriggered(isDone) : MC_ERRORCODE_AXISNOTEXIST;
-}
+    ////////////////////////////////////////////////////////////
 
-////////////////////////////////////////////////////////////
+    MC_ErrorCode FbExecAxisBufferContSyncType::onAxisExecPosedge(void)
+    {
+        return mMaster ? onMasterSlaveExecPosedge() : MC_ERRORCODE_AXISNOTEXIST;
+    }
 
-MC_ErrorCode FbExecAxisBufferContSyncType::onAxisExecPosedge(void)
-{
-    return mMaster ? onMasterSlaveExecPosedge() : MC_ERRORCODE_AXISNOTEXIST;
-}
-
-////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////
 
 } // namespace Uranus

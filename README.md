@@ -18,23 +18,17 @@ PLCOpen 运动控制包括以下几个部分：
 5. **Part 5 - PLCopen Motion Control - Homing Procedures**：回原点程序。
 6. **Part 6 - PLCopen Motion Control - Fluid Power Extensions**：流体动力扩展
 
-
-
 本项目主要实现了 Part 1 & 2 部分，提供一个基础的、完整的 PLC 运动控制基础库，用户可以在此基础上，实现更加复杂的功能。
 
 本项目不提供梯形图编辑、ST 语言解析等能力，仅提供 C++ 接口的调用方式。
 
-
-
 这个仓库 fork 自 `i5cnc`，但是之前问过沈阳机床的人，他们也不知道自己还有这么一个开源的仓库（黑人问号），整个仓库也处于一个无人维护的状态。所以我 fork 了一份，闲暇之余按照自己的想法调整调整。
-
-
 
 ## 快速开始
 
 ### 编译
 
-```
+``` bash
 mkdir build
 cd build
 cmake ..
@@ -43,13 +37,9 @@ make
 
 支持 windows / linux / macOs 下使用。（windows kernel 开发中）
 
-
-
 ### 示例
 
 在 demo 中提供了简单的回原点、单轴运动的示例。
-
-
 
 ## 功能说明
 
@@ -77,15 +67,11 @@ make
 | MC_AbortTrigger       | 终止触发器。           |          |
 | MC_HaltSuperimposed   | 停止额外运动。         |          |
 
-
-
 ### 多轴管理功能块
 
 | 功能块名称        | 描述             | 支持情况 |
 | :---------------- | :--------------- | -------- |
 | MC_CamTableSelect | 选择一个凸轮表。 | O        |
-
-
 
 ### 单轴运动功能块
 
@@ -106,8 +92,6 @@ make
 | MC_VelocityProfile        | 设置轴的速度轮廓。                   |          |
 | MC_AccelerationProfile    | 设置轴的加速度轮廓。                 |          |
 
-
-
 ### 多轴运动功能块
 
 | 功能块名称         | 描述               | 支持情况 |
@@ -121,20 +105,11 @@ make
 | MC_PhasingRelative | 设置相对相位。     |          |
 | MC_CombineAxis     | 结合轴。           |          |
 
-
-
-
-
 ## 其他
 
 1. 目前算法仅支持了加速度减速度运动规划 (加速度直线型)，不支持 Jerk 运动规划。
-
-
 
 ## 参考资料
 
 1. PLCOpen Motion Control 相关资料，可以在 [PLCOpen 官网](https://plcopen.org/technical-activities/motion-control) 下载。
 2. 由于 PLCOpen 的资料都是英文的，所以丢到 AI 智能体做了一个[知识库](https://chatglm.cn/agentShare?id=66c8b6c8b3232fbf83b14ecb)，可以通过大模型进行交互。
-
-
-

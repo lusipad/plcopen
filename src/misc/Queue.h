@@ -1,6 +1,6 @@
 /*
  * Queue.h
- * 
+ *
  * Copyright 2020 (C) SYMG(Shanghai) Intelligence System Co.,Ltd
  *
  * Licensed to the Apache Software Foundation (ASF) under one
@@ -10,18 +10,18 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- * 
+ *
  *   http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
  * under the License.
- * 
+ *
  */
- 
+
 #ifndef _URANUS_QUEUE_HPP_
 #define _URANUS_QUEUE_HPP_
 
@@ -33,35 +33,39 @@ private:
     size_t mTail = 0;
     size_t mUsed = 0;
     size_t mSize;
-    T queue[Size+1];
-    
+    T queue[Size + 1];
+
 public:
     Queue();
     ~Queue();
-    
-    T* front(void) const;
-    T* back(void) const;
-    
-    T* next(T*) const;
-    T* prev(T*) const;
-    
+
+    T *front(void) const;
+    T *back(void) const;
+
+    T *next(T *) const;
+    T *prev(T *) const;
+
     bool pop_front(void);
     bool pop_back(void);
-    
+
     bool push_back(void);
-    
+
     void clear(void);
     bool empty(void) const;
     size_t used(void) const;
 };
 
-#define INC(num, limit) \
-    if(num >= limit - 1) num = 0; \
-    else ++num;
-    
-#define DEC(num, limit) \
-    if(num <= 0) num = limit - 1; \
-    else --num;
+#define INC(num, limit)   \
+    if (num >= limit - 1) \
+        num = 0;          \
+    else                  \
+        ++num;
+
+#define DEC(num, limit)  \
+    if (num <= 0)        \
+        num = limit - 1; \
+    else                 \
+        --num;
 
 template <typename T, size_t Size>
 inline Queue<T, Size>::Queue()
@@ -75,49 +79,49 @@ inline Queue<T, Size>::~Queue()
 }
 
 template <typename T, size_t Size>
-inline T* Queue<T, Size>::front(void) const
+inline T *Queue<T, Size>::front(void) const
 {
-    if(mHead == mTail)
+    if (mHead == mTail)
         return 0;
-        
-    T* tmp = (T*)queue + mHead;
+
+    T *tmp = (T *)queue + mHead;
     return tmp;
 }
 
 template <typename T, size_t Size>
-inline T* Queue<T, Size>::back(void) const
+inline T *Queue<T, Size>::back(void) const
 {
-    if(mHead == mTail)
+    if (mHead == mTail)
         return 0;
-            
+
     size_t pos = mTail;
     DEC(pos, mSize);
-    T* tmp = (T*)queue + pos;
+    T *tmp = (T *)queue + pos;
     return tmp;
 }
 
 template <typename T, size_t Size>
-inline T* Queue<T, Size>::next(T* one) const
+inline T *Queue<T, Size>::next(T *one) const
 {
     size_t cur = one - queue;
     INC(cur, mSize);
-    
-    if((mHead < mTail && cur >= mHead && cur < mTail) ||
+
+    if ((mHead < mTail && cur >= mHead && cur < mTail) ||
         (mTail < mHead && (cur >= mHead || cur < mTail)))
-        return (T*)queue + cur;
+        return (T *)queue + cur;
     else
         return 0;
 }
 
 template <typename T, size_t Size>
-inline T* Queue<T, Size>::prev(T* one) const
+inline T *Queue<T, Size>::prev(T *one) const
 {
     size_t cur = one - queue;
     DEC(cur, mSize);
-    
-    if((mHead < mTail && cur >= mHead && cur < mTail) ||
+
+    if ((mHead < mTail && cur >= mHead && cur < mTail) ||
         (mTail < mHead && (cur >= mHead || cur < mTail)))
-        return (T*)queue + cur;
+        return (T *)queue + cur;
     else
         return 0;
 }
@@ -125,9 +129,9 @@ inline T* Queue<T, Size>::prev(T* one) const
 template <typename T, size_t Size>
 inline bool Queue<T, Size>::pop_front(void)
 {
-    if(mHead == mTail)
+    if (mHead == mTail)
         return false;
-        
+
     INC(mHead, mSize);
     --mUsed;
     return true;
@@ -136,9 +140,9 @@ inline bool Queue<T, Size>::pop_front(void)
 template <typename T, size_t Size>
 bool Queue<T, Size>::pop_back(void)
 {
-    if(mHead == mTail)
+    if (mHead == mTail)
         return false;
-        
+
     DEC(mTail, mSize);
     --mUsed;
     return true;
@@ -147,9 +151,9 @@ bool Queue<T, Size>::pop_back(void)
 template <typename T, size_t Size>
 inline bool Queue<T, Size>::push_back(void)
 {
-    if((mTail == (mHead - 1)) || ((mTail - mSize) == (mHead - 1)))
+    if ((mTail == (mHead - 1)) || ((mTail - mSize) == (mHead - 1)))
         return false;
-    
+
     INC(mTail, mSize);
     ++mUsed;
     return true;
