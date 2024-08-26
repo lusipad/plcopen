@@ -1,5 +1,5 @@
 /*
- * ExeclQueue.hpp
+ * ExeclQueue.h
  * 
  * Copyright 2020 (C) SYMG(Shanghai) Intelligence System Co.,Ltd
  *
@@ -25,8 +25,8 @@
 #ifndef _URANUS_EXECLQUEUE_HPP_
 #define _URANUS_EXECLQUEUE_HPP_
 
-#include "Global.hpp"
-#include "Event.hpp"
+#include "Global.h"
+#include "Event.h"
 #include <functional>
 
 namespace Uranus {

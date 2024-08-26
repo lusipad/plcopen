@@ -22,8 +22,8 @@
  *
  */
 
-#include "ExeclQueue.hpp"
-#include "Queue.hpp"
+#include "ExeclQueue.h"
+#include "Queue.h"
 
 #include <cstdint>
 

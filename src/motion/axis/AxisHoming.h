@@ -1,5 +1,5 @@
 /*
- * AxisMotion.hpp
+ * AxisHoming.h
  * 
  * Copyright 2020 (C) SYMG(Shanghai) Intelligence System Co.,Ltd
  *
@@ -22,26 +22,37 @@
  * 
  */
 
-#ifndef _URANUS_AXISMOTION_HPP_
-#define _URANUS_AXISMOTION_HPP_
+#ifndef _URANUS_AXISHOMING_HPP_
+#define _URANUS_AXISHOMING_HPP_
 
-#include "AxisMove.hpp"
-#include "AxisHoming.hpp"
+#include "AxisMotionBase.h"
 
 namespace Uranus {
-
-class AxisMotion : 
-    virtual public AxisMove,
-    virtual public AxisHoming
+    
+class AxisHoming : virtual public AxisMotionBase
 {
 public:
-    AxisMotion();
-    virtual ~AxisMotion();
+    AxisHoming();
+    virtual ~AxisHoming();
     
-    double cmdPosition(void) const;
-    double actPosition(void) const;
+public:
+    MC_ErrorCode setHomingInfo(const AxisHomingInfo& info);
+    
+    MC_ErrorCode addHoming(
+        FunctionBlock* fb, 
+        double pos, 
+        MC_BufferMode bufferMode = MC_BUFFERMODE_ABORTING,
+        int32_t customId = 0);
+       
+private: 
+    static void onPowerStatusChangedHandler(AxisBase* this_, bool powerStatus);
+    static void onPositionOffsetHandler(AxisBase* this_, double positionOffset);
+    
+private:
+    class AxisHomingImpl;
+    AxisHomingImpl* mImpl_;
+    friend class HomingNode;
 };
 
 }
-
-#endif /** _URANUS_AXISMOTION_HPP_ **/
+#endif /** _URANUS_AXISHOMING_HPP_ **/

@@ -1,5 +1,5 @@
 /*
- * AxisStatus.hpp
+ * FunctionBlock.h
  * 
  * Copyright 2020 (C) SYMG(Shanghai) Intelligence System Co.,Ltd
  *
@@ -22,33 +22,33 @@
  * 
  */
 
-#ifndef _URANUS_AXISSTATUS_HPP_
-#define _URANUS_AXISSTATUS_HPP_
+#ifndef _URANUS_FUNCTIONBLOCK_HPP_
+#define _URANUS_FUNCTIONBLOCK_HPP_
 
-#include "AxisBase.hpp"
+#include "Global.h"
 
 namespace Uranus {
     
-class AxisStatus : virtual public AxisBase
+#pragma pack(push)
+#pragma pack(4)
+
+class FunctionBlock
 {
 public:
-    AxisStatus();
-    virtual ~AxisStatus();
+    virtual ~FunctionBlock() = default;
+
+    virtual void onOperationActive(int32_t customId){}
     
-    MC_AxisStatus status(void);
-    MC_ErrorCode setStatus(MC_AxisStatus status);
-    MC_ErrorCode testStatus(MC_AxisStatus status);
+    virtual void onOperationAborted(int32_t customId){}
     
-private:
-    static void onErrorHandler(AxisBase* this_, MC_ErrorCode errorCode);
-    static void onPowerStatusChangedHandler(AxisBase* this_, bool powerStatus);
+    virtual void onOperationDone(int32_t customId){}
     
-private:
-    class AxisStatusImpl;
-    AxisStatusImpl* mImpl_;
+    virtual void onOperationError(MC_ErrorCode errorCode, int32_t customId){}
 };
+
+#pragma pack(pop)
 
 }
 
-#endif /** _URANUS_AXISSTATUS_HPP_ **/
+#endif /** _URANUS_FUNCTIONBLOCK_HPP_ **/
     

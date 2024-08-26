@@ -1,5 +1,5 @@
 /*
- * Event.hpp
+ * AxisMotion.h
  * 
  * Copyright 2020 (C) SYMG(Shanghai) Intelligence System Co.,Ltd
  *
@@ -21,26 +21,27 @@
  * under the License.
  * 
  */
- 
-#ifndef _URANUS_EVENT_HPP_
-#define _URANUS_EVENT_HPP_
 
-#include <cstdint>
-#include <list>
-#include <stdio.h>
+#ifndef _URANUS_AXISMOTION_HPP_
+#define _URANUS_AXISMOTION_HPP_
+
+#include "AxisMove.h"
+#include "AxisHoming.h"
 
 namespace Uranus {
 
-#ifdef URANUS_DEBUGMSG
-#define URANUS_MSG(...) printf(__VA_ARGS__)
-#else
-#define URANUS_MSG(...)
-#endif
-
-#define URANUS_DEFINE_EVENT(Event, ...) std::list<void(*)(__VA_ARGS__)> Event;
-#define URANUS_ADD_HANDLER(Event, FuncPtr) Event.push_back(FuncPtr);
-#define URANUS_CALL_EVENT(Event, ...) for(auto& f : Event) (*f)(__VA_ARGS__);
+class AxisMotion : 
+    virtual public AxisMove,
+    virtual public AxisHoming
+{
+public:
+    AxisMotion();
+    virtual ~AxisMotion();
+    
+    double cmdPosition(void) const;
+    double actPosition(void) const;
+};
 
 }
 
-#endif /** _URANUS_EVENT_HPP_ **/
+#endif /** _URANUS_AXISMOTION_HPP_ **/

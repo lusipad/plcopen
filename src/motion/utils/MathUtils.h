@@ -1,5 +1,5 @@
 /*
- * MathUtils.hpp
+ * MathUtils.h
  * 
  * Copyright 2020 (C) SYMG(Shanghai) Intelligence System Co.,Ltd
  *

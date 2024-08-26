@@ -22,8 +22,8 @@
  *
  */
 
-#include "FbSingleAxis.hpp"
-#include "Axis.hpp"
+#include "FbSingleAxis.h"
+#include "Axis.h"
 
 #include <cstring>
 

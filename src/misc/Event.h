@@ -1,5 +1,5 @@
 /*
- * LinkList.hpp
+ * Event.h
  * 
  * Copyright 2020 (C) SYMG(Shanghai) Intelligence System Co.,Ltd
  *
@@ -22,28 +22,25 @@
  * 
  */
  
-#ifndef _URANUS_LINKLIST_HPP_
-#define _URANUS_LINKLIST_HPP_
+#ifndef _URANUS_EVENT_HPP_
+#define _URANUS_EVENT_HPP_
+
+#include <cstdint>
+#include <list>
+#include <stdio.h>
 
 namespace Uranus {
 
-class LinkNode
-{
-private:
-    LinkNode* mPrev;
-    LinkNode* mNext;
-    
-public:
-    LinkNode();
-    virtual ~LinkNode();
-    
-    void takeOut(void);
-    void insertBack(LinkNode* one);
-    void insertFront(LinkNode* one);
-    LinkNode* next(void) const;
-    LinkNode* prev(void) const;
-};
+#ifdef URANUS_DEBUGMSG
+#define URANUS_MSG(...) printf(__VA_ARGS__)
+#else
+#define URANUS_MSG(...)
+#endif
+
+#define URANUS_DEFINE_EVENT(Event, ...) std::list<void(*)(__VA_ARGS__)> Event;
+#define URANUS_ADD_HANDLER(Event, FuncPtr) Event.push_back(FuncPtr);
+#define URANUS_CALL_EVENT(Event, ...) for(auto& f : Event) (*f)(__VA_ARGS__);
 
 }
 
-#endif /** _URANUS_LINKLIST_HPP_ **/
+#endif /** _URANUS_EVENT_HPP_ **/

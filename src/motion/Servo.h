@@ -1,5 +1,5 @@
 /*
- * FunctionBlock.hpp
+ * Servo.h
  * 
  * Copyright 2020 (C) SYMG(Shanghai) Intelligence System Co.,Ltd
  *
@@ -22,33 +22,44 @@
  * 
  */
 
-#ifndef _URANUS_FUNCTIONBLOCK_HPP_
-#define _URANUS_FUNCTIONBLOCK_HPP_
+#ifndef _URANUS_SERVO_HPP_
+#define _URANUS_SERVO_HPP_
 
-#include "Global.hpp"
+#include "Global.h"
+#include <stdarg.h>
 
 namespace Uranus {
-    
+
 #pragma pack(push)
 #pragma pack(4)
-
-class FunctionBlock
+    
+class Servo
 {
 public:
-    virtual ~FunctionBlock() = default;
-
-    virtual void onOperationActive(int32_t customId){}
+    Servo();
+    virtual ~Servo();
     
-    virtual void onOperationAborted(int32_t customId){}
+    virtual MC_ServoErrorCode setPower(bool powerStatus, bool& isDone);
+    virtual MC_ServoErrorCode setPos(int32_t pos);
+    virtual MC_ServoErrorCode setVel(int32_t vel);
+    virtual MC_ServoErrorCode setTorque(double torque);
+    virtual int32_t pos(void);
+    virtual int32_t vel(void);
+    virtual int32_t acc(void);
+    virtual double torque(void);
+    virtual bool readVal(int index, double& value);
+    virtual bool writeVal(int index, double value);
+    virtual MC_ServoErrorCode resetError(bool& isDone);
+    virtual void runCycle(double freq);
+    virtual void emergStop(void);
     
-    virtual void onOperationDone(int32_t customId){}
-    
-    virtual void onOperationError(MC_ErrorCode errorCode, int32_t customId){}
+private:
+    class ServoImpl;
+    ServoImpl* mImpl_;
 };
 
 #pragma pack(pop)
 
 }
 
-#endif /** _URANUS_FUNCTIONBLOCK_HPP_ **/
-    
+#endif /** _URANUS_SERVO_HPP_ **/

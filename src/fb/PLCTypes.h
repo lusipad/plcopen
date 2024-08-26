@@ -1,5 +1,5 @@
 /*
- * PLCTypes.hpp
+ * PLCTypes.h
  * 
  * Copyright 2020 (C) SYMG(Shanghai) Intelligence System Co.,Ltd
  *
@@ -27,7 +27,7 @@
 
 #include <cstdint>
 #include <memory>
-#include "Global.hpp"
+#include "Global.h"
 
 namespace Uranus {
 

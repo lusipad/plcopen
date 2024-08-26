@@ -22,8 +22,8 @@
  *
  */
 
-#include "Scheduler.hpp"
-#include "Axis.hpp"
+#include "Scheduler.h"
+#include "Axis.h"
 
 namespace Uranus
 {

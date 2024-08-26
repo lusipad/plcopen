@@ -22,8 +22,8 @@
  *
  */
 
-#include "Servo.hpp"
-#include "Scheduler.hpp"
+#include "Servo.h"
+#include "Scheduler.h"
 
 namespace Uranus
 {

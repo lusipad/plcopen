@@ -1,4 +1,4 @@
-/*
+﻿/*
  * AxisBase.cpp
  *
  * Copyright 2020 (C) SYMG(Shanghai) Intelligence System Co.,Ltd
@@ -22,10 +22,10 @@
  *
  */
 
-#include "AxisBase.hpp"
-#include "Event.hpp"
-#include "MathUtils.hpp"
-#include "Servo.hpp"
+#include "AxisBase.h"
+#include "Event.h"
+#include "MathUtils.h"
+#include "Servo.h"
 
 #include <cstring>
 
@@ -676,4 +676,5 @@ void AxisBase::printLog(MC_LogLevel level, const char *fmt, ...)
     va_end(ap);
 }
 
-} // namespace Uranus
+} 
+// namespace Uranus

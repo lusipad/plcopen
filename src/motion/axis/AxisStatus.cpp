@@ -22,7 +22,7 @@
  *
  */
 
-#include "AxisStatus.hpp"
+#include "AxisStatus.h"
 #include <stdio.h>
 namespace Uranus
 {

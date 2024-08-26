@@ -22,9 +22,9 @@
  *
  */
 
-#include "ProfilesPlanner.hpp"
-#include "MathUtils.hpp"
-#include "ProfilePlanner.hpp"
+#include "ProfilesPlanner.h"
+#include "MathUtils.h"
+#include "ProfilePlanner.h"
 
 namespace Uranus
 {

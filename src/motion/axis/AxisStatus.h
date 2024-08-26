@@ -1,5 +1,5 @@
 /*
- * AxisHoming.hpp
+ * AxisStatus.h
  * 
  * Copyright 2020 (C) SYMG(Shanghai) Intelligence System Co.,Ltd
  *
@@ -22,37 +22,33 @@
  * 
  */
 
-#ifndef _URANUS_AXISHOMING_HPP_
-#define _URANUS_AXISHOMING_HPP_
+#ifndef _URANUS_AXISSTATUS_HPP_
+#define _URANUS_AXISSTATUS_HPP_
 
-#include "AxisMotionBase.hpp"
+#include "AxisBase.h"
 
 namespace Uranus {
     
-class AxisHoming : virtual public AxisMotionBase
+class AxisStatus : virtual public AxisBase
 {
 public:
-    AxisHoming();
-    virtual ~AxisHoming();
+    AxisStatus();
+    virtual ~AxisStatus();
     
-public:
-    MC_ErrorCode setHomingInfo(const AxisHomingInfo& info);
-    
-    MC_ErrorCode addHoming(
-        FunctionBlock* fb, 
-        double pos, 
-        MC_BufferMode bufferMode = MC_BUFFERMODE_ABORTING,
-        int32_t customId = 0);
-       
-private: 
-    static void onPowerStatusChangedHandler(AxisBase* this_, bool powerStatus);
-    static void onPositionOffsetHandler(AxisBase* this_, double positionOffset);
+    MC_AxisStatus status(void);
+    MC_ErrorCode setStatus(MC_AxisStatus status);
+    MC_ErrorCode testStatus(MC_AxisStatus status);
     
 private:
-    class AxisHomingImpl;
-    AxisHomingImpl* mImpl_;
-    friend class HomingNode;
+    static void onErrorHandler(AxisBase* this_, MC_ErrorCode errorCode);
+    static void onPowerStatusChangedHandler(AxisBase* this_, bool powerStatus);
+    
+private:
+    class AxisStatusImpl;
+    AxisStatusImpl* mImpl_;
 };
 
 }
-#endif /** _URANUS_AXISHOMING_HPP_ **/
+
+#endif /** _URANUS_AXISSTATUS_HPP_ **/
+    

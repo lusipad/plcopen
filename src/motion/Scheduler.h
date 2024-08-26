@@ -1,5 +1,5 @@
 ﻿/*
- * Scheduler.hpp
+ * Scheduler.h
  * 
  * Copyright 2020 (C) SYMG(Shanghai) Intelligence System Co.,Ltd
  *
@@ -25,8 +25,8 @@
 #ifndef _URANUS_SCHEDULER_HPP_
 #define _URANUS_SCHEDULER_HPP_
 
-#include "Global.hpp"
-#include "Servo.hpp"
+#include "Global.h"
+#include "Servo.h"
 
 namespace Uranus {
 

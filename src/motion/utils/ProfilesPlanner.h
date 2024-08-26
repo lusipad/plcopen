@@ -1,5 +1,5 @@
 /*
- * ProfilesPlanner.hpp
+ * ProfilesPlanner.h
  * 
  * Copyright 2020 (C) SYMG(Shanghai) Intelligence System Co.,Ltd
  *
@@ -25,8 +25,8 @@
 #ifndef _URANUS_PROFILESPLANNER_HPP_
 #define _URANUS_PROFILESPLANNER_HPP_
 
-#include "ExeclQueue.hpp"
-#include "ProfilePlanner.hpp"
+#include "ExeclQueue.h"
+#include "ProfilePlanner.h"
 
 namespace Uranus {
 

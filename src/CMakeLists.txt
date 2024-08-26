@@ -38,12 +38,12 @@ INSTALL(TARGETS Uranus
 )
 
 INSTALL(FILES 
-    fb/FunctionBlock.hpp 
-    fb/FbPLCOpenBase.hpp 
-    fb/FbSingleAxis.hpp
-    fb/PLCTypes.hpp
-    motion/Servo.hpp 
-    motion/Global.hpp 
-    motion/Scheduler.hpp
+    fb/FunctionBlock.h 
+    fb/FbPLCOpenBase.h 
+    fb/FbSingleAxis.h
+    fb/PLCTypes.h
+    motion/Servo.h 
+    motion/Global.h 
+    motion/Scheduler.h
     DESTINATION include/Uranus
 )

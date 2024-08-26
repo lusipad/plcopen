@@ -1,5 +1,5 @@
 /*
- * FbPLCOpenBase.hpp
+ * FbPLCOpenBase.h
  * 
  * Copyright 2020 (C) SYMG(Shanghai) Intelligence System Co.,Ltd
  *
@@ -25,8 +25,8 @@
 #ifndef _URANUS_FBPLCOPENBASE_HPP_
 #define _URANUS_FBPLCOPENBASE_HPP_
 
-#include "FunctionBlock.hpp"
-#include "PLCTypes.hpp"
+#include "FunctionBlock.h"
+#include "PLCTypes.h"
 
 namespace Uranus {
     

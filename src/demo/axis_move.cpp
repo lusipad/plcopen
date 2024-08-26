@@ -25,8 +25,8 @@
  *
  */
 
-#include "FbSingleAxis.hpp"
-#include "Scheduler.hpp"
+#include "FbSingleAxis.h"
+#include "Scheduler.h"
 #include <iomanip>
 #include <iostream>
 //#include <unistd.h>

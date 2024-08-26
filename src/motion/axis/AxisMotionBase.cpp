@@ -22,9 +22,9 @@
  *
  */
 
-#include "AxisMotionBase.hpp"
-#include "FunctionBlock.hpp"
-// #include "AxesGroupBase.hpp"
+#include "AxisMotionBase.h"
+#include "FunctionBlock.h"
+// #include "AxesGroupBase.h"
 
 namespace Uranus
 {

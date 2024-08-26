@@ -22,8 +22,8 @@
  *
  */
 
-#include "FunctionBlock.hpp"
-#include "Scheduler.hpp"
+#include "FunctionBlock.h"
+#include "Scheduler.h"
 
 namespace Uranus
 {

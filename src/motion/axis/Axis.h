@@ -1,5 +1,5 @@
 /*
- * Servo.hpp
+ * Axis.h
  * 
  * Copyright 2020 (C) SYMG(Shanghai) Intelligence System Co.,Ltd
  *
@@ -22,44 +22,33 @@
  * 
  */
 
-#ifndef _URANUS_SERVO_HPP_
-#define _URANUS_SERVO_HPP_
+#ifndef _URANUS_AXIS_HPP_
+#define _URANUS_AXIS_HPP_
 
-#include "Global.hpp"
-#include <stdarg.h>
+#include "AxisMotion.h"
 
 namespace Uranus {
 
-#pragma pack(push)
-#pragma pack(4)
-    
-class Servo
+class Scheduler;
+class Axis : public AxisMotion
 {
 public:
-    Servo();
-    virtual ~Servo();
+    Axis();
+    virtual ~Axis();
     
-    virtual MC_ServoErrorCode setPower(bool powerStatus, bool& isDone);
-    virtual MC_ServoErrorCode setPos(int32_t pos);
-    virtual MC_ServoErrorCode setVel(int32_t vel);
-    virtual MC_ServoErrorCode setTorque(double torque);
-    virtual int32_t pos(void);
-    virtual int32_t vel(void);
-    virtual int32_t acc(void);
-    virtual double torque(void);
-    virtual bool readVal(int index, double& value);
-    virtual bool writeVal(int index, double value);
-    virtual MC_ServoErrorCode resetError(bool& isDone);
-    virtual void runCycle(double freq);
-    virtual void emergStop(void);
+    int32_t axisId(void);
     
 private:
-    class ServoImpl;
-    ServoImpl* mImpl_;
-};
+    double frequency(void) override final;
+    uint32_t tick(void) override final;
+    void vprintLog(MC_LogLevel level, const char* fmt, va_list ap) override final;
 
-#pragma pack(pop)
+private:
+    Scheduler* mSched = nullptr;
+    int32_t mAxisId = 0;
+    friend class Scheduler;
+};
 
 }
 
-#endif /** _URANUS_SERVO_HPP_ **/
+#endif /** _URANUS_AXIS_HPP_ **/

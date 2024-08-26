@@ -1,4 +1,4 @@
-/*
+﻿/*
  * AxisHoming.cpp
  *
  * Copyright 2020 (C) SYMG(Shanghai) Intelligence System Co.,Ltd
@@ -22,11 +22,11 @@
  *
  */
 
-#include "AxisHoming.hpp"
-#include "Event.hpp"
-#include "FunctionBlock.hpp"
-#include "MathUtils.hpp"
-#include "ProfilePlanner.hpp"
+#include "AxisHoming.h"
+#include "Event.h"
+#include "FunctionBlock.h"
+#include "MathUtils.h"
+#include "ProfilePlanner.h"
 
 namespace Uranus
 {

@@ -1,5 +1,5 @@
 /*
- * Axis.hpp
+ * LinkList.h
  * 
  * Copyright 2020 (C) SYMG(Shanghai) Intelligence System Co.,Ltd
  *
@@ -21,34 +21,29 @@
  * under the License.
  * 
  */
-
-#ifndef _URANUS_AXIS_HPP_
-#define _URANUS_AXIS_HPP_
-
-#include "AxisMotion.hpp"
+ 
+#ifndef _URANUS_LINKLIST_HPP_
+#define _URANUS_LINKLIST_HPP_
 
 namespace Uranus {
 
-class Scheduler;
-class Axis : public AxisMotion
+class LinkNode
 {
+private:
+    LinkNode* mPrev;
+    LinkNode* mNext;
+    
 public:
-    Axis();
-    virtual ~Axis();
+    LinkNode();
+    virtual ~LinkNode();
     
-    int32_t axisId(void);
-    
-private:
-    double frequency(void) override final;
-    uint32_t tick(void) override final;
-    void vprintLog(MC_LogLevel level, const char* fmt, va_list ap) override final;
-
-private:
-    Scheduler* mSched = nullptr;
-    int32_t mAxisId = 0;
-    friend class Scheduler;
+    void takeOut(void);
+    void insertBack(LinkNode* one);
+    void insertFront(LinkNode* one);
+    LinkNode* next(void) const;
+    LinkNode* prev(void) const;
 };
 
 }
 
-#endif /** _URANUS_AXIS_HPP_ **/
+#endif /** _URANUS_LINKLIST_HPP_ **/

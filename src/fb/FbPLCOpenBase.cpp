@@ -1,4 +1,4 @@
-/*
+﻿/*
  * FbPLCOpenBase.cpp
  *
  * Copyright 2020 (C) SYMG(Shanghai) Intelligence System Co.,Ltd
@@ -22,7 +22,7 @@
  *
  */
 
-#include "FbPLCOpenBase.hpp"
+#include "FbPLCOpenBase.h"
 
 namespace Uranus
 {

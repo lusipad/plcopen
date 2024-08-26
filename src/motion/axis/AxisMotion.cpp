@@ -22,7 +22,7 @@
  *
  */
 
-#include "AxisMotion.hpp"
+#include "AxisMotion.h"
 
 namespace Uranus
 {

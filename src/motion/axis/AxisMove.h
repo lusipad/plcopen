@@ -1,5 +1,5 @@
 /*
- * AxisMove.hpp
+ * AxisMove.h
  * 
  * Copyright 2020 (C) SYMG(Shanghai) Intelligence System Co.,Ltd
  *
@@ -25,7 +25,7 @@
 #ifndef _URANUS_AXISMOVE_HPP_
 #define _URANUS_AXISMOVE_HPP_
 
-#include "AxisMotionBase.hpp"
+#include "AxisMotionBase.h"
 
 namespace Uranus {
     

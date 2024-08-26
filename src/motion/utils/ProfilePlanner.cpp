@@ -1,5 +1,5 @@
 /*
- * ProfilePlanner.hpp
+ * ProfilePlanner.h
  *
  * Copyright 2020 (C) SYMG(Shanghai) Intelligence System Co.,Ltd
  *
@@ -24,8 +24,8 @@
 
 /* lagacy code */
 
-#include "ProfilePlanner.hpp"
-#include "MathUtils.hpp"
+#include "ProfilePlanner.h"
+#include "MathUtils.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

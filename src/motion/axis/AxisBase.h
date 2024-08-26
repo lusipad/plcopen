@@ -1,5 +1,5 @@
 /*
- * AxisBase.hpp
+ * AxisBase.h
  * 
  * Copyright 2020 (C) SYMG(Shanghai) Intelligence System Co.,Ltd
  *
@@ -25,8 +25,8 @@
 #ifndef _URANUS_AXISBASE_HPP_
 #define _URANUS_AXISBASE_HPP_
 
-#include "Global.hpp"
-#include "Event.hpp"
+#include "Global.h"
+#include "Event.h"
 #include <stdarg.h>
 
 namespace Uranus {

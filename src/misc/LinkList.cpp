@@ -29,7 +29,7 @@
  *
  */
 
-#include "LinkList.hpp"
+#include "LinkList.h"
 
 namespace Uranus
 {

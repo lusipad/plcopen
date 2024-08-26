@@ -22,8 +22,8 @@
  *
  */
 
-#include "Axis.hpp"
-#include "Scheduler.hpp"
+#include "Axis.h"
+#include "Scheduler.h"
 #include <stdarg.h>
 #include <string.h>
 

@@ -1,5 +1,5 @@
 /*
- * FbSingleAxis.hpp
+ * FbSingleAxis.h
  * 
  * Copyright 2020 (C) SYMG(Shanghai) Intelligence System Co.,Ltd
  *
@@ -25,7 +25,7 @@
 #ifndef _URANUS_FBSINGLEAXIS_HPP_
 #define _URANUS_FBSINGLEAXIS_HPP_
 
-#include "FbPLCOpenBase.hpp"
+#include "FbPLCOpenBase.h"
 
 namespace Uranus {
     
