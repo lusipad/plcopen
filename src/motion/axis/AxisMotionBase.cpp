@@ -39,14 +39,14 @@ namespace Uranus
     {
         AxisMotionBase *axis = dynamic_cast<AxisMotionBase *>(queue);
         MC_ErrorCode err = axis->setStatus(mStatusActive);
-        if (err)
+        if (MC_ErrorCode::GOOD != err)
             return err;
 
         axis->operationActive(mFb, mNodeCustomId);
         if (mFb)
             mFb->onOperationActive(mNodeCustomId);
 
-        return MC_ERRORCODE_GOOD;
+        return MC_ErrorCode::GOOD;
     }
 
     void AxisExeclNode::onAborted(ExeclQueue *queue)
@@ -97,16 +97,16 @@ namespace Uranus
                                                 FunctionBlock *fb, MC_AxisStatus statusActive, MC_AxisStatus statusDone,
                                                 int32_t nodeCustomId)
     {
-        if (errorCode())
+        if (MC_ErrorCode::GOOD != errorCode())
             return errorCode();
 
         if (!powerStatus())
-            return MC_ERRORCODE_AXISPOWEROFF;
+            return MC_ErrorCode::AXISPOWEROFF;
 
         if (abortFlag)
         {
             MC_ErrorCode err = setStatus(statusActive);
-            if (err)
+            if (MC_ErrorCode::GOOD != err)
                 return err;
         }
 

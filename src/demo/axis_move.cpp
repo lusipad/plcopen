@@ -68,7 +68,7 @@ int main(void)
     moveAbs2.mVelocity = 200;
     moveAbs2.mAcceleration = 300;
     moveAbs2.mDeceleration = 300;
-    moveAbs2.mBufferMode = MC_BUFFERMODE_BUFFERED;
+    moveAbs2.mBufferMode = MC_BufferMode::BUFFERED;
 
     FbReadActualPosition readPos;
     readPos.mAxis = axis;

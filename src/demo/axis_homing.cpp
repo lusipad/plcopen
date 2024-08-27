@@ -1,4 +1,4 @@
-/*
+﻿/*
  * axis_homing.cpp
  *
  * Copyright 2020 (C) SYMG(Shanghai) Intelligence System Co.,Ltd
@@ -69,7 +69,7 @@ int main(void)
     // 设定axis的回零开关地址与回零参数
     AxisConfig config;
     config.mHomingInfo.mHomingSig = &servo->homingSwitch;
-    config.mHomingInfo.mHomingMode = MC_HOMINGMODE_MODE7;
+    config.mHomingInfo.mHomingMode = MC_HomingMode::MODE7;
     config.mHomingInfo.mHomingVelSearch = 20;
     config.mHomingInfo.mHomingVelRegression = 1;
     config.mHomingInfo.mHomingAcc = 50;

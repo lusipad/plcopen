@@ -43,9 +43,9 @@ namespace Uranus
             double acc,
             double dec,
             double jerk,
-            MC_ShiftingMode shiftingMode = MC_SHIFTINGMODE_ABSOLUTE,
-            MC_Direction dir = MC_DIRECTION_CURRENT,
-            MC_BufferMode bufferMode = MC_BUFFERMODE_ABORTING,
+            MC_ShiftingMode shiftingMode = MC_ShiftingMode::ABSOLUTE,
+            MC_Direction dir = MC_Direction::CURRENT,
+            MC_BufferMode bufferMode = MC_BufferMode::ABORTING,
             int32_t customId = 0);
 
         MC_ErrorCode addMovePosCont(
@@ -56,9 +56,9 @@ namespace Uranus
             double dec,
             double endVel,
             double jerk,
-            MC_ShiftingMode shiftingMode = MC_SHIFTINGMODE_ABSOLUTE,
-            MC_Direction dir = MC_DIRECTION_CURRENT,
-            MC_BufferMode bufferMode = MC_BUFFERMODE_ABORTING,
+            MC_ShiftingMode shiftingMode = MC_ShiftingMode::ABSOLUTE,
+            MC_Direction dir = MC_Direction::CURRENT,
+            MC_BufferMode bufferMode = MC_BufferMode::ABORTING,
             int32_t customId = 0);
 
         MC_ErrorCode addMoveVel(
@@ -67,14 +67,14 @@ namespace Uranus
             double acc,
             double dec,
             double jerk,
-            MC_BufferMode bufferMode = MC_BUFFERMODE_ABORTING,
+            MC_BufferMode bufferMode = MC_BufferMode::ABORTING,
             int32_t customId = 0);
 
         MC_ErrorCode addHalt(
             FunctionBlock *fb,
             double dec,
             double jerk,
-            MC_BufferMode bufferMode = MC_BUFFERMODE_ABORTING,
+            MC_BufferMode bufferMode = MC_BufferMode::ABORTING,
             int32_t customId = 0);
 
         MC_ErrorCode addStop(

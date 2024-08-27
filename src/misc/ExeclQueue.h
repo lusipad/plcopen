@@ -32,12 +32,12 @@
 namespace Uranus
 {
 
-    typedef enum
+    enum class ExeclNodeExecStat
     {
         EXECLNODEEXECSTAT_BUSY = 0,
         EXECLNODEEXECSTAT_DONE = 1,
         EXECLNODEEXECSTAT_FASTDONE = 2,
-    } ExeclNodeExecStat;
+    } ;
 
     struct ExeclNodeContainer;
     class ExeclQueue;

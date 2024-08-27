@@ -34,14 +34,14 @@ namespace Uranus
     {
         if (!mAxis)
         {
-            onOperationError(MC_ERRORCODE_AXISNOTEXIST, 0);
+            onOperationError(MC_ErrorCode::AXISNOTEXIST, 0);
             return;
         }
 
         MC_ErrorCode err;
         bool isDone;
         err = mAxis->setPower(mEnable, mEnablePositive, mEnableNegative, isDone);
-        if (err)
+        if (MC_ErrorCode::GOOD != err)
         {
             onOperationError(err, 0);
             return;
@@ -88,7 +88,7 @@ namespace Uranus
 
     MC_ErrorCode FbMoveAbsolute::onAxisExecPosedge(void)
     {
-        return mAxis->addMovePos(this, mPosition, mVelocity, mAcceleration, mDeceleration, mJerk, MC_SHIFTINGMODE_ABSOLUTE,
+        return mAxis->addMovePos(this, mPosition, mVelocity, mAcceleration, mDeceleration, mJerk, MC_ShiftingMode::ABSOLUTE,
                                  mDirection, mBufferMode);
     }
 
@@ -96,16 +96,16 @@ namespace Uranus
 
     MC_ErrorCode FbMoveRelative::onAxisExecPosedge(void)
     {
-        return mAxis->addMovePos(this, mDistance, mVelocity, mAcceleration, mDeceleration, mJerk, MC_SHIFTINGMODE_RELATIVE,
-                                 MC_DIRECTION_CURRENT, mBufferMode);
+        return mAxis->addMovePos(this, mDistance, mVelocity, mAcceleration, mDeceleration, mJerk, MC_ShiftingMode::RELATIVE,
+            MC_Direction::CURRENT, mBufferMode);
     }
 
     ////////////////////////////////////////////////////////////
 
     MC_ErrorCode FbMoveAdditive::onAxisExecPosedge(void)
     {
-        return mAxis->addMovePos(this, mDistance, mVelocity, mAcceleration, mDeceleration, mJerk, MC_SHIFTINGMODE_ADDITIVE,
-                                 MC_DIRECTION_CURRENT, mBufferMode);
+        return mAxis->addMovePos(this, mDistance, mVelocity, mAcceleration, mDeceleration, mJerk, MC_ShiftingMode::ADDITIVE,
+            MC_Direction::CURRENT, mBufferMode);
     }
 
     ////////////////////////////////////////////////////////////
@@ -123,35 +123,35 @@ namespace Uranus
 
         switch (mAxis->status())
         {
-        case MC_AXISSTATUS_DISABLED:
+        case MC_AxisStatus::DISABLED:
             mDisabled = true;
             break;
-        case MC_AXISSTATUS_STANDSTILL:
+        case MC_AxisStatus::STANDSTILL:
             mStandstill = true;
             break;
-        case MC_AXISSTATUS_HOMING:
+        case MC_AxisStatus::HOMING:
             mHoming = true;
             break;
-        case MC_AXISSTATUS_DISCRETEMOTION:
+        case MC_AxisStatus::DISCRETEMOTION:
             mDiscreteMotion = true;
             break;
-        case MC_AXISSTATUS_CONTINUOUSMOTION:
+        case MC_AxisStatus::CONTINUOUSMOTION:
             mContinuousMotion = true;
             break;
-        case MC_AXISSTATUS_SYNCHRONIZEDMOTION:
+        case MC_AxisStatus::SYNCHRONIZEDMOTION:
             mSynchronizedMotion = true;
             break;
-        case MC_AXISSTATUS_STOPPING:
+        case MC_AxisStatus::STOPPING:
             mStopping = true;
             break;
-        case MC_AXISSTATUS_ERRORSTOP:
+        case MC_AxisStatus::ERRORSTOP:
             mErrorStop = true;
             break;
         }
 
         isDone = true;
 
-        return MC_ERRORCODE_GOOD;
+        return MC_ErrorCode::GOOD;
     }
 
     void FbReadStatus::onDisable(void)
@@ -166,18 +166,18 @@ namespace Uranus
         double acc, vel;
         switch (mSource)
         {
-        case MC_SOURCE_SETVALUE:
+        case MC_Source::SETVALUE:
             acc = mAxis->cmdAcceleration();
             vel = mAxis->cmdVelocity();
             break;
 
-        case MC_SOURCE_ACTUALVALUE:
+        case MC_Source::ACTUALVALUE:
             acc = mAxis->actAcceleration();
             vel = mAxis->actVelocity();
             break;
 
         default:
-            return MC_ERRORCODE_SOURCEILLEGAL;
+            return MC_ErrorCode::SOURCEILLEGAL;
         }
 
         onDisable();
@@ -212,7 +212,7 @@ namespace Uranus
 
         isDone = true;
 
-        return MC_ERRORCODE_GOOD;
+        return MC_ErrorCode::GOOD;
     }
 
     void FbReadMotionState::onDisable(void)
@@ -230,21 +230,21 @@ namespace Uranus
     MC_ErrorCode FbReadAxisError::onEnableTrue(void)
     {
         if (!mAxis)
-            return MC_ERRORCODE_AXISNOTEXIST;
+            return MC_ErrorCode::AXISNOTEXIST;
 
         mValid = true;
         mError = false;
         mErrorID = mAxis->errorCode();
         mAxisErrorID = mAxis->devErrorCode();
-        return MC_ERRORCODE_GOOD;
+        return MC_ErrorCode::GOOD;
     }
 
     MC_ErrorCode FbReadAxisError::onEnableFalse(void)
     {
         mValid = false;
-        mErrorID = MC_ERRORCODE_GOOD;
+        mErrorID = MC_ErrorCode::GOOD;
         mAxisErrorID = 0;
-        return MC_ERRORCODE_GOOD;
+        return MC_ErrorCode::GOOD;
     }
 
     ////////////////////////////////////////////////////////////
@@ -260,7 +260,7 @@ namespace Uranus
     {
         mPosition = mAxis->actPosition();
         isDone = true;
-        return MC_ERRORCODE_GOOD;
+        return MC_ErrorCode::GOOD;
     }
 
     void FbReadActualPosition::onDisable(void)
@@ -274,7 +274,7 @@ namespace Uranus
     {
         mPosition = mAxis->cmdPosition();
         isDone = true;
-        return MC_ERRORCODE_GOOD;
+        return MC_ErrorCode::GOOD;
     }
 
     ////////////////////////////////////////////////////////////
@@ -283,7 +283,7 @@ namespace Uranus
     {
         mVelocity = mAxis->actVelocity();
         isDone = true;
-        return MC_ERRORCODE_GOOD;
+        return MC_ErrorCode::GOOD;
     }
 
     void FbReadActualVelocity::onDisable(void)
@@ -297,16 +297,16 @@ namespace Uranus
     {
         mVelocity = mAxis->cmdVelocity();
         isDone = true;
-        return MC_ERRORCODE_GOOD;
+        return MC_ErrorCode::GOOD;
     }
 
     ////////////////////////////////////////////////////////////
 
     MC_ErrorCode FbEmergencyStop::onAxisTriggered(bool &isDone)
     {
-        mAxis->emergStop(MC_ERRORCODE_SOFTWAREEMGS);
+        mAxis->emergStop(MC_ErrorCode::SOFTWAREEMGS);
         isDone = true;
-        return MC_ERRORCODE_GOOD;
+        return MC_ErrorCode::GOOD;
     }
 
 } // namespace Uranus

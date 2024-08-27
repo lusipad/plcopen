@@ -66,21 +66,21 @@ MC_ErrorCode MoveNode::onExecuting(ExeclQueue *queue, ExeclNodeExecStat &stat)
 
         bool ret = planner->plan(this, axis->cmdPosition(), axis->cmdVelocity(), axis->cmdAcceleration());
 
-        axis->printLog(MC_LOGLEVEL_DEBUG,
+        axis->printLog(MC_LogLevel::DEBUG,
                        "MovePos %lf -> %lf, Vel %lf -> %lf, With MaxVel %lf, MaxAcc %lf, MaxDec %lf, Jerk %lf\n",
                        axis->cmdPosition(), mEndPos, axis->cmdVelocity(), mEndVel, mVel, mAcc, mDec, mJerk);
 
         if (!ret)
         {
-            stat = EXECLNODEEXECSTAT_FASTDONE;
+            stat = ExeclNodeExecStat::EXECLNODEEXECSTAT_FASTDONE;
             planner->execute();
             axis->setPosition(planner->getEndPosition(), planner->getEndVelocity(), 0);
-            return MC_ERRORCODE_GOOD;
+            return MC_ErrorCode::GOOD;
         }
     }
 
     if (planner->execute())
-        stat = EXECLNODEEXECSTAT_DONE;
+        stat = ExeclNodeExecStat::EXECLNODEEXECSTAT_DONE;
 
     return axis->setPosition(planner->getPosition(), planner->getVelocity(), planner->getAcceleration());
 }
@@ -107,25 +107,25 @@ MC_ErrorCode AxisMove::AxisMoveImpl::addMove(FunctionBlock *fb, double pos, doub
 
     // 速度参数检测
     if ((vel < 0 && !std::isnan(pos)) || !std::isfinite(vel))
-        return MC_ERRORCODE_VELILLEGAL;
+        return MC_ErrorCode::VELILLEGAL;
 
     // 加速度参数检测
     if (acc <= 0 || !std::isfinite(acc) || dec <= 0 || !std::isfinite(dec))
-        return MC_ERRORCODE_ACCILLEGAL;
+        return MC_ErrorCode::ACCILLEGAL;
 
     // 位置参数检测
     if (std::isinf(pos))
-        return MC_ERRORCODE_POSILLEGAL;
+        return MC_ErrorCode::POSILLEGAL;
 
     // 起始位置处理
     double startPos, startVel, startAcc;
-    if (shiftingMode == MC_SHIFTINGMODE_ADDITIVE || bufferMode != MC_BUFFERMODE_ABORTING)
+    if (shiftingMode == MC_ShiftingMode::ADDITIVE || bufferMode != MC_BufferMode::ABORTING)
     { // 使用最后一个功能块终点位置
         if (!mThis_->operationRemains())
             goto USE_CURRENT;
         nodePrev = dynamic_cast<MoveNode *>(mThis_->back());
         if (!nodePrev)
-            return MC_ERRORCODE_FAILEDTOBUFFER;
+            return MC_ErrorCode::FAILEDTOBUFFER;
         startPos = nodePrev->mEndPos;
         startVel = nodePrev->mEndVel;
         startAcc = nodePrev->mEndAcc;
@@ -148,18 +148,18 @@ MC_ErrorCode AxisMove::AxisMoveImpl::addMove(FunctionBlock *fb, double pos, doub
     {
         switch (shiftingMode)
         {
-        case MC_SHIFTINGMODE_ABSOLUTE: { // 绝对位置的模量与零点偏移转换
+        case MC_ShiftingMode::ABSOLUTE: { // 绝对位置的模量与零点偏移转换
             pos = mThis_->userPosToSys(startPos, pos, dir);
             break;
         }
 
-        case MC_SHIFTINGMODE_RELATIVE: // 相对位置
-        case MC_SHIFTINGMODE_ADDITIVE: // 增量位置
+        case MC_ShiftingMode::RELATIVE: // 相对位置
+        case MC_ShiftingMode::ADDITIVE: // 增量位置
             pos += startPos;
             break;
 
         default:
-            return MC_ERRORCODE_SHIFTINGMODEILLEGAL;
+            return MC_ErrorCode::SHIFTINGMODEILLEGAL;
         }
     }
 
@@ -183,7 +183,7 @@ MC_ErrorCode AxisMove::AxisMoveImpl::addMove(FunctionBlock *fb, double pos, doub
             node->mIsHold = isHold;
             return node;
         },
-        (bufferMode == MC_BUFFERMODE_ABORTING), fb, statusActive, statusDone, customId);
+        (bufferMode == MC_BufferMode::ABORTING), fb, statusActive, statusDone, customId);
 
     return err;
 }
@@ -209,10 +209,10 @@ MC_ErrorCode AxisMove::addMovePos(FunctionBlock *fb, double pos, double vel, dou
                                   int32_t customId)
 {
     if (!vel)
-        return MC_ERRORCODE_VELILLEGAL;
+        return MC_ErrorCode::VELILLEGAL;
 
-    return mImpl_->addMove(fb, pos, vel, acc, dec, 0, jerk, shiftingMode, dir, bufferMode, MC_AXISSTATUS_DISCRETEMOTION,
-                           MC_AXISSTATUS_STANDSTILL, false, customId);
+    return mImpl_->addMove(fb, pos, vel, acc, dec, 0, jerk, shiftingMode, dir, bufferMode, MC_AxisStatus::DISCRETEMOTION,
+        MC_AxisStatus::STANDSTILL, false, customId);
 }
 
 MC_ErrorCode AxisMove::addMovePosCont(FunctionBlock *fb, double pos, double vel, double acc, double dec, double endVel,
@@ -220,42 +220,42 @@ MC_ErrorCode AxisMove::addMovePosCont(FunctionBlock *fb, double pos, double vel,
                                       MC_BufferMode bufferMode, int32_t customId)
 {
     if (!endVel || !vel)
-        return MC_ERRORCODE_VELILLEGAL;
+        return MC_ErrorCode::VELILLEGAL;
 
     return mImpl_->addMove(fb, pos, vel, acc, dec, endVel, jerk, shiftingMode, dir, bufferMode,
-                           MC_AXISSTATUS_CONTINUOUSMOTION, MC_AXISSTATUS_CONTINUOUSMOTION, true, customId);
+        MC_AxisStatus::CONTINUOUSMOTION, MC_AxisStatus::CONTINUOUSMOTION, true, customId);
 }
 
 MC_ErrorCode AxisMove::addMoveVel(FunctionBlock *fb, double vel, double acc, double dec, double jerk,
                                   MC_BufferMode bufferMode, int32_t customId)
 {
     if (!vel)
-        return MC_ERRORCODE_VELILLEGAL;
+        return MC_ErrorCode::VELILLEGAL;
 
-    return mImpl_->addMove(fb, NAN, vel, acc, dec, vel, jerk, MC_SHIFTINGMODE_ABSOLUTE, MC_DIRECTION_CURRENT,
-                           bufferMode, MC_AXISSTATUS_CONTINUOUSMOTION, MC_AXISSTATUS_CONTINUOUSMOTION, true, customId);
+    return mImpl_->addMove(fb, NAN, vel, acc, dec, vel, jerk, MC_ShiftingMode::ABSOLUTE, MC_Direction::CURRENT,
+                           bufferMode, MC_AxisStatus::CONTINUOUSMOTION, MC_AxisStatus::CONTINUOUSMOTION, true, customId);
 }
 
 MC_ErrorCode AxisMove::addHalt(FunctionBlock *fb, double dec, double jerk, MC_BufferMode bufferMode, int32_t customId)
 {
-    return mImpl_->addMove(fb, NAN, __EPSILON, dec, dec, 0, jerk, MC_SHIFTINGMODE_ABSOLUTE, MC_DIRECTION_CURRENT,
-                           bufferMode, MC_AXISSTATUS_DISCRETEMOTION, MC_AXISSTATUS_STANDSTILL, false, customId);
+    return mImpl_->addMove(fb, NAN, __EPSILON, dec, dec, 0, jerk, MC_ShiftingMode::ABSOLUTE, MC_Direction::CURRENT,
+                           bufferMode, MC_AxisStatus::DISCRETEMOTION, MC_AxisStatus::STANDSTILL, false, customId);
 }
 
 MC_ErrorCode AxisMove::addStop(FunctionBlock *fb, double dec, double jerk, int32_t customId)
 {
-    return mImpl_->addMove(fb, NAN, __EPSILON, dec, dec, 0, jerk, MC_SHIFTINGMODE_ABSOLUTE, MC_DIRECTION_CURRENT,
-                           MC_BUFFERMODE_ABORTING, MC_AXISSTATUS_STOPPING, MC_AXISSTATUS_STOPPING, false, customId);
+    return mImpl_->addMove(fb, NAN, __EPSILON, dec, dec, 0, jerk, MC_ShiftingMode::ABSOLUTE, MC_Direction::CURRENT,
+        MC_BufferMode::ABORTING, MC_AxisStatus::STOPPING, MC_AxisStatus::STOPPING, false, customId);
 }
 
 void AxisMove::cancelStopLater(void)
 {
-    if (status() != MC_AXISSTATUS_STOPPING)
+    if (status() != MC_AxisStatus::STOPPING)
         return;
 
     if (!operationRemains())
     {
-        setStatus(MC_AXISSTATUS_STANDSTILL);
+        setStatus(MC_AxisStatus::STANDSTILL);
     }
     else
     {
@@ -263,8 +263,8 @@ void AxisMove::cancelStopLater(void)
         if (!node)
             return;
 
-        if (node->mStatusDone == MC_AXISSTATUS_STOPPING)
-            node->mStatusDone = MC_AXISSTATUS_STANDSTILL;
+        if (node->mStatusDone == MC_AxisStatus::STOPPING)
+            node->mStatusDone = MC_AxisStatus::STANDSTILL;
     }
 }
 

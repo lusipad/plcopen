@@ -62,7 +62,7 @@ namespace Uranus
     void ExeclQueue::ExeclQueueImpl::processFrontNode(void)
     {
         MC_ErrorCode err;
-        ExeclNodeExecStat stat = EXECLNODEEXECSTAT_BUSY;
+        ExeclNodeExecStat stat = ExeclNodeExecStat::EXECLNODEEXECSTAT_BUSY;
         ExeclNodeContainer *container = mQueue.front();
         if (!container)
             return;
@@ -71,19 +71,19 @@ namespace Uranus
         if (!node->mIsActived)
         { // 第一次Active
             err = node->onActive(mThis_);
-            if (err)
+            if (MC_ErrorCode::GOOD != err)
                 goto ERROR;
             node->mIsActived = true;
         }
 
         err = node->onExecuting(mThis_, stat);
-        if (err)
+        if (MC_ErrorCode::GOOD != err)
             goto ERROR;
 
         switch (stat)
         {
-        case EXECLNODEEXECSTAT_DONE:
-        case EXECLNODEEXECSTAT_FASTDONE:
+        case ExeclNodeExecStat::EXECLNODEEXECSTAT_DONE:
+        case ExeclNodeExecStat::EXECLNODEEXECSTAT_FASTDONE:
         {
             bool isHold = false;
             node->onDone(mThis_, isHold);
@@ -102,7 +102,7 @@ namespace Uranus
         default:;
         }
 
-        if (stat == EXECLNODEEXECSTAT_FASTDONE)
+        if (stat == ExeclNodeExecStat::EXECLNODEEXECSTAT_FASTDONE)
             processFrontNode();
 
         return;
@@ -125,7 +125,7 @@ namespace Uranus
     void ExeclQueue::processExeclNode(void)
     {
         MC_ErrorCode err;
-        ExeclNodeExecStat stat = EXECLNODEEXECSTAT_BUSY;
+        ExeclNodeExecStat stat = ExeclNodeExecStat::EXECLNODEEXECSTAT_BUSY;
 
         if (mImpl_->mHoldNode)
         {
@@ -138,7 +138,7 @@ namespace Uranus
             else
             {
                 err = mImpl_->mHoldNode->onExecuting(this, stat);
-                if (err)
+                if (MC_ErrorCode::GOOD != err)
                 {
                     setAllNodesError(err);
                     return;
@@ -161,11 +161,11 @@ namespace Uranus
             ExeclNodeContainer *container = mImpl_->mQueue.back();
             container->node = constructor(container->data);
             container->node->mContainer = container;
-            return MC_ERRORCODE_GOOD;
+            return MC_ErrorCode::GOOD;
         }
         else
         {
-            return MC_ERRORCODE_QUEUEFULL;
+            return MC_ErrorCode::QUEUEFULL;
         }
     }
 

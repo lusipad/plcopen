@@ -61,14 +61,14 @@ void Scheduler::runCycle(void)
 MC_ErrorCode Scheduler::setFrequency(double frequency)
 {
     if (frequency <= 0)
-        return MC_ERRORCODE_FREQUENCYILLEGAL;
+        return MC_ErrorCode::FREQUENCYILLEGAL;
 
     if (axisListFirst())
-        return MC_ERRORCODE_AXISBUSY;
+        return MC_ErrorCode::AXISBUSY;
 
     mImpl_->mFreq = frequency;
 
-    return MC_ERRORCODE_GOOD;
+    return MC_ErrorCode::GOOD;
 }
 
 double Scheduler::frequency(void) const
@@ -115,17 +115,21 @@ MC_ErrorCode Scheduler::setAxisConfig(Axis *axis, const AxisConfig &config)
 {
     MC_ErrorCode err;
     err = axis->setControlInfo(config.mControlInfo);
-    if (err)
+    if (MC_ErrorCode::GOOD != err)
         return err;
+
     err = axis->setMetricInfo(config.mMetricInfo);
-    if (err)
+    if (MC_ErrorCode::GOOD != err)
         return err;
+    
     err = axis->setMotionLimitInfo(config.mMotionLimitInfo);
-    if (err)
+    if (MC_ErrorCode::GOOD != err)
         return err;
+    
     err = axis->setRangeLimitInfo(config.mRangeLimitInfo);
-    if (err)
+    if (MC_ErrorCode::GOOD != err)
         return err;
+    
     err = axis->setHomingInfo(config.mHomingInfo);
     return err;
 }

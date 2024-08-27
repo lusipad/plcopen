@@ -32,32 +32,32 @@ class AxisStatus::AxisStatusImpl
   public:
     MC_ErrorCode statusToError(void);
 
-    MC_AxisStatus mStatus = MC_AXISSTATUS_DISABLED;
+    MC_AxisStatus mStatus = MC_AxisStatus::DISABLED;
 };
 
 MC_ErrorCode AxisStatus::AxisStatusImpl::statusToError(void)
 {
     switch (mStatus)
     {
-    case MC_AXISSTATUS_DISABLED:
-        return MC_ERRORCODE_AXISDISABLED;
-    case MC_AXISSTATUS_STANDSTILL:
-        return MC_ERRORCODE_AXISSTANDSTILL;
-    case MC_AXISSTATUS_HOMING:
-        return MC_ERRORCODE_AXISHOMING;
-    case MC_AXISSTATUS_DISCRETEMOTION:
-        return MC_ERRORCODE_AXISDISCRETEMOTION;
-    case MC_AXISSTATUS_CONTINUOUSMOTION:
-        return MC_ERRORCODE_AXISCONTINUOUSMOTION;
-    case MC_AXISSTATUS_SYNCHRONIZEDMOTION:
-        return MC_ERRORCODE_AXISSYNCHRONIZEDMOTION;
-    case MC_AXISSTATUS_STOPPING:
-        return MC_ERRORCODE_AXISSTOPPING;
-    case MC_AXISSTATUS_ERRORSTOP:
-        return MC_ERRORCODE_AXISERRORSTOP;
+    case MC_AxisStatus::DISABLED:
+        return MC_ErrorCode::AXISDISABLED;
+    case MC_AxisStatus::STANDSTILL:
+        return MC_ErrorCode::AXISSTANDSTILL;
+    case MC_AxisStatus::HOMING:
+        return MC_ErrorCode::AXISHOMING;
+    case MC_AxisStatus::DISCRETEMOTION:
+        return MC_ErrorCode::AXISDISCRETEMOTION;
+    case MC_AxisStatus::CONTINUOUSMOTION:
+        return MC_ErrorCode::AXISCONTINUOUSMOTION;
+    case MC_AxisStatus::SYNCHRONIZEDMOTION:
+        return MC_ErrorCode::AXISSYNCHRONIZEDMOTION;
+    case MC_AxisStatus::STOPPING:
+        return MC_ErrorCode::AXISSTOPPING;
+    case MC_AxisStatus::ERRORSTOP:
+        return MC_ErrorCode::AXISERRORSTOP;
     }
 
-    return MC_ERRORCODE_AXISDISABLED;
+    return MC_ErrorCode::AXISDISABLED;
 }
 
 AxisStatus::AxisStatus()
@@ -80,56 +80,56 @@ MC_AxisStatus AxisStatus::status(void)
 MC_ErrorCode AxisStatus::testStatus(MC_AxisStatus status)
 {
     if (status == mImpl_->mStatus)
-        return MC_ERRORCODE_GOOD;
+        return MC_ErrorCode::GOOD;
 
     switch (mImpl_->mStatus)
     {
-    case MC_AXISSTATUS_ERRORSTOP:
-    case MC_AXISSTATUS_DISABLED:
+    case MC_AxisStatus::ERRORSTOP:
+    case MC_AxisStatus::DISABLED:
         goto FAILED;
 
-    case MC_AXISSTATUS_STANDSTILL:
+    case MC_AxisStatus::STANDSTILL:
         switch (status)
         {
-        case MC_AXISSTATUS_DISCRETEMOTION:
-        case MC_AXISSTATUS_CONTINUOUSMOTION:
-        case MC_AXISSTATUS_SYNCHRONIZEDMOTION:
-        case MC_AXISSTATUS_STOPPING:
-        case MC_AXISSTATUS_HOMING:
+        case MC_AxisStatus::DISCRETEMOTION:
+        case MC_AxisStatus::CONTINUOUSMOTION:
+        case MC_AxisStatus::SYNCHRONIZEDMOTION:
+        case MC_AxisStatus::STOPPING:
+        case MC_AxisStatus::HOMING:
             goto SUCCESS;
         default:
             goto FAILED;
         }
 
-    case MC_AXISSTATUS_DISCRETEMOTION:
-    case MC_AXISSTATUS_CONTINUOUSMOTION:
-    case MC_AXISSTATUS_SYNCHRONIZEDMOTION:
+    case MC_AxisStatus::DISCRETEMOTION:
+    case MC_AxisStatus::CONTINUOUSMOTION:
+    case MC_AxisStatus::SYNCHRONIZEDMOTION:
         switch (status)
         {
-        case MC_AXISSTATUS_DISCRETEMOTION:
-        case MC_AXISSTATUS_CONTINUOUSMOTION:
-        case MC_AXISSTATUS_SYNCHRONIZEDMOTION:
-        case MC_AXISSTATUS_STANDSTILL:
-        case MC_AXISSTATUS_STOPPING:
+        case MC_AxisStatus::DISCRETEMOTION:
+        case MC_AxisStatus::CONTINUOUSMOTION:
+        case MC_AxisStatus::SYNCHRONIZEDMOTION:
+        case MC_AxisStatus::STANDSTILL:
+        case MC_AxisStatus::STOPPING:
             goto SUCCESS;
         default:
             goto FAILED;
         }
 
-    case MC_AXISSTATUS_HOMING:
+    case MC_AxisStatus::HOMING:
         switch (status)
         {
-        case MC_AXISSTATUS_STANDSTILL:
-        case MC_AXISSTATUS_STOPPING:
+        case MC_AxisStatus::STANDSTILL:
+        case MC_AxisStatus::STOPPING:
             goto SUCCESS;
         default:
             goto FAILED;
         }
 
-    case MC_AXISSTATUS_STOPPING:
+    case MC_AxisStatus::STOPPING:
         switch (status)
         {
-        case MC_AXISSTATUS_STANDSTILL:
+        case MC_AxisStatus::STANDSTILL:
             goto SUCCESS;
         default:
             goto FAILED;
@@ -140,7 +140,7 @@ MC_ErrorCode AxisStatus::testStatus(MC_AxisStatus status)
     }
 
 SUCCESS:
-    return MC_ERRORCODE_GOOD;
+    return MC_ErrorCode::GOOD;
 
 FAILED:
     return mImpl_->statusToError();
@@ -149,23 +149,23 @@ FAILED:
 MC_ErrorCode AxisStatus::setStatus(MC_AxisStatus status)
 {
     MC_ErrorCode err = testStatus(status);
-    if (err)
+    if (MC_ErrorCode::GOOD != err)
         return err;
 
     mImpl_->mStatus = status;
-    return MC_ERRORCODE_GOOD;
+    return MC_ErrorCode::GOOD;
 }
 
 void AxisStatus::onErrorHandler(AxisBase *this_, MC_ErrorCode errorCode)
 {
     AxisStatus *this__ = dynamic_cast<AxisStatus *>(this_);
-    this__->mImpl_->mStatus = MC_AXISSTATUS_ERRORSTOP;
+    this__->mImpl_->mStatus = MC_AxisStatus::ERRORSTOP;
 }
 
 void AxisStatus::onPowerStatusChangedHandler(AxisBase *this_, bool powerStatus)
 {
     AxisStatus *this__ = dynamic_cast<AxisStatus *>(this_);
-    this__->mImpl_->mStatus = powerStatus ? MC_AXISSTATUS_STANDSTILL : MC_AXISSTATUS_DISABLED;
+    this__->mImpl_->mStatus = powerStatus ? MC_AxisStatus::STANDSTILL : MC_AxisStatus::DISABLED;
 }
 
 } // namespace Uranus

@@ -38,8 +38,8 @@ namespace Uranus
     {
     public:
         FunctionBlock *mFb = nullptr;
-        MC_AxisStatus mStatusActive = MC_AXISSTATUS_STANDSTILL;
-        MC_AxisStatus mStatusDone = MC_AXISSTATUS_STANDSTILL;
+        MC_AxisStatus mStatusActive = MC_AxisStatus::STANDSTILL;
+        MC_AxisStatus mStatusDone = MC_AxisStatus::STANDSTILL;
         int32_t mNodeCustomId = 0;
 
     protected:

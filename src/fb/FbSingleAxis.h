@@ -89,7 +89,7 @@ namespace Uranus
         FB_INPUT LREAL mAcceleration = 0;
         FB_INPUT LREAL mDeceleration = 0;
         FB_INPUT LREAL mJerk = 0;
-        FB_INPUT MC_DIRECTION mDirection = MC_DIRECTION_CURRENT;
+        FB_INPUT MC_DIRECTION mDirection = MC_Direction::CURRENT;
 
     public:
         MC_ErrorCode onAxisExecPosedge(void);
@@ -155,7 +155,7 @@ namespace Uranus
     class FbReadMotionState : public FbReadInfoAxisType
     {
     public:
-        FB_INPUT MC_SOURCE mSource = MC_SOURCE_SETVALUE;
+        FB_INPUT MC_SOURCE mSource = MC_Source::SETVALUE;
 
         FB_OUTPUT BOOL mConstantVelocity = false;
         FB_OUTPUT BOOL mAccelerating = false;
@@ -188,7 +188,7 @@ namespace Uranus
         MC_ErrorCode onAxisTriggered(bool &isDone);
     };
 
-    typedef enum
+    enum class MC_Parameter
     {
         MC_PARAMETER_COMMANDEDPOSITION = 1,
         MC_PARAMETER_SWLIMITPOS = 2,
@@ -207,7 +207,7 @@ namespace Uranus
         MC_PARAMETER_MAXDECELERATIONAPPL = 15,
         MC_PARAMETER_MAXJERKSYSTEM = 16,
         MC_PARAMETER_MAXJERKAPPL = 17,
-    } MC_Parameter;
+    } ;
 
     class FbReadActualPosition : public FbReadInfoAxisType
     {

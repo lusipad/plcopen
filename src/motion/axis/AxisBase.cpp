@@ -48,7 +48,7 @@ namespace Uranus
         AxisControlInfo mControl;
         double mHomePos = 0;
 
-        MC_ErrorCode mErrorCode = MC_ERRORCODE_GOOD;
+        MC_ErrorCode mErrorCode = MC_ErrorCode::GOOD;
         MC_ServoErrorCode mDevErrorCode = 0;
         bool mNeedReset = false;
 
@@ -83,7 +83,7 @@ namespace Uranus
 
     void AxisBase::AxisBaseImpl::processPositionLoop(void)
     {
-        if (mThis_->errorCode())
+        if (MC_ErrorCode::GOOD != mThis_->errorCode())
             return;
 
         if (!mThis_->powerStatus())
@@ -93,19 +93,19 @@ namespace Uranus
 
         if (calVel > 0 && !mEnablePositive)
         {
-            mThis_->emergStop(MC_ERRORCODE_FORBIDDENPPOSMOVE);
+            mThis_->emergStop(MC_ErrorCode::FORBIDDENPPOSMOVE);
             return;
         }
         else if (calVel < 0 && !mEnableNegative)
         {
-            mThis_->emergStop(MC_ERRORCODE_FORBIDDENNPOSMOVE);
+            mThis_->emergStop(MC_ErrorCode::FORBIDDENNPOSMOVE);
             return;
         }
 
         // printf("Axis error %lf %lf %lf %lf\n", mSubmitCmdPos, mCmdPos, calVel, mMotionLimit.mVelLimit);
         if (__isgt(fabs(calVel), mMotionLimit.mVelLimit))
         {
-            mThis_->emergStop(MC_ERRORCODE_CMDVELOVERLIMIT);
+            mThis_->emergStop(MC_ErrorCode::CMDVELOVERLIMIT);
             return;
         }
         /*
@@ -117,13 +117,13 @@ namespace Uranus
 
         if (mRangeLimit.mSwLimitPositive && mRangeLimit.mLimitPositive < mThis_->sysPosToUser(mSubmitCmdPos) && calVel > 0)
         {
-            mThis_->emergStop(MC_ERRORCODE_CMDPPOSOVERLIMIT);
+            mThis_->emergStop(MC_ErrorCode::CMDPPOSOVERLIMIT);
             return;
         }
 
         if (mRangeLimit.mSwLimitNegative && mRangeLimit.mLimitNegative > mThis_->sysPosToUser(mSubmitCmdPos) && calVel < 0)
         {
-            mThis_->emergStop(MC_ERRORCODE_CMDNPOSOVERLIMIT);
+            mThis_->emergStop(MC_ErrorCode::CMDNPOSOVERLIMIT);
             return;
         }
 
@@ -154,7 +154,7 @@ namespace Uranus
         double curDevPos = toSystemLogic(mServo->pos());
         double posDiff = fabs(mCmdPos - curDevPos);
 
-        if (mControl.mControlMode != MC_CONTROLMODE_VELOPENLOOP)
+        if (mControl.mControlMode != MC_ControlMode::VELOPENLOOP)
         {
             if (__isgt(posDiff, mMotionLimit.mPosLagLimit))
             {
@@ -162,7 +162,7 @@ namespace Uranus
                 posDiff = fabs(posDiff);
                 if (__isgt(posDiff, mMotionLimit.mPosLagLimit))
                 {
-                    mThis_->emergStop(MC_ERRORCODE_POSLAGOVERLIMIT);
+                    mThis_->emergStop(MC_ErrorCode::POSLAGOVERLIMIT);
                     return;
                 }
             }
@@ -176,7 +176,7 @@ namespace Uranus
         // 处理错误重置
         if (mNeedReset)
         {
-            if (mThis_->errorCode())
+            if (MC_ErrorCode::GOOD !=  mThis_->errorCode())
             { // 存在错误尝试恢复
                 bool isDone = false;
                 // 驱动器恢复
@@ -189,7 +189,7 @@ namespace Uranus
                 else if (isDone)
                 { // 恢复成功
                     mDevErrorCode = 0;
-                    mErrorCode = MC_ERRORCODE_GOOD;
+                    mErrorCode = MC_ErrorCode::GOOD;
                     mNeedReset = false;
                 }
             }
@@ -199,7 +199,7 @@ namespace Uranus
             }
         }
 
-        if (!mThis_->errorCode() && !mPowerStatusValid)
+        if (MC_ErrorCode::GOOD == mThis_->errorCode() && !mPowerStatusValid)
         {
             // 处理驱动器使能
             if (mPowerStatus)
@@ -214,17 +214,17 @@ namespace Uranus
             mDevErrorCode = mServo->setPower(mPowerStatus, isDone);
             if (mDevErrorCode)
             { // 使能失败
-                mThis_->emergStop(MC_ERRORCODE_AXISHARDWARE);
+                mThis_->emergStop(MC_ErrorCode::AXISHARDWARE);
             }
             else if (isDone)
             { // 使能成功
                 if (mPowerStatus)
                 {
-                    mThis_->printLog(MC_LOGLEVEL_INFO, "Power on\n");
+                    mThis_->printLog(MC_LogLevel::INFO, "Power on\n");
                 }
                 else
                 {
-                    mThis_->printLog(MC_LOGLEVEL_INFO, "Power off\n");
+                    mThis_->printLog(MC_LogLevel::INFO, "Power off\n");
                 }
                 mPowerStatusValid = true;
                 URANUS_CALL_EVENT(mThis_->onPowerStatusChanged, mThis_, mPowerStatus);
@@ -245,14 +245,14 @@ namespace Uranus
 
         switch (mControl.mControlMode)
         {
-        case MC_CONTROLMODE_POSOPENLOOP:
+        case MC_ControlMode::POSOPENLOOP:
         { // 位置控制模式
             int32_t rawPos = toDevRaw(mCmdPosWithFF);
             mDevErrorCode = mServo->setPos(rawPos);
             break;
         }
 
-        case MC_CONTROLMODE_VELCLOSELOOP:
+        case MC_ControlMode::VELCLOSELOOP:
         { // 速度闭环控制模式
             int32_t rawVel = toDevRaw(mCmdPosWithFF) - mServo->pos();
             rawVel *= mControl.mPKp;
@@ -260,7 +260,7 @@ namespace Uranus
             break;
         }
 
-        case MC_CONTROLMODE_VELOPENLOOP:
+        case MC_ControlMode::VELOPENLOOP:
         { // 速度开环控制模式
             int32_t rawVel = toDevRaw(mCmdVel);
             mDevErrorCode = mServo->setVel(rawVel);
@@ -269,7 +269,7 @@ namespace Uranus
         }
 
         if (mDevErrorCode)
-            mThis_->emergStop(MC_ERRORCODE_AXISHARDWARE);
+            mThis_->emergStop(MC_ErrorCode::AXISHARDWARE);
     }
 
     inline int32_t AxisBase::AxisBaseImpl::toDevRaw(double x) const
@@ -299,19 +299,19 @@ namespace Uranus
 
         switch (dir)
         {
-        case MC_DIRECTION_POSITIVE:
+        case MC_Direction::POSITIVE:
             if (targetPosCurrent > basePos)
                 return targetPosCurrent;
             else
                 return targetPosCurrent + mMetric.mModulo;
 
-        case MC_DIRECTION_NEGATIVE:
+        case MC_Direction::NEGATIVE:
             if (targetPosCurrent < basePos)
                 return targetPosCurrent;
             else
                 return targetPosCurrent - mMetric.mModulo;
 
-        case MC_DIRECTION_SHORTESTWAY:
+        case MC_Direction::SHORTESTWAY:
         {
             double targetPosSide;
             if (targetPosCurrent > basePos)
@@ -327,7 +327,7 @@ namespace Uranus
                 return targetPosSide;
         }
 
-        case MC_DIRECTION_CURRENT:
+        case MC_Direction::CURRENT:
         default:
             return targetPosCurrent;
         }
@@ -402,82 +402,82 @@ namespace Uranus
     MC_ErrorCode AxisBase::setMetricInfo(const AxisMetricInfo &info)
     {
         if (powerStatus())
-            return MC_ERRORCODE_AXISPOWERON;
+            return MC_ErrorCode::AXISPOWERON;
 
-        if (errorCode())
+        if (MC_ErrorCode::GOOD != errorCode())
             return errorCode();
 
         if (fabs(info.mDevUnitRatio) < 1.0 || fabs(info.mDevUnitRatio) > 1048576.0 || !std::isfinite(info.mDevUnitRatio))
-            return MC_ERRORCODE_CFGUNITRATIOOUTOFRANGE;
+            return MC_ErrorCode::CFGUNITRATIOOUTOFRANGE;
 
         if (info.mModulo < 0 || !std::isfinite(info.mModulo))
-            return MC_ERRORCODE_CFGMODULOILLEGAL;
+            return MC_ErrorCode::CFGMODULOILLEGAL;
 
         mImpl_->mMetric = info;
 
-        return MC_ERRORCODE_GOOD;
+        return MC_ErrorCode::GOOD;
     }
 
     MC_ErrorCode AxisBase::setRangeLimitInfo(const AxisRangeLimitInfo &info)
     {
         mImpl_->mRangeLimit = info;
 
-        return MC_ERRORCODE_GOOD;
+        return MC_ErrorCode::GOOD;
     }
 
     MC_ErrorCode AxisBase::setMotionLimitInfo(const AxisMotionLimitInfo &info)
     {
         if (powerStatus())
-            return MC_ERRORCODE_AXISPOWERON;
+            return MC_ErrorCode::AXISPOWERON;
 
         if (info.mVelLimit <= 0 || !std::isfinite(info.mVelLimit))
-            return MC_ERRORCODE_CFGVELLIMITILLEGAL;
+            return MC_ErrorCode::CFGVELLIMITILLEGAL;
 
         if (info.mAccLimit <= 0 || !std::isfinite(info.mAccLimit))
-            return MC_ERRORCODE_CFGACCLIMITILLEGAL;
+            return MC_ErrorCode::CFGACCLIMITILLEGAL;
 
         if (info.mPosLagLimit <= 0 || !std::isfinite(info.mPosLagLimit))
-            return MC_ERRORCODE_CFGPOSLAGILLEGAL;
+            return MC_ErrorCode::CFGPOSLAGILLEGAL;
 
         mImpl_->mMotionLimit = info;
 
-        return MC_ERRORCODE_GOOD;
+        return MC_ErrorCode::GOOD;
     }
 
     MC_ErrorCode AxisBase::setControlInfo(const AxisControlInfo &info)
     {
         if (powerStatus())
-            return MC_ERRORCODE_AXISPOWERON;
+            return MC_ErrorCode::AXISPOWERON;
 
-        if (errorCode())
+        if (MC_ErrorCode::GOOD != errorCode())
             return errorCode();
 
         if (info.mPKp < 0 || !std::isfinite(info.mPKp))
-            return MC_ERRORCODE_CFGPKPILLEGAL;
+            return MC_ErrorCode::CFGPKPILLEGAL;
 
         if (info.mFF < 0 || !std::isfinite(info.mFF))
-            return MC_ERRORCODE_CFGFEEDFORWORDILLEGAL;
+            return MC_ErrorCode::CFGFEEDFORWORDILLEGAL;
 
         switch (info.mControlMode)
         {
-        case MC_CONTROLMODE_POSOPENLOOP:
-        case MC_CONTROLMODE_VELCLOSELOOP:
-        case MC_CONTROLMODE_VELOPENLOOP:
+        case MC_ControlMode::POSOPENLOOP:
+        case MC_ControlMode::VELCLOSELOOP:
+        case MC_ControlMode::VELOPENLOOP:
             break;
 
         default:
-            return MC_ERRORCODE_CONTROLMODEILLEGAL;
+            return MC_ErrorCode::CONTROLMODEILLEGAL;
         }
 
         mImpl_->mControl = info;
 
-        return MC_ERRORCODE_GOOD;
+        return MC_ErrorCode::GOOD;
     }
 
     MC_ErrorCode AxisBase::setHomePosition(double homePos)
     {
         if (!std::isfinite(homePos))
-            return MC_ERRORCODE_HOMEPOSITIONILLEGAL;
+            return MC_ErrorCode::HOMEPOSITIONILLEGAL;
 
         double _2147 = fabs(mImpl_->toSystemLogic(2147483648.0));
         double _4294 = fabs(mImpl_->toSystemLogic(4294967296.0));
@@ -491,10 +491,10 @@ namespace Uranus
             homePos += _4294;
         }
 
-        printLog(MC_LOGLEVEL_DEBUG, "Set home pos %lf, previous home pos %lf, diff %lf\n", homePos, mImpl_->mHomePos,
+        printLog(MC_LogLevel::DEBUG, "Set home pos %lf, previous home pos %lf, diff %lf\n", homePos, mImpl_->mHomePos,
                  homePos - mImpl_->mHomePos);
         mImpl_->mHomePos = homePos;
-        return MC_ERRORCODE_GOOD;
+        return MC_ErrorCode::GOOD;
     }
 
     const AxisMetricInfo &AxisBase::metricInfo(void) const
@@ -526,13 +526,13 @@ namespace Uranus
     {
         isDone = false;
 
-        if (errorCode())
+        if (MC_ErrorCode::GOOD != errorCode())
             return errorCode();
 
         if (mImpl_->mPowerStatusValid && (mImpl_->mPowerStatus == powerStatus))
         {
             isDone = true;
-            return MC_ERRORCODE_GOOD;
+            return MC_ErrorCode::GOOD;
         }
 
         mImpl_->mPowerStatus = powerStatus;
@@ -540,12 +540,12 @@ namespace Uranus
         mImpl_->mEnableNegative = enableNegative;
         mImpl_->mPowerStatusValid = false;
 
-        return MC_ERRORCODE_GOOD;
+        return MC_ErrorCode::GOOD;
     }
 
     void AxisBase::emergStop(MC_ErrorCode errorCodeToSet)
     {
-        if (errorCode())
+        if (MC_ErrorCode::GOOD != errorCode())
             return;
 
         mImpl_->mErrorCode = errorCodeToSet;
@@ -555,33 +555,33 @@ namespace Uranus
         mImpl_->mPowerStatusValid = false;
         mImpl_->mNeedReset = false;
         mImpl_->mServo->emergStop();
-        printLog(MC_LOGLEVEL_WARN, "EmergStop, ErrorID 0x%x, AxisErrorID 0x%x\n", errorCode(), devErrorCode());
+        printLog(MC_LogLevel::WARN, "EmergStop, ErrorID 0x%x, AxisErrorID 0x%x\n", errorCode(), devErrorCode());
         URANUS_CALL_EVENT(onError, this, errorCode());
     }
 
     MC_ErrorCode AxisBase::resetError(bool &isDone)
     {
-        if (!errorCode())
+        if (MC_ErrorCode::GOOD == errorCode())
         {
             isDone = true;
-            return MC_ERRORCODE_GOOD;
+            return MC_ErrorCode::GOOD;
         }
 
         mImpl_->mNeedReset = true;
-        return MC_ERRORCODE_GOOD;
+        return MC_ErrorCode::GOOD;
     }
 
     MC_ErrorCode AxisBase::setPosition(double pos, double vel, double acc)
     {
-        if (errorCode())
+        if (MC_ErrorCode::GOOD != errorCode())
             return errorCode();
 
         if (!powerStatus())
-            return MC_ERRORCODE_AXISPOWEROFF;
+            return MC_ErrorCode::AXISPOWEROFF;
 
         if (!std::isfinite(pos))
         {
-            emergStop(MC_ERRORCODE_POSINFINITY);
+            emergStop(MC_ErrorCode::POSINFINITY);
             return errorCode();
         }
 
@@ -589,7 +589,7 @@ namespace Uranus
         // mImpl_->mCmdVel = (mImpl_->mSubmitCmdPos - mImpl_->mCmdPos) * frequency();
         mImpl_->mCmdVel = vel;
         mImpl_->mCmdAcc = acc;
-        return MC_ERRORCODE_GOOD;
+        return MC_ErrorCode::GOOD;
     }
 
     const char *AxisBase::axisName(void) const

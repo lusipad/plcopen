@@ -42,7 +42,7 @@ namespace Uranus
         MC_ErrorCode addHoming(
             FunctionBlock *fb,
             double pos,
-            MC_BufferMode bufferMode = MC_BUFFERMODE_ABORTING,
+            MC_BufferMode bufferMode = MC_BufferMode::ABORTING,
             int32_t customId = 0);
 
     private:

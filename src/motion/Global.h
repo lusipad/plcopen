@@ -41,205 +41,205 @@ namespace Uranus
 
     typedef uint32_t MC_ServoErrorCode;
 
-    typedef enum
+    enum class MC_ServoControlMode
     {
-        MC_SERVOCONTROLMODE_POSITION = 0,
-        MC_SERVOCONTROLMODE_VELOCITY = 1,
-        MC_SERVOCONTROLMODE_TORQUE = 2,
-    } MC_ServoControlMode;
+        POSITION = 0,
+        VELOCITY = 1,
+        TORQUE = 2,
+    };
 
-    typedef enum
+    enum class MC_ErrorCode
     {
-        MC_ERRORCODE_GOOD = 0x0, // 成功
+        GOOD = 0x0, // 成功
 
-        MC_ERRORCODE_QUEUEFULL = 0x1,            // 轴队列已满
-        MC_ERRORCODE_AXISENCODEROVERFLOW = 0x2,  // 轴编码器溢出
-        MC_ERRORCODE_AXISPOWEROFF = 0x3,         // 轴未使能
-        MC_ERRORCODE_AXISPOWERON = 0x4,          // 轴已功能
-        MC_ERRORCODE_FREQUENCYILLEGAL = 0x5,     // 频率不合法
-        MC_ERRORCODE_AXISNOTEXIST = 0x8,         // 轴ID号不存在
-        MC_ERRORCODE_AXISBUSY = 0xA,             // 轴正忙，有功能块正在控制轴运动
-        MC_ERRORCODE_FAILEDTOBUFFER = 0xF,       // 不支持以buffer形式添加
-        MC_ERRORCODE_BLENDINGMODEILLEGAL = 0x10, // BufferMode值非法
-        MC_ERRORCODE_PARAMETERNOTSUPPORT = 0x14, // 不支持该参数号
-        MC_ERRORCODE_OVERRIDEILLEGAL = 0x17,     // OVERRIDE值非法
-        MC_ERRORCODE_SHIFTINGMODEILLEGAL = 0x19, // 移动模式非法
-        MC_ERRORCODE_SOURCEILLEGAL = 0x1A,       // 获取源非法
-        MC_ERRORCODE_CONTROLMODEILLEGAL = 0x23,  // 控制模式设置错误
+        QUEUEFULL = 0x1,            // 轴队列已满
+        AXISENCODEROVERFLOW = 0x2,  // 轴编码器溢出
+        AXISPOWEROFF = 0x3,         // 轴未使能
+        AXISPOWERON = 0x4,          // 轴已功能
+        FREQUENCYILLEGAL = 0x5,     // 频率不合法
+        AXISNOTEXIST = 0x8,         // 轴ID号不存在
+        AXISBUSY = 0xA,             // 轴正忙，有功能块正在控制轴运动
+        FAILEDTOBUFFER = 0xF,       // 不支持以buffer形式添加
+        BLENDINGMODEILLEGAL = 0x10, // BufferMode值非法
+        PARAMETERNOTSUPPORT = 0x14, // 不支持该参数号
+        OVERRIDEILLEGAL = 0x17,     // OVERRIDE值非法
+        SHIFTINGMODEILLEGAL = 0x19, // 移动模式非法
+        SOURCEILLEGAL = 0x1A,       // 获取源非法
+        CONTROLMODEILLEGAL = 0x23,  // 控制模式设置错误
 
-        MC_ERRORCODE_POSILLEGAL = 0x100,        // 位置不合法
-        MC_ERRORCODE_ACCILLEGAL = 0x101,        // 加/减速度不合法
-        MC_ERRORCODE_VELILLEGAL = 0x102,        // 速度不合法
-        MC_ERRORCODE_AXISHARDWARE = 0x103,      // 硬件错误
-        MC_ERRORCODE_VELLIMITTOOLOW = 0x104,    // 由于配置文件限制，无法到达跟随的速度（电子齿轮，凸轮中）
-        MC_ERRORCODE_ENDVELCANNOTREACH = 0x105, // 实际终速度过高无法到达预设速度
+        POSILLEGAL = 0x100,        // 位置不合法
+        ACCILLEGAL = 0x101,        // 加/减速度不合法
+        VELILLEGAL = 0x102,        // 速度不合法
+        AXISHARDWARE = 0x103,      // 硬件错误
+        VELLIMITTOOLOW = 0x104,    // 由于配置文件限制，无法到达跟随的速度（电子齿轮，凸轮中）
+        ENDVELCANNOTREACH = 0x105, // 实际终速度过高无法到达预设速度
 
-        MC_ERRORCODE_CMDPPOSOVERLIMIT = 0x106,  // 指令位置超出配置文件正向限制
-        MC_ERRORCODE_CMDNPOSOVERLIMIT = 0x107,  // 指令位置超出配置文件负向限制
-        MC_ERRORCODE_FORBIDDENPPOSMOVE = 0x108, // 禁止正向移动
-        MC_ERRORCODE_FORBIDDENNPOSMOVE = 0x109, // 禁止负向移动
+        CMDPPOSOVERLIMIT = 0x106,  // 指令位置超出配置文件正向限制
+        CMDNPOSOVERLIMIT = 0x107,  // 指令位置超出配置文件负向限制
+        FORBIDDENPPOSMOVE = 0x108, // 禁止正向移动
+        FORBIDDENNPOSMOVE = 0x109, // 禁止负向移动
 
-        MC_ERRORCODE_POSLAGOVERLIMIT = 0x10A, // 轴跟随误差超限
-        MC_ERRORCODE_CMDVELOVERLIMIT = 0x10B, // 轴指令速度超出限制
-        MC_ERRORCODE_CMDACCOVERLIMIT = 0x10C, // 轴指令加速度超出限制
-        MC_ERRORCODE_POSINFINITY = 0x10E,     // 轴设定位置不合法
+        POSLAGOVERLIMIT = 0x10A, // 轴跟随误差超限
+        CMDVELOVERLIMIT = 0x10B, // 轴指令速度超出限制
+        CMDACCOVERLIMIT = 0x10C, // 轴指令加速度超出限制
+        POSINFINITY = 0x10E,     // 轴设定位置不合法
 
-        MC_ERRORCODE_SOFTWAREEMGS = 0x1EE,  // 用户急停
-        MC_ERRORCODE_SYSTEMEMGS = 0x1EF,    // 系统急停
-        MC_ERRORCODE_COMMUNICATION = 0x1F0, // 硬件通信异常
+        SOFTWAREEMGS = 0x1EE,  // 用户急停
+        SYSTEMEMGS = 0x1EF,    // 系统急停
+        COMMUNICATION = 0x1F0, // 硬件通信异常
 
         /** 配置错误**/
-        MC_ERRORCODE_CFGAXISIDILLEGAL = 0x201,
-        MC_ERRORCODE_CFGUNITRATIOOUTOFRANGE = 0x202,
-        MC_ERRORCODE_CFGCONTROLMODEILLEGAL = 0x203,
-        MC_ERRORCODE_CFGVELLIMITILLEGAL = 0x204,
-        MC_ERRORCODE_CFGACCLIMITILLEGAL = 0x205,
-        MC_ERRORCODE_CFGPOSLAGILLEGAL = 0x206,
-        MC_ERRORCODE_CFGPKPILLEGAL = 0x207,
-        MC_ERRORCODE_CFGFEEDFORWORDILLEGAL = 0x208,
-        MC_ERRORCODE_CFGMODULOILLEGAL = 0x209,
+        CFGAXISIDILLEGAL = 0x201,
+        CFGUNITRATIOOUTOFRANGE = 0x202,
+        CFGCONTROLMODEILLEGAL = 0x203,
+        CFGVELLIMITILLEGAL = 0x204,
+        CFGACCLIMITILLEGAL = 0x205,
+        CFGPOSLAGILLEGAL = 0x206,
+        CFGPKPILLEGAL = 0x207,
+        CFGFEEDFORWORDILLEGAL = 0x208,
+        CFGMODULOILLEGAL = 0x209,
 
-        MC_ERRORCODE_HOMINGVELILLEGAL = 0x210,
-        MC_ERRORCODE_HOMINGACCILLEGAL = 0x211,
-        MC_ERRORCODE_HOMINGSIGILLEGAL = 0x212,
-        MC_ERRORCODE_HOMINGMODEILLEGAL = 0x214,
-        MC_ERRORCODE_HOMEPOSITIONILLEGAL = 0x215,
+        HOMINGVELILLEGAL = 0x210,
+        HOMINGACCILLEGAL = 0x211,
+        HOMINGSIGILLEGAL = 0x212,
+        HOMINGMODEILLEGAL = 0x214,
+        HOMEPOSITIONILLEGAL = 0x215,
 
-        MC_ERRORCODE_AXISDISABLED = 0x500,
-        MC_ERRORCODE_AXISSTANDSTILL = 0x501,
-        MC_ERRORCODE_AXISHOMING = 0x502,
-        MC_ERRORCODE_AXISDISCRETEMOTION = 0x503,
-        MC_ERRORCODE_AXISCONTINUOUSMOTION = 0x504,
-        MC_ERRORCODE_AXISSYNCHRONIZEDMOTION = 0x505,
-        MC_ERRORCODE_AXISSTOPPING = 0x506,
-        MC_ERRORCODE_AXISERRORSTOP = 0x507,
-    } MC_ErrorCode;
+        AXISDISABLED = 0x500,
+        AXISSTANDSTILL = 0x501,
+        AXISHOMING = 0x502,
+        AXISDISCRETEMOTION = 0x503,
+        AXISCONTINUOUSMOTION = 0x504,
+        AXISSYNCHRONIZEDMOTION = 0x505,
+        AXISSTOPPING = 0x506,
+        AXISERRORSTOP = 0x507,
+    };
 
-    typedef enum
+    enum class MC_AxisStatus
     {
-        MC_AXISSTATUS_DISABLED = 0,
-        MC_AXISSTATUS_STANDSTILL = 1,
-        MC_AXISSTATUS_HOMING = 2,
-        MC_AXISSTATUS_DISCRETEMOTION = 3,
-        MC_AXISSTATUS_CONTINUOUSMOTION = 4,
-        MC_AXISSTATUS_SYNCHRONIZEDMOTION = 5,
-        MC_AXISSTATUS_STOPPING = 6,
-        MC_AXISSTATUS_ERRORSTOP = 7,
-    } MC_AxisStatus;
+        DISABLED = 0,
+        STANDSTILL = 1,
+        HOMING = 2,
+        DISCRETEMOTION = 3,
+        CONTINUOUSMOTION = 4,
+        SYNCHRONIZEDMOTION = 5,
+        STOPPING = 6,
+        ERRORSTOP = 7,
+    };
 
-    typedef enum
+    enum class MC_GroupStatus
     {
-        MC_GROUPSTATUS_DISABLED = 0,
-        MC_GROUPSTATUS_STANDBY = 1,
-        MC_GROUPSTATUS_HOMING = 2,
-        MC_GROUPSTATUS_MOVING = 3,
-        MC_GROUPSTATUS_STOPPING = 4,
-        MC_GROUPSTATUS_ERRORSTOP = 5,
-    } MC_GroupStatus;
+        DISABLED = 0,
+        STANDBY = 1,
+        HOMING = 2,
+        MOVING = 3,
+        STOPPING = 4,
+        ERRORSTOP = 5,
+    };
 
-    typedef enum
+    enum class MC_MotionState
     {
-        MC_MOTIONSTATE_INPOSITION = 0,
-        MC_MOTIONSTATE_CONSTANTVELOCITY = 1,
-        MC_MOTIONSTATE_ACCELERATING = 2,
-        MC_MOTIONSTATE_DECELERATING = 3,
-    } MC_MotionState;
+        INPOSITION = 0,
+        CONSTANTVELOCITY = 1,
+        ACCELERATING = 2,
+        DECELERATING = 3,
+    };
 
-    typedef enum
+    enum class MC_BufferMode
     {
-        MC_BUFFERMODE_ABORTING = 0,
-        MC_BUFFERMODE_BUFFERED = 1,
-        MC_BUFFERMODE_BLENDINGLOW = 2,
-        MC_BUFFERMODE_BLENDINGPREVIOUS = 3,
-        MC_BUFFERMODE_BLENDINGNEXT = 4,
-        MC_BUFFERMODE_BLENDINGHIGH = 5,
-        MC_BUFFERMODE_BLENDINGCNC = 128,
-    } MC_BufferMode;
+        ABORTING = 0,
+        BUFFERED = 1,
+        BLENDINGLOW = 2,
+        BLENDINGPREVIOUS = 3,
+        BLENDINGNEXT = 4,
+        BLENDINGHIGH = 5,
+        BLENDINGCNC = 128,
+    };
 
-    typedef enum
+    enum class MC_Direction
     {
-        MC_DIRECTION_POSITIVE = 1,
-        MC_DIRECTION_SHORTESTWAY = 2,
-        MC_DIRECTION_NEGATIVE = 3,
-        MC_DIRECTION_CURRENT = 4,
-    } MC_Direction;
+        POSITIVE = 1,
+        SHORTESTWAY = 2,
+        NEGATIVE = 3,
+        CURRENT = 4,
+    };
 
-    typedef enum
+    enum class MC_Source
     {
-        MC_SOURCE_SETVALUE = 0,
-        MC_SOURCE_ACTUALVALUE = 1,
-    } MC_Source;
+        SETVALUE = 0,
+        ACTUALVALUE = 1,
+    };
 
-    typedef enum
+    enum class MC_ShiftingMode
     {
-        MC_SHIFTINGMODE_ABSOLUTE = 0,
-        MC_SHIFTINGMODE_RELATIVE = 1,
-        MC_SHIFTINGMODE_ADDITIVE = 2,
-    } MC_ShiftingMode;
+        ABSOLUTE = 0,
+        RELATIVE = 1,
+        ADDITIVE = 2,
+    };
 
-    typedef enum
+    enum class MC_HomingMode
     {
-        MC_HOMINGMODE_DIRECT = 1000, // 直接以当前位置作为零点
+        DIRECT = 1000, // 直接以当前位置作为零点
 
-        MC_HOMINGMODE_MODE5 = 1005, // 负向移动寻找回零开关，触发后正向移动离开回零开关，最终停留在刚离开回零开关处，回零开关为上升沿触发
-        MC_HOMINGMODE_MODE6 = 1006, // 负向移动寻找回零开关，触发后正向移动离开回零开关，最终停留在刚离开回零开关处，回零开关为下降沿触发
-        MC_HOMINGMODE_MODE7 = 1007, // 正向移动寻找回零开关，触发后负向移动离开回零开关，最终停留在刚离开回零开关处，回零开关为上升沿触发
-        MC_HOMINGMODE_MODE8 = 1008, // 正向移动寻找回零开关，触发后负向移动离开回零开关，最终停留在刚离开回零开关处，回零开关为下降沿触发
-    } MC_HomingMode;
+        MODE5 = 1005, // 负向移动寻找回零开关，触发后正向移动离开回零开关，最终停留在刚离开回零开关处，回零开关为上升沿触发
+        MODE6 = 1006, // 负向移动寻找回零开关，触发后正向移动离开回零开关，最终停留在刚离开回零开关处，回零开关为下降沿触发
+        MODE7 = 1007, // 正向移动寻找回零开关，触发后负向移动离开回零开关，最终停留在刚离开回零开关处，回零开关为上升沿触发
+        MODE8 = 1008, // 正向移动寻找回零开关，触发后负向移动离开回零开关，最终停留在刚离开回零开关处，回零开关为下降沿触发
+    };
 
-    typedef enum
+    enum class MC_TouchProbeStatus
     {
-        MC_TOUCHPROBESTATUS_NOTEXIST = 0,
-        MC_TOUCHPROBESTATUS_RESETTING = 1,
-        MC_TOUCHPROBESTATUS_RESETED = 2,
-        MC_TOUCHPROBESTATUS_TIGGERING = 3,
-        MC_TOUCHPROBESTATUS_TIGGERED = 4,
-    } MC_TouchProbeStatus;
+        NOTEXIST = 0,
+        RESETTING = 1,
+        RESETED = 2,
+        TIGGERING = 3,
+        TIGGERED = 4,
+    };
 
-    typedef enum
+    enum class MC_ControlMode
     {
-        MC_CONTROLMODE_POSOPENLOOP = 0,
-        MC_CONTROLMODE_VELCLOSELOOP = 1,
-        MC_CONTROLMODE_VELOPENLOOP = 2,
-    } MC_ControlMode;
+        POSOPENLOOP = 0,
+        VELCLOSELOOP = 1,
+        VELOPENLOOP = 2,
+    };
 
-    typedef enum
+    enum class MC_CoordSystem
     {
-        MC_COORDSYSTEM_ACS = 0,
-        MC_COORDSYSTEM_MCS = 1,
-        MC_COORDSYSTEM_PCS = 2,
-    } MC_CoordSystem;
+        ACS = 0,
+        MCS = 1,
+        PCS = 2,
+    };
 
-    typedef enum
+    enum class MC_CircMode
     {
-        MC_CIRCMODE_BORDER = 0,
-        MC_CIRCMODE_CENTER = 1,
-        MC_CIRCMODE_RADIUS = 2,
-        MC_CIRCMODE_VECTOR = 1000,
-    } MC_CircMode;
+        BORDER = 0,
+        CENTER = 1,
+        RADIUS = 2,
+        VECTOR = 1000,
+    };
 
-    typedef enum
+    enum class MC_CircPath
     {
-        MC_CIRCPATH_CLOCKWISE = 0,
-        MC_CIRCPATH_COUNTERCLOCKWISE = 1,
-    } MC_CircPath;
+        CLOCKWISE = 0,
+        COUNTERCLOCKWISE = 1,
+    };
 
-    typedef enum
+    enum class MC_TransitionMode
     {
-        MC_TRANSITIONMODE_NONE = 0,
-        MC_TRANSITIONMODE_STARTVELOCITY = 1,    // 不支持
-        MC_TRANSITIONMODE_CONSTANTVELOCITY = 2, // 不支持
-        MC_TRANSITIONMODE_CORNERDISTANCE = 3,
-        MC_TRANSITIONMODE_MAXCORNERDEVIATION = 4,
-    } MC_TransitionMode;
+        NONE = 0,
+        STARTVELOCITY = 1,    // 不支持
+        CONSTANTVELOCITY = 2, // 不支持
+        CORNERDISTANCE = 3,
+        MAXCORNERDEVIATION = 4,
+    };
 
-    typedef enum
+    enum class MC_LogLevel
     {
-        MC_LOGLEVEL_ERROR = 0,
-        MC_LOGLEVEL_WARN = 1,
-        MC_LOGLEVEL_INFO = 2,
-        MC_LOGLEVEL_DEBUG = 3,
-    } MC_LogLevel;
+        ERROR = 0,
+        WARN = 1,
+        INFO = 2,
+        DEBUG = 3,
+    };
 
     //////////////////////////////////////////////////////////////
 
@@ -266,7 +266,7 @@ namespace Uranus
 
     struct AxisControlInfo
     {
-        MC_ControlMode mControlMode = MC_CONTROLMODE_POSOPENLOOP; // 控制模式
+        MC_ControlMode mControlMode = MC_ControlMode::POSOPENLOOP; // 控制模式
         double mPKp = 10;                                         // 闭环位置Kp
         double mFF = 0;                                           // 位置前馈
     };
@@ -275,7 +275,7 @@ namespace Uranus
     {
         uint8_t *mHomingSig = 0;                          // 回零信号地址
         uint8_t mHomingSigBitOffset = 0;                  // 回零信号偏移
-        MC_HomingMode mHomingMode = MC_HOMINGMODE_DIRECT; // 回零模式
+        MC_HomingMode mHomingMode = MC_HomingMode::DIRECT; // 回零模式
         double mHomingVelSearch = 0;                      // 寻找回零信号速度
         double mHomingVelRegression = 0;                  // 返回零位速度
         double mHomingAcc = 0;                            // 回零加速度

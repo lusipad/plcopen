@@ -33,14 +33,14 @@ namespace Uranus {
 #pragma pack(push)
 #pragma pack(4)
 
-#define FB_INPUT 
-#define FB_OUTPUT 
+#define FB_INPUT // 标记输入变量
+#define FB_OUTPUT // 标记输出变量
 
 class FbBaseType : virtual public FunctionBlock
 {
 public:
     FB_OUTPUT BOOL mError = false;
-    FB_OUTPUT MC_ERRORCODE mErrorID = MC_ERRORCODE_GOOD;
+    FB_OUTPUT MC_ERRORCODE mErrorID = MC_ErrorCode::GOOD;
     
 public:
     void onOperationError(MC_ErrorCode errorCode, int32_t customId);
@@ -155,19 +155,19 @@ public:
 class FbCoordSystemType
 {
 public:
-    FB_INPUT MC_COORD_SYSTEM mCoordSystem = MC_COORDSYSTEM_MCS;
+    FB_INPUT MC_COORD_SYSTEM mCoordSystem = MC_CoordSystem::MCS;
 };
 
 class FbBufferModeType : virtual public FbSeqExecuteType
 {
 public:
-    FB_INPUT MC_BUFFER_MODE mBufferMode = MC_BUFFERMODE_ABORTING;
+    FB_INPUT MC_BUFFER_MODE mBufferMode = MC_BufferMode::ABORTING;
 };
 
 class FbTranslModeType : virtual public FbSeqExecuteType
 {
 public:
-    FB_INPUT MC_TRANSITION_MODE mTransitionMode = MC_TRANSITIONMODE_NONE;
+    FB_INPUT MC_TRANSITION_MODE mTransitionMode = MC_TransitionMode::NONE;
     FB_INPUT LREAL mTransitionParameter[URANUS_TRANSITIONPARAMETER_NUM] = {0};
 };
 
