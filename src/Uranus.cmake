@@ -23,13 +23,13 @@ INCLUDE_DIRECTORIES(
     include
     motion
     motion/axis
-    motion/utils
+    motion/interpolation
     fb
     misc
 )
 
 AUX_SOURCE_DIRECTORY(motion URANUS_SOURCE)
 AUX_SOURCE_DIRECTORY(motion/axis URANUS_SOURCE)
-AUX_SOURCE_DIRECTORY(motion/utils URANUS_SOURCE)
+AUX_SOURCE_DIRECTORY(motion/interpolation URANUS_SOURCE)
 AUX_SOURCE_DIRECTORY(fb URANUS_SOURCE)
 AUX_SOURCE_DIRECTORY(misc URANUS_SOURCE)
