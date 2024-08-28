@@ -177,6 +177,7 @@ namespace Uranus
         ADDITIVE = 2,
     };
 
+    // TODO: 回零要调整，应该是按照固定、直接设定等方式的回零
     enum class MC_HomingMode
     {
         DIRECT = 1000, // 直接以当前位置作为零点

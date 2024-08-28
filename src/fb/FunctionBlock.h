@@ -29,9 +29,8 @@
 
 namespace Uranus
 {
-
-#pragma pack(push)
-#pragma pack(4)
+    #pragma pack(push)
+    #pragma pack(4)
 
     class FunctionBlock
     {
@@ -47,8 +46,7 @@ namespace Uranus
         virtual void onOperationError(MC_ErrorCode errorCode, int32_t customId) {}
     };
 
-#pragma pack(pop)
-
+    #pragma pack(pop)
 }
 
 #endif /** _URANUS_FUNCTIONBLOCK_HPP_ **/

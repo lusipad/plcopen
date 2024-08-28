@@ -38,6 +38,7 @@ namespace Uranus
 #define URANUS_MSG(...)
 #endif
 
+// TODO: 我要做个可以在内核态使用的，所以这里的容器不能使用了，需要调整下
 #define URANUS_DEFINE_EVENT(Event, ...) std::list<void (*)(__VA_ARGS__)> Event;
 #define URANUS_ADD_HANDLER(Event, FuncPtr) Event.push_back(FuncPtr);
 #define URANUS_CALL_EVENT(Event, ...) \

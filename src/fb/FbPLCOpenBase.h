@@ -28,189 +28,191 @@
 #include "FunctionBlock.h"
 #include "PLCTypes.h"
 
-namespace Uranus {
-    
-#pragma pack(push)
-#pragma pack(4)
-
-#define FB_INPUT // 标记输入变量
-#define FB_OUTPUT // 标记输出变量
-
-class FbBaseType : virtual public FunctionBlock
+// TODO: 这里的组合有点问题，需要优化下
+namespace Uranus 
 {
-public:
-    FB_OUTPUT BOOL mError = false;
-    FB_OUTPUT MC_ERRORCODE mErrorID = MC_ErrorCode::GOOD;
+    #pragma pack(push)
+    #pragma pack(4)
+
+    #define FB_INPUT // 标记输入变量
+    #define FB_OUTPUT // 标记输出变量
+
+    class FbBaseType : virtual public FunctionBlock
+    {
+    public:
+        FB_OUTPUT BOOL mError = false;
+        FB_OUTPUT MC_ERRORCODE mErrorID = MC_ErrorCode::GOOD;
     
-public:
-    void onOperationError(MC_ErrorCode errorCode, int32_t customId);
+    public:
+        void onOperationError(MC_ErrorCode errorCode, int32_t customId);
         
-    void clearError(void);
+        void clearError(void);
        
-public: 
-    virtual void call(void) = 0;
-};
+    public: 
+        virtual void call(void) = 0;
+    };
 
-class FbEnableType : virtual public FbBaseType
-{
-public:
-    FB_INPUT BOOL mEnable = false;
+    class FbEnableType : virtual public FbBaseType
+    {
+    public:
+        FB_INPUT BOOL mEnable = false;
     
-public:
-    void call(void);
+    public:
+        void call(void);
     
-public:
-    virtual MC_ErrorCode onEnableTrue(void) = 0;
-    virtual MC_ErrorCode onEnableFalse(void) = 0;
-};
+    public:
+        virtual MC_ErrorCode onEnableTrue(void) = 0;
+        virtual MC_ErrorCode onEnableFalse(void) = 0;
+    };
 
-class FbComExecuteType : virtual public FbBaseType
-{
-public:
-    FB_INPUT BOOL mExecute = false;
+    class FbComExecuteType : virtual public FbBaseType
+    {
+    public:
+        FB_INPUT BOOL mExecute = false;
     
-    FB_OUTPUT BOOL mDone = false;
-    FB_OUTPUT BOOL mBusy = false;
+        FB_OUTPUT BOOL mDone = false;
+        FB_OUTPUT BOOL mBusy = false;
     
-public:
-    void call(void);
+    public:
+        void call(void);
     
-    void onOperationError(MC_ErrorCode errorCode, int32_t customId);
+        void onOperationError(MC_ErrorCode errorCode, int32_t customId);
     
-public:
-    virtual MC_ErrorCode onExecTriggered(bool& isDone) = 0;
-};
+    public:
+        virtual MC_ErrorCode onExecTriggered(bool& isDone) = 0;
+    };
 
-class FbSeqExecuteType : virtual public FbBaseType
-{
-public:
-    FB_INPUT BOOL mExecute = false;
+    class FbSeqExecuteType : virtual public FbBaseType
+    {
+    public:
+        FB_INPUT BOOL mExecute = false;
     
-    FB_OUTPUT BOOL mDone = false;
-    FB_OUTPUT BOOL mBusy = false;
-    FB_OUTPUT BOOL mActive = false;
-    FB_OUTPUT BOOL mCommandAborted = false;
+        FB_OUTPUT BOOL mDone = false;
+        FB_OUTPUT BOOL mBusy = false;
+        FB_OUTPUT BOOL mActive = false;
+        FB_OUTPUT BOOL mCommandAborted = false;
     
-public:
-    void call(void);
+    public:
+        void call(void);
     
-    void onOperationActive(int32_t customId);
+        void onOperationActive(int32_t customId);
     
-    void onOperationAborted(int32_t customId);
+        void onOperationAborted(int32_t customId);
     
-    void onOperationDone(int32_t customId);
+        void onOperationDone(int32_t customId);
     
-    void onOperationError(MC_ErrorCode errorCode, int32_t customId);
+        void onOperationError(MC_ErrorCode errorCode, int32_t customId);
     
-public:
-    virtual MC_ErrorCode onExecPosedge(void) = 0;
-    virtual void onExecNegedge(void){}
+    public:
+        virtual MC_ErrorCode onExecPosedge(void) = 0;
+        virtual void onExecNegedge(void){}
     
-private:
-    bool mExecuteTrigger = false;
-    bool mOkFlag = false;
-};
+    private:
+        bool mExecuteTrigger = false;
+        bool mOkFlag = false;
+    };
 
-class FbReadInfoType : virtual public FbEnableType
-{
-public:
-    FB_OUTPUT BOOL mValid = false;
-    FB_OUTPUT BOOL mBusy = false;
+    class FbReadInfoType : virtual public FbEnableType
+    {
+    public:
+        FB_OUTPUT BOOL mValid = false;
+        FB_OUTPUT BOOL mBusy = false;
     
-public:
-    MC_ErrorCode onEnableTrue(void);
-    MC_ErrorCode onEnableFalse(void);
+    public:
+        MC_ErrorCode onEnableTrue(void);
+        MC_ErrorCode onEnableFalse(void);
     
-    void onOperationError(MC_ErrorCode errorCode, int32_t customId);
+        void onOperationError(MC_ErrorCode errorCode, int32_t customId);
         
-public:
-    virtual MC_ErrorCode onEnable(bool& isDone) = 0;
-    virtual void onDisable(void) = 0;
-};
+    public:
+        virtual MC_ErrorCode onEnable(bool& isDone) = 0;
+        virtual void onDisable(void) = 0;
+    };
 
-class FbWriteInfoAxisType : virtual public FbComExecuteType
-{
-public:
-    FB_INPUT AXIS_REF mAxis = nullptr;
+    class FbWriteInfoAxisType : virtual public FbComExecuteType
+    {
+    public:
+        FB_INPUT AXIS_REF mAxis = nullptr;
     
-public:
-    MC_ErrorCode onExecTriggered(bool& isDone);
+    public:
+        MC_ErrorCode onExecTriggered(bool& isDone);
 
-public:
-    virtual MC_ErrorCode onAxisTriggered(bool& isDone) = 0;
-};
+    public:
+        virtual MC_ErrorCode onAxisTriggered(bool& isDone) = 0;
+    };
 
-class FbReadInfoAxisType : virtual public FbReadInfoType
-{
-public:
-    FB_INPUT AXIS_REF mAxis = nullptr;
+    class FbReadInfoAxisType : virtual public FbReadInfoType
+    {
+    public:
+        FB_INPUT AXIS_REF mAxis = nullptr;
     
-public:
-    MC_ErrorCode onEnable(bool& isDone);
+    public:
+        MC_ErrorCode onEnable(bool& isDone);
         
-public:
-    virtual MC_ErrorCode onAxisEnable(bool& isDone) = 0;
-};
+    public:
+        virtual MC_ErrorCode onAxisEnable(bool& isDone) = 0;
+    };
 
-class FbCoordSystemType
-{
-public:
-    FB_INPUT MC_COORD_SYSTEM mCoordSystem = MC_CoordSystem::MCS;
-};
+    // TODO: 规范里没有这个
+    class FbCoordSystemType
+    {
+    public:
+        FB_INPUT MC_COORD_SYSTEM mCoordSystem = MC_CoordSystem::MCS;
+    };
 
-class FbBufferModeType : virtual public FbSeqExecuteType
-{
-public:
-    FB_INPUT MC_BUFFER_MODE mBufferMode = MC_BufferMode::ABORTING;
-};
+    class FbBufferModeType : virtual public FbSeqExecuteType
+    {
+    public:
+        FB_INPUT MC_BUFFER_MODE mBufferMode = MC_BufferMode::ABORTING;
+    };
 
-class FbTranslModeType : virtual public FbSeqExecuteType
-{
-public:
-    FB_INPUT MC_TRANSITION_MODE mTransitionMode = MC_TransitionMode::NONE;
-    FB_INPUT LREAL mTransitionParameter[URANUS_TRANSITIONPARAMETER_NUM] = {0};
-};
+    class FbTranslModeType : virtual public FbSeqExecuteType
+    {
+    public:
+        FB_INPUT MC_TRANSITION_MODE mTransitionMode = MC_TransitionMode::NONE;
+        FB_INPUT LREAL mTransitionParameter[URANUS_TRANSITIONPARAMETER_NUM] = {0};
+    };
 
-class FbExecAxisType : virtual public FbSeqExecuteType
-{
-public:
-    FB_INPUT AXIS_REF mAxis = nullptr;
+    class FbExecAxisType : virtual public FbSeqExecuteType
+    {
+    public:
+        FB_INPUT AXIS_REF mAxis = nullptr;
     
-public:
-    MC_ErrorCode onExecPosedge(void);
+    public:
+        MC_ErrorCode onExecPosedge(void);
     
-public:
-    virtual MC_ErrorCode onAxisExecPosedge(void) = 0;
-};
+    public:
+        virtual MC_ErrorCode onAxisExecPosedge(void) = 0;
+    };
 
-class FbExecAxisBufferType : 
-    virtual public FbExecAxisType, virtual public FbBufferModeType
-{
-};
+    class FbExecAxisBufferType : 
+        virtual public FbExecAxisType, virtual public FbBufferModeType
+    {
+    };
 
-class FbExecAxisBufferContType : virtual public FbExecAxisBufferType
-{
-public:
-    void onOperationDone(int32_t customId);
-};
+    class FbExecAxisBufferContType : virtual public FbExecAxisBufferType
+    {
+    public:
+        void onOperationDone(int32_t customId);
+    };
 
-class FbExecAxisBufferContSyncType : virtual public FbExecAxisBufferContType
-{
-public:
-    FB_INPUT AXIS_REF mMaster = nullptr;
-    FB_INPUT AXIS_REF& mSlave = mAxis;
-    FB_OUTPUT BOOL mStartSync = false;
-    FB_OUTPUT BOOL& mInGear = mDone;
-    FB_OUTPUT BOOL& mInSync = mDone;
+    class FbExecAxisBufferContSyncType : virtual public FbExecAxisBufferContType
+    {
+    public:
+        FB_INPUT AXIS_REF mMaster = nullptr;
+        FB_INPUT AXIS_REF& mSlave = mAxis;
+        FB_OUTPUT BOOL mStartSync = false;
+        FB_OUTPUT BOOL& mInGear = mDone;
+        FB_OUTPUT BOOL& mInSync = mDone;
     
-public:
-    MC_ErrorCode onAxisExecPosedge(void);
+    public:
+        MC_ErrorCode onAxisExecPosedge(void);
     
-public:
-    virtual MC_ErrorCode onMasterSlaveExecPosedge(void) = 0;
-};
+    public:
+        virtual MC_ErrorCode onMasterSlaveExecPosedge(void) = 0;
+    };
 
-#pragma pack(pop)
+    #pragma pack(pop)
 
 }
 

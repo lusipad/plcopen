@@ -48,7 +48,6 @@ namespace Uranus
         int32_t mAxisId = 0;
         friend class Scheduler;
     };
-
 }
 
 #endif /** _URANUS_AXIS_HPP_ **/

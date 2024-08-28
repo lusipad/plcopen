@@ -167,7 +167,8 @@ namespace Uranus
         MC_ErrorCode onAxisEnable(bool &isDone);
         void onDisable(void);
     };
-
+    
+    // TODO: 这里直接提供 FbAxisEnableType 更合理
     class FbReadAxisError : public FbEnableType
     {
     public:
@@ -235,12 +236,14 @@ namespace Uranus
         void onDisable(void);
     };
 
+    // TODO: 协议里没有这个功能
     class FbReadCommandVelocity : public FbReadActualVelocity
     {
     public:
         MC_ErrorCode onAxisEnable(bool &isDone);
     };
 
+    // TODO: 协议里没有这个功能
     class FbEmergencyStop : public FbWriteInfoAxisType
     {
     public:

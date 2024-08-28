@@ -54,8 +54,8 @@ make
 | MC_ReadBoolParameter  | 读取轴的布尔型参数值。 |          |
 | MC_ReadDigitalInput   | 读取轴的数字型输入。   |          |
 | MC_ReadDigitalOutput  | 读取轴的数字型输出。   |          |
-| MC_ReadActualPosition | 读取轴的实际坐标。     |          |
-| MC_ReadActualVelocity | 读取轴的实际速度。     |          |
+| MC_ReadActualPosition | 读取轴的实际坐标。     | O        |
+| MC_ReadActualVelocity | 读取轴的实际速度。     | O        |
 | MC_ReadActualTorque   | 读取轴的实际扭矩。     |          |
 | MC_ReadAxisInfo       | 读取轴的信息。         |          |
 | MC_ReadMotionState    | 读取运动状态。         |          |
@@ -63,7 +63,7 @@ make
 | MC_SetOverride        | 设置倍率。             |          |
 | MC_TouchProbe         | 设置扭矩。             |          |
 | MC_DigitalCamSwitch   | 设置电子凸轮。         |          |
-| MC_Reset              | 复位。                 |          |
+| MC_Reset              | 复位。                 | O        |
 | MC_AbortTrigger       | 终止触发器。           |          |
 | MC_HaltSuperimposed   | 停止额外运动。         |          |
 
@@ -78,7 +78,7 @@ make
 | 功能块名称                | 描述                                 | 支持情况 |
 | :------------------------ | :----------------------------------- | -------- |
 | MC_Home                   | 回零。                               |          |
-| MC_Stop                   | 停止轴的运动。                       |          |
+| MC_Stop                   | 停止轴的运动。                       | O        |
 | MC_Halt                   | 立即停止轴的运动。                   | O        |
 | MC_MoveAbsolute           | 将轴移动到绝对位置。                 | O        |
 | MC_MoveRelative           | 将轴从当前位置移动相对距离。         | O        |
@@ -108,6 +108,7 @@ make
 ## 其他
 
 1. 目前算法仅支持了加速度减速度运动规划 (加速度直线型)，不支持 Jerk 运动规划。
+1. 不支持 ContinuousUpdate
 
 ## 参考资料
 
