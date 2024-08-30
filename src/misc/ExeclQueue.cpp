@@ -51,7 +51,7 @@ namespace Uranus
     {
     public:
         ExeclQueue *mThis_ = nullptr;
-        ;
+        
         Queue<ExeclNodeContainer, URANUS_AXISEXECLLISTSIZE> mQueue;
         ExeclNode *mHoldNode = nullptr;
 

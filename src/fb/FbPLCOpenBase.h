@@ -217,4 +217,3 @@ namespace Uranus
 }
 
 #endif /** _URANUS_FBPLCOPENBASE_HPP_ **/
-    

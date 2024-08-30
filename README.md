@@ -108,9 +108,37 @@ make
 ## 其他
 
 1. 目前算法仅支持了加速度减速度运动规划 (加速度直线型)，不支持 Jerk 运动规划。
-1. 不支持 ContinuousUpdate
+
+2. 不支持 ContinuousUpdate
+
+   
+
+## TODO
+
+- v0.1 (项目工程化整理)
+  - cmake跨平台支持 ✅️
+  - 格式化调整 ✅️
+  - 文档补充
+  - 增加测试
+
+- v0.2 (功能调整)
+  - 调整状态机实现
+  - 调整FB的组合方式
+  - 补充单轴管理FB
+  - 补充单轴运动FB
+  - 增加多轴FB
+- v0.3 (扩展)
+  - 增加Jog/Inc的FB
+  - 增加Home的FB
+- v0.4 (多语言支持)
+- v0.5 (GUI)
+
+
+
+
+
 
 ## 参考资料
 
-1. PLCOpen Motion Control 相关资料，可以在 [PLCOpen 官网](https://plcopen.org/technical-activities/motion-control) 下载。
+1. PLCOpen Motion Control 相关资料，可以在 [PLCOpen 官网](https://plcopen.org/technical-activities/motion-control) 下载（仓库的 doc 下有 1&2 的资料）。
 2. 由于 PLCOpen 的资料都是英文的，所以丢到 AI 智能体做了一个[知识库](https://chatglm.cn/agentShare?id=66c8b6c8b3232fbf83b14ecb)，可以通过大模型进行交互。
