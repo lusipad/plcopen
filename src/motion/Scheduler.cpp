@@ -61,10 +61,10 @@ void Scheduler::runCycle(void)
 MC_ErrorCode Scheduler::setFrequency(double frequency)
 {
     if (frequency <= 0)
-        return MC_ErrorCode::FREQUENCYILLEGAL;
+        return MC_ErrorCode::FREQUENCY_ILLEGAL;
 
     if (axisListFirst())
-        return MC_ErrorCode::AXISBUSY;
+        return MC_ErrorCode::AXIS_BUSY;
 
     mImpl_->mFreq = frequency;
 

@@ -31,7 +31,6 @@
 #include <iomanip>
 #include <iostream>
 #include <stdio.h>
-// #include <unistd.h>
 #include <thread>
 #include <chrono>
 
@@ -123,7 +122,6 @@ int main(void)
             break;
         }
 
-        // usleep(1000000 / frequency); // 演示用，sleep代替实时定时器
         this_thread::sleep_for(std::chrono::microseconds((long)(1000000 / frequency)));
         t += 1 / frequency;
     }

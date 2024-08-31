@@ -29,7 +29,6 @@
 #include "Scheduler.h"
 #include <iomanip>
 #include <iostream>
-// #include <unistd.h>
 #include <chrono>
 #include <thread>
 
@@ -118,7 +117,6 @@ int main(void)
             break;
         }
 
-        // usleep(1000000 / frequency); // 演示用，sleep代替实时定时器
         this_thread::sleep_for(std::chrono::microseconds((long)(1000000 / frequency)));
         t += 1 / frequency;
     }

@@ -101,7 +101,7 @@ namespace Uranus
             return errorCode();
 
         if (!powerStatus())
-            return MC_ErrorCode::AXISPOWEROFF;
+            return MC_ErrorCode::AXIS_POWER_OFF;
 
         if (abortFlag)
         {

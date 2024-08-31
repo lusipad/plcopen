@@ -93,19 +93,19 @@ namespace Uranus
 
         if (calVel > 0 && !mEnablePositive)
         {
-            mThis_->emergStop(MC_ErrorCode::FORBIDDENPPOSMOVE);
+            mThis_->emergStop(MC_ErrorCode::FORBIDDEN_PPOS_MOVE);
             return;
         }
         else if (calVel < 0 && !mEnableNegative)
         {
-            mThis_->emergStop(MC_ErrorCode::FORBIDDENNPOSMOVE);
+            mThis_->emergStop(MC_ErrorCode::FORBIDDEN_NPOS_MOVE);
             return;
         }
 
         // printf("Axis error %lf %lf %lf %lf\n", mSubmitCmdPos, mCmdPos, calVel, mMotionLimit.mVelLimit);
         if (__isgt(fabs(calVel), mMotionLimit.mVelLimit))
         {
-            mThis_->emergStop(MC_ErrorCode::CMDVELOVERLIMIT);
+            mThis_->emergStop(MC_ErrorCode::CMD_VEL_OVERLIMIT);
             return;
         }
         /*
@@ -117,13 +117,13 @@ namespace Uranus
 
         if (mRangeLimit.mSwLimitPositive && mRangeLimit.mLimitPositive < mThis_->sysPosToUser(mSubmitCmdPos) && calVel > 0)
         {
-            mThis_->emergStop(MC_ErrorCode::CMDPPOSOVERLIMIT);
+            mThis_->emergStop(MC_ErrorCode::CMD_PPOS_OVERLIMIT);
             return;
         }
 
         if (mRangeLimit.mSwLimitNegative && mRangeLimit.mLimitNegative > mThis_->sysPosToUser(mSubmitCmdPos) && calVel < 0)
         {
-            mThis_->emergStop(MC_ErrorCode::CMDNPOSOVERLIMIT);
+            mThis_->emergStop(MC_ErrorCode::CMD_NPOS_OVERLIMIT);
             return;
         }
 
@@ -162,7 +162,7 @@ namespace Uranus
                 posDiff = fabs(posDiff);
                 if (__isgt(posDiff, mMotionLimit.mPosLagLimit))
                 {
-                    mThis_->emergStop(MC_ErrorCode::POSLAGOVERLIMIT);
+                    mThis_->emergStop(MC_ErrorCode::POS_LAG_OVERLIMIT);
                     return;
                 }
             }
@@ -214,7 +214,7 @@ namespace Uranus
             mDevErrorCode = mServo->setPower(mPowerStatus, isDone);
             if (mDevErrorCode)
             { // 使能失败
-                mThis_->emergStop(MC_ErrorCode::AXISHARDWARE);
+                mThis_->emergStop(MC_ErrorCode::AXIS_HARDWARE);
             }
             else if (isDone)
             { // 使能成功
@@ -269,7 +269,7 @@ namespace Uranus
         }
 
         if (mDevErrorCode)
-            mThis_->emergStop(MC_ErrorCode::AXISHARDWARE);
+            mThis_->emergStop(MC_ErrorCode::AXIS_HARDWARE);
     }
 
     inline int32_t AxisBase::AxisBaseImpl::toDevRaw(double x) const
@@ -402,16 +402,16 @@ namespace Uranus
     MC_ErrorCode AxisBase::setMetricInfo(const AxisMetricInfo &info)
     {
         if (powerStatus())
-            return MC_ErrorCode::AXISPOWERON;
+            return MC_ErrorCode::AXIS_POWER_ON;
 
         if (MC_ErrorCode::GOOD != errorCode())
             return errorCode();
 
         if (fabs(info.mDevUnitRatio) < 1.0 || fabs(info.mDevUnitRatio) > 1048576.0 || !std::isfinite(info.mDevUnitRatio))
-            return MC_ErrorCode::CFGUNITRATIOOUTOFRANGE;
+            return MC_ErrorCode::CFG_UNIT_RATIO_OUT_OF_RANGE;
 
         if (info.mModulo < 0 || !std::isfinite(info.mModulo))
-            return MC_ErrorCode::CFGMODULOILLEGAL;
+            return MC_ErrorCode::CFG_MODULO_ILLEGAL;
 
         mImpl_->mMetric = info;
 
@@ -428,16 +428,16 @@ namespace Uranus
     MC_ErrorCode AxisBase::setMotionLimitInfo(const AxisMotionLimitInfo &info)
     {
         if (powerStatus())
-            return MC_ErrorCode::AXISPOWERON;
+            return MC_ErrorCode::AXIS_POWER_ON;
 
         if (info.mVelLimit <= 0 || !std::isfinite(info.mVelLimit))
-            return MC_ErrorCode::CFGVELLIMITILLEGAL;
+            return MC_ErrorCode::CFG_VEL_LIMIT_ILLEGAL;
 
         if (info.mAccLimit <= 0 || !std::isfinite(info.mAccLimit))
-            return MC_ErrorCode::CFGACCLIMITILLEGAL;
+            return MC_ErrorCode::CFG_ACC_LIMIT_ILLEGAL;
 
         if (info.mPosLagLimit <= 0 || !std::isfinite(info.mPosLagLimit))
-            return MC_ErrorCode::CFGPOSLAGILLEGAL;
+            return MC_ErrorCode::CFG_POS_LAG_ILLEGAL;
 
         mImpl_->mMotionLimit = info;
 
@@ -447,16 +447,16 @@ namespace Uranus
     MC_ErrorCode AxisBase::setControlInfo(const AxisControlInfo &info)
     {
         if (powerStatus())
-            return MC_ErrorCode::AXISPOWERON;
+            return MC_ErrorCode::AXIS_POWER_ON;
 
         if (MC_ErrorCode::GOOD != errorCode())
             return errorCode();
 
         if (info.mPKp < 0 || !std::isfinite(info.mPKp))
-            return MC_ErrorCode::CFGPKPILLEGAL;
+            return MC_ErrorCode::CFG_PKP_ILLEGAL;
 
         if (info.mFF < 0 || !std::isfinite(info.mFF))
-            return MC_ErrorCode::CFGFEEDFORWORDILLEGAL;
+            return MC_ErrorCode::CFG_FEED_FORWORD_ILLEGAL;
 
         switch (info.mControlMode)
         {
@@ -466,7 +466,7 @@ namespace Uranus
             break;
 
         default:
-            return MC_ErrorCode::CONTROLMODEILLEGAL;
+            return MC_ErrorCode::CONTROL_MODE_ILLEGAL;
         }
 
         mImpl_->mControl = info;
@@ -477,7 +477,7 @@ namespace Uranus
     MC_ErrorCode AxisBase::setHomePosition(double homePos)
     {
         if (!std::isfinite(homePos))
-            return MC_ErrorCode::HOMEPOSITIONILLEGAL;
+            return MC_ErrorCode::HOME_POSITION_ILLEGAL;
 
         double _2147 = fabs(mImpl_->toSystemLogic(2147483648.0));
         double _4294 = fabs(mImpl_->toSystemLogic(4294967296.0));
@@ -577,11 +577,11 @@ namespace Uranus
             return errorCode();
 
         if (!powerStatus())
-            return MC_ErrorCode::AXISPOWEROFF;
+            return MC_ErrorCode::AXIS_POWER_OFF;
 
         if (!std::isfinite(pos))
         {
-            emergStop(MC_ErrorCode::POSINFINITY);
+            emergStop(MC_ErrorCode::POS_INFINITY);
             return errorCode();
         }
 

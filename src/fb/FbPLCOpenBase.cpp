@@ -201,7 +201,7 @@ namespace Uranus
 
     MC_ErrorCode FbExecAxisType::onExecPosedge(void)
     {
-        return mAxis ? onAxisExecPosedge() : MC_ErrorCode::AXISNOTEXIST;
+        return mAxis ? onAxisExecPosedge() : MC_ErrorCode::AXIS_NO_TEXIST;
     }
 
     ////////////////////////////////////////////////////////////
@@ -217,21 +217,21 @@ namespace Uranus
 
     MC_ErrorCode FbReadInfoAxisType::onEnable(bool &isDone)
     {
-        return mAxis ? onAxisEnable(isDone) : MC_ErrorCode::AXISNOTEXIST;
+        return mAxis ? onAxisEnable(isDone) : MC_ErrorCode::AXIS_NO_TEXIST;
     }
 
     ////////////////////////////////////////////////////////////
 
     MC_ErrorCode FbWriteInfoAxisType::onExecTriggered(bool &isDone)
     {
-        return mAxis ? onAxisTriggered(isDone) : MC_ErrorCode::AXISNOTEXIST;
+        return mAxis ? onAxisTriggered(isDone) : MC_ErrorCode::AXIS_NO_TEXIST;
     }
 
     ////////////////////////////////////////////////////////////
 
     MC_ErrorCode FbExecAxisBufferContSyncType::onAxisExecPosedge(void)
     {
-        return mMaster ? onMasterSlaveExecPosedge() : MC_ErrorCode::AXISNOTEXIST;
+        return mMaster ? onMasterSlaveExecPosedge() : MC_ErrorCode::AXIS_NO_TEXIST;
     }
 
     ////////////////////////////////////////////////////////////

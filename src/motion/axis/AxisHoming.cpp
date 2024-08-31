@@ -33,10 +33,10 @@ namespace Uranus
 
     enum class MC_HomingStep
     {
-        MC_HOMINGSTEP_INIT = 0,
-        MC_HOMINGSTEP_SEARCHSIG = 1,
-        MC_HOMINGSTEP_REGRESSIONSIG = 2,
-        MC_HOMINGSTEP_TOSIG = 3,
+        INIT = 0,
+        SEARCHSIG = 1,
+        REGRESSION_SIG = 2,
+        TOSIG = 3,
     };
 
     struct AxisHomingInfoEx : public AxisHomingInfo
@@ -56,7 +56,7 @@ namespace Uranus
     public:
         double mPos = 0;
         double mFinalPos = 0;
-        MC_HomingStep mHomingStep = MC_HomingStep::MC_HOMINGSTEP_INIT;
+        MC_HomingStep mHomingStep = MC_HomingStep::INIT;
 
     protected:
         virtual MC_ErrorCode onExecuting(ExeclQueue *queue, ExeclNodeExecStat &stat) override;
@@ -72,7 +72,7 @@ namespace Uranus
 
         switch (mHomingStep)
         {
-        case MC_HomingStep::MC_HOMINGSTEP_INIT:
+        case MC_HomingStep::INIT:
             if (!homingInfo->mHomingSig)
             { // 当前位置作为零点
                 goto HOMINGSTEP_TOSIG;
@@ -84,10 +84,10 @@ namespace Uranus
                                homingInfo->mHomingSigVal);
 
                 if (!homingInfo->mHomingVelSearch || !homingInfo->mHomingVelRegression)
-                    return MC_ErrorCode::HOMINGVELILLEGAL;
+                    return MC_ErrorCode::HOMING_VEL_ILLEGAL;
 
                 if (!homingInfo->mHomingAcc)
-                    return MC_ErrorCode::HOMINGACCILLEGAL;
+                    return MC_ErrorCode::HOMING_ACC_ILLEGAL;
 
                 double endPos = ProfilePlanner::calculateDist(axis->cmdVelocity(), homingInfo->mHomingVelSearch,
                                                               homingInfo->mHomingAcc, homingInfo->mHomingAcc);
@@ -96,11 +96,11 @@ namespace Uranus
                               homingInfo->mHomingVelSearch, homingInfo->mHomingVelSearch, homingInfo->mHomingAcc,
                               homingInfo->mHomingAcc);
 
-                mHomingStep = MC_HomingStep::MC_HOMINGSTEP_SEARCHSIG;
+                mHomingStep = MC_HomingStep::SEARCHSIG;
             }
             break;
 
-        case MC_HomingStep::MC_HOMINGSTEP_SEARCHSIG:
+        case MC_HomingStep::SEARCHSIG:
             if ((((*homingInfo->mHomingSig) >> homingInfo->mHomingSigBitOffset) & 0x1) == homingInfo->mHomingSigVal)
             {
 
@@ -111,14 +111,14 @@ namespace Uranus
                               homingInfo->mHomingVelRegression, homingInfo->mHomingVelRegression, homingInfo->mHomingAcc,
                               homingInfo->mHomingAcc);
 
-                mHomingStep = MC_HomingStep::MC_HOMINGSTEP_REGRESSIONSIG;
+                mHomingStep = MC_HomingStep::REGRESSION_SIG;
 
                 axis->printLog(MC_LogLevel::INFO, "homing regressing, vel %lf\n", homingInfo->mHomingVelRegression);
             }
 
             break;
 
-        case MC_HomingStep::MC_HOMINGSTEP_REGRESSIONSIG:
+        case MC_HomingStep::REGRESSION_SIG:
             if ((((*homingInfo->mHomingSig) >> homingInfo->mHomingSigBitOffset) & 0x1) != homingInfo->mHomingSigVal)
             {
             HOMINGSTEP_TOSIG:
@@ -131,18 +131,18 @@ namespace Uranus
                               axis->cmdVelocity(), homingInfo->mHomingVelRegression, 0.0, homingInfo->mHomingAcc,
                               homingInfo->mHomingAcc);
 
-                mHomingStep = MC_HomingStep::MC_HOMINGSTEP_TOSIG;
+                mHomingStep = MC_HomingStep::TOSIG;
             }
 
             break;
 
-        case MC_HomingStep::MC_HOMINGSTEP_TOSIG:
+        case MC_HomingStep::TOSIG:
             if (planner->execute())
-                stat = ExeclNodeExecStat::EXECLNODEEXECSTAT_DONE;
+                stat = ExeclNodeExecStat::DONE;
 
             err = axis->setPosition(planner->getPosition(), planner->getVelocity(), planner->getAcceleration());
 
-            if (stat == ExeclNodeExecStat::EXECLNODEEXECSTAT_DONE && err == MC_ErrorCode::GOOD)
+            if (stat == ExeclNodeExecStat::DONE && err == MC_ErrorCode::GOOD)
             {
                 err = axis->setHomePosition(mPos - mFinalPos);
                 axis->printLog(MC_LogLevel::INFO, "homing complete, new pos %lf\n", axis->homePosition());
@@ -180,16 +180,16 @@ namespace Uranus
         if (info.mHomingMode != MC_HomingMode::DIRECT)
         {
             if (!info.mHomingVelSearch || !info.mHomingVelRegression)
-                return MC_ErrorCode::HOMINGVELILLEGAL;
+                return MC_ErrorCode::HOMING_VEL_ILLEGAL;
 
             if (!info.mHomingAcc)
-                return MC_ErrorCode::HOMINGACCILLEGAL;
+                return MC_ErrorCode::HOMING_ACC_ILLEGAL;
 
             if (!info.mHomingSig)
-                return MC_ErrorCode::HOMINGSIGILLEGAL;
+                return MC_ErrorCode::HOMING_SIG_ILLEGAL;
 
             if (info.mHomingSigBitOffset < 0 || info.mHomingSigBitOffset > 7)
-                return MC_ErrorCode::HOMINGSIGILLEGAL;
+                return MC_ErrorCode::HOMING_SIG_ILLEGAL;
         }
 
         switch (info.mHomingMode)
@@ -217,7 +217,7 @@ namespace Uranus
             break;
 
         default:
-            return MC_ErrorCode::HOMINGMODEILLEGAL;
+            return MC_ErrorCode::HOMING_MODE_ILLEGAL;
         }
 
         mImpl_->mHomingInfo.mHomingSig = info.mHomingSig;
@@ -232,7 +232,7 @@ namespace Uranus
     MC_ErrorCode AxisHoming::addHoming(FunctionBlock *fb, double pos, MC_BufferMode bufferMode, int32_t customId)
     {
         if (!std::isfinite(pos))
-            return MC_ErrorCode::POSILLEGAL;
+            return MC_ErrorCode::POS_ILLEGAL;
 
         HomingNode *node;
         MC_ErrorCode err = pushAndNewData(

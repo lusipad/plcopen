@@ -53,66 +53,66 @@ namespace Uranus
         GOOD = 0x0, // 成功
 
         QUEUEFULL = 0x1,            // 轴队列已满
-        AXISENCODEROVERFLOW = 0x2,  // 轴编码器溢出
-        AXISPOWEROFF = 0x3,         // 轴未使能
-        AXISPOWERON = 0x4,          // 轴已功能
-        FREQUENCYILLEGAL = 0x5,     // 频率不合法
-        AXISNOTEXIST = 0x8,         // 轴ID号不存在
-        AXISBUSY = 0xA,             // 轴正忙，有功能块正在控制轴运动
-        FAILEDTOBUFFER = 0xF,       // 不支持以buffer形式添加
-        BLENDINGMODEILLEGAL = 0x10, // BufferMode值非法
-        PARAMETERNOTSUPPORT = 0x14, // 不支持该参数号
-        OVERRIDEILLEGAL = 0x17,     // OVERRIDE值非法
-        SHIFTINGMODEILLEGAL = 0x19, // 移动模式非法
-        SOURCEILLEGAL = 0x1A,       // 获取源非法
-        CONTROLMODEILLEGAL = 0x23,  // 控制模式设置错误
+        AXIS_ENCODER_OVERFLOW = 0x2,  // 轴编码器溢出
+        AXIS_POWER_OFF = 0x3,         // 轴未使能
+        AXIS_POWER_ON = 0x4,          // 轴已功能
+        FREQUENCY_ILLEGAL = 0x5,     // 频率不合法
+        AXIS_NO_TEXIST = 0x8,         // 轴ID号不存在
+        AXIS_BUSY = 0xA,             // 轴正忙，有功能块正在控制轴运动
+        FAILED_TO_BUFFER = 0xF,       // 不支持以buffer形式添加
+        BLENDING_MODE_ILLEGAL = 0x10, // BufferMode值非法
+        PARAMETER_NOT_SUPPORT = 0x14, // 不支持该参数号
+        OVERRIDE_ILLEGAL = 0x17,     // OVERRIDE值非法
+        SHIFTING_MODE_ILLEGAL = 0x19, // 移动模式非法
+        SOURCE_ILLEGAL = 0x1A,       // 获取源非法
+        CONTROL_MODE_ILLEGAL = 0x23,  // 控制模式设置错误
 
-        POSILLEGAL = 0x100,        // 位置不合法
-        ACCILLEGAL = 0x101,        // 加/减速度不合法
-        VELILLEGAL = 0x102,        // 速度不合法
-        AXISHARDWARE = 0x103,      // 硬件错误
-        VELLIMITTOOLOW = 0x104,    // 由于配置文件限制，无法到达跟随的速度（电子齿轮，凸轮中）
-        ENDVELCANNOTREACH = 0x105, // 实际终速度过高无法到达预设速度
+        POS_ILLEGAL = 0x100,        // 位置不合法
+        ACC_ILLEGAL = 0x101,        // 加/减速度不合法
+        VEL_ILLEGAL = 0x102,        // 速度不合法
+        AXIS_HARDWARE = 0x103,      // 硬件错误
+        VEL_LIMIT_TOOLOW = 0x104,    // 由于配置文件限制，无法到达跟随的速度（电子齿轮，凸轮中）
+        END_VEL_CANNOT_REACH = 0x105, // 实际终速度过高无法到达预设速度
 
-        CMDPPOSOVERLIMIT = 0x106,  // 指令位置超出配置文件正向限制
-        CMDNPOSOVERLIMIT = 0x107,  // 指令位置超出配置文件负向限制
-        FORBIDDENPPOSMOVE = 0x108, // 禁止正向移动
-        FORBIDDENNPOSMOVE = 0x109, // 禁止负向移动
+        CMD_PPOS_OVERLIMIT = 0x106,  // 指令位置超出配置文件正向限制
+        CMD_NPOS_OVERLIMIT = 0x107,  // 指令位置超出配置文件负向限制
+        FORBIDDEN_PPOS_MOVE = 0x108, // 禁止正向移动
+        FORBIDDEN_NPOS_MOVE = 0x109, // 禁止负向移动
 
-        POSLAGOVERLIMIT = 0x10A, // 轴跟随误差超限
-        CMDVELOVERLIMIT = 0x10B, // 轴指令速度超出限制
-        CMDACCOVERLIMIT = 0x10C, // 轴指令加速度超出限制
-        POSINFINITY = 0x10E,     // 轴设定位置不合法
+        POS_LAG_OVERLIMIT = 0x10A, // 轴跟随误差超限
+        CMD_VEL_OVERLIMIT = 0x10B, // 轴指令速度超出限制
+        CMD_ACC_OVERLIMIT = 0x10C, // 轴指令加速度超出限制
+        POS_INFINITY = 0x10E,     // 轴设定位置不合法
 
-        SOFTWAREEMGS = 0x1EE,  // 用户急停
-        SYSTEMEMGS = 0x1EF,    // 系统急停
+        SOFTWARE_EMGS = 0x1EE,  // 用户急停
+        SYSTEM_EMGS = 0x1EF,    // 系统急停
         COMMUNICATION = 0x1F0, // 硬件通信异常
 
         /** 配置错误**/
-        CFGAXISIDILLEGAL = 0x201,
-        CFGUNITRATIOOUTOFRANGE = 0x202,
-        CFGCONTROLMODEILLEGAL = 0x203,
-        CFGVELLIMITILLEGAL = 0x204,
-        CFGACCLIMITILLEGAL = 0x205,
-        CFGPOSLAGILLEGAL = 0x206,
-        CFGPKPILLEGAL = 0x207,
-        CFGFEEDFORWORDILLEGAL = 0x208,
-        CFGMODULOILLEGAL = 0x209,
+        CFG_AXIS_ID_ILLEGAL = 0x201,
+        CFG_UNIT_RATIO_OUT_OF_RANGE = 0x202,
+        CFG_CONTROL_MODE_ILLEGAL = 0x203,
+        CFG_VEL_LIMIT_ILLEGAL = 0x204,
+        CFG_ACC_LIMIT_ILLEGAL = 0x205,
+        CFG_POS_LAG_ILLEGAL = 0x206,
+        CFG_PKP_ILLEGAL = 0x207,
+        CFG_FEED_FORWORD_ILLEGAL = 0x208,
+        CFG_MODULO_ILLEGAL = 0x209,
 
-        HOMINGVELILLEGAL = 0x210,
-        HOMINGACCILLEGAL = 0x211,
-        HOMINGSIGILLEGAL = 0x212,
-        HOMINGMODEILLEGAL = 0x214,
-        HOMEPOSITIONILLEGAL = 0x215,
+        HOMING_VEL_ILLEGAL = 0x210,
+        HOMING_ACC_ILLEGAL = 0x211,
+        HOMING_SIG_ILLEGAL = 0x212,
+        HOMING_MODE_ILLEGAL = 0x214,
+        HOME_POSITION_ILLEGAL = 0x215,
 
-        AXISDISABLED = 0x500,
-        AXISSTANDSTILL = 0x501,
-        AXISHOMING = 0x502,
-        AXISDISCRETEMOTION = 0x503,
-        AXISCONTINUOUSMOTION = 0x504,
-        AXISSYNCHRONIZEDMOTION = 0x505,
-        AXISSTOPPING = 0x506,
-        AXISERRORSTOP = 0x507,
+        AXIS_DISABLED = 0x500,
+        AXIS_STANDSTILL = 0x501,
+        AXIS_HOMING = 0x502,
+        AXIS_DISCRETE_MOTION = 0x503,
+        AXIS_CONTINUOUS_MOTION = 0x504,
+        AXIS_SYNCHRONIZED_MOTION = 0x505,
+        AXIS_STOPPING = 0x506,
+        AXISE_RRORSTOP = 0x507,
     };
 
     enum class MC_AxisStatus
@@ -120,9 +120,9 @@ namespace Uranus
         DISABLED = 0,
         STANDSTILL = 1,
         HOMING = 2,
-        DISCRETEMOTION = 3,
-        CONTINUOUSMOTION = 4,
-        SYNCHRONIZEDMOTION = 5,
+        DISCRETE_MOTION = 3,
+        CONTINUOUS_MOTION = 4,
+        SYNCHRONIZED_MOTION = 5,
         STOPPING = 6,
         ERRORSTOP = 7,
     };
@@ -140,7 +140,7 @@ namespace Uranus
     enum class MC_MotionState
     {
         INPOSITION = 0,
-        CONSTANTVELOCITY = 1,
+        CONSTANT_VELOCITY = 1,
         ACCELERATING = 2,
         DECELERATING = 3,
     };
@@ -149,11 +149,11 @@ namespace Uranus
     {
         ABORTING = 0,
         BUFFERED = 1,
-        BLENDINGLOW = 2,
-        BLENDINGPREVIOUS = 3,
-        BLENDINGNEXT = 4,
-        BLENDINGHIGH = 5,
-        BLENDINGCNC = 128,
+        BLENDING_LOW = 2,
+        BLENDING_PREVIOUS = 3,
+        BLENDING_NEXT = 4,
+        BLENDING_HIGH = 5,
+        BLENDING_CNC = 128,
     };
 
     enum class MC_Direction
@@ -228,10 +228,10 @@ namespace Uranus
     enum class MC_TransitionMode
     {
         NONE = 0,
-        STARTVELOCITY = 1,    // 不支持
-        CONSTANTVELOCITY = 2, // 不支持
-        CORNERDISTANCE = 3,
-        MAXCORNERDEVIATION = 4,
+        START_VELOCITY = 1,    // 不支持
+        CONSTANT_VELOCITY = 2, // 不支持
+        CORNER_DISTANCE = 3,
+        MAX_CORNER_DEVIATION = 4,
     };
 
     enum class MC_LogLevel

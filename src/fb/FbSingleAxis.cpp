@@ -34,7 +34,7 @@ namespace Uranus
     {
         if (!mAxis)
         {
-            onOperationError(MC_ErrorCode::AXISNOTEXIST, 0);
+            onOperationError(MC_ErrorCode::AXIS_NO_TEXIST, 0);
             return;
         }
 
@@ -132,13 +132,13 @@ namespace Uranus
         case MC_AxisStatus::HOMING:
             mHoming = true;
             break;
-        case MC_AxisStatus::DISCRETEMOTION:
+        case MC_AxisStatus::DISCRETE_MOTION:
             mDiscreteMotion = true;
             break;
-        case MC_AxisStatus::CONTINUOUSMOTION:
+        case MC_AxisStatus::CONTINUOUS_MOTION:
             mContinuousMotion = true;
             break;
-        case MC_AxisStatus::SYNCHRONIZEDMOTION:
+        case MC_AxisStatus::SYNCHRONIZED_MOTION:
             mSynchronizedMotion = true;
             break;
         case MC_AxisStatus::STOPPING:
@@ -177,7 +177,7 @@ namespace Uranus
             break;
 
         default:
-            return MC_ErrorCode::SOURCEILLEGAL;
+            return MC_ErrorCode::SOURCE_ILLEGAL;
         }
 
         onDisable();
@@ -230,7 +230,7 @@ namespace Uranus
     MC_ErrorCode FbReadAxisError::onEnableTrue(void)
     {
         if (!mAxis)
-            return MC_ErrorCode::AXISNOTEXIST;
+            return MC_ErrorCode::AXIS_NO_TEXIST;
 
         mValid = true;
         mError = false;
@@ -304,7 +304,7 @@ namespace Uranus
 
     MC_ErrorCode FbEmergencyStop::onAxisTriggered(bool &isDone)
     {
-        mAxis->emergStop(MC_ErrorCode::SOFTWAREEMGS);
+        mAxis->emergStop(MC_ErrorCode::SOFTWARE_EMGS);
         isDone = true;
         return MC_ErrorCode::GOOD;
     }

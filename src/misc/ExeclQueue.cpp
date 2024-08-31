@@ -62,7 +62,7 @@ namespace Uranus
     void ExeclQueue::ExeclQueueImpl::processFrontNode(void)
     {
         MC_ErrorCode err;
-        ExeclNodeExecStat stat = ExeclNodeExecStat::EXECLNODEEXECSTAT_BUSY;
+        ExeclNodeExecStat stat = ExeclNodeExecStat::BUSY;
         ExeclNodeContainer *container = mQueue.front();
         if (!container)
             return;
@@ -82,8 +82,8 @@ namespace Uranus
 
         switch (stat)
         {
-        case ExeclNodeExecStat::EXECLNODEEXECSTAT_DONE:
-        case ExeclNodeExecStat::EXECLNODEEXECSTAT_FASTDONE:
+        case ExeclNodeExecStat::DONE:
+        case ExeclNodeExecStat::FASTDONE:
         {
             bool isHold = false;
             node->onDone(mThis_, isHold);
@@ -102,7 +102,7 @@ namespace Uranus
         default:;
         }
 
-        if (stat == ExeclNodeExecStat::EXECLNODEEXECSTAT_FASTDONE)
+        if (stat == ExeclNodeExecStat::FASTDONE)
             processFrontNode();
 
         return;
@@ -125,7 +125,7 @@ namespace Uranus
     void ExeclQueue::processExeclNode(void)
     {
         MC_ErrorCode err;
-        ExeclNodeExecStat stat = ExeclNodeExecStat::EXECLNODEEXECSTAT_BUSY;
+        ExeclNodeExecStat stat = ExeclNodeExecStat::BUSY;
 
         if (mImpl_->mHoldNode)
         {
