@@ -52,7 +52,7 @@ public:
     {
         clearScreen();
         // 获取info queue最顶层的30个数据并且打印
-        for each (auto item in data)
+        for (auto item : data)
         {
             std::cout << item.first << ":\t";
 
