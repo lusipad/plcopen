@@ -36,6 +36,9 @@ TARGET_LINK_LIBRARIES(axis_move ${PROJECT_NAME})
 ADD_EXECUTABLE(axis_homing demo/axis_homing.cpp)
 TARGET_LINK_LIBRARIES(axis_homing ${PROJECT_NAME})
 
+ADD_EXECUTABLE(axis_move_oscilloscope demo/axis_move_oscilloscope.cpp)
+TARGET_LINK_LIBRARIES(axis_move_oscilloscope ${PROJECT_NAME})
+
 INSTALL(TARGETS Uranus
     LIBRARY DESTINATION lib
 )
