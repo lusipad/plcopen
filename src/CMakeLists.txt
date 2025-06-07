@@ -39,6 +39,10 @@ TARGET_LINK_LIBRARIES(axis_homing ${PROJECT_NAME})
 ADD_EXECUTABLE(axis_move_oscilloscope demo/axis_move_oscilloscope.cpp)
 TARGET_LINK_LIBRARIES(axis_move_oscilloscope ${PROJECT_NAME})
 
+# 添加测试可执行文件
+ADD_EXECUTABLE(test_basic test/test_basic.cpp)
+TARGET_LINK_LIBRARIES(test_basic ${PROJECT_NAME})
+
 INSTALL(TARGETS Uranus
     LIBRARY DESTINATION lib
 )

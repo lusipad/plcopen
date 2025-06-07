@@ -35,7 +35,10 @@
 #include <chrono>
 
 using namespace Uranus;
-using namespace std;
+// 避免全局命名空间污染，使用具体的std成员
+using std::cout;
+using std::endl;
+using std::fixed;
 
 class MyServo : public Servo
 {
@@ -122,9 +125,12 @@ int main(void)
             break;
         }
 
-        this_thread::sleep_for(std::chrono::microseconds((long)(1000000 / frequency)));
+        std::this_thread::sleep_for(std::chrono::microseconds((long)(1000000 / frequency)));
         t += 1 / frequency;
     }
 
+    // 清理资源
+    sched.release();
+    
     return 0;
 }

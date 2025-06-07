@@ -42,7 +42,7 @@ namespace Uranus
     typedef uint16_t WORD;
     typedef uint16_t UINT;
     typedef int16_t INT;
-    typedef uint16_t DWORD;
+    typedef uint32_t DWORD;  // Fixed: DWORD should be 32-bi
     typedef uint32_t UDINT;
     typedef int32_t DINT;
     typedef uint64_t LWORD;
@@ -51,6 +51,25 @@ namespace Uranus
     typedef float REAL;
     typedef double LREAL;
     typedef char *STRING;
+
+    typedef char CHAR;        // Single-byte character (8-bit)
+    typedef uint16_t WCHAR;   // Double-byte character (16-bit, Unicode support)
+
+    typedef uint32_t TIME;           // Time interval in milliseconds (32-bit)
+    typedef uint64_t LTIME;          // Long time interval in nanoseconds (64-bit)
+    typedef uint32_t DATE;           // Date as days since 1970-01-01 (32-bit)
+    typedef uint64_t LDATE;          // Long date as nanoseconds since 1970-01-01, day multiples only (64-bit)
+    typedef uint32_t TIME_OF_DAY;    // Time of day as milliseconds since midnight (32-bit)
+    typedef uint32_t TOD;            // Abbreviation for TIME_OF_DAY
+    typedef uint64_t LTIME_OF_DAY;   // Long time of day as nanoseconds since midnight (64-bit)
+    typedef uint64_t LTOD;           // Abbreviation for LTIME_OF_DAY
+    typedef uint64_t DATE_AND_TIME;  // Date and time as milliseconds since 1970-01-01 00:00:00 (64-bit)
+    typedef uint64_t DT;             // Abbreviation for DATE_AND_TIME
+    typedef uint64_t LDATE_AND_TIME; // Long date and time as nanoseconds since 1970-01-01 00:00:00 (64-bit)
+    typedef uint64_t LDT;            // Abbreviation for LDATE_AND_TIME
+
+    // Added WSTRING type (wide string, Unicode support)
+    typedef uint16_t *WSTRING;       // Double-byte string (simplified implementation)
 
     typedef MC_BufferMode MC_BUFFER_MODE;
     typedef MC_TransitionMode MC_TRANSITION_MODE;

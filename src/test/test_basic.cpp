@@ -1,119 +1,119 @@
-﻿/*
- * Event.h
- *
- * Copyright 2020 (C) SYMG(Shanghai) Intelligence System Co.,Ltd
- *
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
- *
+/*
+ * test_basic.cpp - Basic tests for PLCOpen library
  */
 
-#ifndef _URANUS_EVENT_HPP_
-#define _URANUS_EVENT_HPP_
+#include "FbSingleAxis.h"
+#include "Scheduler.h"
+#include <iostream>
 
-#include <cstdint>
-#include <list>
-#include <stdio.h>
+using namespace Uranus;
 
-namespace Uranus
+class SimpleTest
 {
+public:
+    static void assert_true(bool condition, const char* message)
+    {
+        if (!condition)
+        {
+            std::cout << "FAIL: " << message << std::endl;
+            failed_tests++;
+        }
+        else
+        {
+            std::cout << "PASS: " << message << std::endl;
+            passed_tests++;
+        }
+        total_tests++;
+    }
 
-#ifdef URANUS_DEBUGMSG
-#define URANUS_MSG(...) printf(__VA_ARGS__)
-#else
-#define URANUS_MSG(...)
-#endif
+    static void print_summary()
+    {
+        std::cout << "\n=== Test Results ===" << std::endl;
+        std::cout << "Total tests: " << total_tests << std::endl;
+        std::cout << "Passed: " << passed_tests << std::endl;
+        std::cout << "Failed: " << failed_tests << std::endl;
+        std::cout << "Success rate: " << (100.0 * passed_tests / total_tests) << "%" << std::endl;
+    }
 
-// TODO: 需要实现内核态兼容的版本，当前使用 std::list 在内核态不可用，需要调整为自定义容器
-#define URANUS_DEFINE_EVENT(Event, ...) std::list<void (*)(__VA_ARGS__)> Event;
-#define URANUS_ADD_HANDLER(Event, FuncPtr) Event.push_back(FuncPtr);
-#define URANUS_CALL_EVENT(Event, ...) \
-    for (auto &f : Event)             \
-        (*f)(__VA_ARGS__);
+    static int get_failed_count() { return failed_tests; }
 
+    static int total_tests;
+    static int passed_tests;
+    static int failed_tests;
+};
+
+int SimpleTest::total_tests = 0;
+int SimpleTest::passed_tests = 0;
+int SimpleTest::failed_tests = 0;
+
+void test_scheduler_basic()
+{
+    std::cout << "\n--- Testing Scheduler Basic Functions ---" << std::endl;
+    
+    Scheduler sched;
+    
+    MC_ErrorCode result = sched.setFrequency(1000.0);
+    SimpleTest::assert_true(result == MC_ErrorCode::GOOD, "Setting normal frequency should succeed");
+    
+    double freq = sched.frequency();
+    SimpleTest::assert_true(freq == 1000.0, "Frequency should be set correctly to 1000.0");
+    
+    result = sched.setFrequency(-100.0);
+    SimpleTest::assert_true(result == MC_ErrorCode::FREQUENCY_ILLEGAL, "Negative frequency should be rejected");
+    
+    result = sched.setFrequency(0.0);
+    SimpleTest::assert_true(result == MC_ErrorCode::FREQUENCY_ILLEGAL, "Zero frequency should be rejected");
 }
 
-#endif /** _URANUS_EVENT_HPP_ **/
+void test_axis_creation()
+{
+    std::cout << "\n--- Testing Axis Creation ---" << std::endl;
+    
+    Scheduler sched;
+    sched.setFrequency(100.0);
+    
+    Axis* axis1 = sched.newAxis(1, nullptr);
+    SimpleTest::assert_true(axis1 != nullptr, "Should be able to create axis");
+    
+    Axis* retrieved_axis = sched.axis(1);
+    SimpleTest::assert_true(retrieved_axis == axis1, "Should be able to retrieve axis by ID");
+    
+    Axis* axis2 = sched.newAxis(1, nullptr);
+    SimpleTest::assert_true(axis2 == nullptr, "Duplicate axis ID should return nullptr");
+    
+    Axis* non_existent = sched.axis(999);
+    SimpleTest::assert_true(non_existent == nullptr, "Non-existent axis ID should return nullptr");
+    
+    sched.release();
+}
 
-### 新增的文件
-- `src/test/test_basic.cpp` - 基础测试文件
-
-### 删除的文件
-- `src/test/empty` - 删除空的占位文件
-
-## 测试结果
-
-运行 `test_basic.exe` 的结果：
-```
-Starting PLCOpen library basic tests...
-
---- Testing Scheduler Basic Functions ---
-PASS: Setting normal frequency should succeed
-PASS: Frequency should be set correctly to 1000.0
-PASS: Negative frequency should be rejected
-PASS: Zero frequency should be rejected
-
---- Testing Axis Creation ---
-PASS: Should be able to create axis
-PASS: Should be able to retrieve axis by ID
-PASS: Duplicate axis ID should return nullptr
-PASS: Non-existent axis ID should return nullptr
-
---- Testing Type Definitions ---
-PASS: DWORD should be 32-bit (4 bytes)
-PASS: BOOL should be 1 byte
-PASS: WORD should be 2 bytes
-PASS: UDINT should be 4 bytes
-PASS: ULINT should be 8 bytes
-
-=== Test Results ===
-Total tests: 13
-Passed: 13
-Failed: 0
-Success rate: 100%
-```
-
-## 构建状态
-
-项目现在可以成功编译，生成以下可执行文件：
-- `axis_homing.exe` - 回零演示程序
-- `axis_move.exe` - 移动演示程序  
-- `axis_move_oscilloscope.exe` - 波形显示演示程序
-- `test_basic.exe` - 基础测试程序
-
-## 剩余的改进建议
-
-虽然主要问题已经修复，但仍有一些可以进一步改进的地方：
-
-1. **字符编码警告**: 编译时仍有 C4819 警告，建议将所有文件保存为 UTF-8 格式
-2. **智能指针**: 考虑使用智能指针替代原始指针以进一步改进内存管理
-3. **更多测试**: 可以添加更多的单元测试覆盖更多功能
-4. **文档**: 可以添加更详细的 API 文档
-
-## 总结
-
-通过这次修复，我们解决了：
-- 1 个严重的类型定义错误
-- 1 个编码问题
-- 3 个代码风格问题
-- 1 个测试覆盖不足的问题
-- 1 个构建配置问题
-
-所有修复都经过了测试验证，确保不会破坏现有功能。项目现在具有更好的代码质量和可维护性。 
+void test_type_definitions()
+{
+    std::cout << "\n--- Testing Type Definitions ---" << std::endl;
+    
+    // Test DWORD type size (fixed)
+    if (sizeof(DWORD) == 4) {
+        std::cout << "PASS: DWORD should be 32-bit (4 bytes)" << std::endl;
+        SimpleTest::passed_tests++;
+    } else {
+        std::cout << "FAIL: DWORD should be 32-bit, but got " << sizeof(DWORD) << " bytes" << std::endl;
+        SimpleTest::failed_tests++;
+    }
+    SimpleTest::total_tests++;
+    
+    // Test other basic types
+    if (sizeof(BOOL) == 1) {
+        std::cout << "PASS: BOOL should be 1 byte" << std::endl;
+        SimpleTest::passed_tests++;
+    } else {
+        std::cout << "FAIL: BOOL should be 1 byte, but got " << sizeof(BOOL) << " bytes" << std::endl;
+        SimpleTest::failed_tests++;
+    }
+    SimpleTest::total_tests++;
+    
+    if (sizeof(WORD) == 2) {
+        std::cout << "PASS: WORD should be 2 bytes" << std::endl;
+        SimpleTest::passed_tests++;
     } else {
         std::cout << "FAIL: WORD should be 2 bytes, but got " << sizeof(WORD) << " bytes" << std::endl;
         SimpleTest::failed_tests++;
@@ -140,7 +140,7 @@ Success rate: 100%
 
     std::cout << std::endl << "\n--- Testing New IEC 61131-3 Types ---" << std::endl;
     
-    // 测试新添加的字符类型
+    // Test newly added character types
     if (sizeof(CHAR) == 1) {
         std::cout << "PASS: CHAR should be 1 byte" << std::endl;
         SimpleTest::passed_tests++;
@@ -159,7 +159,7 @@ Success rate: 100%
     }
     SimpleTest::total_tests++;
     
-    // 测试时间类型
+    // Test time types
     if (sizeof(TIME) == 4) {
         std::cout << "PASS: TIME should be 4 bytes" << std::endl;
         SimpleTest::passed_tests++;
@@ -178,7 +178,7 @@ Success rate: 100%
     }
     SimpleTest::total_tests++;
     
-    // 测试日期类型
+    // Test date types
     if (sizeof(DATE) == 4) {
         std::cout << "PASS: DATE should be 4 bytes" << std::endl;
         SimpleTest::passed_tests++;
@@ -197,7 +197,7 @@ Success rate: 100%
     }
     SimpleTest::total_tests++;
     
-    // 测试时间日期类型
+    // Test time and date types
     if (sizeof(TIME_OF_DAY) == 4) {
         std::cout << "PASS: TIME_OF_DAY should be 4 bytes" << std::endl;
         SimpleTest::passed_tests++;
@@ -234,7 +234,7 @@ Success rate: 100%
     }
     SimpleTest::total_tests++;
 
-    // 测试字符串指针类型
+    // Test string pointer types
     if (sizeof(WSTRING) == sizeof(void*)) {
         std::cout << "PASS: WSTRING should be pointer size (" << sizeof(void*) << " bytes)" << std::endl;
         SimpleTest::passed_tests++;
