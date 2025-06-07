@@ -1,5 +1,5 @@
-﻿/*
- * Event.h
+/*
+ * axis_move_oscilloscope.cpp
  *
  * Copyright 2020 (C) SYMG(Shanghai) Intelligence System Co.,Ltd
  *
@@ -20,240 +20,273 @@
  * specific language governing permissions and limitations
  * under the License.
  *
+ * PLCOpen Motion Control Oscilloscope Demo
+ * Shows timing diagrams of Execute, Busy, Active, Error signals
+ *
  */
 
-#ifndef _URANUS_EVENT_HPP_
-#define _URANUS_EVENT_HPP_
+#include "FbSingleAxis.h"
+#include "Scheduler.h"
+#include <iomanip>
+#include <iostream>
+#include <chrono>
+#include <thread>
+#include <vector>
+#include <string>
 
-#include <cstdint>
-#include <list>
-#include <stdio.h>
+using namespace Uranus;
+using std::cout;
+using std::endl;
+using std::vector;
+using std::string;
 
-namespace Uranus
+// Oscilloscope class for displaying timing diagrams
+class Oscilloscope {
+private:
+    struct Signal {
+        string name;
+        vector<bool> data;
+        char high_char;
+        char low_char;
+        
+        Signal(const string& n, char h = '-', char l = ' ') 
+            : name(n), high_char(h), low_char(l) {}
+    };
+    
+    vector<Signal> signals;
+    int max_samples;
+    int current_sample;
+    
+public:
+    Oscilloscope(int samples = 100) : max_samples(samples), current_sample(0) {}
+    
+    void AddSignal(const string& name, char high_char = '-', char low_char = ' ') {
+        signals.push_back(Signal(name, high_char, low_char));
+    }
+    
+    void Sample(const string& name, bool value) {
+        for (auto& signal : signals) {
+            if (signal.name == name) {
+                if (signal.data.size() >= max_samples) {
+                    signal.data.erase(signal.data.begin());
+                }
+                signal.data.push_back(value);
+                break;
+            }
+        }
+    }
+    
+    void Display() {
+        // Clear screen (cross-platform)
+        #ifdef _WIN32
+            system("cls");
+        #else
+            system("clear");
+        #endif
+        
+        cout << "PLCOpen Motion Control Oscilloscope" << endl;
+        cout << "====================================" << endl;
+        cout << "Time: " << current_sample << " cycles" << endl << endl;
+        
+        // Find the maximum signal name length for alignment
+        size_t max_name_len = 0;
+        for (const auto& signal : signals) {
+            max_name_len = std::max(max_name_len, signal.name.length());
+        }
+        
+        // Display each signal
+        for (const auto& signal : signals) {
+            cout << std::setw(max_name_len + 1) << std::left << signal.name << " ";
+            
+            // Display the waveform - simulate oscilloscope style
+            if (!signal.data.empty()) {
+                bool prev_state = false;
+                for (size_t i = 0; i < signal.data.size(); ++i) {
+                    bool current_state = signal.data[i];
+                    
+                    if (i == 0) {
+                        // First point
+                        cout << (current_state ? signal.high_char : signal.low_char);
+                    } else {
+                        // Check for transitions
+                        if (prev_state != current_state) {
+                            if (current_state) {
+                                cout << "/"; // Rising edge
+                            } else {
+                                cout << "\\"; // Falling edge
+                            }
+                        } else {
+                            cout << (current_state ? signal.high_char : signal.low_char);
+                        }
+                    }
+                    prev_state = current_state;
+                }
+            }
+            cout << endl;
+        }
+        
+        // Time scale line
+        cout << endl;
+        cout << string(max_name_len + 1, ' ') << " ";
+        if (!signals.empty() && !signals[0].data.empty()) {
+            for (size_t i = 0; i < signals[0].data.size(); ++i) {
+                if (i % 10 == 0) {
+                    cout << "|";
+                } else if (i % 5 == 0) {
+                    cout << ":";
+                } else {
+                    cout << " ";
+                }
+            }
+        }
+        cout << endl;
+        
+        cout << endl;
+    }
+    
+    void NextSample() {
+        current_sample++;
+    }
+};
+
+int main(void)
 {
+    cout.precision(8);
 
-#ifdef URANUS_DEBUGMSG
-#define URANUS_MSG(...) printf(__VA_ARGS__)
-#else
-#define URANUS_MSG(...)
-#endif
+    // Scheduler initialization
+    Scheduler sched;
+    double frequency = 10; // Slower frequency for better visualization
+    int32_t axisId = 1;
+    sched.setFrequency(frequency);
+    Axis *axis = sched.newAxis(axisId, new Servo());
 
-// TODO: 需要实现内核态兼容的版本，当前使用 std::list 在内核态不可用，需要调整为自定义容器
-#define URANUS_DEFINE_EVENT(Event, ...) std::list<void (*)(__VA_ARGS__)> Event;
-#define URANUS_ADD_HANDLER(Event, FuncPtr) Event.push_back(FuncPtr);
-#define URANUS_CALL_EVENT(Event, ...) \
-    for (auto &f : Event)             \
-        (*f)(__VA_ARGS__);
+    // Function block initialization
+    FbPower power;
+    power.mAxis = axis;
+    power.mEnable = true;
+    power.mEnablePositive = true;
+    power.mEnableNegative = true;
 
-}
+    FbMoveAbsolute move1;
+    move1.mAxis = axis;
+    move1.mPosition = 500;
+    move1.mVelocity = 400;
+    move1.mAcceleration = 500;
+    move1.mDeceleration = 500;
 
-#endif /** _URANUS_EVENT_HPP_ **/
+    FbMoveAbsolute move2;
+    move2.mAxis = axis;
+    move2.mPosition = 1000;
+    move2.mVelocity = 200;
+    move2.mAcceleration = 300;
+    move2.mDeceleration = 300;
 
-### 新增的文件
-- `src/test/test_basic.cpp` - 基础测试文件
+    FbMoveAbsolute move3;
+    move3.mAxis = axis;
+    move3.mPosition = 200;
+    move3.mVelocity = 300;
+    move3.mAcceleration = 400;
+    move3.mDeceleration = 400;
 
-### 删除的文件
-- `src/test/empty` - 删除空的占位文件
+    // Initialize oscilloscope
+    Oscilloscope scope(60);
+    scope.AddSignal("Execute", '-', '_');
+    scope.AddSignal("Busy", '-', '_');
+    scope.AddSignal("Active", '-', '_');
+    scope.AddSignal("Done", '-', '_');
+    scope.AddSignal("Error", '-', '_');
+    scope.AddSignal("CommandAborted", '-', '_');
 
-## 测试结果
+    double t = 0;
+    int cycle_count = 0;
+    bool move1_started = false;
+    bool move2_started = false;
+    bool move3_started = false;
+    bool power_on = false;
 
-运行 `test_basic.exe` 的结果：
-```
-Starting PLCOpen library basic tests...
+    // Simulation loop
+    while (cycle_count < 200) // Run for 200 cycles
+    {
+        // Scheduler cycle processing
+        sched.runCycle();
 
---- Testing Scheduler Basic Functions ---
-PASS: Setting normal frequency should succeed
-PASS: Frequency should be set correctly to 1000.0
-PASS: Negative frequency should be rejected
-PASS: Zero frequency should be rejected
+        // Function block calls
+        power.call();
+        move1.call();
+        move2.call();
+        move3.call();
 
---- Testing Axis Creation ---
-PASS: Should be able to create axis
-PASS: Should be able to retrieve axis by ID
-PASS: Duplicate axis ID should return nullptr
-PASS: Non-existent axis ID should return nullptr
+        // Power on logic
+        if (power.mStatus && power.mValid && !power_on) {
+            power_on = true;
+        }
 
---- Testing Type Definitions ---
-PASS: DWORD should be 32-bit (4 bytes)
-PASS: BOOL should be 1 byte
-PASS: WORD should be 2 bytes
-PASS: UDINT should be 4 bytes
-PASS: ULINT should be 8 bytes
+        // Movement sequence logic
+        if (power_on && cycle_count > 10 && !move1_started) {
+            move1.mExecute = true;
+            move1_started = true;
+        }
 
-=== Test Results ===
-Total tests: 13
-Passed: 13
-Failed: 0
-Success rate: 100%
-```
+        if (move1.mDone && cycle_count > 50 && !move2_started) {
+            move1.mExecute = false;
+            move2.mExecute = true;
+            move2_started = true;
+        }
 
-## 构建状态
+        if (move2.mDone && cycle_count > 100 && !move3_started) {
+            move2.mExecute = false;
+            move3.mExecute = true;
+            move3_started = true;
+        }
 
-项目现在可以成功编译，生成以下可执行文件：
-- `axis_homing.exe` - 回零演示程序
-- `axis_move.exe` - 移动演示程序  
-- `axis_move_oscilloscope.exe` - 波形显示演示程序
-- `test_basic.exe` - 基础测试程序
+        if (move3.mDone && cycle_count > 150) {
+            move3.mExecute = false;
+        }
 
-## 剩余的改进建议
+        // Sample signals for oscilloscope
+        bool execute_signal = move1.mExecute || move2.mExecute || move3.mExecute;
+        bool busy_signal = move1.mBusy || move2.mBusy || move3.mBusy;
+        bool active_signal = move1.mActive || move2.mActive || move3.mActive;
+        bool done_signal = move1.mDone || move2.mDone || move3.mDone;
+        bool error_signal = move1.mError || move2.mError || move3.mError;
+        bool aborted_signal = move1.mCommandAborted || move2.mCommandAborted || move3.mCommandAborted;
 
-虽然主要问题已经修复，但仍有一些可以进一步改进的地方：
+        scope.Sample("Execute", execute_signal);
+        scope.Sample("Busy", busy_signal);
+        scope.Sample("Active", active_signal);
+        scope.Sample("Done", done_signal);
+        scope.Sample("Error", error_signal);
+        scope.Sample("CommandAborted", aborted_signal);
 
-1. **字符编码警告**: 编译时仍有 C4819 警告，建议将所有文件保存为 UTF-8 格式
-2. **智能指针**: 考虑使用智能指针替代原始指针以进一步改进内存管理
-3. **更多测试**: 可以添加更多的单元测试覆盖更多功能
-4. **文档**: 可以添加更详细的 API 文档
+        // Display oscilloscope every few cycles
+        if (cycle_count % 2 == 0) {
+            scope.Display();
+            
+            // Show current values
+            cout << "Current Status:" << endl;
+            cout << "  Power: " << (power_on ? "ON" : "OFF") << endl;
+            cout << "  Move1: Ex=" << move1.mExecute << " Bu=" << move1.mBusy 
+                 << " Ac=" << move1.mActive << " Do=" << move1.mDone << endl;
+            cout << "  Move2: Ex=" << move2.mExecute << " Bu=" << move2.mBusy 
+                 << " Ac=" << move2.mActive << " Do=" << move2.mDone << endl;
+            cout << "  Move3: Ex=" << move3.mExecute << " Bu=" << move3.mBusy 
+                 << " Ac=" << move3.mActive << " Do=" << move3.mDone << endl;
+            cout << endl;
+        }
 
-## 总结
+        scope.NextSample();
+        cycle_count++;
+        t += 1.0 / frequency;
 
-通过这次修复，我们解决了：
-- 1 个严重的类型定义错误
-- 1 个编码问题
-- 3 个代码风格问题
-- 1 个测试覆盖不足的问题
-- 1 个构建配置问题
-
-所有修复都经过了测试验证，确保不会破坏现有功能。项目现在具有更好的代码质量和可维护性。 
-    } else {
-        std::cout << "FAIL: WORD should be 2 bytes, but got " << sizeof(WORD) << " bytes" << std::endl;
-        SimpleTest::failed_tests++;
+        // Delay for visualization
+        std::this_thread::sleep_for(std::chrono::milliseconds(200));
     }
-    SimpleTest::total_tests++;
-    
-    if (sizeof(UDINT) == 4) {
-        std::cout << "PASS: UDINT should be 4 bytes" << std::endl;
-        SimpleTest::passed_tests++;
-    } else {
-        std::cout << "FAIL: UDINT should be 4 bytes, but got " << sizeof(UDINT) << " bytes" << std::endl;
-        SimpleTest::failed_tests++;
-    }
-    SimpleTest::total_tests++;
-    
-    if (sizeof(ULINT) == 8) {
-        std::cout << "PASS: ULINT should be 8 bytes" << std::endl;
-        SimpleTest::passed_tests++;
-    } else {
-        std::cout << "FAIL: ULINT should be 8 bytes, but got " << sizeof(ULINT) << " bytes" << std::endl;
-        SimpleTest::failed_tests++;
-    }
-    SimpleTest::total_tests++;
 
-    std::cout << std::endl << "\n--- Testing New IEC 61131-3 Types ---" << std::endl;
-    
-    // 测试新添加的字符类型
-    if (sizeof(CHAR) == 1) {
-        std::cout << "PASS: CHAR should be 1 byte" << std::endl;
-        SimpleTest::passed_tests++;
-    } else {
-        std::cout << "FAIL: CHAR should be 1 byte, but got " << sizeof(CHAR) << " bytes" << std::endl;
-        SimpleTest::failed_tests++;
-    }
-    SimpleTest::total_tests++;
-    
-    if (sizeof(WCHAR) == 2) {
-        std::cout << "PASS: WCHAR should be 2 bytes" << std::endl;
-        SimpleTest::passed_tests++;
-    } else {
-        std::cout << "FAIL: WCHAR should be 2 bytes, but got " << sizeof(WCHAR) << " bytes" << std::endl;
-        SimpleTest::failed_tests++;
-    }
-    SimpleTest::total_tests++;
-    
-    // 测试时间类型
-    if (sizeof(TIME) == 4) {
-        std::cout << "PASS: TIME should be 4 bytes" << std::endl;
-        SimpleTest::passed_tests++;
-    } else {
-        std::cout << "FAIL: TIME should be 4 bytes, but got " << sizeof(TIME) << " bytes" << std::endl;
-        SimpleTest::failed_tests++;
-    }
-    SimpleTest::total_tests++;
-    
-    if (sizeof(LTIME) == 8) {
-        std::cout << "PASS: LTIME should be 8 bytes" << std::endl;
-        SimpleTest::passed_tests++;
-    } else {
-        std::cout << "FAIL: LTIME should be 8 bytes, but got " << sizeof(LTIME) << " bytes" << std::endl;
-        SimpleTest::failed_tests++;
-    }
-    SimpleTest::total_tests++;
-    
-    // 测试日期类型
-    if (sizeof(DATE) == 4) {
-        std::cout << "PASS: DATE should be 4 bytes" << std::endl;
-        SimpleTest::passed_tests++;
-    } else {
-        std::cout << "FAIL: DATE should be 4 bytes, but got " << sizeof(DATE) << " bytes" << std::endl;
-        SimpleTest::failed_tests++;
-    }
-    SimpleTest::total_tests++;
-    
-    if (sizeof(LDATE) == 8) {
-        std::cout << "PASS: LDATE should be 8 bytes" << std::endl;
-        SimpleTest::passed_tests++;
-    } else {
-        std::cout << "FAIL: LDATE should be 8 bytes, but got " << sizeof(LDATE) << " bytes" << std::endl;
-        SimpleTest::failed_tests++;
-    }
-    SimpleTest::total_tests++;
-    
-    // 测试时间日期类型
-    if (sizeof(TIME_OF_DAY) == 4) {
-        std::cout << "PASS: TIME_OF_DAY should be 4 bytes" << std::endl;
-        SimpleTest::passed_tests++;
-    } else {
-        std::cout << "FAIL: TIME_OF_DAY should be 4 bytes, but got " << sizeof(TIME_OF_DAY) << " bytes" << std::endl;
-        SimpleTest::failed_tests++;
-    }
-    SimpleTest::total_tests++;
-    
-    if (sizeof(TOD) == 4) {
-        std::cout << "PASS: TOD should be 4 bytes" << std::endl;
-        SimpleTest::passed_tests++;
-    } else {
-        std::cout << "FAIL: TOD should be 4 bytes, but got " << sizeof(TOD) << " bytes" << std::endl;
-        SimpleTest::failed_tests++;
-    }
-    SimpleTest::total_tests++;
-    
-    if (sizeof(DATE_AND_TIME) == 8) {
-        std::cout << "PASS: DATE_AND_TIME should be 8 bytes" << std::endl;
-        SimpleTest::passed_tests++;
-    } else {
-        std::cout << "FAIL: DATE_AND_TIME should be 8 bytes, but got " << sizeof(DATE_AND_TIME) << " bytes" << std::endl;
-        SimpleTest::failed_tests++;
-    }
-    SimpleTest::total_tests++;
-    
-    if (sizeof(DT) == 8) {
-        std::cout << "PASS: DT should be 8 bytes" << std::endl;
-        SimpleTest::passed_tests++;
-    } else {
-        std::cout << "FAIL: DT should be 8 bytes, but got " << sizeof(DT) << " bytes" << std::endl;
-        SimpleTest::failed_tests++;
-    }
-    SimpleTest::total_tests++;
+    cout << "\nOscilloscope demo completed!" << endl;
+    cout << "Final timing diagram shows the PLCOpen function block state transitions." << endl;
 
-    // 测试字符串指针类型
-    if (sizeof(WSTRING) == sizeof(void*)) {
-        std::cout << "PASS: WSTRING should be pointer size (" << sizeof(void*) << " bytes)" << std::endl;
-        SimpleTest::passed_tests++;
-    } else {
-        std::cout << "FAIL: WSTRING should be pointer size, but got " << sizeof(WSTRING) << " bytes" << std::endl;
-        SimpleTest::failed_tests++;
-    }
-    SimpleTest::total_tests++;
-}
-
-int main()
-{
-    std::cout << "Starting PLCOpen library basic tests..." << std::endl;
+    // Clean up resources
+    sched.release();
     
-    test_scheduler_basic();
-    test_axis_creation();
-    test_type_definitions();
-    
-    SimpleTest::print_summary();
-    
-    return (SimpleTest::get_failed_count() > 0) ? 1 : 0;
+    return 0;
 } 
