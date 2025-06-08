@@ -275,7 +275,7 @@ plcopen/
 
 ### 报告问题
 
-使用 [GitHub Issues](https://github.com/your-org/plcopen/issues) 报告：
+使用 [GitHub Issues](https://github.com/lusipad/plcopen/issues) 报告：
 - 🐛 Bug报告
 - 💡 功能请求  
 - 📖 文档改进
@@ -297,9 +297,9 @@ plcopen/
 
 ## 联系我们
 
-- **项目主页**: [GitHub](https://github.com/your-org/plcopen)
-- **文档**: [在线文档](https://your-org.github.io/plcopen)  
-- **讨论区**: [GitHub Discussions](https://github.com/your-org/plcopen/discussions)
+- **项目主页**: [GitHub](https://github.com/lusipad/plcopen)
+- **文档**: [在线文档](https://lusipad.github.io/plcopen)  
+- **讨论区**: [GitHub Discussions](https://github.com/lusipad/plcopen/discussions)
 
 ## 致谢
 
