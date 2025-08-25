@@ -2,7 +2,7 @@
 
 ## 概述
 
-本项目提供了一个PowerShell构建脚本，用于一键编译和测试Uranus PLC项目：
+本项目提供了一个 PowerShell 构建脚本，用于一键编译和测试 Uranus PLC 项目：
 
 **`build.ps1`** - 完整功能构建脚本
 
@@ -56,9 +56,9 @@
 
 ### build.ps1
 
-- ✅ 环境检查（PowerShell版本、CMake、操作系统）
+- ✅ 环境检查（PowerShell 版本、CMake、操作系统）
 - ✅ 多配置构建（Debug/Release）
-- ✅ 自动CMake配置和构建
+- ✅ 自动 CMake 配置和构建
 - ✅ 单元测试执行
 - ✅ 自动安装到输出目录
 - ✅ 彩色输出和进度显示
@@ -85,22 +85,22 @@
 
 ### 常见问题
 
-1. **PowerShell执行策略错误**
+1. **PowerShell 执行策略错误**
    ```powershell
    Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
    ```
 
-2. **CMake未找到**
-   - 确保CMake已安装并添加到PATH
+2. **CMake 未找到**
+   - 确保 CMake 已安装并添加到 PATH
    - 或使用完整路径：`C:\Program Files\CMake\bin\cmake.exe`
 
-3. **Visual Studio未找到**
-   - 确保已安装Visual Studio 2022
-   - 确保安装了C++开发工具
+3. **Visual Studio 未找到**
+   - 确保已安装 Visual Studio 2022
+   - 确保安装了 C++ 开发工具
 
 4. **构建失败**
    - 检查是否有编译错误
-   - 查看CMake输出日志
+   - 查看 CMake 输出日志
    - 尝试清理后重新构建：`.\build.ps1 -Clean`
 
 ### 手动构建步骤
@@ -144,9 +144,9 @@ $BuildConfigs = @{
 }
 ```
 
-### 自定义CMake选项
+### 自定义 CMake 选项
 
-在`Invoke-CMakeConfigure`函数中，可以添加更多CMake选项：
+在`Invoke-CMakeConfigure`函数中，可以添加更多 CMake 选项：
 
 ```powershell
 $CMakeVars = @(
@@ -164,4 +164,4 @@ $CMakeVars = @(
 
 ## 贡献
 
-欢迎提交Issue和Pull Request来改进构建脚本。
+欢迎提交 Issue 和 Pull Request 来改进构建脚本。
