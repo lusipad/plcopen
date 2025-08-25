@@ -1,170 +1,170 @@
-# Uranus PLC System - 开放式PLC系统
+# Uranus PLC 构建脚本使用说明
 
-![workflow](https://github.com/lusipad/plcopen/actions/workflows/cmake-multi-platform.yml/badge.svg)
+## 概述
 
-基于IEC 61131-3标准的开源PLC运行时系统和开发环境。
+本项目提供了一个 PowerShell 构建脚本，用于一键编译和测试 Uranus PLC 项目：
 
-## 项目概述
+**`build.ps1`** - 完整功能构建脚本
 
-Uranus PLC System是一个完整的可编程逻辑控制器(PLC)系统，严格遵循IEC 61131-3国际标准。项目基于现有的PLCOpen运动控制框架，旨在提供一个高性能、可扩展、跨平台的工业自动化解决方案。
+## 系统要求
 
-### 主要特性
+- Windows 10/11
+- PowerShell 5.1 或更高版本
+- Visual Studio 2022 或更高版本
+- CMake 3.21 或更高版本
 
-- ✅ **符合IEC 61131-3标准** - 支持所有5种编程语言
-- ✅ **PLCOpen运动控制** - 完整的运动控制功能块库 
-- ✅ **高性能运行时** - 实时任务调度和执行
-- ✅ **跨平台支持** - Windows、Linux、嵌入式系统
-- ✅ **模块化架构** - 可扩展的功能块库
-- 🚧 **工业通信** - Modbus、OPC UA、EtherNet/IP (开发中)
-- 🚧 **集成开发环境** - 图形化编程和调试工具 (开发中)
+## 使用方法
 
-### 支持的编程语言
+### 基本构建
 
-| 语言 | 类型 | 状态 | 描述 |
-|------|------|------|------|
-| **ST** (Structured Text) | 文本 | 🚧 开发中 | 结构化文本语言 |
-| **IL** (Instruction List) | 文本 | 📋 计划中 | 指令表语言 |
-| **LD** (Ladder Diagram) | 图形 | 📋 计划中 | 梯形图语言 |
-| **FBD** (Function Block Diagram) | 图形 | 📋 计划中 | 功能块图语言 |
-| **SFC** (Sequential Function Chart) | 图形 | 📋 计划中 | 顺序功能图语言 |
+```powershell
+# 默认Release配置构建
+.\build.ps1
 
-## 快速开始
-
-### 环境要求
-
-- **操作系统**: Windows 10+, Ubuntu 18.04+, 或其他Linux发行版
-- **编译器**: GCC 7+ 或 MSVC 2019+
-- **CMake**: 3.15+
-
-### 编译和安装
-
-```bash
-# 克隆仓库
-git clone https://github.com/lusipad/plcopen.git
-cd plcopen
-
-# 创建构建目录
-mkdir build && cd build
-
-# 配置和编译
-cmake ..
-make -j4
-
-# 运行示例
-./axis_move           # 单轴运动示例
-./axis_homing         # 回零示例
-./test_basic          # 基础功能测试
+# 指定Debug配置构建
+.\build.ps1 -Configuration Debug
 ```
 
-### 基本使用
+### 清理构建
 
-```cpp
-#include "PLCRuntime.h"
-#include "StandardFunctionBlocks.h"
+```powershell
+# 清理后重新构建
+.\build.ps1 -Clean
+```
 
-int main() {
-    // 获取PLC运行时实例
-    auto& runtime = Uranus::PLCRuntime::getInstance();
-    
-    // 注册标准功能块
-    Uranus::StandardFunctionBlockFactory::registerAllBlocks(runtime);
-    
-    // 创建任务
-    runtime.createTask("MainTask", Uranus::TaskType::CYCLIC, 1);
-    
-    // 启动系统
-    runtime.start();
-    
-    // 主循环
-    while (true) {
-        runtime.runCycle();
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+### 执行测试
+
+```powershell
+# 构建并执行测试
+.\build.ps1 -Test
+
+# 清理、构建、测试
+.\build.ps1 -Clean -Test
+```
+
+### 安装到输出目录
+
+```powershell
+# 构建并安装
+.\build.ps1 -Install
+
+# 完整流程：清理、构建、测试、安装
+.\build.ps1 -Clean -Test -Install
+```
+
+## 脚本功能
+
+### build.ps1
+
+- ✅ 环境检查（PowerShell 版本、CMake、操作系统）
+- ✅ 多配置构建（Debug/Release）
+- ✅ 自动 CMake 配置和构建
+- ✅ 单元测试执行
+- ✅ 自动安装到输出目录
+- ✅ 彩色输出和进度显示
+- ✅ 错误处理和报告
+
+## 输出目录
+
+- **构建目录**: `build/`
+- **输出目录**: `out/`
+- **可执行文件**: `build/src/Release/` 或 `build/src/Debug/`
+
+## 生成的文件
+
+构建完成后，会生成以下文件：
+
+- `Uranus.dll` - 主库文件
+- `Uranus.lib` - 导入库
+- `test_basic.exe` - 基本测试程序
+- `axis_move.exe` - 轴运动演示程序
+- `axis_homing.exe` - 轴回零演示程序
+- `axis_move_oscilloscope.exe` - 轴振荡运动演示程序
+
+## 故障排除
+
+### 常见问题
+
+1. **PowerShell 执行策略错误**
+   ```powershell
+   Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+   ```
+
+2. **CMake 未找到**
+   - 确保 CMake 已安装并添加到 PATH
+   - 或使用完整路径：`C:\Program Files\CMake\bin\cmake.exe`
+
+3. **Visual Studio 未找到**
+   - 确保已安装 Visual Studio 2022
+   - 确保安装了 C++ 开发工具
+
+4. **构建失败**
+   - 检查是否有编译错误
+   - 查看 CMake 输出日志
+   - 尝试清理后重新构建：`.\build.ps1 -Clean`
+
+### 手动构建步骤
+
+如果脚本有问题，可以手动执行以下步骤：
+
+```powershell
+# 1. 创建构建目录
+mkdir build
+cd build
+
+# 2. 配置CMake
+cmake -G "Visual Studio 17 2022" -DCMAKE_BUILD_TYPE=Release ..
+
+# 3. 构建项目
+cmake --build . --config Release --parallel
+
+# 4. 运行测试
+.\src\Release\test_basic.exe
+```
+
+## 开发说明
+
+### 添加新的构建配置
+
+在`build.ps1`中，可以修改`$BuildConfigs`哈希表来添加新的构建配置：
+
+```powershell
+$BuildConfigs = @{
+    "Debug" = @{
+        CMAKE_BUILD_TYPE = "Debug"
+        URANUS_ENABLE_ASSERTS = "ON"
+        URANUS_ENABLE_LOGGING = "ON"
     }
-    
-    return 0;
+    "Release" = @{
+        CMAKE_BUILD_TYPE = "Release"
+        URANUS_ENABLE_ASSERTS = "OFF"
+        URANUS_ENABLE_LOGGING = "OFF"
+    }
+    # 添加新配置...
 }
 ```
 
-## 项目结构
+### 自定义 CMake 选项
 
-```
-plcopen/
-├── src/                    # 源代码
-│   ├── motion/            # 运动控制模块
-│   │   ├── axis/          # 轴控制
-│   │   └── interpolation/ # 插补算法
-│   ├── fb/                # 功能块库
-│   ├── misc/              # 基础工具类
-│   ├── plc/               # PLC核心模块 (新增)
-│   ├── demo/              # 示例程序
-│   └── test/              # 测试程序
-├── doc/                   # 文档
-│   ├── design/            # 设计文档
-│   ├── reference/         # 参考资料
-│   └── user_guide/        # 用户指南
-├── CMakeLists.txt         # 构建配置
-├── plan.md               # 开发计划
-└── README.md             # 项目说明
+在`Invoke-CMakeConfigure`函数中，可以添加更多 CMake 选项：
+
+```powershell
+$CMakeVars = @(
+    "-G", "Visual Studio 17 2022",
+    "-DCMAKE_BUILD_TYPE=$Configuration",
+    "-DURANUS_ENABLE_TESTS=ON",
+    "-DURANUS_ENABLE_BENCHMARKS=ON",
+    # 添加更多选项...
+)
 ```
 
-## 开发计划
+## 许可证
 
-本项目采用分阶段开发模式，详细计划请参考 [plan.md](plan.md)：
+本项目遵循项目主许可证。
 
-### 🎯 第一阶段 (月份 1-3) - 核心运行时系统
-- [x] 运行时框架设计
-- [x] 标准功能块库框架
-- [ ] I/O系统基础
-- [ ] 任务调度器
-- [ ] 内存管理
+## 贡献
 
-### 🎯 第二阶段 (月份 4-7) - 编程语言支持
-- [ ] ST语言编译器
-- [ ] IL虚拟机
-- [ ] POU管理系统
-
-### 🎯 第三阶段 (月份 8-11) - 图形化编程
-- [ ] 梯形图编辑器
-- [ ] 功能块图编辑器
-- [ ] 顺序功能图编辑器
-
-### 🎯 第四阶段 (月份 12-15) - 集成开发环境
-- [ ] IDE核心框架
-- [ ] 调试和监控功能
-- [ ] 诊断工具
-
-### 🎯 第五阶段 (月份 16-19) - 通信和网络
-- [ ] Modbus TCP/RTU
-- [ ] OPC UA支持
-- [ ] 工业以太网协议
-
-### 🎯 第六阶段 (月份 20-24) - 高级功能
-- [ ] 冗余和安全功能
-- [ ] Web HMI
-- [ ] 性能优化
-
-## PLCOpen运动控制功能
-
-基于PLCOpen Motion Control标准（Part 1 & 2），提供完整的运动控制功能块库：
-
-### 单轴管理功能块
-
-| 功能块名称            | 描述                   | 支持情况 |
-| :-------------------- | :--------------------- | -------- |
-| MC_Power              | 控制轴的电源           | ✅        |
-| MC_ReadStatus         | 读取轴的状态           | ✅        |
-| MC_ReadAxisError      | 读取轴的错误代码       | ✅        |
-| MC_ReadActualPosition | 读取轴的实际坐标       | ✅        |
-| MC_ReadActualVelocity | 读取轴的实际速度       | ✅        |
-| MC_Reset              | 复位                   | ✅        |
-| MC_ReadParameter      | 读取轴的参数值         | 📋        |
-| MC_SetPosition        | 设置坐标               | 📋        |
-| MC_SetOverride        | 设置倍率               | 📋        |
-
-### 单轴运动功能块
-
-| 功能块名称                | 描述                                 | 支持情况 |
-| :------------------------ | :----------------------------------- | -------- |
+欢迎提交 Issue 和 Pull Request 来改进构建脚本。
 | MC_MoveAbsolute           | 将轴移动到绝对位置                   | ✅        |
 | MC_MoveRelative           | 将轴从当前位置移动相对距离           | ✅        |
 | MC_MoveAdditive           | 向轴的当前运动添加一个偏移量         | ✅        |
