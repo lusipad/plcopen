@@ -1,162 +1,205 @@
-# Uranus PLC 构建脚本使用说明
+# PLC Runtime Core 构建说明
 
 ## 概述
 
-本项目提供了一个 PowerShell 构建脚本，用于一键编译和测试 Uranus PLC 项目：
-
-**`build.ps1`** - 完整功能构建脚本
+本项目采用简化的构建方式，移除了复杂的CMake配置，直接使用编译器命令行进行编译。
 
 ## 系统要求
 
+### Windows
 - Windows 10/11
-- PowerShell 5.1 或更高版本
-- Visual Studio 2022 或更高版本
-- CMake 3.21 或更高版本
+- Visual Studio 2019 或更高版本（或 Visual Studio Build Tools）
+- PowerShell 5.1 或更高版本（可选，用于脚本）
+
+### Linux
+- GCC 7.0 或更高版本（支持C++17）
+- Make（可选）
 
 ## 使用方法
 
-### 基本构建
+### Windows 构建
 
-```powershell
-# 默认Release配置构建
-.\build.ps1
+#### 基本编译
+```cmd
+# 编译测试程序
+cl.exe /EHsc /std:c++17 /I"include" /I"src" test_simple.cpp /Fe:test_simple.exe
 
-# 指定Debug配置构建
-.\build.ps1 -Configuration Debug
+# 编译演示程序
+cl.exe /EHsc /std:c++17 /I"include" /I"src" src\demo\demo_main.cpp /Fe:plc_runtime_demo.exe
+
+# 编译CI基准测试
+cl.exe /EHsc /std:c++17 /I"include" /I"src" tests\ci\ci-benchmark-gates.cpp /Fe:ci-benchmark-gates.exe
 ```
 
-### 清理构建
-
+#### 使用构建脚本（如果存在）
 ```powershell
-# 清理后重新构建
-.\build.ps1 -Clean
+# 运行构建脚本
+powershell -ExecutionPolicy Bypass -File scripts\build.ps1
 ```
 
-### 执行测试
+### Linux 构建
 
-```powershell
-# 构建并执行测试
-.\build.ps1 -Test
+#### 基本编译
+```bash
+# 编译测试程序
+g++ -std=c++17 -Iinclude -Isrc -O2 test_simple.cpp -o test_simple
 
-# 清理、构建、测试
-.\build.ps1 -Clean -Test
+# 编译演示程序
+g++ -std=c++17 -Iinclude -Isrc -O2 src/demo/demo_main.cpp -o plc_runtime_demo
+
+# 编译CI基准测试
+g++ -std=c++17 -Iinclude -Isrc -O2 tests/ci/ci-benchmark-gates.cpp -o ci-benchmark-gates
 ```
 
-### 安装到输出目录
+#### 使用Makefile（如果存在）
+```bash
+# 编译所有目标
+make
 
-```powershell
-# 构建并安装
-.\build.ps1 -Install
-
-# 完整流程：清理、构建、测试、安装
-.\build.ps1 -Clean -Test -Install
+# 清理构建产物
+make clean
 ```
 
-## 脚本功能
+## 构建特性
 
-### build.ps1
+### 当前构建方式的优势
 
-- ✅ 环境检查（PowerShell 版本、CMake、操作系统）
-- ✅ 多配置构建（Debug/Release）
-- ✅ 自动 CMake 配置和构建
-- ✅ 单元测试执行
-- ✅ 自动安装到输出目录
-- ✅ 彩色输出和进度显示
-- ✅ 错误处理和报告
+- ✅ 简化的构建流程，无需复杂配置
+- ✅ 直接使用编译器，减少依赖
+- ✅ 快速编译和测试
+- ✅ 易于调试和定制
+- ✅ 跨平台兼容（Windows/Linux）
+- ✅ 清洁的项目结构
 
-## 输出目录
+## 输出文件
 
-- **构建目录**: `build/`
-- **输出目录**: `out/`
-- **可执行文件**: `build/src/Release/` 或 `build/src/Debug/`
+构建完成后，会在项目根目录生成以下可执行文件：
 
-## 生成的文件
+### Windows
+- `test_simple.exe` - 基本功能测试程序
+- `plc_runtime_demo.exe` - 演示程序
+- `ci-benchmark-gates.exe` - CI基准测试程序
 
-构建完成后，会生成以下文件：
+### Linux
+- `test_simple` - 基本功能测试程序
+- `plc_runtime_demo` - 演示程序
+- `ci-benchmark-gates` - CI基准测试程序
 
-- `Uranus.dll` - 主库文件
-- `Uranus.lib` - 导入库
-- `test_basic.exe` - 基本测试程序
-- `axis_move.exe` - 轴运动演示程序
-- `axis_homing.exe` - 轴回零演示程序
-- `axis_move_oscilloscope.exe` - 轴振荡运动演示程序
+## 项目结构
+
+```
+plc-runtime-core/
+├── include/           # 头文件目录
+├── src/              # 源代码目录
+├── tests/            # 测试代码
+├── examples/         # 示例程序
+└── scripts/          # 构建脚本（可选）
+```
 
 ## 故障排除
 
 ### 常见问题
 
-1. **PowerShell 执行策略错误**
-   ```powershell
-   Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+1. **编译器未找到**
+   
+   **Windows:**
+   ```cmd
+   # 检查Visual Studio编译器是否可用
+   where cl.exe
+   
+   # 如果未找到，需要运行Visual Studio开发者命令提示符
+   # 或手动设置环境变量
+   ```
+   
+   **Linux:**
+   ```bash
+   # 检查GCC是否安装
+   gcc --version
+   g++ --version
+   
+   # 如果未安装，使用包管理器安装
+   sudo apt-get install build-essential  # Ubuntu/Debian
+   sudo yum install gcc-c++              # CentOS/RHEL
    ```
 
-2. **CMake 未找到**
-   - 确保 CMake 已安装并添加到 PATH
-   - 或使用完整路径：`C:\Program Files\CMake\bin\cmake.exe`
+2. **编译错误**
+   - 检查C++17支持：确保编译器版本足够新
+   - 检查头文件路径：确保include和src目录路径正确
+   - 检查源文件依赖：确保所有必需的源文件都存在
 
-3. **Visual Studio 未找到**
-   - 确保已安装 Visual Studio 2022
-   - 确保安装了 C++ 开发工具
+3. **链接错误**
+   - 确保所有依赖的库都已正确链接
+   - 检查库文件路径和名称
+   - 在Windows上可能需要添加系统库（如kernel32.lib）
 
-4. **构建失败**
-   - 检查是否有编译错误
-   - 查看 CMake 输出日志
-   - 尝试清理后重新构建：`.\build.ps1 -Clean`
+4. **运行时错误**
+   - 检查可执行文件权限（Linux上可能需要sudo）
+   - 确保所有依赖的动态库都可用
+   - 检查工作目录和文件路径
 
-### 手动构建步骤
+### 详细构建步骤
 
-如果脚本有问题，可以手动执行以下步骤：
+如果需要更精细的控制，可以手动执行以下步骤：
 
-```powershell
-# 1. 创建构建目录
-mkdir build
-cd build
+#### Windows 详细步骤
+```cmd
+# 1. 打开Visual Studio开发者命令提示符
+# 2. 导航到项目目录
+cd /d "d:\Repos\plcopen"
 
-# 2. 配置CMake
-cmake -G "Visual Studio 17 2022" -DCMAKE_BUILD_TYPE=Release ..
+# 3. 编译各个组件
+cl.exe /EHsc /std:c++17 /I"include" /I"src" /c src\scheduler\*.cpp
+cl.exe /EHsc /std:c++17 /I"include" /I"src" /c src\memory\*.cpp
+cl.exe /EHsc /std:c++17 /I"include" /I"src" /c src\io\*.cpp
 
-# 3. 构建项目
-cmake --build . --config Release --parallel
+# 4. 链接生成可执行文件
+cl.exe /EHsc /std:c++17 /I"include" /I"src" *.obj test_simple.cpp /Fe:test_simple.exe
+
+# 5. 运行测试
+.\test_simple.exe
+```
+
+#### Linux 详细步骤
+```bash
+# 1. 导航到项目目录
+cd /path/to/plc-runtime-core
+
+# 2. 编译各个组件
+g++ -std=c++17 -Iinclude -Isrc -c src/scheduler/*.cpp
+g++ -std=c++17 -Iinclude -Isrc -c src/memory/*.cpp
+g++ -std=c++17 -Iinclude -Isrc -c src/io/*.cpp
+
+# 3. 链接生成可执行文件
+g++ -std=c++17 -Iinclude -Isrc *.o test_simple.cpp -o test_simple
 
 # 4. 运行测试
-.\src\Release\test_basic.exe
+./test_simple
 ```
 
 ## 开发说明
 
-### 添加新的构建配置
+### 添加新的源文件
 
-在`build.ps1`中，可以修改`$BuildConfigs`哈希表来添加新的构建配置：
+当添加新的源文件时，需要在编译命令中包含它们：
 
-```powershell
-$BuildConfigs = @{
-    "Debug" = @{
-        CMAKE_BUILD_TYPE = "Debug"
-        URANUS_ENABLE_ASSERTS = "ON"
-        URANUS_ENABLE_LOGGING = "ON"
-    }
-    "Release" = @{
-        CMAKE_BUILD_TYPE = "Release"
-        URANUS_ENABLE_ASSERTS = "OFF"
-        URANUS_ENABLE_LOGGING = "OFF"
-    }
-    # 添加新配置...
-}
+```cmd
+# Windows
+cl.exe /EHsc /std:c++17 /I"include" /I"src" test_simple.cpp src\new_module\new_file.cpp /Fe:test_simple.exe
 ```
 
-### 自定义 CMake 选项
-
-在`Invoke-CMakeConfigure`函数中，可以添加更多 CMake 选项：
-
-```powershell
-$CMakeVars = @(
-    "-G", "Visual Studio 17 2022",
-    "-DCMAKE_BUILD_TYPE=$Configuration",
-    "-DURANUS_ENABLE_TESTS=ON",
-    "-DURANUS_ENABLE_BENCHMARKS=ON",
-    # 添加更多选项...
-)
+```bash
+# Linux
+g++ -std=c++17 -Iinclude -Isrc test_simple.cpp src/new_module/new_file.cpp -o test_simple
 ```
+
+### 编译选项说明
+
+- `/EHsc` (Windows): 启用C++异常处理
+- `/std:c++17`: 使用C++17标准
+- `/I"path"`: 添加头文件搜索路径
+- `/Fe:name.exe`: 指定输出可执行文件名
+- `-O2` (Linux): 启用优化
+- `-g` (Linux): 包含调试信息
 
 ## 许可证
 

@@ -23,7 +23,7 @@
  */
 
 #include "AxisMotionBase.h"
-#include "FunctionBlock.h"
+#include "../../fb/FunctionBlock.h"
 // #include "AxesGroupBase.h"
 
 namespace Uranus

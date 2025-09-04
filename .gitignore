@@ -1,4 +1,4 @@
-# Prerequisites
+﻿# Prerequisites
 *.d
 
 # Compiled Object files
@@ -31,7 +31,53 @@
 *.out
 *.app
 
-.vs
-build
-out
-.cache
+# Visual Studio files
+.vs/
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
+*.sln
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+CMakeScripts/
+Testing/
+Makefile
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+CTestTestfile.cmake
+_deps
+
+# Build directories
+build/
+out/
+Debug/
+Release/
+x64/
+*.dir/
+
+# Temporary and cache files
+.cache/
+*.tmp
+*.log
+*.tlog
+*.pdb
+*.ilk
+*.idb
+*.pch
+*.ipch
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Temporary test directories
+temp_test/
+temp*/

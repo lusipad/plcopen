@@ -23,7 +23,7 @@
  */
 
 #include "Axis.h"
-#include "Scheduler.h"
+#include "../Scheduler.h"
 #include <stdarg.h>
 #include <string.h>
 
@@ -50,14 +50,14 @@ namespace Uranus
 
     void Axis::vprintLog(MC_LogLevel level, const char *fmt, va_list ap)
     {
-        // ¶¨ÒåÒ»¸ö×ã¹»´óµÄ³£Á¿£¬È·±£²»»á³¬³öÊµ¼ÊÐèÒªµÄ´óÐ¡
+        // ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ã¹»ï¿½ï¿½Ä³ï¿½ï¿½ï¿½ï¿½ï¿½È·ï¿½ï¿½ï¿½ï¿½ï¿½á³¬ï¿½ï¿½Êµï¿½ï¿½ï¿½ï¿½Òªï¿½Ä´ï¿½Ð¡
         const size_t BUFFER_SIZE = 1024;
         char fmtAxis[BUFFER_SIZE];
 
-        // Ê¹ÓÃ snprintf °²È«µØ¸ñÊ½»¯×Ö·û´®
+        // Ê¹ï¿½ï¿½ snprintf ï¿½ï¿½È«ï¿½Ø¸ï¿½Ê½ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½
         snprintf(fmtAxis, BUFFER_SIZE, "Axis %d: %s", axisId(), fmt);
 
-        // µ÷ÓÃ mSched µÄ vprintLog ·½·¨
+        // ï¿½ï¿½ï¿½ï¿½ mSched ï¿½ï¿½ vprintLog ï¿½ï¿½ï¿½ï¿½
         mSched->vprintLog(level, fmtAxis, ap);
     }
 

@@ -25,7 +25,7 @@
 #ifndef _URANUS_PROFILESPLANNER_HPP_
 #define _URANUS_PROFILESPLANNER_HPP_
 
-#include "ExeclQueue.h"
+#include "../../misc/ExeclQueue.h"
 #include "ProfilePlanner.h"
 
 namespace Uranus {

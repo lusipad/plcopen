@@ -1,4 +1,4 @@
-﻿/*
+/*
  * axis_homing.cpp
  *
  * Copyright 2020 (C) SYMG(Shanghai) Intelligence System Co.,Ltd
@@ -34,7 +34,7 @@
 #include <thread>
 #include <chrono>
 
-using namespace Uranus;
+using namespace plc_runtime::scheduler;
 // 避免全局命名空间污染，使用具体的std成员
 using std::cout;
 using std::endl;

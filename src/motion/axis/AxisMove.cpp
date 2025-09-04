@@ -1,4 +1,4 @@
-﻿/*
+/*
  * AxisMove.cpp
  *
  * Copyright 2020 (C) SYMG(Shanghai) Intelligence System Co.,Ltd
@@ -23,10 +23,10 @@
  */
 
 #include "AxisMove.h"
-#include "Event.h"
-#include "FunctionBlock.h"
-#include "MathUtils.h"
-#include "ProfilesPlanner.h"
+#include "../../misc/Event.h"
+#include "../../fb/FunctionBlock.h"
+#include "../interpolation/MathUtils.h"
+#include "../interpolation/ProfilesPlanner.h"
 
 namespace Uranus
 {

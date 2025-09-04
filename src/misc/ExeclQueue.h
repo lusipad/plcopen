@@ -25,8 +25,8 @@
 #ifndef _URANUS_EXECLQUEUE_HPP_
 #define _URANUS_EXECLQUEUE_HPP_
 
-#include "Global.h"
-#include "Event.h"
+#include "../motion/Global.h"
+#include "../event/Event.h"
 #include <functional>
 
 namespace Uranus

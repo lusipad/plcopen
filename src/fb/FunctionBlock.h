@@ -25,7 +25,7 @@
 #ifndef _URANUS_FUNCTIONBLOCK_HPP_
 #define _URANUS_FUNCTIONBLOCK_HPP_
 
-#include "Global.h"
+#include "../motion/Global.h"
 
 namespace Uranus
 {

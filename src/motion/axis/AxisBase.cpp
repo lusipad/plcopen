@@ -1,4 +1,4 @@
-﻿/*
+/*
  * AxisBase.cpp
  *
  * Copyright 2020 (C) SYMG(Shanghai) Intelligence System Co.,Ltd
@@ -23,9 +23,9 @@
  */
 
 #include "AxisBase.h"
-#include "Event.h"
-#include "MathUtils.h"
-#include "Servo.h"
+#include "../../misc/Event.h"
+#include "../interpolation/MathUtils.h"
+#include "../Servo.h"
 
 #include <cstring>
 

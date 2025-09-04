@@ -1,0 +1,168 @@
+name: CI基准门禁测试
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    # 每天凌晨2点运行基准测试
+    - cron: '0 2 * * *'
+
+jobs:
+  benchmark-gates:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        build-type: [Release, Debug]
+        compiler: [gcc-11, clang-14]
+    
+    steps:
+    - name: 检出代码
+      uses: actions/checkout@v3
+      
+    - name: 设置编译环境
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          build-essential \
+          cmake \
+          ninja-build \
+          libgtest-dev \
+          libbenchmark-dev \
+          linux-tools-generic \
+          cpufrequtils
+          
+    - name: 配置实时环境
+      run: |
+        # 设置CPU频率为固定模式
+        echo performance | sudo tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor
+        
+        # 禁用CPU频率调节
+        sudo cpupower frequency-set --governor performance
+        
+        # 设置进程优先级
+        sudo sysctl -w kernel.sched_rt_runtime_us=950000
+        sudo sysctl -w kernel.sched_rt_period_us=1000000
+        
+    - name: 构建项目
+      run: |
+        mkdir build
+        cd build
+        cmake -G Ninja \
+          -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} \
+          -DCMAKE_CXX_COMPILER=${{ matrix.compiler == 'gcc-11' && 'g++-11' || 'clang++-14' }} \
+          -DENABLE_BENCHMARKS=ON \
+          -DENABLE_TESTING=ON \
+          ..
+        ninja
+        
+    - name: 运行基准门禁测试
+      run: |
+        cd build
+        # 设置实时优先级
+        sudo nice -n -20 ./tests/ci/ci-benchmark-gates --gtest_output=xml:benchmark-results.xml
+        
+    - name: 验证基准结果
+      run: |
+        cd build
+        if [ -f ci-benchmark-report.json ]; then
+          echo "基准测试报告生成成功"
+          cat ci-benchmark-report.json
+          
+          # 检查是否有失败的测试
+          failed_tests=$(jq '[.results[] | select(.passed == false)] | length' ci-benchmark-report.json)
+          if [ "$failed_tests" -gt 0 ]; then
+            echo "❌ 有 $failed_tests 个基准测试失败"
+            jq '.results[] | select(.passed == false) | {testName, failReason}' ci-benchmark-report.json
+            exit 1
+          else
+            echo "✅ 所有基准测试通过"
+          fi
+        else
+          echo "❌ 基准测试报告未生成"
+          exit 1
+        fi
+        
+    - name: 上传测试结果
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: benchmark-results-${{ matrix.build-type }}-${{ matrix.compiler }}
+        path: |
+          build/benchmark-results.xml
+          build/ci-benchmark-report.json
+          
+    - name: 发布基准测试报告
+      uses: dorny/test-reporter@v1
+      if: always()
+      with:
+        name: 基准门禁测试报告 (${{ matrix.build-type }}-${{ matrix.compiler }})
+        path: build/benchmark-results.xml
+        reporter: java-junit
+        
+    - name: 性能回归检测
+      run: |
+        cd build
+        # 如果是主分支，保存基准结果作为基线
+        if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+          cp ci-benchmark-report.json ../baseline-benchmark.json
+          echo "基线基准结果已保存"
+        fi
+        
+        # 如果存在基线，进行性能回归检测
+        if [ -f ../baseline-benchmark.json ] && [ -f ci-benchmark-report.json ]; then
+          echo "执行性能回归检测..."
+          python3 ../scripts/check-performance-regression.py \
+            ../baseline-benchmark.json \
+            ci-benchmark-report.json \
+            --threshold 10.0  # 10%性能回归阈值
+        fi
+
+  benchmark-summary:
+    needs: benchmark-gates
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+    - name: 下载所有测试结果
+      uses: actions/download-artifact@v3
+      
+    - name: 生成基准测试摘要
+      run: |
+        echo "# CI基准门禁测试摘要" > benchmark-summary.md
+        echo "" >> benchmark-summary.md
+        echo "## 测试配置" >> benchmark-summary.md
+        echo "- 构建类型: Release, Debug" >> benchmark-summary.md
+        echo "- 编译器: GCC-11, Clang-14" >> benchmark-summary.md
+        echo "- 运行时间: $(date)" >> benchmark-summary.md
+        echo "" >> benchmark-summary.md
+        
+        echo "## 基准测试结果" >> benchmark-summary.md
+        for dir in benchmark-results-*; do
+          if [ -d "$dir" ]; then
+            echo "### $dir" >> benchmark-summary.md
+            if [ -f "$dir/ci-benchmark-report.json" ]; then
+              jq -r '.results[] | "- \(.testName): \(if .passed then "✅ PASS" else "❌ FAIL" end) (平均: \(.avgTime)μs, 最大: \(.maxTime)μs, 抖动: \(.jitter)μs)"' "$dir/ci-benchmark-report.json" >> benchmark-summary.md
+            fi
+            echo "" >> benchmark-summary.md
+          fi
+        done
+        
+        cat benchmark-summary.md
+        
+    - name: 发布摘要到PR
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const fs = require('fs');
+          const summary = fs.readFileSync('benchmark-summary.md', 'utf8');
+          
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: summary
+          });

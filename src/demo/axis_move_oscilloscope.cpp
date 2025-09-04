@@ -34,7 +34,7 @@
 #include <vector>
 #include <string>
 
-using namespace Uranus;
+using namespace plc_runtime::scheduler;
 using std::cout;
 using std::endl;
 using std::vector;
@@ -289,4 +289,4 @@ int main(void)
     sched.release();
     
     return 0;
-} 
+}

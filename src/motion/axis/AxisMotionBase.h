@@ -26,8 +26,8 @@
 #define _URANUS_AXISMOTIONBASE_HPP_
 
 #include "AxisStatus.h"
-#include "ExeclQueue.h"
-#include "LinkList.h"
+#include "../../misc/ExeclQueue.h"
+#include "../../misc/LinkList.h"
 
 namespace Uranus
 {

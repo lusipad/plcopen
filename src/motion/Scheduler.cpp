@@ -23,7 +23,7 @@
  */
 
 #include "Scheduler.h"
-#include "Axis.h"
+#include "axis/Axis.h"
 
 namespace Uranus
 {

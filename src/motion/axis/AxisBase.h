@@ -25,8 +25,8 @@
 #ifndef _URANUS_AXISBASE_HPP_
 #define _URANUS_AXISBASE_HPP_
 
-#include "Global.h"
-#include "Event.h"
+#include "../Global.h"
+#include "../../misc/Event.h"
 #include <stdarg.h>
 
 namespace Uranus 
