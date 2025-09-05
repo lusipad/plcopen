@@ -1,6 +1,7 @@
 # CI基准门禁测试
 
-# 查找Google Test和Benchmark库
+# 查找依赖
+find_package(Threads REQUIRED)
 find_package(GTest REQUIRED)
 find_package(benchmark QUIET)
 
@@ -11,7 +12,6 @@ add_executable(ci-benchmark-gates
 
 # 链接库
 target_link_libraries(ci-benchmark-gates
-    plc_runtime_core
     GTest::gtest
     GTest::gtest_main
     Threads::Threads

@@ -53,16 +53,16 @@ jobs:
         cmake -G Ninja \
           -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} \
           -DCMAKE_CXX_COMPILER=${{ matrix.compiler == 'gcc-11' && 'g++-11' || 'clang++-14' }} \
-          -DENABLE_BENCHMARKS=ON \
-          -DENABLE_TESTING=ON \
+          -DCMAKE_CXX_STANDARD=17 \
+          -DCMAKE_CXX_STANDARD_REQUIRED=ON \
           ..
         ninja
         
     - name: 运行基准门禁测试
       run: |
         cd build
-        # 设置实时优先级
-        sudo nice -n -20 ./tests/ci/ci-benchmark-gates --gtest_output=xml:benchmark-results.xml
+        # 运行CI基准测试
+        sudo nice -n -20 ./bin/ci-benchmark-gates --gtest_output=xml:benchmark-results.xml
         
     - name: 验证基准结果
       run: |
