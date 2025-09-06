@@ -55,7 +55,7 @@ jobs:
         
     - name: 构建项目
       run: |
-        mkdir build
+        mkdir -p build
         cd build
         cmake -G Ninja \
           -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} \
