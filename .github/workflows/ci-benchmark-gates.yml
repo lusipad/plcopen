@@ -9,6 +9,12 @@ on:
     # 每天凌晨2点运行基准测试
     - cron: '0 2 * * *'
 
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+  actions: read
+
 jobs:
   benchmark-gates:
     runs-on: ubuntu-latest
@@ -20,7 +26,7 @@ jobs:
     
     steps:
     - name: 检出代码
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       
     - name: 设置编译环境
       run: |
@@ -86,7 +92,7 @@ jobs:
         fi
         
     - name: 上传测试结果
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       if: always()
       with:
         name: benchmark-results-${{ matrix.build-type }}-${{ matrix.compiler }}
@@ -127,7 +133,7 @@ jobs:
     
     steps:
     - name: 下载所有测试结果
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       
     - name: 生成基准测试摘要
       run: |
@@ -154,7 +160,7 @@ jobs:
         
     - name: 发布摘要到PR
       if: github.event_name == 'pull_request'
-      uses: actions/github-script@v6
+      uses: actions/github-script@v7
       with:
         script: |
           const fs = require('fs');

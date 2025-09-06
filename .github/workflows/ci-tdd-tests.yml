@@ -7,6 +7,12 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+  actions: read
+
 jobs:
   tdd-tests:
     name: TDD测试执行
