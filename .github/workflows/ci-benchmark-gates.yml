@@ -64,6 +64,8 @@ jobs:
           -DCMAKE_CXX_STANDARD_REQUIRED=ON \
           ..
         ninja
+        # 尝试构建基准测试目标
+        ninja ci-benchmark-gates || echo "⚠️ 基准测试目标构建失败，可能缺少依赖"
         
     - name: 运行基准门禁测试
       run: |

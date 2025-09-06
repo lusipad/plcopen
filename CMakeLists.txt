@@ -31,9 +31,14 @@ enable_testing()
 
 # 添加基准测试（如果系统有GTest和benchmark库）
 if(EXISTS "${CMAKE_SOURCE_DIR}/tests/ci/CMakeLists.txt")
+    find_package(PkgConfig QUIET)
     find_package(GTest QUIET)
-    if(GTest_FOUND OR GTEST_FOUND)
+    # 尝试多种方式查找GTest
+    if(GTest_FOUND OR GTEST_FOUND OR TARGET gtest OR TARGET GTest::gtest)
+        message(STATUS "GTest found, enabling CI benchmark tests")
         add_subdirectory(tests/ci)
+    else()
+        message(STATUS "GTest not found, skipping CI benchmark tests")
     endif()
 endif()
 
