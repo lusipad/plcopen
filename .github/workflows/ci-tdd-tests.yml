@@ -77,12 +77,18 @@ jobs:
       run: |
         cd build
         ninja
+        # 确保构建所有测试可执行文件
+        ninja comprehensive_tdd_tests simple_mvp1_test simple_axis_test
         
     - name: 构建项目 (Windows)
       if: matrix.os == 'windows-latest'
       run: |
         cd build
         cmake --build . --config ${{ matrix.build-type }}
+        # 确保构建所有测试可执行文件
+        cmake --build . --config ${{ matrix.build-type }} --target comprehensive_tdd_tests
+        cmake --build . --config ${{ matrix.build-type }} --target simple_mvp1_test
+        cmake --build . --config ${{ matrix.build-type }} --target simple_axis_test
         
     - name: 运行comprehensive TDD测试 (Ubuntu)
       if: matrix.os == 'ubuntu-latest'
