@@ -1,5 +1,9 @@
 # PLC运行时核心系统
 
+**版本**: v1.0.0-MVP1  
+**最后更新**: 2025-09-06  
+**状态**: MVP-1开发阶段完成
+
 基于深度技术评审和架构决策记录(ADR)的工业级PLC运行时系统。
 
 ## 项目概述
@@ -55,8 +59,8 @@
 
 ```cmd
 # 克隆项目
-git clone <repository-url>
-cd plc-runtime-core
+git clone https://github.com/lusipad/plcopen.git
+cd plcopen
 
 # 使用Visual Studio编译器直接编译
 cl.exe /EHsc /std:c++17 /I"include" /I"src" src/demo/demo_main.cpp /Fe:plc_runtime_demo.exe
@@ -92,8 +96,8 @@ cyclictest -t1 -p 99 -i 1000 -l 10000 -q
 3. **编译构建**:
 ```bash
 # 克隆项目
-git clone <repository-url>
-cd plc-runtime-core
+git clone https://github.com/lusipad/plcopen.git
+cd plcopen
 
 # 使用GCC编译
 g++ -std=c++17 -Iinclude -Isrc -O2 src/demo/demo_main.cpp -o plc_runtime_demo

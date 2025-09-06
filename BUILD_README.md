@@ -1,205 +1,281 @@
 # PLC Runtime Core 构建说明
 
+**版本**: v1.0.0-MVP1  
+**最后更新**: 2025-09-06  
+**适用系统**: Windows 10/11, Linux (Ubuntu 22.04+)
+
 ## 概述
 
-本项目采用简化的构建方式，移除了复杂的CMake配置，直接使用编译器命令行进行编译。
+本项目采用标准的CMake构建系统，支持跨平台编译和完整的项目依赖管理。构建系统包含多个静态库和可执行文件，提供完整的PLC运行时功能。
 
 ## 系统要求
 
 ### Windows
 - Windows 10/11
 - Visual Studio 2019 或更高版本（或 Visual Studio Build Tools）
+- CMake 3.15 或更高版本
 - PowerShell 5.1 或更高版本（可选，用于脚本）
 
 ### Linux
 - GCC 7.0 或更高版本（支持C++17）
-- Make（可选）
+- CMake 3.15 或更高版本
+- Make 或 Ninja 构建工具
 
-## 使用方法
+## 标准构建流程
 
 ### Windows 构建
 
-#### 基本编译
+#### 使用Visual Studio
 ```cmd
-# 编译测试程序
-cl.exe /EHsc /std:c++17 /I"include" /I"src" test_simple.cpp /Fe:test_simple.exe
+# 创建构建目录
+mkdir build
+cd build
 
-# 编译演示程序
-cl.exe /EHsc /std:c++17 /I"include" /I"src" src\demo\demo_main.cpp /Fe:plc_runtime_demo.exe
+# 配置项目
+cmake .. -G "Visual Studio 16 2019" -A x64
 
-# 编译CI基准测试
-cl.exe /EHsc /std:c++17 /I"include" /I"src" tests\ci\ci-benchmark-gates.cpp /Fe:ci-benchmark-gates.exe
+# 编译项目
+cmake --build . --config Release
+
+# 运行测试
+ctest --config Release
 ```
 
-#### 使用构建脚本（如果存在）
-```powershell
-# 运行构建脚本
-powershell -ExecutionPolicy Bypass -File scripts\build.ps1
+#### 使用命令行工具
+```cmd
+# 创建构建目录
+mkdir build
+cd build
+
+# 配置项目
+cmake .. -DCMAKE_BUILD_TYPE=Release
+
+# 编译项目
+cmake --build . --config Release
 ```
 
 ### Linux 构建
 
-#### 基本编译
+#### 标准构建
 ```bash
-# 编译测试程序
-g++ -std=c++17 -Iinclude -Isrc -O2 test_simple.cpp -o test_simple
+# 创建构建目录
+mkdir build && cd build
 
-# 编译演示程序
-g++ -std=c++17 -Iinclude -Isrc -O2 src/demo/demo_main.cpp -o plc_runtime_demo
+# 配置项目
+cmake .. -DCMAKE_BUILD_TYPE=Release
 
-# 编译CI基准测试
-g++ -std=c++17 -Iinclude -Isrc -O2 tests/ci/ci-benchmark-gates.cpp -o ci-benchmark-gates
+# 编译项目
+make -j$(nproc)
+
+# 运行测试
+ctest
 ```
 
-#### 使用Makefile（如果存在）
+#### 使用Ninja构建（推荐，更快）
 ```bash
-# 编译所有目标
-make
+# 安装Ninja（如果未安装）
+sudo apt-get install ninja-build  # Ubuntu/Debian
 
-# 清理构建产物
-make clean
+# 创建构建目录
+mkdir build && cd build
+
+# 使用Ninja生成器配置
+cmake .. -G Ninja -DCMAKE_BUILD_TYPE=Release
+
+# 编译项目
+ninja
 ```
 
-## 构建特性
+## 构建目标
 
-### 当前构建方式的优势
+项目包含以下构建目标：
 
-- ✅ 简化的构建流程，无需复杂配置
-- ✅ 直接使用编译器，减少依赖
-- ✅ 快速编译和测试
-- ✅ 易于调试和定制
-- ✅ 跨平台兼容（Windows/Linux）
-- ✅ 清洁的项目结构
+### 静态库
+- `st_compiler` - ST语言编译器库
+- `io_system` - I/O子系统库  
+- `fb_system` - 功能块系统库
+- `scheduler` - 实时调度器库
 
-## 输出文件
+### 可执行文件
+- `mvp1_integration_test` - MVP-1集成测试
+- `simple_mvp1_test` - 简化MVP-1测试
+- `simple_axis_test` - 轴运动测试
+- `comprehensive_tdd_tests` - 完整TDD测试套件
+- `test_st_compiler` - ST编译器单元测试
+- `mvp1_showcase` - MVP-1功能展示程序（如果存在源文件）
+- `ci-benchmark-gates` - CI基准测试
 
-构建完成后，会在项目根目录生成以下可执行文件：
+### 输出目录结构
 
-### Windows
-- `test_simple.exe` - 基本功能测试程序
-- `plc_runtime_demo.exe` - 演示程序
-- `ci-benchmark-gates.exe` - CI基准测试程序
-
-### Linux
-- `test_simple` - 基本功能测试程序
-- `plc_runtime_demo` - 演示程序
-- `ci-benchmark-gates` - CI基准测试程序
-
-## 项目结构
-
+构建完成后，输出文件位于：
 ```
-plc-runtime-core/
-├── include/           # 头文件目录
-├── src/              # 源代码目录
-├── tests/            # 测试代码
-├── examples/         # 示例程序
-└── scripts/          # 构建脚本（可选）
+build/
+├── bin/           # 可执行文件
+│   ├── mvp1_integration_test(.exe)
+│   ├── simple_mvp1_test(.exe)
+│   ├── simple_axis_test(.exe)
+│   ├── comprehensive_tdd_tests(.exe)
+│   ├── test_st_compiler(.exe)
+│   └── ci-benchmark-gates(.exe)
+└── lib/           # 静态库文件
+    ├── libst_compiler.a/.lib
+    ├── libio_system.a/.lib
+    ├── libfb_system.a/.lib
+    └── libscheduler.a/.lib
+```
+
+## 快速开始
+
+### 1. 克隆并构建项目
+```bash
+# 克隆项目
+git clone https://github.com/lusipad/plcopen.git
+cd plcopen
+
+# 创建构建目录并构建
+mkdir build && cd build
+cmake .. -DCMAKE_BUILD_TYPE=Release
+make -j$(nproc)  # Linux
+# 或
+cmake --build . --config Release  # Windows
+```
+
+### 2. 运行测试程序
+```bash
+# 运行MVP-1集成测试
+./bin/mvp1_integration_test
+
+# 运行完整TDD测试套件
+./bin/comprehensive_tdd_tests
+
+# 运行CI基准测试
+./bin/ci-benchmark-gates
+```
+
+## 高级构建选项
+
+### 构建类型选择
+```bash
+# Debug构建（包含调试信息）
+cmake .. -DCMAKE_BUILD_TYPE=Debug
+
+# Release构建（优化性能）
+cmake .. -DCMAKE_BUILD_TYPE=Release
+
+# RelWithDebInfo（优化+调试信息）
+cmake .. -DCMAKE_BUILD_TYPE=RelWithDebInfo
+```
+
+### 安装项目
+```bash
+# 构建后安装到系统目录
+cmake --build . --target install
+
+# 或指定安装前缀
+cmake .. -DCMAKE_INSTALL_PREFIX=/opt/plc-runtime
+cmake --build . --target install
 ```
 
 ## 故障排除
 
 ### 常见问题
 
-1. **编译器未找到**
-   
-   **Windows:**
-   ```cmd
-   # 检查Visual Studio编译器是否可用
-   where cl.exe
-   
-   # 如果未找到，需要运行Visual Studio开发者命令提示符
-   # 或手动设置环境变量
-   ```
-   
-   **Linux:**
+1. **CMake版本过低**
    ```bash
-   # 检查GCC是否安装
+   # 检查CMake版本
+   cmake --version
+   
+   # 升级CMake（Ubuntu/Debian）
+   sudo apt-get update
+   sudo apt-get install cmake
+   
+   # 或下载最新版本
+   wget https://cmake.org/files/v3.20/cmake-3.20.0-Linux-x86_64.sh
+   chmod +x cmake-3.20.0-Linux-x86_64.sh
+   sudo ./cmake-3.20.0-Linux-x86_64.sh --prefix=/usr/local --skip-license
+   ```
+
+2. **编译器不支持C++17**
+   ```bash
+   # 检查GCC版本
    gcc --version
    g++ --version
    
-   # 如果未安装，使用包管理器安装
-   sudo apt-get install build-essential  # Ubuntu/Debian
-   sudo yum install gcc-c++              # CentOS/RHEL
+   # Ubuntu升级到GCC 7+
+   sudo apt-get install gcc-7 g++-7
+   sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 100
+   sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-7 100
    ```
 
-2. **编译错误**
-   - 检查C++17支持：确保编译器版本足够新
-   - 检查头文件路径：确保include和src目录路径正确
-   - 检查源文件依赖：确保所有必需的源文件都存在
+3. **构建目录权限问题**
+   ```bash
+   # 清理构建目录
+   rm -rf build
+   mkdir build
+   cd build
+   
+   # 确保有写权限
+   cmake .. -DCMAKE_BUILD_TYPE=Release
+   ```
 
-3. **链接错误**
-   - 确保所有依赖的库都已正确链接
-   - 检查库文件路径和名称
-   - 在Windows上可能需要添加系统库（如kernel32.lib）
+4. **链接错误**
+   - 在Linux上可能需要安装pthread库：
+     ```bash
+     sudo apt-get install libpthread-stubs0-dev
+     ```
+   - 对于实时调度功能，可能需要：
+     ```bash
+     sudo apt-get install librt-dev
+     ```
 
-4. **运行时错误**
-   - 检查可执行文件权限（Linux上可能需要sudo）
-   - 确保所有依赖的动态库都可用
-   - 检查工作目录和文件路径
+5. **测试运行失败**
+   ```bash
+   # 检查可执行文件是否存在
+   ls -la build/bin/
+   
+   # 设置执行权限（Linux）
+   chmod +x build/bin/*
+   
+   # 使用详细输出运行测试
+   ./build/bin/comprehensive_tdd_tests --verbose
+   ```
 
-### 详细构建步骤
+### 开发模式构建
 
-如果需要更精细的控制，可以手动执行以下步骤：
-
-#### Windows 详细步骤
-```cmd
-# 1. 打开Visual Studio开发者命令提示符
-# 2. 导航到项目目录
-cd /d "d:\Repos\plcopen"
-
-# 3. 编译各个组件
-cl.exe /EHsc /std:c++17 /I"include" /I"src" /c src\scheduler\*.cpp
-cl.exe /EHsc /std:c++17 /I"include" /I"src" /c src\memory\*.cpp
-cl.exe /EHsc /std:c++17 /I"include" /I"src" /c src\io\*.cpp
-
-# 4. 链接生成可执行文件
-cl.exe /EHsc /std:c++17 /I"include" /I"src" *.obj test_simple.cpp /Fe:test_simple.exe
-
-# 5. 运行测试
-.\test_simple.exe
-```
-
-#### Linux 详细步骤
+对于开发者，推荐使用Debug模式和额外的警告选项：
 ```bash
-# 1. 导航到项目目录
-cd /path/to/plc-runtime-core
-
-# 2. 编译各个组件
-g++ -std=c++17 -Iinclude -Isrc -c src/scheduler/*.cpp
-g++ -std=c++17 -Iinclude -Isrc -c src/memory/*.cpp
-g++ -std=c++17 -Iinclude -Isrc -c src/io/*.cpp
-
-# 3. 链接生成可执行文件
-g++ -std=c++17 -Iinclude -Isrc *.o test_simple.cpp -o test_simple
-
-# 4. 运行测试
-./test_simple
+mkdir build-debug && cd build-debug
+cmake .. -DCMAKE_BUILD_TYPE=Debug \
+         -DCMAKE_CXX_FLAGS="-Wall -Wextra -Werror -g"
+make -j$(nproc)
 ```
 
-## 开发说明
+### 项目结构说明
 
-### 添加新的源文件
-
-当添加新的源文件时，需要在编译命令中包含它们：
-
-```cmd
-# Windows
-cl.exe /EHsc /std:c++17 /I"include" /I"src" test_simple.cpp src\new_module\new_file.cpp /Fe:test_simple.exe
 ```
-
-```bash
-# Linux
-g++ -std=c++17 -Iinclude -Isrc test_simple.cpp src/new_module/new_file.cpp -o test_simple
+plcopen/
+├── CMakeLists.txt     # 主构建配置
+├── include/           # 头文件目录
+│   ├── error/         # 错误处理模块
+│   ├── fb/            # 功能块模块
+│   ├── io/            # I/O系统模块
+│   ├── lockfree/      # 无锁数据结构
+│   ├── memory/        # 内存管理模块
+│   ├── scheduler/     # 调度器模块
+│   └── st_compiler/   # ST编译器模块
+├── src/               # 源代码目录
+│   ├── fb/            # 功能块实现
+│   ├── io/            # I/O系统实现
+│   ├── scheduler/     # 调度器实现
+│   └── st_compiler/   # ST编译器实现
+├── tests/             # 测试代码
+│   ├── ci/            # CI基准测试
+│   ├── unit/          # 单元测试
+│   └── comprehensive_tdd_tests.cpp
+└── build/             # 构建输出目录（生成）
+    ├── bin/           # 可执行文件
+    └── lib/           # 静态库
 ```
-
-### 编译选项说明
-
-- `/EHsc` (Windows): 启用C++异常处理
-- `/std:c++17`: 使用C++17标准
-- `/I"path"`: 添加头文件搜索路径
-- `/Fe:name.exe`: 指定输出可执行文件名
-- `-O2` (Linux): 启用优化
-- `-g` (Linux): 包含调试信息
 
 ## 许可证
 

@@ -29,8 +29,13 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 # 启用CTest
 enable_testing()
 
-# 添加基准测试
-add_subdirectory(tests/ci)
+# 添加基准测试（如果系统有GTest和benchmark库）
+if(EXISTS "${CMAKE_SOURCE_DIR}/tests/ci/CMakeLists.txt")
+    find_package(GTest QUIET)
+    if(GTest_FOUND OR GTEST_FOUND)
+        add_subdirectory(tests/ci)
+    endif()
+endif()
 
 # ST编译器库源文件
 set(ST_COMPILER_SOURCES
@@ -39,6 +44,7 @@ set(ST_COMPILER_SOURCES
     src/st_compiler/SemanticAnalyzer.cpp
     src/st_compiler/CodeGenerator.cpp
     src/st_compiler/STCompiler.cpp
+    src/st_compiler/VirtualMachine.cpp
 )
 
 # I/O子系统库源文件
@@ -54,6 +60,11 @@ set(FB_SYSTEM_SOURCES
     src/fb/FunctionBlockEngine.cpp
 )
 
+# 通信系统库源文件
+set(COMMUNICATION_SOURCES
+    src/communication/ModbusTCP.cpp
+)
+
 # 调度器库源文件
 set(SCHEDULER_SOURCES
     src/scheduler/RealTimeSchedulerOptimized.cpp
@@ -63,28 +74,42 @@ set(SCHEDULER_SOURCES
 add_library(st_compiler STATIC ${ST_COMPILER_SOURCES})
 add_library(io_system STATIC ${IO_SYSTEM_SOURCES})
 add_library(fb_system STATIC ${FB_SYSTEM_SOURCES})
+add_library(communication STATIC ${COMMUNICATION_SOURCES})
 add_library(scheduler STATIC ${SCHEDULER_SOURCES})
 
 # 设置库的包含目录
 target_include_directories(st_compiler PUBLIC ${CMAKE_SOURCE_DIR}/include)
 target_include_directories(io_system PUBLIC ${CMAKE_SOURCE_DIR}/include)
 target_include_directories(fb_system PUBLIC ${CMAKE_SOURCE_DIR}/include)
+target_include_directories(communication PUBLIC ${CMAKE_SOURCE_DIR}/include)
 target_include_directories(scheduler PUBLIC ${CMAKE_SOURCE_DIR}/include)
 
 # MVP-1测试可执行文件
-add_executable(mvp1_integration_test mvp1_integration_test.cpp)
-add_executable(simple_mvp1_test simple_mvp1_test.cpp)
-add_executable(simple_axis_test simple_axis_test.cpp)
+add_executable(mvp1_integration_test tests/integration/mvp1_integration_test.cpp)
+add_executable(simple_mvp1_test tests/mvp1/simple_mvp1_test.cpp)
+add_executable(simple_axis_test tests/mvp1/simple_axis_test.cpp)
 add_executable(comprehensive_tdd_tests tests/comprehensive_tdd_tests.cpp)
+add_executable(st_compiler_integration_test tests/integration/test_st_compiler_integration.cpp)
+add_executable(modbus_tcp_test tests/integration/test_modbus_tcp.cpp)
+add_executable(modbus_basic_test tests/integration/test_modbus_basic.cpp)
+add_executable(modbus_simple_test tests/integration/test_modbus_simple.cpp)
 
 # 链接库（注意：这里不链接实际库，因为测试程序是自包含的）
 target_include_directories(mvp1_integration_test PRIVATE ${CMAKE_SOURCE_DIR}/include)
 target_include_directories(simple_mvp1_test PRIVATE ${CMAKE_SOURCE_DIR}/include)
 target_include_directories(simple_axis_test PRIVATE ${CMAKE_SOURCE_DIR}/include)
 target_include_directories(comprehensive_tdd_tests PRIVATE ${CMAKE_SOURCE_DIR}/include)
+target_include_directories(st_compiler_integration_test PRIVATE ${CMAKE_SOURCE_DIR}/include)
+target_link_libraries(st_compiler_integration_test st_compiler)
+target_include_directories(modbus_tcp_test PRIVATE ${CMAKE_SOURCE_DIR}/include)
+target_link_libraries(modbus_tcp_test communication)
+target_include_directories(modbus_basic_test PRIVATE ${CMAKE_SOURCE_DIR}/include)
+target_link_libraries(modbus_basic_test communication)
+target_include_directories(modbus_simple_test PRIVATE ${CMAKE_SOURCE_DIR}/include)
+target_link_libraries(modbus_simple_test communication)
 
 # ST编译器测试可执行文件
-add_executable(test_st_compiler test_st_compiler.cpp)
+add_executable(test_st_compiler tests/unit/test_st_compiler.cpp)
 target_include_directories(test_st_compiler PRIVATE ${CMAKE_SOURCE_DIR}/include)
 target_link_libraries(test_st_compiler st_compiler)
 

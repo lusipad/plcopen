@@ -60,7 +60,7 @@
 
 1. **克隆项目**
    ```cmd
-   git clone <repository-url>
+   git clone https://github.com/lusipad/plcopen.git
    cd plc-runtime-core
    ```
 
