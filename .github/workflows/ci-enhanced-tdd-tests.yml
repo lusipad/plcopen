@@ -133,31 +133,31 @@ jobs:
       if: matrix.os == 'windows-latest'
       run: |
         cd build
-        echo "=== 运行调度器单元测试 ==="
+        Write-Host "=== 运行调度器单元测试 ==="
         if (Test-Path ".\bin\${{ matrix.build-type }}\test_real_time_scheduler.exe") {
           .\bin\${{ matrix.build-type }}\test_real_time_scheduler.exe
         } else {
           Write-Host "⚠️ 调度器测试可执行文件未找到，跳过"
         }
-        echo "=== 运行内存管理单元测试 ==="
+        Write-Host "=== 运行内存管理单元测试 ==="
         if (Test-Path ".\bin\${{ matrix.build-type }}\test_memory_manager.exe") {
           .\bin\${{ matrix.build-type }}\test_memory_manager.exe
         } else {
           Write-Host "⚠️ 内存管理测试可执行文件未找到，跳过"
         }
-        echo "=== 运行无锁数据结构单元测试 ==="
+        Write-Host "=== 运行无锁数据结构单元测试 ==="
         if (Test-Path ".\bin\${{ matrix.build-type }}\test_lockfree_structures.exe") {
           .\bin\${{ matrix.build-type }}\test_lockfree_structures.exe
         } else {
           Write-Host "⚠️ 无锁结构测试可执行文件未找到，跳过"
         }
-        echo "=== 运行错误处理单元测试 ==="
+        Write-Host "=== 运行错误处理单元测试 ==="
         if (Test-Path ".\bin\${{ matrix.build-type }}\test_error_handler.exe") {
           .\bin\${{ matrix.build-type }}\test_error_handler.exe
         } else {
           Write-Host "⚠️ 错误处理测试可执行文件未找到，跳过"
         }
-        echo "=== 运行统一单元测试套件 ==="
+        Write-Host "=== 运行统一单元测试套件 ==="
         if (Test-Path ".\bin\${{ matrix.build-type }}\run_unit_tests.exe") {
           .\bin\${{ matrix.build-type }}\run_unit_tests.exe
         } else {
@@ -176,9 +176,9 @@ jobs:
       if: matrix.os == 'windows-latest'
       run: |
         cd build
-        echo "=== 运行Comprehensive TDD测试套件 ==="
+        Write-Host "=== 运行Comprehensive TDD测试套件 ==="
         .\bin\${{ matrix.build-type }}\comprehensive_tdd_tests.exe
-        echo "=== Comprehensive TDD测试完成 ==="
+        Write-Host "=== Comprehensive TDD测试完成 ==="
         
     - name: 运行MVP-1集成测试 (Ubuntu)
       if: matrix.os == 'ubuntu-latest'
@@ -210,21 +210,21 @@ jobs:
       if: matrix.os == 'windows-latest'
       run: |
         cd build
-        echo "=== 运行MVP-1集成验证测试 ==="
+        Write-Host "=== 运行MVP-1集成验证测试 ==="
         if (Test-Path ".\bin\${{ matrix.build-type }}\mvp1_integration_test.exe") {
           .\bin\${{ matrix.build-type }}\mvp1_integration_test.exe
           Write-Host "=== MVP-1集成测试完成 ==="
         } else {
           Write-Host "⚠️ mvp1_integration_test可执行文件未找到，跳过"
         }
-        echo "=== 运行Simple MVP-1测试 ==="
+        Write-Host "=== 运行Simple MVP-1测试 ==="
         if (Test-Path ".\bin\${{ matrix.build-type }}\simple_mvp1_test.exe") {
           .\bin\${{ matrix.build-type }}\simple_mvp1_test.exe
           Write-Host "=== Simple MVP-1测试完成 ==="
         } else {
           Write-Host "⚠️ simple_mvp1_test可执行文件未找到，跳过"
         }
-        echo "=== 运行Simple轴测试 ==="
+        Write-Host "=== 运行Simple轴测试 ==="
         if (Test-Path ".\bin\${{ matrix.build-type }}\simple_axis_test.exe") {
           .\bin\${{ matrix.build-type }}\simple_axis_test.exe
           Write-Host "=== Simple轴测试完成 ==="

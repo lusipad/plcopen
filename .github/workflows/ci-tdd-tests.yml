@@ -102,9 +102,9 @@ jobs:
       if: matrix.os == 'windows-latest'
       run: |
         cd build
-        echo "=== 运行Comprehensive TDD测试套件 ==="
+        Write-Host "=== 运行Comprehensive TDD测试套件 ==="
         .\bin\${{ matrix.build-type }}\comprehensive_tdd_tests.exe
-        echo "=== Comprehensive TDD测试完成 ==="
+        Write-Host "=== Comprehensive TDD测试完成 ==="
         
     - name: 运行MVP-1集成测试 (Ubuntu)
       if: matrix.os == 'ubuntu-latest'
@@ -118,9 +118,9 @@ jobs:
       if: matrix.os == 'windows-latest'
       run: |
         cd build
-        echo "=== 运行MVP-1集成验证测试 ==="
+        Write-Host "=== 运行MVP-1集成验证测试 ==="
         .\bin\${{ matrix.build-type }}\simple_mvp1_test.exe
-        echo "=== MVP-1集成测试完成 ==="
+        Write-Host "=== MVP-1集成测试完成 ==="
         
     - name: 运行轴运动测试 (Ubuntu)
       if: matrix.os == 'ubuntu-latest'
@@ -134,9 +134,9 @@ jobs:
       if: matrix.os == 'windows-latest'
       run: |
         cd build
-        echo "=== 运行轴运动专项测试 ==="
+        Write-Host "=== 运行轴运动专项测试 ==="
         .\bin\${{ matrix.build-type }}\simple_axis_test.exe
-        echo "=== 轴运动测试完成 ==="
+        Write-Host "=== 轴运动测试完成 ==="
 
   test-summary:
     name: 测试结果汇总
