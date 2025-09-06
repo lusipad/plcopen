@@ -83,13 +83,13 @@ set(LOCKFREE_SOURCES
     src/lockfree/AtomicUtils.cpp
 )
 
-# 创建静态库 - MVP-1最小化构建配置（仅核心模块）
-# 暂时跳过需要大量重构的模块，专注于能成功编译的核心功能
-# add_library(st_compiler STATIC ${ST_COMPILER_SOURCES})
-# add_library(io_system STATIC ${IO_SYSTEM_SOURCES})
-# add_library(fb_system STATIC ${FB_SYSTEM_SOURCES})
-add_library(communication STATIC ${COMMUNICATION_SOURCES})
-# add_library(scheduler STATIC ${SCHEDULER_SOURCES})
+# 创建静态库 - MVP-1.1保守配置
+# 由于存在多个编译问题，暂时保持最小配置确保系统稳定性
+# add_library(st_compiler STATIC ${ST_COMPILER_SOURCES})  # 等待进一步重构
+add_library(io_system STATIC ${IO_SYSTEM_SOURCES})        # IO系统已修复
+# add_library(fb_system STATIC ${FB_SYSTEM_SOURCES})      # 需要修复功能块接口问题
+add_library(communication STATIC ${COMMUNICATION_SOURCES}) # 通信系统稳定
+# add_library(scheduler STATIC ${SCHEDULER_SOURCES})      # 调度器需要原子操作重构
 
 # 创建模拟的内存管理和无锁数据结构库（用于测试）
 add_library(memory_manager STATIC)
@@ -99,7 +99,7 @@ target_sources(lockfree PRIVATE src/lockfree/LockFree_stub.cpp)
 
 # 设置库的包含目录
 # target_include_directories(st_compiler PUBLIC ${CMAKE_SOURCE_DIR}/include)
-# target_include_directories(io_system PUBLIC ${CMAKE_SOURCE_DIR}/include)
+target_include_directories(io_system PUBLIC ${CMAKE_SOURCE_DIR}/include)
 # target_include_directories(fb_system PUBLIC ${CMAKE_SOURCE_DIR}/include)
 target_include_directories(communication PUBLIC ${CMAKE_SOURCE_DIR}/include)
 # target_include_directories(scheduler PUBLIC ${CMAKE_SOURCE_DIR}/include)
@@ -174,8 +174,12 @@ install(TARGETS mvp1_integration_test
 #             RUNTIME DESTINATION bin)
 # endif()
 
-# 添加单元测试子目录 - 暂时跳过等待重构
-# add_subdirectory(tests/unit)
+# 添加单元测试子目录 - 暂时禁用等待修复编译问题
+# if(EXISTS "${CMAKE_SOURCE_DIR}/tests/unit/CMakeLists.txt")
+#     add_subdirectory(tests/unit)
+#     message(STATUS "Unit tests enabled")
+# endif()
+message(STATUS "Unit tests temporarily disabled due to compilation issues")
 
 # 打印构建信息
 message(STATUS "PLC Runtime Core - MVP-1")

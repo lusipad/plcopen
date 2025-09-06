@@ -59,4 +59,3 @@ private:
 
 } // namespace fb
 } // namespace plc_runtime
-EOF < /dev/null

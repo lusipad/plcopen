@@ -7,9 +7,21 @@
 
 #pragma once
 
-#include "FunctionBlock.h"
-#include "PLCTypes.h"
-#include "error/error_codes.h"
+#include "function_block/FunctionBlock.h"
+#include <cstdint>
+
+// 临时错误码定义（等待错误处理系统重构）
+namespace plc_runtime {
+namespace error {
+    enum class ErrorCode : uint32_t {
+        OK = 0,
+        ERROR = 1,
+        INVALID_PARAM = 2,
+        NOT_FOUND = 3,
+        TIMEOUT = 4
+    };
+}
+}
 #include <memory>
 #include <string>
 #include <unordered_map>
