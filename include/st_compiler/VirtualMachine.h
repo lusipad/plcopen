@@ -11,6 +11,7 @@
 #include "st_compiler/STCompiler.h"
 #include <stack>
 #include <unordered_map>
+#include <unordered_set>
 #include <functional>
 #include <chrono>
 #include <memory>
@@ -22,7 +23,7 @@ namespace st_compiler {
  * @brief 运行时值类型
  */
 struct RuntimeValue {
-    DataType type;
+    STDataType type;
     union {
         bool bool_value;
         int8_t sint_value;
@@ -32,30 +33,30 @@ struct RuntimeValue {
         char* string_value;
     } data;
     
-    RuntimeValue() : type(DataType::INT) {
+    RuntimeValue() : type(STDataType::INT) {
         data.dint_value = 0;
     }
     
-    explicit RuntimeValue(bool value) : type(DataType::BOOL) {
+    explicit RuntimeValue(bool value) : type(STDataType::BOOL) {
         data.bool_value = value;
     }
     
-    explicit RuntimeValue(int32_t value) : type(DataType::DINT) {
+    explicit RuntimeValue(int32_t value) : type(STDataType::DINT) {
         data.dint_value = value;
     }
     
-    explicit RuntimeValue(float value) : type(DataType::REAL) {
+    explicit RuntimeValue(float value) : type(STDataType::REAL) {
         data.real_value = value;
     }
     
     // 获取布尔值
     bool as_bool() const {
         switch (type) {
-            case DataType::BOOL: return data.bool_value;
-            case DataType::SINT: return data.sint_value != 0;
-            case DataType::INT: return data.int_value != 0;
-            case DataType::DINT: return data.dint_value != 0;
-            case DataType::REAL: return data.real_value != 0.0f;
+            case STDataType::BOOL: return data.bool_value;
+            case STDataType::SINT: return data.sint_value != 0;
+            case STDataType::INT: return data.int_value != 0;
+            case STDataType::DINT: return data.dint_value != 0;
+            case STDataType::REAL: return data.real_value != 0.0f;
             default: return false;
         }
     }
@@ -63,11 +64,11 @@ struct RuntimeValue {
     // 获取整数值
     int32_t as_int() const {
         switch (type) {
-            case DataType::BOOL: return data.bool_value ? 1 : 0;
-            case DataType::SINT: return data.sint_value;
-            case DataType::INT: return data.int_value;
-            case DataType::DINT: return data.dint_value;
-            case DataType::REAL: return static_cast<int32_t>(data.real_value);
+            case STDataType::BOOL: return data.bool_value ? 1 : 0;
+            case STDataType::SINT: return data.sint_value;
+            case STDataType::INT: return data.int_value;
+            case STDataType::DINT: return data.dint_value;
+            case STDataType::REAL: return static_cast<int32_t>(data.real_value);
             default: return 0;
         }
     }
@@ -75,11 +76,11 @@ struct RuntimeValue {
     // 获取浮点值
     float as_real() const {
         switch (type) {
-            case DataType::BOOL: return data.bool_value ? 1.0f : 0.0f;
-            case DataType::SINT: return static_cast<float>(data.sint_value);
-            case DataType::INT: return static_cast<float>(data.int_value);
-            case DataType::DINT: return static_cast<float>(data.dint_value);
-            case DataType::REAL: return data.real_value;
+            case STDataType::BOOL: return data.bool_value ? 1.0f : 0.0f;
+            case STDataType::SINT: return static_cast<float>(data.sint_value);
+            case STDataType::INT: return static_cast<float>(data.int_value);
+            case STDataType::DINT: return static_cast<float>(data.dint_value);
+            case STDataType::REAL: return data.real_value;
             default: return 0.0f;
         }
     }
@@ -106,11 +107,15 @@ public:
      * @brief 虚拟机配置
      */
     struct Config {
-        size_t stack_size = 1024;              // 栈大小
-        size_t max_instructions = 1000000;     // 最大指令数
-        bool enable_debugging = false;         // 启用调试
-        bool enable_profiling = false;         // 启用性能分析
-        std::chrono::milliseconds timeout{5000}; // 超时时间
+        size_t stack_size;              // 栈大小
+        size_t max_instructions;     // 最大指令数
+        bool enable_debugging;         // 启用调试
+        bool enable_profiling;         // 启用性能分析
+        std::chrono::milliseconds timeout; // 超时时间
+        
+        Config() : stack_size(1024), max_instructions(1000000), 
+                  enable_debugging(false), enable_profiling(false), 
+                  timeout(5000) {}
     };
     
     explicit VirtualMachine(const Config& config = Config());
@@ -191,7 +196,7 @@ private:
     std::chrono::steady_clock::time_point start_time_;
     
     // 执行指令
-    bool execute_instruction(const Instruction& instr);
+    bool execute_instruction(const IRInstruction& instr);
     
     // 栈操作
     void push(const RuntimeValue& value);
@@ -204,16 +209,16 @@ private:
     bool store_variable(const std::string& name);
     
     // 算术运算
-    void execute_binary_op(OpCode opcode);
-    void execute_unary_op(OpCode opcode);
-    void execute_comparison(OpCode opcode);
-    void execute_logical_op(OpCode opcode);
+    void execute_binary_op(IRInstruction::OpCode opcode);
+    void execute_unary_op(IRInstruction::OpCode opcode);
+    void execute_comparison(IRInstruction::OpCode opcode);
+    void execute_logical_op(IRInstruction::OpCode opcode);
     
     // 类型转换
-    RuntimeValue convert_type(const RuntimeValue& value, DataType target_type);
+    RuntimeValue convert_type(const RuntimeValue& value, STDataType target_type);
     
     // 调试支持
-    void debug_print_instruction(const Instruction& instr);
+    void debug_print_instruction(const IRInstruction& instr);
     void debug_print_stack();
     void debug_print_variables();
     

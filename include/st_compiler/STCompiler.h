@@ -151,13 +151,20 @@ struct IRInstruction {
         JUMP = 0x0040,         // 无条件跳转
         JUMP_IF = 0x0041,      // 条件跳转(真)
         JUMP_IF_NOT = 0x0042,  // 条件跳转(假)
-        CALL = 0x0043,         // 函数调用
-        RETURN = 0x0044,       // 返回
+        JUMP_IF_TRUE = 0x0043,  // 条件跳转(真)
+        JUMP_IF_FALSE = 0x0044, // 条件跳转(假)
+        CALL = 0x0045,         // 函数调用
+        RETURN = 0x0046,       // 返回
+        RET = 0x0047,          // 返回(别名)
         
         // 功能块操作
         FB_CALL = 0x0050,      // 功能块调用
         FB_LOAD_INPUT = 0x0051, // 加载FB输入
         FB_STORE_OUTPUT = 0x0052, // 存储FB输出
+        
+        // 栈操作
+        POP = 0x0060,          // 出栈
+        DUP = 0x0061,          // 复制栈顶元素
         
         // 特殊操作
         NOP = 0x0000,          // 空操作
@@ -169,9 +176,12 @@ struct IRInstruction {
     uint32_t operand2;         // 操作数2  
     uint32_t operand3;         // 操作数3
     std::string label;         // 标签(可选)
+    std::string operand;       // 操作数字符串(兼容性)
+    std::string comment;       // 注释
+    uint32_t address;          // 指令地址
     
     IRInstruction(OpCode op, uint32_t op1 = 0, uint32_t op2 = 0, uint32_t op3 = 0)
-        : opcode(op), operand1(op1), operand2(op2), operand3(op3) {}
+        : opcode(op), operand1(op1), operand2(op2), operand3(op3), address(0) {}
 };
 
 /**

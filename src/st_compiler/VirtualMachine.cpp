@@ -40,14 +40,14 @@ bool VirtualMachine::load_program(std::unique_ptr<CompiledProgram> program) {
     for (const auto& var : program_->variables) {
         RuntimeValue initial_value;
         switch (var.data_type) {
-            case DataType::BOOL:
+            case STDataType::BOOL:
                 initial_value = RuntimeValue(false);
                 break;
-            case DataType::INT:
-            case DataType::DINT:
+            case STDataType::INT:
+            case STDataType::DINT:
                 initial_value = RuntimeValue(0);
                 break;
-            case DataType::REAL:
+            case STDataType::REAL:
                 initial_value = RuntimeValue(0.0f);
                 break;
             default:
@@ -144,9 +144,9 @@ bool VirtualMachine::step() {
     return result;
 }
 
-bool VirtualMachine::execute_instruction(const Instruction& instr) {
+bool VirtualMachine::execute_instruction(const IRInstruction& instr) {
     switch (instr.opcode) {
-        case OpCode::LOAD_CONST: {
+        case IRInstruction::OpCode::LOAD_CONST: {
             // 解析常量值
             RuntimeValue value;
             if (instr.operand == "TRUE" || instr.operand == "true") {
@@ -163,7 +163,7 @@ bool VirtualMachine::execute_instruction(const Instruction& instr) {
             break;
         }
         
-        case OpCode::LOAD_VAR: {
+        case IRInstruction::OpCode::LOAD_VAR: {
             if (!load_variable(instr.operand)) {
                 runtime_error("Variable not found: " + instr.operand);
                 return false;
@@ -172,7 +172,7 @@ bool VirtualMachine::execute_instruction(const Instruction& instr) {
             break;
         }
         
-        case OpCode::STORE_VAR: {
+        case IRInstruction::OpCode::STORE_VAR: {
             if (!store_variable(instr.operand)) {
                 runtime_error("Cannot store to variable: " + instr.operand);
                 return false;
@@ -181,39 +181,39 @@ bool VirtualMachine::execute_instruction(const Instruction& instr) {
             break;
         }
         
-        case OpCode::ADD:
-        case OpCode::SUB:
-        case OpCode::MUL:
-        case OpCode::DIV:
-        case OpCode::MOD:
+        case IRInstruction::OpCode::ADD:
+        case IRInstruction::OpCode::SUB:
+        case IRInstruction::OpCode::MUL:
+        case IRInstruction::OpCode::DIV:
+        case IRInstruction::OpCode::MOD:
             execute_binary_op(instr.opcode);
             program_counter_++;
             break;
             
-        case OpCode::NEG:
-        case OpCode::NOT:
+        case IRInstruction::OpCode::NEG:
+        case IRInstruction::OpCode::NOT:
             execute_unary_op(instr.opcode);
             program_counter_++;
             break;
             
-        case OpCode::EQ:
-        case OpCode::NE:
-        case OpCode::LT:
-        case OpCode::LE:
-        case OpCode::GT:
-        case OpCode::GE:
+        case IRInstruction::OpCode::EQ:
+        case IRInstruction::OpCode::NE:
+        case IRInstruction::OpCode::LT:
+        case IRInstruction::OpCode::LE:
+        case IRInstruction::OpCode::GT:
+        case IRInstruction::OpCode::GE:
             execute_comparison(instr.opcode);
             program_counter_++;
             break;
             
-        case OpCode::AND:
-        case OpCode::OR:
-        case OpCode::XOR:
+        case IRInstruction::OpCode::AND:
+        case IRInstruction::OpCode::OR:
+        case IRInstruction::OpCode::XOR:
             execute_logical_op(instr.opcode);
             program_counter_++;
             break;
             
-        case OpCode::JUMP: {
+        case IRInstruction::OpCode::JUMP: {
             // 查找标签地址
             for (size_t i = 0; i < program_->instructions.size(); i++) {
                 if (program_->instructions[i].address == std::stoi(instr.operand) ||
@@ -226,7 +226,7 @@ bool VirtualMachine::execute_instruction(const Instruction& instr) {
             return false;
         }
         
-        case OpCode::JUMP_IF_FALSE: {
+        case IRInstruction::OpCode::JUMP_IF_FALSE: {
             if (stack_.empty()) {
                 runtime_error("Stack underflow in conditional jump");
                 return false;
@@ -249,7 +249,7 @@ bool VirtualMachine::execute_instruction(const Instruction& instr) {
             break;
         }
         
-        case OpCode::JUMP_IF_TRUE: {
+        case IRInstruction::OpCode::JUMP_IF_TRUE: {
             if (stack_.empty()) {
                 runtime_error("Stack underflow in conditional jump");
                 return false;
@@ -272,7 +272,7 @@ bool VirtualMachine::execute_instruction(const Instruction& instr) {
             break;
         }
         
-        case OpCode::CALL: {
+        case IRInstruction::OpCode::CALL: {
             // 调用系统函数
             if (system_functions_.count(instr.operand)) {
                 auto func = system_functions_[instr.operand];
@@ -292,12 +292,12 @@ bool VirtualMachine::execute_instruction(const Instruction& instr) {
             break;
         }
         
-        case OpCode::RET: {
+        case IRInstruction::OpCode::RET: {
             running_ = false; // 程序结束
             break;
         }
         
-        case OpCode::POP: {
+        case IRInstruction::OpCode::POP: {
             if (stack_.empty()) {
                 runtime_error("Stack underflow in POP");
                 return false;
@@ -307,7 +307,7 @@ bool VirtualMachine::execute_instruction(const Instruction& instr) {
             break;
         }
         
-        case OpCode::DUP: {
+        case IRInstruction::OpCode::DUP: {
             if (stack_.empty()) {
                 runtime_error("Stack underflow in DUP");
                 return false;
@@ -318,7 +318,7 @@ bool VirtualMachine::execute_instruction(const Instruction& instr) {
             break;
         }
         
-        case OpCode::HALT: {
+        case IRInstruction::OpCode::HALT: {
             running_ = false;
             break;
         }
@@ -331,7 +331,7 @@ bool VirtualMachine::execute_instruction(const Instruction& instr) {
     return true;
 }
 
-void VirtualMachine::execute_binary_op(OpCode opcode) {
+void VirtualMachine::execute_binary_op(IRInstruction::OpCode opcode) {
     if (stack_.size() < 2) {
         runtime_error("Stack underflow in binary operation");
         return;
@@ -342,43 +342,43 @@ void VirtualMachine::execute_binary_op(OpCode opcode) {
     RuntimeValue result;
     
     switch (opcode) {
-        case OpCode::ADD:
-            if (left.type == DataType::REAL || right.type == DataType::REAL) {
+        case IRInstruction::OpCode::ADD:
+            if (left.type == STDataType::REAL || right.type == STDataType::REAL) {
                 result = RuntimeValue(left.as_real() + right.as_real());
             } else {
                 result = RuntimeValue(left.as_int() + right.as_int());
             }
             break;
             
-        case OpCode::SUB:
-            if (left.type == DataType::REAL || right.type == DataType::REAL) {
+        case IRInstruction::OpCode::SUB:
+            if (left.type == STDataType::REAL || right.type == STDataType::REAL) {
                 result = RuntimeValue(left.as_real() - right.as_real());
             } else {
                 result = RuntimeValue(left.as_int() - right.as_int());
             }
             break;
             
-        case OpCode::MUL:
-            if (left.type == DataType::REAL || right.type == DataType::REAL) {
+        case IRInstruction::OpCode::MUL:
+            if (left.type == STDataType::REAL || right.type == STDataType::REAL) {
                 result = RuntimeValue(left.as_real() * right.as_real());
             } else {
                 result = RuntimeValue(left.as_int() * right.as_int());
             }
             break;
             
-        case OpCode::DIV:
+        case IRInstruction::OpCode::DIV:
             if (right.as_int() == 0 && right.as_real() == 0.0f) {
                 runtime_error("Division by zero");
                 return;
             }
-            if (left.type == DataType::REAL || right.type == DataType::REAL) {
+            if (left.type == STDataType::REAL || right.type == STDataType::REAL) {
                 result = RuntimeValue(left.as_real() / right.as_real());
             } else {
                 result = RuntimeValue(left.as_int() / right.as_int());
             }
             break;
             
-        case OpCode::MOD:
+        case IRInstruction::OpCode::MOD:
             if (right.as_int() == 0) {
                 runtime_error("Modulo by zero");
                 return;
@@ -394,7 +394,7 @@ void VirtualMachine::execute_binary_op(OpCode opcode) {
     push(result);
 }
 
-void VirtualMachine::execute_unary_op(OpCode opcode) {
+void VirtualMachine::execute_unary_op(IRInstruction::OpCode opcode) {
     if (stack_.empty()) {
         runtime_error("Stack underflow in unary operation");
         return;
@@ -404,15 +404,15 @@ void VirtualMachine::execute_unary_op(OpCode opcode) {
     RuntimeValue result;
     
     switch (opcode) {
-        case OpCode::NEG:
-            if (operand.type == DataType::REAL) {
+        case IRInstruction::OpCode::NEG:
+            if (operand.type == STDataType::REAL) {
                 result = RuntimeValue(-operand.as_real());
             } else {
                 result = RuntimeValue(-operand.as_int());
             }
             break;
             
-        case OpCode::NOT:
+        case IRInstruction::OpCode::NOT:
             result = RuntimeValue(!operand.as_bool());
             break;
             
@@ -424,7 +424,7 @@ void VirtualMachine::execute_unary_op(OpCode opcode) {
     push(result);
 }
 
-void VirtualMachine::execute_comparison(OpCode opcode) {
+void VirtualMachine::execute_comparison(IRInstruction::OpCode opcode) {
     if (stack_.size() < 2) {
         runtime_error("Stack underflow in comparison");
         return;
@@ -435,17 +435,17 @@ void VirtualMachine::execute_comparison(OpCode opcode) {
     RuntimeValue result;
     
     // 使用浮点比较如果任一操作数是浮点数
-    if (left.type == DataType::REAL || right.type == DataType::REAL) {
+    if (left.type == STDataType::REAL || right.type == STDataType::REAL) {
         float left_val = left.as_real();
         float right_val = right.as_real();
         
         switch (opcode) {
-            case OpCode::EQ: result = RuntimeValue(left_val == right_val); break;
-            case OpCode::NE: result = RuntimeValue(left_val != right_val); break;
-            case OpCode::LT: result = RuntimeValue(left_val < right_val); break;
-            case OpCode::LE: result = RuntimeValue(left_val <= right_val); break;
-            case OpCode::GT: result = RuntimeValue(left_val > right_val); break;
-            case OpCode::GE: result = RuntimeValue(left_val >= right_val); break;
+            case IRInstruction::OpCode::EQ: result = RuntimeValue(left_val == right_val); break;
+            case IRInstruction::OpCode::NE: result = RuntimeValue(left_val != right_val); break;
+            case IRInstruction::OpCode::LT: result = RuntimeValue(left_val < right_val); break;
+            case IRInstruction::OpCode::LE: result = RuntimeValue(left_val <= right_val); break;
+            case IRInstruction::OpCode::GT: result = RuntimeValue(left_val > right_val); break;
+            case IRInstruction::OpCode::GE: result = RuntimeValue(left_val >= right_val); break;
             default: runtime_error("Unknown comparison operation"); return;
         }
     } else {
@@ -453,12 +453,12 @@ void VirtualMachine::execute_comparison(OpCode opcode) {
         int32_t right_val = right.as_int();
         
         switch (opcode) {
-            case OpCode::EQ: result = RuntimeValue(left_val == right_val); break;
-            case OpCode::NE: result = RuntimeValue(left_val != right_val); break;
-            case OpCode::LT: result = RuntimeValue(left_val < right_val); break;
-            case OpCode::LE: result = RuntimeValue(left_val <= right_val); break;
-            case OpCode::GT: result = RuntimeValue(left_val > right_val); break;
-            case OpCode::GE: result = RuntimeValue(left_val >= right_val); break;
+            case IRInstruction::OpCode::EQ: result = RuntimeValue(left_val == right_val); break;
+            case IRInstruction::OpCode::NE: result = RuntimeValue(left_val != right_val); break;
+            case IRInstruction::OpCode::LT: result = RuntimeValue(left_val < right_val); break;
+            case IRInstruction::OpCode::LE: result = RuntimeValue(left_val <= right_val); break;
+            case IRInstruction::OpCode::GT: result = RuntimeValue(left_val > right_val); break;
+            case IRInstruction::OpCode::GE: result = RuntimeValue(left_val >= right_val); break;
             default: runtime_error("Unknown comparison operation"); return;
         }
     }
@@ -466,7 +466,7 @@ void VirtualMachine::execute_comparison(OpCode opcode) {
     push(result);
 }
 
-void VirtualMachine::execute_logical_op(OpCode opcode) {
+void VirtualMachine::execute_logical_op(IRInstruction::OpCode opcode) {
     if (stack_.size() < 2) {
         runtime_error("Stack underflow in logical operation");
         return;
@@ -477,13 +477,13 @@ void VirtualMachine::execute_logical_op(OpCode opcode) {
     RuntimeValue result;
     
     switch (opcode) {
-        case OpCode::AND:
+        case IRInstruction::OpCode::AND:
             result = RuntimeValue(left.as_bool() && right.as_bool());
             break;
-        case OpCode::OR:
+        case IRInstruction::OpCode::OR:
             result = RuntimeValue(left.as_bool() || right.as_bool());
             break;
-        case OpCode::XOR:
+        case IRInstruction::OpCode::XOR:
             result = RuntimeValue(left.as_bool() != right.as_bool());
             break;
         default:
@@ -583,7 +583,7 @@ void VirtualMachine::initialize_system_functions() {
     // 数学函数
     register_system_function("ABS", [](const std::vector<RuntimeValue>& args) -> RuntimeValue {
         if (args.empty()) return RuntimeValue(0);
-        if (args[0].type == DataType::REAL) {
+        if (args[0].type == STDataType::REAL) {
             return RuntimeValue(std::abs(args[0].as_real()));
         } else {
             return RuntimeValue(std::abs(args[0].as_int()));
@@ -602,7 +602,7 @@ void VirtualMachine::initialize_system_functions() {
     });
 }
 
-void VirtualMachine::debug_print_instruction(const Instruction& instr) {
+void VirtualMachine::debug_print_instruction(const IRInstruction& instr) {
     std::cout << "PC:" << program_counter_ << " ";
     std::cout << "OP:" << static_cast<int>(instr.opcode) << " ";
     std::cout << "ARG:" << instr.operand << " ";
@@ -612,9 +612,9 @@ void VirtualMachine::debug_print_instruction(const Instruction& instr) {
 void VirtualMachine::debug_print_stack() {
     std::cout << "Stack[" << stack_.size() << "]: ";
     for (const auto& val : stack_) {
-        if (val.type == DataType::BOOL) {
+        if (val.type == STDataType::BOOL) {
             std::cout << (val.as_bool() ? "T" : "F") << " ";
-        } else if (val.type == DataType::REAL) {
+        } else if (val.type == STDataType::REAL) {
             std::cout << val.as_real() << " ";
         } else {
             std::cout << val.as_int() << " ";
@@ -627,9 +627,9 @@ void VirtualMachine::debug_print_variables() {
     std::cout << "Variables:" << std::endl;
     for (const auto& pair : variables_) {
         std::cout << "  " << pair.first << " = ";
-        if (pair.second.type == DataType::BOOL) {
+        if (pair.second.type == STDataType::BOOL) {
             std::cout << (pair.second.as_bool() ? "TRUE" : "FALSE");
-        } else if (pair.second.type == DataType::REAL) {
+        } else if (pair.second.type == STDataType::REAL) {
             std::cout << pair.second.as_real();
         } else {
             std::cout << pair.second.as_int();
@@ -659,12 +659,12 @@ STExecutor::ExecutionResult STExecutor::compile_and_execute(
         STCompiler compiler;
         auto compile_result = compiler.compile(source_code);
         
-        if (!compile_result.success) {
+        if (!compile_result) {
             result.error_message = "Compilation failed";
             return result;
         }
         
-        return execute_program(std::move(compile_result.program), input_variables, vm_config);
+        return execute_program(std::move(compile_result), input_variables, vm_config);
         
     } catch (const std::exception& e) {
         result.error_message = e.what();

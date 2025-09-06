@@ -40,6 +40,7 @@ enum class ASTNodeType {
     FUNCTION_CALL,
     VARIABLE_REF,
     LITERAL,
+    IDENTIFIER,
     
     // 字面量类型
     BOOL_LITERAL,

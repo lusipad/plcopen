@@ -224,7 +224,10 @@ bool LinuxSysfsGPIODriver::read_batch(const std::vector<uint32_t>& pins,
     // 标准批量读取
     bool all_success = true;
     for (size_t i = 0; i < pins.size(); ++i) {
-        if (!read_pin(pins[i], values[i])) {
+        bool temp_value;
+        if (read_pin(pins[i], temp_value)) {
+            values[i] = temp_value;
+        } else {
             all_success = false;
         }
     }
@@ -583,10 +586,9 @@ void LinuxSysfsGPIODriver::update_statistics(bool is_read, uint64_t duration_ns,
     }
 }
 
-// =============================================================================
-// VirtualGPIODriver Implementation (for testing)
-// =============================================================================
+// 缺失函数的实现
 
+// VirtualGPIODriver 构造函数
 VirtualGPIODriver::VirtualGPIODriver(const SimulationConfig& config) 
     : simulate_delays_(config.simulate_delays),
       read_delay_us_(config.read_delay_us),
@@ -594,13 +596,14 @@ VirtualGPIODriver::VirtualGPIODriver(const SimulationConfig& config)
       error_rate_(config.error_rate) {
 }
 
+// VirtualGPIODriver 基本实现
 bool VirtualGPIODriver::configure_pin(const GPIOConfig& config) {
     std::lock_guard<std::mutex> lock(pins_mutex_);
     
     auto& pin = virtual_pins_[config.pin_number];
     pin.config = config;
     pin.status.is_configured = true;
-    pin.status.last_change_ns = get_current_time_ns();
+    pin.status.last_change_ns = VirtualGPIODriver::get_current_time_ns();
     
     return true;
 }
@@ -623,7 +626,7 @@ bool VirtualGPIODriver::read_pin(uint32_t pin, bool& value) {
     
     value = it->second.value;
     it->second.status.last_value = value;
-    it->second.status.last_change_ns = get_current_time_ns();
+    it->second.status.last_change_ns = VirtualGPIODriver::get_current_time_ns();
     
     return true;
 }
@@ -651,7 +654,7 @@ bool VirtualGPIODriver::write_pin(uint32_t pin, bool value) {
     bool old_value = it->second.value;
     it->second.value = value;
     it->second.status.last_value = value;
-    it->second.status.last_change_ns = get_current_time_ns();
+    it->second.status.last_change_ns = VirtualGPIODriver::get_current_time_ns();
     
     if (old_value != value) {
         it->second.status.change_count++;
@@ -664,10 +667,358 @@ std::string VirtualGPIODriver::get_driver_name() const {
     return "Virtual GPIO Driver v1.0";
 }
 
-// =============================================================================
-// GPIODriverFactory Implementation
-// =============================================================================
+// LinuxSysfsGPIODriver 的缺失函数
+bool LinuxSysfsGPIODriver::read_pin_fallback(uint32_t pin, bool& value) {
+#ifdef __linux__
+    std::string value_path = gpio_path(pin, "value");
+    std::ifstream value_file(value_path);
+    if (!value_file.is_open()) {
+        return false;
+    }
+    
+    char raw_value;
+    value_file >> raw_value;
+    
+    if (!value_file.good()) {
+        return false;
+    }
+    
+    std::lock_guard<std::mutex> lock(pins_mutex_);
+    auto it = pins_.find(pin);
+    if (it != pins_.end()) {
+        bool temp_value = (raw_value == '1');
+        value = it->second->config.active_low ? !temp_value : temp_value;
+        return true;
+    }
+    return false;
+#else
+    return false;
+#endif
+}
 
+bool LinuxSysfsGPIODriver::write_pin_fallback(uint32_t pin, bool value) {
+#ifdef __linux__
+    std::lock_guard<std::mutex> lock(pins_mutex_);
+    auto it = pins_.find(pin);
+    if (it == pins_.end()) {
+        return false;
+    }
+    
+    bool raw_value = it->second->config.active_low ? !value : value;
+    
+    std::string value_path = gpio_path(pin, "value");
+    std::ofstream value_file(value_path);
+    if (!value_file.is_open()) {
+        return false;
+    }
+    
+    value_file << (raw_value ? "1" : "0");
+    return value_file.good();
+#else
+    return false;
+#endif
+}
+
+bool LinuxSysfsGPIODriver::read_batch_optimized(const std::vector<uint32_t>& pins, 
+                                               std::vector<bool>& values) {
+    // 优化的批量读取实现
+    bool all_success = true;
+    std::lock_guard<std::mutex> lock(pins_mutex_);
+    
+    for (size_t i = 0; i < pins.size(); ++i) {
+        auto it = pins_.find(pins[i]);
+        if (it != pins_.end()) {
+            bool temp_value;
+            if (read_pin_fast(*it->second, temp_value)) {
+                values[i] = temp_value;
+            } else {
+                all_success = false;
+            }
+        } else {
+            all_success = false;
+        }
+    }
+    
+    return all_success;
+}
+
+bool LinuxSysfsGPIODriver::write_batch_optimized(const std::vector<uint32_t>& pins, 
+                                                const std::vector<bool>& values) {
+    // 优化的批量写入实现
+    bool all_success = true;
+    std::lock_guard<std::mutex> lock(pins_mutex_);
+    
+    for (size_t i = 0; i < pins.size(); ++i) {
+        auto it = pins_.find(pins[i]);
+        if (it != pins_.end()) {
+            if (!write_pin_fast(*it->second, values[i])) {
+                all_success = false;
+            }
+        } else {
+            all_success = false;
+        }
+    }
+    
+    return all_success;
+}
+
+void LinuxSysfsGPIODriver::start_interrupt_thread() {
+    if (!interrupt_thread_running_.load()) {
+        interrupt_thread_running_.store(true);
+        interrupt_thread_ = std::thread(&LinuxSysfsGPIODriver::interrupt_thread_loop, this);
+    }
+}
+
+void LinuxSysfsGPIODriver::stop_interrupt_thread() {
+    if (interrupt_thread_running_.load()) {
+        interrupt_thread_running_.store(false);
+        if (interrupt_thread_.joinable()) {
+            interrupt_thread_.join();
+        }
+    }
+}
+
+void LinuxSysfsGPIODriver::interrupt_thread_loop() {
+#ifdef __linux__
+    const int max_events = 64;
+    struct epoll_event events[max_events];
+    
+    while (interrupt_thread_running_.load()) {
+        int nfds = epoll_wait(epoll_fd_, events, max_events, perf_config_.poll_timeout_ms);
+        
+        if (nfds > 0) {
+            for (int i = 0; i < nfds; ++i) {
+                uint32_t pin = events[i].data.u32;
+                
+                std::lock_guard<std::mutex> lock(pins_mutex_);
+                auto it = pins_.find(pin);
+                if (it != pins_.end()) {
+                    handle_interrupt(pin, *it->second);
+                }
+            }
+        } else if (nfds < 0 && errno != EINTR) {
+            // 错误处理
+            break;
+        }
+    }
+#endif
+}
+
+void LinuxSysfsGPIODriver::handle_interrupt(uint32_t pin, PinInfo& pin_info) {
+    if (pin_info.callback_active.load() && pin_info.callback) {
+        bool current_value;
+        if (read_pin_fast(pin_info, current_value)) {
+            uint64_t timestamp = get_current_time_ns();
+            
+            // 在统计中记录中断
+            {
+                std::lock_guard<std::mutex> lock(stats_mutex_);
+                statistics_.interrupt_count++;
+            }
+            
+            // 调用回调函数
+            try {
+                pin_info.callback(pin, current_value, timestamp);
+            } catch (...) {
+                // 忽略回调函数中的异常
+            }
+        }
+    }
+}
+
+// VirtualGPIODriver 的缺失函数实现
+bool VirtualGPIODriver::unconfigure_pin(uint32_t pin) {
+    std::lock_guard<std::mutex> lock(pins_mutex_);
+    
+    auto it = virtual_pins_.find(pin);
+    if (it == virtual_pins_.end()) {
+        return false;
+    }
+    
+    virtual_pins_.erase(it);
+    return true;
+}
+
+bool VirtualGPIODriver::read_batch(const std::vector<uint32_t>& pins, 
+                                 std::vector<bool>& values) {
+    if (pins.empty()) {
+        return true;
+    }
+    
+    values.resize(pins.size());
+    
+    bool all_success = true;
+    for (size_t i = 0; i < pins.size(); ++i) {
+        bool temp_value;
+        if (read_pin(pins[i], temp_value)) {
+            values[i] = temp_value;
+        } else {
+            all_success = false;
+        }
+    }
+    
+    return all_success;
+}
+
+bool VirtualGPIODriver::write_batch(const std::vector<uint32_t>& pins, 
+                                  const std::vector<bool>& values) {
+    if (pins.size() != values.size()) {
+        return false;
+    }
+    
+    if (pins.empty()) {
+        return true;
+    }
+    
+    bool all_success = true;
+    for (size_t i = 0; i < pins.size(); ++i) {
+        if (!write_pin(pins[i], values[i])) {
+            all_success = false;
+        }
+    }
+    
+    return all_success;
+}
+
+bool VirtualGPIODriver::get_pin_status(uint32_t pin, GPIOStatus& status) {
+    std::lock_guard<std::mutex> lock(pins_mutex_);
+    
+    auto it = virtual_pins_.find(pin);
+    if (it == virtual_pins_.end()) {
+        return false;
+    }
+    
+    status = it->second.status;
+    return true;
+}
+
+bool VirtualGPIODriver::set_interrupt_callback(uint32_t pin, GPIOInterruptCallback callback) {
+    std::lock_guard<std::mutex> lock(pins_mutex_);
+    
+    auto it = virtual_pins_.find(pin);
+    if (it == virtual_pins_.end() || !it->second.status.is_configured) {
+        return false;
+    }
+    
+    if (it->second.config.direction != GPIODirection::INPUT ||
+        it->second.config.trigger_mode == GPIOTriggerMode::NONE) {
+        return false;
+    }
+    
+    it->second.callback = callback;
+    return true;
+}
+
+bool VirtualGPIODriver::clear_interrupt_callback(uint32_t pin) {
+    std::lock_guard<std::mutex> lock(pins_mutex_);
+    
+    auto it = virtual_pins_.find(pin);
+    if (it == virtual_pins_.end()) {
+        return false;
+    }
+    
+    it->second.callback = nullptr;
+    return true;
+}
+
+std::vector<uint32_t> VirtualGPIODriver::get_supported_pins() const {
+    std::vector<uint32_t> pins;
+    for (uint32_t i = 0; i < 1024; ++i) {  // 默认支持1024个虚拟引脚
+        pins.push_back(i);
+    }
+    return pins;
+}
+
+void VirtualGPIODriver::cleanup() {
+    std::lock_guard<std::mutex> lock(pins_mutex_);
+    virtual_pins_.clear();
+}
+
+bool VirtualGPIODriver::set_simulated_value(uint32_t pin, bool value) {
+    std::lock_guard<std::mutex> lock(pins_mutex_);
+    
+    auto it = virtual_pins_.find(pin);
+    if (it == virtual_pins_.end()) {
+        return false;
+    }
+    
+    it->second.value = value;
+    it->second.status.last_value = value;
+    it->second.status.last_change_ns = VirtualGPIODriver::get_current_time_ns();
+    
+    return true;
+}
+
+bool VirtualGPIODriver::trigger_simulated_interrupt(uint32_t pin) {
+    std::lock_guard<std::mutex> lock(pins_mutex_);
+    
+    auto it = virtual_pins_.find(pin);
+    if (it == virtual_pins_.end() || !it->second.callback) {
+        return false;
+    }
+    
+    try {
+        it->second.callback(pin, it->second.value, VirtualGPIODriver::get_current_time_ns());
+    } catch (...) {
+        return false;
+    }
+    
+    return true;
+}
+
+void VirtualGPIODriver::simulate_delay(uint32_t delay_us) const {
+    if (delay_us > 0) {
+        std::this_thread::sleep_for(std::chrono::microseconds(delay_us));
+    }
+}
+
+bool VirtualGPIODriver::simulate_error() const {
+    if (error_rate_ <= 0.0) {
+        return false;
+    }
+    
+    static thread_local std::random_device rd;
+    static thread_local std::mt19937 gen(rd());
+    static thread_local std::uniform_real_distribution<> dis(0.0, 1.0);
+    
+    return dis(gen) < error_rate_;
+}
+
+uint64_t VirtualGPIODriver::get_current_time_ns() {
+    auto now = std::chrono::high_resolution_clock::now();
+    auto ns = std::chrono::duration_cast<std::chrono::nanoseconds>(
+        now.time_since_epoch()).count();
+    return static_cast<uint64_t>(ns);
+}
+
+std::vector<uint32_t> GPIODriverFactory::detect_available_pins() {
+    // 简单实现：返回常见的GPIO引脚
+    std::vector<uint32_t> pins;
+    
+#ifdef __linux__
+    // 对于Linux系统，检查 /sys/class/gpio 目录
+    for (uint32_t i = 0; i < 64; ++i) {
+        std::string pin_dir = "/sys/class/gpio/gpio" + std::to_string(i);
+        struct stat st;
+        if (stat(pin_dir.c_str(), &st) == 0) {
+            pins.push_back(i);
+        }
+    }
+    
+    // 如果没有找到已导出的GPIO，返回默认范围
+    if (pins.empty()) {
+        for (uint32_t i = 2; i < 28; ++i) {  // BCM2835常用引脚范围
+            pins.push_back(i);
+        }
+    }
+#else
+    // 非Linux系统返回空列表
+#endif
+    
+    return pins;
+}
+
+// GPIODriverFactory 实现
 std::unique_ptr<GPIODriver> GPIODriverFactory::create_driver(DriverType type) {
     switch (type) {
         case DriverType::LINUX_SYSFS:

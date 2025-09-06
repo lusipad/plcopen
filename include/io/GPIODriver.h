@@ -15,6 +15,7 @@
 #include <chrono>
 #include <functional>
 #include <thread>
+#include <string>
 
 namespace plc_runtime {
 namespace io {
@@ -164,13 +165,15 @@ public:
      * @brief 性能配置
      */
     struct PerformanceConfig {
-        bool enable_fast_path = true;        // 启用快速路径优化
-        bool cache_file_descriptors = true;  // 缓存文件描述符
-        bool use_memory_mapping = false;     // 使用内存映射(高级)
-        uint32_t batch_size_threshold = 8;   // 批量操作阈值
-        uint32_t poll_timeout_ms = 1;        // 轮询超时
+        bool enable_fast_path;               // 启用快速路径优化
+        bool cache_file_descriptors;         // 缓存文件描述符
+        bool use_memory_mapping;             // 使用内存映射(高级)
+        uint32_t batch_size_threshold;       // 批量操作阈值
+        uint32_t poll_timeout_ms;            // 轮询超时
         
-        PerformanceConfig() = default;
+        PerformanceConfig() : enable_fast_path(true), cache_file_descriptors(true), 
+                             use_memory_mapping(false), batch_size_threshold(8), 
+                             poll_timeout_ms(1) {}
     };
     
 private:
@@ -275,6 +278,10 @@ private:
     bool read_batch_optimized(const std::vector<uint32_t>& pins, std::vector<bool>& values);
     bool write_batch_optimized(const std::vector<uint32_t>& pins, const std::vector<bool>& values);
     
+    // 回退方法
+    bool read_pin_fallback(uint32_t pin, bool& value);
+    bool write_pin_fallback(uint32_t pin, bool value);
+    
     // 中断处理
     void start_interrupt_thread();
     void stop_interrupt_thread();
@@ -283,7 +290,7 @@ private:
     
     // 工具函数
     static uint64_t get_current_time_ns();
-    static std::string gpio_path(uint32_t pin, const std::string& attribute = "");
+    static std::string gpio_path(uint32_t pin, const std::string& attribute = {});
     void update_statistics(bool is_read, uint64_t duration_ns, bool success);
 };
 
@@ -315,13 +322,14 @@ public:
      * @brief 仿真配置
      */
     struct SimulationConfig {
-        bool simulate_delays = false;     // 仿真延迟
-        uint32_t read_delay_us = 1;       // 读取延迟
-        uint32_t write_delay_us = 1;      // 写入延迟
-        double error_rate = 0.0;          // 错误率(0.0-1.0)
-        uint32_t max_pins = 1024;         // 最大引脚数
+        bool simulate_delays;             // 仿真延迟
+        uint32_t read_delay_us;          // 读取延迟
+        uint32_t write_delay_us;         // 写入延迟
+        double error_rate;               // 错误率(0.0-1.0)
+        uint32_t max_pins;               // 最大引脚数
         
-        SimulationConfig() = default;
+        SimulationConfig() : simulate_delays(false), read_delay_us(1), 
+                           write_delay_us(1), error_rate(0.0), max_pins(1024) {}
     };
     
     explicit VirtualGPIODriver(const SimulationConfig& config = SimulationConfig{});
@@ -354,6 +362,7 @@ public:
 private:
     void simulate_delay(uint32_t delay_us) const;
     bool simulate_error() const;
+    static uint64_t get_current_time_ns();
 };
 
 /**

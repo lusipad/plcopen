@@ -396,10 +396,7 @@ std::unique_ptr<AST> Lexer::analyze(const std::string& source) {
     
     // 创建AST根节点
     auto ast = std::make_unique<AST>();
-    ast->node_type = ASTNodeType::PROGRAM;
-    ast->value = "lexer_output";
-    ast->line = 1;
-    ast->column = 1;
+    auto program_node = std::make_unique<ProgramNode>("lexer_output", 1, 1);
     
     // 将tokens信息添加到AST中（简化实现）
     for (const auto& token : tokens) {
@@ -407,15 +404,12 @@ std::unique_ptr<AST> Lexer::analyze(const std::string& source) {
             continue;
         }
         
-        auto token_node = std::make_unique<AST>();
-        token_node->node_type = ASTNodeType::IDENTIFIER;
-        token_node->value = token.value;
-        token_node->line = token.line;
-        token_node->column = token.column;
-        
-        ast->children.push_back(std::move(token_node));
+        auto token_node = std::make_unique<LiteralNode>(ASTNodeType::IDENTIFIER, token.value, 
+                                                       token.line, token.column);
+        program_node->add_child(std::move(token_node));
     }
     
+    ast->set_root(std::move(program_node));
     return ast;
 }
 
