@@ -219,8 +219,8 @@ jobs:
         echo "检查测试文件结构..."
         test -f "include/test/TestFramework.h" && echo "✅ 测试框架存在"
         test -f "tests/comprehensive_tdd_tests.cpp" && echo "✅ TDD测试套件存在"
-        test -f "simple_mvp1_test.cpp" && echo "✅ MVP-1集成测试存在"
-        test -f "simple_axis_test.cpp" && echo "✅ 轴运动测试存在"
+        test -f "tests/mvp1/simple_mvp1_test.cpp" && echo "✅ MVP-1集成测试存在"
+        test -f "tests/mvp1/simple_axis_test.cpp" && echo "✅ 轴运动测试存在"
         
         # 检查测试覆盖度
         echo "检查测试覆盖度..."

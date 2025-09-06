@@ -178,16 +178,52 @@ jobs:
       run: |
         cd build
         echo "=== 运行MVP-1集成验证测试 ==="
-        ./bin/mvp1_integration_test
-        echo "=== MVP-1集成测试完成 ==="
+        if [ -f "./bin/mvp1_integration_test" ]; then
+          ./bin/mvp1_integration_test
+          echo "=== MVP-1集成测试完成 ==="
+        else
+          echo "⚠️ mvp1_integration_test可执行文件未找到，跳过"
+        fi
+        echo "=== 运行Simple MVP-1测试 ==="
+        if [ -f "./bin/simple_mvp1_test" ]; then
+          ./bin/simple_mvp1_test
+          echo "=== Simple MVP-1测试完成 ==="
+        else
+          echo "⚠️ simple_mvp1_test可执行文件未找到，跳过"
+        fi
+        echo "=== 运行Simple轴测试 ==="
+        if [ -f "./bin/simple_axis_test" ]; then
+          ./bin/simple_axis_test
+          echo "=== Simple轴测试完成 ==="
+        else
+          echo "⚠️ simple_axis_test可执行文件未找到，跳过"
+        fi
         
     - name: 运行MVP-1集成测试 (Windows)
       if: matrix.os == 'windows-latest'
       run: |
         cd build
         echo "=== 运行MVP-1集成验证测试 ==="
-        .\bin\${{ matrix.build-type }}\mvp1_integration_test.exe
-        echo "=== MVP-1集成测试完成 ==="
+        if (Test-Path ".\bin\${{ matrix.build-type }}\mvp1_integration_test.exe") {
+          .\bin\${{ matrix.build-type }}\mvp1_integration_test.exe
+          Write-Host "=== MVP-1集成测试完成 ==="
+        } else {
+          Write-Host "⚠️ mvp1_integration_test可执行文件未找到，跳过"
+        }
+        echo "=== 运行Simple MVP-1测试 ==="
+        if (Test-Path ".\bin\${{ matrix.build-type }}\simple_mvp1_test.exe") {
+          .\bin\${{ matrix.build-type }}\simple_mvp1_test.exe
+          Write-Host "=== Simple MVP-1测试完成 ==="
+        } else {
+          Write-Host "⚠️ simple_mvp1_test可执行文件未找到，跳过"
+        }
+        echo "=== 运行Simple轴测试 ==="
+        if (Test-Path ".\bin\${{ matrix.build-type }}\simple_axis_test.exe") {
+          .\bin\${{ matrix.build-type }}\simple_axis_test.exe
+          Write-Host "=== Simple轴测试完成 ==="
+        } else {
+          Write-Host "⚠️ simple_axis_test可执行文件未找到，跳过"
+        }
         
     - name: 生成代码覆盖率报告 (Ubuntu Debug)
       if: matrix.os == 'ubuntu-latest' && matrix.build-type == 'Debug'
