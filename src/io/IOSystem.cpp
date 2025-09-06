@@ -15,6 +15,13 @@
 
 namespace Uranus {
 
+// 获取当前纳秒时间戳的辅助函数
+static uint64_t get_current_time_ns() {
+    auto now = std::chrono::high_resolution_clock::now();
+    auto duration = now.time_since_epoch();
+    return std::chrono::duration_cast<std::chrono::nanoseconds>(duration).count();
+}
+
 // Linux Sysfs GPIO Implementation
 LinuxSysfsGPIO::~LinuxSysfsGPIO() {
     cleanup();
@@ -197,8 +204,11 @@ bool LinuxSysfsGPIO::read_batch(const std::vector<uint32_t>& pins,
     bool success = true;
     
     for (size_t i = 0; i < pins.size(); ++i) {
-        if (!read_pin(pins[i], values[i])) {
+        bool temp_value;
+        if (!read_pin(pins[i], temp_value)) {
             success = false;
+        } else {
+            values[i] = temp_value;
         }
     }
     
@@ -243,11 +253,6 @@ void LinuxSysfsGPIO::cleanup() {
     configured_pins_.clear();
 }
 
-uint64_t get_current_time_ns() {
-    auto now = std::chrono::high_resolution_clock::now();
-    return std::chrono::duration_cast<std::chrono::nanoseconds>(
-        now.time_since_epoch()).count();
-}
 
 // IOSystem Implementation
 IOSystem::IOSystem() 
@@ -294,9 +299,12 @@ bool IOSystem::add_input_point(uint32_t address, IOType type, IODataType data_ty
     
     input_mapping_[address] = index;
     
-    // Initialize both buffers
-    for (int i = 0; i < 2; ++i) {
-        IOPoint& point = process_image_manager_->images_[i].input_points[index];
+    // Initialize read and write buffers
+    ProcessImage* read_buffer = process_image_manager_->get_read_buffer();
+    ProcessImage* write_buffer = process_image_manager_->get_write_buffer();
+    
+    for (auto* buffer : {read_buffer, write_buffer}) {
+        IOPoint& point = buffer->input_points[index];
         point.address = address;
         point.type = type;
         point.data_type = data_type;
@@ -321,9 +329,12 @@ bool IOSystem::add_output_point(uint32_t address, IOType type, IODataType data_t
     
     output_mapping_[address] = index;
     
-    // Initialize both buffers
-    for (int i = 0; i < 2; ++i) {
-        IOPoint& point = process_image_manager_->images_[i].output_points[index];
+    // Initialize read and write buffers  
+    ProcessImage* read_buffer = process_image_manager_->get_read_buffer();
+    ProcessImage* write_buffer = process_image_manager_->get_write_buffer();
+    
+    for (auto* buffer : {read_buffer, write_buffer}) {
+        IOPoint& point = buffer->output_points[index];
         point.address = address;
         point.type = type;
         point.data_type = data_type;

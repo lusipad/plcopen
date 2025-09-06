@@ -206,8 +206,11 @@ public:
         bool success = true;
         
         for (size_t i = 0; i < pins.size(); ++i) {
-            if (!read_pin(pins[i], values[i])) {
+            bool temp_value;
+            if (!read_pin(pins[i], temp_value)) {
                 success = false;
+            } else {
+                values[i] = temp_value;
             }
         }
         
