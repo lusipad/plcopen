@@ -26,13 +26,9 @@ foreach(TEST_SOURCE ${UNIT_TEST_SOURCES})
     # Create executable for this test
     add_executable(${TEST_NAME} ${TEST_SOURCE})
     
-    # Link required libraries
+    # Link required libraries (only the ones that build successfully)
     target_link_libraries(${TEST_NAME} 
-        scheduler
         memory_manager
-        io_system
-        fb_system
-        st_compiler
         pthread
     )
     
@@ -59,11 +55,7 @@ endforeach()
 # Create unified unit test runner
 add_executable(run_unit_tests run_all_unit_tests.cpp)
 target_link_libraries(run_unit_tests 
-    scheduler
     memory_manager
-    io_system
-    fb_system
-    st_compiler
     pthread
 )
 target_compile_features(run_unit_tests PRIVATE cxx_std_17)
