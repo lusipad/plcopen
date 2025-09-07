@@ -44,8 +44,7 @@ jobs:
           cmake \
           ninja-build \
           g++-11 \
-          lcov \
-          gcov
+          lcov
         sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-11 100
         sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-11 100
           
