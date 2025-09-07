@@ -32,18 +32,30 @@ foreach(TEST_SOURCE ${UNIT_TEST_SOURCES})
         lockfree
         io_system
         communication
-        pthread
     )
+    
+    # Platform-specific pthread linking
+    if(UNIX)
+        target_link_libraries(${TEST_NAME} pthread)
+    endif()
     
     # Set C++17 standard
     target_compile_features(${TEST_NAME} PRIVATE cxx_std_17)
     
-    # Add compiler flags for testing
-    target_compile_options(${TEST_NAME} PRIVATE
-        -Wall -Wextra -g -O0
-        -DUNIT_TESTING=1
-        -DDEBUG_MODE=1
-    )
+    # Add compiler flags for testing based on platform
+    if(MSVC)
+        target_compile_options(${TEST_NAME} PRIVATE
+            /W3 /EHsc
+            /DUNIT_TESTING=1
+            /DDEBUG_MODE=1
+        )
+    else()
+        target_compile_options(${TEST_NAME} PRIVATE
+            -Wall -Wextra -g -O0
+            -DUNIT_TESTING=1
+            -DDEBUG_MODE=1
+        )
+    endif()
     
     # Add to test suite
     add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME})
@@ -62,10 +74,21 @@ target_link_libraries(run_unit_tests
     lockfree
     io_system
     communication
-    pthread
 )
+
+# Platform-specific pthread linking for runner
+if(UNIX)
+    target_link_libraries(run_unit_tests pthread)
+endif()
+
 target_compile_features(run_unit_tests PRIVATE cxx_std_17)
-target_compile_options(run_unit_tests PRIVATE -Wall -Wextra -g -O0)
+
+# Platform-specific compile options for runner
+if(MSVC)
+    target_compile_options(run_unit_tests PRIVATE /W3 /EHsc)
+else()
+    target_compile_options(run_unit_tests PRIVATE -Wall -Wextra -g -O0)
+endif()
 
 # Coverage support (optional)
 if(ENABLE_COVERAGE)

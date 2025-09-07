@@ -10,6 +10,11 @@
 #include <cstring>
 #include <algorithm>
 
+// Windows compatibility - define ssize_t for Windows
+#ifdef _WIN32
+    typedef long long ssize_t;
+#endif
+
 #ifndef _WIN32
 #include <sys/socket.h>
 #include <netinet/in.h>

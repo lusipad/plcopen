@@ -96,6 +96,11 @@ add_library(io_system STATIC ${IO_SYSTEM_SOURCES})        # IO系统已修复
 add_library(communication STATIC ${COMMUNICATION_SOURCES}) # 通信系统稳定
 # add_library(scheduler STATIC ${SCHEDULER_SOURCES})      # 调度器需要原子操作重构
 
+# Windows平台需要链接Winsock库
+if(WIN32)
+    target_link_libraries(communication ws2_32)
+endif()
+
 # 创建模拟的内存管理和无锁数据结构库（用于测试）
 add_library(memory_manager STATIC)
 target_sources(memory_manager PRIVATE src/memory/MemoryManager_stub.cpp)
@@ -141,6 +146,11 @@ target_link_libraries(modbus_simple_test communication)
 # target_include_directories(test_st_compiler PRIVATE ${CMAKE_SOURCE_DIR}/include)
 # target_link_libraries(test_st_compiler st_compiler)
 
+# 添加单元测试子目录 - 暂时禁用以解决编译问题
+# if(EXISTS "${CMAKE_SOURCE_DIR}/tests/unit/CMakeLists.txt")
+#     add_subdirectory(tests/unit)
+# endif()
+
 # MVP-1功能展示程序
 # MVP-1功能展示程序 - 暂时跳过依赖过多的模块
 # if(EXISTS "${CMAKE_SOURCE_DIR}/src/demo/mvp1_showcase.cpp")
@@ -179,12 +189,6 @@ install(TARGETS mvp1_integration_test
 #             RUNTIME DESTINATION bin)
 # endif()
 
-# 添加单元测试子目录 - 暂时禁用等待修复编译问题
-# if(EXISTS "${CMAKE_SOURCE_DIR}/tests/unit/CMakeLists.txt")
-#     add_subdirectory(tests/unit)
-#     message(STATUS "Unit tests enabled")
-# endif()
-message(STATUS "Unit tests temporarily disabled due to compilation issues")
 
 # 打印构建信息
 message(STATUS "PLC Runtime Core - MVP-1")
