@@ -18,6 +18,16 @@
 #include <chrono>
 #include <string>
 #include <iomanip>
+#include <thread>
+#include <cstdlib>
+
+#ifdef _WIN32
+#include <io.h>
+#define isatty _isatty
+#define STDOUT_FILENO 1
+#else
+#include <unistd.h>
+#endif
 
 // Test suite executables (these would be linked or included)
 int run_scheduler_tests();
@@ -29,14 +39,14 @@ using namespace plc_test;
 
 // ANSI color codes for console output
 namespace Colors {
-    const std::string RESET = "\033[0m";
-    const std::string RED = "\033[31m";
-    const std::string GREEN = "\033[32m";
-    const std::string YELLOW = "\033[33m";
-    const std::string BLUE = "\033[34m";
-    const std::string MAGENTA = "\033[35m";
-    const std::string CYAN = "\033[36m";
-    const std::string WHITE = "\033[37m";
+    std::string RESET = "\033[0m";
+    std::string RED = "\033[31m";
+    std::string GREEN = "\033[32m";
+    std::string YELLOW = "\033[33m";
+    std::string BLUE = "\033[34m";
+    std::string MAGENTA = "\033[35m";
+    std::string CYAN = "\033[36m";
+    std::string WHITE = "\033[37m";
 }
 
 class UnitTestRunner {
