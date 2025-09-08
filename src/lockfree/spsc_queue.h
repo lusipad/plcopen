@@ -252,4 +252,3 @@ public:
 } // namespace plc_runtime
 
 #endif // LOCKFREE_SPSC_QUEUE_H
-"

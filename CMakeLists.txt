@@ -102,10 +102,8 @@ if(WIN32)
 endif()
 
 # 创建模拟的内存管理和无锁数据结构库（用于测试）
-add_library(memory_manager STATIC)
-target_sources(memory_manager PRIVATE src/memory/MemoryManager_stub.cpp)
-add_library(lockfree STATIC) 
-target_sources(lockfree PRIVATE src/lockfree/LockFree_stub.cpp)
+add_library(memory_manager STATIC src/memory/MemoryManager_stub.cpp)
+add_library(lockfree STATIC src/lockfree/LockFree_stub.cpp)
 
 # 设置库的包含目录
 # target_include_directories(st_compiler PUBLIC ${CMAKE_SOURCE_DIR}/include)
@@ -146,10 +144,10 @@ target_link_libraries(modbus_simple_test communication)
 # target_include_directories(test_st_compiler PRIVATE ${CMAKE_SOURCE_DIR}/include)
 # target_link_libraries(test_st_compiler st_compiler)
 
-# 添加单元测试子目录 - 暂时禁用以解决编译问题
-# if(EXISTS "${CMAKE_SOURCE_DIR}/tests/unit/CMakeLists.txt")
-#     add_subdirectory(tests/unit)
-# endif()
+# 添加单元测试子目录
+if(EXISTS "${CMAKE_SOURCE_DIR}/tests/unit/CMakeLists.txt")
+    add_subdirectory(tests/unit)
+endif()
 
 # MVP-1功能展示程序
 # MVP-1功能展示程序 - 暂时跳过依赖过多的模块

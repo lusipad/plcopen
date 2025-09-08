@@ -17,6 +17,7 @@
 #include <iostream>
 #include <chrono>
 #include <string>
+#include <iomanip>
 
 // Test suite executables (these would be linked or included)
 int run_scheduler_tests();
@@ -251,7 +252,7 @@ int main(int argc, char* argv[]) {
     // Disable colors if not running in a terminal or if quiet mode
     if (quiet || !isatty(STDOUT_FILENO)) {
         Colors::RESET = Colors::RED = Colors::GREEN = Colors::YELLOW = 
-        Colors::BLUE = Colors::MAGENTA = Colors::CYAN = Colors::WHITE = "";
+        Colors::BLUE = ""; Colors::MAGENTA = ""; Colors::CYAN = ""; Colors::WHITE = "";
     }
     
     UnitTestRunner runner;
