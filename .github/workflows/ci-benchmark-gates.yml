@@ -252,7 +252,7 @@ jobs:
         EOF
         fi
         
-    - name: 验证基准结果
+    - name: 验证基准结果和门禁检查
       run: |
         cd build
         if [ -f ci-benchmark-report.json ]; then
@@ -265,12 +265,43 @@ jobs:
             result_count=$(jq '.results | length' ci-benchmark-report.json 2>/dev/null || echo "0")
             if [ "$result_count" -gt 0 ]; then
               failed_tests=$(jq '[.results[] | select(.passed == false)] | length' ci-benchmark-report.json 2>/dev/null || echo "0")
+              
+              # 性能阈禁检查
+              echo "=== 性能门禁检查 ==="
+              
+              # 检查调度延迟
+              max_scheduling_latency=$(jq '.results[] | select(.testName == "SchedulingLatency") | .maxTime // 0' ci-benchmark-report.json 2>/dev/null || echo "0")
+              if [ "$max_scheduling_latency" -gt 50000 ]; then
+                echo "❌ 调度延迟超过阈值: ${max_scheduling_latency}ns > 50000ns"
+                failed_tests=$((failed_tests + 1))
+              else
+                echo "✅ 调度延迟在阈值内: ${max_scheduling_latency}ns"
+              fi
+              
+              # 检查I/O扫描时间
+              max_io_scan_time=$(jq '.results[] | select(.testName == "IOScanTime") | .maxTime // 0' ci-benchmark-report.json 2>/dev/null || echo "0")
+              if [ "$max_io_scan_time" -gt 100000 ]; then
+                echo "❌ I/O扫描时间超过阈值: ${max_io_scan_time}ns > 100000ns"
+                failed_tests=$((failed_tests + 1))
+              else
+                echo "✅ I/O扫描时间在阈值内: ${max_io_scan_time}ns"
+              fi
+              
+              # 检查内存分配时间
+              max_memory_alloc_time=$(jq '.results[] | select(.testName == "MemoryAllocation") | .maxTime // 0' ci-benchmark-report.json 2>/dev/null || echo "0")
+              if [ "$max_memory_alloc_time" -gt 10000 ]; then
+                echo "❌ 内存分配时间超过阈值: ${max_memory_alloc_time}ns > 10000ns"
+                failed_tests=$((failed_tests + 1))
+              else
+                echo "✅ 内存分配时间在阈值内: ${max_memory_alloc_time}ns"
+              fi
+              
               if [ "$failed_tests" -gt 0 ]; then
-                echo "❌ 有 $failed_tests 个基准测试失败"
-                jq '.results[] | select(.passed == false) | {testName, failReason}' ci-benchmark-report.json 2>/dev/null || true
+                echo "❌ 有 $failed_tests 个性能阈禁失败"
+                jq '.results[] | select(.passed == false) | {testName, failReason, maxTime, avgTime}' ci-benchmark-report.json 2>/dev/null || true
                 exit 1
               else
-                echo "✅ 所有基准测试通过"
+                echo "✅ 所有性能门禁通过"
               fi
             else
               echo "⚠️ 基准测试跳过或无结果"
@@ -283,6 +314,113 @@ jobs:
           echo "❌ 基准测试报告未生成"
           exit 1
         fi
+        
+    - name: 性能回归检测
+      run: |
+        cd build
+        echo "=== 性能回归检测 ==="
+        
+        # 检查基准测试报告
+        if [ -f "ci-benchmark-report.json" ]; then
+          # 创建性能基线目录
+          mkdir -p performance-baselines
+          
+          # 定义基线文件路径
+          BASELINE_FILE="performance-baselines/baseline-${{ matrix.build-type }}-${{ matrix.compiler }}.json"
+          CURRENT_FILE="ci-benchmark-report.json"
+          
+          # 如果没有基线，创建基线
+          if [ ! -f "$BASELINE_FILE" ]; then
+            echo "📊 创建性能基线文件: $BASELINE_FILE"
+            cp "$CURRENT_FILE" "$BASELINE_FILE"
+            echo "✅ 基线已创建，本次运行将作为性能基准"
+          else
+            echo "📈 执行性能回归分析..."
+            
+            # 检查jq可用性
+            if command -v jq &> /dev/null; then
+              echo "基线数据:"
+              jq -r '.results[] | select(.passed == true) | "\(.testName): \(.avgTime)ns"' "$BASELINE_FILE" 2>/dev/null || echo "无基线数据"
+              
+              echo ""
+              echo "当前数据:"
+              jq -r '.results[] | select(.passed == true) | "\(.testName): \(.avgTime)ns"' "$CURRENT_FILE" 2>/dev/null || echo "无当前数据"
+              
+              # 性能回归检测阈值 (允许10%的性能下降)
+              REGRESSION_THRESHOLD=1.10
+              regression_detected=0
+              
+              echo ""
+              echo "回归检测结果:"
+              
+              # 检查调度延迟
+              baseline_sched=$(jq -r '.results[] | select(.testName == "SchedulingLatency") | .avgTime // 0' "$BASELINE_FILE" 2>/dev/null || echo "0")
+              current_sched=$(jq -r '.results[] | select(.testName == "SchedulingLatency") | .avgTime // 0' "$CURRENT_FILE" 2>/dev/null || echo "0")
+              
+              if [ "$baseline_sched" -gt 0 ] && [ "$current_sched" -gt 0 ]; then
+                ratio=$(echo "scale=2; $current_sched / $baseline_sched" | bc -l 2>/dev/null || echo "1.0")
+                if (( $(echo "$ratio > $REGRESSION_THRESHOLD" | bc -l) )); then
+                  echo "❌ 调度延迟回归: ${current_sched}ns vs 基线${baseline_sched}ns (回归${ratio}x)"
+                  regression_detected=1
+                else
+                  echo "✅ 调度延迟无回归: ${current_sched}ns vs 基线${baseline_sched}ns (比率${ratio}x)"
+                fi
+              fi
+              
+              # 检查I/O扫描时间
+              baseline_io=$(jq -r '.results[] | select(.testName == "IOScanTime") | .avgTime // 0' "$BASELINE_FILE" 2>/dev/null || echo "0")
+              current_io=$(jq -r '.results[] | select(.testName == "IOScanTime") | .avgTime // 0' "$CURRENT_FILE" 2>/dev/null || echo "0")
+              
+              if [ "$baseline_io" -gt 0 ] && [ "$current_io" -gt 0 ]; then
+                ratio=$(echo "scale=2; $current_io / $baseline_io" | bc -l 2>/dev/null || echo "1.0")
+                if (( $(echo "$ratio > $REGRESSION_THRESHOLD" | bc -l) )); then
+                  echo "❌ I/O扫描时间回归: ${current_io}ns vs 基线${baseline_io}ns (回归${ratio}x)"
+                  regression_detected=1
+                else
+                  echo "✅ I/O扫描时间无回归: ${current_io}ns vs 基线${baseline_io}ns (比率${ratio}x)"
+                fi
+              fi
+              
+              # 检查内存分配时间
+              baseline_mem=$(jq -r '.results[] | select(.testName == "MemoryAllocation") | .avgTime // 0' "$BASELINE_FILE" 2>/dev/null || echo "0")
+              current_mem=$(jq -r '.results[] | select(.testName == "MemoryAllocation") | .avgTime // 0' "$CURRENT_FILE" 2>/dev/null || echo "0")
+              
+              if [ "$baseline_mem" -gt 0 ] && [ "$current_mem" -gt 0 ]; then
+                ratio=$(echo "scale=2; $current_mem / $baseline_mem" | bc -l 2>/dev/null || echo "1.0")
+                if (( $(echo "$ratio > $REGRESSION_THRESHOLD" | bc -l) )); then
+                  echo "❌ 内存分配时间回归: ${current_mem}ns vs 基线${baseline_mem}ns (回归${ratio}x)"
+                  regression_detected=1
+                else
+                  echo "✅ 内存分配时间无回归: ${current_mem}ns vs 基线${baseline_mem}ns (比率${ratio}x)"
+                fi
+              fi
+              
+              # 回归检测结果
+              if [ "$regression_detected" -gt 0 ]; then
+                echo ""
+                echo "❌ 检测到性能回归，超过${REGRESSION_THRESHOLD}x阈值"
+                echo "建议:"
+                echo "- 检查最近的代码变更是否影响性能"
+                echo "- 运行性能分析工具识别瓶颈"
+                echo "- 考虑是否需要更新性能基线"
+                echo "PERFORMANCE_REGRESSION=true" >> $GITHUB_ENV
+                # 注意: 性能回归不导致CI失败，而是警告
+                echo "⚠️ 性能回归检测到但不中断构建"
+              else
+                echo ""
+                echo "✅ 未检测到显著性能回归"
+                echo "PERFORMANCE_REGRESSION=false" >> $GITHUB_ENV
+              fi
+              
+            else
+              echo "⚠️ jq不可用，跳过性能回归分析"
+            fi
+          fi
+        else
+          echo "⚠️ 基准测试报告不存在，跳过回归检测"
+        fi
+        
+        echo "=== 性能回归检测完成 ==="
         
     - name: 上传测试结果
       uses: actions/upload-artifact@v4

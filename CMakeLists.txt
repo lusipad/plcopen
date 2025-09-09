@@ -68,6 +68,9 @@ set(FB_SYSTEM_SOURCES
 # 通信系统库源文件
 set(COMMUNICATION_SOURCES
     src/communication/ModbusTCP.cpp
+    src/communication/NetworkManager.cpp
+    src/communication/StreamingModbusParser.cpp
+    src/communication/ConcurrentModbusDataMap.cpp
 )
 
 # 调度器库源文件
@@ -96,9 +99,11 @@ add_library(io_system STATIC ${IO_SYSTEM_SOURCES})        # IO系统已修复
 add_library(communication STATIC ${COMMUNICATION_SOURCES}) # 通信系统稳定
 # add_library(scheduler STATIC ${SCHEDULER_SOURCES})      # 调度器需要原子操作重构
 
-# Windows平台需要链接Winsock库
+# Windows平台需要链接网络和系统库
 if(WIN32)
-    target_link_libraries(communication ws2_32)
+    target_link_libraries(communication ws2_32 iphlpapi)
+    # 为了支持NetworkManager的Windows特定功能
+    target_compile_definitions(communication PRIVATE WIN32_LEAN_AND_MEAN)
 endif()
 
 # 创建模拟的内存管理和无锁数据结构库（用于测试）
@@ -124,6 +129,21 @@ add_executable(comprehensive_tdd_tests tests/comprehensive_tdd_tests.cpp)
 add_executable(modbus_tcp_test tests/integration/test_modbus_tcp.cpp)
 add_executable(modbus_basic_test tests/integration/test_modbus_basic.cpp)
 add_executable(modbus_simple_test tests/integration/test_modbus_simple.cpp)
+
+# 网络管理器单元测试 - 新增跨平台网络测试
+add_executable(test_network_manager tests/unit/test_network_manager.cpp)
+target_include_directories(test_network_manager PRIVATE ${CMAKE_SOURCE_DIR}/include)
+target_link_libraries(test_network_manager communication)
+
+# 并发数据映射测试
+add_executable(test_concurrent_modbus tests/unit/test_concurrent_modbus_data_map.cpp)
+target_include_directories(test_concurrent_modbus PRIVATE ${CMAKE_SOURCE_DIR}/include)
+target_link_libraries(test_concurrent_modbus communication)
+
+# 流式解析器测试
+add_executable(test_streaming_parser tests/unit/test_streaming_modbus_parser.cpp)
+target_include_directories(test_streaming_parser PRIVATE ${CMAKE_SOURCE_DIR}/include)
+target_link_libraries(test_streaming_parser communication)
 
 # 链接库（注意：这里不链接实际库，因为测试程序是自包含的）
 target_include_directories(mvp1_integration_test PRIVATE ${CMAKE_SOURCE_DIR}/include)

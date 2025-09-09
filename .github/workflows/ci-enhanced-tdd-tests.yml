@@ -191,10 +191,93 @@ jobs:
     - name: 生成代码覆盖率报告 (Ubuntu Debug)
       if: matrix.os == 'ubuntu-latest' && matrix.build-type == 'Debug'
       run: |
-        echo "=== 跳过代码覆盖率报告生成 ==="
-        echo "覆盖率功能暂时禁用，专注于核心测试通过"
-        mkdir -p build/coverage
-        echo "Coverage temporarily disabled" > build/coverage/summary.txt
+        cd build
+        echo "=== 生成代码覆盖率报告 ==="
+        
+        # 重新配置带覆盖率标志的构建
+        cmake -G Ninja \
+          -DCMAKE_BUILD_TYPE=Debug \
+          -DCMAKE_CXX_FLAGS="--coverage -fprofile-arcs -ftest-coverage" \
+          -DCMAKE_C_FLAGS="--coverage -fprofile-arcs -ftest-coverage" \
+          ..
+        
+        # 重新构建带覆盖率支持
+        ninja clean || true
+        ninja
+        
+        # 运行测试以生成覆盖率数据
+        echo "运行测试生成覆盖率数据..."
+        ./bin/comprehensive_tdd_tests || true
+        [ -f "./bin/mvp1_integration_test" ] && ./bin/mvp1_integration_test || true
+        [ -f "./bin/simple_mvp1_test" ] && ./bin/simple_mvp1_test || true
+        [ -f "./bin/simple_axis_test" ] && ./bin/simple_axis_test || true
+        
+        # 创建覆盖率目录
+        mkdir -p coverage
+        
+        # 生成覆盖率报告
+        echo "生成lcov覆盖率报告..."
+        lcov --capture --directory . --output-file coverage/coverage.info --ignore-errors mismatch,empty,negative || true
+        
+        # 过滤系统文件和第三方文件
+        lcov --remove coverage/coverage.info '/usr/*' '*/tests/*' '*/build/*' \
+          --output-file coverage/filtered.info --ignore-errors unused || true
+        
+        # 生成HTML报告
+        genhtml coverage/filtered.info --output-directory coverage/html \
+          --title "PLC Runtime Core Coverage" --num-spaces 4 || true
+        
+        # 生成文本摘要
+        lcov --summary coverage/filtered.info > coverage/summary.txt 2>&1 || echo "Coverage: 0.0%" > coverage/summary.txt
+        
+        echo "覆盖率报告生成完成"
+        cat coverage/summary.txt || true
+        
+    - name: 覆盖率门禁检查 (Ubuntu Debug)
+      if: matrix.os == 'ubuntu-latest' && matrix.build-type == 'Debug'
+      run: |
+        cd build
+        echo "=== 覆盖率门禁检查 ==="
+        
+        # 设置覆盖率阈值
+        COVERAGE_THRESHOLD=70.0
+        echo "最低覆盖率阈值: ${COVERAGE_THRESHOLD}%"
+        
+        # 解析覆盖率
+        if [ -f "coverage/summary.txt" ]; then
+          # 尝试从lcov摘要中提取覆盖率
+          COVERAGE_LINE=$(grep -E "lines.*:" coverage/summary.txt | head -1)
+          echo "覆盖率信息: $COVERAGE_LINE"
+          
+          if [[ $COVERAGE_LINE =~ ([0-9]+\.[0-9]+)% ]]; then
+            COVERAGE_PERCENT=${BASH_REMATCH[1]}
+            echo "检测到覆盖率: ${COVERAGE_PERCENT}%"
+            
+            # 使用bc进行浮点数比较
+            if (( $(echo "$COVERAGE_PERCENT >= $COVERAGE_THRESHOLD" | bc -l) )); then
+              echo "✅ 覆盖率门禁通过: ${COVERAGE_PERCENT}% >= ${COVERAGE_THRESHOLD}%"
+              echo "COVERAGE_GATE_PASSED=true" >> $GITHUB_ENV
+            else
+              echo "❌ 覆盖率门禁失败: ${COVERAGE_PERCENT}% < ${COVERAGE_THRESHOLD}%"
+              echo "请增加单元测试以提高代码覆盖率"
+              echo "COVERAGE_GATE_PASSED=false" >> $GITHUB_ENV
+              exit 1
+            fi
+          else
+            echo "⚠️ 无法解析覆盖率信息，检查lcov输出格式"
+            echo "原始覆盖率文件内容:"
+            cat coverage/summary.txt
+            echo "假设覆盖率为0%，门禁失败"
+            echo "COVERAGE_GATE_PASSED=false" >> $GITHUB_ENV
+            exit 1
+          fi
+        else
+          echo "❌ 覆盖率报告文件不存在"
+          echo "COVERAGE_GATE_PASSED=false" >> $GITHUB_ENV
+          exit 1
+        fi
+        
+        echo "=== 覆盖率门禁检查完成 ==="
         
     - name: 上传覆盖率报告
       if: matrix.os == 'ubuntu-latest' && matrix.build-type == 'Debug'
@@ -389,24 +472,58 @@ jobs:
           cat coverage/summary.txt
           
           # 提取覆盖率数字
-          COVERAGE=$(grep "lines" coverage/summary.txt | grep -o '[0-9]\+\.[0-9]\+%' | head -1)
-          echo "当前覆盖率: $COVERAGE"
+          COVERAGE_LINE=$(grep -E "lines.*:" coverage/summary.txt | head -1)
+          echo "覆盖率行信息: $COVERAGE_LINE"
           
-          # 检查覆盖率阈值
-          COVERAGE_NUM=$(echo $COVERAGE | sed 's/%//')
-          if (( $(echo "$COVERAGE_NUM >= 60" | bc -l) )); then
-            echo "✅ 覆盖率达到阶段性目标 (≥60%)"
+          if [[ $COVERAGE_LINE =~ ([0-9]+\.[0-9]+)% ]]; then
+            COVERAGE_PERCENT=${BASH_REMATCH[1]}
+            echo "当前覆盖率: ${COVERAGE_PERCENT}%"
+            
+            # 检查覆盖率阈值
+            echo ""
+            echo "📊 覆盖率门禁状态检查:"
+            
+            # 当前门禁阈值 (70%)
+            if (( $(echo "$COVERAGE_PERCENT >= 70.0" | bc -l) )); then
+              echo "✅ 强制门禁通过: ${COVERAGE_PERCENT}% >= 70.0% (必过门禁)"
+            else
+              echo "❌ 强制门禁失败: ${COVERAGE_PERCENT}% < 70.0% (必过门禁)"
+              echo "⚠️  这将导致CI失败，请增加单元测试"
+            fi
+            
+            # 进阶目标 (85%)
+            if (( $(echo "$COVERAGE_PERCENT >= 85.0" | bc -l) )); then
+              echo "🎉 达到卓越覆盖率目标: ${COVERAGE_PERCENT}% >= 85.0%"
+            else
+              echo "📈 继续提升覆盖率，卓越目标: 85.0%"
+            fi
+            
+            # 生成覆盖率提升建议
+            echo ""
+            echo "📋 覆盖率提升建议:"
+            if (( $(echo "$COVERAGE_PERCENT < 50.0" | bc -l) )); then
+              echo "- 重点增加核心模块的基础测试用例"
+              echo "- 确保每个public方法都有对应测试"
+              echo "- 添加正常路径的功能测试"
+            elif (( $(echo "$COVERAGE_PERCENT < 70.0" | bc -l) )); then
+              echo "- 增加边界条件和异常路径测试"
+              echo "- 添加错误处理分支的测试用例"
+              echo "- 完善并发和多线程场景测试"
+            elif (( $(echo "$COVERAGE_PERCENT < 85.0" | bc -l) )); then
+              echo "- 覆盖剩余的边缘情况和错误分支"
+              echo "- 增加集成测试场景"
+              echo "- 优化现有测试的覆盖度"
+            else
+              echo "- 覆盖率已达到卓越水平，专注于测试质量"
+            fi
           else
-            echo "⚠️ 覆盖率未达到阶段性目标 (≥60%)"
-          fi
-          
-          if (( $(echo "$COVERAGE_NUM >= 85" | bc -l) )); then
-            echo "🎉 覆盖率达到最终目标 (≥85%)"
-          else
-            echo "📈 继续提升覆盖率，目标85%"
+            echo "⚠️ 无法解析覆盖率百分比"
+            echo "原始内容："
+            cat coverage/summary.txt
           fi
         else
-          echo "⚠️ 覆盖率报告未生成，可能是构建问题"
+          echo "❌ 覆盖率报告未生成，可能是构建问题"
+          echo "请检查测试执行和lcov生成步骤"
         fi
         
         echo "=== 覆盖率分析完成 ==="

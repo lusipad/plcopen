@@ -72,38 +72,129 @@ static bool is_valid_exception_code(uint8_t exception_code) {
 }
 
 /**
- * @brief 健壮的字节接收函数，处理粘包问题
+ * @brief 网络错误类型枚举
+ */
+enum class NetworkError {
+    SUCCESS = 0,
+    TIMEOUT = 1,        // 超时
+    PEER_CLOSED = 2,    // 对端关闭连接
+    NETWORK_ERROR = 3,  // 网络错误
+    BUFFER_FULL = 4,    // 缓冲区已满
+    INVALID_PARAM = 5   // 参数错误
+};
+
+/**
+ * @brief 接收结果结构
+ */
+struct ReceiveResult {
+    NetworkError error;
+    size_t bytes_received;
+    std::string error_message;
+    
+    bool is_success() const { return error == NetworkError::SUCCESS; }
+};
+
+/**
+ * @brief 网络超时配置
+ */
+struct NetworkTimeouts {
+    uint32_t connect_timeout_ms = 5000;     // 连接超时
+    uint32_t read_timeout_ms = 5000;        // 读取超时
+    uint32_t write_timeout_ms = 3000;       // 写入超时
+    uint32_t total_timeout_ms = 30000;      // 总超时
+    bool adaptive_timeout = true;           // 自适应超时
+    double slow_link_factor = 2.0;          // 慢链路因子
+};
+
+/**
+ * @brief 增强的字节接收函数，支持灵活的超时配置和错误分类
  * @param socket_fd 套接字描述符
  * @param buffer 接收缓冲区
  * @param expected_size 期望接收的字节数
- * @param timeout_ms 超时时间（毫秒）
- * @return true 如果成功接收所有字节
+ * @param timeouts 超时配置
+ * @return 接收结果
  */
-static bool receive_exact_bytes(int socket_fd, uint8_t* buffer, size_t expected_size, int timeout_ms = 5000) {
+static ReceiveResult receive_exact_bytes_enhanced(int socket_fd, uint8_t* buffer, size_t expected_size, const NetworkTimeouts& timeouts) {
+    if (!buffer || expected_size == 0) {
+        return {NetworkError::INVALID_PARAM, 0, "Invalid parameters"};
+    }
+    
     size_t total_received = 0;
     auto start_time = std::chrono::steady_clock::now();
+    auto last_receive_time = start_time;
+    
+    // 计算实际超时值
+    uint32_t effective_read_timeout = timeouts.read_timeout_ms;
+    if (timeouts.adaptive_timeout) {
+        // 根据数据大小调整超时
+        if (expected_size > 1024) { // 大数据包
+            effective_read_timeout = static_cast<uint32_t>(timeouts.read_timeout_ms * timeouts.slow_link_factor);
+        }
+    }
     
     while (total_received < expected_size) {
-        // 检查超时
-        auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
-            std::chrono::steady_clock::now() - start_time).count();
-        if (elapsed > timeout_ms) {
-            return false;
+        auto now = std::chrono::steady_clock::now();
+        
+        // 检查总超时
+        auto total_elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - start_time).count();
+        if (total_elapsed > timeouts.total_timeout_ms) {
+            return {NetworkError::TIMEOUT, total_received, 
+                   "Total timeout exceeded: " + std::to_string(total_elapsed) + "ms"};
+        }
+        
+        // 检查读取超时
+        auto read_elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - last_receive_time).count();
+        if (read_elapsed > effective_read_timeout) {
+            return {NetworkError::TIMEOUT, total_received, 
+                   "Read timeout: " + std::to_string(read_elapsed) + "ms"};
         }
         
         ssize_t received = recv(socket_fd, 
                                reinterpret_cast<char*>(buffer + total_received), 
                                expected_size - total_received, 0);
         
-        if (received <= 0) {
-            // 连接关闭或错误
-            return false;
+        if (received > 0) {
+            total_received += received;
+            last_receive_time = now; // 更新最后接收时间
+        } else if (received == 0) {
+            // 对端关闭连接
+            return {NetworkError::PEER_CLOSED, total_received, "Peer closed connection"};
+        } else {
+            // 错误发生
+#ifdef _WIN32
+            int error_code = WSAGetLastError();
+            if (error_code == WSAEWOULDBLOCK || error_code == WSAEINPROGRESS) {
+                // 非阻塞套接字，继续等待
+                std::this_thread::sleep_for(std::chrono::milliseconds(1));
+                continue;
+            }
+            return {NetworkError::NETWORK_ERROR, total_received, 
+                   "Windows socket error: " + std::to_string(error_code)};
+#else
+            int error_code = errno;
+            if (error_code == EAGAIN || error_code == EWOULDBLOCK || error_code == EINTR) {
+                // 可恢复错误，继续等待
+                std::this_thread::sleep_for(std::chrono::milliseconds(1));
+                continue;
+            }
+            return {NetworkError::NETWORK_ERROR, total_received, 
+                   "Unix socket error: " + std::to_string(error_code)};
+#endif
         }
-        
-        total_received += received;
     }
     
-    return true;
+    return {NetworkError::SUCCESS, total_received, "Success"};
+}
+
+// 向后兼容的简化版本
+static bool receive_exact_bytes(int socket_fd, uint8_t* buffer, size_t expected_size, int timeout_ms = 5000) {
+    NetworkTimeouts timeouts;
+    timeouts.read_timeout_ms = timeout_ms;
+    timeouts.total_timeout_ms = timeout_ms;
+    timeouts.adaptive_timeout = false;
+    
+    auto result = receive_exact_bytes_enhanced(socket_fd, buffer, expected_size, timeouts);
+    return result.is_success();
 }
 
 // =============================================================================
@@ -119,13 +210,13 @@ DefaultModbusDataMap::DefaultModbusDataMap(const Config& config)
 }
 
 bool DefaultModbusDataMap::read_coil(uint16_t address) {
-    std::lock_guard<std::mutex> lock(data_mutex_);
+    std::shared_lock<std::shared_mutex> lock(data_mutex_);
     if (address >= coils_.size()) return false;
     return coils_[address];
 }
 
 bool DefaultModbusDataMap::write_coil(uint16_t address, bool value) {
-    std::lock_guard<std::mutex> lock(data_mutex_);
+    std::unique_lock<std::shared_mutex> lock(data_mutex_);
     if (address >= coils_.size()) return false;
     coils_[address] = value;
     return true;
@@ -732,6 +823,27 @@ bool ModbusTcpClient::deserialize_adu(const std::vector<uint8_t>& data, ModbusTc
     if (adu.unit_id == 0 || adu.unit_id > 247) {
         // 可以选择接受或拒绝，这里采用宽松策略
         // return false; // 严格模式下可开启
+    }
+    
+    // 5. MBAP Length边界值检查
+    // Length = Unit ID(1) + Function Code(1) + Data
+    // 最小值: 2 (仅Unit ID + Function Code)
+    // 最大值: 255 (Modbus协议限制)
+    static constexpr uint16_t MIN_MBAP_LENGTH = 2;
+    static constexpr uint16_t MAX_MBAP_LENGTH = 255;
+    
+    if (adu.length < MIN_MBAP_LENGTH || adu.length > MAX_MBAP_LENGTH) {
+        return false;
+    }
+    
+    // 6. Length与PDU实际长度的精确匹配检查
+    // actual_pdu_length = data.size() - 6 (MBAP头部6字节) - 1 (Unit ID)
+    size_t actual_pdu_length = data.size() - 7; // MBAP头部(6) + Unit ID(1)
+    size_t expected_pdu_length = adu.length - 1; // Length包括Unit ID，所以PDU = Length - 1
+    
+    if (actual_pdu_length != expected_pdu_length) {
+        // Length字段与实际PDU长度不匹配
+        return false;
     }
     
     // 解析PDU
