@@ -13,6 +13,9 @@
 #include <iomanip>
 #include <thread>
 #include <memory>
+
+namespace plc_runtime {
+namespace scheduler {
 #include <atomic>
 #include <chrono>
 

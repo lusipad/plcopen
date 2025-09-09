@@ -24,6 +24,14 @@ jobs:
       matrix:
         build-type: [Release, Debug]
         compiler: [gcc-11, clang-14]
+        include:
+          # 添加Sanitizer构建配置
+          - build-type: Debug
+            compiler: gcc-11
+            sanitizer: "address,undefined"
+          - build-type: Debug
+            compiler: clang-14
+            sanitizer: "thread"
     
     steps:
     - name: 检出代码
@@ -129,6 +137,20 @@ jobs:
         
         echo "使用编译器: $CXX_COMPILER (C++), $C_COMPILER (C)"
         
+        # 设置Sanitizer选项
+        SANITIZER_FLAGS=""
+        if [ "${{ matrix.sanitizer }}" != "" ]; then
+          echo "=== 启用Sanitizer: ${{ matrix.sanitizer }} ==="
+          case "${{ matrix.sanitizer }}" in
+            "address,undefined")
+              SANITIZER_FLAGS="-DCMAKE_CXX_FLAGS_DEBUG='-g -O1 -fsanitize=address,undefined -fno-omit-frame-pointer' -DCMAKE_C_FLAGS_DEBUG='-g -O1 -fsanitize=address,undefined -fno-omit-frame-pointer'"
+              ;;
+            "thread")
+              SANITIZER_FLAGS="-DCMAKE_CXX_FLAGS_DEBUG='-g -O1 -fsanitize=thread -fno-omit-frame-pointer' -DCMAKE_C_FLAGS_DEBUG='-g -O1 -fsanitize=thread -fno-omit-frame-pointer'"
+              ;;
+          esac
+        fi
+        
         cmake -G Ninja \
           -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} \
           -DCMAKE_CXX_COMPILER="$CXX_COMPILER" \
@@ -136,6 +158,7 @@ jobs:
           -DCMAKE_CXX_STANDARD=17 \
           -DCMAKE_CXX_STANDARD_REQUIRED=ON \
           -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+          $SANITIZER_FLAGS \
           .. || { echo "❌ CMake配置失败"; exit 1; }
         
         echo "=== 主项目构建阶段 ==="
@@ -173,8 +196,15 @@ jobs:
           echo "=== 运行CI基准测试 ==="
           
           # 运行CI基准测试（使用实时优先级，但有容错）
-          # 使用 || true 确保即使基准测试失败也不会导致CI步骤失败
-          sudo nice -n -20 "$benchmark_exe" --gtest_output=xml:benchmark-results.xml || {
+          # Sanitizer环境下可能会影响性能，但可以检测内存错误
+          if [ "${{ matrix.sanitizer }}" != "" ]; then
+            echo "在Sanitizer环境下运行基准测试（主要用于错误检测）"
+            # Sanitizer版本优先检测正确性而非性能
+            "$benchmark_exe" --gtest_output=xml:benchmark-results.xml
+          else
+            # 正常性能测试
+            sudo nice -n -20 "$benchmark_exe" --gtest_output=xml:benchmark-results.xml
+          fi || {
             echo "⚠️ 基准测试运行失败，但CI继续执行"
             
             # 检查是否已经生成了XML文件（即使测试失败）

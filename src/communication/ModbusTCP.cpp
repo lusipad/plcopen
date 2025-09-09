@@ -9,6 +9,7 @@
 #include <iostream>
 #include <cstring>
 #include <algorithm>
+#include <unordered_set>
 
 // Windows compatibility - define ssize_t for Windows
 #ifdef _WIN32
@@ -27,6 +28,83 @@
 
 namespace plc_runtime {
 namespace communication {
+
+// =============================================================================
+// 内部工具函数
+// =============================================================================
+
+/**
+ * @brief 检查Modbus功能码是否合法
+ * @param function_code 功能码
+ * @return true 如果功能码合法
+ */
+static bool is_valid_function_code(uint8_t function_code) {
+    // 支持的标准Modbus功能码
+    static const std::unordered_set<uint8_t> valid_codes = {
+        1,  // Read Coils
+        2,  // Read Discrete Inputs
+        3,  // Read Holding Registers
+        4,  // Read Input Registers
+        5,  // Write Single Coil
+        6,  // Write Single Register
+        15, // Write Multiple Coils (0x0F)
+        16, // Write Multiple Registers (0x10)
+        // 可扩展支持其他功能码如 20-24 (Read/Write File Record)
+    };
+    
+    // 检查是否为异常响应码（功能码 + 0x80）
+    if (function_code >= 0x80) {
+        uint8_t original_code = function_code & 0x7F;
+        return valid_codes.count(original_code) > 0;
+    }
+    
+    return valid_codes.count(function_code) > 0;
+}
+
+/**
+ * @brief 检查异常码是否合法
+ * @param exception_code 异常码
+ * @return true 如果异常码合法
+ */
+static bool is_valid_exception_code(uint8_t exception_code) {
+    // 标准Modbus异常码
+    return exception_code >= 1 && exception_code <= 11; // 01-0B
+}
+
+/**
+ * @brief 健壮的字节接收函数，处理粘包问题
+ * @param socket_fd 套接字描述符
+ * @param buffer 接收缓冲区
+ * @param expected_size 期望接收的字节数
+ * @param timeout_ms 超时时间（毫秒）
+ * @return true 如果成功接收所有字节
+ */
+static bool receive_exact_bytes(int socket_fd, uint8_t* buffer, size_t expected_size, int timeout_ms = 5000) {
+    size_t total_received = 0;
+    auto start_time = std::chrono::steady_clock::now();
+    
+    while (total_received < expected_size) {
+        // 检查超时
+        auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::steady_clock::now() - start_time).count();
+        if (elapsed > timeout_ms) {
+            return false;
+        }
+        
+        ssize_t received = recv(socket_fd, 
+                               reinterpret_cast<char*>(buffer + total_received), 
+                               expected_size - total_received, 0);
+        
+        if (received <= 0) {
+            // 连接关闭或错误
+            return false;
+        }
+        
+        total_received += received;
+    }
+    
+    return true;
+}
 
 // =============================================================================
 // DefaultModbusDataMap Implementation
@@ -615,7 +693,14 @@ std::vector<uint8_t> ModbusTcpClient::serialize_adu(const ModbusTcpADU& adu) {
 }
 
 bool ModbusTcpClient::deserialize_adu(const std::vector<uint8_t>& data, ModbusTcpADU& adu) {
-    if (data.size() < 8) { // 至少需要MBAP头部(7) + 功能码(1)
+    // 最小长度检查：MBAP头部(7) + 功能码(1)
+    if (data.size() < 8) {
+        return false;
+    }
+    
+    // 最大PDU限制，防止OOM/DoS攻击
+    static constexpr size_t MAX_PDU_SIZE = 253; // Modbus标准最大PDU尺寸
+    if (data.size() > MAX_PDU_SIZE + 7) { // MBAP(7) + PDU
         return false;
     }
     
@@ -625,11 +710,40 @@ bool ModbusTcpClient::deserialize_adu(const std::vector<uint8_t>& data, ModbusTc
     adu.length = (data[4] << 8) | data[5];
     adu.unit_id = data[6];
     
+    // 严格校验MBAP头部
+    // 1. Protocol ID必须为0（Modbus协议）
+    if (adu.protocol_id != 0) {
+        return false;
+    }
+    
+    // 2. Length字段与实际PDU一致性检查
+    // Length = Unit ID(1) + PDU length
+    size_t expected_total_length = adu.length + 6; // MBAP前6字节 + Length字段指示的内容
+    if (data.size() != expected_total_length) {
+        return false;
+    }
+    
+    // 3. Length字段范围检查（Unit ID + 至少一个功能码）
+    if (adu.length < 2) {
+        return false;
+    }
+    
+    // 4. Unit ID范围检查（通常为1-247，0和255为特殊用途）
+    if (adu.unit_id == 0 || adu.unit_id > 247) {
+        // 可以选择接受或拒绝，这里采用宽松策略
+        // return false; // 严格模式下可开启
+    }
+    
     // 解析PDU
     adu.pdu.function_code = data[7];
     adu.pdu.data.clear();
     if (data.size() > 8) {
         adu.pdu.data.insert(adu.pdu.data.end(), data.begin() + 8, data.end());
+    }
+    
+    // 功能码合法性检查
+    if (!is_valid_function_code(adu.pdu.function_code)) {
+        return false;
     }
     
     return true;
@@ -915,30 +1029,30 @@ void ModbusTcpServer::handle_client(int client_socket, const std::string& client
     
     try {
         while (running_.load() && client_active) {
-            // 接收MBAP头部（7字节）
+            // 健壮的MBAP头部接收（7字节）
             std::vector<uint8_t> header_buffer(7);
-            ssize_t received = recv(client_socket, reinterpret_cast<char*>(header_buffer.data()), 7, 0);
-            
-            if (received <= 0) {
-                break; // 客户端断开连接
+            if (!receive_exact_bytes(client_socket, header_buffer.data(), 7, 5000)) {
+                break; // 客户端断开或超时
             }
             
-            if (received != 7) {
-                continue; // 不完整的头部，忽略
-            }
-            
-            // 解析长度字段
+            // 解析并验证MBAP长度字段
             uint16_t length = (header_buffer[4] << 8) | header_buffer[5];
             if (length < 2 || length > 253) {
-                continue; // 无效长度
+                // 无效长度，跳过违法数据并继续处理
+                continue;
             }
             
-            // 接收PDU数据
-            std::vector<uint8_t> pdu_buffer(length - 1);
-            received = recv(client_socket, reinterpret_cast<char*>(pdu_buffer.data()), length - 1, 0);
+            // 验证Protocol ID（必须为0）
+            uint16_t protocol_id = (header_buffer[2] << 8) | header_buffer[3];
+            if (protocol_id != 0) {
+                // 非Modbus协议，跳过
+                continue;
+            }
             
-            if (received != length - 1) {
-                continue; // 不完整的PDU
+            // 健壮的PDU数据接收
+            std::vector<uint8_t> pdu_buffer(length - 1); // length包括unit_id，所以PDU长度为length-1
+            if (!receive_exact_bytes(client_socket, pdu_buffer.data(), length - 1, 5000)) {
+                break; // PDU接收失败或超时
             }
             
             // 构建完整的请求数据

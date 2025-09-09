@@ -62,11 +62,13 @@
 git clone https://github.com/lusipad/plcopen.git
 cd plcopen
 
-# 使用Visual Studio编译器直接编译
-cl.exe /EHsc /std:c++17 /I"include" /I"src" src/demo/demo_main.cpp /Fe:plc_runtime_demo.exe
+# 使用CMake构建（推荐）
+mkdir build && cd build
+cmake -G "Visual Studio 16 2019" ..
+cmake --build . --config Release
 
-# 或使用提供的构建脚本（如果存在）
-powershell -ExecutionPolicy Bypass -File scripts\build.ps1
+# 或直接使用Visual Studio编译器（快速测试）
+cl.exe /EHsc /std:c++17 /I"include" /I"src" src/demo/demo_main.cpp /Fe:plc_runtime_demo.exe
 
 # 运行演示程序
 .\plc_runtime_demo.exe
@@ -99,11 +101,13 @@ cyclictest -t1 -p 99 -i 1000 -l 10000 -q
 git clone https://github.com/lusipad/plcopen.git
 cd plcopen
 
-# 使用GCC编译
-g++ -std=c++17 -Iinclude -Isrc -O2 src/demo/demo_main.cpp -o plc_runtime_demo
+# 使用CMake构建（推荐）
+mkdir build && cd build
+cmake -DCMAKE_BUILD_TYPE=Release ..
+cmake --build . --parallel
 
-# 或使用Makefile（如果存在）
-make
+# 或直接使用GCC（快速测试）
+g++ -std=c++17 -Iinclude -Isrc -O2 src/demo/demo_main.cpp -o plc_runtime_demo
 
 # 运行演示程序
 ./plc_runtime_demo
@@ -234,15 +238,29 @@ motion->moveAbsolute(axisId, 100.0, 50.0, 1000.0); // 位置, 速度, 加速度
 - Python缓存文件
 - 其他构建产物
 
-### 当前构建方式
+### 构建系统
 
-项目现在采用更简洁的构建方式：
-- 直接使用编译器命令行编译
-- 移除了复杂的CMake配置
-- 保持了核心源代码和头文件结构
-- 更新了.gitignore以防止未来的构建产物污染
+项目采用现代化的跨平台构建系统：
+- **主要构建工具**: CMake 3.15+ (跨平台支持)
+- **CI/CD集成**: 完整的GitHub Actions流水线
+- **多编译器支持**: GCC, Clang, MSVC
+- **Out-of-tree构建**: 支持独立的构建目录
+- **测试集成**: 单元测试、集成测试、性能基准测试
 
-详细的清理报告请参见 [CLEANUP_REPORT.md](CLEANUP_REPORT.md)。
+#### CMake构建（推荐）
+```bash
+# 创建构建目录
+mkdir build && cd build
+
+# 配置项目
+cmake -DCMAKE_BUILD_TYPE=Release ..
+
+# 构建
+cmake --build . --parallel
+
+# 运行测试
+ctest --parallel
+```
 
 ## 开发指南
 

@@ -1,8 +1,21 @@
-# PLC Runtime Core 构建说明
+#pragma once
 
-## 概述
+#include <cstddef>
+#include <memory>
+#include <vector>
+#include <unordered_map>
+#include <atomic>
+#include <chrono>
 
-本项目采用简化的构建方式，移除了复杂的 CMake 配置，直接使用编译器命令行进行编译。
+namespace plc_runtime {
+namespace memory {
+
+/**
+ * @brief 内存管理器主接口
+ * 
+ * 提供确定性的内存分配和管理功能，支持固定池分配器、
+ * 动态分配器、内存泄漏检测和预算管理。
+ */
 
 ## 系统要求
 

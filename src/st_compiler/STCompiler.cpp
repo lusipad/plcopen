@@ -21,6 +21,9 @@
 namespace plc_runtime {
 namespace st_compiler {
 
+namespace plc_runtime {
+namespace st_compiler {
+
 // =============================================================================
 // STCompiler Implementation
 // =============================================================================
