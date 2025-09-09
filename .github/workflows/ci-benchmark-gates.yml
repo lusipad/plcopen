@@ -31,24 +31,47 @@ jobs:
     - name: 设置编译环境
       run: |
         sudo apt-get update
+        
+        # 安装基础包
         sudo apt-get install -y \
           build-essential \
           cmake \
           ninja-build \
           libgtest-dev \
           googletest \
-          google-benchmark \
           libbenchmark-dev \
-          linux-tools-generic \
-          cpufrequtils \
           jq \
           python3 \
-          python3-pip || echo "⚠️ 部分包安装失败，继续执行"
+          python3-pip || echo "⚠️ 部分基础包安装失败，继续执行"
         
-        # 尝试安装额外的GTest支持
-        sudo apt-get install -y \
-          libgtest-dev \
-          googletest-tools || echo "⚠️ GTest扩展包安装失败"
+        # 尝试安装额外工具（容错）
+        sudo apt-get install -y linux-tools-generic cpufrequtils || echo "⚠️ 性能工具安装失败，跳过"
+        
+        # 安装特定版本的编译器
+        if [ "${{ matrix.compiler }}" = "gcc-11" ]; then
+          # 在Ubuntu 24.04中，通常需要universe源
+          sudo apt-get install -y gcc-11 g++-11 || echo "⚠️ GCC-11安装失败，使用默认版本"
+        elif [ "${{ matrix.compiler }}" = "clang-14" ]; then
+          sudo apt-get install -y clang-14 clang++-14 || echo "⚠️ Clang-14安装失败，使用默认版本"
+        fi
+        
+        # 验证编译器可用性
+        echo "=== 编译器版本检查 ==="
+        if [ "${{ matrix.compiler }}" = "gcc-11" ]; then
+          if command -v g++-11 &> /dev/null; then
+            g++-11 --version
+          else
+            echo "⚠️ g++-11未找到，将使用默认GCC"
+            g++ --version
+          fi
+        elif [ "${{ matrix.compiler }}" = "clang-14" ]; then
+          if command -v clang++-14 &> /dev/null; then
+            clang++-14 --version
+          else
+            echo "⚠️ clang++-14未找到，将使用默认Clang"
+            clang++ --version || echo "⚠️ 默认Clang也未找到"
+          fi
+        fi
           
     - name: 配置实时环境
       run: |
@@ -81,10 +104,34 @@ jobs:
         cd build
         
         echo "=== CMAKE配置阶段 ==="
+        
+        # 确定编译器路径（带备选方案）
+        if [ "${{ matrix.compiler }}" = "gcc-11" ]; then
+          if command -v g++-11 &> /dev/null; then
+            CXX_COMPILER="g++-11"
+            C_COMPILER="gcc-11"
+          else
+            echo "⚠️ g++-11未找到，使用默认GCC"
+            CXX_COMPILER="g++"
+            C_COMPILER="gcc"
+          fi
+        elif [ "${{ matrix.compiler }}" = "clang-14" ]; then
+          if command -v clang++-14 &> /dev/null; then
+            CXX_COMPILER="clang++-14"
+            C_COMPILER="clang-14"
+          else
+            echo "⚠️ clang++-14未找到，使用默认Clang"
+            CXX_COMPILER="clang++"
+            C_COMPILER="clang"
+          fi
+        fi
+        
+        echo "使用编译器: $CXX_COMPILER (C++), $C_COMPILER (C)"
+        
         cmake -G Ninja \
           -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} \
-          -DCMAKE_CXX_COMPILER=${{ matrix.compiler == 'gcc-11' && 'g++-11' || 'clang++-14' }} \
-          -DCMAKE_C_COMPILER=${{ matrix.compiler == 'gcc-11' && 'gcc-11' || 'clang-14' }} \
+          -DCMAKE_CXX_COMPILER="$CXX_COMPILER" \
+          -DCMAKE_C_COMPILER="$C_COMPILER" \
           -DCMAKE_CXX_STANDARD=17 \
           -DCMAKE_CXX_STANDARD_REQUIRED=ON \
           -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
