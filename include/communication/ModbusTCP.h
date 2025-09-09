@@ -20,6 +20,7 @@
 #include <unordered_map>
 #include <atomic>
 #include <mutex>
+#include <shared_mutex>
 #include <thread>
 
 namespace plc_runtime {

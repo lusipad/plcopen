@@ -14,7 +14,7 @@
 #include <optional>
 #include <functional>
 #include <chrono>
-#include "ModbusTCP.h"
+#include "communication/ModbusTCP.h"
 
 namespace plc_runtime {
 namespace communication {

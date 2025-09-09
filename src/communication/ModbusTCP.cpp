@@ -10,6 +10,7 @@
 #include <cstring>
 #include <algorithm>
 #include <unordered_set>
+#include <shared_mutex>
 
 // Windows compatibility - define ssize_t for Windows
 #ifdef _WIN32
@@ -210,13 +211,13 @@ DefaultModbusDataMap::DefaultModbusDataMap(const Config& config)
 }
 
 bool DefaultModbusDataMap::read_coil(uint16_t address) {
-    std::shared_lock<std::shared_mutex> lock(data_mutex_);
+    std::lock_guard<std::mutex> lock(data_mutex_);
     if (address >= coils_.size()) return false;
     return coils_[address];
 }
 
 bool DefaultModbusDataMap::write_coil(uint16_t address, bool value) {
-    std::unique_lock<std::shared_mutex> lock(data_mutex_);
+    std::lock_guard<std::mutex> lock(data_mutex_);
     if (address >= coils_.size()) return false;
     coils_[address] = value;
     return true;
