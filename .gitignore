@@ -42,6 +42,9 @@
 *.userosscache
 *.sln.docstates
 
+# VSCode files
+.vscode/
+
 # CMake
 CMakeCache.txt
 CMakeFiles/

@@ -636,8 +636,11 @@ NetworkErrorCode ManagedSocket::map_system_error(int error_code) {
         case ETIMEDOUT: return NetworkErrorCode::TIMEOUT;
         case EINTR: return NetworkErrorCode::INTERRUPTED;
         case EINVAL: return NetworkErrorCode::INVALID_PARAM;
-        case EAGAIN: return NetworkErrorCode::TIMEOUT;
-        case EWOULDBLOCK: return NetworkErrorCode::TIMEOUT;
+        case EAGAIN:
+#if EAGAIN != EWOULDBLOCK
+        case EWOULDBLOCK:
+#endif
+            return NetworkErrorCode::TIMEOUT;
         default: return NetworkErrorCode::UNKNOWN_ERROR;
     }
 #endif

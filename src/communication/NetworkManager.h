@@ -21,6 +21,8 @@
 #include <atomic>
 #include <mutex>
 #include <condition_variable>
+#include <thread>
+#include <cstring>
 
 #ifdef _WIN32
     #include <winsock2.h>
@@ -30,7 +32,9 @@
 #else
     #include <sys/socket.h>
     #include <netinet/in.h>
+    #include <netinet/tcp.h>
     #include <arpa/inet.h>
+    #include <netdb.h>
     #include <unistd.h>
     #include <signal.h>
     #include <sys/select.h>
