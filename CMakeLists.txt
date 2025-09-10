@@ -159,10 +159,10 @@ add_executable(test_concurrent_modbus tests/unit/test_concurrent_modbus_data_map
 target_include_directories(test_concurrent_modbus PRIVATE ${CMAKE_SOURCE_DIR}/include)
 target_link_libraries(test_concurrent_modbus communication)
 
-# 流式解析器测试
-add_executable(test_streaming_parser tests/unit/test_streaming_modbus_parser.cpp)
-target_include_directories(test_streaming_parser PRIVATE ${CMAKE_SOURCE_DIR}/include)
-target_link_libraries(test_streaming_parser communication)
+# 暂时禁用流式解析器测试（依赖被移除的StreamingModbusParser.cpp）
+# add_executable(test_streaming_parser tests/unit/test_streaming_modbus_parser.cpp)
+# target_include_directories(test_streaming_parser PRIVATE ${CMAKE_SOURCE_DIR}/include)
+# target_link_libraries(test_streaming_parser communication)
 
 # Modbus MBAP边界测试
 add_executable(test_modbus_mbap_boundary tests/unit/test_modbus_mbap_boundary.cpp)
