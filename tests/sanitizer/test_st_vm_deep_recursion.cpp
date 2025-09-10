@@ -135,7 +135,7 @@ TEST_F(STVMDeepRecursionTest, SimpleRecursiveFunctionStackOverflow) {
     // 执行程序并期望栈溢出检测
     auto start_time = std::chrono::high_resolution_clock::now();
     
-    VirtualMachine::ExecutionResult exec_result = vm_->execute();
+    STExecutor::ExecutionResult exec_result = vm_->execute();
     
     auto end_time = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
@@ -214,7 +214,7 @@ TEST_F(STVMDeepRecursionTest, NestedLoopRecursionStressTest) {
     ASSERT_TRUE(compile_and_load(st_code));
     
     auto start_time = std::chrono::high_resolution_clock::now();
-    VirtualMachine::ExecutionResult exec_result = vm_->execute();
+    STExecutor::ExecutionResult exec_result = vm_->execute();
     auto end_time = std::chrono::high_resolution_clock::now();
     
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
@@ -301,7 +301,7 @@ TEST_F(STVMDeepRecursionTest, MemoryBoundsCheckingWithRecursion) {
     ASSERT_TRUE(compile_and_load(st_code));
     
     auto start_time = std::chrono::high_resolution_clock::now();
-    VirtualMachine::ExecutionResult exec_result = vm_->execute();
+    STExecutor::ExecutionResult exec_result = vm_->execute();
     auto end_time = std::chrono::high_resolution_clock::now();
     
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
@@ -363,7 +363,7 @@ TEST_F(STVMDeepRecursionTest, ConcurrentRecursionThreadSafety) {
     // 创建多个线程并发执行相同的程序
     const int num_threads = 4;
     std::vector<std::thread> threads;
-    std::vector<VirtualMachine::ExecutionResult> results(num_threads);
+    std::vector<STExecutor::ExecutionResult> results(num_threads);
     std::atomic<int> completed_threads{0};
     
     auto start_time = std::chrono::high_resolution_clock::now();
@@ -512,7 +512,7 @@ TEST_F(STVMDeepRecursionTest, UninitializedMemoryAccessDetection) {
     ASSERT_TRUE(compile_and_load(st_code));
     
     auto start_time = std::chrono::high_resolution_clock::now();
-    VirtualMachine::ExecutionResult exec_result = vm_->execute();
+    STExecutor::ExecutionResult exec_result = vm_->execute();
     auto end_time = std::chrono::high_resolution_clock::now();
     
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
@@ -575,7 +575,7 @@ TEST_F(STVMDeepRecursionTest, StackOverflowRecoveryMechanism) {
     ASSERT_TRUE(compile_and_load(st_code));
     
     auto start_time = std::chrono::high_resolution_clock::now();
-    VirtualMachine::ExecutionResult exec_result = vm_->execute();
+    STExecutor::ExecutionResult exec_result = vm_->execute();
     auto end_time = std::chrono::high_resolution_clock::now();
     
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
@@ -706,7 +706,7 @@ TEST_F(STVMDeepRecursionTest, ComprehensiveSanitizerStressTest) {
     size_t initial_memory = vm_->get_memory_usage();
     
     auto start_time = std::chrono::high_resolution_clock::now();
-    VirtualMachine::ExecutionResult exec_result = vm_->execute();
+    STExecutor::ExecutionResult exec_result = vm_->execute();
     auto end_time = std::chrono::high_resolution_clock::now();
     
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);

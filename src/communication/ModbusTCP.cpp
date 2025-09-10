@@ -67,7 +67,7 @@ static bool is_valid_function_code(uint8_t function_code) {
  * @param exception_code 异常码
  * @return true 如果异常码合法
  */
-static bool is_valid_exception_code(uint8_t exception_code) {
+[[maybe_unused]] static bool is_valid_exception_code(uint8_t exception_code) {
     // 标准Modbus异常码
     return exception_code >= 1 && exception_code <= 11; // 01-0B
 }

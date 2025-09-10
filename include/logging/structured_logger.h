@@ -249,7 +249,7 @@ public:
     /**
      * @brief 构造函数
      */
-    explicit StructuredLogger(const Config& config = Config{});
+    explicit StructuredLogger(const Config& config = {});
     
     /**
      * @brief 析构函数

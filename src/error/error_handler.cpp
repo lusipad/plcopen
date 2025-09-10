@@ -192,17 +192,23 @@ void ErrorHandler::recordErrorHistory(const ErrorContext& context) {
 
 void ErrorHandler::notifyListeners(const ErrorContext& context) {
     // 简化实现 - 暂时不通知监听器
+    (void)context; // 消除未使用参数警告
 }
 
 void ErrorHandler::notifyRecoveryListeners(const ErrorContext& context, 
                                          RecoveryAction action, 
                                          bool success) {
     // 简化实现 - 暂时不通知监听器
+    (void)context; // 消除未使用参数警告
+    (void)action;
+    (void)success;
 }
 
 bool ErrorHandler::executeRecovery(const ErrorContext& context, 
                                  const RecoveryStrategy& strategy) {
     // 简化实现 - 总是返回成功
+    (void)context; // 消除未使用参数警告
+    (void)strategy;
     return true;
 }
 
