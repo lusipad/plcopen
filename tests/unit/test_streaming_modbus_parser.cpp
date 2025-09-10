@@ -11,7 +11,7 @@
  * - 边界条件：最大包长、空数据、无效长度
  */
 
-#include "../TestFramework.h"
+#include "test/TestFramework.h"
 #include "communication/StreamingModbusParser.h"
 #include <random>
 #include <vector>

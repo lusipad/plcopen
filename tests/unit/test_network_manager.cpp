@@ -7,7 +7,7 @@
  * 测试跨平台网络资源管理、错误处理和RAII套接字管理
  */
 
-#include "../TestFramework.h"
+#include "test/TestFramework.h"
 #include "communication/NetworkManager.h"
 #include <thread>
 #include <chrono>

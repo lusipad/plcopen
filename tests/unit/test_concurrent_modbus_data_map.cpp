@@ -11,7 +11,7 @@
  * - 性能验证：shared_mutex优化效果
  */
 
-#include "../TestFramework.h"
+#include "test/TestFramework.h"
 #include "communication/ConcurrentModbusDataMap.h"
 #include <thread>
 #include <vector>
