@@ -28,19 +28,55 @@ if(benchmark_FOUND)
     target_compile_definitions(ci-benchmark-gates PRIVATE HAVE_BENCHMARK)
 endif()
 
-# 设置编译选项
-if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-    target_compile_options(ci-benchmark-gates PRIVATE
-        -O3
-        -march=native
-        -mtune=native
-        -DNDEBUG
+# 设置编译选项 - 彻底解决MSVC标志冲突
+if(MSVC)
+    # 彻底清除所有继承的编译标志，重新设置
+    set_target_properties(ci-benchmark-gates PROPERTIES
+        COMPILE_FLAGS ""
+        COMPILE_OPTIONS ""
     )
-elseif(MSVC)
-    target_compile_options(ci-benchmark-gates PRIVATE
-        /O2
-        /DNDEBUG
-    )
+    
+    # 明确禁用运行时检查并设置适当的标志
+    if(CMAKE_BUILD_TYPE STREQUAL "Release")
+        target_compile_options(ci-benchmark-gates PRIVATE
+            /O2          # 优化
+            /DNDEBUG     # 禁用调试宏
+            /GS-         # 禁用安全检查（避免与优化冲突）
+        )
+    else()
+        target_compile_options(ci-benchmark-gates PRIVATE
+            /Od          # 禁用优化
+            /Zi          # 调试信息
+            /RTC1        # Debug模式才启用运行时检查
+        )
+    endif()
+    
+    # 设置运行时库类型避免冲突
+    if(CMAKE_BUILD_TYPE STREQUAL "Release")
+        set_target_properties(ci-benchmark-gates PROPERTIES
+            MSVC_RUNTIME_LIBRARY "MultiThreadedDLL"
+        )
+    else()
+        set_target_properties(ci-benchmark-gates PROPERTIES
+            MSVC_RUNTIME_LIBRARY "MultiThreadedDebugDLL"
+        )
+    endif()
+    
+elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    # GCC/Clang处理
+    if(CMAKE_BUILD_TYPE STREQUAL "Release")
+        target_compile_options(ci-benchmark-gates PRIVATE
+            -O3
+            -march=native
+            -mtune=native
+            -DNDEBUG
+        )
+    else()
+        target_compile_options(ci-benchmark-gates PRIVATE
+            -g
+            -O1
+        )
+    endif()
 endif()
 
 # 添加测试
