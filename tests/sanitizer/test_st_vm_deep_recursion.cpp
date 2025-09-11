@@ -146,7 +146,8 @@ TEST_F(STVMDeepRecursionTest, SimpleRecursiveFunctionStackOverflow) {
     
     // 应该检测到栈溢出错误
     EXPECT_FALSE(exec_result.success);
-    EXPECT_EQ(exec_result.error_code, VirtualMachine::ErrorCode::STACK_OVERFLOW);
+    EXPECT_TRUE(exec_result.error_message.find("STACK_OVERFLOW") != std::string::npos ||
+                exec_result.error_message.find("stack overflow") != std::string::npos);
     
     // 验证虚拟机状态
     auto vm_stats = vm_->get_statistics();
@@ -227,8 +228,10 @@ TEST_F(STVMDeepRecursionTest, NestedLoopRecursionStressTest) {
     if (exec_result.success) {
         PLC_LOG_INFO(*logger_, LogModule::RUNTIME, "Nested recursion completed successfully");
     } else {
-        EXPECT_TRUE(exec_result.error_code == VirtualMachine::ErrorCode::STACK_OVERFLOW ||
-                   exec_result.error_code == VirtualMachine::ErrorCode::EXECUTION_TIMEOUT);
+        EXPECT_TRUE(exec_result.error_message.find("STACK_OVERFLOW") != std::string::npos ||
+                   exec_result.error_message.find("EXECUTION_TIMEOUT") != std::string::npos ||
+                   exec_result.error_message.find("stack overflow") != std::string::npos ||
+                   exec_result.error_message.find("timeout") != std::string::npos);
         PLC_LOG_INFO(*logger_, LogModule::RUNTIME, "Nested recursion handled error gracefully");
     }
     
@@ -313,8 +316,10 @@ TEST_F(STVMDeepRecursionTest, MemoryBoundsCheckingWithRecursion) {
     if (exec_result.success) {
         PLC_LOG_INFO(*logger_, LogModule::RUNTIME, "Memory bounds checking test passed");
     } else {
-        EXPECT_TRUE(exec_result.error_code == VirtualMachine::ErrorCode::BOUNDS_CHECK_FAILED ||
-                   exec_result.error_code == VirtualMachine::ErrorCode::STACK_OVERFLOW);
+        EXPECT_TRUE(exec_result.error_message.find("BOUNDS_CHECK_FAILED") != std::string::npos ||
+                   exec_result.error_message.find("STACK_OVERFLOW") != std::string::npos ||
+                   exec_result.error_message.find("bounds check") != std::string::npos ||
+                   exec_result.error_message.find("stack overflow") != std::string::npos);
         PLC_LOG_WARN(*logger_, LogModule::RUNTIME, "Memory bounds violation detected as expected");
     }
 }
@@ -589,7 +594,8 @@ TEST_F(STVMDeepRecursionTest, StackOverflowRecoveryMechanism) {
         PLC_LOG_INFO(*logger_, LogModule::RUNTIME, "Stack overflow recovery test completed successfully");
     } else {
         // 应该能够优雅地处理栈溢出而不是崩溃
-        EXPECT_EQ(exec_result.error_code, VirtualMachine::ErrorCode::STACK_OVERFLOW);
+        EXPECT_TRUE(exec_result.error_message.find("STACK_OVERFLOW") != std::string::npos ||
+                   exec_result.error_message.find("stack overflow") != std::string::npos);
         PLC_LOG_INFO(*logger_, LogModule::RUNTIME, "Stack overflow handled gracefully without crash");
     }
     

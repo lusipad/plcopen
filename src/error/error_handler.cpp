@@ -218,37 +218,51 @@ void ErrorHandler::registerDefaultRecoveryStrategies() {
 
 bool ErrorHandler::executeRetryRecovery(const ErrorContext& context, 
                                       const RecoveryStrategy& strategy) {
+    (void)context; // 消除未使用参数警告
+    (void)strategy;
     return true;
 }
 
 bool ErrorHandler::executeFallbackRecovery(const ErrorContext& context, 
                                          const RecoveryStrategy& strategy) {
+    (void)context; // 消除未使用参数警告
+    (void)strategy;
     return true;
 }
 
 bool ErrorHandler::executeRestartRecovery(const ErrorContext& context, 
                                         const RecoveryStrategy& strategy) {
+    (void)context; // 消除未使用参数警告
+    (void)strategy;
     return true;
 }
 
 bool ErrorHandler::executeShutdownRecovery(const ErrorContext& context, 
                                          const RecoveryStrategy& strategy) {
+    (void)context; // 消除未使用参数警告
+    (void)strategy;
     return true;
 }
 
 bool ErrorHandler::executeEmergencyStopRecovery(const ErrorContext& context, 
                                                const RecoveryStrategy& strategy) {
+    (void)context; // 消除未使用参数警告
+    (void)strategy;
     return true;
 }
 
 // DefaultErrorListener 简化实现
 void DefaultErrorListener::onError(const ErrorContext& context) {
+    (void)context; // 消除未使用参数警告
     // 简化实现 - 暂时不输出
 }
 
 void DefaultErrorListener::onRecovery(const ErrorContext& context, 
                                     RecoveryAction action, 
                                     bool success) {
+    (void)context; // 消除未使用参数警告
+    (void)action;
+    (void)success;
     // 简化实现 - 暂时不输出
 }
 

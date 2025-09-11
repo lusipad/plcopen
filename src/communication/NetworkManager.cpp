@@ -828,6 +828,7 @@ BOOL WINAPI SignalManager::console_ctrl_handler(DWORD ctrl_type) {
 }
 #else
 void SignalManager::signal_handler(int signal) {
+    (void)signal; // 消除未使用参数警告
     SignalManager& manager = getInstance();
     manager.request_shutdown();
 }

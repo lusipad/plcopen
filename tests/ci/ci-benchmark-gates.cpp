@@ -198,8 +198,8 @@ private:
 
 // 模拟调度器抖动测试
 TEST_F(CIBenchmarkGates, SchedulerJitterBenchmark) {
-    std::atomic<bool> running{true};
-    std::atomic<uint64_t> cycleCount{0};
+    [[maybe_unused]] std::atomic<bool> running{true};
+    [[maybe_unused]] std::atomic<uint64_t> cycleCount{0};
     std::vector<double> cycleTimes;
     
     auto schedulerSimulation = [&]() {
@@ -213,6 +213,7 @@ TEST_F(CIBenchmarkGates, SchedulerJitterBenchmark) {
         for (int i = 0; i < 1000; i++) {
             dummy += i;
         }
+        (void)dummy; // 消除未使用变量警告
         
         auto end = std::chrono::high_resolution_clock::now();
         double cycleTime = std::chrono::duration_cast<std::chrono::nanoseconds>(
