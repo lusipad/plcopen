@@ -282,11 +282,12 @@ jobs:
         
         # 解析覆盖率
         if [ -f "coverage/summary.txt" ]; then
-          # 尝试从lcov摘要中提取覆盖率
-          COVERAGE_LINE=$(grep -E "lines.*:" coverage/summary.txt | head -1)
+          # 尝试从lcov摘要中提取覆盖率（支持多种格式）
+          COVERAGE_LINE=$(grep -E "(lines.*:|Coverage:)" coverage/summary.txt | head -1)
           echo "覆盖率信息: $COVERAGE_LINE"
           
-          if [[ $COVERAGE_LINE =~ ([0-9]+\.[0-9]+)% ]]; then
+          # 支持多种覆盖率格式的正则表达式
+          if [[ $COVERAGE_LINE =~ ([0-9]+\.?[0-9]*)% ]] || [[ $COVERAGE_LINE =~ Coverage:\ ([0-9]+\.?[0-9]*)% ]]; then
             COVERAGE_PERCENT=${BASH_REMATCH[1]}
             echo "检测到覆盖率: ${COVERAGE_PERCENT}%"
             
