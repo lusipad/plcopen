@@ -162,10 +162,10 @@ jobs:
           echo "=== 启用Sanitizer: ${{ matrix.sanitizer }} ==="
           case "${{ matrix.sanitizer }}" in
             "address,undefined")
-              SANITIZER_FLAGS="-DCMAKE_CXX_FLAGS_DEBUG='-g -O1 -fsanitize=address,undefined -fno-omit-frame-pointer' -DCMAKE_C_FLAGS_DEBUG='-g -O1 -fsanitize=address,undefined -fno-omit-frame-pointer'"
+              SANITIZER_FLAGS="-DCMAKE_CXX_FLAGS_DEBUG=\"-g -O1 -fsanitize=address,undefined -fno-omit-frame-pointer\" -DCMAKE_C_FLAGS_DEBUG=\"-g -O1 -fsanitize=address,undefined -fno-omit-frame-pointer\""
               ;;
             "thread")
-              SANITIZER_FLAGS="-DCMAKE_CXX_FLAGS_DEBUG='-g -O1 -fsanitize=thread -fno-omit-frame-pointer' -DCMAKE_C_FLAGS_DEBUG='-g -O1 -fsanitize=thread -fno-omit-frame-pointer'"
+              SANITIZER_FLAGS="-DCMAKE_CXX_FLAGS_DEBUG=\"-g -O1 -fsanitize=thread -fno-omit-frame-pointer\" -DCMAKE_C_FLAGS_DEBUG=\"-g -O1 -fsanitize=thread -fno-omit-frame-pointer\""
               ;;
           esac
         fi

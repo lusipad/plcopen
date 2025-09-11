@@ -384,6 +384,7 @@ namespace st_compiler {
         STCompiler(const CompileOptions& options) : options_(options) {}
         
         std::unique_ptr<CompiledProgram> compile(const std::string& source, const std::string& name) {
+            (void)name; // 消除未使用参数警告
             auto program = std::make_unique<CompiledProgram>();
             
             // Simple mock compilation
@@ -680,7 +681,7 @@ void run_function_block_tests() {
             ctu_counter->inputs.CU = false;
             ctu_counter->execute();
             
-            ASSERT_EQ(i + 1, ctu_counter->outputs.CV);
+            ASSERT_EQ(static_cast<uint32_t>(i + 1), ctu_counter->outputs.CV);
             if (i + 1 >= 3) {
                 ASSERT_TRUE(ctu_counter->outputs.Q);
             } else {

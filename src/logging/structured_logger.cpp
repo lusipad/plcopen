@@ -194,8 +194,8 @@ void FileSink::write(const LogEntry& entry) {
     
     // 更新文件大小
     std::streampos pos = file_.tellp();
-    if (pos > current_size_) {
-        current_size_ = pos;
+    if (pos >= 0 && static_cast<size_t>(pos) > current_size_) {
+        current_size_ = static_cast<size_t>(pos);
     }
 }
 
@@ -355,6 +355,7 @@ void RateLimiter::cleanup_old_windows() {
 // =============================================================================
 
 bool Sampler::should_sample(LogLevel level, LogModule module) {
+    (void)module; // 消除未使用参数警告
     reset_minute_counter_if_needed();
     
     // 如果已达到每分钟最大采样数，拒绝采样
