@@ -109,11 +109,25 @@ add_library(io_system STATIC ${IO_SYSTEM_SOURCES})        # IO系统已修复
 add_library(communication STATIC ${COMMUNICATION_SOURCES}) # 通信系统稳定
 # add_library(scheduler STATIC ${SCHEDULER_SOURCES})      # 调度器需要原子操作重构
 
-# Windows平台需要链接网络和系统库
+# 平台特定系统库链接
 if(WIN32)
+    # Windows平台需要链接网络和系统库
     target_link_libraries(communication ws2_32 iphlpapi)
     # 为了支持NetworkManager的Windows特定功能
     target_compile_definitions(communication PRIVATE WIN32_LEAN_AND_MEAN)
+elseif(UNIX)
+    # Linux/Unix平台需要链接系统库
+    target_link_libraries(communication pthread)
+    # 如果需要实时功能，添加rt库
+    find_library(RT_LIB rt)
+    if(RT_LIB)
+        target_link_libraries(communication ${RT_LIB})
+    endif()
+    # 确保线程安全编译
+    set_target_properties(communication PROPERTIES
+        COMPILE_OPTIONS -pthread
+        LINK_OPTIONS -pthread
+    )
 endif()
 
 # 创建模拟的内存管理和无锁数据结构库（用于测试）
