@@ -14,17 +14,49 @@ if(NOT GTest_FOUND AND NOT GTEST_FOUND AND NOT TARGET GTest::gtest)
         pkg_check_modules(GTEST_MAIN gtest_main)
     endif()
     
-    # 如果还是没找到，尝试系统路径
+    # 如果还是没找到，尝试系统路径（包含Ubuntu 22.04+路径）
     if(NOT GTEST_FOUND)
         find_path(GTEST_INCLUDE_DIR gtest/gtest.h
-            PATHS /usr/include /usr/local/include)
-        find_library(GTEST_LIBRARY gtest
-            PATHS /usr/lib /usr/local/lib /usr/lib/x86_64-linux-gnu)
-        find_library(GTEST_MAIN_LIBRARY gtest_main
-            PATHS /usr/lib /usr/local/lib /usr/lib/x86_64-linux-gnu)
+            PATHS 
+                /usr/include 
+                /usr/local/include
+                /usr/src/gtest/googletest/include
+                /usr/src/googletest/googletest/include)
+        find_library(GTEST_LIBRARY 
+            NAMES gtest libgtest gtest.a libgtest.a
+            PATHS 
+                /usr/lib 
+                /usr/local/lib 
+                /usr/lib/x86_64-linux-gnu
+                /usr/src/gtest/build/lib
+                /usr/src/googletest/build/lib)
+        find_library(GTEST_MAIN_LIBRARY 
+            NAMES gtest_main libgtest_main gtest_main.a libgtest_main.a
+            PATHS 
+                /usr/lib 
+                /usr/local/lib 
+                /usr/lib/x86_64-linux-gnu
+                /usr/src/gtest/build/lib
+                /usr/src/googletest/build/lib)
             
         if(GTEST_INCLUDE_DIR AND GTEST_LIBRARY AND GTEST_MAIN_LIBRARY)
             set(GTEST_FOUND TRUE)
+            message(STATUS "Found GTest manually: ${GTEST_LIBRARY}")
+        endif()
+    endif()
+    
+    # 最后的尝试：检查Ubuntu gtest源码是否可用
+    if(NOT GTEST_FOUND)
+        if(EXISTS "/usr/src/gtest/CMakeLists.txt" OR EXISTS "/usr/src/googletest/CMakeLists.txt")
+            message(STATUS "Found GTest source, attempting to use source build")
+            set(GTEST_INCLUDE_DIR "/usr/include")
+            # 假设我们的工作流已经构建了静态库
+            set(GTEST_LIBRARY "/usr/lib/x86_64-linux-gnu/libgtest.a")
+            set(GTEST_MAIN_LIBRARY "/usr/lib/x86_64-linux-gnu/libgtest_main.a")
+            if(EXISTS "${GTEST_LIBRARY}" AND EXISTS "${GTEST_MAIN_LIBRARY}")
+                set(GTEST_FOUND TRUE)
+                message(STATUS "Using pre-built GTest libraries from workflow")
+            endif()
         endif()
     endif()
 endif()
@@ -60,7 +92,28 @@ elseif(GTEST_FOUND AND GTEST_LIBRARY AND GTEST_MAIN_LIBRARY)
         Threads::Threads
     )
 else()
-    message(FATAL_ERROR "GTest not found! Please install libgtest-dev package.")
+    message(STATUS "GTest detection summary:")
+    message(STATUS "  find_package(GTest): ${GTest_FOUND}")
+    message(STATUS "  GTEST_FOUND: ${GTEST_FOUND}")
+    message(STATUS "  TARGET GTest::gtest: ${TARGET GTest::gtest}")
+    message(STATUS "  pkg-config gtest: ${GTEST_PC_FOUND}")
+    message(STATUS "  GTEST_INCLUDE_DIR: ${GTEST_INCLUDE_DIR}")
+    message(STATUS "  GTEST_LIBRARY: ${GTEST_LIBRARY}")
+    message(STATUS "  GTEST_MAIN_LIBRARY: ${GTEST_MAIN_LIBRARY}")
+    
+    # 检查是否在CI环境中
+    if(DEFINED ENV{CI} OR DEFINED ENV{GITHUB_ACTIONS})
+        message(FATAL_ERROR "CI Environment: GTest not found despite workflow dependencies! 
+This indicates a GTest detection or installation issue.
+Expected: libgtest-dev, libgmock-dev, pkg-config packages installed
+Workflow should have built GTest from source as fallback.
+Check workflow GTest installation step and library paths.")
+    else()
+        message(WARNING "GTest not found! Skipping CI benchmark tests.
+For local builds: sudo apt-get install libgtest-dev libgmock-dev
+The tests directory will be skipped.")
+        return()
+    endif()
 endif()
 
 # Linux特定的库
