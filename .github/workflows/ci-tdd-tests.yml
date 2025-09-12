@@ -43,7 +43,20 @@ jobs:
           build-essential \
           cmake \
           ninja-build \
-          g++-11
+          g++-11 \
+          libgtest-dev \
+          libgmock-dev \
+          pkg-config
+        
+        # 在Ubuntu 22.04+中，可能需要手动构建GTest
+        if [ ! -f "/usr/lib/x86_64-linux-gnu/libgtest.a" ] && [ ! -f "/usr/lib/libgtest.a" ]; then
+          echo "Building GTest from source..."
+          cd /usr/src/gtest
+          sudo cmake -B build -DCMAKE_BUILD_TYPE=Release
+          sudo cmake --build build
+          sudo cp build/lib/*.a /usr/lib/x86_64-linux-gnu/ || sudo cp build/*.a /usr/lib/
+          cd $GITHUB_WORKSPACE
+        fi
         sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-11 100
         sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-11 100
           
