@@ -164,10 +164,19 @@ add_executable(modbus_simple_test tests/integration/test_modbus_simple.cpp)
 # target_include_directories(test_streaming_parser PRIVATE ${CMAKE_SOURCE_DIR}/include)
 # target_link_libraries(test_streaming_parser communication)
 
-# Modbus MBAP边界测试 - 暂时禁用直到修复GTest依赖问题
-# add_executable(test_modbus_mbap_boundary tests/unit/test_modbus_mbap_boundary.cpp)
-# target_include_directories(test_modbus_mbap_boundary PRIVATE ${CMAKE_SOURCE_DIR}/include)
-# target_link_libraries(test_modbus_mbap_boundary communication)
+# Modbus MBAP边界测试 - 已修复GTest依赖问题，重新启用
+add_executable(test_modbus_mbap_boundary tests/unit/test_modbus_mbap_boundary.cpp)
+target_include_directories(test_modbus_mbap_boundary PRIVATE ${CMAKE_SOURCE_DIR}/include)
+target_link_libraries(test_modbus_mbap_boundary communication)
+
+# 添加GTest支持
+if(GTest_FOUND OR GTEST_FOUND OR TARGET gtest OR TARGET GTest::gtest)
+    if(TARGET GTest::gtest)
+        target_link_libraries(test_modbus_mbap_boundary GTest::gtest GTest::gtest_main)
+    else()
+        target_link_libraries(test_modbus_mbap_boundary gtest gtest_main)
+    endif()
+endif()
 
 # 暂时禁用示例程序以修复CI构建
 # TODO: 修复编译错误后重新启用
