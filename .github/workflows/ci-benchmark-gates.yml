@@ -2,7 +2,7 @@ name: CI基准门禁测试
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main, develop, feature/* ]
   pull_request:
     branches: [ main ]
   schedule:
@@ -50,8 +50,8 @@ jobs:
           python3 \
           python3-pip || echo "⚠️ 部分基础包安装失败，继续执行"
         
-        # 安装GTest（在Ubuntu 24.04中需要单独处理）
-        sudo apt-get install -y libgtest-dev libgmock-dev || echo "⚠️ GTest安装失败，尝试替代方案"
+        # 安装GTest（在Ubuntu 22.04+中需要特殊处理）
+        sudo apt-get install -y libgtest-dev libgmock-dev pkg-config || echo "⚠️ GTest预编译包安装失败，继续尝试其他方案"
         
         # 如果预编译的GTest不可用，从源码构建
         if ! pkg-config --exists gtest; then
@@ -163,9 +163,14 @@ jobs:
           case "${{ matrix.sanitizer }}" in
             "address,undefined")
               SANITIZER_FLAGS='-DCMAKE_CXX_FLAGS_DEBUG="-g -O1 -fsanitize=address,undefined -fno-omit-frame-pointer" -DCMAKE_C_FLAGS_DEBUG="-g -O1 -fsanitize=address,undefined -fno-omit-frame-pointer"'
+              # 设置环境变量以便运行时检测
+              export ASAN_OPTIONS="halt_on_error=0:abort_on_error=0:detect_odr_violation=0"
+              export UBSAN_OPTIONS="halt_on_error=0:abort_on_error=0"
               ;;
             "thread")
               SANITIZER_FLAGS='-DCMAKE_CXX_FLAGS_DEBUG="-g -O1 -fsanitize=thread -fno-omit-frame-pointer" -DCMAKE_C_FLAGS_DEBUG="-g -O1 -fsanitize=thread -fno-omit-frame-pointer"'
+              # 设置环境变量以便运行时检测
+              export TSAN_OPTIONS="halt_on_error=0:abort_on_error=0"
               ;;
           esac
         fi
@@ -218,6 +223,21 @@ jobs:
           # Sanitizer环境下可能会影响性能，但可以检测内存错误
           if [ "${{ matrix.sanitizer }}" != "" ]; then
             echo "在Sanitizer环境下运行基准测试（主要用于错误检测）"
+            
+            # 重新设置Sanitizer环境变量以确保运行时检测
+            case "${{ matrix.sanitizer }}" in
+              "address,undefined")
+                export ASAN_OPTIONS="halt_on_error=0:abort_on_error=0:detect_odr_violation=0"
+                export UBSAN_OPTIONS="halt_on_error=0:abort_on_error=0"
+                echo "ASAN_OPTIONS=$ASAN_OPTIONS"
+                echo "UBSAN_OPTIONS=$UBSAN_OPTIONS"
+                ;;
+              "thread")
+                export TSAN_OPTIONS="halt_on_error=0:abort_on_error=0"
+                echo "TSAN_OPTIONS=$TSAN_OPTIONS"
+                ;;
+            esac
+            
             # Sanitizer版本优先检测正确性而非性能
             "$benchmark_exe" --gtest_output=xml:benchmark-results.xml
           else

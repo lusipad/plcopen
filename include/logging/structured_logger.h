@@ -243,7 +243,7 @@ public:
         bool enable_rate_limiting{true};
         bool enable_sampling{false};
         
-        Config() = default;
+        Config() {} // 显式默认构造函数以兼容clang-14
     };
     
     /**

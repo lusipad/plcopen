@@ -51,6 +51,36 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
+    - name: Install Ubuntu Dependencies
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          build-essential \
+          cmake \
+          ninja-build \
+          g++-11 \
+          libgtest-dev \
+          libgmock-dev \
+          pkg-config
+        
+        # 在Ubuntu 22.04+中，可能需要手动构建GTest
+        if [ ! -f "/usr/lib/x86_64-linux-gnu/libgtest.a" ] && [ ! -f "/usr/lib/libgtest.a" ]; then
+          echo "Building GTest from source..."
+          cd /usr/src/gtest
+          sudo cmake -B build -DCMAKE_BUILD_TYPE=Release
+          sudo cmake --build build
+          sudo cp build/lib/*.a /usr/lib/x86_64-linux-gnu/ || sudo cp build/*.a /usr/lib/
+        fi
+        
+        # 设置GCC-11为默认编译器
+        sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-11 100
+        sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-11 100
+        
+        # 验证GTest安装
+        echo "Checking GTest installation..."
+        find /usr -name "libgtest*" 2>/dev/null | head -5
+
     - name: Set reusable strings
       # Turn repeated input strings (such as the build output directory) into step outputs. These step outputs can be used throughout the workflow file.
       id: strings
@@ -64,9 +94,12 @@ jobs:
       # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
       run: >
         cmake -B ${{ steps.strings.outputs.build-output-dir }}
+        -G Ninja
         -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
         -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
         -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+        -DCMAKE_CXX_STANDARD=17
+        -DCMAKE_CXX_STANDARD_REQUIRED=ON
         -S ${{ github.workspace }}
 
     - name: Configure CMake (Windows)
@@ -79,7 +112,12 @@ jobs:
         -DCMAKE_CXX_STANDARD_REQUIRED=ON `
         -S ${{ github.workspace }}
 
-    - name: Build
+    - name: Build (Ubuntu)
+      if: matrix.os == 'ubuntu-latest'
+      run: ninja -C ${{ steps.strings.outputs.build-output-dir }}
+      
+    - name: Build (Windows)
+      if: matrix.os == 'windows-latest'
       # Build your program with the given configuration. Note that --config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
       run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
 

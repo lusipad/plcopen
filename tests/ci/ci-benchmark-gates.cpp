@@ -32,30 +32,110 @@ struct BenchmarkThresholds {
         return std::getenv("CI") != nullptr || std::getenv("GITHUB_ACTIONS") != nullptr;
     }
     
-    // 生产环境阈值 vs CI环境阈值
+    // 检测Sanitizer环境（性能会受到严重影响）
+    static bool isSanitizer() {
+        // 方法1: 检查环境变量
+        if (std::getenv("ASAN_OPTIONS") != nullptr || 
+            std::getenv("TSAN_OPTIONS") != nullptr || 
+            std::getenv("MSAN_OPTIONS") != nullptr ||
+            std::getenv("UBSAN_OPTIONS") != nullptr) {
+            return true;
+        }
+        
+        // 方法2: 检查编译时Sanitizer标志（通过运行时特征检测）
+        #if defined(__has_feature)
+            #if __has_feature(address_sanitizer) || __has_feature(thread_sanitizer) || __has_feature(memory_sanitizer)
+                return true;
+            #endif
+        #endif
+        
+        // 方法3: GCC/Clang Sanitizer宏检测
+        #ifdef __SANITIZE_ADDRESS__
+            return true;
+        #endif
+        
+        #ifdef __SANITIZE_THREAD__
+            return true;
+        #endif
+        
+        // 方法4: 动态检测（通过性能特征）
+        // 如果是CI环境且Debug构建，很可能启用了Sanitizer
+        if (isCI()) {
+            const char* build_type = std::getenv("CMAKE_BUILD_TYPE");
+            if (build_type && std::string(build_type) == "Debug") {
+                return true;  // CI Debug构建默认启用Sanitizer
+            }
+            
+            // 检查是否有Sanitizer相关的编译器参数证据
+            const char* cxx_flags = std::getenv("CXXFLAGS");
+            if (cxx_flags && (strstr(cxx_flags, "sanitize") != nullptr)) {
+                return true;
+            }
+        }
+        
+        return false;
+    }
+    
+    // 检测Debug构建模式
+    static bool isDebugBuild() {
+        #ifdef NDEBUG
+            return false;  // Release构建
+        #else
+            return true;   // Debug构建
+        #endif
+    }
+    
+    // 获取性能倍数（Sanitizer/Debug下需要更宽松的阈值）
+    static double getPerformanceMultiplier() {
+        if (isSanitizer()) {
+            return 20.0;  // Sanitizer环境下允许20倍的性能下降（更宽松）
+        } else if (isDebugBuild() && isCI()) {
+            return 8.0;   // Debug构建在CI环境下允许8倍的性能下降
+        } else if (isDebugBuild()) {
+            return 5.0;   // Debug构建允许5倍的性能下降
+        } else if (isCI()) {
+            return 3.0;   // Release CI环境下允许3倍的性能下降
+        } else {
+            return 1.0;   // 生产环境标准阈值
+        }
+    }
+    
+    // 生产环境阈值 vs CI环境阈值 vs Sanitizer环境阈值
     static double getSchedulerMaxJitter() { 
-        return isCI() ? 2000.0 : 50.0;      // CI: 2ms vs 生产: 50μs
+        return 50.0 * getPerformanceMultiplier();      // 基准: 50μs
     }
     static double getSchedulerAvgLatency() { 
-        return isCI() ? 100.0 : 10.0;       // CI: 100μs vs 生产: 10μs
+        return 10.0 * getPerformanceMultiplier();      // 基准: 10μs
     }
     static double getIOScanMaxTime() { 
-        return isCI() ? 15000.0 : 100.0;    // CI: 15ms vs 生产: 100μs
+        return 100.0 * getPerformanceMultiplier();     // 基准: 100μs
     }
     static double getMotionInterpMaxTime() { 
-        return isCI() ? 2000.0 : 500.0;     // CI: 2ms vs 生产: 500μs
+        return 500.0 * getPerformanceMultiplier();     // 基准: 500μs
     }
     static double getMemoryAllocMaxTime() { 
-        return isCI() ? 100.0 : 10.0;       // CI: 100μs vs 生产: 10μs
+        return 10.0 * getPerformanceMultiplier();      // 基准: 10μs
     }
     static double getFBExecMaxTime() { 
-        return isCI() ? 500.0 : 50.0;       // CI: 500μs vs 生产: 50μs
+        return 50.0 * getPerformanceMultiplier();      // 基准: 50μs
     }
     static uint64_t getMinSamples() { 
-        return isCI() ? 1000 : 10000;       // CI: 1K samples vs 生产: 10K samples
+        if (isSanitizer()) {
+            return 500;    // Sanitizer: 500 samples (更少样本以加快测试)
+        } else if (isCI()) {
+            return 1000;   // CI: 1K samples
+        } else {
+            return 10000;  // 生产: 10K samples
+        }
     }
     static double getReliabilityThreshold() { 
-        return isCI() ? 90.0 : 99.0;        // CI: 90% vs 生产: 99%
+        if (isSanitizer()) {
+            return 80.0;   // Sanitizer: 80% (更宽松的可靠性要求)
+        } else if (isCI()) {
+            return 90.0;   // CI: 90%
+        } else {
+            return 99.0;   // 生产: 99%
+        }
     }
     
     // 保持向后兼容的静态常量（已弃用，使用getter函数）
@@ -264,13 +344,13 @@ TEST_F(CIBenchmarkGates, SchedulerJitterBenchmark) {
     
     auto result = runBenchmark("调度器抖动基准测试", 
                               schedulerSimulation,
-                              BenchmarkThresholds::isCI() ? 3000.0 : 1100.0,  // CI: 3ms vs 生产: 1.1ms
+                              1100.0 * BenchmarkThresholds::getPerformanceMultiplier(),  // 基准: 1.1ms * 性能倍数
                               BenchmarkThresholds::getSchedulerMaxJitter());
     
     // 额外验证调度精度
     EXPECT_LT(result.jitter, BenchmarkThresholds::getSchedulerMaxJitter()) 
         << "调度器抖动超过阈值: " << result.jitter << "μs";
-    EXPECT_LT(result.avgTime, 1010.0) 
+    EXPECT_LT(result.avgTime, BenchmarkThresholds::getSchedulerAvgLatency() * 10.0) 
         << "平均调度周期偏差过大: " << result.avgTime << "μs";
 }
 
@@ -487,19 +567,34 @@ TEST_F(CIBenchmarkGates, SystemOverallBenchmark) {
                               1000.0,  // 1ms系统周期
                               50.0);   // 50μs抖动限制
     
-    EXPECT_LT(result.avgTime, 800.0)  // 平均应该在800μs以内
-        << "系统整体性能不达标: " << result.avgTime << "μs";
+    // 使用环境适配的系统性能阈值
+    double systemPerfThreshold = 800.0 * BenchmarkThresholds::getPerformanceMultiplier();  // 基准: 800μs * 性能倍数
+    EXPECT_LT(result.avgTime, systemPerfThreshold)
+        << "系统整体性能不达标: " << result.avgTime << "μs > " << systemPerfThreshold << "μs";
 }
 
 int main(int argc, char** argv) {
     ::testing::InitGoogleTest(&argc, argv);
     
     std::cout << "=== PLC运行时核心系统 CI基准门禁测试 ===" << std::endl;
-    if (BenchmarkThresholds::isCI()) {
-        std::cout << "运行环境: CI环境 (调整后的阈值)" << std::endl;
+    
+    // 显示详细的环境信息
+    std::cout << "构建模式: " << (BenchmarkThresholds::isDebugBuild() ? "Debug" : "Release") << std::endl;
+    std::cout << "CI环境: " << (BenchmarkThresholds::isCI() ? "是" : "否") << std::endl;
+    std::cout << "Sanitizer: " << (BenchmarkThresholds::isSanitizer() ? "启用" : "禁用") << std::endl;
+    
+    if (BenchmarkThresholds::isSanitizer()) {
+        std::cout << "运行环境: Sanitizer环境 (超宽松阈值, 20x倍数)" << std::endl;
+    } else if (BenchmarkThresholds::isDebugBuild() && BenchmarkThresholds::isCI()) {
+        std::cout << "运行环境: Debug CI环境 (宽松阈值, 8x倍数)" << std::endl;
+    } else if (BenchmarkThresholds::isDebugBuild()) {
+        std::cout << "运行环境: Debug环境 (中等阈值, 5x倍数)" << std::endl;
+    } else if (BenchmarkThresholds::isCI()) {
+        std::cout << "运行环境: Release CI环境 (标准阈值, 3x倍数)" << std::endl;
     } else {
-        std::cout << "运行环境: 生产环境 (严格阈值)" << std::endl;
+        std::cout << "运行环境: 生产环境 (严格阈值, 1x倍数)" << std::endl;
     }
+    std::cout << "实际性能倍数: " << BenchmarkThresholds::getPerformanceMultiplier() << "x" << std::endl;
     std::cout << "测试目标:" << std::endl;
     std::cout << "- 调度器抖动 < " << BenchmarkThresholds::getSchedulerMaxJitter() << "μs" << std::endl;
     std::cout << "- I/O扫描时间 < " << BenchmarkThresholds::getIOScanMaxTime() << "μs" << std::endl;

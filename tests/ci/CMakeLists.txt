@@ -2,7 +2,33 @@
 
 # 查找依赖
 find_package(Threads REQUIRED)
-find_package(GTest REQUIRED)
+
+# 多种方式查找GTest（兼容不同Linux发行版）
+find_package(GTest QUIET)
+find_package(PkgConfig QUIET)
+
+if(NOT GTest_FOUND AND NOT GTEST_FOUND AND NOT TARGET GTest::gtest)
+    # 尝试pkg-config查找
+    if(PkgConfig_FOUND)
+        pkg_check_modules(GTEST gtest)
+        pkg_check_modules(GTEST_MAIN gtest_main)
+    endif()
+    
+    # 如果还是没找到，尝试系统路径
+    if(NOT GTEST_FOUND)
+        find_path(GTEST_INCLUDE_DIR gtest/gtest.h
+            PATHS /usr/include /usr/local/include)
+        find_library(GTEST_LIBRARY gtest
+            PATHS /usr/lib /usr/local/lib /usr/lib/x86_64-linux-gnu)
+        find_library(GTEST_MAIN_LIBRARY gtest_main
+            PATHS /usr/lib /usr/local/lib /usr/lib/x86_64-linux-gnu)
+            
+        if(GTEST_INCLUDE_DIR AND GTEST_LIBRARY AND GTEST_MAIN_LIBRARY)
+            set(GTEST_FOUND TRUE)
+        endif()
+    endif()
+endif()
+
 find_package(benchmark QUIET)
 
 # CI基准门禁测试可执行文件
@@ -10,12 +36,32 @@ add_executable(ci-benchmark-gates
     ci-benchmark-gates.cpp
 )
 
-# 链接库
-target_link_libraries(ci-benchmark-gates
-    GTest::gtest
-    GTest::gtest_main
-    Threads::Threads
-)
+# 链接库 - 兼容多种GTest安装方式
+if(TARGET GTest::gtest)
+    # 现代CMake方式
+    target_link_libraries(ci-benchmark-gates
+        GTest::gtest
+        GTest::gtest_main
+        Threads::Threads
+    )
+elseif(TARGET gtest)
+    # 旧版CMake方式
+    target_link_libraries(ci-benchmark-gates
+        gtest
+        gtest_main
+        Threads::Threads
+    )
+elseif(GTEST_FOUND AND GTEST_LIBRARY AND GTEST_MAIN_LIBRARY)
+    # 手动查找方式
+    target_include_directories(ci-benchmark-gates PRIVATE ${GTEST_INCLUDE_DIR})
+    target_link_libraries(ci-benchmark-gates
+        ${GTEST_LIBRARY}
+        ${GTEST_MAIN_LIBRARY}
+        Threads::Threads
+    )
+else()
+    message(FATAL_ERROR "GTest not found! Please install libgtest-dev package.")
+endif()
 
 # Linux特定的库
 if(UNIX AND NOT APPLE)
@@ -86,9 +132,15 @@ add_test(
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
-# 设置测试属性
+# 设置测试属性 - Debug/Sanitizer模式需要更长时间
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    set(TEST_TIMEOUT 900)  # Debug模式: 15分钟超时
+else()
+    set(TEST_TIMEOUT 300)  # Release模式: 5分钟超时
+endif()
+
 set_tests_properties(CIBenchmarkGates PROPERTIES
-    TIMEOUT 300  # 5分钟超时
+    TIMEOUT ${TEST_TIMEOUT}
     LABELS "benchmark;ci;performance"
 )
 
