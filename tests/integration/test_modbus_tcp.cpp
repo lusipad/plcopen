@@ -16,22 +16,46 @@
 #include <chrono>
 #include <cassert>
 #include <memory>
+#include <csignal>
+#include <cstdlib>
+#include <atomic>
 #include "communication/ModbusTCP.h"
 
 using namespace plc_runtime::communication;
 
+// 全局退出标志
+static std::atomic<bool> g_should_exit{false};
+
+// 信号处理函数
+void signal_handler(int signal) {
+    std::cout << "\n收到信号 " << signal << "，正在安全退出..." << std::endl;
+    g_should_exit.store(true);
+}
+
 // 测试框架宏定义
 #define ASSERT_TRUE(condition) \
-    do { if (!(condition)) { \
-        std::cout << "断言失败: " << #condition << " 在 " << __LINE__ << " 行" << std::endl; \
-        return false; \
-    } } while(0)
+    do { \
+        if (g_should_exit.load()) { \
+            std::cout << "收到退出信号，跳过测试" << std::endl; \
+            return false; \
+        } \
+        if (!(condition)) { \
+            std::cout << "断言失败: " << #condition << " 在 " << __LINE__ << " 行" << std::endl; \
+            return false; \
+        } \
+    } while(0)
 
 #define ASSERT_EQ(expected, actual) \
-    do { if ((expected) != (actual)) { \
-        std::cout << "断言失败: 期望 " << (expected) << ", 实际 " << (actual) << " 在 " << __LINE__ << " 行" << std::endl; \
-        return false; \
-    } } while(0)
+    do { \
+        if (g_should_exit.load()) { \
+            std::cout << "收到退出信号，跳过测试" << std::endl; \
+            return false; \
+        } \
+        if ((expected) != (actual)) { \
+            std::cout << "断言失败: 期望 " << (expected) << ", 实际 " << (actual) << " 在 " << __LINE__ << " 行" << std::endl; \
+            return false; \
+        } \
+    } while(0)
 
 #define ASSERT_FALSE(condition) ASSERT_TRUE(!(condition))
 
@@ -39,42 +63,48 @@ class ModbusTcpIntegrationTest {
 public:
     void run_all_tests() {
         std::cout << "=== Modbus TCP 集成测试套件 ===" << std::endl;
+        std::cout << "提示: 按 Ctrl+C 可以安全退出测试" << std::endl;
         
         int passed = 0, total = 0;
         
         // 基础功能测试
-        if (test_data_map_basic_operations()) { passed++; } total++;
-        if (test_server_startup_shutdown()) { passed++; } total++;
-        if (test_client_connection()) { passed++; } total++;
+        if (!g_should_exit.load() && test_data_map_basic_operations()) { passed++; } total++;
+        if (!g_should_exit.load() && test_server_startup_shutdown()) { passed++; } total++;
+        if (!g_should_exit.load() && test_client_connection()) { passed++; } total++;
         
         // 读取功能测试
-        if (test_read_holding_registers()) { passed++; } total++;
-        if (test_read_coils()) { passed++; } total++;
-        if (test_read_input_registers()) { passed++; } total++;
-        if (test_read_discrete_inputs()) { passed++; } total++;
+        if (!g_should_exit.load() && test_read_holding_registers()) { passed++; } total++;
+        if (!g_should_exit.load() && test_read_coils()) { passed++; } total++;
+        if (!g_should_exit.load() && test_read_input_registers()) { passed++; } total++;
+        if (!g_should_exit.load() && test_read_discrete_inputs()) { passed++; } total++;
         
         // 写入功能测试
-        if (test_write_single_register()) { passed++; } total++;
-        if (test_write_single_coil()) { passed++; } total++;
-        if (test_write_multiple_registers()) { passed++; } total++;
-        if (test_write_multiple_coils()) { passed++; } total++;
+        if (!g_should_exit.load() && test_write_single_register()) { passed++; } total++;
+        if (!g_should_exit.load() && test_write_single_coil()) { passed++; } total++;
+        if (!g_should_exit.load() && test_write_multiple_registers()) { passed++; } total++;
+        if (!g_should_exit.load() && test_write_multiple_coils()) { passed++; } total++;
         
         // 错误处理测试
-        if (test_invalid_address_handling()) { passed++; } total++;
-        if (test_exception_responses()) { passed++; } total++;
+        if (!g_should_exit.load() && test_invalid_address_handling()) { passed++; } total++;
+        if (!g_should_exit.load() && test_exception_responses()) { passed++; } total++;
         
         // 并发和性能测试
-        if (test_multiple_clients()) { passed++; } total++;
-        if (test_performance_benchmark()) { passed++; } total++;
+        if (!g_should_exit.load() && test_multiple_clients()) { passed++; } total++;
+        if (!g_should_exit.load() && test_performance_benchmark()) { passed++; } total++;
         
-        std::cout << "\n=== 测试结果 ===" << std::endl;
-        std::cout << "通过: " << passed << "/" << total << " (" 
-                  << (100.0 * passed / total) << "%)" << std::endl;
-        
-        if (passed == total) {
-            std::cout << "🎉 所有测试通过！" << std::endl;
+        if (g_should_exit.load()) {
+            std::cout << "\n=== 测试被用户中断 ===" << std::endl;
+            std::cout << "已完成: " << passed << "/" << total << " 个测试" << std::endl;
         } else {
-            std::cout << "❌ 有 " << (total - passed) << " 个测试失败" << std::endl;
+            std::cout << "\n=== 测试结果 ===" << std::endl;
+            std::cout << "通过: " << passed << "/" << total << " (" 
+                      << (100.0 * passed / total) << "%)" << std::endl;
+            
+            if (passed == total) {
+                std::cout << "🎉 所有测试通过！" << std::endl;
+            } else {
+                std::cout << "❌ 有 " << (total - passed) << " 个测试失败" << std::endl;
+            }
         }
     }
 
@@ -510,12 +540,24 @@ private:
 };
 
 int main() {
+    // 注册信号处理函数
+    std::signal(SIGINT, signal_handler);   // Ctrl+C
+    std::signal(SIGTERM, signal_handler);  // 终止信号
+#ifdef _WIN32
+    std::signal(SIGBREAK, signal_handler); // Ctrl+Break (Windows)
+#endif
+    
     try {
         ModbusTcpIntegrationTest test_suite;
         test_suite.run_all_tests();
         
-        std::cout << "\n=== Modbus TCP 集成测试完成 ===" << std::endl;
-        return 0;
+        if (g_should_exit.load()) {
+            std::cout << "\n=== Modbus TCP 集成测试被中断 ===" << std::endl;
+            return 130; // 标准的信号中断退出码
+        } else {
+            std::cout << "\n=== Modbus TCP 集成测试完成 ===" << std::endl;
+            return 0;
+        }
         
     } catch (const std::exception& e) {
         std::cerr << "测试执行异常: " << e.what() << std::endl;

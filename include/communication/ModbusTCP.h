@@ -23,6 +23,9 @@
 #include <shared_mutex>
 #include <thread>
 
+// 前向声明测试类
+class ModbusMBAPBoundaryTest;
+
 namespace plc_runtime {
 namespace communication {
 
@@ -222,6 +225,9 @@ private:
  * @brief Modbus TCP客户端（主站）
  */
 class ModbusTcpClient {
+    // 友元声明，允许测试类访问私有成员
+    friend class ::ModbusMBAPBoundaryTest;
+    
 public:
     struct Config {
         std::string server_host;
@@ -265,6 +271,9 @@ public:
     // 统计信息
     ModbusStatisticsSnapshot get_statistics() const { return ModbusStatisticsSnapshot::from_atomic(statistics_); }
     void reset_statistics();
+    
+    // 测试辅助方法（公开用于单元测试）
+    bool deserialize_adu(const std::vector<uint8_t>& data, ModbusTcpADU& adu);
 
 private:
     Config config_;
@@ -279,7 +288,6 @@ private:
     bool send_raw_data(const std::vector<uint8_t>& data);
     bool receive_raw_data(std::vector<uint8_t>& data, size_t expected_length);
     std::vector<uint8_t> serialize_adu(const ModbusTcpADU& adu);
-    bool deserialize_adu(const std::vector<uint8_t>& data, ModbusTcpADU& adu);
     uint16_t next_transaction_id() { return transaction_id_.fetch_add(1); }
     void update_statistics(bool success, const std::chrono::steady_clock::time_point& start_time);
 };

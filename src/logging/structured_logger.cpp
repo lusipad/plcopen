@@ -395,9 +395,10 @@ double Sampler::generate_random() const {
 
 void Sampler::reset_minute_counter_if_needed() {
     auto now = std::chrono::system_clock::now();
-    if (now - minute_start_ >= std::chrono::minutes(1)) {
+    auto one_minute = std::chrono::duration_cast<std::chrono::system_clock::duration>(std::chrono::minutes(1));
+    if (now - minute_start_ >= one_minute) {
         std::lock_guard<std::mutex> lock(sampler_mutex_);
-        if (now - minute_start_ >= std::chrono::minutes(1)) {
+        if (now - minute_start_ >= one_minute) {
             minute_start_ = now;
             samples_this_minute_.store(0);
         }
@@ -572,12 +573,11 @@ void StructuredLogger::log_error(error::ErrorCode error_code, LogModule module,
     }
     
     // 添加错误码相关字段
-    std::unordered_map<std::string, std::string> fields = {
-        {"error_code", error::ErrorCodeUtils::toString(error_code)},
-        {"error_category", std::string(error::ErrorCodeUtils::categoryToString(error_info.category))},
-        {"error_severity", std::string(error::ErrorCodeUtils::severityToString(severity))},
-        {"solution", std::string(error_info.solution)}
-    };
+    std::unordered_map<std::string, std::string> fields;
+    fields["error_code"] = error::ErrorCodeUtils::toString(error_code);
+    fields["error_category"] = std::string(error::ErrorCodeUtils::categoryToString(error_info.category));
+    fields["error_severity"] = std::string(error::ErrorCodeUtils::severityToString(severity));
+    fields["solution"] = std::string(error_info.solution);
     
     log(log_level, module, message, fields);
 }

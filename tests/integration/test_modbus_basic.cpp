@@ -9,14 +9,32 @@
 #include <memory>
 #include <thread>
 #include <chrono>
+#include <csignal>
+#include <cstdlib>
+#include <atomic>
 #include "communication/ModbusTCP.h"
 
 using namespace plc_runtime::communication;
 
+// 全局退出标志
+static std::atomic<bool> g_should_exit{false};
+
+// 信号处理函数
+void signal_handler(int signal) {
+    std::cout << "\n收到信号 " << signal << "，正在安全退出..." << std::endl;
+    g_should_exit.store(true);
+}
+
 // 简单测试框架
 #define TEST_PASS() do { std::cout << " [通过]" << std::endl; return true; } while(0)
 #define TEST_FAIL(msg) do { std::cout << " [失败] " << msg << std::endl; return false; } while(0)
-#define ASSERT(cond) do { if (!(cond)) TEST_FAIL(#cond); } while(0)
+#define ASSERT(cond) do { \
+    if (g_should_exit.load()) { \
+        std::cout << "收到退出信号，跳过测试" << std::endl; \
+        return false; \
+    } \
+    if (!(cond)) TEST_FAIL(#cond); \
+} while(0)
 
 bool test_data_map() {
     std::cout << "测试数据映射基础功能...";
@@ -186,29 +204,48 @@ bool test_statistics() {
 }
 
 int main() {
+    // 注册信号处理函数
+    std::signal(SIGINT, signal_handler);   // Ctrl+C
+    std::signal(SIGTERM, signal_handler);  // 终止信号
+#ifdef _WIN32
+    std::signal(SIGBREAK, signal_handler); // Ctrl+Break (Windows)
+#endif
+    
     std::cout << "=== Modbus TCP 基础功能测试 ===" << std::endl;
+    std::cout << "提示: 按 Ctrl+C 可以安全退出测试" << std::endl;
     
     int passed = 0;
     int total = 0;
     
-    // 运行测试
-    if (test_data_map()) passed++; total++;
-    if (test_utilities()) passed++; total++;
-    if (test_client_server_basic()) passed++; total++;
-    if (test_statistics()) passed++; total++;
-    
-    std::cout << "\n=== 测试结果 ===" << std::endl;
-    std::cout << "通过: " << passed << "/" << total;
-    if (total > 0) {
-        std::cout << " (" << (100 * passed / total) << "%)";
-    }
-    std::cout << std::endl;
-    
-    if (passed == total) {
-        std::cout << "✓ 所有基础测试通过！" << std::endl;
-        return 0;
-    } else {
-        std::cout << "✗ 有测试失败" << std::endl;
+    try {
+        // 运行测试
+        if (!g_should_exit.load() && test_data_map()) passed++; total++;
+        if (!g_should_exit.load() && test_utilities()) passed++; total++;
+        if (!g_should_exit.load() && test_client_server_basic()) passed++; total++;
+        if (!g_should_exit.load() && test_statistics()) passed++; total++;
+        
+        if (g_should_exit.load()) {
+            std::cout << "\n=== 测试被用户中断 ===" << std::endl;
+            std::cout << "已完成: " << passed << "/" << total << " 个测试" << std::endl;
+            return 130; // 标准的信号中断退出码
+        } else {
+            std::cout << "\n=== 测试结果 ===" << std::endl;
+            std::cout << "通过: " << passed << "/" << total;
+            if (total > 0) {
+                std::cout << " (" << (100 * passed / total) << "%)";
+            }
+            std::cout << std::endl;
+            
+            if (passed == total) {
+                std::cout << "✓ 所有基础测试通过！" << std::endl;
+                return 0;
+            } else {
+                std::cout << "✗ 有测试失败" << std::endl;
+                return 1;
+            }
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "测试执行异常: " << e.what() << std::endl;
         return 1;
     }
 }

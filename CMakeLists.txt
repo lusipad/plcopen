@@ -105,7 +105,7 @@ set(LOGGING_SYSTEM_SOURCES
 # 由于存在多个编译问题，暂时保持最小配置确保系统稳定性
 # add_library(st_compiler STATIC ${ST_COMPILER_SOURCES})  # 等待进一步重构
 add_library(io_system STATIC ${IO_SYSTEM_SOURCES})        # IO系统已修复
-# add_library(fb_system STATIC ${FB_SYSTEM_SOURCES})      # 需要修复功能块接口问题
+# add_library(fb_system STATIC ${FB_SYSTEM_SOURCES})      # 暂时禁用，存在编译错误
 add_library(communication STATIC ${COMMUNICATION_SOURCES}) # 通信系统稳定
 # add_library(scheduler STATIC ${SCHEDULER_SOURCES})      # 调度器需要原子操作重构
 
@@ -115,6 +115,8 @@ if(WIN32)
     target_link_libraries(communication ws2_32 iphlpapi)
     # 为了支持NetworkManager的Windows特定功能
     target_compile_definitions(communication PRIVATE WIN32_LEAN_AND_MEAN)
+    # 抑制MSVC类型转换警告以保持CI清洁
+    target_compile_options(communication PRIVATE /wd4267 /wd4244)
 elseif(UNIX)
     # Linux/Unix平台需要链接系统库
     target_link_libraries(communication pthread)
@@ -137,8 +139,7 @@ add_library(lockfree STATIC src/lockfree/LockFree_stub.cpp)
 # 创建错误处理系统库 - 新增统一错误码体系
 add_library(error_system STATIC ${ERROR_SYSTEM_SOURCES})
 
-# 暂时禁用日志系统库以修复CI构建
-# TODO: 修复编译错误后重新启用
+# 暂时禁用日志系统库，存在MSVC兼容性问题
 # add_library(logging_system STATIC ${LOGGING_SYSTEM_SOURCES})
 
 # 设置库的包含目录

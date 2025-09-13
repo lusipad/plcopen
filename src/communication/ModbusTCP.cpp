@@ -22,6 +22,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <unistd.h>
+#include <fcntl.h>
 #else
 #include <winsock2.h>
 #include <ws2tcpip.h>
@@ -731,11 +732,27 @@ bool ModbusTcpClient::send_raw_data(const std::vector<uint8_t>& data) {
     std::lock_guard<std::mutex> lock(socket_mutex_);
     
     size_t total_sent = 0;
+    auto start_time = std::chrono::steady_clock::now();
+    const auto timeout_duration = config_.timeout;
+    
     while (total_sent < data.size()) {
+        // 检查超时
+        auto elapsed = std::chrono::steady_clock::now() - start_time;
+        if (elapsed >= timeout_duration) {
+            std::cerr << "发送数据超时: " << std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count() << "ms" << std::endl;
+            return false;
+        }
+        
         ssize_t sent = send(socket_fd_, 
                            reinterpret_cast<const char*>(data.data() + total_sent), 
                            data.size() - total_sent, 0);
         if (sent <= 0) {
+#ifdef _WIN32
+            int error = WSAGetLastError();
+            std::cerr << "发送数据错误: " << error << std::endl;
+#else
+            std::cerr << "发送数据错误: " << errno << std::endl;
+#endif
             return false;
         }
         total_sent += sent;
@@ -750,15 +767,61 @@ bool ModbusTcpClient::receive_raw_data(std::vector<uint8_t>& data, size_t expect
     
     data.resize(expected_length);
     size_t total_received = 0;
+    auto start_time = std::chrono::steady_clock::now();
+    const auto timeout_duration = config_.timeout;
     
     while (total_received < expected_length) {
+        // 检查超时
+        auto elapsed = std::chrono::steady_clock::now() - start_time;
+        if (elapsed >= timeout_duration) {
+            std::cerr << "接收数据超时: " << std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count() << "ms" << std::endl;
+            return false;
+        }
+        
+        // 设置套接字为非阻塞模式进行超时检查
+#ifdef _WIN32
+        u_long mode = 1;
+        ioctlsocket(socket_fd_, FIONBIO, &mode);
+#else
+        int flags = fcntl(socket_fd_, F_GETFL, 0);
+        fcntl(socket_fd_, F_SETFL, flags | O_NONBLOCK);
+#endif
+        
         ssize_t received = recv(socket_fd_, 
                                reinterpret_cast<char*>(data.data() + total_received), 
                                expected_length - total_received, 0);
-        if (received <= 0) {
+        
+        if (received > 0) {
+            total_received += received;
+        } else if (received == 0) {
+            // 连接被对端关闭
+            std::cerr << "连接被对端关闭" << std::endl;
             return false;
+        } else {
+            // 检查错误类型
+#ifdef _WIN32
+            int error = WSAGetLastError();
+            if (error != WSAEWOULDBLOCK) {
+                std::cerr << "接收数据错误: " << error << std::endl;
+                return false;
+            }
+#else
+            if (errno != EAGAIN && errno != EWOULDBLOCK) {
+                std::cerr << "接收数据错误: " << errno << std::endl;
+                return false;
+            }
+#endif
+            // 非阻塞模式下没有数据可读，短暂等待后重试
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
         }
-        total_received += received;
+        
+        // 恢复阻塞模式
+#ifdef _WIN32
+        mode = 0;
+        ioctlsocket(socket_fd_, FIONBIO, &mode);
+#else
+        fcntl(socket_fd_, F_SETFL, flags);
+#endif
     }
     
     statistics_.messages_received.fetch_add(1);

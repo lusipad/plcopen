@@ -6,19 +6,44 @@
  */
 
 #include <iostream>
+#include <csignal>
+#include <cstdlib>
+#include <atomic>
 #include "communication/ModbusTCP.h"
 
 using namespace plc_runtime::communication;
 
+// 全局退出标志
+static std::atomic<bool> g_should_exit{false};
+
+// 信号处理函数
+void signal_handler(int signal) {
+    std::cout << "\n收到信号 " << signal << "，正在安全退出..." << std::endl;
+    g_should_exit.store(true);
+}
+
 int main() {
+    // 注册信号处理函数
+    std::signal(SIGINT, signal_handler);   // Ctrl+C
+    std::signal(SIGTERM, signal_handler);  // 终止信号
+#ifdef _WIN32
+    std::signal(SIGBREAK, signal_handler); // Ctrl+Break (Windows)
+#endif
+    
     std::cout << "=== Modbus TCP 简单功能验证 ===" << std::endl;
+    std::cout << "提示: 按 Ctrl+C 可以安全退出测试" << std::endl;
     
     int tests_passed = 0;
     int total_tests = 0;
     
-    // 测试1: 数据映射基础功能
-    std::cout << "1. 测试数据映射...";
-    total_tests++;
+    try {
+        // 测试1: 数据映射基础功能
+        if (g_should_exit.load()) {
+            std::cout << "\n=== 测试被用户中断 ===" << std::endl;
+            return 130;
+        }
+        std::cout << "1. 测试数据映射...";
+        total_tests++;
     try {
         DefaultModbusDataMap data_map;
         
@@ -53,9 +78,14 @@ int main() {
         std::cout << " ✗ 异常: " << e.what() << std::endl;
     }
     
-    // 测试2: 工具函数
-    std::cout << "2. 测试工具函数...";
-    total_tests++;
+        // 测试2: 工具函数
+        if (g_should_exit.load()) {
+            std::cout << "\n=== 测试被用户中断 ===" << std::endl;
+            std::cout << "已完成: " << tests_passed << "/" << total_tests << " 个测试" << std::endl;
+            return 130;
+        }
+        std::cout << "2. 测试工具函数...";
+        total_tests++;
     try {
         bool success = true;
         
@@ -88,9 +118,14 @@ int main() {
         std::cout << " ✗ 异常: " << e.what() << std::endl;
     }
     
-    // 测试3: 客户端和服务器创建
-    std::cout << "3. 测试客户端服务器创建...";
-    total_tests++;
+        // 测试3: 客户端和服务器创建
+        if (g_should_exit.load()) {
+            std::cout << "\n=== 测试被用户中断 ===" << std::endl;
+            std::cout << "已完成: " << tests_passed << "/" << total_tests << " 个测试" << std::endl;
+            return 130;
+        }
+        std::cout << "3. 测试客户端服务器创建...";
+        total_tests++;
     try {
         bool success = true;
         
@@ -124,9 +159,14 @@ int main() {
         std::cout << " ✗ 异常: " << e.what() << std::endl;
     }
     
-    // 测试4: ADU序列化/反序列化
-    std::cout << "4. 测试ADU序列化...";
-    total_tests++;
+        // 测试4: ADU序列化/反序列化
+        if (g_should_exit.load()) {
+            std::cout << "\n=== 测试被用户中断 ===" << std::endl;
+            std::cout << "已完成: " << tests_passed << "/" << total_tests << " 个测试" << std::endl;
+            return 130;
+        }
+        std::cout << "4. 测试ADU序列化...";
+        total_tests++;
     try {
         bool success = true;
         
@@ -160,19 +200,30 @@ int main() {
         std::cout << " ✗ 异常: " << e.what() << std::endl;
     }
     
-    // 显示结果
-    std::cout << "\n=== 测试结果 ===" << std::endl;
-    std::cout << "通过: " << tests_passed << "/" << total_tests;
-    if (total_tests > 0) {
-        std::cout << " (" << (100 * tests_passed / total_tests) << "%)";
-    }
-    std::cout << std::endl;
-    
-    if (tests_passed == total_tests) {
-        std::cout << "🎉 所有基础功能正常！Modbus TCP实现已完成。" << std::endl;
-        return 0;
-    } else {
-        std::cout << "❌ 有功能存在问题" << std::endl;
+        // 显示结果
+        if (g_should_exit.load()) {
+            std::cout << "\n=== 测试被用户中断 ===" << std::endl;
+            std::cout << "已完成: " << tests_passed << "/" << total_tests << " 个测试" << std::endl;
+            return 130;
+        }
+        
+        std::cout << "\n=== 测试结果 ===" << std::endl;
+        std::cout << "通过: " << tests_passed << "/" << total_tests;
+        if (total_tests > 0) {
+            std::cout << " (" << (100 * tests_passed / total_tests) << "%)";
+        }
+        std::cout << std::endl;
+        
+        if (tests_passed == total_tests) {
+            std::cout << "🎉 所有基础功能正常！Modbus TCP实现已完成。" << std::endl;
+            return 0;
+        } else {
+            std::cout << "❌ 有功能存在问题" << std::endl;
+            return 1;
+        }
+        
+    } catch (const std::exception& e) {
+        std::cerr << "测试执行异常: " << e.what() << std::endl;
         return 1;
     }
 }

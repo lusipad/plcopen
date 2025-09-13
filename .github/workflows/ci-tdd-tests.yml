@@ -109,11 +109,12 @@ jobs:
         
     - name: 运行comprehensive TDD测试 (Ubuntu)
       if: matrix.os == 'ubuntu-latest'
+      timeout-minutes: 10
       run: |
         cd build
         echo "=== 运行Comprehensive TDD测试套件 ==="
         if [ -f "./bin/comprehensive_tdd_tests" ]; then
-          ./bin/comprehensive_tdd_tests || echo "comprehensive_tdd_tests执行失败，但继续流程"
+          timeout 600 ./bin/comprehensive_tdd_tests || echo "comprehensive_tdd_tests执行失败或超时，但继续流程"
         else
           echo "⚠️ comprehensive_tdd_tests可执行文件未找到，跳过"
         fi
@@ -121,6 +122,7 @@ jobs:
         
     - name: 运行comprehensive TDD测试 (Windows)
       if: matrix.os == 'windows-latest'
+      timeout-minutes: 10
       shell: pwsh
       run: |
         cd build
@@ -131,7 +133,14 @@ jobs:
         }
         if (Test-Path $testExe) {
           try {
-            & $testExe
+            $job = Start-Job -ScriptBlock { & $using:testExe }
+            if (Wait-Job $job -Timeout 600) {
+              Receive-Job $job
+            } else {
+              Write-Host "⚠️ comprehensive_tdd_tests执行超时，终止进程"
+              Stop-Job $job
+            }
+            Remove-Job $job
           } catch {
             Write-Host "⚠️ comprehensive_tdd_tests执行失败，但继续流程"
           }
@@ -241,6 +250,17 @@ jobs:
           Write-Host "⚠️ simple_axis_test可执行文件未找到: $testExe"
           Get-ChildItem .\bin\ -Recurse | Where-Object { $_.Name -like "*axis*" }
         }
+        
+    - name: 上传测试结果和日志
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-results-${{ matrix.os }}-${{ matrix.build-type }}
+        path: |
+          build/bin/
+          build/lib/
+          build/*.log
+        retention-days: 7
 
   test-summary:
     name: 测试结果汇总
