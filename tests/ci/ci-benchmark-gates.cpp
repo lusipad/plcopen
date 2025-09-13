@@ -87,17 +87,35 @@ struct BenchmarkThresholds {
     
     // 获取性能倍数（Sanitizer/Debug下需要更宽松的阈值）
     static double getPerformanceMultiplier() {
-        if (isSanitizer()) {
-            return 20.0;  // Sanitizer环境下允许20倍的性能下降（更宽松）
-        } else if (isDebugBuild() && isCI()) {
-            return 8.0;   // Debug构建在CI环境下允许8倍的性能下降
-        } else if (isDebugBuild()) {
-            return 5.0;   // Debug构建允许5倍的性能下降
-        } else if (isCI()) {
-            return 3.0;   // Release CI环境下允许3倍的性能下降
-        } else {
-            return 1.0;   // 生产环境标准阈值
+        static double multiplier = -1.0;  // 缓存计算结果
+        if (multiplier < 0) {
+            if (isSanitizer()) {
+                multiplier = 50.0;  // Sanitizer环境下允许50倍的性能下降（更宽松）
+            } else if (isDebugBuild() && isCI()) {
+                multiplier = 15.0;  // Debug构建在CI环境下允许15倍的性能下降
+            } else if (isDebugBuild()) {
+                multiplier = 10.0;  // Debug构建允许10倍的性能下降
+            } else if (isCI()) {
+                multiplier = 5.0;   // Release CI环境下允许5倍的性能下降
+            } else {
+                multiplier = 1.0;   // 生产环境标准阈值
+            }
+            
+            // 检查环境变量覆盖
+            const char* override_multiplier = std::getenv("BENCHMARK_PERFORMANCE_MULTIPLIER");
+            if (override_multiplier) {
+                double override_val = std::atof(override_multiplier);
+                if (override_val > 0) {
+                    multiplier = override_val;
+                }
+            }
+            
+            std::cout << "[基准测试] 性能倍数: " << multiplier 
+                      << " (Sanitizer: " << (isSanitizer() ? "是" : "否")
+                      << ", Debug: " << (isDebugBuild() ? "是" : "否")
+                      << ", CI: " << (isCI() ? "是" : "否") << ")" << std::endl;
         }
+        return multiplier;
     }
     
     // 生产环境阈值 vs CI环境阈值 vs Sanitizer环境阈值

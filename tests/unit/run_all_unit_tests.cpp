@@ -83,7 +83,8 @@ public:
         printSummary(overallDuration);
         
         // Generate coverage report if enabled
-        if (std::getenv("ENABLE_COVERAGE")) {
+        const char* coverage_env = std::getenv("ENABLE_COVERAGE");
+        if (coverage_env && std::string(coverage_env) == "1") {
             generateCoverageReport();
         }
     }
@@ -145,7 +146,7 @@ private:
         std::cout << Colors::CYAN << "  Test Summary" << Colors::RESET << std::endl;
         std::cout << Colors::CYAN << "========================================" << Colors::RESET << std::endl;
         
-        int totalSuites = results_.size();
+        int totalSuites = static_cast<int>(results_.size());
         int passedSuites = 0;
         int failedSuites = 0;
         

@@ -355,7 +355,7 @@ private:
         
         // 验证写入
         for (size_t i = 0; i < values.size(); i++) {
-            ASSERT_EQ(values[i], data_map->read_holding_register(20 + i));
+            ASSERT_EQ(values[i], data_map->read_holding_register(20 + static_cast<uint16_t>(i)));
         }
         
         cleanup_test_server(server);
@@ -377,7 +377,7 @@ private:
         
         // 验证写入
         for (size_t i = 0; i < coils.size(); i++) {
-            ASSERT_EQ(coils[i], data_map->read_coil(30 + i));
+            ASSERT_EQ(coils[i], data_map->read_coil(30 + static_cast<uint16_t>(i)));
         }
         
         cleanup_test_server(server);

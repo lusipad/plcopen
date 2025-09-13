@@ -129,36 +129,45 @@ endif()
 
 # 设置编译选项 - 彻底解决MSVC标志冲突
 if(MSVC)
-    # 彻底清除所有继承的编译标志，重新设置
-    set_target_properties(ci-benchmark-gates PROPERTIES
-        COMPILE_FLAGS ""
-        COMPILE_OPTIONS ""
-    )
-    
-    # 明确禁用运行时检查并设置适当的标志
-    if(CMAKE_BUILD_TYPE STREQUAL "Release")
-        target_compile_options(ci-benchmark-gates PRIVATE
-            /O2          # 优化
-            /DNDEBUG     # 禁用调试宏
-            /GS-         # 禁用安全检查（避免与优化冲突）
-        )
-    else()
-        target_compile_options(ci-benchmark-gates PRIVATE
-            /Od          # 禁用优化
-            /Zi          # 调试信息
-            /RTC1        # Debug模式才启用运行时检查
-        )
-    endif()
-    
-    # 设置运行时库类型避免冲突
-    if(CMAKE_BUILD_TYPE STREQUAL "Release")
-        set_target_properties(ci-benchmark-gates PROPERTIES
-            MSVC_RUNTIME_LIBRARY "MultiThreadedDLL"
-        )
-    else()
+    # 检测当前构建类型并强制使用一致的运行时库
+    if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+        # Debug构建：强制使用Debug运行时库
         set_target_properties(ci-benchmark-gates PROPERTIES
             MSVC_RUNTIME_LIBRARY "MultiThreadedDebugDLL"
         )
+        target_compile_options(ci-benchmark-gates PRIVATE
+            /MDd         # 强制Debug DLL运行时
+            /Od          # 禁用优化
+            /Zi          # 调试信息
+            /D_DEBUG     # Debug宏
+            /D_ITERATOR_DEBUG_LEVEL=2  # 强制迭代器调试级别
+        )
+        target_link_options(ci-benchmark-gates PRIVATE
+            /NODEFAULTLIB:msvcrt.lib   # 排除Release运行时库
+            /NODEFAULTLIB:libcmt.lib   # 排除静态运行时库
+        )
+    else()
+        # Release构建：强制使用Release运行时库
+        set_target_properties(ci-benchmark-gates PROPERTIES
+            MSVC_RUNTIME_LIBRARY "MultiThreadedDLL"
+        )
+        target_compile_options(ci-benchmark-gates PRIVATE
+            /MD          # 强制Release DLL运行时
+            /O2          # 优化
+            /DNDEBUG     # 禁用调试宏
+            /D_ITERATOR_DEBUG_LEVEL=0  # 禁用迭代器调试
+        )
+        target_link_options(ci-benchmark-gates PRIVATE
+            /NODEFAULTLIB:msvcrtd.lib  # 排除Debug运行时库
+            /NODEFAULTLIB:libcmtd.lib  # 排除静态Debug运行时库
+        )
+    endif()
+    
+    # 为了确保与GTest库的兼容性，我们需要检查GTest是如何构建的
+    # 如果GTest是Release构建但我们是Debug，会有冲突
+    if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+        message(WARNING "Debug构建可能与预构建的Release GTest库不兼容")
+        message(STATUS "如果遇到链接错误，考虑使用Release构建或重新构建GTest")
     endif()
     
 elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
