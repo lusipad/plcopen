@@ -3,9 +3,30 @@ name: TDD测试套件CI
 on:
   push:
     branches: [ main, develop, feature/* ]
+    paths-ignore:
+      - '*.md'
+      - 'docs/**'
+      - '.gitignore'
+      - 'LICENSE'
   pull_request:
     branches: [ main ]
+    paths-ignore:
+      - '*.md'
+      - 'docs/**'
+      - '.gitignore'
+      - 'LICENSE'
   workflow_dispatch:
+    inputs:
+      run_coverage:
+        description: 'Run code coverage analysis'
+        required: false
+        default: 'true'
+        type: boolean
+      run_benchmarks:
+        description: 'Run benchmark tests'
+        required: false
+        default: 'true'
+        type: boolean
 
 permissions:
   contents: read
@@ -123,11 +144,38 @@ jobs:
       run: |
         cd build
         echo "=== 运行Comprehensive TDD测试套件 ==="
+        
+        # 检查可执行文件是否存在
         if [ -f "./bin/comprehensive_tdd_tests" ]; then
-          timeout 600 ./bin/comprehensive_tdd_tests || echo "comprehensive_tdd_tests执行失败或超时，但继续流程"
+          echo "找到测试可执行文件，开始运行..."
+          
+          # 设置测试环境变量
+          export TDD_TEST_MODE=CI
+          export TDD_VERBOSE=1
+          
+          # 运行测试并捕获输出
+          if timeout 600 ./bin/comprehensive_tdd_tests; then
+            echo "✅ comprehensive_tdd_tests执行成功"
+          else
+            EXIT_CODE=$?
+            echo "❌ comprehensive_tdd_tests执行失败，退出码: $EXIT_CODE"
+            
+            # 在Debug模式下，某些测试失败是可接受的
+            if [ "${{ matrix.build-type }}" = "Debug" ]; then
+              echo "Debug模式下允许测试失败，继续CI流程"
+            else
+              echo "Release模式下测试失败，但不阻止CI（MVP-1阶段）"
+            fi
+          fi
         else
-          echo "⚠️ comprehensive_tdd_tests可执行文件未找到，跳过"
+          echo "⚠️ comprehensive_tdd_tests可执行文件未找到"
+          echo "检查构建目录内容:"
+          ls -la ./bin/ || echo "bin目录不存在"
+          
+          # 这不应该阻止CI，因为可能是构建配置问题
+          echo "测试可执行文件缺失，但继续CI流程"
         fi
+        
         echo "=== Comprehensive TDD测试完成 ==="
         
     - name: 运行comprehensive TDD测试 (Windows)
@@ -137,26 +185,53 @@ jobs:
       run: |
         cd build
         Write-Host "=== 运行Comprehensive TDD测试套件 ==="
+        
+        # 查找测试可执行文件
         $testExe = ".\bin\comprehensive_tdd_tests.exe"
         if (!(Test-Path $testExe)) {
           $testExe = ".\bin\${{ matrix.build-type }}\comprehensive_tdd_tests.exe"
         }
+        
         if (Test-Path $testExe) {
+          Write-Host "找到测试可执行文件: $testExe"
+          
+          # 设置测试环境变量
+          $env:TDD_TEST_MODE = "CI"
+          $env:TDD_VERBOSE = "1"
+          
           try {
-            $job = Start-Job -ScriptBlock { & $using:testExe }
-            if (Wait-Job $job -Timeout 600) {
-              Receive-Job $job
+            # 直接运行测试，不使用Job以获得更好的输出
+            Write-Host "开始运行测试..."
+            $process = Start-Process -FilePath $testExe -NoNewWindow -Wait -PassThru
+            
+            if ($process.ExitCode -eq 0) {
+              Write-Host "✅ comprehensive_tdd_tests执行成功"
             } else {
-              Write-Host "⚠️ comprehensive_tdd_tests执行超时，终止进程"
-              Stop-Job $job
+              Write-Host "❌ comprehensive_tdd_tests执行失败，退出码: $($process.ExitCode)"
+              
+              # 在Debug模式下，某些测试失败是可接受的
+              if ("${{ matrix.build-type }}" -eq "Debug") {
+                Write-Host "Debug模式下允许测试失败，继续CI流程"
+              } else {
+                Write-Host "Release模式下测试失败，但不阻止CI（MVP-1阶段）"
+              }
             }
-            Remove-Job $job
           } catch {
-            Write-Host "⚠️ comprehensive_tdd_tests执行失败，但继续流程"
+            Write-Host "❌ comprehensive_tdd_tests执行异常: $_"
+            Write-Host "继续CI流程"
           }
         } else {
-          Write-Host "⚠️ comprehensive_tdd_tests可执行文件未找到，跳过"
+          Write-Host "⚠️ comprehensive_tdd_tests可执行文件未找到"
+          Write-Host "检查构建目录内容:"
+          if (Test-Path ".\bin") {
+            Get-ChildItem ".\bin" -Recurse | Format-Table Name, FullName
+          } else {
+            Write-Host "bin目录不存在"
+          }
+          
+          Write-Host "测试可执行文件缺失，但继续CI流程"
         }
+        
         Write-Host "=== Comprehensive TDD测试完成 ==="
         
     - name: 运行MVP-1集成测试 (Ubuntu)
@@ -262,7 +337,7 @@ jobs:
         }
         
     - name: 运行基准测试 (Ubuntu)
-      if: matrix.os == 'ubuntu-latest' && matrix.build-type == 'Release'
+      if: matrix.os == 'ubuntu-latest' && matrix.build-type == 'Release' && (github.event.inputs.run_benchmarks != 'false')
       timeout-minutes: 15
       env:
         BENCHMARK_PERFORMANCE_MULTIPLIER: "5.0"
@@ -282,7 +357,7 @@ jobs:
         echo "=== 基准测试完成 ==="
         
     - name: 运行基准测试 (Windows)
-      if: matrix.os == 'windows-latest' && matrix.build-type == 'Release'
+      if: matrix.os == 'windows-latest' && matrix.build-type == 'Release' && (github.event.inputs.run_benchmarks != 'false')
       timeout-minutes: 15
       shell: pwsh
       env:
@@ -319,25 +394,64 @@ jobs:
       run: |
         cd build
         echo "=== 收集代码覆盖率 ==="
-        # 安装lcov工具
-        sudo apt-get install -y lcov
+        # 安装lcov工具和bc计算器
+        sudo apt-get update
+        sudo apt-get install -y lcov bc
+        
+        # 检查gcov数据文件
+        echo "检查gcov数据文件..."
+        find . -name "*.gcda" -exec echo "Found gcda: {}" \;
+        find . -name "*.gcno" -exec echo "Found gcno: {}" \;
+        
+        # 初始化覆盖率数据
+        lcov --zerocounters --directory . || echo "清零计数器失败，继续"
+        lcov --capture --initial --directory . --output-file coverage_base.info || echo "初始化捕获失败，继续"
+        
+        # 运行测试以生成覆盖率数据
+        echo "运行测试生成覆盖率数据..."
+        if [ -f "./bin/comprehensive_tdd_tests" ]; then
+          ./bin/comprehensive_tdd_tests || echo "测试运行失败，但继续收集覆盖率"
+        fi
         
         # 生成覆盖率报告
-        lcov --capture --directory . --output-file coverage.info || {
+        lcov --capture --directory . --output-file coverage_test.info || {
           echo "⚠️ lcov capture失败，尝试手动收集"
-          find . -name "*.gcda" -exec echo "Found: {}" \;
+          find . -name "*.gcda" -exec echo "Found after test: {}" \;
+          # 尝试直接使用gcov
+          find . -name "*.gcno" -exec gcov {} \; || echo "gcov失败"
           exit 0
         }
         
+        # 合并基线和测试覆盖率
+        lcov --add-tracefile coverage_base.info --add-tracefile coverage_test.info --output-file coverage_total.info || {
+          echo "合并失败，使用测试覆盖率"
+          cp coverage_test.info coverage_total.info
+        }
+        
         # 过滤系统文件和测试文件
-        lcov --remove coverage.info '/usr/*' --output-file coverage.info || echo "过滤失败，继续"
-        lcov --remove coverage.info '*/tests/*' --output-file coverage.info || echo "过滤失败，继续"
+        lcov --remove coverage_total.info '/usr/*' '*/tests/*' '*/build/*' --output-file coverage_filtered.info || {
+          echo "过滤失败，使用原始数据"
+          cp coverage_total.info coverage_filtered.info
+        }
         
         # 生成HTML报告
-        genhtml coverage.info --output-directory coverage_html || echo "HTML生成失败，继续"
+        genhtml coverage_filtered.info --output-directory coverage_html --title "PLC Runtime Core Coverage" --num-spaces 4 || echo "HTML生成失败，继续"
         
         # 显示覆盖率摘要
-        lcov --list coverage.info || echo "摘要显示失败"
+        lcov --list coverage_filtered.info || echo "摘要显示失败"
+        
+        # 计算覆盖率百分比
+        COVERAGE_PERCENT=$(lcov --summary coverage_filtered.info 2>/dev/null | grep -o 'lines......: [0-9.]*%' | grep -o '[0-9.]*' || echo "0")
+        echo "代码覆盖率: ${COVERAGE_PERCENT}%"
+        
+        # 设置覆盖率阈值
+        COVERAGE_THRESHOLD=70
+        if (( $(echo "$COVERAGE_PERCENT >= $COVERAGE_THRESHOLD" | bc -l) )); then
+          echo "✅ 覆盖率达标: ${COVERAGE_PERCENT}% >= ${COVERAGE_THRESHOLD}%"
+        else
+          echo "⚠️ 覆盖率未达标: ${COVERAGE_PERCENT}% < ${COVERAGE_THRESHOLD}%，但不阻止构建"
+        fi
+        
         echo "=== 代码覆盖率收集完成 ==="
         
     - name: 上传测试结果和日志
@@ -422,6 +536,131 @@ jobs:
             repo: context.repo.repo,
             body: summary
           });
+
+  code-coverage:
+    name: 代码覆盖率分析
+    runs-on: ubuntu-latest
+    needs: tdd-tests
+    if: always() && (github.event.inputs.run_coverage != 'false')
+    
+    steps:
+    - name: 检出代码
+      uses: actions/checkout@v4
+      
+    - name: 设置编译环境
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          build-essential \
+          cmake \
+          ninja-build \
+          g++-11 \
+          libgtest-dev \
+          libgmock-dev \
+          lcov \
+          bc
+        sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-11 100
+        sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-11 100
+        
+    - name: 配置CMake (启用覆盖率)
+      run: |
+        mkdir -p build
+        cd build
+        cmake -G Ninja \
+          -DCMAKE_BUILD_TYPE=Debug \
+          -DCMAKE_CXX_STANDARD=17 \
+          -DCMAKE_CXX_STANDARD_REQUIRED=ON \
+          -DENABLE_COVERAGE=ON \
+          ..
+          
+    - name: 构建项目
+      run: |
+        cd build
+        ninja
+        
+    - name: 运行测试并收集覆盖率
+      run: |
+        cd build
+        echo "=== 运行测试并收集代码覆盖率 ==="
+        
+        # 清理之前的覆盖率数据
+        find . -name "*.gcda" -delete || true
+        
+        # 运行所有可用的测试
+        echo "运行comprehensive_tdd_tests..."
+        if [ -f "./bin/comprehensive_tdd_tests" ]; then
+          ./bin/comprehensive_tdd_tests || echo "comprehensive_tdd_tests失败，继续"
+        fi
+        
+        echo "运行simple_mvp1_test..."
+        if [ -f "./bin/simple_mvp1_test" ]; then
+          ./bin/simple_mvp1_test || echo "simple_mvp1_test失败，继续"
+        fi
+        
+        echo "运行simple_axis_test..."
+        if [ -f "./bin/simple_axis_test" ]; then
+          ./bin/simple_axis_test || echo "simple_axis_test失败，继续"
+        fi
+        
+        echo "运行modbus测试..."
+        if [ -f "./bin/modbus_basic_test" ]; then
+          ./bin/modbus_basic_test || echo "modbus_basic_test失败，继续"
+        fi
+        
+        if [ -f "./bin/modbus_simple_test" ]; then
+          ./bin/modbus_simple_test || echo "modbus_simple_test失败，继续"
+        fi
+        
+        # 收集覆盖率数据
+        echo "收集覆盖率数据..."
+        lcov --capture --directory . --output-file coverage_raw.info || {
+          echo "lcov capture失败，检查gcov文件"
+          find . -name "*.gcda" -exec echo "Found: {}" \;
+          exit 1
+        }
+        
+        # 过滤不需要的文件
+        lcov --remove coverage_raw.info \
+          '/usr/*' \
+          '*/tests/*' \
+          '*/build/*' \
+          '*/examples/*' \
+          --output-file coverage_filtered.info
+        
+        # 生成HTML报告
+        genhtml coverage_filtered.info \
+          --output-directory coverage_html \
+          --title "PLC Runtime Core Coverage Report" \
+          --num-spaces 4 \
+          --legend
+        
+        # 显示覆盖率摘要
+        echo "=== 覆盖率摘要 ==="
+        lcov --list coverage_filtered.info
+        
+        # 计算覆盖率百分比
+        COVERAGE_PERCENT=$(lcov --summary coverage_filtered.info 2>/dev/null | grep -o 'lines......: [0-9.]*%' | grep -o '[0-9.]*' || echo "0")
+        echo "总体代码覆盖率: ${COVERAGE_PERCENT}%"
+        
+        # 设置覆盖率目标
+        COVERAGE_TARGET=75
+        if (( $(echo "$COVERAGE_PERCENT >= $COVERAGE_TARGET" | bc -l) )); then
+          echo "✅ 覆盖率达到目标: ${COVERAGE_PERCENT}% >= ${COVERAGE_TARGET}%"
+        else
+          echo "⚠️ 覆盖率未达目标: ${COVERAGE_PERCENT}% < ${COVERAGE_TARGET}%"
+          echo "这不会阻止构建，但建议增加测试覆盖"
+        fi
+        
+        echo "=== 代码覆盖率分析完成 ==="
+        
+    - name: 上传覆盖率报告
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-report
+        path: |
+          build/coverage_filtered.info
+          build/coverage_html/
+        retention-days: 30
 
   code-quality:
     name: 代码质量检查

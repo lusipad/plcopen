@@ -32,9 +32,39 @@ enable_testing()
 # 代码覆盖率支持
 option(ENABLE_COVERAGE "Enable code coverage" OFF)
 if(ENABLE_COVERAGE AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --coverage -fprofile-arcs -ftest-coverage")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --coverage -fprofile-arcs -ftest-coverage -O0")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --coverage")
-    message(STATUS "Code coverage enabled")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} --coverage -fprofile-arcs -ftest-coverage -O0")
+    set(CMAKE_C_LINKER_FLAGS "${CMAKE_C_LINKER_FLAGS} --coverage")
+    message(STATUS "Code coverage enabled with gcov support")
+    
+    # 确保覆盖率数据目录存在
+    file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/coverage)
+    
+    # 添加覆盖率清理目标
+    add_custom_target(coverage-clean
+        COMMAND find ${CMAKE_BINARY_DIR} -name "*.gcda" -delete
+        COMMAND find ${CMAKE_BINARY_DIR} -name "*.gcno" -delete
+        COMMENT "Cleaning coverage data"
+    )
+    
+    # 添加覆盖率收集目标
+    find_program(LCOV_PATH lcov)
+    find_program(GENHTML_PATH genhtml)
+    
+    if(LCOV_PATH AND GENHTML_PATH)
+        add_custom_target(coverage
+            COMMAND ${LCOV_PATH} --capture --directory ${CMAKE_BINARY_DIR} --output-file coverage.info
+            COMMAND ${LCOV_PATH} --remove coverage.info '/usr/*' '*/tests/*' --output-file coverage_filtered.info
+            COMMAND ${GENHTML_PATH} coverage_filtered.info --output-directory coverage_html
+            COMMAND ${LCOV_PATH} --list coverage_filtered.info
+            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+            COMMENT "Generating code coverage report"
+        )
+        message(STATUS "Coverage targets added: coverage-clean, coverage")
+    else()
+        message(WARNING "lcov or genhtml not found, coverage target not available")
+    endif()
 endif()
 
 # 基准测试优化配置
@@ -239,6 +269,44 @@ target_include_directories(modbus_basic_test PRIVATE ${CMAKE_SOURCE_DIR}/include
 target_link_libraries(modbus_basic_test communication)
 target_include_directories(modbus_simple_test PRIVATE ${CMAKE_SOURCE_DIR}/include)
 target_link_libraries(modbus_simple_test communication)
+
+# 为所有测试目标添加代码覆盖率支持
+if(ENABLE_COVERAGE)
+    set(TEST_TARGETS 
+        mvp1_integration_test 
+        simple_mvp1_test 
+        simple_axis_test 
+        comprehensive_tdd_tests 
+        modbus_tcp_test 
+        modbus_basic_test 
+        modbus_simple_test
+    )
+    
+    foreach(target ${TEST_TARGETS})
+        if(TARGET ${target})
+            target_compile_options(${target} PRIVATE --coverage -fprofile-arcs -ftest-coverage -O0)
+            target_link_options(${target} PRIVATE --coverage)
+            message(STATUS "Coverage enabled for target: ${target}")
+        endif()
+    endforeach()
+    
+    # 为库目标添加覆盖率支持
+    set(LIB_TARGETS 
+        io_system 
+        communication 
+        memory_manager 
+        lockfree 
+        error_system
+    )
+    
+    foreach(target ${LIB_TARGETS})
+        if(TARGET ${target})
+            target_compile_options(${target} PRIVATE --coverage -fprofile-arcs -ftest-coverage -O0)
+            target_link_options(${target} PRIVATE --coverage)
+            message(STATUS "Coverage enabled for library: ${target}")
+        endif()
+    endforeach()
+endif()
 
 # ST编译器测试可执行文件 - 暂时跳过等待重构
 # add_executable(test_st_compiler tests/unit/test_st_compiler.cpp)
