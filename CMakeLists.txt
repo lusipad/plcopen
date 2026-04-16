@@ -11,4 +11,6 @@ project(
   HOMEPAGE_URL "http://github.com/lusipad/plcopen"
   LANGUAGES CXX)
 
+include(CTest)
+
 add_subdirectory(src)

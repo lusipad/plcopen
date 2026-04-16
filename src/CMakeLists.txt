@@ -39,9 +39,25 @@ target_link_libraries(axis_homing ${PROJECT_NAME})
 add_executable(axis_move_oscilloscope demo/axis_move_oscilloscope.cpp)
 target_link_libraries(axis_move_oscilloscope ${PROJECT_NAME})
 
-# 添加测试可执行文件
-add_executable(test_basic test/test_basic.cpp)
-target_link_libraries(test_basic ${PROJECT_NAME})
+if(BUILD_TESTING)
+    include(FetchContent)
+
+    FetchContent_Declare(
+        Catch2
+        GIT_REPOSITORY https://github.com/catchorg/Catch2.git
+        GIT_TAG v3.11.0
+    )
+    set(CATCH_BUILD_TESTING OFF CACHE BOOL "" FORCE)
+    set(CATCH_INSTALL_DOCS OFF CACHE BOOL "" FORCE)
+    FetchContent_MakeAvailable(Catch2)
+
+    list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/extras)
+    include(Catch)
+
+    add_executable(test_basic test/test_basic.cpp)
+    target_link_libraries(test_basic PRIVATE ${PROJECT_NAME} Catch2::Catch2WithMain)
+    catch_discover_tests(test_basic)
+endif()
 
 install(TARGETS ${PROJECT_NAME}
     LIBRARY DESTINATION lib
