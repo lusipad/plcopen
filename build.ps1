@@ -37,6 +37,40 @@ $BuildDir = Join-Path $ProjectRoot "build"
 $OutDir = Join-Path $ProjectRoot "out"
 $StartTime = Get-Date
 
+function Find-BuildArtifact {
+    param([string]$Name)
+
+    if (-not (Test-Path $BuildDir)) {
+        return $null
+    }
+
+    $Candidates = Get-ChildItem -Path $BuildDir -Recurse -File -Filter $Name -ErrorAction SilentlyContinue
+    if (-not $Candidates) {
+        return $null
+    }
+
+    $ConfigCandidates = $Candidates | Where-Object {
+        $_.FullName -match "[\\\\/]$([regex]::Escape($Configuration))[\\\\/]"
+    }
+    if ($ConfigCandidates) {
+        return ($ConfigCandidates | Select-Object -First 1).FullName
+    }
+
+    return ($Candidates | Select-Object -First 1).FullName
+}
+
+function Get-BuildOutputDir {
+    $PrimaryArtifact = Find-BuildArtifact "plcopen.dll"
+    if (-not $PrimaryArtifact) {
+        $PrimaryArtifact = Find-BuildArtifact "plcopen.lib"
+    }
+    if (-not $PrimaryArtifact) {
+        return $null
+    }
+
+    return Split-Path -Parent $PrimaryArtifact
+}
+
 # Environment check function
 function Test-Environment {
     Write-Info "Checking build environment..."
@@ -83,7 +117,6 @@ function Invoke-CMakeConfigure {
     
     # Set CMake variables
     $CMakeVars = @(
-        "-G", "Visual Studio 17 2022",
         "-DCMAKE_BUILD_TYPE=$Configuration"
     )
     
@@ -132,15 +165,30 @@ function Invoke-Tests {
     Write-Info "Executing test suite..."
     
     # Check test executable
-    $TestExe = Join-Path $BuildDir $Configuration "test_basic.exe"
-    if (-not (Test-Path $TestExe)) {
+    $BuildOutputDir = Get-BuildOutputDir
+    $TestExe = Find-BuildArtifact "test_basic.exe"
+    if (-not $TestExe -or -not (Test-Path $TestExe)) {
         Write-Warning "Test executable not found: $TestExe"
         return
     }
+
+    $TestRunDir = Join-Path $OutDir "testrun"
+    if (Test-Path $TestRunDir) {
+        Remove-Item $TestRunDir -Recurse -Force
+    }
+    New-Item -ItemType Directory -Path $TestRunDir -Force | Out-Null
+
+    Copy-Item $TestExe $TestRunDir -Force
+
+    $LibraryDll = Find-BuildArtifact "plcopen.dll"
+    if ($LibraryDll -and (Test-Path $LibraryDll)) {
+        Copy-Item $LibraryDll $TestRunDir -Force
+    }
     
     # Execute tests
-    Write-Info "Running tests: $TestExe"
-    $TestResult = & $TestExe 2>&1
+    $RunnableTestExe = (Resolve-Path (Join-Path $TestRunDir "test_basic.exe")).Path
+    Write-Info "Running tests: $RunnableTestExe"
+    $TestResult = & $RunnableTestExe 2>&1
     $TestExitCode = $LASTEXITCODE
     
     if ($TestExitCode -eq 0) {
@@ -165,8 +213,8 @@ function Invoke-Install {
     }
     
     # Copy executables
-    $SourceDir = Join-Path $BuildDir $Configuration
-    if (Test-Path $SourceDir) {
+    $SourceDir = Get-BuildOutputDir
+    if ($SourceDir -and (Test-Path $SourceDir)) {
         Copy-Item "$SourceDir\*.exe" $OutDir -Force
         Copy-Item "$SourceDir\*.dll" $OutDir -Force
         Copy-Item "$SourceDir\*.lib" $OutDir -Force
@@ -185,7 +233,7 @@ function Invoke-Install {
 # Main function
 function Main {
     try {
-        Write-ColorOutput "🚀 Uranus PLC Build Script Starting" "Magenta"
+        Write-ColorOutput "🚀 plcopen Build Script Starting" "Magenta"
         Write-ColorOutput "==========================================" "Magenta"
         
         # Environment check
@@ -208,10 +256,11 @@ function Main {
         # Install project
         Invoke-Install
         
+        $BuildDurationSeconds = ((Get-Date) - $StartTime).TotalSeconds
         Write-ColorOutput "==========================================" "Magenta"
         Write-Success "🎉 Build completed!"
         Write-Info "Build Configuration: $Configuration"
-        Write-Info "Build Duration: $((Get-Date) - $StartTime).TotalSeconds.ToString('F2') seconds"
+        Write-Info ("Build Duration: {0:F2} seconds" -f $BuildDurationSeconds)
         
         if ($Test) {
             Write-Info "Test Status: Executed"

@@ -27,7 +27,7 @@
 
 #include <cmath>
 
-namespace Uranus {
+namespace plcopen {
 
 #ifndef __square
 #define __square(x) ((x)*(x))

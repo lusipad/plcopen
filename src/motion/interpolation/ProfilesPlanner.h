@@ -28,7 +28,7 @@
 #include "ExeclQueue.h"
 #include "ProfilePlanner.h"
 
-namespace Uranus {
+namespace plcopen {
 
 class ProfileNode : virtual public ExeclNode
 {

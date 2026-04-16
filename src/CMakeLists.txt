@@ -19,35 +19,35 @@
 # under the License.
 # 
 
-PROJECT(Uranus)
+project(plcopen)
 
-INCLUDE(Uranus.cmake)
+include(plcopen.cmake)
 
-file(GLOB_RECURSE URANUS_HEADER  ${CMAKE_CURRENT_SOURCE_DIR}/*.h )
-source_group("Header Files" FILES ${URANUS_HEADER}) 
+file(GLOB_RECURSE PLCOPEN_HEADER ${CMAKE_CURRENT_SOURCE_DIR}/*.h)
+source_group("Header Files" FILES ${PLCOPEN_HEADER})
 
-ADD_LIBRARY(${PROJECT_NAME} SHARED ${URANUS_SOURCE} ${URANUS_HEADER})
+add_library(${PROJECT_NAME} SHARED ${PLCOPEN_SOURCE} ${PLCOPEN_HEADER})
 
-SET_TARGET_PROPERTIES(${PROJECT_NAME} PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS TRUE)
+set_target_properties(${PROJECT_NAME} PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS TRUE)
 
-ADD_EXECUTABLE(axis_move demo/axis_move.cpp)
-TARGET_LINK_LIBRARIES(axis_move ${PROJECT_NAME})
+add_executable(axis_move demo/axis_move.cpp)
+target_link_libraries(axis_move ${PROJECT_NAME})
 
-ADD_EXECUTABLE(axis_homing demo/axis_homing.cpp)
-TARGET_LINK_LIBRARIES(axis_homing ${PROJECT_NAME})
+add_executable(axis_homing demo/axis_homing.cpp)
+target_link_libraries(axis_homing ${PROJECT_NAME})
 
-ADD_EXECUTABLE(axis_move_oscilloscope demo/axis_move_oscilloscope.cpp)
-TARGET_LINK_LIBRARIES(axis_move_oscilloscope ${PROJECT_NAME})
+add_executable(axis_move_oscilloscope demo/axis_move_oscilloscope.cpp)
+target_link_libraries(axis_move_oscilloscope ${PROJECT_NAME})
 
 # 添加测试可执行文件
-ADD_EXECUTABLE(test_basic test/test_basic.cpp)
-TARGET_LINK_LIBRARIES(test_basic ${PROJECT_NAME})
+add_executable(test_basic test/test_basic.cpp)
+target_link_libraries(test_basic ${PROJECT_NAME})
 
-INSTALL(TARGETS Uranus
+install(TARGETS ${PROJECT_NAME}
     LIBRARY DESTINATION lib
 )
 
-INSTALL(FILES 
+install(FILES
     fb/FunctionBlock.h 
     fb/FbPLCOpenBase.h 
     fb/FbSingleAxis.h
@@ -55,5 +55,5 @@ INSTALL(FILES
     motion/Servo.h 
     motion/Global.h 
     motion/Scheduler.h
-    DESTINATION include/Uranus
+    DESTINATION include/plcopen
 )

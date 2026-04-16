@@ -26,7 +26,7 @@
 #include "FunctionBlock.h"
 // #include "AxesGroupBase.h"
 
-namespace Uranus
+namespace plcopen
 {
 
     class AxisMotionBase::AxisMotionBaseImpl
@@ -154,4 +154,4 @@ namespace Uranus
         }
     }
 
-} // namespace Uranus
+} // namespace plcopen

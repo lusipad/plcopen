@@ -29,7 +29,7 @@
 #include "ExeclQueue.h"
 #include "LinkList.h"
 
-namespace Uranus
+namespace plcopen
 {
 
     // class AxesGroupBase;

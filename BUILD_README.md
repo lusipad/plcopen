@@ -1,8 +1,8 @@
-# Uranus PLC 构建脚本使用说明
+# plcopen 构建脚本使用说明
 
 ## 概述
 
-本项目提供了一个 PowerShell 构建脚本，用于一键编译和测试 Uranus PLC 项目：
+本项目提供了一个 PowerShell 构建脚本，用于一键编译和测试 plcopen 项目：
 
 **`build.ps1`** - 完整功能构建脚本
 
@@ -68,14 +68,14 @@
 
 - **构建目录**: `build/`
 - **输出目录**: `out/`
-- **可执行文件**: `build/src/Release/` 或 `build/src/Debug/`
+- **可执行文件**: 取决于生成器，常见为 `build/src/Release/`、`build/src/Debug/`、`build/Release/` 或 `build/Debug/`
 
 ## 生成的文件
 
 构建完成后，会生成以下文件：
 
-- `Uranus.dll` - 主库文件
-- `Uranus.lib` - 导入库
+- `plcopen.dll` - 主库文件
+- `plcopen.lib` - 导入库
 - `test_basic.exe` - 基本测试程序
 - `axis_move.exe` - 轴运动演示程序
 - `axis_homing.exe` - 轴回零演示程序
@@ -113,13 +113,14 @@ mkdir build
 cd build
 
 # 2. 配置CMake
-cmake -G "Visual Studio 17 2022" -DCMAKE_BUILD_TYPE=Release ..
+cmake -DCMAKE_BUILD_TYPE=Release ..
 
 # 3. 构建项目
 cmake --build . --config Release --parallel
 
 # 4. 运行测试
-.\src\Release\test_basic.exe
+$testExe = Get-ChildItem . -Recurse -Filter test_basic.exe | Select-Object -First 1
+& $testExe.FullName
 ```
 
 ## 开发说明
@@ -132,13 +133,13 @@ cmake --build . --config Release --parallel
 $BuildConfigs = @{
     "Debug" = @{
         CMAKE_BUILD_TYPE = "Debug"
-        URANUS_ENABLE_ASSERTS = "ON"
-        URANUS_ENABLE_LOGGING = "ON"
+        PLCOPEN_ENABLE_ASSERTS = "ON"
+        PLCOPEN_ENABLE_LOGGING = "ON"
     }
     "Release" = @{
         CMAKE_BUILD_TYPE = "Release"
-        URANUS_ENABLE_ASSERTS = "OFF"
-        URANUS_ENABLE_LOGGING = "OFF"
+        PLCOPEN_ENABLE_ASSERTS = "OFF"
+        PLCOPEN_ENABLE_LOGGING = "OFF"
     }
     # 添加新配置...
 }
@@ -150,10 +151,9 @@ $BuildConfigs = @{
 
 ```powershell
 $CMakeVars = @(
-    "-G", "Visual Studio 17 2022",
     "-DCMAKE_BUILD_TYPE=$Configuration",
-    "-DURANUS_ENABLE_TESTS=ON",
-    "-DURANUS_ENABLE_BENCHMARKS=ON",
+    "-DPLCOPEN_ENABLE_TESTS=ON",
+    "-DPLCOPEN_ENABLE_BENCHMARKS=ON",
     # 添加更多选项...
 )
 ```

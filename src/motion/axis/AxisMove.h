@@ -27,7 +27,7 @@
 
 #include "AxisMotionBase.h"
 
-namespace Uranus
+namespace plcopen
 {
 
     class AxisMove : virtual public AxisMotionBase

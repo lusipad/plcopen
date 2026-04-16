@@ -1,4 +1,4 @@
-/*
+﻿/*
  * FbSingleAxis.h
  *
  * Copyright 2020 (C) SYMG(Shanghai) Intelligence System Co.,Ltd
@@ -27,7 +27,7 @@
 
 #include "FbPLCOpenBase.h"
 
-namespace Uranus
+namespace plcopen
 {
 
 #pragma pack(push)

@@ -31,7 +31,7 @@
 
 #include "LinkList.h"
 
-namespace Uranus
+namespace plcopen
 {
 
     LinkNode::LinkNode()
@@ -87,4 +87,4 @@ namespace Uranus
         return mPrev;
     }
 
-} // namespace Uranus
+} // namespace plcopen

@@ -29,7 +29,7 @@
 #include "Event.h"
 #include <stdarg.h>
 
-namespace Uranus 
+namespace plcopen 
 {
     class Servo;
     class AxisBase

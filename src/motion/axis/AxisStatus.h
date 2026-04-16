@@ -27,7 +27,7 @@
 
 #include "AxisBase.h"
 
-namespace Uranus
+namespace plcopen
 {
 
     class AxisStatus : virtual public AxisBase

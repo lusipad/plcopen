@@ -24,7 +24,7 @@
 
 #include "AxisMotion.h"
 
-namespace Uranus
+namespace plcopen
 {
 
     AxisMotion::AxisMotion()
@@ -45,4 +45,4 @@ namespace Uranus
         return sysPosToUser(AxisBase::actPosition());
     }
 
-} // namespace Uranus
+} // namespace plcopen

@@ -27,7 +27,7 @@
 
 #include "Global.h"
 
-namespace Uranus
+namespace plcopen
 {
     #pragma pack(push)
     #pragma pack(4)

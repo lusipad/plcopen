@@ -6,7 +6,7 @@
 #include "Scheduler.h"
 #include <iostream>
 
-using namespace Uranus;
+using namespace plcopen;
 
 class SimpleTest
 {

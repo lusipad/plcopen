@@ -25,7 +25,7 @@
 #include "Scheduler.h"
 #include "Axis.h"
 
-namespace Uranus
+namespace plcopen
 {
 
 class Scheduler::SchedulerImpl
@@ -159,4 +159,4 @@ void Scheduler::release(void)
     }
 }
 
-} // namespace Uranus
+} // namespace plcopen

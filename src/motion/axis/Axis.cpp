@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Axis.cpp
  *
  * Copyright 2020 (C) SYMG(Shanghai) Intelligence System Co.,Ltd
@@ -27,7 +27,7 @@
 #include <stdarg.h>
 #include <string.h>
 
-namespace Uranus
+namespace plcopen
 {
 
     Axis::Axis()
@@ -66,4 +66,4 @@ namespace Uranus
         return mAxisId;
     }
 
-} // namespace Uranus
+} // namespace plcopen

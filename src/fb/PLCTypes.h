@@ -29,7 +29,7 @@
 #include <memory>
 #include "Global.h"
 
-namespace Uranus
+namespace plcopen
 {
 
 #pragma pack(push)

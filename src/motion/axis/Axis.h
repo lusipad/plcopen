@@ -27,7 +27,7 @@
 
 #include "AxisMotion.h"
 
-namespace Uranus
+namespace plcopen
 {
     class Scheduler;
     class Axis : public AxisMotion

@@ -24,7 +24,7 @@
 
 #include "AxisStatus.h"
 #include <stdio.h>
-namespace Uranus
+namespace plcopen
 {
 
 class AxisStatus::AxisStatusImpl
@@ -168,4 +168,4 @@ void AxisStatus::onPowerStatusChangedHandler(AxisBase *this_, bool powerStatus)
     this__->mImpl_->mStatus = powerStatus ? MC_AxisStatus::STANDSTILL : MC_AxisStatus::DISABLED;
 }
 
-} // namespace Uranus
+} // namespace plcopen

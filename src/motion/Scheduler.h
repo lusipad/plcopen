@@ -28,7 +28,7 @@
 #include "Global.h"
 #include "Servo.h"
 
-namespace Uranus
+namespace plcopen
 {
 
 #pragma pack(push)

@@ -29,10 +29,10 @@
 |---|------|------------------|------|
 | 0.1 | 归档 `.kiro/specs/` / `plan.md` / `MILESTONES.md` | 文件移到 `doc/vision/`，`git log --follow` 可追溯 | ✅ 已 stage |
 | 0.2 | 写 `VISION.md` | 包含愿景层次、解锁条件、原则、边界 | ✅ 完成 |
-| 0.3 | 写 `ROADMAP.md`（本文） | 明确 v0.2.0 具体任务和 DoD | 🚧 进行中 |
-| 0.4 | 写 `doc/vision/README.md` 归档前言 | 说明归档文档的性质，避免被当路线图 | ⏳ 待开始 |
-| 0.5 | 重写根目录 `README.md` | 首屏有一句话定位 + 对比表 + 快速开始 | ⏳ 待开始 |
-| 0.6 | 命名统一（`plcopen` 为主） | CMake、生成物、namespace 一致 | ⏳ 待开始 |
+| 0.3 | 写 `ROADMAP.md`（本文） | 明确 v0.2.0 具体任务和 DoD | ✅ 完成 |
+| 0.4 | 写 `doc/vision/README.md` 归档前言 | 说明归档文档的性质，避免被当路线图 | ✅ 完成 |
+| 0.5 | 重写根目录 `README.md` | 首屏有一句话定位 + 对比表 + 快速开始 | ✅ 完成 |
+| 0.6 | 命名统一（`plcopen` 为主） | CMake、生成物、namespace 一致 | ✅ 完成 |
 | 0.7 | Commit Sprint 0 所有变更 | 一次清晰的 commit，message 说清搬家意图 | ⏳ 待开始 |
 
 ### Sprint 1：测试与 CI（2026-05 → 2026-06，约 4 周）

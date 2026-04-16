@@ -28,7 +28,7 @@
 #include "MathUtils.h"
 #include "ProfilePlanner.h"
 
-namespace Uranus
+namespace plcopen
 {
 
     enum class MC_HomingStep
@@ -264,4 +264,4 @@ namespace Uranus
         this__->mImpl_->mPlanner.setPositionOffset(positionOffset);
     }
 
-} // namespace Uranus
+} // namespace plcopen

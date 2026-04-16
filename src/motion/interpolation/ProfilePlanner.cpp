@@ -32,7 +32,7 @@
 
 // #define MC_DEBUG 1
 
-namespace Uranus
+namespace plcopen
 {
 
 typedef ProfilePlanner::Segment Segment;
@@ -611,4 +611,4 @@ static inline bool is_acc_neg(double start_vel, double end_vel)
     return (end_vel < start_vel);
 }
 
-} // namespace Uranus
+} // namespace plcopen

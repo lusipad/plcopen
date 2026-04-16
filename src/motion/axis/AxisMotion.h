@@ -28,7 +28,7 @@
 #include "AxisMove.h"
 #include "AxisHoming.h"
 
-namespace Uranus
+namespace plcopen
 {
 
     class AxisMotion : virtual public AxisMove,

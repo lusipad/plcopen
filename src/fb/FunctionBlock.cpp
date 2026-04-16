@@ -25,7 +25,7 @@
 #include "FunctionBlock.h"
 #include "Scheduler.h"
 
-namespace Uranus
+namespace plcopen
 {
 
 }

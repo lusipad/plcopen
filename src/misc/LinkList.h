@@ -25,7 +25,7 @@
 #ifndef _URANUS_LINKLIST_HPP_
 #define _URANUS_LINKLIST_HPP_
 
-namespace Uranus
+namespace plcopen
 {
 
     class LinkNode

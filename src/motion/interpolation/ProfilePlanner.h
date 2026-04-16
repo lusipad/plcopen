@@ -29,7 +29,7 @@
 
 #include <stdint.h>
 
-namespace Uranus
+namespace plcopen
 {
 
 #define MAX_ROUTE_SEGMENT_NUM 5

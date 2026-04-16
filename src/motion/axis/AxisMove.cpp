@@ -28,7 +28,7 @@
 #include "MathUtils.h"
 #include "ProfilesPlanner.h"
 
-namespace Uranus
+namespace plcopen
 {
 
 class MoveNode : virtual public AxisExeclNode, public ProfileNode
@@ -291,4 +291,4 @@ void AxisMove::onAllNodesErrorHandler(ExeclQueue *this_, MC_ErrorCode errorCodeT
     // AxisMove* this__ = dynamic_cast<AxisMove*>(this_);
 }
 
-} // namespace Uranus
+} // namespace plcopen

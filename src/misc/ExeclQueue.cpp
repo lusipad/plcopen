@@ -27,7 +27,7 @@
 
 #include <cstdint>
 
-namespace Uranus
+namespace plcopen
 {
 
 #define URANUS_AXISEXECLLISTSIZE 6
@@ -249,4 +249,4 @@ namespace Uranus
         URANUS_CALL_EVENT(onAllNodesError, this, errorCodeToSet);
     }
 
-} // namespace Uranus
+} // namespace plcopen

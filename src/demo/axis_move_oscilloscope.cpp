@@ -34,7 +34,7 @@
 #include <vector>
 #include <string>
 
-using namespace Uranus;
+using namespace plcopen;
 using std::cout;
 using std::endl;
 using std::vector;

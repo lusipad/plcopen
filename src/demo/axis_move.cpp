@@ -32,7 +32,7 @@
 #include <chrono>
 #include <thread>
 
-using namespace Uranus;
+using namespace plcopen;
 // 避免全局命名空间污染，使用具体的std成员
 using std::cout;
 using std::endl;

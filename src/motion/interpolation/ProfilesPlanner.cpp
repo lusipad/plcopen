@@ -26,7 +26,7 @@
 #include "MathUtils.h"
 #include "ProfilePlanner.h"
 
-namespace Uranus
+namespace plcopen
 {
 
 class ProfilesPlanner::ProfilesPlannerImpl
@@ -53,4 +53,4 @@ bool ProfilesPlanner::plan(ProfileNode *node, double startPos, double startVel, 
     return ProfilePlanner::plan(startPos, node->mEndPos, startVel, node->mVel, node->mEndVel, node->mAcc, node->mDec);
 }
 
-}; // namespace Uranus
+}; // namespace plcopen

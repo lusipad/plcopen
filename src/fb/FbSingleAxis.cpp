@@ -27,7 +27,7 @@
 
 #include <cstring>
 
-namespace Uranus
+namespace plcopen
 {
 
     void FbPower::call(void)
@@ -309,4 +309,4 @@ namespace Uranus
         return MC_ErrorCode::GOOD;
     }
 
-} // namespace Uranus
+} // namespace plcopen

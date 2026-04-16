@@ -69,7 +69,6 @@ plcopen 想填补的空白是**"现代 C++ 的可嵌入 PLCopen 运动控制库"
 - Linux 构建脚本 + 文档
 - CMake `install(EXPORT)` + `find_package(plcopen)` 支持
 - `FetchContent` 兼容
-- 项目命名统一（`Uranus` → `plcopen`）
 
 完整清单见 [ROADMAP.md](ROADMAP.md)。
 
@@ -118,7 +117,7 @@ cmake --build build --config Release
 #include <thread>
 #include <chrono>
 
-using namespace Uranus;  // 注：namespace 会在 v0.2.0 统一为 plcopen
+using namespace plcopen;
 
 int main() {
     // 1. 建调度器和轴
@@ -239,7 +238,6 @@ int main() {
 
 ## 已知问题
 
-- **命名不统一**：项目名是 `plcopen`，但 C++ namespace 是 `Uranus`（历史遗留，fork 自 i5cnc）。v0.2.0 会统一。
 - **Linux 构建**：代码本身跨平台，但构建脚本目前只有 PowerShell。v0.2.0 补 Linux。
 - **测试覆盖率极低**：只有一个 `test_basic.cpp`，v0.2.0 正在补。
 - **MC_Home 未完成**：约 75%，不要用于生产。

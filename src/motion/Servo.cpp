@@ -25,7 +25,7 @@
 #include "Servo.h"
 #include "Scheduler.h"
 
-namespace Uranus
+namespace plcopen
 {
 
     class Servo::ServoImpl
@@ -120,4 +120,4 @@ namespace Uranus
         mImpl_->mVel = mImpl_->mAcc = 0;
     }
 
-} // namespace Uranus
+} // namespace plcopen

@@ -29,7 +29,7 @@
 
 #include <cstring>
 
-namespace Uranus
+namespace plcopen
 {
 
 #define URANUS_AXISNAMESIZE 64
@@ -682,4 +682,4 @@ namespace Uranus
     }
 
 }
-// namespace Uranus
+// namespace plcopen

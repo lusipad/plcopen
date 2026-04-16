@@ -29,7 +29,7 @@
 #include "PLCTypes.h"
 
 // TODO: 这里的组合有点问题，需要优化下
-namespace Uranus 
+namespace plcopen 
 {
     #pragma pack(push)
     #pragma pack(4)

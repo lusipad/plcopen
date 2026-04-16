@@ -28,7 +28,7 @@
 #include <cstdint>
 #include <cstddef>
 
-namespace Uranus
+namespace plcopen
 {
 
 #pragma pack(push)

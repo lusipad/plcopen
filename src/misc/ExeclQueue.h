@@ -29,7 +29,7 @@
 #include "Event.h"
 #include <functional>
 
-namespace Uranus
+namespace plcopen
 {
 
     enum class ExeclNodeExecStat

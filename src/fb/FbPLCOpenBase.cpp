@@ -24,7 +24,7 @@
 
 #include "FbPLCOpenBase.h"
 
-namespace Uranus
+namespace plcopen
 {
 
     void FbBaseType::onOperationError(MC_ErrorCode errorCode, int32_t customId)
@@ -236,4 +236,4 @@ namespace Uranus
 
     ////////////////////////////////////////////////////////////
 
-} // namespace Uranus
+} // namespace plcopen
