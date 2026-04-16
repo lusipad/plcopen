@@ -54,7 +54,11 @@ if(BUILD_TESTING)
     list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/extras)
     include(Catch)
 
-    add_executable(test_basic test/test_basic.cpp)
+    add_executable(
+        test_basic
+        test/test_basic.cpp
+        test/test_axis_status.cpp
+    )
     target_link_libraries(test_basic PRIVATE ${PROJECT_NAME} Catch2::Catch2WithMain)
     catch_discover_tests(test_basic)
 endif()
