@@ -535,7 +535,10 @@ static bool check_results(const Segment *segments, int length)
 
 static bool route_param_pre_process(double &vel, double &acc, double &dec, double &end_vel)
 {
-    if (acc == 0.0 || dec == 0.0)
+    if (__iseq(vel, 0.0) || __iseq(acc, 0.0) || __iseq(dec, 0.0))
+        return false;
+
+    if (!std::isfinite(vel) || !std::isfinite(acc) || !std::isfinite(dec) || !std::isfinite(end_vel))
         return false;
 
     vel = fabs(vel);
