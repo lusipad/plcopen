@@ -15,6 +15,19 @@ include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 include(CTest)
 
+set(PLCOPEN_IS_TOP_LEVEL OFF)
+if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
+  set(PLCOPEN_IS_TOP_LEVEL ON)
+endif()
+
+option(PLCOPEN_BUILD_DEMOS "Build plcopen demo executables" ${PLCOPEN_IS_TOP_LEVEL})
+set(PLCOPEN_DEFAULT_BUILD_TESTS OFF)
+if(PLCOPEN_IS_TOP_LEVEL)
+  set(PLCOPEN_DEFAULT_BUILD_TESTS ${BUILD_TESTING})
+endif()
+option(PLCOPEN_BUILD_TESTS "Build plcopen tests" ${PLCOPEN_DEFAULT_BUILD_TESTS})
+unset(PLCOPEN_DEFAULT_BUILD_TESTS)
+
 add_subdirectory(src)
 
 configure_package_config_file(

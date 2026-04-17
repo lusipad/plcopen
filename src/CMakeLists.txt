@@ -19,14 +19,16 @@
 # under the License.
 # 
 
-project(plcopen)
-
 include(plcopen.cmake)
 
 file(GLOB_RECURSE PLCOPEN_HEADER ${CMAKE_CURRENT_SOURCE_DIR}/*.h)
 source_group("Header Files" FILES ${PLCOPEN_HEADER})
 
 add_library(${PROJECT_NAME} SHARED ${PLCOPEN_SOURCE} ${PLCOPEN_HEADER})
+
+if(NOT TARGET plcopen::plcopen)
+    add_library(plcopen::plcopen ALIAS ${PROJECT_NAME})
+endif()
 
 target_include_directories(
     ${PROJECT_NAME}
@@ -41,16 +43,18 @@ target_include_directories(
 
 set_target_properties(${PROJECT_NAME} PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS TRUE)
 
-add_executable(axis_move demo/axis_move.cpp)
-target_link_libraries(axis_move ${PROJECT_NAME})
+if(PLCOPEN_BUILD_DEMOS)
+    add_executable(axis_move demo/axis_move.cpp)
+    target_link_libraries(axis_move ${PROJECT_NAME})
 
-add_executable(axis_homing demo/axis_homing.cpp)
-target_link_libraries(axis_homing ${PROJECT_NAME})
+    add_executable(axis_homing demo/axis_homing.cpp)
+    target_link_libraries(axis_homing ${PROJECT_NAME})
 
-add_executable(axis_move_oscilloscope demo/axis_move_oscilloscope.cpp)
-target_link_libraries(axis_move_oscilloscope ${PROJECT_NAME})
+    add_executable(axis_move_oscilloscope demo/axis_move_oscilloscope.cpp)
+    target_link_libraries(axis_move_oscilloscope ${PROJECT_NAME})
+endif()
 
-if(BUILD_TESTING)
+if(PLCOPEN_BUILD_TESTS AND BUILD_TESTING)
     include(FetchContent)
 
     FetchContent_Declare(
