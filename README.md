@@ -254,6 +254,7 @@ int main() {
 | [VISION.md](VISION.md) | 长期愿景（3-5 年方向） |
 | [ROADMAP.md](ROADMAP.md) | 近期路线（6-12 个月） |
 | [BUILD_README.md](BUILD_README.md) | 详细构建指南 |
+| [BUILD_LINUX.md](BUILD_LINUX.md) | Ubuntu 22.04 构建说明 |
 | [CLAUDE.md](CLAUDE.md) | AI 协作的行为规范 |
 | [doc/design/](doc/design/) | 当前代码的设计文档 |
 | [doc/reference/](doc/reference/) | PLCopen 标准原文（PDF） |
