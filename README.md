@@ -8,9 +8,9 @@
 [![Windows CI](https://github.com/lusipad/plcopen/actions/workflows/windows-ci.yml/badge.svg)](https://github.com/lusipad/plcopen/actions/workflows/windows-ci.yml)
 [![Linux CI](https://github.com/lusipad/plcopen/actions/workflows/linux-ci.yml/badge.svg)](https://github.com/lusipad/plcopen/actions/workflows/linux-ci.yml)
 [![C++17](https://img.shields.io/badge/C%2B%2B-17-blue.svg)](https://en.cppreference.com/w/cpp/17)
-[![Version](https://img.shields.io/badge/version-v0.1-orange.svg)]()
+[![Version](https://img.shields.io/badge/version-v0.2.0-orange.svg)](CHANGELOG.md)
 
-> **项目状态**：早期开发（v0.1），正在进行 v0.2.0 的基础设施建设（CI、测试、Linux 构建）。API 可能变化。
+> **项目状态**：`v0.2.0` 已发布。项目现在具备 CI、自动化测试、Linux 构建和 CMake 包导出能力；在 `v1.0` 前 API 仍可能变化。
 >
 > 详情见 [ROADMAP.md](ROADMAP.md)；长期方向见 [VISION.md](VISION.md)。
 
@@ -64,13 +64,14 @@ plcopen 想填补的空白是**"现代 C++ 的可嵌入 PLCopen 运动控制库"
 | 示波器 demo | 可视化轴状态变化 |
 | CMake 构建 | Windows + Visual Studio 2022 |
 
-### 进行中（v0.2.0，2026 Q3 目标）
+### v0.2.0 亮点
 
 - GitHub Actions CI（Windows + Linux）
-- 单元测试接入 Catch2 / GoogleTest，覆盖率 >50%
-- Linux 构建脚本 + 文档
-- CMake `install(EXPORT)` + `find_package(plcopen)` 支持
-- `FetchContent` 兼容
+- Catch2 自动化测试覆盖轴状态机、轨迹规划器和单轴功能块
+- 覆盖率基线 >50%，并纳入发布门槛
+- Linux 构建脚本 `build.sh` 和 `BUILD_LINUX.md`
+- CMake `install(EXPORT)`、`find_package(plcopen)` 和 `FetchContent` 支持
+- 独立 `plcopen-examples` 消费者示例仓库
 
 完整清单见 [ROADMAP.md](ROADMAP.md)。
 
@@ -240,8 +241,6 @@ int main() {
 
 ## 已知问题
 
-- **Linux 构建**：代码本身跨平台，但构建脚本目前只有 PowerShell。v0.2.0 补 Linux。
-- **测试覆盖率极低**：只有一个 `test_basic.cpp`，v0.2.0 正在补。
 - **MC_Home 未完成**：约 75%，不要用于生产。
 
 ---
@@ -251,6 +250,7 @@ int main() {
 | 文档 | 说明 |
 |------|------|
 | [README.md](README.md) | 本文档：项目概览 |
+| [CHANGELOG.md](CHANGELOG.md) | 版本变化记录 |
 | [VISION.md](VISION.md) | 长期愿景（3-5 年方向） |
 | [ROADMAP.md](ROADMAP.md) | 近期路线（6-12 个月） |
 | [BUILD_README.md](BUILD_README.md) | 详细构建指南 |
