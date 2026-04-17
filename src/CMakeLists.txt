@@ -59,6 +59,7 @@ if(BUILD_TESTING)
         test/test_basic.cpp
         test/test_axis_status.cpp
         test/test_profile_planner.cpp
+        test/test_fb_single_axis.cpp
     )
     target_link_libraries(test_basic PRIVATE ${PROJECT_NAME} Catch2::Catch2WithMain)
     catch_discover_tests(test_basic)
