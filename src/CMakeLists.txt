@@ -28,6 +28,17 @@ source_group("Header Files" FILES ${PLCOPEN_HEADER})
 
 add_library(${PROJECT_NAME} SHARED ${PLCOPEN_SOURCE} ${PLCOPEN_HEADER})
 
+target_include_directories(
+    ${PROJECT_NAME}
+    PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/fb>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/motion>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/motion/axis>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/motion/interpolation>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/misc>
+        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/plcopen>
+)
+
 set_target_properties(${PROJECT_NAME} PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS TRUE)
 
 add_executable(axis_move demo/axis_move.cpp)
@@ -66,7 +77,10 @@ if(BUILD_TESTING)
 endif()
 
 install(TARGETS ${PROJECT_NAME}
-    LIBRARY DESTINATION lib
+    EXPORT plcopenTargets
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
 
 install(FILES
@@ -77,5 +91,5 @@ install(FILES
     motion/Servo.h 
     motion/Global.h 
     motion/Scheduler.h
-    DESTINATION include/plcopen
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/plcopen
 )

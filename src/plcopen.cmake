@@ -19,15 +19,6 @@
 # under the License.
 # 
 
-INCLUDE_DIRECTORIES(
-    include
-    motion
-    motion/axis
-    motion/interpolation
-    fb
-    misc
-)
-
 AUX_SOURCE_DIRECTORY(motion PLCOPEN_SOURCE)
 AUX_SOURCE_DIRECTORY(motion/axis PLCOPEN_SOURCE)
 AUX_SOURCE_DIRECTORY(motion/interpolation PLCOPEN_SOURCE)
