@@ -1,4 +1,4 @@
-Ôªø/*
+/*
  * FbSingleAxis.h
  *
  * Copyright 2020 (C) SYMG(Shanghai) Intelligence System Co.,Ltd
@@ -33,6 +33,9 @@ namespace plcopen
 #pragma pack(push)
 #pragma pack(4)
 
+    /**
+     * @brief Single-axis power block.
+     */
     class FbPower : public FbBaseType
     {
     public:
@@ -51,6 +54,9 @@ namespace plcopen
         void onOperationError(MC_ErrorCode errorCode, int32_t customId);
     };
 
+    /**
+     * @brief Single-axis homing block.
+     */
     class FbHome : public FbExecAxisBufferType
     {
     public:
@@ -60,6 +66,9 @@ namespace plcopen
         MC_ErrorCode onAxisExecPosedge(void);
     };
 
+    /**
+     * @brief Controlled stop block.
+     */
     class FbStop : public FbExecAxisType
     {
     public:
@@ -71,6 +80,9 @@ namespace plcopen
         void onExecNegedge(void);
     };
 
+    /**
+     * @brief Single-axis halt block.
+     */
     class FbHalt : public FbExecAxisBufferType
     {
     public:
@@ -81,6 +93,9 @@ namespace plcopen
         MC_ErrorCode onAxisExecPosedge(void);
     };
 
+    /**
+     * @brief Absolute move block.
+     */
     class FbMoveAbsolute : public FbExecAxisBufferType
     {
     public:
@@ -95,6 +110,9 @@ namespace plcopen
         MC_ErrorCode onAxisExecPosedge(void);
     };
 
+    /**
+     * @brief Relative move block.
+     */
     class FbMoveRelative : public FbExecAxisBufferType
     {
     public:
@@ -108,6 +126,9 @@ namespace plcopen
         MC_ErrorCode onAxisExecPosedge(void);
     };
 
+    /**
+     * @brief Additive move block.
+     */
     class FbMoveAdditive : public FbExecAxisBufferType
     {
     public:
@@ -121,6 +142,12 @@ namespace plcopen
         MC_ErrorCode onAxisExecPosedge(void);
     };
 
+    /**
+     * @brief Velocity move block.
+     *
+     * `mInVelocity` aliases `mDone` and indicates that the target velocity has
+     * been reached.
+     */
     class FbMoveVelocity : public FbExecAxisBufferContType
     {
     public:
@@ -135,6 +162,9 @@ namespace plcopen
         MC_ErrorCode onAxisExecPosedge(void);
     };
 
+    /**
+     * @brief Read the PLCopen axis state-machine state.
+     */
     class FbReadStatus : public FbReadInfoAxisType
     {
     public:
@@ -152,6 +182,9 @@ namespace plcopen
         void onDisable(void);
     };
 
+    /**
+     * @brief Read the current motion-state classification.
+     */
     class FbReadMotionState : public FbReadInfoAxisType
     {
     public:
@@ -167,8 +200,10 @@ namespace plcopen
         MC_ErrorCode onAxisEnable(bool &isDone);
         void onDisable(void);
     };
-    
-    // TODO: ’‚¿Ô÷±Ω”Ã·π© FbAxisEnableType ∏¸∫œ¿Ì
+
+    /**
+     * @brief Read the underlying servo error code.
+     */
     class FbReadAxisError : public FbEnableType
     {
     public:
@@ -183,12 +218,18 @@ namespace plcopen
         MC_ErrorCode onEnableFalse(void);
     };
 
+    /**
+     * @brief Reset the axis error state.
+     */
     class FbReset : public FbWriteInfoAxisType
     {
     public:
         MC_ErrorCode onAxisTriggered(bool &isDone);
     };
 
+    /**
+     * @brief Parameter enum used by `MC_ReadParameter` style APIs.
+     */
     enum class MC_Parameter
     {
         COMMANDED_POSITION = 1,
@@ -208,8 +249,11 @@ namespace plcopen
         MAX_DECELERATION_APPL = 15,
         MAX_JERK_SYSTEM = 16,
         MAX_JERK_APPL = 17,
-    } ;
+    };
 
+    /**
+     * @brief Read the actual position.
+     */
     class FbReadActualPosition : public FbReadInfoAxisType
     {
     public:
@@ -220,12 +264,18 @@ namespace plcopen
         void onDisable(void);
     };
 
+    /**
+     * @brief Read the commanded position.
+     */
     class FbReadCommandPosition : public FbReadActualPosition
     {
     public:
         MC_ErrorCode onAxisEnable(bool &isDone);
     };
 
+    /**
+     * @brief Read the actual velocity.
+     */
     class FbReadActualVelocity : public FbReadInfoAxisType
     {
     public:
@@ -236,14 +286,18 @@ namespace plcopen
         void onDisable(void);
     };
 
-    // TODO: –≠“È¿Ô√ª”–’‚∏ˆπ¶ƒ‹
+    /**
+     * @brief Read the commanded velocity.
+     */
     class FbReadCommandVelocity : public FbReadActualVelocity
     {
     public:
         MC_ErrorCode onAxisEnable(bool &isDone);
     };
 
-    // TODO: –≠“È¿Ô√ª”–’‚∏ˆπ¶ƒ‹
+    /**
+     * @brief Trigger the underlying servo emergency stop.
+     */
     class FbEmergencyStop : public FbWriteInfoAxisType
     {
     public:

@@ -2,15 +2,15 @@
 
 > **现代 C++ 的 PLCopen 运动控制库 —— 嵌入到你的控制器里，不替代你的控制器。**
 >
-> *A modern C++ motion-control library implementing the PLCopen Part 1&2 standard. Embed it in your controller, not replace your controller.*
+> *A modern C++ motion-control library implementing core PLCopen Part 1 building blocks and selected Part 2 concepts. Embed it in your controller, not replace your controller.*
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Windows CI](https://github.com/lusipad/plcopen/actions/workflows/windows-ci.yml/badge.svg)](https://github.com/lusipad/plcopen/actions/workflows/windows-ci.yml)
 [![Linux CI](https://github.com/lusipad/plcopen/actions/workflows/linux-ci.yml/badge.svg)](https://github.com/lusipad/plcopen/actions/workflows/linux-ci.yml)
 [![C++17](https://img.shields.io/badge/C%2B%2B-17-blue.svg)](https://en.cppreference.com/w/cpp/17)
-[![Version](https://img.shields.io/badge/version-v0.2.0-orange.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-v0.4.0-orange.svg)](CHANGELOG.md)
 
-> **项目状态**：`v0.2.0` 已发布。项目现在具备 CI、自动化测试、Linux 构建和 CMake 包导出能力；在 `v1.0` 前 API 仍可能变化。
+> **项目状态**：当前工作集版本为 `v0.4.0`。项目现在具备 CI、自动化测试、Linux 构建、CMake 包导出、单轴与 homing 的 jerk-aware 规划、可选 Doxygen/API 与 Python 绑定入口，以及概念级多轴同步 demo；在 `v1.0` 前 API 仍可能变化。
 >
 > 详情见 [ROADMAP.md](ROADMAP.md)；长期方向见 [VISION.md](VISION.md)。
 
@@ -18,7 +18,7 @@
 
 ## 这是什么
 
-plcopen 是一个 **C++17 运动控制库**，实现 PLCopen Motion Control Part 1&2 标准的功能块和状态机模型。它被设计成**可嵌入的库**，不是完整的 PLC 运行时。
+plcopen 是一个 **C++17 运动控制库**，实现 PLCopen Motion Control Part 1 的核心功能块与状态机，并逐步补齐 Part 2 的选定能力。它被设计成**可嵌入的库**，不是完整的 PLC 运行时。
 
 ### 适合你，如果你……
 
@@ -52,19 +52,19 @@ plcopen 想填补的空白是**"现代 C++ 的可嵌入 PLCopen 运动控制库"
 
 ## 当前状态
 
-### 已实现（v0.1）
+### 已实现（截至 v0.4.0）
 
 | 能力 | 说明 |
 |------|------|
 | 轴状态机 | PLCopen 标准的 8 状态机（Disabled、Standstill、DiscreteMotion 等） |
 | 单轴运动功能块 | MC_Power、MC_MoveAbsolute、MC_MoveRelative、MC_MoveAdditive、MC_MoveVelocity、MC_Stop、MC_Halt、MC_Reset |
-| 运动规划 | 梯形（加减速直线型）速度曲线 |
+| 运动规划 | 梯形 + 单轴 jerk-aware S 曲线 |
 | Buffer mode | Aborting / Buffered 等缓冲切换 |
 | 调度器 | 单线程周期调度（用户负责在 tick 里调用 `runCycle()`） |
 | 示波器 demo | 可视化轴状态变化 |
 | CMake 构建 | Windows + Visual Studio 2022 |
 
-### v0.2.0 亮点
+### v0.4.0 亮点
 
 - GitHub Actions CI（Windows + Linux）
 - Catch2 自动化测试覆盖轴状态机、轨迹规划器和单轴功能块
@@ -72,6 +72,15 @@ plcopen 想填补的空白是**"现代 C++ 的可嵌入 PLCopen 运动控制库"
 - Linux 构建脚本 `build.sh` 和 `BUILD_LINUX.md`
 - CMake `install(EXPORT)`、`find_package(plcopen)` 和 `FetchContent` 支持
 - 独立 `plcopen-examples` 消费者示例仓库
+- `MC_Home` 补齐 direct、MODE5/6/7/8、非法参数和 buffer 交互回归测试
+- Buffer mode 覆盖 `ABORTING` 与所有公开非 `ABORTING` 枚举的当前队列语义
+- 单轴 `AxisMove` 路径补齐非零 `jerk` 的 jerk-aware 轨迹规划与回归测试
+- `MC_Home` 规划已真正接入 `mHomingJerk`
+- 新增可选 `docs` target，未安装 Doxygen 时优雅降级并给出提示
+- `docs` 入口公开头文件已补齐 Doxygen 注释
+- 新增概念级双轴 `sync / gear / cam` demo
+- 新增可选 `pyplcopen` Python 单轴仿真绑定与 smoke test
+- `pyplcopen::AxisSim` 已补 `move_velocity` / `halt` / `stop` 与加速度读取
 
 完整清单见 [ROADMAP.md](ROADMAP.md)。
 
@@ -110,6 +119,23 @@ cd plcopen
 # 跨平台通用命令
 cmake -S . -B build
 cmake --build build --config Release
+```
+
+### 生成 API 文档（可选）
+
+```bash
+cmake -S . -B build -DPLCOPEN_BUILD_DOCS=ON
+cmake --build build --config Release --target docs
+```
+
+如果本机未安装 Doxygen，`docs` target 会打印安装提示并优雅退出。
+
+### 构建 Python 绑定（可选）
+
+```bash
+cmake -S . -B build -DPLCOPEN_BUILD_PYTHON_BINDINGS=ON
+cmake --build build --config Release
+ctest --test-dir build --build-config Release -R pyplcopen_smoke --output-on-failure
 ```
 
 ### 最简示例：让一个轴从 0 走到 500
@@ -162,14 +188,19 @@ int main() {
 
 完整示例见 `src/demo/`：
 - `axis_move.cpp` —— 点到点运动 + Buffer mode
-- `axis_homing.cpp` —— 回零（MC_Home 仍在开发中）
+- `axis_homing.cpp` —— 回零示例（已覆盖核心路径）
 - `axis_move_oscilloscope.cpp` —— 带状态示波器的演示
+- `axis_sync.cpp` —— 概念级 1:1 双轴同步 demo
+- `axis_gear.cpp` —— 概念级固定齿轮比 follow demo
+- `axis_cam.cpp` —— 概念级离散 cam table follow demo
+
+这些新增 demo 用于展示“如何在现有单轴基础上拼出同步概念”，**不代表** `MC_Cam*` / `MC_Gear*` PLCopen 多轴功能块已经正式实现。
 
 ---
 
 ## PLCopen 功能块支持
 
-图例：✅ 已实现 / 🚧 开发中 / 📋 未实现
+图例：✅ 已实现 / 📋 未实现
 
 ### 单轴管理功能块
 
@@ -192,7 +223,7 @@ int main() {
 | MC_MoveVelocity | 连续速度运动 | ✅ |
 | MC_Stop | 停止运动 | ✅ |
 | MC_Halt | 立即停止 | ✅ |
-| MC_Home | 回零 | 🚧 |
+| MC_Home | 回零 | ✅ |
 | MC_MoveSuperimposed | 叠加运动 | 📋 |
 | MC_TorqueControl | 扭矩控制 | 📋 |
 
@@ -200,7 +231,7 @@ int main() {
 
 | 功能块 | 描述 | 状态 |
 |--------|------|------|
-| MC_CamTableSelect | 选择凸轮表 | ✅ |
+| MC_CamTableSelect | 选择凸轮表 | 📋 |
 | MC_CamIn / MC_CamOut | 凸轮同步 | 📋 |
 | MC_GearIn / MC_GearOut | 齿轮同步 | 📋 |
 
@@ -221,7 +252,7 @@ int main() {
                      ▼
   ┌──────────────────────────────────────────┐
   │  运动规划层 (src/motion/interpolation/)  │
-  │  ProfilePlanner (梯形曲线)               │
+  │  ProfilePlanner (梯形 + jerk-aware)      │
   └──────────────────────────────────────────┘
                      ▼
   ┌──────────────────────────────────────────┐
@@ -239,9 +270,11 @@ int main() {
 
 ---
 
-## 已知问题
+## 已知边界
 
-- **MC_Home 未完成**：约 75%，不要用于生产。
+- 当前实现中，所有非 `ABORTING` 的 Buffer mode 枚举共享同一套“排队、不立即打断前一条命令”的语义；细粒度 blending 行为尚未分化实现。
+- `axis_sync.cpp` / `axis_gear.cpp` / `axis_cam.cpp` 是 demo 级辅助能力，不代表 `MC_CamTableSelect`、`MC_CamIn/Out`、`MC_GearIn/Out` 已正式落地。
+- `pyplcopen` 当前只暴露单轴仿真 facade，不是完整 Python PLCopen SDK。
 
 ---
 

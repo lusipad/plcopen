@@ -48,6 +48,9 @@ namespace plcopen
         TORQUE = 2,
     };
 
+    /**
+     * @brief 公共错误码集合。
+     */
     enum class MC_ErrorCode
     {
         GOOD = 0x0, // 成功
@@ -115,6 +118,9 @@ namespace plcopen
         AXISE_RRORSTOP = 0x507,
     };
 
+    /**
+     * @brief PLCopen 单轴状态机。
+     */
     enum class MC_AxisStatus
     {
         DISABLED = 0,
@@ -137,6 +143,9 @@ namespace plcopen
         ERRORSTOP = 5,
     };
 
+    /**
+     * @brief 运动状态分类。
+     */
     enum class MC_MotionState
     {
         INPOSITION = 0,
@@ -145,6 +154,13 @@ namespace plcopen
         DECELERATING = 3,
     };
 
+    /**
+     * @brief PLCopen buffer mode.
+     *
+     * 当前实现只区分两类语义：
+     * - `ABORTING`：立即打断当前命令。
+     * - 其余已定义值：统一按“排队、不立即打断”的语义处理。
+     */
     enum class MC_BufferMode
     {
         ABORTING = 0,
@@ -155,6 +171,45 @@ namespace plcopen
         BLENDING_HIGH = 5,
         BLENDING_CNC = 128,
     };
+
+    /**
+     * @brief 判断一个 buffer mode 是否是当前实现认识的公开枚举值。
+     */
+    inline constexpr bool isDefinedBufferMode(MC_BufferMode mode)
+    {
+        switch (mode)
+        {
+        case MC_BufferMode::ABORTING:
+        case MC_BufferMode::BUFFERED:
+        case MC_BufferMode::BLENDING_LOW:
+        case MC_BufferMode::BLENDING_PREVIOUS:
+        case MC_BufferMode::BLENDING_NEXT:
+        case MC_BufferMode::BLENDING_HIGH:
+        case MC_BufferMode::BLENDING_CNC:
+            return true;
+        default:
+            return false;
+        }
+    }
+
+    /**
+     * @brief 判断一个 buffer mode 是否在当前实现中走“排队”语义。
+     */
+    inline constexpr bool usesQueuedBufferModeSemantics(MC_BufferMode mode)
+    {
+        switch (mode)
+        {
+        case MC_BufferMode::BUFFERED:
+        case MC_BufferMode::BLENDING_LOW:
+        case MC_BufferMode::BLENDING_PREVIOUS:
+        case MC_BufferMode::BLENDING_NEXT:
+        case MC_BufferMode::BLENDING_HIGH:
+        case MC_BufferMode::BLENDING_CNC:
+            return true;
+        default:
+            return false;
+        }
+    }
 
     enum class MC_Direction
     {
@@ -178,6 +233,9 @@ namespace plcopen
     };
 
     // TODO: 回零要调整，应该是按照固定、直接设定等方式的回零
+    /**
+     * @brief 当前实现支持的 homing 模式。
+     */
     enum class MC_HomingMode
     {
         DIRECT = 1000, // 直接以当前位置作为零点
@@ -244,12 +302,18 @@ namespace plcopen
 
     //////////////////////////////////////////////////////////////
 
+    /**
+     * @brief 轴的编码器与模数配置。
+     */
     struct AxisMetricInfo
     {
         double mDevUnitRatio = 8192; // 设备编码器单位比率
         double mModulo = 0;          // 模数值
     };
 
+    /**
+     * @brief 轴的软限位配置。
+     */
     struct AxisRangeLimitInfo
     {
         bool mSwLimitPositive = false; // 正向限位启用标志位
@@ -258,6 +322,9 @@ namespace plcopen
         double mLimitNegative = 0;     // 负向限位位置
     };
 
+    /**
+     * @brief 轴的运动极限配置。
+     */
     struct AxisMotionLimitInfo
     {
         double mVelLimit = 1000;   // 速度限制
@@ -265,6 +332,9 @@ namespace plcopen
         double mPosLagLimit = 150; // 跟随误差限制
     };
 
+    /**
+     * @brief 轴控制器配置。
+     */
     struct AxisControlInfo
     {
         MC_ControlMode mControlMode = MC_ControlMode::POSOPENLOOP; // 控制模式
@@ -272,6 +342,9 @@ namespace plcopen
         double mFF = 0;                                           // 位置前馈
     };
 
+    /**
+     * @brief Axis homing configuration.
+     */
     struct AxisHomingInfo
     {
         uint8_t *mHomingSig = 0;                          // 回零信号地址
@@ -283,6 +356,9 @@ namespace plcopen
         double mHomingJerk = 0;                           // 回零加加速
     };
 
+    /**
+     * @brief Axis runtime configuration bundle.
+     */
     struct AxisConfig
     {
         AxisMetricInfo mMetricInfo;

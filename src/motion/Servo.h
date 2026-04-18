@@ -34,23 +34,38 @@ namespace plcopen
 #pragma pack(push)
 #pragma pack(4)
 
+    /**
+     * @brief Abstract servo interface.
+     *
+     * The default implementation is an in-memory simulated servo. Derived
+     * classes can override these virtual methods to connect real hardware.
+     */
     class Servo
     {
     public:
         Servo();
         virtual ~Servo();
 
+        /// Enable or disable the servo.
         virtual MC_ServoErrorCode setPower(bool powerStatus, bool &isDone);
+        /// Write the commanded position.
         virtual MC_ServoErrorCode setPos(int32_t pos);
+        /// Write the commanded velocity.
         virtual MC_ServoErrorCode setVel(int32_t vel);
+        /// Write the commanded torque.
         virtual MC_ServoErrorCode setTorque(double torque);
+        /// Read the actual position.
         virtual int32_t pos(void);
+        /// Read the actual velocity.
         virtual int32_t vel(void);
+        /// Read the actual acceleration.
         virtual int32_t acc(void);
+        /// Read the actual torque.
         virtual double torque(void);
         virtual bool readVal(int index, double &value);
         virtual bool writeVal(int index, double value);
         virtual MC_ServoErrorCode resetError(bool &isDone);
+        /// Advance the servo state by one cycle.
         virtual void runCycle(double freq);
         virtual void emergStop(void);
 

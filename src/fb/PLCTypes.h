@@ -35,6 +35,9 @@ namespace plcopen
 #pragma pack(push)
 #pragma pack(4)
 
+    /**
+     * @brief IEC 61131-3 style base type aliases.
+     */
     typedef bool BOOL;
     typedef uint8_t BYTE;
     typedef uint8_t USINT;
@@ -81,12 +84,15 @@ namespace plcopen
     typedef MC_ErrorCode MC_ERRORCODE;
     typedef MC_ServoErrorCode MC_SERVOERRORCODE;
 
+    /// Single-axis reference type.
     class Axis;
     typedef Axis *AXIS_REF;
 
+    /// Multi-axis group reference type.
     class AxesGroup;
     typedef AxesGroup *AXES_GROUP_REF;
 
+    /// Cam-table reference type.
     class CamTable;
     typedef std::shared_ptr<CamTable> MC_CAM_REF;
 

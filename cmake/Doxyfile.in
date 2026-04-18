@@ -1,0 +1,37 @@
+PROJECT_NAME           = "@PROJECT_NAME@"
+PROJECT_NUMBER         = "@PROJECT_VERSION@"
+OUTPUT_DIRECTORY       = "@PLCOPEN_DOXYGEN_OUTPUT_DIR@"
+CREATE_SUBDIRS         = NO
+ALLOW_UNICODE_NAMES    = YES
+OUTPUT_LANGUAGE        = Chinese
+
+INPUT                  = "@CMAKE_CURRENT_SOURCE_DIR@/README.md" \
+                         "@CMAKE_CURRENT_SOURCE_DIR@/src/fb/FunctionBlock.h" \
+                         "@CMAKE_CURRENT_SOURCE_DIR@/src/fb/FbPLCOpenBase.h" \
+                         "@CMAKE_CURRENT_SOURCE_DIR@/src/fb/FbSingleAxis.h" \
+                         "@CMAKE_CURRENT_SOURCE_DIR@/src/fb/PLCTypes.h" \
+                         "@CMAKE_CURRENT_SOURCE_DIR@/src/motion/Global.h" \
+                         "@CMAKE_CURRENT_SOURCE_DIR@/src/motion/Scheduler.h" \
+                         "@CMAKE_CURRENT_SOURCE_DIR@/src/motion/Servo.h"
+FILE_PATTERNS          = *.h *.md
+RECURSIVE              = NO
+USE_MDFILE_AS_MAINPAGE = "@CMAKE_CURRENT_SOURCE_DIR@/README.md"
+STRIP_FROM_PATH        = "@CMAKE_CURRENT_SOURCE_DIR@"
+
+EXTRACT_ALL            = YES
+EXTRACT_PRIVATE        = NO
+EXTRACT_STATIC         = NO
+JAVADOC_AUTOBRIEF      = YES
+MULTILINE_CPP_IS_BRIEF = YES
+
+GENERATE_HTML          = YES
+GENERATE_LATEX         = NO
+GENERATE_XML           = NO
+HTML_OUTPUT            = html
+MARKDOWN_SUPPORT       = YES
+SOURCE_BROWSER         = YES
+INLINE_SOURCES         = NO
+
+QUIET                  = YES
+WARN_IF_UNDOCUMENTED   = NO
+WARN_IF_DOC_ERROR      = YES

@@ -75,7 +75,15 @@ namespace plcopen
         case MC_HomingStep::INIT:
             if (!homingInfo->mHomingSig)
             { // 当前位置作为零点
-                goto HOMINGSTEP_TOSIG;
+                mFinalPos = axis->actPosition();
+                err = axis->setHomePosition(mPos - mFinalPos);
+                if (err == MC_ErrorCode::GOOD)
+                {
+                    axis->printLog(MC_LogLevel::INFO, "homing complete, new pos %lf\n", axis->homePosition());
+                    stat = ExeclNodeExecStat::DONE;
+                }
+
+                return err;
             }
             else
             { // 启动回零流程
@@ -90,11 +98,12 @@ namespace plcopen
                     return MC_ErrorCode::HOMING_ACC_ILLEGAL;
 
                 double endPos = ProfilePlanner::calculateDist(axis->cmdVelocity(), homingInfo->mHomingVelSearch,
-                                                              homingInfo->mHomingAcc, homingInfo->mHomingAcc);
+                                                              homingInfo->mHomingAcc, homingInfo->mHomingAcc,
+                                                              homingInfo->mHomingJerk);
 
                 planner->plan(axis->cmdPosition(), axis->cmdPosition() + endPos, axis->cmdVelocity(),
                               homingInfo->mHomingVelSearch, homingInfo->mHomingVelSearch, homingInfo->mHomingAcc,
-                              homingInfo->mHomingAcc);
+                              homingInfo->mHomingAcc, homingInfo->mHomingJerk);
 
                 mHomingStep = MC_HomingStep::SEARCHSIG;
             }
@@ -105,11 +114,12 @@ namespace plcopen
             {
 
                 double endPos = ProfilePlanner::calculateDist(axis->cmdVelocity(), homingInfo->mHomingVelRegression,
-                                                              homingInfo->mHomingAcc, homingInfo->mHomingAcc);
+                                                              homingInfo->mHomingAcc, homingInfo->mHomingAcc,
+                                                              homingInfo->mHomingJerk);
 
                 planner->plan(axis->cmdPosition(), axis->cmdPosition() + endPos, axis->cmdVelocity(),
                               homingInfo->mHomingVelRegression, homingInfo->mHomingVelRegression, homingInfo->mHomingAcc,
-                              homingInfo->mHomingAcc);
+                              homingInfo->mHomingAcc, homingInfo->mHomingJerk);
 
                 mHomingStep = MC_HomingStep::REGRESSION_SIG;
 
@@ -127,9 +137,10 @@ namespace plcopen
                 planner->plan(axis->cmdPosition(),
                               axis->cmdPosition() + ProfilePlanner::calculateDist(axis->cmdVelocity(), __EPSILON,
                                                                                   homingInfo->mHomingAcc,
-                                                                                  homingInfo->mHomingAcc),
+                                                                                  homingInfo->mHomingAcc,
+                                                                                  homingInfo->mHomingJerk),
                               axis->cmdVelocity(), homingInfo->mHomingVelRegression, 0.0, homingInfo->mHomingAcc,
-                              homingInfo->mHomingAcc);
+                              homingInfo->mHomingAcc, homingInfo->mHomingJerk);
 
                 mHomingStep = MC_HomingStep::TOSIG;
             }
@@ -192,6 +203,15 @@ namespace plcopen
                 return MC_ErrorCode::HOMING_SIG_ILLEGAL;
         }
 
+        mImpl_->mHomingInfo.mHomingSig = info.mHomingSig;
+        mImpl_->mHomingInfo.mHomingSigBitOffset = info.mHomingSigBitOffset;
+        mImpl_->mHomingInfo.mHomingMode = info.mHomingMode;
+        mImpl_->mHomingInfo.mHomingVelSearch = fabs(info.mHomingVelSearch);
+        mImpl_->mHomingInfo.mHomingVelRegression = fabs(info.mHomingVelRegression);
+        mImpl_->mHomingInfo.mHomingAcc = fabs(info.mHomingAcc);
+        mImpl_->mHomingInfo.mHomingJerk = fabs(info.mHomingJerk);
+        mImpl_->mHomingInfo.mHomingSigVal = false;
+
         switch (info.mHomingMode)
         {
         case MC_HomingMode::DIRECT:
@@ -220,17 +240,14 @@ namespace plcopen
             return MC_ErrorCode::HOMING_MODE_ILLEGAL;
         }
 
-        mImpl_->mHomingInfo.mHomingSig = info.mHomingSig;
-        mImpl_->mHomingInfo.mHomingMode = info.mHomingMode;
-
-        mImpl_->mHomingInfo.mHomingAcc = fabs(info.mHomingAcc);
-        mImpl_->mHomingInfo.mHomingJerk = fabs(info.mHomingJerk);
-
         return MC_ErrorCode::GOOD;
     }
 
     MC_ErrorCode AxisHoming::addHoming(FunctionBlock *fb, double pos, MC_BufferMode bufferMode, int32_t customId)
     {
+        if (!isDefinedBufferMode(bufferMode))
+            return MC_ErrorCode::BLENDING_MODE_ILLEGAL;
+
         if (!std::isfinite(pos))
             return MC_ErrorCode::POS_ILLEGAL;
 
@@ -243,7 +260,7 @@ namespace plcopen
                 node->mPos = pos;
                 return node;
             },
-            (bufferMode == MC_BufferMode::ABORTING), fb, MC_AxisStatus::HOMING, MC_AxisStatus::STANDSTILL, customId);
+            !usesQueuedBufferModeSemantics(bufferMode), fb, MC_AxisStatus::HOMING, MC_AxisStatus::STANDSTILL, customId);
 
         if (MC_ErrorCode::GOOD != err)
             return err;

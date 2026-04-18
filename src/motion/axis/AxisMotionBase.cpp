@@ -107,7 +107,15 @@ namespace plcopen
         {
             MC_ErrorCode err = setStatus(statusActive);
             if (MC_ErrorCode::GOOD != err)
-                return err;
+            {
+                err = setStatus(MC_AxisStatus::STANDSTILL);
+                if (MC_ErrorCode::GOOD != err)
+                    return err;
+
+                err = setStatus(statusActive);
+                if (MC_ErrorCode::GOOD != err)
+                    return err;
+            }
         }
 
         return ExeclQueue::pushAndNewData(

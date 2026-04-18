@@ -26,6 +26,8 @@
 
 #include "ProfilePlanner.h"
 #include "MathUtils.h"
+#include <algorithm>
+#include <cmath>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -37,6 +39,8 @@ namespace plcopen
 
 typedef ProfilePlanner::Segment Segment;
 typedef ProfilePlanner::ProfilePlannerData ProfilePlannerData;
+typedef ProfilePlanner::JerkPhase JerkPhase;
+typedef ProfilePlanner::SamplePoint SamplePoint;
 
 static int route_calculate(Segment *segments, double shift, double start_vel, double vel, double acc, double dec,
                            double &end_vel);
@@ -54,6 +58,193 @@ static int tiny_segment_merge(Segment *segments, int length, uint32_t frequency,
 static double cal_shift(double start_vel, double end_vel, double acc, double *t);
 
 static inline bool is_acc_neg(double start_vel, double end_vel);
+
+namespace
+{
+constexpr double kPlanEpsilon = 1e-9;
+
+double clampNearZero(double value)
+{
+    return std::fabs(value) < kPlanEpsilon ? 0.0 : value;
+}
+
+void advance_jerk_phase_state(double &position, double &velocity, double &acceleration, double jerk, double duration)
+{
+    position += velocity * duration + acceleration * duration * duration / 2.0 + jerk * duration * duration * duration / 6.0;
+    velocity += acceleration * duration + jerk * duration * duration / 2.0;
+    acceleration += jerk * duration;
+
+    position = clampNearZero(position);
+    velocity = clampNearZero(velocity);
+    acceleration = clampNearZero(acceleration);
+}
+
+void append_jerk_phase(std::vector<JerkPhase> *phases, double duration, double &position, double &velocity,
+                       double &acceleration, double jerk)
+{
+    if (duration <= kPlanEpsilon)
+        return;
+
+    if (phases)
+        phases->push_back({duration, position, velocity, acceleration, jerk});
+
+    advance_jerk_phase_state(position, velocity, acceleration, jerk, duration);
+}
+
+double append_velocity_transition(std::vector<JerkPhase> *phases, double targetVelocity, double maxAcceleration,
+                                  double maxJerk, double &position, double &velocity, double &acceleration)
+{
+    const double velocityDelta = targetVelocity - velocity;
+    if (std::fabs(velocityDelta) <= kPlanEpsilon)
+        return 0.0;
+
+    const double jerkSign = velocityDelta > 0.0 ? maxJerk : -maxJerk;
+    const double absVelocityDelta = std::fabs(velocityDelta);
+    const double fullJerkTime = maxAcceleration / maxJerk;
+    double jerkTime = fullJerkTime;
+    double holdTime = 0.0;
+
+    if (absVelocityDelta < maxAcceleration * fullJerkTime)
+        jerkTime = std::sqrt(absVelocityDelta / maxJerk);
+    else
+        holdTime = absVelocityDelta / maxAcceleration - fullJerkTime;
+
+    const double startPosition = position;
+
+    append_jerk_phase(phases, jerkTime, position, velocity, acceleration, jerkSign);
+    append_jerk_phase(phases, holdTime, position, velocity, acceleration, 0.0);
+    append_jerk_phase(phases, jerkTime, position, velocity, acceleration, -jerkSign);
+
+    acceleration = 0.0;
+    velocity = targetVelocity;
+
+    return position - startPosition;
+}
+
+double jerk_transition_distance(double startVelocity, double endVelocity, double maxAcceleration, double maxJerk)
+{
+    double position = 0.0;
+    double velocity = startVelocity;
+    double acceleration = 0.0;
+    append_velocity_transition(nullptr, endVelocity, maxAcceleration, maxJerk, position, velocity, acceleration);
+    return position;
+}
+
+bool jerk_planning_supported(double startPosition, double endPosition, double startVelocity, double velocity,
+                             double endVelocity, double acc, double dec, double jerk)
+{
+    if (!std::isfinite(startPosition) || !std::isfinite(endPosition) || !std::isfinite(startVelocity) ||
+        !std::isfinite(velocity) || !std::isfinite(endVelocity) || !std::isfinite(acc) || !std::isfinite(dec) ||
+        !std::isfinite(jerk))
+        return false;
+
+    if (jerk <= 0.0 || velocity <= 0.0 || acc <= 0.0 || dec <= 0.0)
+        return false;
+
+    const double shift = endPosition - startPosition;
+    if (std::fabs(shift) <= kPlanEpsilon)
+        return false;
+
+    const double direction = shift >= 0.0 ? 1.0 : -1.0;
+    return startVelocity * direction >= -kPlanEpsilon && endVelocity * direction >= -kPlanEpsilon;
+}
+
+void append_phase_samples(const JerkPhase &phase, uint32_t frequency, std::vector<SamplePoint> &samples)
+{
+    const int steps = std::max(1, static_cast<int>(std::ceil(phase.duration * frequency - kPlanEpsilon)));
+    for (int step = 1; step <= steps; ++step)
+    {
+        const double t = std::min(static_cast<double>(step) / frequency, phase.duration);
+        SamplePoint sample;
+        sample.position = phase.start_position + phase.start_vel * t + phase.start_acc * t * t / 2.0 +
+                          phase.jerk * t * t * t / 6.0;
+        sample.velocity = phase.start_vel + phase.start_acc * t + phase.jerk * t * t / 2.0;
+        sample.acceleration = phase.start_acc + phase.jerk * t;
+
+        if (!samples.empty() && std::fabs(samples.back().position - sample.position) <= kPlanEpsilon &&
+            std::fabs(samples.back().velocity - sample.velocity) <= kPlanEpsilon &&
+            std::fabs(samples.back().acceleration - sample.acceleration) <= kPlanEpsilon)
+        {
+            continue;
+        }
+
+        samples.push_back(sample);
+    }
+}
+
+bool build_jerk_profile(double startPosition, double endPosition, double startVelocity, double velocity, double endVelocity,
+                        double acc, double dec, double jerk, uint32_t frequency, std::vector<JerkPhase> &phases,
+                        std::vector<SamplePoint> &samples)
+{
+    if (!jerk_planning_supported(startPosition, endPosition, startVelocity, velocity, endVelocity, acc, dec, jerk))
+        return false;
+
+    const double shift = endPosition - startPosition;
+    const double direction = shift >= 0.0 ? 1.0 : -1.0;
+    const double distance = std::fabs(shift);
+    const double normalizedStartVelocity = startVelocity * direction;
+    const double normalizedEndVelocity = endVelocity * direction;
+    const double maxVelocity = std::fabs(velocity);
+
+    if (maxVelocity + kPlanEpsilon < std::max(normalizedStartVelocity, normalizedEndVelocity))
+        return false;
+
+    const auto distanceForPeakVelocity = [&](double peakVelocity) {
+        return jerk_transition_distance(normalizedStartVelocity, peakVelocity, acc, jerk) +
+               jerk_transition_distance(peakVelocity, normalizedEndVelocity, dec, jerk);
+    };
+
+    double peakVelocity = maxVelocity;
+    double minDistance = distanceForPeakVelocity(peakVelocity);
+    double cruiseDuration = 0.0;
+    const double minimalPeakVelocity = std::max(normalizedStartVelocity, normalizedEndVelocity);
+
+    if (minDistance > distance + kPlanEpsilon)
+    {
+        if (distanceForPeakVelocity(minimalPeakVelocity) > distance + kPlanEpsilon)
+            return false;
+
+        double low = minimalPeakVelocity;
+        double high = maxVelocity;
+        for (int i = 0; i < 64; ++i)
+        {
+            const double mid = (low + high) / 2.0;
+            if (distanceForPeakVelocity(mid) > distance)
+                high = mid;
+            else
+                low = mid;
+        }
+
+        peakVelocity = low;
+        minDistance = distanceForPeakVelocity(peakVelocity);
+    }
+    else if (peakVelocity > kPlanEpsilon)
+    {
+        cruiseDuration = (distance - minDistance) / peakVelocity;
+    }
+
+    double position = startPosition;
+    double currentVelocity = startVelocity;
+    double currentAcceleration = 0.0;
+
+    append_velocity_transition(&phases, direction * peakVelocity, acc, jerk, position, currentVelocity, currentAcceleration);
+    append_jerk_phase(&phases, cruiseDuration, position, currentVelocity, currentAcceleration, 0.0);
+    append_velocity_transition(&phases, endVelocity, dec, jerk, position, currentVelocity, currentAcceleration);
+
+    samples.clear();
+    samples.push_back({startPosition, startVelocity, 0.0});
+    for (const auto &phase : phases)
+        append_phase_samples(phase, frequency, samples);
+
+    if (samples.empty())
+        return false;
+
+    samples.back().position = endPosition;
+    samples.back().velocity = endVelocity;
+    samples.back().acceleration = 0.0;
+    return true;
+}
+} // namespace
 
 void print_all(Segment *segments, int num)
 {
@@ -81,7 +272,9 @@ void print_all(Segment *segments, int num)
 
 ProfilePlanner::ProfilePlanner()
 {
-    memset(this, 0, sizeof(ProfilePlanner));
+    std::memset(&data, 0, sizeof(data));
+    std::memset(&data_backup, 0, sizeof(data_backup));
+    std::memset(&input_info, 0, sizeof(input_info));
     frequency = 1000;
 }
 
@@ -124,9 +317,53 @@ double ProfilePlanner::calculateDist(double start_vel, double end_vel, double ac
     }
 }
 
-bool ProfilePlanner::plan(double start_position, double end_position, double start_vel, double vel, double end_vel,
-                          double acc, double dec)
+double ProfilePlanner::calculateDist(double start_vel, double end_vel, double acc, double dec, double jerk)
 {
+    if (!std::isfinite(jerk))
+        return NAN;
+
+    if (jerk <= 0.0)
+        return calculateDist(start_vel, end_vel, acc, dec);
+
+    if (isOpposite(start_vel, end_vel) && end_vel != 0.0)
+        return calculateDist(start_vel, end_vel, acc, dec);
+
+    const double maxAcceleration = std::fabs(start_vel) <= std::fabs(end_vel) ? acc : dec;
+    return jerk_transition_distance(start_vel, end_vel, std::fabs(maxAcceleration), jerk);
+}
+
+bool ProfilePlanner::plan(double start_position, double end_position, double start_vel, double vel, double end_vel,
+                          double acc, double dec, double jerk)
+{
+    if (jerk > 0.0)
+    {
+        std::vector<JerkPhase> phases;
+        std::vector<SamplePoint> samples;
+        if (build_jerk_profile(start_position, end_position, start_vel, vel, end_vel, acc, dec, jerk, frequency, phases,
+                               samples))
+        {
+            clearJerkProfile();
+            mUsingJerkProfile = true;
+            mSamples = std::move(samples);
+            mSampleIndex = 0;
+
+            std::memset(&data, 0, sizeof(data));
+            data.frequency = frequency;
+            data.position = start_position;
+            data.velocity = start_vel;
+            data.acceleration = 0.0;
+
+            input_info.start_position = start_position;
+            input_info.end_position = end_position;
+            input_info.start_vel = start_vel;
+            input_info.end_vel = end_vel;
+
+            return mSamples.size() > 1;
+        }
+    }
+
+    clearJerkProfile();
+
     double shift;
     int route_calculate_result;
 
@@ -186,6 +423,7 @@ EXIT:
     data.frequency = frequency;
     data.position = start_position;
     data.velocity = start_vel;
+    data.acceleration = 0.0;
 
     input_info.start_position = start_position;
     input_info.end_position = end_position;
@@ -203,10 +441,34 @@ EXIT:
 
 bool ProfilePlanner::execute(void)
 {
+    if (mUsingJerkProfile)
+    {
+        if (mSamples.empty())
+            return true;
+
+        if (mSampleIndex >= mSamples.size())
+        {
+            data.velocity = input_info.end_vel;
+            data.position += data.velocity / data.frequency;
+            data.acceleration = 0.0;
+            input_info.end_position = data.position;
+            data.t_remain = 1.0 / data.frequency;
+            return true;
+        }
+
+        const SamplePoint &sample = mSamples[mSampleIndex];
+        data.position = sample.position;
+        data.velocity = sample.velocity;
+        data.acceleration = sample.acceleration;
+        ++mSampleIndex;
+        return mSampleIndex >= mSamples.size();
+    }
+
     if (data.current_segment >= data.number_segment)
     {
         data.velocity = input_info.end_vel;
         data.position += data.velocity / data.frequency;
+        data.acceleration = 0.0;
         input_info.end_position = data.position;
         data.t_remain = 1.0 / data.frequency;
         return true;
@@ -219,6 +481,7 @@ bool ProfilePlanner::execute(void)
     data.velocity = data.segments[data.current_segment].start_vel + acc_2;
     data.position = data.segments[data.current_segment].start_position + data.velocity * t;
     data.velocity += acc_2;
+    data.acceleration = data.segments[data.current_segment].acc;
 
     if (data.current_tick == data.segments[data.current_segment].tick &&
         !data.segments[data.current_segment].magic_flags)
@@ -233,6 +496,7 @@ bool ProfilePlanner::execute(void)
         {
             data.t_remain = 0.0;
             data.velocity = 0;
+            data.acceleration = 0.0;
         }
 
         goto SEGMENT_SUCCESS;
@@ -252,6 +516,17 @@ SEGMENT_SUCCESS:
 
 int ProfilePlanner::readStatus(void)
 {
+    if (mUsingJerkProfile)
+    {
+        if (std::fabs(data.acceleration) <= kPlanEpsilon)
+            return std::fabs(data.velocity) <= kPlanEpsilon ? 0 : 1;
+
+        if ((data.acceleration > 0.0) != (data.velocity > 0.0))
+            return 3;
+        else
+            return 2;
+    }
+
     if ((data.current_segment >= data.number_segment) || (data.segments[data.current_segment].acc == 0.0))
     {
         if (data.velocity == 0.0)
@@ -278,6 +553,9 @@ double ProfilePlanner::getVelocity(void)
 
 double ProfilePlanner::getAcceleration(void)
 {
+    if (mUsingJerkProfile)
+        return data.acceleration;
+
     if (data.current_segment >= data.number_segment)
     {
         return 0;
@@ -300,6 +578,16 @@ double ProfilePlanner::getEndPosition(void)
 
 void ProfilePlanner::setPositionOffset(double pos)
 {
+    if (mUsingJerkProfile)
+    {
+        for (auto &sample : mSamples)
+            sample.position += pos;
+
+        data.position += pos;
+        input_info.end_position += pos;
+        return;
+    }
+
     if (data.current_segment >= data.number_segment)
     {
         data.position += pos;
@@ -325,11 +613,23 @@ void ProfilePlanner::resetRemain(uint32_t freq)
 void ProfilePlanner::pushData(void)
 {
     data_backup = data;
+    mSamplesBackup = mSamples;
+    mSampleIndexBackup = mSampleIndex;
 }
 
 void ProfilePlanner::popData(void)
 {
     data = data_backup;
+    mSamples = mSamplesBackup;
+    mSampleIndex = mSampleIndexBackup;
+    mUsingJerkProfile = !mSamples.empty();
+}
+
+void ProfilePlanner::clearJerkProfile(void)
+{
+    mUsingJerkProfile = false;
+    mSamples.clear();
+    mSampleIndex = 0;
 }
 
 //void ProfilePlanner::popData(void);

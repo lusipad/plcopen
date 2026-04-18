@@ -50,7 +50,8 @@ ProfilesPlanner::~ProfilesPlanner()
 
 bool ProfilesPlanner::plan(ProfileNode *node, double startPos, double startVel, double startAcc)
 {
-    return ProfilePlanner::plan(startPos, node->mEndPos, startVel, node->mVel, node->mEndVel, node->mAcc, node->mDec);
+    return ProfilePlanner::plan(startPos, node->mEndPos, startVel, node->mVel, node->mEndVel, node->mAcc, node->mDec,
+                                node->mJerk);
 }
 
 }; // namespace plcopen

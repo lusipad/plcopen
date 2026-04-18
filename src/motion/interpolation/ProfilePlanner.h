@@ -27,7 +27,8 @@
 #ifndef _URANUS_PROFILEPLANNER_HPP_
 #define _URANUS_PROFILEPLANNER_HPP_
 
-#include <stdint.h>
+#include <cstdint>
+#include <vector>
 
 namespace plcopen
 {
@@ -60,6 +61,23 @@ public:
     {
         double position;
         double velocity;
+        double acceleration;
+    } SamplePoint;
+
+    typedef struct
+    {
+        double duration;
+        double start_position;
+        double start_vel;
+        double start_acc;
+        double jerk;
+    } JerkPhase;
+
+    typedef struct
+    {
+        double position;
+        double velocity;
+        double acceleration;
         int32_t current_tick;
         uint32_t frequency;
         uint32_t current_segment;
@@ -84,10 +102,12 @@ public:
     
     static double calculateDist(double start_vel, double end_vel, double acc, double dec);
 
+    static double calculateDist(double start_vel, double end_vel, double acc, double dec, double jerk);
+
     bool plan(
         double start_position, double end_position, 
         double start_vel, double vel, double end_vel,
-        double acc, double dec);
+        double acc, double dec, double jerk = 0.0);
         
     bool execute(void);
     
@@ -122,6 +142,15 @@ private:
     void pushData(void);
     
     void popData(void);
+
+    void clearJerkProfile(void);
+
+private:
+    bool mUsingJerkProfile = false;
+    std::vector<SamplePoint> mSamples;
+    std::vector<SamplePoint> mSamplesBackup;
+    size_t mSampleIndex = 0;
+    size_t mSampleIndexBackup = 0;
 };
 
 void print_all(ProfilePlanner::Segment* segments, int num = 5);

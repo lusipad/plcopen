@@ -52,6 +52,52 @@ if(PLCOPEN_BUILD_DEMOS)
 
     add_executable(axis_move_oscilloscope demo/axis_move_oscilloscope.cpp)
     target_link_libraries(axis_move_oscilloscope ${PROJECT_NAME})
+
+    add_executable(axis_sync demo/axis_sync.cpp)
+    target_link_libraries(axis_sync ${PROJECT_NAME})
+
+    add_executable(axis_gear demo/axis_gear.cpp)
+    target_link_libraries(axis_gear ${PROJECT_NAME})
+
+    add_executable(axis_cam demo/axis_cam.cpp)
+    target_link_libraries(axis_cam ${PROJECT_NAME})
+endif()
+
+if(PLCOPEN_BUILD_PYTHON_BINDINGS)
+    include(FetchContent)
+    find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
+
+    set(PYBIND11_FINDPYTHON ON CACHE BOOL "" FORCE)
+    FetchContent_Declare(
+        pybind11
+        GIT_REPOSITORY https://github.com/pybind/pybind11.git
+        GIT_TAG v2.13.6
+    )
+    FetchContent_MakeAvailable(pybind11)
+
+    pybind11_add_module(pyplcopen python/pyplcopen.cpp)
+    target_link_libraries(pyplcopen PRIVATE ${PROJECT_NAME})
+
+    if(BUILD_TESTING)
+        file(GENERATE
+            OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/pyplcopen_smoke_$<CONFIG>.py
+            CONTENT [=[
+import sys
+sys.path.insert(0, r"$<TARGET_FILE_DIR:pyplcopen>")
+import pyplcopen
+
+axis = pyplcopen.AxisSim(100.0)
+axis.power_on()
+axis.move_absolute(1.0, 2.0, 4.0, 4.0, 32.0)
+assert abs(axis.actual_position() - 1.0) < 1e-2
+axis.move_velocity(1.0, 4.0, 4.0, 32.0)
+assert axis.command_velocity() > 0.0
+assert axis.command_acceleration() >= 0.0
+axis.halt(4.0, 32.0)
+assert axis.status() == pyplcopen.AxisStatus.STANDSTILL
+]=])
+        add_test(NAME pyplcopen_smoke COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/pyplcopen_smoke_$<CONFIG>.py)
+    endif()
 endif()
 
 if(PLCOPEN_BUILD_TESTS AND BUILD_TESTING)
@@ -78,6 +124,12 @@ if(PLCOPEN_BUILD_TESTS AND BUILD_TESTING)
     )
     target_link_libraries(test_basic PRIVATE ${PROJECT_NAME} Catch2::Catch2WithMain)
     catch_discover_tests(test_basic)
+
+    if(PLCOPEN_BUILD_DEMOS)
+        add_test(NAME axis_sync_smoke COMMAND axis_sync --no-sleep)
+        add_test(NAME axis_gear_smoke COMMAND axis_gear --no-sleep)
+        add_test(NAME axis_cam_smoke COMMAND axis_cam --no-sleep)
+    endif()
 endif()
 
 install(TARGETS ${PROJECT_NAME}

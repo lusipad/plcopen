@@ -32,17 +32,27 @@ namespace plcopen
     #pragma pack(push)
     #pragma pack(4)
 
+    /**
+     * @brief Base callback interface for all function blocks.
+     *
+     * Motion commands report active, done, aborted, and error transitions
+     * through these callbacks.
+     */
     class FunctionBlock
     {
     public:
         virtual ~FunctionBlock() = default;
 
+        /// Called when a command becomes active.
         virtual void onOperationActive(int32_t customId) {}
 
+        /// Called when a command is aborted by a later command.
         virtual void onOperationAborted(int32_t customId) {}
 
+        /// Called when a command finishes successfully.
         virtual void onOperationDone(int32_t customId) {}
 
+        /// Called when a command fails.
         virtual void onOperationError(MC_ErrorCode errorCode, int32_t customId) {}
     };
 

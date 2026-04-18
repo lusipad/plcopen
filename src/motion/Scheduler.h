@@ -35,6 +35,11 @@ namespace plcopen
 #pragma pack(4)
 
     class Axis;
+    /**
+     * @brief 单线程周期调度器。
+     *
+     * 用户按固定频率调用 `runCycle()`，调度器依次推进所有轴与功能块。
+     */
     class Scheduler
     {
     public:
@@ -42,42 +47,42 @@ namespace plcopen
 
         virtual ~Scheduler();
 
-        // 执行一次插补
+        /// 执行一个调度周期。
         void runCycle(void);
 
-        // 设定runCycle的频率
+        /// 设定调度频率。
         MC_ErrorCode setFrequency(double frequency);
 
-        // 获取频率
+        /// 获取当前调度频率。
         double frequency(void) const;
 
-        // 当前tick，每次runCycle后自增
+        /// 获取当前 tick，每次 `runCycle()` 后自增。
         uint32_t tick(void) const;
 
-        /*
-         * 新建轴
-         * axisId:轴Id，不重复
-         * servo:伺服驱动器实例
-         * 返回:轴实例
+        /**
+         * @brief 新建一个轴实例。
+         * @param axisId 轴 ID，要求在当前调度器中唯一。
+         * @param servo 伺服抽象实例。
+         * @return 创建成功时返回轴指针，否则返回空指针。
          */
         Axis *newAxis(int32_t axisId, Servo *servo);
 
-        // 通过Id获取轴
+        /// 通过 ID 获取轴实例。
         Axis *axis(int32_t axisId) const;
 
-        // 设定轴配置
+        /// 应用一组轴配置。
         MC_ErrorCode setAxisConfig(Axis *axis, const AxisConfig &config);
 
-        // 直接设定轴零点配置
+        /// 直接设置轴的用户坐标零点。
         MC_ErrorCode setAxisHomePosition(Axis *axis, double homePos);
 
-        // 获取第一个轴
+        /// 获取轴链表中的第一个轴。
         Axis *axisListFirst(void) const;
 
-        // 获取下一个轴
+        /// 获取给定轴之后的下一个轴。
         Axis *axisListNext(const Axis *one) const;
 
-        // 释放所有创建的轴
+        /// 释放当前调度器创建的所有轴。
         void release(void);
 
     protected:

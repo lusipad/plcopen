@@ -37,6 +37,9 @@ namespace plcopen
     #define FB_INPUT // 标记输入变量
     #define FB_OUTPUT // 标记输出变量
 
+    /**
+     * @brief 所有 PLCopen 风格功能块的公共基类。
+     */
     class FbBaseType : virtual public FunctionBlock
     {
     public:
@@ -52,6 +55,9 @@ namespace plcopen
         virtual void call(void) = 0;
     };
 
+    /**
+     * @brief 适用于 `Enable/Valid/Busy` 模式的功能块基类。
+     */
     class FbEnableType : virtual public FbBaseType
     {
     public:
@@ -65,6 +71,9 @@ namespace plcopen
         virtual MC_ErrorCode onEnableFalse(void) = 0;
     };
 
+    /**
+     * @brief 适用于“一次触发、完成即结束”的 execute 型功能块基类。
+     */
     class FbComExecuteType : virtual public FbBaseType
     {
     public:
@@ -82,6 +91,9 @@ namespace plcopen
         virtual MC_ErrorCode onExecTriggered(bool& isDone) = 0;
     };
 
+    /**
+     * @brief 适用于“进入队列、异步完成”的顺序命令型功能块基类。
+     */
     class FbSeqExecuteType : virtual public FbBaseType
     {
     public:
@@ -112,6 +124,9 @@ namespace plcopen
         bool mOkFlag = false;
     };
 
+    /**
+     * @brief 读取类功能块基类。
+     */
     class FbReadInfoType : virtual public FbEnableType
     {
     public:
@@ -129,6 +144,9 @@ namespace plcopen
         virtual void onDisable(void) = 0;
     };
 
+    /**
+     * @brief 以轴为目标的一次性写入功能块基类。
+     */
     class FbWriteInfoAxisType : virtual public FbComExecuteType
     {
     public:
@@ -141,6 +159,9 @@ namespace plcopen
         virtual MC_ErrorCode onAxisTriggered(bool& isDone) = 0;
     };
 
+    /**
+     * @brief 以轴为目标的读取功能块基类。
+     */
     class FbReadInfoAxisType : virtual public FbReadInfoType
     {
     public:
@@ -160,6 +181,9 @@ namespace plcopen
         FB_INPUT MC_COORD_SYSTEM mCoordSystem = MC_CoordSystem::MCS;
     };
 
+    /**
+     * @brief 带 `BufferMode` 输入的顺序命令基类。
+     */
     class FbBufferModeType : virtual public FbSeqExecuteType
     {
     public:
@@ -173,6 +197,9 @@ namespace plcopen
         FB_INPUT LREAL mTransitionParameter[URANUS_TRANSITIONPARAMETER_NUM] = {0};
     };
 
+    /**
+     * @brief 单轴顺序命令功能块基类。
+     */
     class FbExecAxisType : virtual public FbSeqExecuteType
     {
     public:
@@ -185,17 +212,28 @@ namespace plcopen
         virtual MC_ErrorCode onAxisExecPosedge(void) = 0;
     };
 
+    /**
+     * @brief 带 `BufferMode` 的单轴顺序命令功能块基类。
+     */
     class FbExecAxisBufferType : 
         virtual public FbExecAxisType, virtual public FbBufferModeType
     {
     };
 
+    /**
+     * @brief 连续型单轴命令基类。
+     *
+     * 这类命令在逻辑上“完成”后仍可能保持 active，例如 `MoveVelocity`。
+     */
     class FbExecAxisBufferContType : virtual public FbExecAxisBufferType
     {
     public:
         void onOperationDone(int32_t customId);
     };
 
+    /**
+     * @brief 主从同步类命令基类。
+     */
     class FbExecAxisBufferContSyncType : virtual public FbExecAxisBufferContType
     {
     public:

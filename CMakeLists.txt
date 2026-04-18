@@ -6,7 +6,7 @@ endif()
 
 project(
   plcopen
-  VERSION 0.2.0
+  VERSION 0.4.0
   DESCRIPTION "a c++ library for plcopen"
   HOMEPAGE_URL "http://github.com/lusipad/plcopen"
   LANGUAGES CXX)
@@ -21,6 +21,8 @@ if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
 endif()
 
 option(PLCOPEN_BUILD_DEMOS "Build plcopen demo executables" ${PLCOPEN_IS_TOP_LEVEL})
+option(PLCOPEN_BUILD_DOCS "Build plcopen API docs with Doxygen" OFF)
+option(PLCOPEN_BUILD_PYTHON_BINDINGS "Build pybind11-based Python bindings" OFF)
 set(PLCOPEN_DEFAULT_BUILD_TESTS OFF)
 if(PLCOPEN_IS_TOP_LEVEL)
   set(PLCOPEN_DEFAULT_BUILD_TESTS ${BUILD_TESTING})
@@ -29,6 +31,32 @@ option(PLCOPEN_BUILD_TESTS "Build plcopen tests" ${PLCOPEN_DEFAULT_BUILD_TESTS})
 unset(PLCOPEN_DEFAULT_BUILD_TESTS)
 
 add_subdirectory(src)
+
+if(PLCOPEN_BUILD_DOCS)
+  find_package(Doxygen QUIET)
+
+  if(Doxygen_FOUND)
+    set(PLCOPEN_DOXYGEN_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/docs/api)
+    configure_file(
+      ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Doxyfile.in
+      ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
+      @ONLY)
+
+    add_custom_target(
+      docs
+      COMMAND ${CMAKE_COMMAND} -E make_directory ${PLCOPEN_DOXYGEN_OUTPUT_DIR}
+      COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
+      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+      COMMENT "Generating plcopen API documentation with Doxygen"
+      VERBATIM)
+  else()
+    message(STATUS "Doxygen not found; 'docs' target will print installation guidance.")
+    add_custom_target(
+      docs
+      COMMAND ${CMAKE_COMMAND} -E echo "Doxygen not found. Install Doxygen and reconfigure with -DPLCOPEN_BUILD_DOCS=ON to generate API docs."
+      VERBATIM)
+  endif()
+endif()
 
 configure_package_config_file(
   ${CMAKE_CURRENT_SOURCE_DIR}/cmake/plcopenConfig.cmake.in

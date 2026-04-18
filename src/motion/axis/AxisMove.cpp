@@ -104,6 +104,10 @@ MC_ErrorCode AxisMove::AxisMoveImpl::addMove(FunctionBlock *fb, double pos, doub
 {
     MoveNode *node, *nodePrev;
     MC_ErrorCode err;
+    const bool queuedBufferMode = usesQueuedBufferModeSemantics(bufferMode);
+
+    if (!isDefinedBufferMode(bufferMode))
+        return MC_ErrorCode::BLENDING_MODE_ILLEGAL;
 
     // 速度参数检测
     if ((vel < 0 && !std::isnan(pos)) || !std::isfinite(vel))
@@ -119,7 +123,7 @@ MC_ErrorCode AxisMove::AxisMoveImpl::addMove(FunctionBlock *fb, double pos, doub
 
     // 起始位置处理
     double startPos, startVel, startAcc;
-    if (shiftingMode == MC_ShiftingMode::ADDITIVE || bufferMode != MC_BufferMode::ABORTING)
+    if (shiftingMode == MC_ShiftingMode::ADDITIVE || queuedBufferMode)
     { // 使用最后一个功能块终点位置
         if (!mThis_->operationRemains())
             goto USE_CURRENT;
@@ -141,7 +145,7 @@ MC_ErrorCode AxisMove::AxisMoveImpl::addMove(FunctionBlock *fb, double pos, doub
     // 特殊位置处理
     if (std::isnan(pos))
     { // 不清楚位置
-        pos = ProfilePlanner::calculateDist(startVel, vel, acc, dec);
+        pos = ProfilePlanner::calculateDist(startVel, endVel, acc, dec, jerk);
         pos += startPos;
     }
     else
@@ -183,7 +187,7 @@ MC_ErrorCode AxisMove::AxisMoveImpl::addMove(FunctionBlock *fb, double pos, doub
             node->mIsHold = isHold;
             return node;
         },
-        (bufferMode == MC_BufferMode::ABORTING), fb, statusActive, statusDone, customId);
+        !queuedBufferMode, fb, statusActive, statusDone, customId);
 
     return err;
 }
@@ -238,13 +242,15 @@ MC_ErrorCode AxisMove::addMoveVel(FunctionBlock *fb, double vel, double acc, dou
 
 MC_ErrorCode AxisMove::addHalt(FunctionBlock *fb, double dec, double jerk, MC_BufferMode bufferMode, int32_t customId)
 {
-    return mImpl_->addMove(fb, NAN, __EPSILON, dec, dec, 0, jerk, MC_ShiftingMode::ABSOLUTE, MC_Direction::CURRENT,
+    const double brakingVelocity = std::max(std::fabs(cmdVelocity()), __EPSILON);
+    return mImpl_->addMove(fb, NAN, brakingVelocity, dec, dec, 0, jerk, MC_ShiftingMode::ABSOLUTE, MC_Direction::CURRENT,
                            bufferMode, MC_AxisStatus::DISCRETE_MOTION, MC_AxisStatus::STANDSTILL, false, customId);
 }
 
 MC_ErrorCode AxisMove::addStop(FunctionBlock *fb, double dec, double jerk, int32_t customId)
 {
-    return mImpl_->addMove(fb, NAN, __EPSILON, dec, dec, 0, jerk, MC_ShiftingMode::ABSOLUTE, MC_Direction::CURRENT,
+    const double brakingVelocity = std::max(std::fabs(cmdVelocity()), __EPSILON);
+    return mImpl_->addMove(fb, NAN, brakingVelocity, dec, dec, 0, jerk, MC_ShiftingMode::ABSOLUTE, MC_Direction::CURRENT,
         MC_BufferMode::ABORTING, MC_AxisStatus::STOPPING, MC_AxisStatus::STOPPING, false, customId);
 }
 
