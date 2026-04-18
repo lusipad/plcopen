@@ -3,6 +3,7 @@
 
 #include "ProfilePlanner.h"
 
+#include <algorithm>
 #include <cmath>
 
 using namespace plcopen;

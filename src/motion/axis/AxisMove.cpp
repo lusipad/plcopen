@@ -28,6 +28,8 @@
 #include "MathUtils.h"
 #include "ProfilesPlanner.h"
 
+#include <algorithm>
+
 namespace plcopen
 {
 
