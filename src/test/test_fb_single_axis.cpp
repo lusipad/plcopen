@@ -6,6 +6,7 @@
 #include "Scheduler.h"
 
 #include <array>
+#include <cmath>
 #include <limits>
 
 using namespace plcopen;

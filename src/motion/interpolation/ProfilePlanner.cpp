@@ -30,7 +30,7 @@
 #include <cmath>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
+#include <cstring>
 
 // #define MC_DEBUG 1
 
