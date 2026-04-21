@@ -61,6 +61,9 @@ if(PLCOPEN_BUILD_DEMOS)
 
     add_executable(axis_cam demo/axis_cam.cpp)
     target_link_libraries(axis_cam ${PROJECT_NAME})
+
+    add_executable(basic_fb_cycle demo/basic_fb_cycle.cpp)
+    target_link_libraries(basic_fb_cycle ${PROJECT_NAME})
 endif()
 
 if(PLCOPEN_BUILD_PYTHON_BINDINGS)
@@ -119,6 +122,7 @@ if(PLCOPEN_BUILD_TESTS AND BUILD_TESTING)
         test_basic
         test/test_basic.cpp
         test/test_axis_status.cpp
+        test/test_fb_basic.cpp
         test/test_profile_planner.cpp
         test/test_fb_single_axis.cpp
     )
@@ -129,6 +133,7 @@ if(PLCOPEN_BUILD_TESTS AND BUILD_TESTING)
         add_test(NAME axis_sync_smoke COMMAND axis_sync --no-sleep)
         add_test(NAME axis_gear_smoke COMMAND axis_gear --no-sleep)
         add_test(NAME axis_cam_smoke COMMAND axis_cam --no-sleep)
+        add_test(NAME basic_fb_cycle_smoke COMMAND basic_fb_cycle --no-sleep)
     endif()
 endif()
 
@@ -141,6 +146,7 @@ install(TARGETS ${PROJECT_NAME}
 
 install(FILES
     fb/FunctionBlock.h 
+    fb/FbBasic.h
     fb/FbPLCOpenBase.h 
     fb/FbSingleAxis.h
     fb/PLCTypes.h

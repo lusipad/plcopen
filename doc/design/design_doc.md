@@ -67,6 +67,7 @@ plcopen/
 所有功能块继承自`FunctionBlock`基类，该基类定义了功能块的基本接口和行为模式。功能块分为以下几类：
 
 - `FbBaseType`：基本功能块类型
+- `FbBasicType`：基础 IEC 非运动功能块类型
 - `FbExecAxisType`：需要执行的轴功能块类型
 - `FbExecAxisBufferType`：带缓冲模式的轴功能块类型
 - `FbReadInfoAxisType`：读取轴信息的功能块类型
@@ -74,6 +75,7 @@ plcopen/
 
 ```
 FunctionBlock
+├── FbBasicType
 └── FbBaseType
     ├── FbExecAxisType
     │   └── FbExecAxisBufferType
@@ -89,7 +91,7 @@ FunctionBlock
 
 - `Axis`：表示物理或虚拟轴的抽象，管理轴的状态和运动
 - `Servo`：对伺服控制器的抽象，处理实际的运动控制
-- `Scheduler`：调度器，负责周期性调度轴的运动和功能块的执行
+- `Scheduler`：调度器，负责周期性推进轴的运动；功能块由调用方在每个 scan 中显式执行
 
 轴控制系统负责管理轴的生命周期、状态转换和运动规划。它为功能块层提供了一个统一的接口，使功能块能够独立于具体硬件实现运动控制逻辑。
 

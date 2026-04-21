@@ -8,9 +8,9 @@
 [![Windows CI](https://github.com/lusipad/plcopen/actions/workflows/windows-ci.yml/badge.svg)](https://github.com/lusipad/plcopen/actions/workflows/windows-ci.yml)
 [![Linux CI](https://github.com/lusipad/plcopen/actions/workflows/linux-ci.yml/badge.svg)](https://github.com/lusipad/plcopen/actions/workflows/linux-ci.yml)
 [![C++17](https://img.shields.io/badge/C%2B%2B-17-blue.svg)](https://en.cppreference.com/w/cpp/17)
-[![Version](https://img.shields.io/badge/version-v0.4.0-orange.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-v0.5.0-orange.svg)](CHANGELOG.md)
 
-> **项目状态**：当前工作集版本为 `v0.4.0`。当前路线图中仓库内已定义的里程碑工作已经完成；后续默认以 issue-driven 修复、文档/测试补充与下一次路线复盘为主。项目现在具备 CI、自动化测试、Linux 构建、CMake 包导出、单轴与 homing 的 jerk-aware 规划、可选 Doxygen/API 与 Python 绑定入口，以及概念级多轴同步 demo；在 `v1.0` 前 API 仍可能变化。
+> **项目状态**：当前工作集版本为 `v0.5.0`。项目现在具备 CI、自动化测试、Linux 构建、CMake 包导出、单轴与 homing 的 jerk-aware 规划、基础 IEC 61131-3 功能块首批实现、可选 Doxygen/API 与 Python 绑定入口，以及概念级多轴同步 demo；在 `v1.0` 前 API 仍可能变化。
 >
 > 详情见 [ROADMAP.md](ROADMAP.md)；长期方向见 [VISION.md](VISION.md)。
 
@@ -52,19 +52,24 @@ plcopen 想填补的空白是**"现代 C++ 的可嵌入 PLCopen 运动控制库"
 
 ## 当前状态
 
-### 已实现（截至 v0.4.0）
+### 已实现（截至 v0.5.0）
 
 | 能力 | 说明 |
 |------|------|
 | 轴状态机 | PLCopen 标准的 8 状态机（Disabled、Standstill、DiscreteMotion 等） |
 | 单轴运动功能块 | MC_Power、MC_MoveAbsolute、MC_MoveRelative、MC_MoveAdditive、MC_MoveVelocity、MC_Stop、MC_Halt、MC_Reset |
+| 基础 IEC 功能块 | R_TRIG、F_TRIG、SR、RS、TON、TOF、TP、CTU、CTD、CTUD |
 | 运动规划 | 梯形 + 单轴 jerk-aware S 曲线 |
 | Buffer mode | Aborting / Buffered 等缓冲切换 |
 | 调度器 | 单线程周期调度（用户负责在 tick 里调用 `runCycle()`） |
 | 示波器 demo | 可视化轴状态变化 |
 | CMake 构建 | Windows + Visual Studio 2022 |
 
-### v0.4.0 亮点
+### v0.5.0 亮点
+
+- 新增基础 IEC 61131-3 功能块首批实现：边沿检测、双稳态、定时器、计数器
+- 定时器明确采用显式 scan-cycle 语义，由调用方配置周期时间，不依赖墙钟时间
+- 新增 `basic_fb_cycle` demo 和独立 Catch2 回归，覆盖边沿、延时与计数边界
 
 - GitHub Actions CI（Windows + Linux）
 - Catch2 自动化测试覆盖轴状态机、轨迹规划器和单轴功能块
@@ -187,6 +192,7 @@ int main() {
 ```
 
 完整示例见 `src/demo/`：
+- `basic_fb_cycle.cpp` —— 基础 IEC 功能块的 scan-cycle 调用示例
 - `axis_move.cpp` —— 点到点运动 + Buffer mode
 - `axis_homing.cpp` —— 回零示例（已覆盖核心路径）
 - `axis_move_oscilloscope.cpp` —— 带状态示波器的演示
@@ -198,11 +204,28 @@ int main() {
 
 ---
 
-## PLCopen 功能块支持
+## 标准功能块支持
 
 图例：✅ 已实现 / 📋 未实现
 
-### 单轴管理功能块
+### IEC 61131-3 基础功能块
+
+| 功能块 | 描述 | 状态 |
+|--------|------|------|
+| R_TRIG | 上升沿检测 | ✅ |
+| F_TRIG | 下降沿检测 | ✅ |
+| SR | 置位优先锁存器 | ✅ |
+| RS | 复位优先锁存器 | ✅ |
+| TON | 通电延时定时器 | ✅ |
+| TOF | 断电延时定时器 | ✅ |
+| TP | 脉冲定时器 | ✅ |
+| CTU | 加计数器 | ✅ |
+| CTD | 减计数器 | ✅ |
+| CTUD | 双向计数器 | ✅ |
+
+### PLCopen 运动功能块
+
+#### 单轴管理功能块
 
 | 功能块 | 描述 | 状态 |
 |--------|------|------|
@@ -213,7 +236,7 @@ int main() {
 | MC_ReadStatus | 读取状态 | ✅ |
 | MC_ReadAxisError | 读取轴错误 | ✅ |
 
-### 单轴运动功能块
+#### 单轴运动功能块
 
 | 功能块 | 描述 | 状态 |
 |--------|------|------|
@@ -227,7 +250,7 @@ int main() {
 | MC_MoveSuperimposed | 叠加运动 | 📋 |
 | MC_TorqueControl | 扭矩控制 | 📋 |
 
-### 多轴运动功能块
+#### 多轴运动功能块
 
 | 功能块 | 描述 | 状态 |
 |--------|------|------|
@@ -242,7 +265,7 @@ int main() {
 ```
   ┌──────────────────────────────────────────┐
   │  功能块层 (src/fb/)                      │
-  │  FbPower, FbMoveAbsolute, FbStop, ...   │
+  │  FbPower, FbMoveAbsolute, FbTon, ...    │
   └──────────────────────────────────────────┘
                      ▼
   ┌──────────────────────────────────────────┐
@@ -257,7 +280,8 @@ int main() {
                      ▼
   ┌──────────────────────────────────────────┐
   │  调度层 (src/motion/Scheduler.*)         │
-  │  单线程周期调度，由用户在 tick 调用      │
+  │  单线程周期调度；轴由 runCycle 推进      │
+  │  功能块由用户每周期显式 call()          │
   └──────────────────────────────────────────┘
                      ▼
   ┌──────────────────────────────────────────┐
@@ -273,6 +297,7 @@ int main() {
 ## 已知边界
 
 - 当前实现中，所有非 `ABORTING` 的 Buffer mode 枚举共享同一套“排队、不立即打断前一条命令”的语义；细粒度 blending 行为尚未分化实现。
+- 基础 IEC 定时器按显式周期推进；调用方需要保证每 scan 调用一次，并通过 `setCycleTime()` 提供周期时间。
 - `axis_sync.cpp` / `axis_gear.cpp` / `axis_cam.cpp` 是 demo 级辅助能力，不代表 `MC_CamTableSelect`、`MC_CamIn/Out`、`MC_GearIn/Out` 已正式落地。
 - `pyplcopen` 当前只暴露单轴仿真 facade，不是完整 Python PLCopen SDK。
 
@@ -288,6 +313,7 @@ int main() {
 | [ROADMAP.md](ROADMAP.md) | 近期路线（6-12 个月） |
 | [BUILD_README.md](BUILD_README.md) | 详细构建指南 |
 | [BUILD_LINUX.md](BUILD_LINUX.md) | Ubuntu 22.04 构建说明 |
+| [`src/fb/FbBasic.h`](src/fb/FbBasic.h) | 基础 IEC 功能块公开头文件 |
 | [CLAUDE.md](CLAUDE.md) | AI 协作的行为规范 |
 | [doc/design/](doc/design/) | 当前代码的设计文档 |
 | [doc/reference/](doc/reference/) | PLCopen 标准原文（PDF） |
