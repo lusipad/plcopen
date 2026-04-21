@@ -10,7 +10,7 @@
 [![C++17](https://img.shields.io/badge/C%2B%2B-17-blue.svg)](https://en.cppreference.com/w/cpp/17)
 [![Version](https://img.shields.io/badge/version-v0.4.0-orange.svg)](CHANGELOG.md)
 
-> **项目状态**：当前工作集版本为 `v0.4.0`。项目现在具备 CI、自动化测试、Linux 构建、CMake 包导出、单轴与 homing 的 jerk-aware 规划、可选 Doxygen/API 与 Python 绑定入口，以及概念级多轴同步 demo；在 `v1.0` 前 API 仍可能变化。
+> **项目状态**：当前工作集版本为 `v0.4.0`。当前路线图中仓库内已定义的里程碑工作已经完成；后续默认以 issue-driven 修复、文档/测试补充与下一次路线复盘为主。项目现在具备 CI、自动化测试、Linux 构建、CMake 包导出、单轴与 homing 的 jerk-aware 规划、可选 Doxygen/API 与 Python 绑定入口，以及概念级多轴同步 demo；在 `v1.0` 前 API 仍可能变化。
 >
 > 详情见 [ROADMAP.md](ROADMAP.md)；长期方向见 [VISION.md](VISION.md)。
 
@@ -300,7 +300,7 @@ int main() {
 欢迎各种形式的贡献：
 
 - **Bug 修复、测试补充、文档改进**：随时 PR
-- **v0.2 / v0.3 路线图任务**：对应 [ROADMAP.md](ROADMAP.md) 任务发 issue / PR
+- **当前路线图里的 issue-driven 修复或文档/测试补充**：先看 [ROADMAP.md](ROADMAP.md) 当前状态，再发 issue / PR
 - **不在路线图上的能力**：先看 [VISION.md 解锁条件](VISION.md#解锁条件)，满足后开 issue 讨论，再动手
 
 报告问题：[GitHub Issues](https://github.com/lusipad/plcopen/issues)
