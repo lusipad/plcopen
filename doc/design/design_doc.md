@@ -70,6 +70,7 @@ plcopen/
 - `FbBasicType`：基础 IEC 非运动功能块类型
 - `FbExecAxisType`：需要执行的轴功能块类型
 - `FbExecAxisBufferType`：带缓冲模式的轴功能块类型
+- `FbExecAxisBufferContSyncType`：主从同步类功能块类型
 - `FbReadInfoAxisType`：读取轴信息的功能块类型
 - `FbWriteInfoAxisType`：写入轴信息的功能块类型
 
@@ -79,6 +80,7 @@ FunctionBlock
 └── FbBaseType
     ├── FbExecAxisType
     │   └── FbExecAxisBufferType
+    │       └── FbExecAxisBufferContSyncType
     ├── FbReadInfoAxisType
     └── FbWriteInfoAxisType
 ```
@@ -91,6 +93,7 @@ FunctionBlock
 
 - `Axis`：表示物理或虚拟轴的抽象，管理轴的状态和运动
 - `Servo`：对伺服控制器的抽象，处理实际的运动控制
+- `CamTable`：多轴 cam 跟随使用的主从位置映射表
 - `Scheduler`：调度器，负责周期性推进轴的运动；功能块由调用方在每个 scan 中显式执行
 
 轴控制系统负责管理轴的生命周期、状态转换和运动规划。它为功能块层提供了一个统一的接口，使功能块能够独立于具体硬件实现运动控制逻辑。
@@ -143,21 +146,21 @@ FunctionBlock
 
 ### 3.4 运动规划
 
-目前实现了加速度减速度运动规划（加速度直线型），主要运动模式包括：
+当前实现已经具备梯形与 jerk-aware 轨迹规划，并在此基础上补齐了单轴 motion、基础 IEC 块和最小多轴同步块。主要运动模式包括：
 
 - 绝对位置运动（MoveAbsolute）
 - 相对位置运动（MoveRelative）
 - 叠加运动（MoveAdditive）
 - 速度运动（MoveVelocity）
 
-运动规划的实现基于梯形速度曲线，支持不同的缓冲模式（如Aborting、Buffered等）。运动规划算法考虑了以下因素：
+当前运动规划支持梯形与单轴 jerk-aware 轨迹，支持不同的缓冲模式（如 Aborting、Buffered 等）。运动规划算法考虑了以下因素：
 
 - 最大速度限制
 - 加速度和减速度限制
 - 位置和速度平滑过渡
 - 缓冲模式下的运动衔接
 
-未来计划支持S曲线（Jerk受限）运动规划，以实现更平滑的运动特性。
+多轴 gear/cam 当前以单主单从的最小同步 runtime 落地，不包含完整 `AxesGroup` 框架。
 
 ### 3.5 错误处理
 
@@ -198,10 +201,9 @@ FunctionBlock
 
 ### 5.1 当前限制
 
-- 仅支持加速度直线型运动规划，不支持Jerk限制
+- gear/cam 仍是单主单从的最小同步实现
 - 不支持ContinuousUpdate模式
-- 部分功能块尚未实现
-- 多轴功能支持有限
+- 多轴功能仍未扩展到完整 `AxesGroup`
 
 ### 5.2 未来计划
 

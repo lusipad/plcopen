@@ -244,10 +244,17 @@ namespace plcopen
         FB_OUTPUT BOOL& mInSync = mDone;
     
     public:
+        void call(void);
+        void onOperationDone(int32_t customId);
+        void onOperationAborted(int32_t customId);
+        void onOperationError(MC_ErrorCode errorCode, int32_t customId);
         MC_ErrorCode onAxisExecPosedge(void);
     
     public:
         virtual MC_ErrorCode onMasterSlaveExecPosedge(void) = 0;
+
+    private:
+        bool mStartSyncLatch = false;
     };
 
     #pragma pack(pop)

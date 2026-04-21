@@ -143,6 +143,26 @@ namespace plcopen
     };
 
     /**
+     * @brief Superimposed move block.
+     *
+     * The current single-axis implementation maps this block to the additive
+     * move path and therefore queues an additive offset on the existing motion
+     * stack instead of synthesizing a true parallel superposition layer.
+     */
+    class FbMoveSuperimposed : public FbExecAxisBufferType
+    {
+    public:
+        FB_INPUT LREAL mDistance = 0;
+        FB_INPUT LREAL mVelocity = 0;
+        FB_INPUT LREAL mAcceleration = 0;
+        FB_INPUT LREAL mDeceleration = 0;
+        FB_INPUT LREAL mJerk = 0;
+
+    public:
+        MC_ErrorCode onAxisExecPosedge(void);
+    };
+
+    /**
      * @brief Velocity move block.
      *
      * `mInVelocity` aliases `mDone` and indicates that the target velocity has
@@ -228,6 +248,30 @@ namespace plcopen
     };
 
     /**
+     * @brief Set the current user-space position while the axis is idle.
+     */
+    class FbSetPosition : public FbWriteInfoAxisType
+    {
+    public:
+        FB_INPUT LREAL mPosition = 0;
+
+    public:
+        MC_ErrorCode onAxisTriggered(bool &isDone);
+    };
+
+    /**
+     * @brief Set the motion override percentage for newly planned moves.
+     */
+    class FbSetOverride : public FbWriteInfoAxisType
+    {
+    public:
+        FB_INPUT LREAL mOverride = 100.0;
+
+    public:
+        MC_ErrorCode onAxisTriggered(bool &isDone);
+    };
+
+    /**
      * @brief Parameter enum used by `MC_ReadParameter` style APIs.
      */
     enum class MC_Parameter
@@ -293,6 +337,32 @@ namespace plcopen
     {
     public:
         MC_ErrorCode onAxisEnable(bool &isDone);
+    };
+
+    /**
+     * @brief Read a supported axis parameter by enum id.
+     */
+    class FbReadParameter : public FbReadInfoAxisType
+    {
+    public:
+        FB_INPUT MC_Parameter mParameterNumber = MC_Parameter::COMMANDED_POSITION;
+        FB_OUTPUT LREAL mValue = 0;
+
+    public:
+        MC_ErrorCode onAxisEnable(bool &isDone);
+        void onDisable(void);
+    };
+
+    /**
+     * @brief Write a torque setpoint to the underlying servo abstraction.
+     */
+    class FbTorqueControl : public FbWriteInfoAxisType
+    {
+    public:
+        FB_INPUT LREAL mTorque = 0;
+
+    public:
+        MC_ErrorCode onAxisTriggered(bool &isDone);
     };
 
     /**

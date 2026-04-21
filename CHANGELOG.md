@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.6.0] - 2026-04-22
+
+### Added
+
+- 单轴功能块新增 `MC_ReadParameter`、`MC_SetPosition`、`MC_SetOverride`、`MC_MoveSuperimposed`、`MC_TorqueControl`。
+- 多轴功能块新增 `MC_CamTableSelect`、`MC_CamIn / MC_CamOut`、`MC_GearIn / MC_GearOut`。
+- 新增 `CamTable` 公共类型与 `test_fb_multi_axis.cpp` 回归覆盖。
+
+### Changed
+
+- README 的公开支持表现在覆盖当前仓库可用的全部 FunctionBlock。
+- `MC_SetOverride` 当前显式收口为“只影响新规划的运动命令”。
+- `MC_MoveSuperimposed` 当前显式收口为“映射到单轴 additive 队列语义”。
+- `MC_TorqueControl` 当前显式收口为“扭矩设定透传到伺服抽象”。
+
 ## [0.5.0] - 2026-04-21
 
 ### Added

@@ -821,3 +821,195 @@ TEST_CASE("Move and home reject undefined buffer modes", "[fb][axis][buffer][val
     REQUIRE(home.mError);
     REQUIRE(home.mErrorID == MC_ErrorCode::BLENDING_MODE_ILLEGAL);
 }
+
+TEST_CASE("FbSetPosition remaps the current user-space position while standstill", "[fb][axis][integration][position]")
+{
+    SingleAxisFbHarness harness;
+    harness.powerOn();
+
+    FbSetPosition setPosition;
+    setPosition.mAxis = harness.axis;
+    setPosition.mPosition = 12.5;
+    setPosition.mExecute = true;
+
+    harness.runCycle(setPosition);
+
+    REQUIRE_FALSE(setPosition.mError);
+    REQUIRE(setPosition.mDone);
+    REQUIRE(harness.axis->actPosition() == Catch::Approx(12.5).margin(1e-6));
+
+    auto moveAbsolute = makeMoveAbsolute(harness.axis, 15.0, 2.0, 4.0, 4.0);
+    moveAbsolute.mExecute = true;
+    harness.runUntil(
+        [&]() { return moveAbsolute.mDone; },
+        400,
+        "move after set position did not finish",
+        moveAbsolute);
+
+    REQUIRE_FALSE(moveAbsolute.mError);
+    REQUIRE(harness.axis->actPosition() == Catch::Approx(15.0).margin(1e-2));
+}
+
+TEST_CASE("FbSetPosition rejects changes while the axis is moving", "[fb][axis][integration][position]")
+{
+    SingleAxisFbHarness harness;
+    harness.powerOn();
+
+    auto moveAbsolute = makeMoveAbsolute(harness.axis, 5.0, 2.0, 4.0, 4.0);
+    moveAbsolute.mExecute = true;
+    harness.runCycle(moveAbsolute);
+    harness.runUntil(
+        [&]() { return moveAbsolute.mActive; },
+        50,
+        "move did not become active",
+        moveAbsolute);
+
+    FbSetPosition setPosition;
+    setPosition.mAxis = harness.axis;
+    setPosition.mPosition = 20.0;
+    setPosition.mExecute = true;
+    setPosition.call();
+
+    REQUIRE(setPosition.mError);
+    REQUIRE(setPosition.mErrorID == MC_ErrorCode::AXIS_STANDSTILL);
+}
+
+TEST_CASE("FbReadParameter reads supported parameters and rejects unsupported ones", "[fb][axis][integration][parameter]")
+{
+    SingleAxisFbHarness harness;
+
+    AxisConfig config;
+    config.mRangeLimitInfo.mSwLimitPositive = true;
+    config.mRangeLimitInfo.mSwLimitNegative = true;
+    config.mRangeLimitInfo.mLimitPositive = 7.5;
+    config.mRangeLimitInfo.mLimitNegative = -3.0;
+    config.mMotionLimitInfo.mPosLagLimit = 42.0;
+    REQUIRE(harness.axis->setRangeLimitInfo(config.mRangeLimitInfo) == MC_ErrorCode::GOOD);
+    REQUIRE(harness.axis->setMotionLimitInfo(config.mMotionLimitInfo) == MC_ErrorCode::GOOD);
+    harness.powerOn();
+
+    auto moveAbsolute = makeMoveAbsolute(harness.axis, 2.0, 4.0, 8.0, 8.0);
+    moveAbsolute.mExecute = true;
+    harness.runUntil(
+        [&]() { return moveAbsolute.mDone; },
+        300,
+        "reference move did not finish",
+        moveAbsolute);
+
+    FbReadParameter readParameter;
+    readParameter.mAxis = harness.axis;
+    readParameter.mEnable = true;
+
+    readParameter.mParameterNumber = MC_Parameter::COMMANDED_POSITION;
+    readParameter.call();
+    REQUIRE(readParameter.mValid);
+    REQUIRE_FALSE(readParameter.mError);
+    REQUIRE(readParameter.mValue == Catch::Approx(harness.axis->cmdPosition()).margin(1e-6));
+
+    readParameter.mParameterNumber = MC_Parameter::SWLIMIT_POS;
+    readParameter.call();
+    REQUIRE(readParameter.mValue == Catch::Approx(7.5).margin(1e-6));
+
+    readParameter.mParameterNumber = MC_Parameter::ENABLE_LIMIT_NEG;
+    readParameter.call();
+    REQUIRE(readParameter.mValue == 1.0);
+
+    readParameter.mParameterNumber = MC_Parameter::MAX_POSITION_LAG;
+    readParameter.call();
+    REQUIRE(readParameter.mValue == Catch::Approx(42.0).margin(1e-6));
+
+    readParameter.mParameterNumber = MC_Parameter::ACTUAL_VELOCITY;
+    readParameter.call();
+    REQUIRE(readParameter.mValue == Catch::Approx(harness.axis->actVelocity()).margin(1e-6));
+
+    readParameter.mParameterNumber = MC_Parameter::MAX_ACCELERATION_SYSTEM;
+    readParameter.call();
+    REQUIRE(readParameter.mError);
+    REQUIRE(readParameter.mErrorID == MC_ErrorCode::PARAMETER_NOT_SUPPORT);
+}
+
+TEST_CASE("FbSetOverride scales newly planned motion commands and rejects invalid values", "[fb][axis][integration][override]")
+{
+    SingleAxisFbHarness harness;
+    harness.powerOn();
+
+    FbSetOverride setOverride;
+    setOverride.mAxis = harness.axis;
+    setOverride.mOverride = 50.0;
+    setOverride.mExecute = true;
+    harness.runCycle(setOverride);
+
+    REQUIRE_FALSE(setOverride.mError);
+    REQUIRE(setOverride.mDone);
+    REQUIRE(harness.axis->override() == Catch::Approx(50.0).margin(1e-6));
+
+    auto moveAbsolute = makeMoveAbsolute(harness.axis, 5.0, 4.0, 8.0, 8.0);
+    moveAbsolute.mExecute = true;
+    harness.runCycle(moveAbsolute);
+    harness.runUntil(
+        [&]() { return moveAbsolute.mActive; },
+        50,
+        "move with override did not become active",
+        moveAbsolute);
+
+    REQUIRE(std::fabs(harness.axis->cmdVelocity()) <= 2.05);
+
+    FbSetOverride invalidOverride;
+    invalidOverride.mAxis = harness.axis;
+    invalidOverride.mOverride = 0.0;
+    invalidOverride.mExecute = true;
+    invalidOverride.call();
+    REQUIRE(invalidOverride.mError);
+    REQUIRE(invalidOverride.mErrorID == MC_ErrorCode::OVERRIDE_ILLEGAL);
+}
+
+TEST_CASE("FbMoveSuperimposed adds an offset on top of the current single-axis motion stack", "[fb][axis][integration][superimposed]")
+{
+    SingleAxisFbHarness harness;
+    harness.powerOn();
+
+    auto baseMove = makeMoveAbsolute(harness.axis, 5.0, 3.0, 6.0, 6.0);
+    baseMove.mExecute = true;
+    harness.runCycle(baseMove);
+    harness.runUntil(
+        [&]() { return baseMove.mActive; },
+        50,
+        "base move did not become active",
+        baseMove);
+
+    FbMoveSuperimposed superimposed;
+    superimposed.mAxis = harness.axis;
+    superimposed.mDistance = 2.0;
+    superimposed.mVelocity = 2.0;
+    superimposed.mAcceleration = 4.0;
+    superimposed.mDeceleration = 4.0;
+    superimposed.mBufferMode = MC_BufferMode::BUFFERED;
+    superimposed.mExecute = true;
+    harness.runCycle(baseMove, superimposed);
+
+    harness.runUntil(
+        [&]() { return superimposed.mDone; },
+        500,
+        "superimposed move did not finish",
+        baseMove,
+        superimposed);
+
+    REQUIRE_FALSE(superimposed.mError);
+    REQUIRE(harness.axis->actPosition() == Catch::Approx(7.0).margin(1e-2));
+}
+
+TEST_CASE("FbTorqueControl writes a torque setpoint to the servo abstraction", "[fb][axis][integration][torque]")
+{
+    SingleAxisFbHarness harness;
+    harness.powerOn();
+
+    FbTorqueControl torqueControl;
+    torqueControl.mAxis = harness.axis;
+    torqueControl.mTorque = 3.5;
+    torqueControl.mExecute = true;
+    harness.runCycle(torqueControl);
+
+    REQUIRE_FALSE(torqueControl.mError);
+    REQUIRE(torqueControl.mDone);
+    REQUIRE(harness.axis->actTorque() == Catch::Approx(3.5).margin(1e-6));
+}

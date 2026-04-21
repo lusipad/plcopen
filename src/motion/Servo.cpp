@@ -35,6 +35,7 @@ namespace plcopen
         int32_t mPos = 0;
         double mVel = 0;
         double mAcc = 0;
+        double mTorque = 0;
     };
 
     Servo::Servo()
@@ -66,7 +67,8 @@ namespace plcopen
 
     MC_ServoErrorCode Servo::setTorque(double torque)
     {
-        return 0xFFFFFFFF;
+        mImpl_->mTorque = torque;
+        return 0;
     }
 
     int32_t Servo::pos(void)
@@ -86,7 +88,7 @@ namespace plcopen
 
     double Servo::torque(void)
     {
-        return 0;
+        return mImpl_->mTorque;
     }
 
     bool Servo::readVal(int index, double &value)

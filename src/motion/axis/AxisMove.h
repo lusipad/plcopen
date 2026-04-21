@@ -83,6 +83,9 @@ namespace plcopen
             double jerk,
             int32_t customId = 0);
 
+        MC_ErrorCode setOverride(double overridePercent);
+        double override(void) const;
+
         void cancelStopLater(void);
 
     private:

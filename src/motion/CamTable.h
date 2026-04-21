@@ -1,5 +1,5 @@
 /*
- * AxisMotion.h
+ * CamTable.h
  *
  * Copyright 2020 (C) SYMG(Shanghai) Intelligence System Co.,Ltd
  *
@@ -22,28 +22,26 @@
  *
  */
 
-#ifndef _URANUS_AXISMOTION_HPP_
-#define _URANUS_AXISMOTION_HPP_
+#ifndef _URANUS_CAMTABLE_HPP_
+#define _URANUS_CAMTABLE_HPP_
 
-#include "AxisSync.h"
-#include "AxisMove.h"
-#include "AxisHoming.h"
+#include <utility>
+#include <vector>
 
 namespace plcopen
 {
 
-    class AxisMotion : virtual public AxisMove,
-                       virtual public AxisSync,
-                       virtual public AxisHoming
+    class CamTable
     {
     public:
-        AxisMotion();
-        virtual ~AxisMotion();
+        void addPoint(double masterPosition, double slavePosition);
+        bool empty(void) const;
+        double sample(double masterPosition) const;
 
-        double cmdPosition(void) const;
-        double actPosition(void) const;
+    private:
+        std::vector<std::pair<double, double>> mPoints;
     };
 
-}
+} // namespace plcopen
 
-#endif /** _URANUS_AXISMOTION_HPP_ **/
+#endif /** _URANUS_CAMTABLE_HPP_ **/

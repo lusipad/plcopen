@@ -65,6 +65,7 @@ namespace plcopen
         void emergStop(MC_ErrorCode errorCodeToSet);
         MC_ErrorCode resetError(bool& isDone);
         MC_ErrorCode setPosition(double pos, double vel, double acc);
+        MC_ErrorCode setTorque(double torque);
     
         bool powerStatus(void) const;
         MC_ErrorCode errorCode(void) const;

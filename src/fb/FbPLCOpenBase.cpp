@@ -234,6 +234,40 @@ namespace plcopen
         return mMaster ? onMasterSlaveExecPosedge() : MC_ErrorCode::AXIS_NO_TEXIST;
     }
 
+    void FbExecAxisBufferContSyncType::call(void)
+    {
+        FbSeqExecuteType::call();
+        if (mStartSyncLatch)
+        {
+            mStartSyncLatch = false;
+        }
+        else
+        {
+            mStartSync = false;
+        }
+    }
+
+    void FbExecAxisBufferContSyncType::onOperationDone(int32_t customId)
+    {
+        FbExecAxisBufferContType::onOperationDone(customId);
+        mStartSync = true;
+        mStartSyncLatch = true;
+    }
+
+    void FbExecAxisBufferContSyncType::onOperationAborted(int32_t customId)
+    {
+        mStartSync = false;
+        mStartSyncLatch = false;
+        FbSeqExecuteType::onOperationAborted(customId);
+    }
+
+    void FbExecAxisBufferContSyncType::onOperationError(MC_ErrorCode errorCode, int32_t customId)
+    {
+        mStartSync = false;
+        mStartSyncLatch = false;
+        FbSeqExecuteType::onOperationError(errorCode, customId);
+    }
+
     ////////////////////////////////////////////////////////////
 
 } // namespace plcopen

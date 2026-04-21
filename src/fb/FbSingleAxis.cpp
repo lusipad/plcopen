@@ -110,6 +110,14 @@ namespace plcopen
 
     ////////////////////////////////////////////////////////////
 
+    MC_ErrorCode FbMoveSuperimposed::onAxisExecPosedge(void)
+    {
+        return mAxis->addMovePos(this, mDistance, mVelocity, mAcceleration, mDeceleration, mJerk, MC_ShiftingMode::ADDITIVE,
+            MC_Direction::CURRENT, mBufferMode);
+    }
+
+    ////////////////////////////////////////////////////////////
+
     MC_ErrorCode FbMoveVelocity::onAxisExecPosedge(void)
     {
         return mAxis->addMoveVel(this, mVelocity, mAcceleration, mDeceleration, mJerk, mBufferMode);
@@ -256,6 +264,34 @@ namespace plcopen
 
     ////////////////////////////////////////////////////////////
 
+    MC_ErrorCode FbSetPosition::onAxisTriggered(bool &isDone)
+    {
+        if (mAxis->status() != MC_AxisStatus::STANDSTILL)
+            return MC_ErrorCode::AXIS_STANDSTILL;
+
+        const double systemActualPosition = mAxis->actPosition();
+        const MC_ErrorCode err = mAxis->setHomePosition(mPosition - systemActualPosition);
+        if (err != MC_ErrorCode::GOOD)
+            return err;
+
+        isDone = true;
+        return MC_ErrorCode::GOOD;
+    }
+
+    ////////////////////////////////////////////////////////////
+
+    MC_ErrorCode FbSetOverride::onAxisTriggered(bool &isDone)
+    {
+        const MC_ErrorCode err = mAxis->setOverride(mOverride);
+        if (err != MC_ErrorCode::GOOD)
+            return err;
+
+        isDone = true;
+        return MC_ErrorCode::GOOD;
+    }
+
+    ////////////////////////////////////////////////////////////
+
     MC_ErrorCode FbReadActualPosition::onAxisEnable(bool &isDone)
     {
         mPosition = mAxis->actPosition();
@@ -296,6 +332,61 @@ namespace plcopen
     MC_ErrorCode FbReadCommandVelocity::onAxisEnable(bool &isDone)
     {
         mVelocity = mAxis->cmdVelocity();
+        isDone = true;
+        return MC_ErrorCode::GOOD;
+    }
+
+    ////////////////////////////////////////////////////////////
+
+    MC_ErrorCode FbReadParameter::onAxisEnable(bool &isDone)
+    {
+        switch (mParameterNumber)
+        {
+        case MC_Parameter::COMMANDED_POSITION:
+            mValue = mAxis->cmdPosition();
+            break;
+        case MC_Parameter::SWLIMIT_POS:
+            mValue = mAxis->rangeLimitInfo().mLimitPositive;
+            break;
+        case MC_Parameter::SWLIMIT_NEG:
+            mValue = mAxis->rangeLimitInfo().mLimitNegative;
+            break;
+        case MC_Parameter::ENABLE_LIMIT_POS:
+            mValue = mAxis->rangeLimitInfo().mSwLimitPositive ? 1.0 : 0.0;
+            break;
+        case MC_Parameter::ENABLE_LIMIT_NEG:
+            mValue = mAxis->rangeLimitInfo().mSwLimitNegative ? 1.0 : 0.0;
+            break;
+        case MC_Parameter::MAX_POSITION_LAG:
+            mValue = mAxis->motionLimitInfo().mPosLagLimit;
+            break;
+        case MC_Parameter::ACTUAL_VELOCITY:
+            mValue = mAxis->actVelocity();
+            break;
+        case MC_Parameter::COMMANDED_VELOCITY:
+            mValue = mAxis->cmdVelocity();
+            break;
+        default:
+            return MC_ErrorCode::PARAMETER_NOT_SUPPORT;
+        }
+
+        isDone = true;
+        return MC_ErrorCode::GOOD;
+    }
+
+    void FbReadParameter::onDisable(void)
+    {
+        mValue = 0;
+    }
+
+    ////////////////////////////////////////////////////////////
+
+    MC_ErrorCode FbTorqueControl::onAxisTriggered(bool &isDone)
+    {
+        const MC_ErrorCode err = mAxis->setTorque(mTorque);
+        if (err != MC_ErrorCode::GOOD)
+            return err;
+
         isDone = true;
         return MC_ErrorCode::GOOD;
     }

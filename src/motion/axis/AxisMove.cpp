@@ -50,6 +50,7 @@ class AxisMove::AxisMoveImpl
   public:
     AxisMove *mThis_;
     ProfilesPlanner mPlanner;
+    double mOverrideFactor = 1.0;
 
   public:
     MC_ErrorCode addMove(FunctionBlock *fb, double pos, double vel, double acc, double dec, double endVel, double jerk,
@@ -107,6 +108,13 @@ MC_ErrorCode AxisMove::AxisMoveImpl::addMove(FunctionBlock *fb, double pos, doub
     MoveNode *node, *nodePrev;
     MC_ErrorCode err;
     const bool queuedBufferMode = usesQueuedBufferModeSemantics(bufferMode);
+    const double overrideFactor = mOverrideFactor;
+
+    vel *= overrideFactor;
+    acc *= overrideFactor;
+    dec *= overrideFactor;
+    endVel *= overrideFactor;
+    jerk *= overrideFactor;
 
     if (!isDefinedBufferMode(bufferMode))
         return MC_ErrorCode::BLENDING_MODE_ILLEGAL;
@@ -274,6 +282,20 @@ void AxisMove::cancelStopLater(void)
         if (node->mStatusDone == MC_AxisStatus::STOPPING)
             node->mStatusDone = MC_AxisStatus::STANDSTILL;
     }
+}
+
+MC_ErrorCode AxisMove::setOverride(double overridePercent)
+{
+    if (overridePercent <= 0 || overridePercent > 100 || !std::isfinite(overridePercent))
+        return MC_ErrorCode::OVERRIDE_ILLEGAL;
+
+    mImpl_->mOverrideFactor = overridePercent * 0.01;
+    return MC_ErrorCode::GOOD;
+}
+
+double AxisMove::override(void) const
+{
+    return mImpl_->mOverrideFactor * 100.0;
 }
 
 void AxisMove::onPowerStatusChangedHandler(AxisBase *this_, bool powerStatus)

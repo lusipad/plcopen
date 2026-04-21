@@ -592,6 +592,24 @@ namespace plcopen
         return MC_ErrorCode::GOOD;
     }
 
+    MC_ErrorCode AxisBase::setTorque(double torque)
+    {
+        if (MC_ErrorCode::GOOD != errorCode())
+            return errorCode();
+
+        if (!powerStatus())
+            return MC_ErrorCode::AXIS_POWER_OFF;
+
+        mImpl_->mDevErrorCode = mImpl_->mServo->setTorque(torque);
+        if (mImpl_->mDevErrorCode)
+        {
+            emergStop(MC_ErrorCode::AXIS_HARDWARE);
+            return errorCode();
+        }
+
+        return MC_ErrorCode::GOOD;
+    }
+
     const char *AxisBase::axisName(void) const
     {
         return mImpl_->mAxisName;

@@ -1,5 +1,5 @@
 /*
- * AxisMotion.h
+ * FbMultiAxis.cpp
  *
  * Copyright 2020 (C) SYMG(Shanghai) Intelligence System Co.,Ltd
  *
@@ -22,28 +22,40 @@
  *
  */
 
-#ifndef _URANUS_AXISMOTION_HPP_
-#define _URANUS_AXISMOTION_HPP_
-
-#include "AxisSync.h"
-#include "AxisMove.h"
-#include "AxisHoming.h"
+#include "FbMultiAxis.h"
+#include "Axis.h"
 
 namespace plcopen
 {
 
-    class AxisMotion : virtual public AxisMove,
-                       virtual public AxisSync,
-                       virtual public AxisHoming
+    MC_ErrorCode FbGearIn::onMasterSlaveExecPosedge(void)
     {
-    public:
-        AxisMotion();
-        virtual ~AxisMotion();
+        return mSlave->addGearIn(this, mMaster, mRatioNumerator, mRatioDenominator, mBufferMode);
+    }
 
-        double cmdPosition(void) const;
-        double actPosition(void) const;
-    };
+    MC_ErrorCode FbGearOut::onAxisExecPosedge(void)
+    {
+        return mAxis->addGearOut(this);
+    }
 
-}
+    MC_ErrorCode FbCamTableSelect::onExecTriggered(bool &isDone)
+    {
+        if (!mCamTable || mCamTable->empty())
+            return MC_ErrorCode::PARAMETER_NOT_SUPPORT;
 
-#endif /** _URANUS_AXISMOTION_HPP_ **/
+        mCamTableSelected = mCamTable;
+        isDone = true;
+        return MC_ErrorCode::GOOD;
+    }
+
+    MC_ErrorCode FbCamIn::onMasterSlaveExecPosedge(void)
+    {
+        return mSlave->addCamIn(this, mMaster, mCamTable, mBufferMode);
+    }
+
+    MC_ErrorCode FbCamOut::onAxisExecPosedge(void)
+    {
+        return mAxis->addCamOut(this);
+    }
+
+} // namespace plcopen

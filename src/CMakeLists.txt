@@ -123,6 +123,7 @@ if(PLCOPEN_BUILD_TESTS AND BUILD_TESTING)
         test/test_basic.cpp
         test/test_axis_status.cpp
         test/test_fb_basic.cpp
+        test/test_fb_multi_axis.cpp
         test/test_profile_planner.cpp
         test/test_fb_single_axis.cpp
     )
@@ -147,9 +148,11 @@ install(TARGETS ${PROJECT_NAME}
 install(FILES
     fb/FunctionBlock.h 
     fb/FbBasic.h
+    fb/FbMultiAxis.h
     fb/FbPLCOpenBase.h 
     fb/FbSingleAxis.h
     fb/PLCTypes.h
+    motion/CamTable.h
     motion/Servo.h 
     motion/Global.h 
     motion/Scheduler.h
