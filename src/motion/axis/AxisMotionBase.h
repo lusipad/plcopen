@@ -32,7 +32,7 @@
 namespace plcopen
 {
 
-    // class AxesGroupBase;
+    class AxesGroup;
     class FunctionBlock;
     class AxisExeclNode : virtual public ExeclNode
     {
@@ -41,6 +41,7 @@ namespace plcopen
         MC_AxisStatus mStatusActive = MC_AxisStatus::STANDSTILL;
         MC_AxisStatus mStatusDone = MC_AxisStatus::STANDSTILL;
         int32_t mNodeCustomId = 0;
+        MC_BufferMode mBufferMode = MC_BufferMode::ABORTING;
 
     protected:
         virtual MC_ErrorCode onActive(ExeclQueue *queue) override;
@@ -66,7 +67,8 @@ namespace plcopen
             FunctionBlock *fb,
             MC_AxisStatus statusActive,
             MC_AxisStatus statusDone,
-            int32_t nodeCustomId);
+            int32_t nodeCustomId,
+            MC_BufferMode bufferMode = MC_BufferMode::ABORTING);
 
     public: // 外部继承获取
         virtual void operationActive(FunctionBlock *fb, int32_t customId) {}
@@ -74,15 +76,18 @@ namespace plcopen
         virtual void operationDone(FunctionBlock *fb, int32_t customId) {}
         virtual void operationError(
             FunctionBlock *fb, int32_t customId, MC_ErrorCode errorCode) {}
+        AxesGroup *group(void) const;
 
     private:
         static void onErrorHandler(AxisBase *this_, MC_ErrorCode errorCode);
         static void onPowerStatusChangedHandler(AxisBase *this_, bool powerStatus);
         static void onPositionOffsetHandler(AxisBase *this_, double positionOffset);
+        void setGroup(AxesGroup *group);
 
     private:
         class AxisMotionBaseImpl;
         AxisMotionBaseImpl *mImpl_;
+        friend class AxesGroup;
     };
 
 }

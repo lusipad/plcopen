@@ -35,3 +35,5 @@
 build
 out
 .cache
+.playwright-cli/
+.omx/

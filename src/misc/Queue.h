@@ -163,6 +163,7 @@ template <typename T, size_t Size>
 inline void Queue<T, Size>::clear(void)
 {
     mHead = mTail;
+    mUsed = 0;
 }
 
 template <typename T, size_t Size>

@@ -207,6 +207,11 @@ namespace plcopen
         return mImpl_->mQueue.used();
     }
 
+    ExeclNode *ExeclQueue::activeNode(void) const
+    {
+        return mImpl_->mHoldNode ? mImpl_->mHoldNode : front();
+    }
+
     void ExeclQueue::setAllNodesAborted(void)
     {
         if (mImpl_->mHoldNode)

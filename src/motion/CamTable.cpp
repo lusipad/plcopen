@@ -1,30 +1,7 @@
-/*
- * CamTable.cpp
- *
- * Copyright 2020 (C) SYMG(Shanghai) Intelligence System Co.,Ltd
- *
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
- *
- */
-
 #include "CamTable.h"
 
 #include <algorithm>
+#include <cmath>
 
 namespace plcopen
 {
@@ -33,6 +10,16 @@ namespace plcopen
     {
         mPoints.emplace_back(masterPosition, slavePosition);
         std::sort(mPoints.begin(), mPoints.end(), [](const auto &lhs, const auto &rhs) { return lhs.first < rhs.first; });
+    }
+
+    void CamTable::setPeriodic(bool periodic)
+    {
+        mPeriodic = periodic;
+    }
+
+    bool CamTable::periodic(void) const
+    {
+        return mPeriodic;
     }
 
     bool CamTable::empty(void) const
@@ -44,6 +31,20 @@ namespace plcopen
     {
         if (mPoints.empty())
             return 0.0;
+
+        if (mPeriodic && mPoints.size() >= 2)
+        {
+            const double firstMaster = mPoints.front().first;
+            const double lastMaster = mPoints.back().first;
+            const double period = lastMaster - firstMaster;
+            if (period > 0.0)
+            {
+                masterPosition = std::fmod(masterPosition - firstMaster, period);
+                if (masterPosition < 0.0)
+                    masterPosition += period;
+                masterPosition += firstMaster;
+            }
+        }
 
         if (masterPosition <= mPoints.front().first)
             return mPoints.front().second;

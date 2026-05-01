@@ -185,11 +185,26 @@ function Invoke-Tests {
         Copy-Item $LibraryDll $TestRunDir -Force
     }
     
-    # Execute tests
     $RunnableTestExe = (Resolve-Path (Join-Path $TestRunDir "test_basic.exe")).Path
     Write-Info "Running tests: $RunnableTestExe"
-    $TestResult = & $RunnableTestExe 2>&1
-    $TestExitCode = $LASTEXITCODE
+
+    $StdOutPath = Join-Path $TestRunDir "test_basic.stdout.txt"
+    $StdErrPath = Join-Path $TestRunDir "test_basic.stderr.txt"
+    $TestProcess = Start-Process `
+        -FilePath $RunnableTestExe `
+        -NoNewWindow `
+        -Wait `
+        -PassThru `
+        -RedirectStandardOutput $StdOutPath `
+        -RedirectStandardError $StdErrPath
+    $TestExitCode = $TestProcess.ExitCode
+    $TestResult = @()
+    if (Test-Path $StdOutPath) {
+        $TestResult += Get-Content $StdOutPath
+    }
+    if (Test-Path $StdErrPath) {
+        $TestResult += Get-Content $StdErrPath
+    }
     
     if ($TestExitCode -eq 0) {
         Write-Success "All tests passed"

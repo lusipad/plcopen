@@ -47,6 +47,7 @@ namespace plcopen
         AxisMotionLimitInfo mMotionLimit;
         AxisControlInfo mControl;
         double mHomePos = 0;
+        bool mIsHomed = false;
 
         MC_ErrorCode mErrorCode = MC_ErrorCode::GOOD;
         MC_ServoErrorCode mDevErrorCode = 0;
@@ -66,6 +67,9 @@ namespace plcopen
         bool mEnableNegative = false;
 
         double mEncoderOverflowOffset = 0;
+        bool mTouchProbeArmed = false;
+        int mTouchProbeInput = -1;
+        bool mTouchProbeLastValue = false;
 
     public:
         void processPositionLoop(void);
@@ -154,7 +158,7 @@ namespace plcopen
         double curDevPos = toSystemLogic(mServo->pos());
         double posDiff = fabs(mCmdPos - curDevPos);
 
-        if (mControl.mControlMode != MC_ControlMode::VELOPENLOOP)
+        if (mMotionLimit.mEnablePosLagMonitoring && mControl.mControlMode != MC_ControlMode::VELOPENLOOP)
         {
             if (__isgt(posDiff, mMotionLimit.mPosLagLimit))
             {
@@ -436,6 +440,9 @@ namespace plcopen
         if (info.mAccLimit <= 0 || !std::isfinite(info.mAccLimit))
             return MC_ErrorCode::CFG_ACC_LIMIT_ILLEGAL;
 
+        if (info.mJerkLimit < 0 || !std::isfinite(info.mJerkLimit))
+            return MC_ErrorCode::CFG_JERK_LIMIT_ILLEGAL;
+
         if (info.mPosLagLimit <= 0 || !std::isfinite(info.mPosLagLimit))
             return MC_ErrorCode::CFG_POS_LAG_ILLEGAL;
 
@@ -494,6 +501,7 @@ namespace plcopen
         printLog(MC_LogLevel::DEBUG, "Set home pos %lf, previous home pos %lf, diff %lf\n", homePos, mImpl_->mHomePos,
                  homePos - mImpl_->mHomePos);
         mImpl_->mHomePos = homePos;
+        mImpl_->mIsHomed = true;
         return MC_ErrorCode::GOOD;
     }
 
@@ -670,6 +678,11 @@ namespace plcopen
         return mImpl_->mServo->torque();
     }
 
+    bool AxisBase::isHomed(void) const
+    {
+        return mImpl_->mIsHomed;
+    }
+
     bool AxisBase::servoReadVal(int index, double &value)
     {
         return mImpl_->mServo->readVal(index, value);
@@ -678,6 +691,47 @@ namespace plcopen
     bool AxisBase::servoWriteVal(int index, double value)
     {
         return mImpl_->mServo->writeVal(index, value);
+    }
+
+    MC_ErrorCode AxisBase::armTouchProbe(int triggerInput, bool initialValue)
+    {
+        if (triggerInput < 0)
+            return MC_ErrorCode::PARAMETER_NOT_SUPPORT;
+
+        mImpl_->mTouchProbeArmed = true;
+        mImpl_->mTouchProbeInput = triggerInput;
+        mImpl_->mTouchProbeLastValue = initialValue;
+        return MC_ErrorCode::GOOD;
+    }
+
+    MC_ErrorCode AxisBase::updateTouchProbe(int triggerInput, bool currentValue, bool &triggered, bool captureEnabled)
+    {
+        triggered = false;
+        if (!mImpl_->mTouchProbeArmed || mImpl_->mTouchProbeInput != triggerInput)
+            return MC_ErrorCode::GOOD;
+
+        triggered = captureEnabled && currentValue && !mImpl_->mTouchProbeLastValue;
+        mImpl_->mTouchProbeLastValue = currentValue;
+        if (triggered)
+            mImpl_->mTouchProbeArmed = false;
+
+        return MC_ErrorCode::GOOD;
+    }
+
+    MC_ErrorCode AxisBase::abortTouchProbe(int triggerInput)
+    {
+        if (triggerInput < 0)
+            return MC_ErrorCode::PARAMETER_NOT_SUPPORT;
+
+        if (mImpl_->mTouchProbeArmed && mImpl_->mTouchProbeInput == triggerInput)
+            mImpl_->mTouchProbeArmed = false;
+
+        return MC_ErrorCode::GOOD;
+    }
+
+    bool AxisBase::touchProbeArmed(int triggerInput) const
+    {
+        return mImpl_->mTouchProbeArmed && mImpl_->mTouchProbeInput == triggerInput;
     }
 
     double AxisBase::userPosToSys(double baseSysPos, double userPos, MC_Direction dir) const

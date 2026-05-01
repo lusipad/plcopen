@@ -260,7 +260,12 @@ namespace plcopen
                 node->mPos = pos;
                 return node;
             },
-            !usesQueuedBufferModeSemantics(bufferMode), fb, MC_AxisStatus::HOMING, MC_AxisStatus::STANDSTILL, customId);
+            !usesQueuedBufferModeSemantics(bufferMode),
+            fb,
+            MC_AxisStatus::HOMING,
+            MC_AxisStatus::STANDSTILL,
+            customId,
+            bufferMode);
 
         if (MC_ErrorCode::GOOD != err)
             return err;

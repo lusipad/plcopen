@@ -2,15 +2,15 @@
 
 > **现代 C++ 的 PLCopen 运动控制库 —— 嵌入到你的控制器里，不替代你的控制器。**
 >
-> *A modern C++ motion-control library implementing core PLCopen Part 1 building blocks and selected Part 2 concepts. Embed it in your controller, not replace your controller.*
+> *A modern C++ motion-control library implementing core PLCopen Part 1 building blocks and selected coordinated-motion foundation concepts. Embed it in your controller, not replace your controller.*
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Windows CI](https://github.com/lusipad/plcopen/actions/workflows/windows-ci.yml/badge.svg)](https://github.com/lusipad/plcopen/actions/workflows/windows-ci.yml)
 [![Linux CI](https://github.com/lusipad/plcopen/actions/workflows/linux-ci.yml/badge.svg)](https://github.com/lusipad/plcopen/actions/workflows/linux-ci.yml)
 [![C++17](https://img.shields.io/badge/C%2B%2B-17-blue.svg)](https://en.cppreference.com/w/cpp/17)
-[![Version](https://img.shields.io/badge/version-v0.6.0-orange.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-v0.8.0-orange.svg)](CHANGELOG.md)
 
-> **项目状态**：当前工作集版本为 `v0.6.0`。项目现在具备 CI、自动化测试、Linux 构建、CMake 包导出、单轴与 homing 的 jerk-aware 规划、基础 IEC 61131-3 功能块、单轴管理/运动功能块、以及最小可用的 gear/cam 多轴同步功能块；在 `v1.0` 前 API 仍可能变化。
+> **项目状态**：当前工作集版本为 `v0.8.0`。项目现在具备 CI、自动化测试、Linux 构建、CMake 包导出、单轴与 homing 的 jerk-aware 规划、基础 IEC 61131-3 功能块、单轴管理/运动功能块、最小可用的 gear/cam 多轴同步功能块，以及 `AxesGroup Foundation`；在 `v1.0` 前 API 仍可能变化。
 >
 > 详情见 [ROADMAP.md](ROADMAP.md)；长期方向见 [VISION.md](VISION.md)。
 
@@ -18,7 +18,7 @@
 
 ## 这是什么
 
-plcopen 是一个 **C++17 运动控制库**，实现 PLCopen Motion Control Part 1 的核心功能块与状态机，并逐步补齐 Part 2 的选定能力。它被设计成**可嵌入的库**，不是完整的 PLC 运行时。
+plcopen 是一个 **C++17 运动控制库**，实现 PLCopen Motion Control Part 1 的核心功能块与状态机，并开始补齐 Part 4 coordinated motion 的基础层。它被设计成**可嵌入的库**，不是完整的 PLC 运行时。
 
 ### 适合你，如果你……
 
@@ -52,26 +52,36 @@ plcopen 想填补的空白是**"现代 C++ 的可嵌入 PLCopen 运动控制库"
 
 ## 当前状态
 
-### 已实现（截至 v0.6.0）
+### 已实现（截至 v0.8.0）
 
 | 能力 | 说明 |
 |------|------|
 | 轴状态机 | PLCopen 标准的 8 状态机（Disabled、Standstill、DiscreteMotion 等） |
-| 单轴管理/运动功能块 | MC_Power、MC_Reset、MC_ReadStatus、MC_ReadAxisError、MC_ReadActualPosition、MC_ReadCommandPosition、MC_ReadActualVelocity、MC_ReadCommandVelocity、MC_ReadParameter、MC_SetPosition、MC_SetOverride、MC_MoveAbsolute、MC_MoveRelative、MC_MoveAdditive、MC_MoveSuperimposed、MC_MoveVelocity、MC_Stop、MC_Halt、MC_Home、MC_TorqueControl |
-| 基础 IEC 功能块 | R_TRIG、F_TRIG、SR、RS、TON、TOF、TP、CTU、CTD、CTUD |
-| 多轴同步功能块 | MC_CamTableSelect、MC_CamIn / MC_CamOut、MC_GearIn / MC_GearOut |
+| 单轴管理/运动功能块 | MC_Power、MC_Reset、MC_ReadStatus、MC_ReadAxisError、MC_ReadActualPosition、MC_ReadCommandPosition、MC_ReadActualVelocity、MC_ReadCommandVelocity、MC_ReadActualTorque、MC_ReadParameter、MC_ReadBoolParameter、MC_WriteParameter、MC_WriteBoolParameter、MC_ReadDigitalInput、MC_ReadDigitalOutput、MC_WriteDigitalOutput、MC_DigitalCamSwitch、MC_ReadAxisInfo、MC_SetPosition、MC_SetOverride、MC_TouchProbe、MC_AbortTrigger、MC_MoveAbsolute、MC_MoveRelative、MC_MoveAdditive、MC_MoveSuperimposed、MC_MoveVelocity、MC_MoveContinuousAbsolute、MC_MoveContinuousRelative、MC_PositionProfile、MC_VelocityProfile、MC_AccelerationProfile、MC_Stop、MC_Halt、MC_HaltSuperimposed、MC_Home、MC_TorqueControl |
+| 基础 IEC 功能块 | R_TRIG、F_TRIG、SR、RS、TON、TOF、TP、CTU、CTD、CTUD、RTC |
+| AxesGroup Foundation | `AxesGroup` runtime、`MC_AddAxisToGroup`、`MC_RemoveAxisFromGroup`、`MC_GroupEnable`、`MC_GroupDisable`、`MC_GroupReadStatus`、`MC_GroupReadActualPosition`、`MC_GroupReadCommandPosition`、`MC_GroupStop`、`MC_GroupReset` |
+| 多轴同步功能块 | MC_CamTableSelect、MC_CamIn / MC_CamOut、MC_GearIn / MC_GearInPos / MC_GearOut、MC_PhasingAbsolute / MC_PhasingRelative、MC_CombineAxes |
 | 运动规划 | 梯形 + 单轴 jerk-aware S 曲线 |
 | Buffer mode | Aborting / Buffered 等缓冲切换 |
 | 调度器 | 单线程周期调度（用户负责在 tick 里调用 `runCycle()`） |
 | 示波器 demo | 可视化轴状态变化 |
 | CMake 构建 | Windows + Visual Studio 2022 |
 
-### v0.6.0 亮点
+### v0.8.0 亮点
 
-- 单轴功能块面补齐 `MC_ReadParameter`、`MC_SetPosition`、`MC_SetOverride`、`MC_MoveSuperimposed`、`MC_TorqueControl`
-- 公开多轴同步功能块补齐 `MC_CamTableSelect`、`MC_CamIn / MC_CamOut`、`MC_GearIn / MC_GearOut`
+- 新增 `AxesGroup` runtime，支持成员管理、group 启停、状态读取、停组与组复位。
+- 新增 `MC_GroupReadActualPosition` / `MC_GroupReadCommandPosition`，按 0-based 成员槽位读取实际/指令位置；索引不是 axis id，移除成员后后续槽位会前移。
+- `MC_Gear* / MC_Cam*` 现在要求主从轴属于同一个已启用的 `AxesGroup`。
+- 新增 `test_axes_group.cpp` 与 group-aware 多轴回归，默认测试目标会一起编译这批 Part 4 foundation 测试。
+
+- 基础 IEC 61131-3 标准功能块补齐 `RTC`
+- `RTC` 当前显式收口为 scan-cycle 驱动的日期时间累加器，不直接读取宿主系统墙钟时间
+- 新增 `RTC` 的 Catch2 回归覆盖，验证启停、重启和 `DT` 上界饱和行为
+
+- 单轴功能块面补齐 `MC_ReadParameter`、`MC_ReadBoolParameter`、`MC_WriteParameter`、`MC_WriteBoolParameter`、`MC_ReadDigitalInput`、`MC_ReadDigitalOutput`、`MC_WriteDigitalOutput`、`MC_DigitalCamSwitch`、`MC_ReadAxisInfo`、`MC_SetPosition`、`MC_SetOverride`、`MC_TouchProbe`、`MC_AbortTrigger`、`MC_MoveSuperimposed`、`MC_MoveContinuousAbsolute`、`MC_MoveContinuousRelative`、`MC_PositionProfile`、`MC_VelocityProfile`、`MC_AccelerationProfile`、`MC_HaltSuperimposed`、`MC_TorqueControl`
+- 公开多轴同步功能块补齐 `MC_CamTableSelect`、`MC_CamIn / MC_CamOut`、`MC_GearIn / MC_GearInPos / MC_GearOut`、`MC_PhasingAbsolute / MC_PhasingRelative`、`MC_CombineAxes`
 - 新增最小 `CamTable` 公共类型与多轴 Catch2 回归，真实验证主从同步与脱开
-- `MC_SetOverride` 当前明确作用于**新规划**的运动命令；`MC_MoveSuperimposed` 当前走单轴 additive 队列语义；`MC_TorqueControl` 当前直接透传到伺服抽象
+- `MC_SetOverride` 当前明确作用于**新规划**的运动命令，并可触发 active `MC_MoveVelocity`、`MC_MoveContinuousAbsolute`、`MC_MoveContinuousRelative`、`MC_PositionProfile`、`MC_VelocityProfile`、`MC_AccelerationProfile` 在 `ContinuousUpdate = TRUE` 时按新倍率重规划；`MC_MoveSuperimposed` 当前走单轴 additive 队列语义；`MC_TorqueControl` 当前直接透传到伺服抽象
 
 - 新增基础 IEC 61131-3 功能块首批实现：边沿检测、双稳态、定时器、计数器
 - 定时器明确采用显式 scan-cycle 语义，由调用方配置周期时间，不依赖墙钟时间
@@ -84,7 +94,7 @@ plcopen 想填补的空白是**"现代 C++ 的可嵌入 PLCopen 运动控制库"
 - CMake `install(EXPORT)`、`find_package(plcopen)` 和 `FetchContent` 支持
 - 独立 `plcopen-examples` 消费者示例仓库
 - `MC_Home` 补齐 direct、MODE5/6/7/8、非法参数和 buffer 交互回归测试
-- Buffer mode 覆盖 `ABORTING` 与所有公开非 `ABORTING` 枚举的当前队列语义
+- Buffer mode 覆盖 `ABORTING`、`BUFFERED` 与单轴 MoveNode 的最小 `BLENDING_LOW` / `BLENDING_HIGH` 接续语义
 - 单轴 `AxisMove` 路径补齐非零 `jerk` 的 jerk-aware 轨迹规划与回归测试
 - `MC_Home` 规划已真正接入 `mHomingJerk`
 - 新增可选 `docs` target，未安装 Doxygen 时优雅降级并给出提示
@@ -205,8 +215,90 @@ int main() {
 - `axis_sync.cpp` —— 概念级 1:1 双轴同步 demo
 - `axis_gear.cpp` —— 概念级固定齿轮比 follow demo
 - `axis_cam.cpp` —— 概念级离散 cam table follow demo
+- `axes_group_lifecycle.cpp` —— `AxesGroup` add-axis / enable / disable 的最小 lifecycle demo
 
 这些 demo 现在与仓库里的 `MC_Cam*` / `MC_Gear*` 最小实现保持一致，用于展示当前公开同步块的基础用法与边界。
+
+### AxesGroup Quick Start
+
+当前 `MC_Gear* / MC_Cam*` 必须运行在同一个已启用的 `AxesGroup` 中。最小生命周期如下：
+
+```cpp
+#include "AxesGroup.h"
+#include "FbMultiAxis.h"
+#include "FbSingleAxis.h"
+#include "Scheduler.h"
+
+using namespace plcopen;
+
+Scheduler sched;
+sched.setFrequency(100.0);
+
+Axis *master = sched.newAxis(1, new Servo());
+Axis *slave = sched.newAxis(2, new Servo());
+
+// 先按单轴流程完成 MC_Power 使能；AxesGroup 只管理 group 生命周期，不负责成员轴上电。
+
+AxesGroup group;
+
+FbAddAxisToGroup addMaster;
+addMaster.mAxesGroup = &group;
+addMaster.mAxis = master;
+addMaster.mExecute = true;
+addMaster.call();
+
+FbAddAxisToGroup addSlave;
+addSlave.mAxesGroup = &group;
+addSlave.mAxis = slave;
+addSlave.mExecute = true;
+addSlave.call();
+
+FbGroupEnable enable;
+enable.mAxesGroup = &group;
+enable.mExecute = true;
+enable.call();
+
+FbGearIn gearIn;
+gearIn.mMaster = master;
+gearIn.mSlave = slave;
+gearIn.mRatioNumerator = 2.0;
+gearIn.mRatioDenominator = 1.0;
+gearIn.mExecute = true;
+```
+
+可直接运行 `src/demo/axes_group_lifecycle.cpp`，看一遍 add-axis → enable → disable 的完整最小闭环。
+
+当前阶段的边界是：有了真实 `AxesGroup` 和 group lifecycle，但还没有 `MC_MoveLinear*`、kinematics、坐标变换或多从轴 coordinated motion。
+
+### 下游 CMake 消费
+
+安装后用 `find_package` 消费：
+
+```cmake
+find_package(plcopen CONFIG REQUIRED)
+
+add_executable(app main.cpp)
+target_link_libraries(app PRIVATE plcopen::plcopen)
+```
+
+Windows 下运行独立 consumer 时，需要确保安装前缀的 `bin` 目录在 `PATH` 中，或把 `plcopen.dll` 放到可执行文件同目录。
+
+或在同一个源码树里用 `FetchContent` 消费：
+
+```cmake
+include(FetchContent)
+
+set(PLCOPEN_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(PLCOPEN_BUILD_DEMOS OFF CACHE BOOL "" FORCE)
+
+FetchContent_Declare(
+    plcopen
+    SOURCE_DIR "/path/to/plcopen"
+)
+FetchContent_MakeAvailable(plcopen)
+
+target_link_libraries(app PRIVATE plcopen::plcopen)
+```
 
 ---
 
@@ -228,6 +320,7 @@ int main() {
 | CTU | 加计数器 | ✅ |
 | CTD | 减计数器 | ✅ |
 | CTUD | 双向计数器 | ✅ |
+| RTC | 实时时钟累加器 | ✅ |
 
 ### PLCopen 运动功能块
 
@@ -245,8 +338,18 @@ int main() {
 | MC_ReadMotionState | 读取运动状态分类 | ✅ |
 | MC_ReadAxisError | 读取轴错误 | ✅ |
 | MC_ReadParameter | 读取已支持参数子集 | ✅ |
+| MC_ReadBoolParameter | 读取已支持布尔参数子集 | ✅ |
+| MC_WriteParameter | 写入已支持数值参数子集 | ✅ |
+| MC_WriteBoolParameter | 写入已支持布尔参数子集 | ✅ |
+| MC_ReadDigitalInput | 通过 Servo 扩展通道读取数字输入 | ✅ |
+| MC_ReadDigitalOutput | 通过 Servo 扩展通道读取数字输出 | ✅ |
+| MC_WriteDigitalOutput | 通过 Servo 扩展通道写入数字输出 | ✅ |
+| MC_DigitalCamSwitch | 按轴位置窗口写 Servo 数字输出 | 部分 |
+| MC_ReadAxisInfo | 读取仿真、ready、power、homed、软件限位等轴信息子集 | ✅ |
 | MC_SetPosition | 重映射当前用户坐标位置 | ✅ |
-| MC_SetOverride | 设置新规划运动的倍率 | ✅ |
+| MC_SetOverride | 设置新规划运动的倍率，并支持 active 连续更新命令重规划 | ✅ |
+| MC_TouchProbe / MC_AbortTrigger | Servo 数字输入上升沿位置捕获、软件窗口门控与取消 | 部分 |
+| MC_ReadActualTorque | 读取实际扭矩 | ✅ |
 | MC_EmergencyStop | 触发伺服急停 | ✅ |
 
 #### 单轴运动功能块
@@ -258,8 +361,14 @@ int main() {
 | MC_MoveAdditive | 叠加位置偏移 | ✅ |
 | MC_MoveSuperimposed | 当前映射到 additive 队列语义 | ✅ |
 | MC_MoveVelocity | 连续速度运动 | ✅ |
+| MC_MoveContinuousAbsolute | 到达绝对位置后保持非零结束速度 | ✅ |
+| MC_MoveContinuousRelative | 到达相对距离后保持非零结束速度 | ✅ |
+| MC_PositionProfile | 支持链式多段位置 profile reference | 部分 |
+| MC_VelocityProfile | 支持链式多段速度 profile reference | 部分 |
+| MC_AccelerationProfile | 支持链式多段加速度 profile reference，复用速度运动路径 | 部分 |
 | MC_Stop | 停止运动 | ✅ |
 | MC_Halt | 立即停止 | ✅ |
+| MC_HaltSuperimposed | 当前复用 halt 路径停止 additive 近似叠加运动 | ✅ |
 | MC_Home | 回零 | ✅ |
 | MC_TorqueControl | 伺服扭矩设定透传 | ✅ |
 
@@ -269,7 +378,17 @@ int main() {
 |--------|------|------|
 | MC_CamTableSelect | 选择凸轮表 | ✅ |
 | MC_CamIn / MC_CamOut | 凸轮同步 | ✅ |
-| MC_GearIn / MC_GearOut | 齿轮同步 | ✅ |
+| MC_GearIn / MC_GearInPos / MC_GearOut | 齿轮同步 | 部分 |
+| MC_PhasingAbsolute / MC_PhasingRelative | 调整 gear phase offset，支持速度/加速度约束过渡 | 部分 |
+| MC_CombineAxes | 将两个轴加入同一 AxesGroup | 部分 |
+| MC_AddAxisToGroup | 向 group 添加轴 | ✅ |
+| MC_RemoveAxisFromGroup | 从 group 移除轴 | ✅ |
+| MC_GroupEnable | 启用 group 逻辑生命周期 | ✅ |
+| MC_GroupDisable | 禁用 group 逻辑生命周期 | ✅ |
+| MC_GroupReadStatus | 读取 group 状态 | ✅ |
+| MC_GroupReadActualPosition / MC_GroupReadCommandPosition | 按成员轴索引读取实际/指令位置 | ✅ |
+| MC_GroupStop | 对成员轴发起停组 | ✅ |
+| MC_GroupReset | 复位成员轴错误并恢复 group standby | ✅ |
 
 ---
 
@@ -309,13 +428,22 @@ int main() {
 
 ## 已知边界
 
-- 当前实现中，所有非 `ABORTING` 的 Buffer mode 枚举共享同一套“排队、不立即打断前一条命令”的语义；细粒度 blending 行为尚未分化实现。
+- 当前 `BufferMode` 已区分 `ABORTING`、`BUFFERED` 与单轴 MoveNode 的最小 blending：`BLENDING_LOW` / `BLENDING_PREVIOUS` / `BLENDING_NEXT` / `BLENDING_CNC` 在前一条 MoveNode 减速到标称速度 30% 以下时提前接续，`BLENDING_HIGH` 在 70% 以下时提前接续；Homing / Sync 节点不参与 blending，低速或短距离场景可能退化为 `BUFFERED`。
 - 基础 IEC 定时器按显式周期推进；调用方需要保证每 scan 调用一次，并通过 `setCycleTime()` 提供周期时间。
-- `MC_SetOverride` 当前作用于**新规划**的运动命令，不对已经运行中的 profile 做重规划。
+- `MC_SetOverride` 当前作用于**新规划**的运动命令，并会让 active `MC_MoveVelocity`、`MC_MoveContinuousAbsolute`、`MC_MoveContinuousRelative`、`MC_PositionProfile`、`MC_VelocityProfile`、`MC_AccelerationProfile` 在 `ContinuousUpdate = TRUE` 时按新倍率重规划。
+- `MC_TouchProbe` / `MC_AbortTrigger` 当前基于 Servo 数字输入扩展通道实现单个上升沿位置捕获、`WindowOnly` 软件位置窗口门控和取消；窗口外电平变化会刷新边沿状态但不会记录位置，未 armed 或不匹配的 trigger 取消请求按幂等成功处理，不包含多个 trigger storage 或硬件锁存时间戳。
+- `MC_DigitalCamSwitch` 当前按当前轴位置窗口直接写 Servo 数字输出，并支持可选周期窗口跨周期边界触发；不包含凸轮轨迹表、提前量、周期输出队列或硬件调度。
+- `MC_ReadParameter` / `MC_WriteParameter` 当前覆盖位置、软限位、速度、加速度/减速度、jerk 配置值、跟随误差限制和跟随误差监控状态子集；`MC_ReadBoolParameter` / `MC_WriteBoolParameter` 支持软限位开关和跟随误差监控开关；system/application 速度限制共享同一个轴速度极限，加速度/减速度限制共享同一个轴加速度极限，system/application jerk 共享同一个轴 jerk 配置值；该 jerk 配置值当前仅提供参数存取与合法性校验，不参与统一运行时 jerk 限幅。
+- `MC_ReadAxisInfo` 当前报告仿真、communication ready、ready for power on、power、homed、软件限位越界状态，并通过 Servo 数字输入扩展通道 0/1/2/3 读取 home switch、正限位、负限位和 axis warning；不包含更深入的驱动侧诊断通道。
 - `MC_MoveSuperimposed` 当前在单轴队列上按 additive 偏移语义实现，不是独立的并行叠加轨迹合成器。
-- `MC_TorqueControl` 当前把扭矩设定直接透传给伺服抽象；更深入的 torque-mode 闭环控制仍取决于具体伺服实现。
-- `MC_Gear* / MC_Cam*` 当前是单主单从的最小同步实现，不包含完整 `AxesGroup`、多从轴协调或高级平滑脱开策略。
-- `MC_CamTableSelect` 当前负责表校验和句柄传递；`MC_CamIn` 直接消费选定的 `CamTable` 句柄，不维护独立的控制器侧表仓库。
+- `MC_MoveVelocity` 当前支持 `ContinuousUpdate = TRUE` 时在 `Execute` 保持为真期间更新目标速度；`MC_MoveContinuousAbsolute` / `MC_MoveContinuousRelative` 当前支持 active 命令重规划连续位置目标，其中 relative 更新按本次命令触发时的起点重新计算目标距离；`MC_PositionProfile` / `MC_VelocityProfile` / `MC_AccelerationProfile` 当前支持 active 当前段的命令更新。
+- `MC_PositionProfile` / `MC_VelocityProfile` / `MC_AccelerationProfile` 当前支持通过 profile data 的 `mNext` 指针顺序消费链式多段 profile；`MC_VelocityProfile` 与 `MC_AccelerationProfile` 都复用当前速度运动路径，尚不包含标准 profile table 解析、时间戳/延迟消费或复杂插补。
+- `MC_TorqueControl` 当前把扭矩设定直接透传给伺服抽象，执行成功后置 `InTorque`，`Execute` 拉低时清零扭矩设定；更深入的 torque-mode 闭环控制仍取决于具体伺服实现。
+- `AxesGroup` 当前只提供 foundation：成员管理、group lifecycle、状态读取、成员轴位置 readback、停组与组复位；`MC_GroupReset` 复用成员轴 reset 错误恢复，不包含 coordinated motion 级路径恢复；`MC_GroupReadActualPosition` / `MC_GroupReadCommandPosition` 读取的是 0-based 成员槽位位置，索引不是 axis id，移除成员后后续槽位会前移；readback 只要求 group 引用存在且索引有效，不要求 group 已 enable；返回值不是 Cartesian group pose；不包含 `MC_MoveLinear*`、kinematics、坐标变换、多从轴协调或高级平滑脱开策略。
+- `MC_Gear* / MC_Cam*` 当前仍是单主单从的最小同步实现，但现在要求主从轴位于同一个已启用的 `AxesGroup` 中；`MC_GearIn`、`MC_GearInPos` 和 `MC_CamIn` 支持 `MasterValueSource` 的 command/actual 两种采样来源；`MC_GearInPos` 会等待主轴到达 `MasterSyncPosition` 后按 `SlaveSyncPosition - MasterSyncPosition * ratio` 建立相位偏移并进入同步，尚不规划从轴接入过渡轨迹。
+- `MC_PhasingAbsolute` / `MC_PhasingRelative` 在 `Velocity > 0` 时按速度、加速度、减速度和 jerk 规划 phase offset 过渡；`Velocity = 0` 保留直接调整语义。
+- `MC_CombineAxes` 当前只是 AxesGroup 成员组合便捷块，会先整体预校验两个输入轴再提交成员关系，不包含坐标系、kinematics 或路径合成。
+- `MC_CamTableSelect` 当前负责表校验和句柄传递；`MC_CamIn` 直接消费选定的 `CamTable` 句柄；`CamTable` 支持显式 opt-in 的周期采样；`MC_CamIn` 支持 master/slave offset 与 scaling，可在 `MasterStartDistance > 0` 时等待主轴到达 `MasterSyncPosition` 后再进入同步，但尚不规划完整接入距离/过渡轨迹，也不维护独立的控制器侧表仓库。
 - `mStartSync` 当前建模为同步建立成功时的一拍脉冲。
 - `pyplcopen` 当前只暴露单轴仿真 facade，不是完整 Python PLCopen SDK。
 

@@ -101,6 +101,7 @@ namespace plcopen
         CFG_PKP_ILLEGAL = 0x207,
         CFG_FEED_FORWORD_ILLEGAL = 0x208,
         CFG_MODULO_ILLEGAL = 0x209,
+        CFG_JERK_LIMIT_ILLEGAL = 0x20A,
 
         HOMING_VEL_ILLEGAL = 0x210,
         HOMING_ACC_ILLEGAL = 0x211,
@@ -116,6 +117,17 @@ namespace plcopen
         AXIS_SYNCHRONIZED_MOTION = 0x505,
         AXIS_STOPPING = 0x506,
         AXISE_RRORSTOP = 0x507,
+        GROUP_DISABLED = 0x508,
+        GROUP_STANDBY = 0x509,
+        GROUP_HOMING = 0x50A,
+        GROUP_MOVING = 0x50B,
+        GROUP_STOPPING = 0x50C,
+        GROUP_ERRORSTOP = 0x50D,
+
+        GROUP_MEMBER_NOT_READY = 0x520,
+        AXIS_ALREADY_IN_GROUP = 0x521,
+        AXIS_IN_OTHER_GROUP = 0x522,
+        AXIS_GROUP_MISMATCH = 0x523,
     };
 
     /**
@@ -157,9 +169,14 @@ namespace plcopen
     /**
      * @brief PLCopen buffer mode.
      *
-     * 当前实现只区分两类语义：
+     * 当前实现区分以下语义：
      * - `ABORTING`：立即打断当前命令。
-     * - 其余已定义值：统一按“排队、不立即打断”的语义处理。
+     * - `BUFFERED`：排队，并等待前一条 MoveNode 到达终点后启动。
+     * - `BLENDING_LOW` / `BLENDING_PREVIOUS` / `BLENDING_NEXT` / `BLENDING_CNC`：
+     *   在前一条 MoveNode 减速到标称速度 30% 以下时提前接续。
+     * - `BLENDING_HIGH`：在前一条 MoveNode 减速到标称速度 70% 以下时提前接续。
+     *
+     * Homing / Sync 节点当前不参与 blending，仍走排队语义。
      */
     enum class MC_BufferMode
     {
@@ -193,7 +210,7 @@ namespace plcopen
     }
 
     /**
-     * @brief 判断一个 buffer mode 是否在当前实现中走“排队”语义。
+     * @brief 判断一个 buffer mode 是否在当前实现中走“不立即打断”的排队语义。
      */
     inline constexpr bool usesQueuedBufferModeSemantics(MC_BufferMode mode)
     {
@@ -330,6 +347,8 @@ namespace plcopen
         double mVelLimit = 1000;   // 速度限制
         double mAccLimit = 5000;   // 加速度限制
         double mPosLagLimit = 150; // 跟随误差限制
+        bool mEnablePosLagMonitoring = true; // 跟随误差监控启用标志位
+        double mJerkLimit = 0;     // jerk 配置存取值，当前不作为统一运行时限幅
     };
 
     /**

@@ -157,6 +157,59 @@
 
 ---
 
+## 已完成工作集：v0.7.0（IEC 61131-3 标准 FunctionBlock 口径补齐）
+
+**预估窗口**：2026-Q4
+
+**2026-04-22 更新**：在不把标准函数库、ST/IDE 或通信层拉入当前范围的前提下，项目补齐了当前采用口径下剩余的 IEC 61131-3 标准 FunctionBlock，并继续保持“显式 scan-cycle 推进”的执行契约。
+
+**候选目标**（按优先级；已完成项保留作记录）：
+
+| 候选 | 动机 | 解锁条件 | 优先级 |
+|------|------|----------|--------|
+| `RTC` 标准块补齐 | 收口当前基础 IEC 标准 FunctionBlock 集 | 复用 `PLCTypes` 中已有 `DT` 类型别名 | P0（已完成） |
+| 时间相关边界测试 | 防止启停、重启与时间上界行为回归 | 沿用 Catch2 基础块测试组织方式 | P0（已完成） |
+| 公开支持表闭环 | 让 README/CHANGELOG 与实现口径一致 | 全量回归通过 | P1（已完成） |
+
+**原则**：`v0.7.0` 只补当前采用口径下的 IEC 61131-3 标准 FunctionBlock，不把选择/比较/算术等标准函数库扩进当前里程碑。
+
+**当前执行状态（2026-04-22 复核）**：截至目前，当前仓库采用口径下的 IEC 61131-3 标准 FunctionBlock 已补齐；若继续扩展 IEC 61131-3，下一步应显式定义“标准函数库”里程碑，而不是混入本版本。
+
+---
+
+## 当前工作集：v0.8.0（AxesGroup Foundation）
+
+**预估窗口**：2026-Q2
+
+**2026-04-25 更新**：下一阶段目标已切换为 `AxesGroup Foundation`。这一阶段对应 PLCopen Part 4 coordinated motion 的基础层，不追求完整的 coordinated motion、kinematics 或线性插补。
+
+**当前范围**：
+
+- `AxesGroup` runtime
+- `MC_AddAxisToGroup`
+- `MC_RemoveAxisFromGroup`
+- `MC_GroupEnable`
+- `MC_GroupDisable`
+- `MC_GroupReadStatus`
+- `MC_GroupReadActualPosition`
+- `MC_GroupReadCommandPosition`
+- `MC_GroupStop`
+- `MC_GroupReset`
+- `MC_CombineAxes`
+- `MC_Gear* / MC_Cam*` 的 group-aware 前置条件
+- README / CHANGELOG / 安装导出闭环
+
+**明确延后**：
+
+- `MC_GroupHome`
+- `MC_MoveLinear*`
+- kinematics / coordinate transforms
+- multi-master / multi-slave coordinated runtime
+
+**原则**：`v0.8.0` 只把 group 做成真实存在、可测试、可公开引用的运行时边界，不把 Part 4 的完整路径规划和坐标变换偷渡进来。
+
+---
+
 ## 每季度复盘（每季度第 1 周）
 
 **固定 4 个问题**：
@@ -213,5 +266,5 @@
 
 ---
 
-*本文档最后更新：2026-04-21*
+*本文档最后更新：2026-04-25*
 *下次复盘：2026-07-01（确定下一里程碑范围）*

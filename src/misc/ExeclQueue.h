@@ -81,6 +81,8 @@ namespace plcopen
         void setAllNodesError(MC_ErrorCode errorCodeToSet);
 
     protected:
+        ExeclNode *activeNode(void) const;
+
         URANUS_DEFINE_EVENT(onAllNodesAborted, ExeclQueue *);
         URANUS_DEFINE_EVENT(onAllNodesError, ExeclQueue *, MC_ErrorCode);
 

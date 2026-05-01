@@ -2,6 +2,75 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Added
+
+- 新增 `MC_ReadBoolParameter`、`MC_WriteParameter`、`MC_WriteBoolParameter` 的当前参数子集实现。
+- 扩展 `MC_ReadParameter`，支持以数值形式读取 `ENABLE_POS_LAG_MONITORING`。
+- 新增 `MC_ReadParameter` / `MC_WriteParameter` 对 `MAX_JERK_SYSTEM` 和 `MAX_JERK_APPL` 的轴级 jerk 配置值存取支持。
+- 新增 `MC_ReadActualTorque`，读取当前伺服扭矩值。
+- 扩展 `MC_ReadAxisInfo`，通过 Servo 数字输入扩展通道 0/1/2/3 读取 home switch、正限位、负限位和 axis warning。
+- 新增 `MC_ReadDigitalInput`、`MC_ReadDigitalOutput`、`MC_WriteDigitalOutput` 的 Servo 扩展通道实现。
+- 新增 `MC_ReadAxisInfo` 的当前轴信息子集实现，覆盖仿真、ready、power 与 homed 状态。
+- 新增 `MC_HaltSuperimposed` 的当前单轴 additive 近似语义实现。
+- 新增 `MC_MoveContinuousAbsolute` 与 `MC_MoveContinuousRelative` 的当前连续位置运动实现。
+- 新增 `MC_PositionProfile` 的单段 profile reference partial 实现。
+- 新增 `MC_VelocityProfile` 的单段 profile reference partial 实现。
+- 新增 `MC_AccelerationProfile` 的单段 profile reference partial 实现。
+- 新增 `MC_PositionProfile` / `MC_VelocityProfile` / `MC_AccelerationProfile` 的链式多段 profile reference 顺序执行。
+- 新增 `MC_TouchProbe`、`MC_AbortTrigger`、`MC_DigitalCamSwitch` 的 Servo 扩展通道 partial 实现。
+- 新增 `MC_GearInPos` 等待 `MasterSyncPosition` 后按 `SlaveSyncPosition` 建立 ratio 同步的 partial 实现。
+- 新增 `MC_PhasingAbsolute` 与 `MC_PhasingRelative` 的 gear phase offset 过渡 partial 实现，`Velocity > 0` 时按 profile 推进。
+- 新增 `MC_CombineAxes` 的 AxesGroup 成员组合 partial 实现。
+- 新增 `MC_MoveVelocity` 的最小 `ContinuousUpdate` 支持，允许 active 命令在 `Execute` 保持为真时更新目标速度。
+- 新增 `MC_SetOverride` 对 active `MC_MoveVelocity`、`MC_MoveContinuousAbsolute`、`MC_MoveContinuousRelative`、`MC_PositionProfile`、`MC_VelocityProfile`、`MC_AccelerationProfile` 的 `ContinuousUpdate` 重规划支持，倍率变化可作用于当前连续速度/连续位置/profile 命令。
+- 新增 `MC_MoveContinuousAbsolute` / `MC_MoveContinuousRelative` 的最小 `ContinuousUpdate` 支持，允许 active 命令重规划连续位置目标。
+- 新增 `MC_PositionProfile` / `MC_VelocityProfile` / `MC_AccelerationProfile` 的单段 profile `ContinuousUpdate` 支持。
+- 新增 `BLENDING_LOW` / `BLENDING_HIGH` 的单轴 MoveNode 最小差异化接续语义，`BUFFERED` 保持到终点后启动。
+- 新增 `MC_GroupReadActualPosition` / `MC_GroupReadCommandPosition` 的 AxesGroup foundation readback 实现。
+- 新增 `MC_GroupReset` 的 AxesGroup foundation 实现，可复位成员轴错误并让 group 回到 `STANDBY`。
+- 新增 PLCopen Motion Control Part 1 v2.0 覆盖矩阵，作为 Part 1/2 完整开发的追踪基线。
+- 安装导出头文件面补齐 axis、interpolation 与 misc 公共依赖，确保下游 `find_package(plcopen)` 后可直接 include 公开运动控制头。
+- 完成本地 `FetchContent` consumer 验证，确保下游可通过 `FetchContent_MakeAvailable(plcopen)` 消费 `plcopen::plcopen`。
+- 完成本地 `PLCOPEN_BUILD_DOCS=ON` 验证，确认 `docs` target 在缺少 Doxygen 的本机环境下能执行 fallback。
+
+### Changed
+
+- Windows 构建脚本不再尝试为本地测试产物创建/复用自签名证书；受限机器上的执行问题改由机器策略或 CI 处理。
+
+## [0.8.0] - 2026-04-25
+
+### Added
+
+- 新增 `AxesGroup` runtime，并公开安装导出 `AxesGroup.h`。
+- 新增 `MC_AddAxisToGroup`、`MC_RemoveAxisFromGroup`、`MC_GroupEnable`、`MC_GroupDisable`、`MC_GroupReadStatus`、`MC_GroupStop` 的最小功能块实现。
+- 新增 `test_axes_group.cpp` 运行时回归，以及 group-aware 的多轴同步回归。
+- 新增 `MC_GroupStop` 回归，验证停组会真实中断成员运动并回到 `Standby`。
+
+### Changed
+
+- `MC_GearIn` / `MC_CamIn` 现在要求主轴和从轴属于同一个已启用的 `AxesGroup`，不再接受无 group 直连。
+- 默认测试目标现在直接编译 `AxesGroup Foundation` 相关回归，不再把这部分契约藏在条件编译后面。
+- `README`/`ROADMAP` 现统一将本阶段表述为 `AxesGroup Foundation`，对应 PLCopen Part 4 coordinated motion 的基础层，而不是完整 coordinated motion。
+- 根 `CMakeLists.txt` 与 `.version` 的项目版本对齐到 `0.8.0`。
+
+### Known limitations
+
+- 当前工作集已在本机通过 `ctest --test-dir build --build-config Release --output-on-failure`，共 156/156 个测试通过；若其他 Windows 机器受应用程序控制策略限制，仍以 CI 或允许执行测试产物的环境作为测试执行证据。
+
+## [0.7.0] - 2026-04-22
+
+### Added
+
+- 基础 IEC 61131-3 功能块新增 `RTC`。
+- 新增 `RTC` 的 Catch2 回归覆盖，验证启停、重启与 `DT` 上界饱和行为。
+
+### Changed
+
+- README 的基础 IEC 功能块支持表现在包含 `RTC`。
+- `RTC` 当前显式收口为“scan-cycle 驱动的日期时间累加器”，不直接读取宿主系统墙钟时间。
+
 ## [0.6.0] - 2026-04-22
 
 ### Added

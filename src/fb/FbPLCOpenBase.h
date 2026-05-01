@@ -228,6 +228,9 @@ namespace plcopen
     class FbExecAxisBufferContType : virtual public FbExecAxisBufferType
     {
     public:
+        FB_INPUT BOOL mContinuousUpdate = false;
+
+    public:
         void onOperationDone(int32_t customId);
     };
 

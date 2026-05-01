@@ -177,6 +177,24 @@ namespace plcopen
     };
 
     /**
+     * @brief Real-time clock accumulator.
+     */
+    class FbRtc : public FbCycleTimeAwareType
+    {
+    public:
+        FB_INPUT BOOL mEN = false;
+        FB_INPUT DT mPDT = 0;
+        FB_OUTPUT BOOL mQ = false;
+        FB_OUTPUT DT mCDT = 0;
+
+    public:
+        void call(void);
+
+    private:
+        BOOL mRunning = false;
+    };
+
+    /**
      * @brief Up-counter.
      */
     class FbCtu : public FbBasicType

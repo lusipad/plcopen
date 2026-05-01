@@ -1,5 +1,7 @@
 #include <catch2/catch_test_macros.hpp>
 
+#include <limits>
+
 #include "FbBasic.h"
 
 using namespace plcopen;
@@ -361,4 +363,62 @@ TEST_CASE("CTUD does not create cold-start edges when one counter input starts h
     ctud.call();
     REQUIRE(ctud.mCV == 1);
     REQUIRE_FALSE(ctud.mQU);
+}
+
+TEST_CASE("RTC starts from PDT and advances by cycle time while enabled", "[fb][basic][rtc]")
+{
+    FbRtc rtc;
+    REQUIRE(rtc.setCycleTime(10));
+    rtc.mPDT = 100;
+
+    rtc.mEN = true;
+    rtc.call();
+    REQUIRE(rtc.mQ);
+    REQUIRE(rtc.mCDT == 100);
+
+    rtc.call();
+    REQUIRE(rtc.mQ);
+    REQUIRE(rtc.mCDT == 110);
+
+    rtc.call();
+    REQUIRE(rtc.mQ);
+    REQUIRE(rtc.mCDT == 120);
+}
+
+TEST_CASE("RTC clears on disable and restarts from the new preset on re-enable", "[fb][basic][rtc][boundary]")
+{
+    FbRtc rtc;
+    REQUIRE(rtc.setCycleTime(5));
+    rtc.mPDT = 50;
+
+    rtc.mEN = true;
+    rtc.call();
+    rtc.call();
+    REQUIRE(rtc.mCDT == 55);
+
+    rtc.mEN = false;
+    rtc.call();
+    REQUIRE_FALSE(rtc.mQ);
+    REQUIRE(rtc.mCDT == 0);
+
+    rtc.mPDT = 200;
+    rtc.mEN = true;
+    rtc.call();
+    REQUIRE(rtc.mQ);
+    REQUIRE(rtc.mCDT == 200);
+}
+
+TEST_CASE("RTC saturates instead of overflowing DT while enabled", "[fb][basic][rtc][boundary]")
+{
+    FbRtc rtc;
+    REQUIRE(rtc.setCycleTime(10));
+    rtc.mPDT = std::numeric_limits<DT>::max() - 5;
+
+    rtc.mEN = true;
+    rtc.call();
+    REQUIRE(rtc.mCDT == std::numeric_limits<DT>::max() - 5);
+
+    rtc.call();
+    REQUIRE(rtc.mQ);
+    REQUIRE(rtc.mCDT == std::numeric_limits<DT>::max());
 }

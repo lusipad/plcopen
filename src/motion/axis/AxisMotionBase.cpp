@@ -24,7 +24,6 @@
 
 #include "AxisMotionBase.h"
 #include "FunctionBlock.h"
-// #include "AxesGroupBase.h"
 
 namespace plcopen
 {
@@ -32,7 +31,7 @@ namespace plcopen
     class AxisMotionBase::AxisMotionBaseImpl
     {
     public:
-        // AxesGroupBase* mGroup = nullptr;
+        AxesGroup *mGroup = nullptr;
     };
 
     MC_ErrorCode AxisExeclNode::onActive(ExeclQueue *queue)
@@ -95,7 +94,7 @@ namespace plcopen
 
     MC_ErrorCode AxisMotionBase::pushAndNewData(const std::function<AxisExeclNode *(void *)> &constructor, bool abortFlag,
                                                 FunctionBlock *fb, MC_AxisStatus statusActive, MC_AxisStatus statusDone,
-                                                int32_t nodeCustomId)
+                                                int32_t nodeCustomId, MC_BufferMode bufferMode)
     {
         if (MC_ErrorCode::GOOD != errorCode())
             return errorCode();
@@ -119,16 +118,22 @@ namespace plcopen
         }
 
         return ExeclQueue::pushAndNewData(
-            [&constructor, fb, statusActive, statusDone, nodeCustomId](void *baseNode) -> AxisExeclNode *
+            [&constructor, fb, statusActive, statusDone, nodeCustomId, bufferMode](void *baseNode) -> AxisExeclNode *
             {
                 AxisExeclNode *node = constructor(baseNode);
                 node->mFb = fb;
                 node->mStatusActive = statusActive;
                 node->mStatusDone = statusDone;
                 node->mNodeCustomId = nodeCustomId;
+                node->mBufferMode = bufferMode;
                 return node;
             },
             abortFlag);
+    }
+
+    AxesGroup *AxisMotionBase::group(void) const
+    {
+        return mImpl_->mGroup;
     }
 
     void AxisMotionBase::onErrorHandler(AxisBase *this_, MC_ErrorCode errorCode)
@@ -141,12 +146,6 @@ namespace plcopen
     {
         AxisMotionBase *this__ = dynamic_cast<AxisMotionBase *>(this_);
         this__->setAllNodesAborted();
-        /*
-        AxesGroupBase* group = this__->mImpl_->mGroup;
-        if(group) {
-            URANUS_CALL_EVENT(group->onAxisPowerStatusChanged, group, this__, powerStatus);
-        }
-        */
     }
 
     void AxisMotionBase::onPositionOffsetHandler(AxisBase *this_, double positionOffset)
@@ -160,6 +159,11 @@ namespace plcopen
             node->onPositionOffset(this__, positionOffset);
             node = dynamic_cast<AxisExeclNode *>(this__->ExeclQueue::next(node));
         }
+    }
+
+    void AxisMotionBase::setGroup(AxesGroup *group)
+    {
+        mImpl_->mGroup = group;
     }
 
 } // namespace plcopen

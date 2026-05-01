@@ -39,7 +39,7 @@ namespace plcopen
     class FbPower : public FbBaseType
     {
     public:
-        FB_INPUT AXIS_REF mAxis;
+        FB_INPUT AXIS_REF mAxis = nullptr;
 
         FB_INPUT BOOL mEnable = false;
         FB_INPUT BOOL mEnablePositive = false;
@@ -84,6 +84,22 @@ namespace plcopen
      * @brief Single-axis halt block.
      */
     class FbHalt : public FbExecAxisBufferType
+    {
+    public:
+        FB_INPUT LREAL mDeceleration = 0;
+        FB_INPUT LREAL mJerk = 0;
+
+    public:
+        MC_ErrorCode onAxisExecPosedge(void);
+    };
+
+    /**
+     * @brief Halt the current single-axis superimposed motion approximation.
+     *
+     * The current implementation has no independent superimposed motion layer,
+     * so this block follows the same halt path as `MC_Halt`.
+     */
+    class FbHaltSuperimposed : public FbExecAxisBufferType
     {
     public:
         FB_INPUT LREAL mDeceleration = 0;
@@ -179,7 +195,206 @@ namespace plcopen
         FB_OUTPUT BOOL &mInVelocity = mDone;
 
     public:
+        void call(void);
         MC_ErrorCode onAxisExecPosedge(void);
+
+    private:
+        bool mContinuousUpdateSnapshotValid = false;
+        LREAL mLastVelocity = 0;
+        LREAL mLastAcceleration = 0;
+        LREAL mLastDeceleration = 0;
+        LREAL mLastJerk = 0;
+        LREAL mLastOverride = 100;
+    };
+
+    /**
+     * @brief Absolute move that reaches the target position with a non-zero end velocity.
+     */
+    class FbMoveContinuousAbsolute : public FbExecAxisBufferContType
+    {
+    public:
+        FB_INPUT LREAL mPosition = 0;
+        FB_INPUT LREAL mVelocity = 0;
+        FB_INPUT LREAL mEndVelocity = 0;
+        FB_INPUT LREAL mAcceleration = 0;
+        FB_INPUT LREAL mDeceleration = 0;
+        FB_INPUT LREAL mJerk = 0;
+        FB_INPUT MC_DIRECTION mDirection = MC_Direction::CURRENT;
+
+    public:
+        void call(void);
+        MC_ErrorCode onAxisExecPosedge(void);
+
+    private:
+        bool mContinuousUpdateSnapshotValid = false;
+        LREAL mLastPosition = 0;
+        LREAL mLastVelocity = 0;
+        LREAL mLastEndVelocity = 0;
+        LREAL mLastAcceleration = 0;
+        LREAL mLastDeceleration = 0;
+        LREAL mLastJerk = 0;
+        MC_DIRECTION mLastDirection = MC_Direction::CURRENT;
+        LREAL mLastOverride = 100;
+    };
+
+    /**
+     * @brief Relative move that reaches the target offset with a non-zero end velocity.
+     */
+    class FbMoveContinuousRelative : public FbExecAxisBufferContType
+    {
+    public:
+        FB_INPUT LREAL mDistance = 0;
+        FB_INPUT LREAL mVelocity = 0;
+        FB_INPUT LREAL mEndVelocity = 0;
+        FB_INPUT LREAL mAcceleration = 0;
+        FB_INPUT LREAL mDeceleration = 0;
+        FB_INPUT LREAL mJerk = 0;
+
+    public:
+        void call(void);
+        MC_ErrorCode onAxisExecPosedge(void);
+
+    private:
+        bool mContinuousUpdateSnapshotValid = false;
+        LREAL mCommandStartPosition = 0;
+        LREAL mLastDistance = 0;
+        LREAL mLastVelocity = 0;
+        LREAL mLastEndVelocity = 0;
+        LREAL mLastAcceleration = 0;
+        LREAL mLastDeceleration = 0;
+        LREAL mLastJerk = 0;
+        LREAL mLastOverride = 100;
+    };
+
+    /**
+     * @brief Minimal linked position profile reference.
+     *
+     * Each entry describes one segment. `mNext` can link another segment for
+     * sequential profile table execution.
+     */
+    struct MC_PositionProfileData
+    {
+        LREAL mPosition = 0;
+        LREAL mVelocity = 0;
+        LREAL mAcceleration = 0;
+        LREAL mDeceleration = 0;
+        LREAL mJerk = 0;
+        MC_ShiftingMode mShiftingMode = MC_ShiftingMode::ABSOLUTE;
+        MC_Direction mDirection = MC_Direction::CURRENT;
+        MC_PositionProfileData *mNext = nullptr;
+    };
+
+    typedef MC_PositionProfileData *MC_POSITION_PROFILE_REF;
+
+    /**
+     * @brief Execute a minimal single-segment position profile.
+     */
+    class FbPositionProfile : public FbExecAxisBufferType
+    {
+    public:
+        FB_INPUT MC_POSITION_PROFILE_REF mPositionProfile = nullptr;
+        FB_INPUT BOOL mContinuousUpdate = false;
+
+    public:
+        void call(void);
+        MC_ErrorCode onAxisExecPosedge(void);
+        void onOperationDone(int32_t customId);
+        void onOperationAborted(int32_t customId);
+
+    private:
+        bool mContinuousUpdateSnapshotValid = false;
+        MC_POSITION_PROFILE_REF mActivePositionProfile = nullptr;
+        LREAL mCommandStartPosition = 0;
+        LREAL mLastPosition = 0;
+        LREAL mLastVelocity = 0;
+        LREAL mLastAcceleration = 0;
+        LREAL mLastDeceleration = 0;
+        LREAL mLastJerk = 0;
+        MC_ShiftingMode mLastShiftingMode = MC_ShiftingMode::ABSOLUTE;
+        MC_Direction mLastDirection = MC_Direction::CURRENT;
+        LREAL mLastOverride = 100;
+    };
+
+    /**
+     * @brief Minimal linked velocity profile reference.
+     *
+     * Each entry describes one target velocity segment. `mNext` can link
+     * another segment for sequential profile table execution.
+     */
+    struct MC_VelocityProfileData
+    {
+        LREAL mVelocity = 0;
+        LREAL mAcceleration = 0;
+        LREAL mDeceleration = 0;
+        LREAL mJerk = 0;
+        MC_VelocityProfileData *mNext = nullptr;
+    };
+
+    typedef MC_VelocityProfileData *MC_VELOCITY_PROFILE_REF;
+
+    /**
+     * @brief Execute a minimal single-segment velocity profile.
+     */
+    class FbVelocityProfile : public FbExecAxisBufferContType
+    {
+    public:
+        FB_INPUT MC_VELOCITY_PROFILE_REF mVelocityProfile = nullptr;
+
+    public:
+        void call(void);
+        MC_ErrorCode onAxisExecPosedge(void);
+        void onOperationDone(int32_t customId);
+        void onOperationAborted(int32_t customId);
+
+    private:
+        bool mContinuousUpdateSnapshotValid = false;
+        MC_VELOCITY_PROFILE_REF mActiveVelocityProfile = nullptr;
+        LREAL mLastVelocity = 0;
+        LREAL mLastAcceleration = 0;
+        LREAL mLastDeceleration = 0;
+        LREAL mLastJerk = 0;
+        LREAL mLastOverride = 100;
+    };
+
+    /**
+     * @brief Minimal linked acceleration profile reference.
+     *
+     * Each entry describes one velocity target with acceleration parameters.
+     * `mNext` can link another segment for sequential profile table execution.
+     */
+    struct MC_AccelerationProfileData
+    {
+        LREAL mVelocity = 0;
+        LREAL mAcceleration = 0;
+        LREAL mDeceleration = 0;
+        LREAL mJerk = 0;
+        MC_AccelerationProfileData *mNext = nullptr;
+    };
+
+    typedef MC_AccelerationProfileData *MC_ACCELERATION_PROFILE_REF;
+
+    /**
+     * @brief Execute a minimal single-segment acceleration profile.
+     */
+    class FbAccelerationProfile : public FbExecAxisBufferContType
+    {
+    public:
+        FB_INPUT MC_ACCELERATION_PROFILE_REF mAccelerationProfile = nullptr;
+
+    public:
+        void call(void);
+        MC_ErrorCode onAxisExecPosedge(void);
+        void onOperationDone(int32_t customId);
+        void onOperationAborted(int32_t customId);
+
+    private:
+        bool mContinuousUpdateSnapshotValid = false;
+        MC_ACCELERATION_PROFILE_REF mActiveAccelerationProfile = nullptr;
+        LREAL mLastVelocity = 0;
+        LREAL mLastAcceleration = 0;
+        LREAL mLastDeceleration = 0;
+        LREAL mLastJerk = 0;
+        LREAL mLastOverride = 100;
     };
 
     /**
@@ -271,6 +486,38 @@ namespace plcopen
         MC_ErrorCode onAxisTriggered(bool &isDone);
     };
 
+    class FbTouchProbe : public FbBaseType
+    {
+    public:
+        FB_INPUT AXIS_REF mAxis = nullptr;
+        FB_INPUT BOOL mExecute = false;
+        FB_INPUT UINT mTriggerInput = 0;
+        FB_INPUT BOOL mWindowOnly = false;
+        FB_INPUT LREAL mFirstPosition = 0.0;
+        FB_INPUT LREAL mLastPosition = 0.0;
+
+        FB_OUTPUT BOOL mDone = false;
+        FB_OUTPUT BOOL mBusy = false;
+        FB_OUTPUT BOOL mActive = false;
+        FB_OUTPUT BOOL mCommandAborted = false;
+        FB_OUTPUT LREAL mRecordedPosition = 0.0;
+
+    public:
+        void call(void);
+
+    private:
+        bool mExecuteTrigger = false;
+    };
+
+    class FbAbortTrigger : public FbWriteInfoAxisType
+    {
+    public:
+        FB_INPUT UINT mTriggerInput = 0;
+
+    public:
+        MC_ErrorCode onAxisTriggered(bool &isDone);
+    };
+
     /**
      * @brief Parameter enum used by `MC_ReadParameter` style APIs.
      */
@@ -340,6 +587,19 @@ namespace plcopen
     };
 
     /**
+     * @brief Read the actual torque.
+     */
+    class FbReadActualTorque : public FbReadInfoAxisType
+    {
+    public:
+        FB_OUTPUT LREAL mTorque = 0;
+
+    public:
+        MC_ErrorCode onAxisEnable(bool &isDone);
+        void onDisable(void);
+    };
+
+    /**
      * @brief Read a supported axis parameter by enum id.
      */
     class FbReadParameter : public FbReadInfoAxisType
@@ -354,14 +614,132 @@ namespace plcopen
     };
 
     /**
+     * @brief Read a supported boolean axis parameter by enum id.
+     */
+    class FbReadBoolParameter : public FbReadInfoAxisType
+    {
+    public:
+        FB_INPUT MC_Parameter mParameterNumber = MC_Parameter::ENABLE_LIMIT_POS;
+        FB_OUTPUT BOOL mValue = false;
+
+    public:
+        MC_ErrorCode onAxisEnable(bool &isDone);
+        void onDisable(void);
+    };
+
+    /**
+     * @brief Read static and runtime axis capability/status flags.
+     */
+    class FbReadAxisInfo : public FbReadInfoAxisType
+    {
+    public:
+        FB_OUTPUT BOOL mHomeAbsSwitch = false;
+        FB_OUTPUT BOOL mLimitSwitchPos = false;
+        FB_OUTPUT BOOL mLimitSwitchNeg = false;
+        FB_OUTPUT BOOL mSimulation = false;
+        FB_OUTPUT BOOL mCommunicationReady = false;
+        FB_OUTPUT BOOL mReadyForPowerOn = false;
+        FB_OUTPUT BOOL mPowerOn = false;
+        FB_OUTPUT BOOL mIsHomed = false;
+        FB_OUTPUT BOOL mAxisWarning = false;
+
+    public:
+        MC_ErrorCode onAxisEnable(bool &isDone);
+        void onDisable(void);
+    };
+
+    /**
+     * @brief Write a supported numeric axis parameter by enum id.
+     */
+    class FbWriteParameter : public FbWriteInfoAxisType
+    {
+    public:
+        FB_INPUT MC_Parameter mParameterNumber = MC_Parameter::SWLIMIT_POS;
+        FB_INPUT LREAL mValue = 0;
+
+    public:
+        MC_ErrorCode onAxisTriggered(bool &isDone);
+    };
+
+    /**
+     * @brief Write a supported boolean axis parameter by enum id.
+     */
+    class FbWriteBoolParameter : public FbWriteInfoAxisType
+    {
+    public:
+        FB_INPUT MC_Parameter mParameterNumber = MC_Parameter::ENABLE_LIMIT_POS;
+        FB_INPUT BOOL mValue = false;
+
+    public:
+        MC_ErrorCode onAxisTriggered(bool &isDone);
+    };
+
+    /**
+     * @brief Read a digital input through the servo extension channel.
+     */
+    class FbReadDigitalInput : public FbReadInfoAxisType
+    {
+    public:
+        FB_INPUT UINT mInputNumber = 0;
+        FB_OUTPUT BOOL mValue = false;
+
+    public:
+        MC_ErrorCode onAxisEnable(bool &isDone);
+        void onDisable(void);
+    };
+
+    /**
+     * @brief Read a digital output through the servo extension channel.
+     */
+    class FbReadDigitalOutput : public FbReadInfoAxisType
+    {
+    public:
+        FB_INPUT UINT mOutputNumber = 0;
+        FB_OUTPUT BOOL mValue = false;
+
+    public:
+        MC_ErrorCode onAxisEnable(bool &isDone);
+        void onDisable(void);
+    };
+
+    /**
+     * @brief Write a digital output through the servo extension channel.
+     */
+    class FbWriteDigitalOutput : public FbWriteInfoAxisType
+    {
+    public:
+        FB_INPUT UINT mOutputNumber = 0;
+        FB_INPUT BOOL mValue = false;
+
+    public:
+        MC_ErrorCode onAxisTriggered(bool &isDone);
+    };
+
+    class FbDigitalCamSwitch : public FbReadInfoAxisType
+    {
+    public:
+        FB_INPUT UINT mOutputNumber = 0;
+        FB_INPUT LREAL mOnPosition = 0;
+        FB_INPUT LREAL mOffPosition = 0;
+        FB_INPUT LREAL mPeriod = 0;
+        FB_OUTPUT BOOL mValue = false;
+
+    public:
+        MC_ErrorCode onAxisEnable(bool &isDone);
+        void onDisable(void);
+    };
+
+    /**
      * @brief Write a torque setpoint to the underlying servo abstraction.
      */
     class FbTorqueControl : public FbWriteInfoAxisType
     {
     public:
         FB_INPUT LREAL mTorque = 0;
+        FB_OUTPUT BOOL mInTorque = false;
 
     public:
+        void call(void);
         MC_ErrorCode onAxisTriggered(bool &isDone);
     };
 

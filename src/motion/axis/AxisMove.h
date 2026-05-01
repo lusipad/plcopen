@@ -70,6 +70,34 @@ namespace plcopen
             MC_BufferMode bufferMode = MC_BufferMode::ABORTING,
             int32_t customId = 0);
 
+        MC_ErrorCode updateMoveVel(
+            FunctionBlock *fb,
+            double vel,
+            double acc,
+            double dec,
+            double jerk);
+
+        MC_ErrorCode updateMovePos(
+            FunctionBlock *fb,
+            double pos,
+            double vel,
+            double acc,
+            double dec,
+            double jerk,
+            MC_ShiftingMode shiftingMode = MC_ShiftingMode::ABSOLUTE,
+            MC_Direction dir = MC_Direction::CURRENT);
+
+        MC_ErrorCode updateMovePosCont(
+            FunctionBlock *fb,
+            double pos,
+            double vel,
+            double acc,
+            double dec,
+            double endVel,
+            double jerk,
+            MC_ShiftingMode shiftingMode = MC_ShiftingMode::ABSOLUTE,
+            MC_Direction dir = MC_Direction::CURRENT);
+
         MC_ErrorCode addHalt(
             FunctionBlock *fb,
             double dec,

@@ -63,6 +63,15 @@ bool fallingEdge(bool current, bool& previous, bool& initialized)
     previous = current;
     return edge;
 }
+
+DT saturatingAdvanceDateTime(DT current, TIME delta)
+{
+    const DT maxValue = std::numeric_limits<DT>::max();
+    if (current >= maxValue - delta)
+        return maxValue;
+
+    return current + delta;
+}
 } // namespace
 
     bool FbCycleTimeAwareType::setCycleTime(TIME cycleTime)
@@ -199,6 +208,29 @@ bool fallingEdge(bool current, bool& previous, bool& initialized)
         }
 
         mPreviousIN = mIN;
+    }
+
+    ////////////////////////////////////////////////////////////
+
+    void FbRtc::call(void)
+    {
+        if (!mEN)
+        {
+            mQ = false;
+            mCDT = 0;
+            mRunning = false;
+            return;
+        }
+
+        mQ = true;
+        if (!mRunning)
+        {
+            mCDT = mPDT;
+            mRunning = true;
+            return;
+        }
+
+        mCDT = saturatingAdvanceDateTime(mCDT, cycleTime());
     }
 
     ////////////////////////////////////////////////////////////

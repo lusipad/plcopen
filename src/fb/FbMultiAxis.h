@@ -34,11 +34,135 @@ namespace plcopen
 #pragma pack(push)
 #pragma pack(4)
 
+    class FbAddAxisToGroup : public FbComExecuteType
+    {
+    public:
+        FB_INPUT AXES_GROUP_REF mAxesGroup = nullptr;
+        FB_INPUT AXIS_REF mAxis = nullptr;
+
+    public:
+        MC_ErrorCode onExecTriggered(bool &isDone);
+    };
+
+    class FbRemoveAxisFromGroup : public FbComExecuteType
+    {
+    public:
+        FB_INPUT AXES_GROUP_REF mAxesGroup = nullptr;
+        FB_INPUT AXIS_REF mAxis = nullptr;
+
+    public:
+        MC_ErrorCode onExecTriggered(bool &isDone);
+    };
+
+    class FbGroupEnable : public FbComExecuteType
+    {
+    public:
+        FB_INPUT AXES_GROUP_REF mAxesGroup = nullptr;
+
+    public:
+        MC_ErrorCode onExecTriggered(bool &isDone);
+    };
+
+    class FbGroupDisable : public FbComExecuteType
+    {
+    public:
+        FB_INPUT AXES_GROUP_REF mAxesGroup = nullptr;
+
+    public:
+        MC_ErrorCode onExecTriggered(bool &isDone);
+    };
+
+    class FbGroupReadStatus : public FbReadInfoType
+    {
+    public:
+        FB_INPUT AXES_GROUP_REF mAxesGroup = nullptr;
+
+        FB_OUTPUT BOOL mErrorStop = false;
+        FB_OUTPUT BOOL mDisabled = false;
+        FB_OUTPUT BOOL mStopping = false;
+        FB_OUTPUT BOOL mHoming = false;
+        FB_OUTPUT BOOL mStandby = false;
+        FB_OUTPUT BOOL mMoving = false;
+
+    public:
+        MC_ErrorCode onEnable(bool &isDone);
+        void onDisable(void);
+    };
+
+    class FbGroupReadActualPosition : public FbReadInfoType
+    {
+    public:
+        FB_INPUT AXES_GROUP_REF mAxesGroup = nullptr;
+        FB_INPUT UINT mAxisIndex = 0;
+
+        FB_OUTPUT LREAL mPosition = 0.0;
+
+    public:
+        MC_ErrorCode onEnable(bool &isDone);
+        void onDisable(void);
+    };
+
+    class FbGroupReadCommandPosition : public FbReadInfoType
+    {
+    public:
+        FB_INPUT AXES_GROUP_REF mAxesGroup = nullptr;
+        FB_INPUT UINT mAxisIndex = 0;
+
+        FB_OUTPUT LREAL mPosition = 0.0;
+
+    public:
+        MC_ErrorCode onEnable(bool &isDone);
+        void onDisable(void);
+    };
+
+    class FbGroupStop : public FbComExecuteType
+    {
+    public:
+        FB_INPUT AXES_GROUP_REF mAxesGroup = nullptr;
+
+    public:
+        MC_ErrorCode onExecTriggered(bool &isDone);
+    };
+
+    class FbGroupReset : public FbComExecuteType
+    {
+    public:
+        FB_INPUT AXES_GROUP_REF mAxesGroup = nullptr;
+
+    public:
+        MC_ErrorCode onExecTriggered(bool &isDone);
+    };
+
+    class FbCombineAxes : public FbComExecuteType
+    {
+    public:
+        FB_INPUT AXES_GROUP_REF mAxesGroup = nullptr;
+        FB_INPUT AXIS_REF mAxis1 = nullptr;
+        FB_INPUT AXIS_REF mAxis2 = nullptr;
+
+    public:
+        MC_ErrorCode onExecTriggered(bool &isDone);
+    };
+
     class FbGearIn : public FbExecAxisBufferContSyncType
     {
     public:
         FB_INPUT LREAL mRatioNumerator = 1.0;
         FB_INPUT LREAL mRatioDenominator = 1.0;
+        FB_INPUT MC_SOURCE mMasterValueSource = MC_Source::SETVALUE;
+
+    public:
+        MC_ErrorCode onMasterSlaveExecPosedge(void);
+    };
+
+    class FbGearInPos : public FbExecAxisBufferContSyncType
+    {
+    public:
+        FB_INPUT LREAL mRatioNumerator = 1.0;
+        FB_INPUT LREAL mRatioDenominator = 1.0;
+        FB_INPUT LREAL mMasterSyncPosition = 0.0;
+        FB_INPUT LREAL mSlaveSyncPosition = 0.0;
+        FB_INPUT MC_SOURCE mMasterValueSource = MC_Source::SETVALUE;
 
     public:
         MC_ErrorCode onMasterSlaveExecPosedge(void);
@@ -48,6 +172,42 @@ namespace plcopen
     {
     public:
         MC_ErrorCode onAxisExecPosedge(void);
+    };
+
+    class FbPhasingAbsolute : public FbWriteInfoAxisType
+    {
+    public:
+        FB_INPUT LREAL mPhaseShift = 0.0;
+        FB_INPUT LREAL mVelocity = 0.0;
+        FB_INPUT LREAL mAcceleration = 0.0;
+        FB_INPUT LREAL mDeceleration = 0.0;
+        FB_INPUT LREAL mJerk = 0.0;
+
+    public:
+        void call(void);
+        MC_ErrorCode onAxisTriggered(bool &isDone);
+
+    private:
+        BOOL mPhaseTargetValid = false;
+        LREAL mPhaseTarget = 0.0;
+    };
+
+    class FbPhasingRelative : public FbWriteInfoAxisType
+    {
+    public:
+        FB_INPUT LREAL mPhaseShift = 0.0;
+        FB_INPUT LREAL mVelocity = 0.0;
+        FB_INPUT LREAL mAcceleration = 0.0;
+        FB_INPUT LREAL mDeceleration = 0.0;
+        FB_INPUT LREAL mJerk = 0.0;
+
+    public:
+        void call(void);
+        MC_ErrorCode onAxisTriggered(bool &isDone);
+
+    private:
+        BOOL mPhaseTargetValid = false;
+        LREAL mPhaseTarget = 0.0;
     };
 
     class FbCamTableSelect : public FbComExecuteType
@@ -64,6 +224,13 @@ namespace plcopen
     {
     public:
         FB_INPUT MC_CAM_REF mCamTable = nullptr;
+        FB_INPUT LREAL mMasterSyncPosition = 0.0;
+        FB_INPUT LREAL mMasterStartDistance = 0.0;
+        FB_INPUT LREAL mMasterOffset = 0.0;
+        FB_INPUT LREAL mSlaveOffset = 0.0;
+        FB_INPUT LREAL mMasterScaling = 1.0;
+        FB_INPUT LREAL mSlaveScaling = 1.0;
+        FB_INPUT MC_SOURCE mMasterValueSource = MC_Source::SETVALUE;
 
     public:
         MC_ErrorCode onMasterSlaveExecPosedge(void);

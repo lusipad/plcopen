@@ -29,9 +29,35 @@
 #include "ProfilesPlanner.h"
 
 #include <algorithm>
+#include <cmath>
 
 namespace plcopen
 {
+namespace
+{
+constexpr double kBlendLowFraction = 0.30;
+constexpr double kBlendHighFraction = 0.70;
+constexpr double kBlendMinSpeed = 0.1;
+constexpr int kMotionStateDecelerating = 3;
+
+bool blendFractionForMode(MC_BufferMode mode, double &fraction)
+{
+    switch (mode)
+    {
+    case MC_BufferMode::BLENDING_HIGH:
+        fraction = kBlendHighFraction;
+        return true;
+    case MC_BufferMode::BLENDING_LOW:
+    case MC_BufferMode::BLENDING_PREVIOUS:
+    case MC_BufferMode::BLENDING_NEXT:
+    case MC_BufferMode::BLENDING_CNC:
+        fraction = kBlendLowFraction;
+        return true;
+    default:
+        return false;
+    }
+}
+} // namespace
 
 class MoveNode : virtual public AxisExeclNode, public ProfileNode
 {
@@ -83,7 +109,28 @@ MC_ErrorCode MoveNode::onExecuting(ExeclQueue *queue, ExeclNodeExecStat &stat)
     }
 
     if (planner->execute())
+    {
         stat = ExeclNodeExecStat::DONE;
+    }
+    else if (axis->operationRemains() > 1)
+    {
+        ExeclNode *next = queue->next(queue->front());
+        MoveNode *nextMove = dynamic_cast<MoveNode *>(next);
+        double blendFraction = 0.0;
+        if (nextMove && blendFractionForMode(nextMove->mBufferMode, blendFraction))
+        {
+            const double speed = std::fabs(planner->getVelocity());
+            const double peakSpeed = std::fabs(mVel);
+            if (speed >= kBlendMinSpeed && peakSpeed > kBlendMinSpeed &&
+                planner->readStatus() == kMotionStateDecelerating &&
+                speed / peakSpeed <= blendFraction)
+            {
+                nextMove->mStartPos = planner->getPosition();
+                nextMove->mStartVel = planner->getVelocity();
+                stat = ExeclNodeExecStat::FASTDONE;
+            }
+        }
+    }
 
     return axis->setPosition(planner->getPosition(), planner->getVelocity(), planner->getAcceleration());
 }
@@ -197,7 +244,7 @@ MC_ErrorCode AxisMove::AxisMoveImpl::addMove(FunctionBlock *fb, double pos, doub
             node->mIsHold = isHold;
             return node;
         },
-        !queuedBufferMode, fb, statusActive, statusDone, customId);
+        !queuedBufferMode, fb, statusActive, statusDone, customId, bufferMode);
 
     return err;
 }
@@ -248,6 +295,169 @@ MC_ErrorCode AxisMove::addMoveVel(FunctionBlock *fb, double vel, double acc, dou
 
     return mImpl_->addMove(fb, NAN, vel, acc, dec, vel, jerk, MC_ShiftingMode::ABSOLUTE, MC_Direction::CURRENT,
                            bufferMode, MC_AxisStatus::CONTINUOUS_MOTION, MC_AxisStatus::CONTINUOUS_MOTION, true, customId);
+}
+
+MC_ErrorCode AxisMove::updateMoveVel(FunctionBlock *fb, double vel, double acc, double dec, double jerk)
+{
+    if (!vel)
+        return MC_ErrorCode::VEL_ILLEGAL;
+
+    vel *= mImpl_->mOverrideFactor;
+    acc *= mImpl_->mOverrideFactor;
+    dec *= mImpl_->mOverrideFactor;
+    jerk *= mImpl_->mOverrideFactor;
+
+    if (!std::isfinite(vel))
+        return MC_ErrorCode::VEL_ILLEGAL;
+
+    if (acc <= 0 || !std::isfinite(acc) || dec <= 0 || !std::isfinite(dec))
+        return MC_ErrorCode::ACC_ILLEGAL;
+
+    MoveNode *node = dynamic_cast<MoveNode *>(activeNode());
+    if (!node || node->mFb != fb)
+        return MC_ErrorCode::FAILED_TO_BUFFER;
+
+    const double startVel = cmdVelocity();
+    node->mStartPos = cmdPosition();
+    node->mStartVel = startVel;
+    node->mStartAcc = cmdAcceleration();
+    node->mEndPos = node->mStartPos + ProfilePlanner::calculateDist(startVel, vel, acc, dec, jerk);
+    node->mEndVel = vel;
+    node->mEndAcc = 0;
+    node->mVel = vel;
+    node->mAcc = acc;
+    node->mDec = dec;
+    node->mJerk = jerk;
+    node->mNeedPlan = true;
+    node->mIsHold = true;
+    return MC_ErrorCode::GOOD;
+}
+
+MC_ErrorCode AxisMove::updateMovePos(FunctionBlock *fb, double pos, double vel, double acc, double dec, double jerk,
+                                     MC_ShiftingMode shiftingMode, MC_Direction dir)
+{
+    if (!vel)
+        return MC_ErrorCode::VEL_ILLEGAL;
+
+    vel *= mImpl_->mOverrideFactor;
+    acc *= mImpl_->mOverrideFactor;
+    dec *= mImpl_->mOverrideFactor;
+    jerk *= mImpl_->mOverrideFactor;
+
+    if ((vel < 0 && !std::isnan(pos)) || !std::isfinite(vel))
+        return MC_ErrorCode::VEL_ILLEGAL;
+
+    if (acc <= 0 || !std::isfinite(acc) || dec <= 0 || !std::isfinite(dec))
+        return MC_ErrorCode::ACC_ILLEGAL;
+
+    if (std::isinf(pos))
+        return MC_ErrorCode::POS_ILLEGAL;
+
+    MoveNode *node = dynamic_cast<MoveNode *>(activeNode());
+    if (!node || node->mFb != fb)
+        return MC_ErrorCode::FAILED_TO_BUFFER;
+
+    const double startPos = cmdPosition();
+    if (std::isnan(pos))
+    {
+        pos = ProfilePlanner::calculateDist(cmdVelocity(), 0, acc, dec, jerk);
+        pos += startPos;
+    }
+    else
+    {
+        switch (shiftingMode)
+        {
+        case MC_ShiftingMode::ABSOLUTE:
+            pos = userPosToSys(startPos, pos, dir);
+            break;
+
+        case MC_ShiftingMode::RELATIVE:
+        case MC_ShiftingMode::ADDITIVE:
+            pos += startPos;
+            break;
+
+        default:
+            return MC_ErrorCode::SHIFTING_MODE_ILLEGAL;
+        }
+    }
+
+    node->mStartPos = startPos;
+    node->mStartVel = cmdVelocity();
+    node->mStartAcc = cmdAcceleration();
+    node->mEndPos = pos;
+    node->mEndVel = 0;
+    node->mEndAcc = 0;
+    node->mVel = vel;
+    node->mAcc = acc;
+    node->mDec = dec;
+    node->mJerk = jerk;
+    node->mNeedPlan = true;
+    node->mIsHold = false;
+    return MC_ErrorCode::GOOD;
+}
+
+MC_ErrorCode AxisMove::updateMovePosCont(FunctionBlock *fb, double pos, double vel, double acc, double dec,
+                                         double endVel, double jerk, MC_ShiftingMode shiftingMode, MC_Direction dir)
+{
+    if (!endVel || !vel)
+        return MC_ErrorCode::VEL_ILLEGAL;
+
+    vel *= mImpl_->mOverrideFactor;
+    acc *= mImpl_->mOverrideFactor;
+    dec *= mImpl_->mOverrideFactor;
+    endVel *= mImpl_->mOverrideFactor;
+    jerk *= mImpl_->mOverrideFactor;
+
+    if ((vel < 0 && !std::isnan(pos)) || !std::isfinite(vel))
+        return MC_ErrorCode::VEL_ILLEGAL;
+
+    if (acc <= 0 || !std::isfinite(acc) || dec <= 0 || !std::isfinite(dec))
+        return MC_ErrorCode::ACC_ILLEGAL;
+
+    if (std::isinf(pos))
+        return MC_ErrorCode::POS_ILLEGAL;
+
+    MoveNode *node = dynamic_cast<MoveNode *>(activeNode());
+    if (!node || node->mFb != fb)
+        return MC_ErrorCode::FAILED_TO_BUFFER;
+
+    const double startPos = cmdPosition();
+    if (std::isnan(pos))
+    {
+        pos = ProfilePlanner::calculateDist(cmdVelocity(), endVel, acc, dec, jerk);
+        pos += startPos;
+    }
+    else
+    {
+        switch (shiftingMode)
+        {
+        case MC_ShiftingMode::ABSOLUTE:
+            pos = userPosToSys(startPos, pos, dir);
+            break;
+
+        case MC_ShiftingMode::RELATIVE:
+        case MC_ShiftingMode::ADDITIVE:
+            pos += startPos;
+            break;
+
+        default:
+            return MC_ErrorCode::SHIFTING_MODE_ILLEGAL;
+        }
+    }
+
+    node->mStartPos = startPos;
+    node->mStartVel = cmdVelocity();
+    node->mStartAcc = cmdAcceleration();
+    node->mEndPos = pos;
+    node->mEndVel = endVel;
+    node->mEndAcc = 0;
+    node->mVel = vel;
+    node->mAcc = acc;
+    node->mDec = dec;
+    node->mJerk = jerk;
+    node->mNeedPlan = true;
+    node->mIsHold = true;
+    return MC_ErrorCode::GOOD;
 }
 
 MC_ErrorCode AxisMove::addHalt(FunctionBlock *fb, double dec, double jerk, MC_BufferMode bufferMode, int32_t customId)

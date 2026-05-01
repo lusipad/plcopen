@@ -80,9 +80,14 @@ namespace plcopen
         double actVelocity(void) const;
         double actAcceleration(void) const;
         double actTorque(void) const;
-    
+        bool isHomed(void) const;
+
         bool servoReadVal(int index, double& value);
         bool servoWriteVal(int index, double value);
+        MC_ErrorCode armTouchProbe(int triggerInput, bool initialValue);
+        MC_ErrorCode updateTouchProbe(int triggerInput, bool currentValue, bool &triggered, bool captureEnabled = true);
+        MC_ErrorCode abortTouchProbe(int triggerInput);
+        bool touchProbeArmed(int triggerInput) const;
     
         double userPosToSys(double baseSysPos, double userPos, MC_Direction dir) const;
         double sysPosToUser(double sysPos) const;
