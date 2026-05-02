@@ -39,6 +39,19 @@ inline void maybeSleep(bool enabled, double frequency)
     std::this_thread::sleep_for(std::chrono::microseconds(static_cast<long long>(1000000.0 / frequency)));
 }
 
+template <typename StepFn, typename CheckFn>
+bool waitForConvergence(int maxCycles, StepFn step, CheckFn check)
+{
+    for (int cycle = 0; cycle < maxCycles; ++cycle)
+    {
+        step();
+        if (check())
+            return true;
+    }
+
+    return false;
+}
+
 class MappingFollowerServo : public plcopen::Servo
 {
   public:

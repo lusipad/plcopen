@@ -162,6 +162,7 @@ namespace plcopen
         FB_INPUT LREAL mRatioDenominator = 1.0;
         FB_INPUT LREAL mMasterSyncPosition = 0.0;
         FB_INPUT LREAL mSlaveSyncPosition = 0.0;
+        FB_INPUT LREAL mMasterStartDistance = 0.0;
         FB_INPUT MC_SOURCE mMasterValueSource = MC_Source::SETVALUE;
 
     public:
@@ -190,6 +191,10 @@ namespace plcopen
     private:
         BOOL mPhaseTargetValid = false;
         LREAL mPhaseTarget = 0.0;
+        LREAL mPhaseVelocity = 0.0;
+        LREAL mPhaseAcceleration = 0.0;
+        LREAL mPhaseDeceleration = 0.0;
+        LREAL mPhaseJerk = 0.0;
     };
 
     class FbPhasingRelative : public FbWriteInfoAxisType
@@ -208,6 +213,10 @@ namespace plcopen
     private:
         BOOL mPhaseTargetValid = false;
         LREAL mPhaseTarget = 0.0;
+        LREAL mPhaseVelocity = 0.0;
+        LREAL mPhaseAcceleration = 0.0;
+        LREAL mPhaseDeceleration = 0.0;
+        LREAL mPhaseJerk = 0.0;
     };
 
     class FbCamTableSelect : public FbComExecuteType

@@ -132,15 +132,17 @@ struct DigitalIoServo : Servo
 
     bool readVal(int index, double& value) override
     {
-        if (index >= 10000 && index < 10000 + static_cast<int>(inputs.size()))
+        if (index >= MC_SERVO_EXTENSION_DIGITAL_INPUT_BASE &&
+            index < MC_SERVO_EXTENSION_DIGITAL_INPUT_BASE + static_cast<int>(inputs.size()))
         {
-            value = inputs[static_cast<std::size_t>(index - 10000)] ? 1.0 : 0.0;
+            value = inputs[static_cast<std::size_t>(index - MC_SERVO_EXTENSION_DIGITAL_INPUT_BASE)] ? 1.0 : 0.0;
             return true;
         }
 
-        if (index >= 20000 && index < 20000 + static_cast<int>(outputs.size()))
+        if (index >= MC_SERVO_EXTENSION_DIGITAL_OUTPUT_BASE &&
+            index < MC_SERVO_EXTENSION_DIGITAL_OUTPUT_BASE + static_cast<int>(outputs.size()))
         {
-            value = outputs[static_cast<std::size_t>(index - 20000)] ? 1.0 : 0.0;
+            value = outputs[static_cast<std::size_t>(index - MC_SERVO_EXTENSION_DIGITAL_OUTPUT_BASE)] ? 1.0 : 0.0;
             return true;
         }
 
@@ -149,9 +151,10 @@ struct DigitalIoServo : Servo
 
     bool writeVal(int index, double value) override
     {
-        if (index >= 20000 && index < 20000 + static_cast<int>(outputs.size()))
+        if (index >= MC_SERVO_EXTENSION_DIGITAL_OUTPUT_BASE &&
+            index < MC_SERVO_EXTENSION_DIGITAL_OUTPUT_BASE + static_cast<int>(outputs.size()))
         {
-            outputs[static_cast<std::size_t>(index - 20000)] = value != 0.0;
+            outputs[static_cast<std::size_t>(index - MC_SERVO_EXTENSION_DIGITAL_OUTPUT_BASE)] = value != 0.0;
             return true;
         }
 
@@ -2943,6 +2946,45 @@ TEST_CASE("FbDigitalCamSwitch supports periodic windows that cross the cycle bou
     REQUIRE(servo->outputs[1]);
 }
 
+TEST_CASE("FbDigitalCamSwitch clears the previously controlled output when the channel changes",
+          "[fb][axis][integration][digital-io]")
+{
+    auto* servo = new DigitalIoServo();
+    servo->outputs = {false, false, false, false};
+    SingleAxisFbHarness harness(servo);
+    harness.powerOn();
+
+    REQUIRE(harness.axis->setPosition(0.0, 0.0, 0.0) == MC_ErrorCode::GOOD);
+    harness.runCycle();
+
+    FbDigitalCamSwitch camSwitch;
+    camSwitch.mAxis = harness.axis;
+    camSwitch.mOutputNumber = 1;
+    camSwitch.mOnPosition = -1.0;
+    camSwitch.mOffPosition = 1.0;
+    camSwitch.mEnable = true;
+    camSwitch.call();
+
+    REQUIRE(camSwitch.mValid);
+    REQUIRE(camSwitch.mValue);
+    REQUIRE(servo->outputs[1]);
+
+    camSwitch.mOutputNumber = 2;
+    camSwitch.call();
+
+    REQUIRE(camSwitch.mValid);
+    REQUIRE_FALSE(servo->outputs[1]);
+    REQUIRE(servo->outputs[2]);
+
+    camSwitch.mOutputNumber = 99;
+    camSwitch.call();
+
+    REQUIRE(camSwitch.mError);
+    REQUIRE(camSwitch.mErrorID == MC_ErrorCode::PARAMETER_NOT_SUPPORT);
+    REQUIRE_FALSE(servo->outputs[1]);
+    REQUIRE_FALSE(servo->outputs[2]);
+}
+
 TEST_CASE("FbDigitalCamSwitch clears output on disable and rejects invalid inputs", "[fb][axis][integration][digital-io][validation]")
 {
     auto* servo = new DigitalIoServo();
@@ -3120,6 +3162,38 @@ TEST_CASE("FbSetOverride scales newly planned motion commands and rejects invali
     invalidOverride.call();
     REQUIRE(invalidOverride.mError);
     REQUIRE(invalidOverride.mErrorID == MC_ErrorCode::OVERRIDE_ILLEGAL);
+}
+
+TEST_CASE("FbSetOverride leaves active non-continuous position moves on their original profile", "[fb][axis][integration][override]")
+{
+    SingleAxisFbHarness harness;
+    harness.powerOn();
+
+    auto moveAbsolute = makeMoveAbsolute(harness.axis, 20.0, 4.0, 8.0, 8.0);
+    moveAbsolute.mExecute = true;
+    harness.runUntil(
+        [&]() { return moveAbsolute.mActive && harness.axis->cmdVelocity() > 1.0; },
+        100,
+        "MoveAbsolute did not become active before override changed",
+        moveAbsolute);
+
+    FbSetOverride setOverride;
+    setOverride.mAxis = harness.axis;
+    setOverride.mOverride = 50.0;
+    setOverride.mExecute = true;
+    harness.runCycle(setOverride, moveAbsolute);
+
+    REQUIRE_FALSE(setOverride.mError);
+    REQUIRE(setOverride.mDone);
+
+    harness.runUntil(
+        [&]() { return moveAbsolute.mActive && harness.axis->cmdVelocity() >= 3.8; },
+        200,
+        "MoveAbsolute was replanned by an active override change",
+        moveAbsolute);
+
+    REQUIRE_FALSE(moveAbsolute.mError);
+    REQUIRE(harness.axis->cmdVelocity() == Catch::Approx(4.0).margin(0.25));
 }
 
 TEST_CASE("FbSetOverride replans active MoveVelocity continuous update", "[fb][axis][integration][override]")
@@ -3513,6 +3587,12 @@ TEST_CASE("FbTorqueControl rejects invalid torque inputs", "[fb][axis][integrati
     REQUIRE(torqueControl.mError);
     REQUIRE(torqueControl.mErrorID == MC_ErrorCode::PARAMETER_NOT_SUPPORT);
     REQUIRE_FALSE(torqueControl.mInTorque);
+
+    torqueControl.mExecute = false;
+    harness.runCycle(torqueControl);
+
+    REQUIRE_FALSE(torqueControl.mError);
+    REQUIRE(torqueControl.mErrorID == MC_ErrorCode::GOOD);
 }
 
 TEST_CASE("FbPower and FbReadStatus reflect disabled, standstill, motion, and error-stop states", "[fb][axis][integration][status]")

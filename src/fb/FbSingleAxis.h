@@ -727,6 +727,10 @@ namespace plcopen
     public:
         MC_ErrorCode onAxisEnable(bool &isDone);
         void onDisable(void);
+
+    private:
+        BOOL mOutputActive = false;
+        UINT mActiveOutputNumber = 0;
     };
 
     /**

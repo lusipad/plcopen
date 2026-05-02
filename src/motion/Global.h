@@ -39,6 +39,12 @@ namespace plcopen
 #define URANUS_CARTESIAN_DIMENSION6 6
 #define URANUS_TRANSITIONPARAMETER_NUM 4
 
+    /**
+     * @brief Servo::readVal/writeVal extension-channel bases used by the digital IO FBs.
+     */
+    inline constexpr int MC_SERVO_EXTENSION_DIGITAL_INPUT_BASE = 10000;
+    inline constexpr int MC_SERVO_EXTENSION_DIGITAL_OUTPUT_BASE = 20000;
+
     typedef uint32_t MC_ServoErrorCode;
 
     enum class MC_ServoControlMode

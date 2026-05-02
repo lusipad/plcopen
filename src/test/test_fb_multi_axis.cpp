@@ -718,7 +718,8 @@ TEST_CASE("FbGearInPos waits for the master sync position before gearing in", "[
     REQUIRE_FALSE(gearInPos.mInGear);
     REQUIRE_FALSE(gearInPos.mStartSync);
     REQUIRE(harness.master->cmdPosition() < 2.0);
-    REQUIRE(harness.slave->cmdPosition() == Catch::Approx(0.0).margin(1e-9));
+    REQUIRE(harness.slave->cmdPosition() > 0.0);
+    REQUIRE(harness.slave->cmdPosition() < gearInPos.mSlaveSyncPosition);
 
     harness.runUntil(
         [&]() { return gearInPos.mInGear && harness.master->cmdPosition() >= gearInPos.mMasterSyncPosition; },
@@ -786,6 +787,70 @@ TEST_CASE("FbGearInPos can wait on actual master values", "[fb][multi-axis][gear
 
     REQUIRE(gearInPos.mStartSync);
     REQUIRE(harness.slave->cmdPosition() == Catch::Approx(gearInPos.mSlaveSyncPosition).margin(5e-2));
+}
+
+TEST_CASE("FbGearInPos waits for the master start distance before approaching sync",
+          "[fb][multi-axis][gear][sync-position]")
+{
+    DualAxisFbHarness harness;
+    harness.powerOn();
+
+    AxesGroup group;
+    REQUIRE(group.addAxis(harness.master) == MC_ErrorCode::GOOD);
+    REQUIRE(group.addAxis(harness.slave) == MC_ErrorCode::GOOD);
+    REQUIRE(group.enable() == MC_ErrorCode::GOOD);
+
+    FbGearInPos gearInPos;
+    gearInPos.mMaster = harness.master;
+    gearInPos.mSlave = harness.slave;
+    gearInPos.mRatioNumerator = 1.0;
+    gearInPos.mRatioDenominator = 1.0;
+    gearInPos.mMasterSyncPosition = 2.0;
+    gearInPos.mSlaveSyncPosition = 4.0;
+    gearInPos.mMasterStartDistance = 1.0;
+    gearInPos.mExecute = true;
+
+    auto moveMaster = makeMasterMove(harness.master, 3.0, 2.0);
+    moveMaster.mExecute = true;
+
+    harness.runUntil(
+        [&]() { return moveMaster.mActive && harness.master->cmdPosition() > 0.25 &&
+                       harness.master->cmdPosition() < 0.75; },
+        100,
+        "master did not move before gear in pos start distance",
+        gearInPos,
+        moveMaster);
+
+    REQUIRE_FALSE(gearInPos.mInGear);
+    REQUIRE_FALSE(gearInPos.mStartSync);
+    REQUIRE(harness.slave->cmdPosition() == Catch::Approx(0.0).margin(1e-9));
+
+    harness.runUntil(
+        [&]() { return gearInPos.mStartSync; },
+        100,
+        "gear in pos did not start synchronization at the approach window",
+        gearInPos,
+        moveMaster);
+
+    REQUIRE_FALSE(gearInPos.mInGear);
+    REQUIRE(gearInPos.mStartSync);
+    REQUIRE(harness.master->cmdPosition() >= gearInPos.mMasterSyncPosition - gearInPos.mMasterStartDistance);
+    REQUIRE(harness.master->cmdPosition() < gearInPos.mMasterSyncPosition);
+    harness.runCycle(gearInPos, moveMaster);
+    REQUIRE_FALSE(gearInPos.mStartSync);
+    REQUIRE(harness.slave->cmdPosition() > 0.0);
+    REQUIRE(harness.slave->cmdPosition() < gearInPos.mSlaveSyncPosition);
+
+    harness.runUntil(
+        [&]() { return gearInPos.mInGear && harness.master->cmdPosition() >= gearInPos.mMasterSyncPosition; },
+        100,
+        "gear in pos did not wait for master sync position",
+        gearInPos,
+        moveMaster);
+
+    REQUIRE(gearInPos.mStartSync);
+    REQUIRE_FALSE(gearInPos.mError);
+    REQUIRE(harness.slave->cmdPosition() == Catch::Approx(gearInPos.mSlaveSyncPosition).margin(0.2));
 }
 
 TEST_CASE("FbGearInPos rejects invalid group and sync position inputs", "[fb][multi-axis][gear][validation]")
@@ -889,6 +954,26 @@ TEST_CASE("FbGearInPos rejects invalid group and sync position inputs", "[fb][mu
 
         REQUIRE(gearInPos.mError);
         REQUIRE(gearInPos.mErrorID == MC_ErrorCode::SOURCE_ILLEGAL);
+    }
+
+    {
+        DualAxisFbHarness harness;
+        harness.powerOn();
+
+        AxesGroup group;
+        REQUIRE(group.addAxis(harness.master) == MC_ErrorCode::GOOD);
+        REQUIRE(group.addAxis(harness.slave) == MC_ErrorCode::GOOD);
+        REQUIRE(group.enable() == MC_ErrorCode::GOOD);
+
+        FbGearInPos gearInPos;
+        gearInPos.mMaster = harness.master;
+        gearInPos.mSlave = harness.slave;
+        gearInPos.mMasterStartDistance = -1.0;
+        gearInPos.mExecute = true;
+        gearInPos.call();
+
+        REQUIRE(gearInPos.mError);
+        REQUIRE(gearInPos.mErrorID == MC_ErrorCode::PARAMETER_NOT_SUPPORT);
     }
 }
 
@@ -1005,6 +1090,112 @@ TEST_CASE("FbPhasingAbsolute and FbPhasingRelative transition the current gear p
     REQUIRE(harness.slave->gearPhaseOffset() == Catch::Approx(-0.5).margin(1e-3));
 }
 
+TEST_CASE("FbPhasingAbsolute and FbPhasingRelative latch inputs while executing",
+          "[fb][multi-axis][gear][phasing]")
+{
+    DualAxisFbHarness harness;
+    harness.powerOn();
+
+    AxesGroup group;
+    REQUIRE(group.addAxis(harness.master) == MC_ErrorCode::GOOD);
+    REQUIRE(group.addAxis(harness.slave) == MC_ErrorCode::GOOD);
+    REQUIRE(group.enable() == MC_ErrorCode::GOOD);
+
+    FbGearIn gearIn;
+    gearIn.mMaster = harness.master;
+    gearIn.mSlave = harness.slave;
+    gearIn.mExecute = true;
+
+    auto moveMaster = makeMasterMove(harness.master, 10.0, 2.0);
+    moveMaster.mExecute = true;
+
+    harness.runUntil(
+        [&]() { return gearIn.mInGear; },
+        100,
+        "gear in never entered sync before phasing latch test",
+        gearIn,
+        moveMaster);
+
+    FbPhasingAbsolute phasingAbsolute;
+    phasingAbsolute.mAxis = harness.slave;
+    phasingAbsolute.mPhaseShift = 2.0;
+    phasingAbsolute.mVelocity = 0.5;
+    phasingAbsolute.mAcceleration = 1.0;
+    phasingAbsolute.mDeceleration = 1.0;
+    phasingAbsolute.mExecute = true;
+    phasingAbsolute.call();
+    REQUIRE(phasingAbsolute.mBusy);
+
+    harness.runUntil(
+        [&]() { return !phasingAbsolute.mDone && harness.slave->gearPhaseOffset() > 0.05; },
+        500,
+        "absolute phasing did not begin before input changes",
+        gearIn,
+        moveMaster,
+        phasingAbsolute);
+
+    phasingAbsolute.mPhaseShift = 8.0;
+    phasingAbsolute.mVelocity = -1.0;
+    phasingAbsolute.mAcceleration = 0.0;
+    phasingAbsolute.mDeceleration = 0.0;
+    phasingAbsolute.mJerk = std::numeric_limits<double>::infinity();
+    harness.runCycle(gearIn, moveMaster, phasingAbsolute);
+
+    REQUIRE_FALSE(phasingAbsolute.mError);
+    REQUIRE_FALSE(phasingAbsolute.mDone);
+
+    harness.runUntil(
+        [&]() { return phasingAbsolute.mDone; },
+        500,
+        "absolute phasing did not finish with latched inputs",
+        gearIn,
+        moveMaster,
+        phasingAbsolute);
+
+    REQUIRE(harness.slave->gearPhaseOffset() == Catch::Approx(2.0).margin(1e-3));
+
+    phasingAbsolute.mExecute = false;
+    harness.runCycle(gearIn, moveMaster, phasingAbsolute);
+
+    FbPhasingRelative phasingRelative;
+    phasingRelative.mAxis = harness.slave;
+    phasingRelative.mPhaseShift = 1.0;
+    phasingRelative.mVelocity = 0.5;
+    phasingRelative.mAcceleration = 1.0;
+    phasingRelative.mDeceleration = 1.0;
+    phasingRelative.mExecute = true;
+    phasingRelative.call();
+    REQUIRE(phasingRelative.mBusy);
+
+    harness.runUntil(
+        [&]() { return !phasingRelative.mDone && harness.slave->gearPhaseOffset() > 2.05; },
+        500,
+        "relative phasing did not begin before input changes",
+        gearIn,
+        moveMaster,
+        phasingRelative);
+
+    phasingRelative.mPhaseShift = 5.0;
+    phasingRelative.mVelocity = -1.0;
+    phasingRelative.mAcceleration = 0.0;
+    phasingRelative.mDeceleration = 0.0;
+    phasingRelative.mJerk = std::numeric_limits<double>::infinity();
+    harness.runCycle(gearIn, moveMaster, phasingRelative);
+
+    REQUIRE_FALSE(phasingRelative.mError);
+    REQUIRE_FALSE(phasingRelative.mDone);
+
+    harness.runUntil(
+        [&]() { return phasingRelative.mDone; },
+        500,
+        "relative phasing did not finish with latched inputs",
+        gearIn,
+        moveMaster,
+        phasingRelative);
+
+    REQUIRE(harness.slave->gearPhaseOffset() == Catch::Approx(3.0).margin(1e-3));
+}
+
 TEST_CASE("FbPhasingAbsolute and FbPhasingRelative reject invalid phase profile inputs",
           "[fb][multi-axis][gear][phasing][validation]")
 {
@@ -1070,6 +1261,42 @@ TEST_CASE("FbPhasingAbsolute and FbPhasingRelative reject invalid phase profile 
         REQUIRE(phasingRelative.mError);
         REQUIRE(phasingRelative.mErrorID == MC_ErrorCode::ACC_ILLEGAL);
     }
+
+    {
+        DualAxisFbHarness harness;
+        harness.powerOn();
+
+        FbPhasingAbsolute phasingAbsolute;
+        phasingAbsolute.mAxis = harness.slave;
+        phasingAbsolute.mPhaseShift = 1.0;
+        phasingAbsolute.mVelocity = 1.0;
+        phasingAbsolute.mAcceleration = 1.0;
+        phasingAbsolute.mDeceleration = 1.0;
+        phasingAbsolute.mJerk = -1.0;
+        phasingAbsolute.mExecute = true;
+        phasingAbsolute.call();
+
+        REQUIRE(phasingAbsolute.mError);
+        REQUIRE(phasingAbsolute.mErrorID == MC_ErrorCode::CFG_JERK_LIMIT_ILLEGAL);
+    }
+
+    {
+        DualAxisFbHarness harness;
+        harness.powerOn();
+
+        FbPhasingRelative phasingRelative;
+        phasingRelative.mAxis = harness.slave;
+        phasingRelative.mPhaseShift = 1.0;
+        phasingRelative.mVelocity = 1.0;
+        phasingRelative.mAcceleration = 1.0;
+        phasingRelative.mDeceleration = 1.0;
+        phasingRelative.mJerk = std::numeric_limits<double>::infinity();
+        phasingRelative.mExecute = true;
+        phasingRelative.call();
+
+        REQUIRE(phasingRelative.mError);
+        REQUIRE(phasingRelative.mErrorID == MC_ErrorCode::CFG_JERK_LIMIT_ILLEGAL);
+    }
 }
 
 TEST_CASE("FbCamTableSelect validates tables and FbCamIn/FbCamOut follow sampled positions", "[fb][multi-axis][cam]")
@@ -1102,6 +1329,36 @@ TEST_CASE("FbCamTableSelect validates tables and FbCamIn/FbCamOut follow sampled
     emptySelect.call();
     REQUIRE(emptySelect.mError);
     REQUIRE(emptySelect.mErrorID == MC_ErrorCode::PARAMETER_NOT_SUPPORT);
+
+    MC_CAM_REF invalidPointTable = std::make_shared<CamTable>();
+    invalidPointTable->addPoint(0.0, 0.0);
+    invalidPointTable->addPoint(std::numeric_limits<double>::quiet_NaN(), 1.0);
+    FbCamTableSelect invalidPointSelect;
+    invalidPointSelect.mCamTable = invalidPointTable;
+    invalidPointSelect.mExecute = true;
+    invalidPointSelect.call();
+    REQUIRE(invalidPointSelect.mError);
+    REQUIRE(invalidPointSelect.mErrorID == MC_ErrorCode::PARAMETER_NOT_SUPPORT);
+
+    MC_CAM_REF invalidSlavePointTable = std::make_shared<CamTable>();
+    invalidSlavePointTable->addPoint(0.0, 0.0);
+    invalidSlavePointTable->addPoint(1.0, std::numeric_limits<double>::infinity());
+    FbCamTableSelect invalidSlavePointSelect;
+    invalidSlavePointSelect.mCamTable = invalidSlavePointTable;
+    invalidSlavePointSelect.mExecute = true;
+    invalidSlavePointSelect.call();
+    REQUIRE(invalidSlavePointSelect.mError);
+    REQUIRE(invalidSlavePointSelect.mErrorID == MC_ErrorCode::PARAMETER_NOT_SUPPORT);
+
+    MC_CAM_REF duplicateMasterTable = std::make_shared<CamTable>();
+    duplicateMasterTable->addPoint(0.0, 0.0);
+    duplicateMasterTable->addPoint(0.0, 1.0);
+    FbCamTableSelect duplicateMasterSelect;
+    duplicateMasterSelect.mCamTable = duplicateMasterTable;
+    duplicateMasterSelect.mExecute = true;
+    duplicateMasterSelect.call();
+    REQUIRE(duplicateMasterSelect.mError);
+    REQUIRE(duplicateMasterSelect.mErrorID == MC_ErrorCode::PARAMETER_NOT_SUPPORT);
 
     DualAxisFbHarness harness;
     harness.powerOn();
@@ -1239,24 +1496,40 @@ TEST_CASE("FbCamIn waits for the master sync position when start distance is req
     camIn.mMaster = harness.master;
     camIn.mSlave = harness.slave;
     camIn.mCamTable = table;
-    camIn.mMasterSyncPosition = 1.0;
+    camIn.mMasterSyncPosition = 2.0;
     camIn.mMasterStartDistance = 1.0;
     camIn.mExecute = true;
 
-    auto moveMaster = makeMasterMove(harness.master, 2.0, 2.0);
+    auto moveMaster = makeMasterMove(harness.master, 3.0, 2.0);
     moveMaster.mExecute = true;
 
     harness.runUntil(
         [&]() { return moveMaster.mActive && harness.master->cmdPosition() > 0.25 &&
-                       harness.master->cmdPosition() < camIn.mMasterSyncPosition; },
+                       harness.master->cmdPosition() < 0.75; },
         100,
-        "master did not move before cam sync point",
+        "master did not move before cam start distance",
         camIn,
         moveMaster);
 
     REQUIRE_FALSE(camIn.mInSync);
     REQUIRE_FALSE(camIn.mStartSync);
     REQUIRE(harness.slave->cmdPosition() == Catch::Approx(0.0).margin(1e-9));
+
+    harness.runUntil(
+        [&]() { return camIn.mStartSync; },
+        100,
+        "cam in did not start synchronization at the approach window",
+        camIn,
+        moveMaster);
+
+    REQUIRE_FALSE(camIn.mInSync);
+    REQUIRE(camIn.mStartSync);
+    REQUIRE(harness.master->cmdPosition() >= camIn.mMasterSyncPosition - camIn.mMasterStartDistance);
+    REQUIRE(harness.master->cmdPosition() < camIn.mMasterSyncPosition);
+    harness.runCycle(camIn, moveMaster);
+    REQUIRE_FALSE(camIn.mStartSync);
+    REQUIRE(harness.slave->cmdPosition() > 0.0);
+    REQUIRE(harness.slave->cmdPosition() < table->sample(camIn.mMasterSyncPosition));
 
     harness.runUntil(
         [&]() { return camIn.mInSync && harness.master->cmdPosition() >= camIn.mMasterSyncPosition; },
@@ -1360,6 +1633,31 @@ TEST_CASE("FbGearIn and FbCamIn reject invalid sync command inputs", "[fb][multi
 
         REQUIRE(camIn.mError);
         REQUIRE(camIn.mErrorID == MC_ErrorCode::AXIS_NO_TEXIST);
+        REQUIRE_FALSE(camIn.mStartSync);
+    }
+
+    {
+        DualAxisFbHarness harness;
+        harness.powerOn();
+
+        AxesGroup group;
+        REQUIRE(group.addAxis(harness.master) == MC_ErrorCode::GOOD);
+        REQUIRE(group.addAxis(harness.slave) == MC_ErrorCode::GOOD);
+        REQUIRE(group.enable() == MC_ErrorCode::GOOD);
+
+        MC_CAM_REF invalidTable = std::make_shared<CamTable>();
+        invalidTable->addPoint(0.0, 0.0);
+        invalidTable->addPoint(std::numeric_limits<double>::quiet_NaN(), 1.0);
+
+        FbCamIn camIn;
+        camIn.mMaster = harness.master;
+        camIn.mSlave = harness.slave;
+        camIn.mCamTable = invalidTable;
+        camIn.mExecute = true;
+        camIn.call();
+
+        REQUIRE(camIn.mError);
+        REQUIRE(camIn.mErrorID == MC_ErrorCode::PARAMETER_NOT_SUPPORT);
         REQUIRE_FALSE(camIn.mStartSync);
     }
 

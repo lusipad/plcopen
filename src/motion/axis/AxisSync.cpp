@@ -67,13 +67,18 @@ class SyncNode : virtual public AxisExeclNode
     bool mWaitForMasterSyncPosition = false;
     bool mMasterSyncPositionInitialized = false;
     double mMasterSyncPosition = 0.0;
+    double mMasterStartDistance = 0.0;
     double mStartMasterPosition = 0.0;
+    double mStartSlavePosition = 0.0;
+    double mSlaveSyncPosition = 0.0;
+    bool mSlaveSyncPositionExplicit = false;
     MC_CAM_REF mCamTable;
     double mCamMasterOffset = 0.0;
     double mCamSlaveOffset = 0.0;
     double mCamMasterScaling = 1.0;
     double mCamSlaveScaling = 1.0;
     bool mHoldArmed = true;
+    bool mStartSyncNotified = false;
 
   protected:
     MC_ErrorCode onExecuting(ExeclQueue *queue, ExeclNodeExecStat &stat) override
@@ -92,16 +97,55 @@ class SyncNode : virtual public AxisExeclNode
         {
             if (!mMasterSyncPositionInitialized)
             {
-                mStartMasterPosition = masterPosition();
+                const double currentMasterPosition = masterPosition();
+                if (mMasterStartDistance > 0.0)
+                {
+                    const double direction = mMasterSyncPosition >= currentMasterPosition ? 1.0 : -1.0;
+                    mStartMasterPosition = mMasterSyncPosition - direction * mMasterStartDistance;
+                }
+                else
+                {
+                    mStartMasterPosition = currentMasterPosition;
+                }
+                mStartSlavePosition = slave->cmdPosition();
                 mMasterSyncPositionInitialized = true;
             }
 
             const double currentMasterPosition = masterPosition();
             const bool positiveApproach = mMasterSyncPosition >= mStartMasterPosition;
+            const bool approachStarted = positiveApproach ? currentMasterPosition >= mStartMasterPosition
+                                                          : currentMasterPosition <= mStartMasterPosition;
             const bool syncReached = positiveApproach ? currentMasterPosition >= mMasterSyncPosition
                                                       : currentMasterPosition <= mMasterSyncPosition;
             if (!syncReached)
+            {
+                if (!approachStarted)
+                    return MC_ErrorCode::GOOD;
+
+                notifyStartSync();
+
+                const double span = mMasterSyncPosition - mStartMasterPosition;
+                if (span != 0.0)
+                {
+                    const double slaveSyncPosition = mSlaveSyncPositionExplicit
+                        ? mSlaveSyncPosition
+                        : camTargetAtMasterSyncPosition();
+                    double progress = (currentMasterPosition - mStartMasterPosition) / span;
+                    if (progress < 0.0)
+                        progress = 0.0;
+                    else if (progress > 1.0)
+                        progress = 1.0;
+
+                    const double targetPosition =
+                        mStartSlavePosition + (slaveSyncPosition - mStartSlavePosition) * progress;
+                    const double targetVelocity =
+                        masterVelocity() * (slaveSyncPosition - mStartSlavePosition) / span;
+                    const MC_ErrorCode err = slave->setPosition(targetPosition, targetVelocity, 0.0);
+                    if (err != MC_ErrorCode::GOOD)
+                        return err;
+                }
                 return MC_ErrorCode::GOOD;
+            }
 
             mWaitForMasterSyncPosition = false;
         }
@@ -161,6 +205,25 @@ class SyncNode : virtual public AxisExeclNode
     double masterAcceleration() const
     {
         return mMasterValueSource == MC_Source::ACTUALVALUE ? mMaster->actAcceleration() : mMaster->cmdAcceleration();
+    }
+
+    double camTargetAtMasterSyncPosition() const
+    {
+        if (!mCamTable || mCamTable->empty())
+            return mStartSlavePosition;
+
+        const double camMasterPosition = (mMasterSyncPosition - mCamMasterOffset) / mCamMasterScaling;
+        return mCamSlaveOffset + mCamSlaveScaling * mCamTable->sample(camMasterPosition);
+    }
+
+    void notifyStartSync()
+    {
+        if (mStartSyncNotified)
+            return;
+
+        if (mFb)
+            mFb->onOperationStartSync(mNodeCustomId);
+        mStartSyncNotified = true;
     }
 };
 
@@ -238,7 +301,7 @@ class SyncOutNode : virtual public AxisExeclNode
     }
 
     MC_ErrorCode AxisSync::addGearInPos(FunctionBlock *fb, Axis *master, double ratioNumerator, double ratioDenominator,
-                                        double masterSyncPosition, double slaveSyncPosition,
+                                        double masterSyncPosition, double slaveSyncPosition, double masterStartDistance,
                                         MC_Source masterValueSource, MC_BufferMode bufferMode, int32_t customId)
     {
         if (!master)
@@ -260,11 +323,19 @@ class SyncOutNode : virtual public AxisExeclNode
         if (!std::isfinite(masterSyncPosition) || !std::isfinite(slaveSyncPosition))
             return MC_ErrorCode::POS_ILLEGAL;
 
+        if (!std::isfinite(masterStartDistance) || masterStartDistance < 0.0)
+            return MC_ErrorCode::PARAMETER_NOT_SUPPORT;
+
         const double ratio = ratioNumerator / ratioDenominator;
         mImpl_->mGearPhaseOffset = slaveSyncPosition - masterSyncPosition * ratio;
 
         return pushAndNewData(
-            [master, ratio, masterSyncPosition, masterValueSource](void *baseNode) -> AxisExeclNode * {
+            [master,
+             ratio,
+             masterSyncPosition,
+             slaveSyncPosition,
+             masterStartDistance,
+             masterValueSource](void *baseNode) -> AxisExeclNode * {
                 auto *node = reinterpret_cast<SyncNode *>(baseNode);
                 new (node) SyncNode();
                 node->mMaster = master;
@@ -273,6 +344,9 @@ class SyncOutNode : virtual public AxisExeclNode
                 node->mRatio = ratio;
                 node->mWaitForMasterSyncPosition = true;
                 node->mMasterSyncPosition = masterSyncPosition;
+                node->mMasterStartDistance = masterStartDistance;
+                node->mSlaveSyncPosition = slaveSyncPosition;
+                node->mSlaveSyncPositionExplicit = true;
                 return node;
             },
             !usesQueuedBufferModeSemantics(bufferMode),
@@ -321,6 +395,9 @@ class SyncOutNode : virtual public AxisExeclNode
 
         if (acceleration <= 0 || !std::isfinite(acceleration) || deceleration <= 0 || !std::isfinite(deceleration))
             return MC_ErrorCode::ACC_ILLEGAL;
+
+        if (jerk < 0.0 || !std::isfinite(jerk))
+            return MC_ErrorCode::CFG_JERK_LIMIT_ILLEGAL;
 
         if (!mImpl_->mPhaseMoveActive || mImpl_->mPhaseMoveTarget != phaseOffset)
         {
@@ -391,7 +468,7 @@ class SyncOutNode : virtual public AxisExeclNode
         if (!isDefinedMasterValueSource(masterValueSource))
             return MC_ErrorCode::SOURCE_ILLEGAL;
 
-        if (!camTable || camTable->empty())
+        if (!camTable || camTable->empty() || !camTable->valid())
             return MC_ErrorCode::PARAMETER_NOT_SUPPORT;
 
         if (!std::isfinite(masterStartDistance) || masterStartDistance < 0.0)
@@ -423,6 +500,7 @@ class SyncOutNode : virtual public AxisExeclNode
                 node->mMasterValueSource = masterValueSource;
                 node->mWaitForMasterSyncPosition = masterStartDistance > 0.0;
                 node->mMasterSyncPosition = masterSyncPosition;
+                node->mMasterStartDistance = masterStartDistance;
                 node->mCamMasterOffset = masterOffset;
                 node->mCamSlaveOffset = slaveOffset;
                 node->mCamMasterScaling = masterScaling;

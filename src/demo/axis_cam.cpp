@@ -78,8 +78,17 @@ int main(int argc, char **argv)
 
         if (moveMaster.mDone)
         {
-            const double diff = std::fabs(readCamPos.mPosition - camTable.sample(readMasterPos.mPosition));
-            return diff <= 1e-2 ? 0 : 1;
+            const bool converged = demo_support::waitForConvergence(
+                80,
+                [&]() {
+                    sched.runCycle();
+                    masterPower.call();
+                    camPower.call();
+                    readMasterPos.call();
+                    readCamPos.call();
+                },
+                [&]() { return std::fabs(readCamPos.mPosition - camTable.sample(readMasterPos.mPosition)) <= 1e-2; });
+            return converged ? 0 : 1;
         }
 
         demo_support::maybeSleep(sleepEnabled, frequency);

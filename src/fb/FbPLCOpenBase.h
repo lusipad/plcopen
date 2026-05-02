@@ -248,6 +248,7 @@ namespace plcopen
     
     public:
         void call(void);
+        void onOperationStartSync(int32_t customId);
         void onOperationDone(int32_t customId);
         void onOperationAborted(int32_t customId);
         void onOperationError(MC_ErrorCode errorCode, int32_t customId);

@@ -27,6 +27,21 @@ namespace plcopen
         return mPoints.empty();
     }
 
+    bool CamTable::valid(void) const
+    {
+        for (size_t i = 0; i < mPoints.size(); ++i)
+        {
+            const auto &point = mPoints[i];
+            if (!std::isfinite(point.first) || !std::isfinite(point.second))
+                return false;
+
+            if (i > 0 && point.first <= mPoints[i - 1].first)
+                return false;
+        }
+
+        return true;
+    }
+
     double CamTable::sample(double masterPosition) const
     {
         if (mPoints.empty())

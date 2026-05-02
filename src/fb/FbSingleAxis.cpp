@@ -32,8 +32,8 @@ namespace plcopen
 {
     namespace
     {
-        constexpr int kDigitalInputBase = 10000;
-        constexpr int kDigitalOutputBase = 20000;
+        constexpr int kDigitalInputBase = MC_SERVO_EXTENSION_DIGITAL_INPUT_BASE;
+        constexpr int kDigitalOutputBase = MC_SERVO_EXTENSION_DIGITAL_OUTPUT_BASE;
         constexpr int kAxisInfoHomeSwitchInput = kDigitalInputBase;
         constexpr int kAxisInfoPositiveLimitInput = kDigitalInputBase + 1;
         constexpr int kAxisInfoNegativeLimitInput = kDigitalInputBase + 2;
@@ -1532,9 +1532,17 @@ namespace plcopen
             mValue = position >= low && position <= high;
         }
 
+        if (mOutputActive && mActiveOutputNumber != mOutputNumber)
+        {
+            mAxis->servoWriteVal(kDigitalOutputBase + static_cast<int>(mActiveOutputNumber), 0.0);
+            mOutputActive = false;
+        }
+
         if (!mAxis->servoWriteVal(kDigitalOutputBase + static_cast<int>(mOutputNumber), mValue ? 1.0 : 0.0))
             return MC_ErrorCode::PARAMETER_NOT_SUPPORT;
 
+        mActiveOutputNumber = mOutputNumber;
+        mOutputActive = true;
         isDone = true;
         return MC_ErrorCode::GOOD;
     }
@@ -1542,8 +1550,10 @@ namespace plcopen
     void FbDigitalCamSwitch::onDisable(void)
     {
         mValue = false;
-        if (mAxis)
-            mAxis->servoWriteVal(kDigitalOutputBase + static_cast<int>(mOutputNumber), 0.0);
+        if (mAxis && mOutputActive)
+            mAxis->servoWriteVal(kDigitalOutputBase + static_cast<int>(mActiveOutputNumber), 0.0);
+
+        mOutputActive = false;
     }
 
     ////////////////////////////////////////////////////////////

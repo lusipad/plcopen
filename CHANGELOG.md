@@ -12,6 +12,7 @@ All notable changes to this project will be documented in this file.
 - 新增 `MC_ReadActualTorque`，读取当前伺服扭矩值。
 - 扩展 `MC_ReadAxisInfo`，通过 Servo 数字输入扩展通道 0/1/2/3 读取 home switch、正限位、负限位和 axis warning。
 - 新增 `MC_ReadDigitalInput`、`MC_ReadDigitalOutput`、`MC_WriteDigitalOutput` 的 Servo 扩展通道实现。
+- 新增 `MC_SERVO_EXTENSION_DIGITAL_INPUT_BASE` / `MC_SERVO_EXTENSION_DIGITAL_OUTPUT_BASE` 命名常量，作为数字 IO 功能块的 Servo 扩展通道契约。
 - 新增 `MC_ReadAxisInfo` 的当前轴信息子集实现，覆盖仿真、ready、power 与 homed 状态。
 - 新增 `MC_HaltSuperimposed` 的当前单轴 additive 近似语义实现。
 - 新增 `MC_MoveContinuousAbsolute` 与 `MC_MoveContinuousRelative` 的当前连续位置运动实现。
@@ -19,12 +20,21 @@ All notable changes to this project will be documented in this file.
 - 新增 `MC_VelocityProfile` 的单段 profile reference partial 实现。
 - 新增 `MC_AccelerationProfile` 的单段 profile reference partial 实现。
 - 新增 `MC_PositionProfile` / `MC_VelocityProfile` / `MC_AccelerationProfile` 的链式多段 profile reference 顺序执行。
-- 新增 `MC_TouchProbe`、`MC_AbortTrigger`、`MC_DigitalCamSwitch` 的 Servo 扩展通道 partial 实现。
-- 新增 `MC_GearInPos` 等待 `MasterSyncPosition` 后按 `SlaveSyncPosition` 建立 ratio 同步的 partial 实现。
+- 新增 `MC_TouchProbe` 的 Servo 数字输入捕获、`MC_AbortTrigger` 的软件 armed trigger 取消，以及 `MC_DigitalCamSwitch` 的 Servo 数字输出 partial 实现。
+- 新增 `MC_GearInPos` 等待 `MasterSyncPosition` 后按 `SlaveSyncPosition` 建立 ratio 同步的 partial 实现，并补齐 `MasterStartDistance` 线性接近窗口和 `StartSync` 脉冲回归。
+- 扩展 `MC_CamTableSelect` / `MC_CamIn` 表校验，拒绝包含非有限 master/slave 点或非严格递增 master 点的 `CamTable`。
+- 扩展 `MC_PhasingAbsolute` / `MC_PhasingRelative` 校验，拒绝非有限或负 jerk 输入。
+- 调整 `MC_PhasingAbsolute` / `MC_PhasingRelative` 的 execute 周期语义，锁存目标和 profile 输入，避免执行中的输入变化污染当前命令。
+- 调整 `MC_DigitalCamSwitch` 输出归属语义，输出通道切换、禁用或错误清理时会关闭上一受控通道。
+- 补齐 PLCopen 基类契约回归，覆盖 execute 错误恢复、enable valid/busy/error 清理和同步 `StartSync` 脉冲。
+- 在 compliance matrix 中补充 supported parameter registry，明确参数 FB 的 numeric/bool 读写子集与校验边界。
+- 修复 Python `AxisSim` smoke 中对 `ErrorID = GOOD` 的误报，并让 demo smoke 在主轴完成后等待跟随轴收敛。
 - 新增 `MC_PhasingAbsolute` 与 `MC_PhasingRelative` 的 gear phase offset 过渡 partial 实现，`Velocity > 0` 时按 profile 推进。
 - 新增 `MC_CombineAxes` 的 AxesGroup 成员组合 partial 实现。
 - 新增 `MC_MoveVelocity` 的最小 `ContinuousUpdate` 支持，允许 active 命令在 `Execute` 保持为真时更新目标速度。
 - 新增 `MC_SetOverride` 对 active `MC_MoveVelocity`、`MC_MoveContinuousAbsolute`、`MC_MoveContinuousRelative`、`MC_PositionProfile`、`MC_VelocityProfile`、`MC_AccelerationProfile` 的 `ContinuousUpdate` 重规划支持，倍率变化可作用于当前连续速度/连续位置/profile 命令。
+- 补齐 `MC_SetOverride` 边界回归，确认 active 非连续位置运动保持原规划 profile。
+- 补齐 `MC_TorqueControl` 非法输入后的 execute falling-edge 清错回归。
 - 新增 `MC_MoveContinuousAbsolute` / `MC_MoveContinuousRelative` 的最小 `ContinuousUpdate` 支持，允许 active 命令重规划连续位置目标。
 - 新增 `MC_PositionProfile` / `MC_VelocityProfile` / `MC_AccelerationProfile` 的单段 profile `ContinuousUpdate` 支持。
 - 新增 `BLENDING_LOW` / `BLENDING_HIGH` 的单轴 MoveNode 最小差异化接续语义，`BUFFERED` 保持到终点后启动。
@@ -34,6 +44,7 @@ All notable changes to this project will be documented in this file.
 - 安装导出头文件面补齐 axis、interpolation 与 misc 公共依赖，确保下游 `find_package(plcopen)` 后可直接 include 公开运动控制头。
 - 完成本地 `FetchContent` consumer 验证，确保下游可通过 `FetchContent_MakeAvailable(plcopen)` 消费 `plcopen::plcopen`。
 - 完成本地 `PLCOPEN_BUILD_DOCS=ON` 验证，确认 `docs` target 在缺少 Doxygen 的本机环境下能执行 fallback。
+- 校准 README/ROADMAP 的版本口径，区分最新发布检查点 `v0.8.0` 与当前未发布 `v0.9.0 Part 1/2 Completion` 工作树。
 
 ### Changed
 

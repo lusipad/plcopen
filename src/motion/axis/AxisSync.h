@@ -31,6 +31,7 @@ namespace plcopen
             double ratioDenominator,
             double masterSyncPosition,
             double slaveSyncPosition,
+            double masterStartDistance = 0.0,
             MC_Source masterValueSource = MC_Source::SETVALUE,
             MC_BufferMode bufferMode = MC_BufferMode::ABORTING,
             int32_t customId = 0);

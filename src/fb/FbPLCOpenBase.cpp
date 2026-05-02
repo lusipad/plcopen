@@ -247,6 +247,12 @@ namespace plcopen
         }
     }
 
+    void FbExecAxisBufferContSyncType::onOperationStartSync(int32_t customId)
+    {
+        mStartSync = true;
+        mStartSyncLatch = true;
+    }
+
     void FbExecAxisBufferContSyncType::onOperationDone(int32_t customId)
     {
         FbExecAxisBufferContType::onOperationDone(customId);

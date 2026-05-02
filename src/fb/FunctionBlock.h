@@ -46,6 +46,9 @@ namespace plcopen
         /// Called when a command becomes active.
         virtual void onOperationActive(int32_t customId) {}
 
+        /// Called when a synchronization command starts its sync approach.
+        virtual void onOperationStartSync(int32_t customId) {}
+
         /// Called when a command is aborted by a later command.
         virtual void onOperationAborted(int32_t customId) {}
 

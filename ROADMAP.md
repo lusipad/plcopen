@@ -177,11 +177,11 @@
 
 ---
 
-## 当前工作集：v0.8.0（AxesGroup Foundation）
+## 已完成工作集：v0.8.0（AxesGroup Foundation）
 
 **预估窗口**：2026-Q2
 
-**2026-04-25 更新**：下一阶段目标已切换为 `AxesGroup Foundation`。这一阶段对应 PLCopen Part 4 coordinated motion 的基础层，不追求完整的 coordinated motion、kinematics 或线性插补。
+**2026-05-01 更新**：`AxesGroup Foundation` 已作为当前里程碑检查点提交。这一阶段对应 PLCopen Part 4 coordinated motion 的基础层，不追求完整的 coordinated motion、kinematics 或线性插补。
 
 **当前范围**：
 
@@ -207,6 +207,33 @@
 - multi-master / multi-slave coordinated runtime
 
 **原则**：`v0.8.0` 只把 group 做成真实存在、可测试、可公开引用的运行时边界，不把 Part 4 的完整路径规划和坐标变换偷渡进来。
+
+---
+
+## 当前工作集：v0.9.0（Part 1/2 Completion）
+
+**预估窗口**：2026-Q2 → 2026-Q3
+
+**2026-05-02 更新**：下一阶段目标切换为收口 PLCopen Motion Control Part 1/2 的 `partial` 项。详细执行计划见 [v0.9.0 Part 1/2 Completion Plan](doc/compliance/part1-part2-completion-plan.md)。
+
+**当前基线**：
+
+- Part 1/2 标准 FB：45 个 tracked rows。
+- 当前 FB 状态：11 个 `implemented`，34 个 `partial`，0 个 `missing`；所有 `partial` 均已有 v0.9.0 gap type 和明确边界/后续条件。
+- 跨切语义：Execute/Done/Busy/Error、Enable/Valid/Error、当前公开错误码覆盖已归为 implemented；BufferMode 与 ContinuousUpdate 保持 documented partial/scope-boundary。
+
+**候选目标**（按优先级）：
+
+| 候选 | 动机 | 解锁条件 | 优先级 |
+|------|------|----------|--------|
+| Compliance matrix 正规化 | 把每个 `partial` 拆成可执行缺口，而不是口头承诺“全支持” | 当前矩阵已经列出全部 partial 原因 | P0（已完成） |
+| 跨切 FB contract 收口 | Execute/Enable 生命周期、错误码和清除语义会影响所有后续实现 | 代表性 FB 回归已锁住当前公开行为 | P0（已完成） |
+| 管理类单轴 FB 完成 | 参数、IO、AxisInfo、TouchProbe 等是 Part 1/2 完整口径的基础面 | 保持硬件相关能力诚实建模 | P0（已完成/边界明确） |
+| 单轴 motion partial 收口 | Home、BufferMode、profile、superimposed、torque 是当前最大缺口 | shared planner/contract 行为已覆盖，剩余为显式范围边界 | P1（已完成/边界明确） |
+| 多轴同步 FB 收口 | Cam/Gear/Phasing/CombineAxes 需要在 Part 1/2 与 Part 4 边界上写清楚 | 不把 coordinated path planning 偷渡进来 | P1（已完成/边界明确） |
+| 文档与发布门禁 | 对外 claim 必须可审计 | 全量 build/test/consumer/docs smoke 通过 | P1（已完成） |
+
+**原则**：`v0.9.0` 的目标是“Part 1/2 partial 清零或显式重分类”，不是“扩展到完整 Part 4 coordinated motion”。硬件 latch、驱动诊断、闭环 torque 等无法由当前 runtime 验证的能力，要新增窄抽象或诚实列为范围外，不能用模拟假设冒充已实现。
 
 ---
 
@@ -266,5 +293,5 @@
 
 ---
 
-*本文档最后更新：2026-04-25*
+*本文档最后更新：2026-05-01*
 *下次复盘：2026-07-01（确定下一里程碑范围）*

@@ -242,7 +242,7 @@ MC_ErrorCode requireGroup(AXES_GROUP_REF group)
     MC_ErrorCode FbGearInPos::onMasterSlaveExecPosedge(void)
     {
         return mSlave->addGearInPos(this, mMaster, mRatioNumerator, mRatioDenominator, mMasterSyncPosition,
-                                    mSlaveSyncPosition, mMasterValueSource, mBufferMode);
+                                    mSlaveSyncPosition, mMasterStartDistance, mMasterValueSource, mBufferMode);
     }
 
     MC_ErrorCode FbGearOut::onAxisExecPosedge(void)
@@ -263,10 +263,15 @@ MC_ErrorCode requireGroup(AXES_GROUP_REF group)
         if (!mPhaseTargetValid)
         {
             mPhaseTarget = mPhaseShift;
+            mPhaseVelocity = mVelocity;
+            mPhaseAcceleration = mAcceleration;
+            mPhaseDeceleration = mDeceleration;
+            mPhaseJerk = mJerk;
             mPhaseTargetValid = true;
         }
 
-        return mAxis->moveGearPhaseOffset(mPhaseTarget, mVelocity, mAcceleration, mDeceleration, mJerk, isDone);
+        return mAxis->moveGearPhaseOffset(
+            mPhaseTarget, mPhaseVelocity, mPhaseAcceleration, mPhaseDeceleration, mPhaseJerk, isDone);
     }
 
     void FbPhasingRelative::call(void)
@@ -282,15 +287,20 @@ MC_ErrorCode requireGroup(AXES_GROUP_REF group)
         if (!mPhaseTargetValid)
         {
             mPhaseTarget = mAxis->gearPhaseOffset() + mPhaseShift;
+            mPhaseVelocity = mVelocity;
+            mPhaseAcceleration = mAcceleration;
+            mPhaseDeceleration = mDeceleration;
+            mPhaseJerk = mJerk;
             mPhaseTargetValid = true;
         }
 
-        return mAxis->moveGearPhaseOffset(mPhaseTarget, mVelocity, mAcceleration, mDeceleration, mJerk, isDone);
+        return mAxis->moveGearPhaseOffset(
+            mPhaseTarget, mPhaseVelocity, mPhaseAcceleration, mPhaseDeceleration, mPhaseJerk, isDone);
     }
 
     MC_ErrorCode FbCamTableSelect::onExecTriggered(bool &isDone)
     {
-        if (!mCamTable || mCamTable->empty())
+        if (!mCamTable || mCamTable->empty() || !mCamTable->valid())
             return MC_ErrorCode::PARAMETER_NOT_SUPPORT;
 
         mCamTableSelected = mCamTable;

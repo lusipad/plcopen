@@ -77,8 +77,17 @@ int main(int argc, char **argv)
 
         if (moveMaster.mDone)
         {
-            const double diff = std::fabs(readGearPos.mPosition - readMasterPos.mPosition * ratio);
-            return diff <= 1e-2 ? 0 : 1;
+            const bool converged = demo_support::waitForConvergence(
+                80,
+                [&]() {
+                    sched.runCycle();
+                    masterPower.call();
+                    gearPower.call();
+                    readMasterPos.call();
+                    readGearPos.call();
+                },
+                [&]() { return std::fabs(readGearPos.mPosition - readMasterPos.mPosition * ratio) <= 1e-2; });
+            return converged ? 0 : 1;
         }
 
         demo_support::maybeSleep(sleepEnabled, frequency);

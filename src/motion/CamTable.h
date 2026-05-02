@@ -14,6 +14,7 @@ namespace plcopen
         void setPeriodic(bool periodic);
         bool periodic(void) const;
         bool empty(void) const;
+        bool valid(void) const;
         double sample(double masterPosition) const;
 
     private:

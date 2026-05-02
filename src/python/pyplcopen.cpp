@@ -232,7 +232,7 @@ class AxisSim
             ensurePowerHealthy(operation);
             ensureActiveVelocityMoveHealthy(operation, &block);
 
-            if (block.mError)
+            if (block.mError && block.mErrorID != MC_ErrorCode::GOOD)
                 throw std::runtime_error(makeErrorMessage(operation, block.mErrorID));
 
             if (predicate(block))
@@ -243,7 +243,7 @@ class AxisSim
                     tick(block);
                     ensurePowerHealthy(operation);
                     ensureActiveVelocityMoveHealthy(operation, &block);
-                    if (block.mError)
+                    if (block.mError && block.mErrorID != MC_ErrorCode::GOOD)
                         throw std::runtime_error(makeErrorMessage(operation, block.mErrorID));
                 }
                 return;
@@ -255,7 +255,7 @@ class AxisSim
 
     void ensurePowerHealthy(const char *operation)
     {
-        if (mPower.mError)
+        if (mPower.mError && mPower.mErrorID != MC_ErrorCode::GOOD)
             throw std::runtime_error(makeErrorMessage(operation, mPower.mErrorID));
     }
 
@@ -265,7 +265,7 @@ class AxisSim
         if (!mActiveVelocityMove || static_cast<const void *>(mActiveVelocityMove.get()) == static_cast<const void *>(currentBlock))
             return;
 
-        if (mActiveVelocityMove->mError)
+        if (mActiveVelocityMove->mError && mActiveVelocityMove->mErrorID != MC_ErrorCode::GOOD)
             throw std::runtime_error(makeErrorMessage(operation, mActiveVelocityMove->mErrorID));
     }
 

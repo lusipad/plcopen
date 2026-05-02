@@ -52,6 +52,26 @@ struct StubSeqExecute : FbSeqExecuteType
     }
 };
 
+struct StubReadInfo : FbReadInfoType
+{
+    MC_ErrorCode enableResult = MC_ErrorCode::GOOD;
+    bool completes = true;
+    int enableCalls = 0;
+    int disableCalls = 0;
+
+    MC_ErrorCode onEnable(bool& isDone) override
+    {
+        ++enableCalls;
+        isDone = completes;
+        return enableResult;
+    }
+
+    void onDisable(void) override
+    {
+        ++disableCalls;
+    }
+};
+
 struct StubSyncExecute : FbExecAxisBufferContSyncType
 {
     MC_ErrorCode posedgeResult = MC_ErrorCode::GOOD;
@@ -260,6 +280,31 @@ TEST_CASE("FbComExecuteType surfaces trigger errors without leaving stale busy s
     REQUIRE_FALSE(block.mBusy);
 }
 
+TEST_CASE("FbComExecuteType clears errors on execute falling edge and can retrigger", "[fb][base][com-execute][error]")
+{
+    StubComExecute block;
+    block.mExecute = true;
+    block.triggerResult = MC_ErrorCode::AXIS_NO_TEXIST;
+    block.call();
+    REQUIRE(block.mError);
+    REQUIRE(block.triggerCalls == 1);
+
+    block.mExecute = false;
+    block.call();
+    REQUIRE_FALSE(block.mError);
+    REQUIRE(block.mErrorID == MC_ErrorCode::GOOD);
+    REQUIRE_FALSE(block.mDone);
+    REQUIRE_FALSE(block.mBusy);
+
+    block.mExecute = true;
+    block.triggerResult = MC_ErrorCode::GOOD;
+    block.completesImmediately = true;
+    block.call();
+    REQUIRE(block.triggerCalls == 2);
+    REQUIRE(block.mDone);
+    REQUIRE_FALSE(block.mError);
+}
+
 TEST_CASE("FbSeqExecuteType clears done and aborted flags on execute falling edge", "[fb][base][seq-execute]")
 {
     StubSeqExecute block;
@@ -297,6 +342,41 @@ TEST_CASE("FbSeqExecuteType clears done and aborted flags on execute falling edg
     REQUIRE_FALSE(block.mCommandAborted);
 }
 
+TEST_CASE("FbReadInfoType tracks enable valid busy and clears errors on disable", "[fb][base][read-info]")
+{
+    StubReadInfo block;
+    block.mEnable = true;
+    block.completes = false;
+    block.call();
+    REQUIRE(block.enableCalls == 1);
+    REQUIRE(block.mBusy);
+    REQUIRE_FALSE(block.mValid);
+    REQUIRE_FALSE(block.mError);
+
+    block.completes = true;
+    block.call();
+    REQUIRE(block.enableCalls == 2);
+    REQUIRE(block.mValid);
+    REQUIRE_FALSE(block.mBusy);
+    REQUIRE_FALSE(block.mError);
+
+    block.enableResult = MC_ErrorCode::AXIS_NO_TEXIST;
+    block.call();
+    REQUIRE(block.mError);
+    REQUIRE(block.mErrorID == MC_ErrorCode::AXIS_NO_TEXIST);
+    REQUIRE_FALSE(block.mValid);
+    REQUIRE_FALSE(block.mBusy);
+    REQUIRE(block.disableCalls == 1);
+
+    block.mEnable = false;
+    block.call();
+    REQUIRE_FALSE(block.mError);
+    REQUIRE(block.mErrorID == MC_ErrorCode::GOOD);
+    REQUIRE_FALSE(block.mValid);
+    REQUIRE_FALSE(block.mBusy);
+    REQUIRE(block.disableCalls == 2);
+}
+
 TEST_CASE("FbExecAxisBufferContSyncType emits a one-cycle start-sync pulse after completion", "[fb][base][sync]")
 {
     Scheduler sched;
@@ -329,6 +409,28 @@ TEST_CASE("FbExecAxisBufferContSyncType emits a one-cycle start-sync pulse after
     REQUIRE_FALSE(block.mStartSync);
 
     sched.release();
+}
+
+TEST_CASE("FbExecAxisBufferContSyncType emits a one-cycle start-sync pulse on approach start", "[fb][base][sync]")
+{
+    StubSyncExecute block;
+
+    block.onOperationStartSync(0);
+    REQUIRE(block.mStartSync);
+
+    block.call();
+    REQUIRE(block.mStartSync);
+
+    block.call();
+    REQUIRE_FALSE(block.mStartSync);
+
+    block.onOperationStartSync(0);
+    block.onOperationAborted(0);
+    REQUIRE_FALSE(block.mStartSync);
+
+    block.onOperationStartSync(0);
+    block.onOperationError(MC_ErrorCode::PARAMETER_NOT_SUPPORT, 0);
+    REQUIRE_FALSE(block.mStartSync);
 }
 
 TEST_CASE("Queue clears used count and remains reusable after wrap-around", "[queue]")
