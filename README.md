@@ -8,9 +8,9 @@
 [![Windows CI](https://github.com/lusipad/plcopen/actions/workflows/windows-ci.yml/badge.svg)](https://github.com/lusipad/plcopen/actions/workflows/windows-ci.yml)
 [![Linux CI](https://github.com/lusipad/plcopen/actions/workflows/linux-ci.yml/badge.svg)](https://github.com/lusipad/plcopen/actions/workflows/linux-ci.yml)
 [![C++17](https://img.shields.io/badge/C%2B%2B-17-blue.svg)](https://en.cppreference.com/w/cpp/17)
-[![Version](https://img.shields.io/badge/latest%20release-v0.8.0-orange.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/latest%20release-v0.9.0-orange.svg)](CHANGELOG.md)
 
-> **项目状态**：最新发布检查点为 `v0.8.0`；当前工作树正在推进 `v0.9.0 Part 1/2 Completion`。项目现在具备 CI、自动化测试、Linux 构建、CMake 包导出、单轴与 homing 的 jerk-aware 规划、基础 IEC 61131-3 功能块、单轴管理/运动功能块、最小可用的 gear/cam 多轴同步功能块，以及 `AxesGroup Foundation`；在 `v1.0` 前 API 仍可能变化。
+> **项目状态**：最新发布检查点为 `v0.9.0`。项目现在具备 CI、自动化测试、Linux 构建、CMake 包导出、单轴与 homing 的 jerk-aware 规划、基础 IEC 61131-3 功能块、单轴管理/运动功能块、最小可用的 gear/cam 多轴同步功能块，以及 `AxesGroup Foundation`；在 `v1.0` 前 API 仍可能变化。
 >
 > 详情见 [ROADMAP.md](ROADMAP.md)；长期方向见 [VISION.md](VISION.md)。
 
@@ -52,7 +52,7 @@ plcopen 想填补的空白是**"现代 C++ 的可嵌入 PLCopen 运动控制库"
 
 ## 当前状态
 
-### 已实现（截至当前 v0.9.0 工作树）
+### 已实现（截至 v0.9.0）
 
 | 能力 | 说明 |
 |------|------|
@@ -69,7 +69,7 @@ plcopen 想填补的空白是**"现代 C++ 的可嵌入 PLCopen 运动控制库"
 
 ### 当前能力亮点
 
-- 最新发布检查点是 `v0.8.0`；当前未发布工作树正在收口 `v0.9.0 Part 1/2 Completion`，详细口径见 [v0.9.0 Part 1/2 Completion Plan](doc/compliance/part1-part2-completion-plan.md) 和 [compliance matrix](doc/compliance/plcopen-motion-v2-function-block-matrix.md)。
+- 最新发布检查点是 `v0.9.0`；Part 1/2 completion 的详细口径见 [v0.9.0 Part 1/2 Completion Plan](doc/compliance/part1-part2-completion-plan.md) 和 [compliance matrix](doc/compliance/plcopen-motion-v2-function-block-matrix.md)。
 
 - 新增 `AxesGroup` runtime，支持成员管理、group 启停、状态读取、停组与组复位。
 - 新增 `MC_GroupReadActualPosition` / `MC_GroupReadCommandPosition`，按 0-based 成员槽位读取实际/指令位置；索引不是 axis id，移除成员后后续槽位会前移。

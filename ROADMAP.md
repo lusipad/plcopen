@@ -210,11 +210,11 @@
 
 ---
 
-## 当前工作集：v0.9.0（Part 1/2 Completion）
+## 已完成工作集：v0.9.0（Part 1/2 Completion）
 
 **预估窗口**：2026-Q2 → 2026-Q3
 
-**2026-05-02 更新**：下一阶段目标切换为收口 PLCopen Motion Control Part 1/2 的 `partial` 项。详细执行计划见 [v0.9.0 Part 1/2 Completion Plan](doc/compliance/part1-part2-completion-plan.md)。
+**2026-05-03 更新**：`v0.9.0` 已作为 Part 1/2 Completion 检查点收口。详细执行计划见 [v0.9.0 Part 1/2 Completion Plan](doc/compliance/part1-part2-completion-plan.md)。
 
 **当前基线**：
 
@@ -293,5 +293,5 @@
 
 ---
 
-*本文档最后更新：2026-05-01*
+*本文档最后更新：2026-05-03*
 *下次复盘：2026-07-01（确定下一里程碑范围）*

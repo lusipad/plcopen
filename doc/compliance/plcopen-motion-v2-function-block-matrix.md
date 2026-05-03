@@ -73,7 +73,7 @@ v0.9.0 gap types:
 | Item | Status | Evidence | Next action |
 |---|---|---|---|
 | Default test target coverage | no blocker | `src/CMakeLists.txt` includes `test_axes_group.cpp` in the default `PLCOPEN_TEST_SOURCES`; local `ctest --test-dir build --build-config Release --output-on-failure` passed 163/163 | Keep AxesGroup foundation tests in the default regression set |
-| Release metadata mismatch | fixed | root `CMakeLists.txt` now matches `.version` at `0.8.0` | Keep version surfaces synced before release |
+| Release metadata mismatch | fixed | root `CMakeLists.txt` now matches `.version` at `0.9.0` | Keep version surfaces synced before release |
 
 ## Administrative Single-Axis Function Blocks
 

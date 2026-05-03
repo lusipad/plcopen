@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-05-03
+
 ### Added
 
 - 新增 `MC_ReadBoolParameter`、`MC_WriteParameter`、`MC_WriteBoolParameter` 的当前参数子集实现。
@@ -44,7 +46,7 @@ All notable changes to this project will be documented in this file.
 - 安装导出头文件面补齐 axis、interpolation 与 misc 公共依赖，确保下游 `find_package(plcopen)` 后可直接 include 公开运动控制头。
 - 完成本地 `FetchContent` consumer 验证，确保下游可通过 `FetchContent_MakeAvailable(plcopen)` 消费 `plcopen::plcopen`。
 - 完成本地 `PLCOPEN_BUILD_DOCS=ON` 验证，确认 `docs` target 在缺少 Doxygen 的本机环境下能执行 fallback。
-- 校准 README/ROADMAP 的版本口径，区分最新发布检查点 `v0.8.0` 与当前未发布 `v0.9.0 Part 1/2 Completion` 工作树。
+- 校准 README/ROADMAP 的版本口径，将最新发布检查点推进到 `v0.9.0 Part 1/2 Completion`。
 
 ### Changed
 
