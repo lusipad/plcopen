@@ -4,6 +4,32 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Changed
+
+- `MC_Home` is now classified as implemented after completing indexed homing modes 1-4 and 9-14 alongside direct and switch-based modes.
+- `MC_MoveSuperimposed` and `MC_HaltSuperimposed` are now classified as implemented against the independent single-axis superimposed offset trajectory contract.
+- `MC_CombineAxes` is now classified as implemented after replacing group-membership convenience behavior with two-master add/sub setpoint combination, per-master ratios, command/actual source selection, `ContinuousUpdate`, and validation coverage.
+- `MC_SetOverride` is now classified as implemented after scaling newly planned homing and replanning active homing search/regression/final approach segments.
+- `MC_MoveContinuousAbsolute` and `MC_MoveContinuousRelative` are now classified as implemented after completing active-update, disabled-update, invalid-end-velocity, abort, and override coverage.
+- `MC_MoveAbsolute`, `MC_MoveRelative`, and `MC_MoveAdditive` are now classified as implemented for the single-axis MoveNode buffer contract, including aborting, buffered, low/high blending, blending aliases, low-speed fallback, and relative/additive endpoint preservation.
+- `MC_PositionProfile`, `MC_VelocityProfile`, and `MC_AccelerationProfile` are now classified as implemented after completing linked/timed segment execution, scale/offset handling, active update, override replanning, and invalid-reference coverage for the current public profile-reference model.
+- `MC_AbortTrigger` now rejects unsupported Servo trigger input channels before attempting to abort an armed touch probe.
+- `MC_TouchProbe` is now classified as implemented after adding optional Servo latched-position readback for `RecordedPosition` and window gating.
+- `MC_TouchProbe` now tracks multiple armed software trigger inputs independently instead of storing only one axis-level armed trigger.
+- `MC_SetOverride` now replans active non-continuous position moves instead of only affecting later moves and continuous-update commands.
+- `MC_SetOverride` override changes now replan active modeled continuous move/profile commands even when `ContinuousUpdate` is disabled.
+- `MC_ReadParameter`, `MC_ReadBoolParameter`, `MC_WriteParameter`, and `MC_WriteBoolParameter` are now classified as implemented against the explicit supported parameter registry; unsupported PLCopen/vendor parameters remain explicit `PARAMETER_NOT_SUPPORT` cases.
+- `MC_MoveVelocity` now supports the `Direction` input for positive/negative velocity sign selection, including active `ContinuousUpdate` direction changes.
+- `MC_MoveVelocity` is now classified as implemented after aligning signed `Velocity` and unsupported `SHORTESTWAY` direction semantics with PLCopen Part 1.
+- `MC_ReadAxisInfo` is now classified as implemented after adding Servo diagnostic readiness and warning hooks.
+- `MC_ReadDigitalInput`, `MC_ReadDigitalOutput`, and `MC_WriteDigitalOutput` are now classified as implemented against the named Servo extension-channel contract.
+- `MC_DigitalCamSwitch` is now classified as implemented for the scan-cycle Servo output contract.
+- `MC_CamTableSelect` is now classified as implemented for validated `MC_CAM_REF` selection.
+- `MC_CamOut` and `MC_GearOut` are now classified as implemented detach function blocks.
+- `MC_PhasingAbsolute` and `MC_PhasingRelative` are now classified as implemented phase-offset function blocks.
+- `MC_CamIn` and `MC_GearIn` are now classified as implemented single-master/single-slave synchronization function blocks.
+- `MC_TorqueControl` is now classified as implemented against the Servo torque setpoint contract.
+
 ## [0.9.0] - 2026-05-03
 
 ### Added
@@ -35,7 +61,7 @@ All notable changes to this project will be documented in this file.
 - 新增 `MC_CombineAxes` 的 AxesGroup 成员组合 partial 实现。
 - 新增 `MC_MoveVelocity` 的最小 `ContinuousUpdate` 支持，允许 active 命令在 `Execute` 保持为真时更新目标速度。
 - 新增 `MC_SetOverride` 对 active `MC_MoveVelocity`、`MC_MoveContinuousAbsolute`、`MC_MoveContinuousRelative`、`MC_PositionProfile`、`MC_VelocityProfile`、`MC_AccelerationProfile` 的 `ContinuousUpdate` 重规划支持，倍率变化可作用于当前连续速度/连续位置/profile 命令。
-- 补齐 `MC_SetOverride` 边界回归，确认 active 非连续位置运动保持原规划 profile。
+- 补齐 `MC_SetOverride` 边界回归，确认 active 非连续位置运动会按新的 override 重规划。
 - 补齐 `MC_TorqueControl` 非法输入后的 execute falling-edge 清错回归。
 - 新增 `MC_MoveContinuousAbsolute` / `MC_MoveContinuousRelative` 的最小 `ContinuousUpdate` 支持，允许 active 命令重规划连续位置目标。
 - 新增 `MC_PositionProfile` / `MC_VelocityProfile` / `MC_AccelerationProfile` 的单段 profile `ContinuousUpdate` 支持。

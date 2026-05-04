@@ -28,6 +28,7 @@
 #include "Servo.h"
 
 #include <cstring>
+#include <map>
 
 namespace plcopen
 {
@@ -67,9 +68,7 @@ namespace plcopen
         bool mEnableNegative = false;
 
         double mEncoderOverflowOffset = 0;
-        bool mTouchProbeArmed = false;
-        int mTouchProbeInput = -1;
-        bool mTouchProbeLastValue = false;
+        std::map<int, bool> mTouchProbeLastValues;
 
     public:
         void processPositionLoop(void);
@@ -653,6 +652,11 @@ namespace plcopen
         return mImpl_->mCmdAcc;
     }
 
+    double AxisBase::sampleTime(void)
+    {
+        return 1.0 / frequency();
+    }
+
     double AxisBase::positionOffset(void) const
     {
         return mImpl_->mEncoderOverflowOffset;
@@ -683,6 +687,26 @@ namespace plcopen
         return mImpl_->mIsHomed;
     }
 
+    bool AxisBase::servoCommunicationReady(void) const
+    {
+        return mImpl_->mServo && mImpl_->mServo->communicationReady();
+    }
+
+    bool AxisBase::servoReadyForPowerOn(void) const
+    {
+        return mImpl_->mServo && mImpl_->mServo->readyForPowerOn();
+    }
+
+    bool AxisBase::servoWarning(void) const
+    {
+        return mImpl_->mServo && mImpl_->mServo->warning();
+    }
+
+    bool AxisBase::servoReadLatchedPosition(int index, double &position)
+    {
+        return mImpl_->mServo->readLatchedPosition(index, position);
+    }
+
     bool AxisBase::servoReadVal(int index, double &value)
     {
         return mImpl_->mServo->readVal(index, value);
@@ -698,22 +722,21 @@ namespace plcopen
         if (triggerInput < 0)
             return MC_ErrorCode::PARAMETER_NOT_SUPPORT;
 
-        mImpl_->mTouchProbeArmed = true;
-        mImpl_->mTouchProbeInput = triggerInput;
-        mImpl_->mTouchProbeLastValue = initialValue;
+        mImpl_->mTouchProbeLastValues[triggerInput] = initialValue;
         return MC_ErrorCode::GOOD;
     }
 
     MC_ErrorCode AxisBase::updateTouchProbe(int triggerInput, bool currentValue, bool &triggered, bool captureEnabled)
     {
         triggered = false;
-        if (!mImpl_->mTouchProbeArmed || mImpl_->mTouchProbeInput != triggerInput)
+        auto it = mImpl_->mTouchProbeLastValues.find(triggerInput);
+        if (it == mImpl_->mTouchProbeLastValues.end())
             return MC_ErrorCode::GOOD;
 
-        triggered = captureEnabled && currentValue && !mImpl_->mTouchProbeLastValue;
-        mImpl_->mTouchProbeLastValue = currentValue;
+        triggered = captureEnabled && currentValue && !it->second;
+        it->second = currentValue;
         if (triggered)
-            mImpl_->mTouchProbeArmed = false;
+            mImpl_->mTouchProbeLastValues.erase(it);
 
         return MC_ErrorCode::GOOD;
     }
@@ -723,15 +746,13 @@ namespace plcopen
         if (triggerInput < 0)
             return MC_ErrorCode::PARAMETER_NOT_SUPPORT;
 
-        if (mImpl_->mTouchProbeArmed && mImpl_->mTouchProbeInput == triggerInput)
-            mImpl_->mTouchProbeArmed = false;
-
+        mImpl_->mTouchProbeLastValues.erase(triggerInput);
         return MC_ErrorCode::GOOD;
     }
 
     bool AxisBase::touchProbeArmed(int triggerInput) const
     {
-        return mImpl_->mTouchProbeArmed && mImpl_->mTouchProbeInput == triggerInput;
+        return mImpl_->mTouchProbeLastValues.find(triggerInput) != mImpl_->mTouchProbeLastValues.end();
     }
 
     double AxisBase::userPosToSys(double baseSysPos, double userPos, MC_Direction dir) const

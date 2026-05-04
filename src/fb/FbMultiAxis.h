@@ -133,15 +133,27 @@ namespace plcopen
         MC_ErrorCode onExecTriggered(bool &isDone);
     };
 
-    class FbCombineAxes : public FbComExecuteType
+    class FbCombineAxes : public FbSeqExecuteType
     {
     public:
-        FB_INPUT AXES_GROUP_REF mAxesGroup = nullptr;
-        FB_INPUT AXIS_REF mAxis1 = nullptr;
-        FB_INPUT AXIS_REF mAxis2 = nullptr;
+        FB_INPUT AXIS_REF mMaster1 = nullptr;
+        FB_INPUT AXIS_REF mMaster2 = nullptr;
+        FB_INPUT AXIS_REF mSlave = nullptr;
+        FB_INPUT BOOL mContinuousUpdate = false;
+        FB_INPUT MC_COMBINE_MODE mCombineMode = MC_CombineMode::mcAddAxes;
+        FB_INPUT LREAL mGearRatioNumeratorM1 = 1.0;
+        FB_INPUT LREAL mGearRatioDenominatorM1 = 1.0;
+        FB_INPUT LREAL mGearRatioNumeratorM2 = 1.0;
+        FB_INPUT LREAL mGearRatioDenominatorM2 = 1.0;
+        FB_INPUT MC_SOURCE mMasterValueSourceM1 = MC_Source::SETVALUE;
+        FB_INPUT MC_SOURCE mMasterValueSourceM2 = MC_Source::SETVALUE;
+        FB_INPUT MC_BUFFER_MODE mBufferMode = MC_BufferMode::ABORTING;
+
+        FB_OUTPUT BOOL &mInSync = mDone;
 
     public:
-        MC_ErrorCode onExecTriggered(bool &isDone);
+        MC_ErrorCode onExecPosedge(void);
+        void onOperationDone(int32_t customId);
     };
 
     class FbGearIn : public FbExecAxisBufferContSyncType
@@ -163,6 +175,10 @@ namespace plcopen
         FB_INPUT LREAL mMasterSyncPosition = 0.0;
         FB_INPUT LREAL mSlaveSyncPosition = 0.0;
         FB_INPUT LREAL mMasterStartDistance = 0.0;
+        FB_INPUT LREAL mVelocity = 0.0;
+        FB_INPUT LREAL mAcceleration = 0.0;
+        FB_INPUT LREAL mDeceleration = 0.0;
+        FB_INPUT LREAL mJerk = 0.0;
         FB_INPUT MC_SOURCE mMasterValueSource = MC_Source::SETVALUE;
 
     public:

@@ -219,8 +219,9 @@
 **当前基线**：
 
 - Part 1/2 标准 FB：45 个 tracked rows。
-- 当前 FB 状态：11 个 `implemented`，34 个 `partial`，0 个 `missing`；所有 `partial` 均已有 v0.9.0 gap type 和明确边界/后续条件。
-- 跨切语义：Execute/Done/Busy/Error、Enable/Valid/Error、当前公开错误码覆盖已归为 implemented；BufferMode 与 ContinuousUpdate 保持 documented partial/scope-boundary。
+- 当前 FB 状态：45 个 `implemented`，0 个 `partial`，0 个 `missing`；剩余限制均转入明确的 runtime boundary / out-of-scope 说明。
+- Profile FB 已补链式多段、timed segment、scale/offset 归一化和 active update 回归；外部 profile-table import/parser 仍是未来 runtime goal。
+- 跨切语义：Execute/Done/Busy/Error、Enable/Valid/Error、当前公开错误码覆盖已归为 implemented；BufferMode 与未建模的 ContinuousUpdate 变体保持 documented scope-boundary。
 
 **候选目标**（按优先级）：
 
@@ -233,7 +234,7 @@
 | 多轴同步 FB 收口 | Cam/Gear/Phasing/CombineAxes 需要在 Part 1/2 与 Part 4 边界上写清楚 | 不把 coordinated path planning 偷渡进来 | P1（已完成/边界明确） |
 | 文档与发布门禁 | 对外 claim 必须可审计 | 全量 build/test/consumer/docs smoke 通过 | P1（已完成） |
 
-**原则**：`v0.9.0` 的目标是“Part 1/2 partial 清零或显式重分类”，不是“扩展到完整 Part 4 coordinated motion”。硬件 latch、驱动诊断、闭环 torque 等无法由当前 runtime 验证的能力，要新增窄抽象或诚实列为范围外，不能用模拟假设冒充已实现。
+**原则**：`v0.9.0` 的目标是“Part 1/2 partial 清零或显式重分类”，不是“扩展到完整 Part 4 coordinated motion”。硬件 latch 等无法由当前 runtime 验证的能力，要新增窄抽象或诚实列为范围外，不能用模拟假设冒充已实现。
 
 ---
 

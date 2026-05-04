@@ -96,8 +96,8 @@ namespace plcopen
     /**
      * @brief Halt the current single-axis superimposed motion approximation.
      *
-     * The current implementation has no independent superimposed motion layer,
-     * so this block follows the same halt path as `MC_Halt`.
+     * This stops only the independent superimposed offset trajectory and
+     * leaves the base motion command active.
      */
     class FbHaltSuperimposed : public FbExecAxisBufferType
     {
@@ -161,9 +161,8 @@ namespace plcopen
     /**
      * @brief Superimposed move block.
      *
-     * The current single-axis implementation maps this block to the additive
-     * move path and therefore queues an additive offset on the existing motion
-     * stack instead of synthesizing a true parallel superposition layer.
+     * The current single-axis implementation runs an independent offset
+     * trajectory and layers it over the base motion command.
      */
     class FbMoveSuperimposed : public FbExecAxisBufferType
     {
@@ -191,6 +190,7 @@ namespace plcopen
         FB_INPUT LREAL mAcceleration = 0;
         FB_INPUT LREAL mDeceleration = 0;
         FB_INPUT LREAL mJerk = 0;
+        FB_INPUT MC_DIRECTION mDirection = MC_Direction::CURRENT;
 
         FB_OUTPUT BOOL &mInVelocity = mDone;
 
@@ -204,6 +204,7 @@ namespace plcopen
         LREAL mLastAcceleration = 0;
         LREAL mLastDeceleration = 0;
         LREAL mLastJerk = 0;
+        MC_DIRECTION mLastDirection = MC_Direction::CURRENT;
         LREAL mLastOverride = 100;
     };
 
@@ -279,6 +280,7 @@ namespace plcopen
         LREAL mAcceleration = 0;
         LREAL mDeceleration = 0;
         LREAL mJerk = 0;
+        LREAL mDuration = 0;
         MC_ShiftingMode mShiftingMode = MC_ShiftingMode::ABSOLUTE;
         MC_Direction mDirection = MC_Direction::CURRENT;
         MC_PositionProfileData *mNext = nullptr;
@@ -287,12 +289,15 @@ namespace plcopen
     typedef MC_PositionProfileData *MC_POSITION_PROFILE_REF;
 
     /**
-     * @brief Execute a minimal single-segment position profile.
+     * @brief Execute a minimal linked position profile reference.
      */
     class FbPositionProfile : public FbExecAxisBufferType
     {
     public:
         FB_INPUT MC_POSITION_PROFILE_REF mPositionProfile = nullptr;
+        FB_INPUT LREAL mTimeScale = 1.0;
+        FB_INPUT LREAL mPositionScale = 1.0;
+        FB_INPUT LREAL mPositionOffset = 0.0;
         FB_INPUT BOOL mContinuousUpdate = false;
 
     public:
@@ -302,9 +307,19 @@ namespace plcopen
         void onOperationAborted(int32_t customId);
 
     private:
+        void resetTimedState(void);
+        MC_ErrorCode startTimedSegment(MC_POSITION_PROFILE_REF profile);
+        void processTimedSegment(void);
+
+    private:
         bool mContinuousUpdateSnapshotValid = false;
         MC_POSITION_PROFILE_REF mActivePositionProfile = nullptr;
         LREAL mCommandStartPosition = 0;
+        LREAL mTimedSegmentStartPosition = 0;
+        LREAL mTimedSegmentTargetPosition = 0;
+        LREAL mTimedSegmentElapsed = 0;
+        LREAL mTimedSegmentDuration = 0;
+        bool mTimedSegmentDonePending = false;
         LREAL mLastPosition = 0;
         LREAL mLastVelocity = 0;
         LREAL mLastAcceleration = 0;
@@ -327,18 +342,22 @@ namespace plcopen
         LREAL mAcceleration = 0;
         LREAL mDeceleration = 0;
         LREAL mJerk = 0;
+        LREAL mDuration = 0;
         MC_VelocityProfileData *mNext = nullptr;
     };
 
     typedef MC_VelocityProfileData *MC_VELOCITY_PROFILE_REF;
 
     /**
-     * @brief Execute a minimal single-segment velocity profile.
+     * @brief Execute a minimal linked velocity profile reference.
      */
     class FbVelocityProfile : public FbExecAxisBufferContType
     {
     public:
         FB_INPUT MC_VELOCITY_PROFILE_REF mVelocityProfile = nullptr;
+        FB_INPUT LREAL mTimeScale = 1.0;
+        FB_INPUT LREAL mVelocityScale = 1.0;
+        FB_INPUT LREAL mVelocityOffset = 0.0;
 
     public:
         void call(void);
@@ -347,8 +366,15 @@ namespace plcopen
         void onOperationAborted(int32_t customId);
 
     private:
+        void resetTimedState(void);
+        MC_ErrorCode startTimedSegment(MC_VELOCITY_PROFILE_REF profile);
+        void processTimedSegment(void);
+
+    private:
         bool mContinuousUpdateSnapshotValid = false;
         MC_VELOCITY_PROFILE_REF mActiveVelocityProfile = nullptr;
+        LREAL mTimedSegmentElapsed = 0;
+        LREAL mTimedSegmentDuration = 0;
         LREAL mLastVelocity = 0;
         LREAL mLastAcceleration = 0;
         LREAL mLastDeceleration = 0;
@@ -368,18 +394,22 @@ namespace plcopen
         LREAL mAcceleration = 0;
         LREAL mDeceleration = 0;
         LREAL mJerk = 0;
+        LREAL mDuration = 0;
         MC_AccelerationProfileData *mNext = nullptr;
     };
 
     typedef MC_AccelerationProfileData *MC_ACCELERATION_PROFILE_REF;
 
     /**
-     * @brief Execute a minimal single-segment acceleration profile.
+     * @brief Execute a minimal linked acceleration profile reference.
      */
     class FbAccelerationProfile : public FbExecAxisBufferContType
     {
     public:
         FB_INPUT MC_ACCELERATION_PROFILE_REF mAccelerationProfile = nullptr;
+        FB_INPUT LREAL mTimeScale = 1.0;
+        FB_INPUT LREAL mAccelerationScale = 1.0;
+        FB_INPUT LREAL mAccelerationOffset = 0.0;
 
     public:
         void call(void);
@@ -388,8 +418,15 @@ namespace plcopen
         void onOperationAborted(int32_t customId);
 
     private:
+        void resetTimedState(void);
+        MC_ErrorCode startTimedSegment(MC_ACCELERATION_PROFILE_REF profile);
+        void processTimedSegment(void);
+
+    private:
         bool mContinuousUpdateSnapshotValid = false;
         MC_ACCELERATION_PROFILE_REF mActiveAccelerationProfile = nullptr;
+        LREAL mTimedSegmentElapsed = 0;
+        LREAL mTimedSegmentDuration = 0;
         LREAL mLastVelocity = 0;
         LREAL mLastAcceleration = 0;
         LREAL mLastDeceleration = 0;

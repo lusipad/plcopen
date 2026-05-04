@@ -32,6 +32,10 @@ namespace plcopen
             double masterSyncPosition,
             double slaveSyncPosition,
             double masterStartDistance = 0.0,
+            double velocity = 0.0,
+            double acceleration = 0.0,
+            double deceleration = 0.0,
+            double jerk = 0.0,
             MC_Source masterValueSource = MC_Source::SETVALUE,
             MC_BufferMode bufferMode = MC_BufferMode::ABORTING,
             int32_t customId = 0);
@@ -67,6 +71,20 @@ namespace plcopen
 
         MC_ErrorCode addCamOut(
             FunctionBlock *fb,
+            int32_t customId = 0);
+
+        MC_ErrorCode addCombineAxes(
+            FunctionBlock *fb,
+            Axis *master1,
+            Axis *master2,
+            double gearRatioNumeratorM1,
+            double gearRatioDenominatorM1,
+            double gearRatioNumeratorM2,
+            double gearRatioDenominatorM2,
+            MC_CombineMode combineMode,
+            MC_Source masterValueSourceM1 = MC_Source::SETVALUE,
+            MC_Source masterValueSourceM2 = MC_Source::SETVALUE,
+            MC_BufferMode bufferMode = MC_BufferMode::ABORTING,
             int32_t customId = 0);
 
     private:

@@ -1,4 +1,4 @@
-﻿/*
+/*
  * AxisHoming.cpp
  *
  * Copyright 2020 (C) SYMG(Shanghai) Intelligence System Co.,Ltd
@@ -23,6 +23,7 @@
  */
 
 #include "AxisHoming.h"
+#include "AxisMove.h"
 #include "Event.h"
 #include "FunctionBlock.h"
 #include "MathUtils.h"
@@ -30,6 +31,28 @@
 
 namespace plcopen
 {
+namespace
+{
+    bool homingModeUsesIndex(MC_HomingMode mode)
+    {
+        switch (mode)
+        {
+        case MC_HomingMode::MODE1:
+        case MC_HomingMode::MODE2:
+        case MC_HomingMode::MODE3:
+        case MC_HomingMode::MODE4:
+        case MC_HomingMode::MODE9:
+        case MC_HomingMode::MODE10:
+        case MC_HomingMode::MODE11:
+        case MC_HomingMode::MODE12:
+        case MC_HomingMode::MODE13:
+        case MC_HomingMode::MODE14:
+            return true;
+        default:
+            return false;
+        }
+    }
+}
 
     enum class MC_HomingStep
     {
@@ -37,12 +60,30 @@ namespace plcopen
         SEARCHSIG = 1,
         REGRESSION_SIG = 2,
         TOSIG = 3,
+        SEARCH_INDEX = 4,
     };
 
     struct AxisHomingInfoEx : public AxisHomingInfo
     {
         bool mHomingSigVal = false; // 回零信号比对值
+        bool mStopOnIndex = false;
+        bool mIndexSearchAfterSwitch = false;
     };
+
+    constexpr double kHomingOverrideEpsilon = 1e-9;
+
+    double homingOverrideFactor(AxisHoming *axis)
+    {
+        AxisMove *axisMove = dynamic_cast<AxisMove *>(axis);
+        return axisMove ? axisMove->override() * 0.01 : 1.0;
+    }
+
+    MC_ErrorCode setHomingPosition(AxisHoming *axis, double position, double velocity, double acceleration)
+    {
+        AxisMove *axisMove = dynamic_cast<AxisMove *>(axis);
+        return axisMove ? axisMove->setPosition(position, velocity, acceleration)
+                        : axis->setPosition(position, velocity, acceleration);
+    }
 
     class AxisHoming::AxisHomingImpl
     {
@@ -57,17 +98,118 @@ namespace plcopen
         double mPos = 0;
         double mFinalPos = 0;
         MC_HomingStep mHomingStep = MC_HomingStep::INIT;
+        double mLastOverrideFactor = 1.0;
+        bool mOverrideSnapshotValid = false;
 
     protected:
         virtual MC_ErrorCode onExecuting(ExeclQueue *queue, ExeclNodeExecStat &stat) override;
         virtual void onPositionOffset(ExeclQueue *queue, double offset) override;
+
+    private:
+        bool overrideChanged(double overrideFactor) const;
+        void planSearch(AxisHoming *axis, AxisHomingInfoEx *homingInfo, ProfilePlanner *planner,
+                        double overrideFactor);
+        void planRegression(AxisHoming *axis, AxisHomingInfoEx *homingInfo, ProfilePlanner *planner,
+                            double overrideFactor);
+        void planToSignal(AxisHoming *axis, AxisHomingInfoEx *homingInfo, ProfilePlanner *planner,
+                          double overrideFactor);
+        void planIndexSearch(AxisHoming *axis, AxisHomingInfoEx *homingInfo, ProfilePlanner *planner,
+                             double overrideFactor);
+        bool signalActive(uint8_t *signal, uint8_t bitOffset, bool activeValue) const;
     };
+
+    bool HomingNode::overrideChanged(double overrideFactor) const
+    {
+        return !mOverrideSnapshotValid || fabs(overrideFactor - mLastOverrideFactor) > kHomingOverrideEpsilon;
+    }
+
+    void HomingNode::planSearch(AxisHoming *axis, AxisHomingInfoEx *homingInfo, ProfilePlanner *planner,
+                                double overrideFactor)
+    {
+        const double velocity = homingInfo->mHomingVelSearch * overrideFactor;
+        const double acceleration = homingInfo->mHomingAcc * overrideFactor;
+        const double jerk = homingInfo->mHomingJerk * overrideFactor;
+        const double endPos = ProfilePlanner::calculateDist(
+            axis->cmdVelocity(),
+            velocity,
+            acceleration,
+            acceleration,
+            jerk);
+
+        planner->plan(axis->cmdPosition(), axis->cmdPosition() + endPos, axis->cmdVelocity(),
+                      velocity, velocity, acceleration, acceleration, jerk);
+        mLastOverrideFactor = overrideFactor;
+        mOverrideSnapshotValid = true;
+    }
+
+    void HomingNode::planRegression(AxisHoming *axis, AxisHomingInfoEx *homingInfo, ProfilePlanner *planner,
+                                    double overrideFactor)
+    {
+        const double velocity = homingInfo->mHomingVelRegression * overrideFactor;
+        const double acceleration = homingInfo->mHomingAcc * overrideFactor;
+        const double jerk = homingInfo->mHomingJerk * overrideFactor;
+        const double endPos = ProfilePlanner::calculateDist(
+            axis->cmdVelocity(),
+            velocity,
+            acceleration,
+            acceleration,
+            jerk);
+
+        planner->plan(axis->cmdPosition(), axis->cmdPosition() + endPos, axis->cmdVelocity(),
+                      velocity, velocity, acceleration, acceleration, jerk);
+        mLastOverrideFactor = overrideFactor;
+        mOverrideSnapshotValid = true;
+    }
+
+    void HomingNode::planToSignal(AxisHoming *axis, AxisHomingInfoEx *homingInfo, ProfilePlanner *planner,
+                                  double overrideFactor)
+    {
+        const double velocity = homingInfo->mHomingVelRegression * overrideFactor;
+        const double acceleration = homingInfo->mHomingAcc * overrideFactor;
+        const double jerk = homingInfo->mHomingJerk * overrideFactor;
+        const double endPos = ProfilePlanner::calculateDist(
+            axis->cmdVelocity(),
+            __EPSILON,
+            acceleration,
+            acceleration,
+            jerk);
+
+        planner->plan(axis->cmdPosition(), axis->cmdPosition() + endPos, axis->cmdVelocity(),
+                      velocity, 0.0, acceleration, acceleration, jerk);
+        mLastOverrideFactor = overrideFactor;
+        mOverrideSnapshotValid = true;
+    }
+
+    void HomingNode::planIndexSearch(AxisHoming *axis, AxisHomingInfoEx *homingInfo, ProfilePlanner *planner,
+                                     double overrideFactor)
+    {
+        const double velocity = homingInfo->mHomingVelRegression * overrideFactor;
+        const double acceleration = homingInfo->mHomingAcc * overrideFactor;
+        const double jerk = homingInfo->mHomingJerk * overrideFactor;
+        const double endPos = ProfilePlanner::calculateDist(
+            axis->cmdVelocity(),
+            velocity,
+            acceleration,
+            acceleration,
+            jerk);
+
+        planner->plan(axis->cmdPosition(), axis->cmdPosition() + endPos, axis->cmdVelocity(),
+                      velocity, velocity, acceleration, acceleration, jerk);
+        mLastOverrideFactor = overrideFactor;
+        mOverrideSnapshotValid = true;
+    }
+
+    bool HomingNode::signalActive(uint8_t *signal, uint8_t bitOffset, bool activeValue) const
+    {
+        return signal && ((((*signal) >> bitOffset) & 0x1) == activeValue);
+    }
 
     MC_ErrorCode HomingNode::onExecuting(ExeclQueue *queue, ExeclNodeExecStat &stat)
     {
         AxisHoming *axis = dynamic_cast<AxisHoming *>(queue);
         ProfilePlanner *planner = &axis->mImpl_->mPlanner;
         AxisHomingInfoEx *homingInfo = &axis->mImpl_->mHomingInfo;
+        const double overrideFactor = homingOverrideFactor(axis);
         MC_ErrorCode err;
 
         switch (mHomingStep)
@@ -97,61 +239,66 @@ namespace plcopen
                 if (!homingInfo->mHomingAcc)
                     return MC_ErrorCode::HOMING_ACC_ILLEGAL;
 
-                double endPos = ProfilePlanner::calculateDist(axis->cmdVelocity(), homingInfo->mHomingVelSearch,
-                                                              homingInfo->mHomingAcc, homingInfo->mHomingAcc,
-                                                              homingInfo->mHomingJerk);
-
-                planner->plan(axis->cmdPosition(), axis->cmdPosition() + endPos, axis->cmdVelocity(),
-                              homingInfo->mHomingVelSearch, homingInfo->mHomingVelSearch, homingInfo->mHomingAcc,
-                              homingInfo->mHomingAcc, homingInfo->mHomingJerk);
-
+                planSearch(axis, homingInfo, planner, overrideFactor);
                 mHomingStep = MC_HomingStep::SEARCHSIG;
             }
             break;
 
         case MC_HomingStep::SEARCHSIG:
-            if ((((*homingInfo->mHomingSig) >> homingInfo->mHomingSigBitOffset) & 0x1) == homingInfo->mHomingSigVal)
+            if (signalActive(homingInfo->mHomingSig, homingInfo->mHomingSigBitOffset, homingInfo->mHomingSigVal))
             {
+                if (homingInfo->mStopOnIndex && !homingInfo->mIndexSearchAfterSwitch)
+                {
+                    planIndexSearch(axis, homingInfo, planner, overrideFactor);
+                    mHomingStep = MC_HomingStep::SEARCH_INDEX;
+                    axis->printLog(MC_LogLevel::INFO, "homing searching index, vel %lf\n",
+                                   homingInfo->mHomingVelRegression);
+                    break;
+                }
 
-                double endPos = ProfilePlanner::calculateDist(axis->cmdVelocity(), homingInfo->mHomingVelRegression,
-                                                              homingInfo->mHomingAcc, homingInfo->mHomingAcc,
-                                                              homingInfo->mHomingJerk);
-
-                planner->plan(axis->cmdPosition(), axis->cmdPosition() + endPos, axis->cmdVelocity(),
-                              homingInfo->mHomingVelRegression, homingInfo->mHomingVelRegression, homingInfo->mHomingAcc,
-                              homingInfo->mHomingAcc, homingInfo->mHomingJerk);
-
+                planRegression(axis, homingInfo, planner, overrideFactor);
                 mHomingStep = MC_HomingStep::REGRESSION_SIG;
 
                 axis->printLog(MC_LogLevel::INFO, "homing regressing, vel %lf\n", homingInfo->mHomingVelRegression);
+            }
+            else if (overrideChanged(overrideFactor))
+            {
+                planSearch(axis, homingInfo, planner, overrideFactor);
             }
 
             break;
 
         case MC_HomingStep::REGRESSION_SIG:
-            if ((((*homingInfo->mHomingSig) >> homingInfo->mHomingSigBitOffset) & 0x1) != homingInfo->mHomingSigVal)
+            if (!signalActive(homingInfo->mHomingSig, homingInfo->mHomingSigBitOffset, homingInfo->mHomingSigVal))
             {
             HOMINGSTEP_TOSIG:
+                if (homingInfo->mStopOnIndex)
+                {
+                    planIndexSearch(axis, homingInfo, planner, overrideFactor);
+                    mHomingStep = MC_HomingStep::SEARCH_INDEX;
+                    break;
+                }
+
                 mFinalPos = axis->actPosition();
 
-                planner->plan(axis->cmdPosition(),
-                              axis->cmdPosition() + ProfilePlanner::calculateDist(axis->cmdVelocity(), __EPSILON,
-                                                                                  homingInfo->mHomingAcc,
-                                                                                  homingInfo->mHomingAcc,
-                                                                                  homingInfo->mHomingJerk),
-                              axis->cmdVelocity(), homingInfo->mHomingVelRegression, 0.0, homingInfo->mHomingAcc,
-                              homingInfo->mHomingAcc, homingInfo->mHomingJerk);
-
+                planToSignal(axis, homingInfo, planner, overrideFactor);
                 mHomingStep = MC_HomingStep::TOSIG;
+            }
+            else if (overrideChanged(overrideFactor))
+            {
+                planRegression(axis, homingInfo, planner, overrideFactor);
             }
 
             break;
 
         case MC_HomingStep::TOSIG:
+            if (overrideChanged(overrideFactor))
+                planToSignal(axis, homingInfo, planner, overrideFactor);
+
             if (planner->execute())
                 stat = ExeclNodeExecStat::DONE;
 
-            err = axis->setPosition(planner->getPosition(), planner->getVelocity(), planner->getAcceleration());
+            err = setHomingPosition(axis, planner->getPosition(), planner->getVelocity(), planner->getAcceleration());
 
             if (stat == ExeclNodeExecStat::DONE && err == MC_ErrorCode::GOOD)
             {
@@ -160,11 +307,43 @@ namespace plcopen
             }
 
             return err;
+
+        case MC_HomingStep::SEARCH_INDEX:
+        {
+            const bool plannerDone = planner->execute();
+
+            err = setHomingPosition(axis, planner->getPosition(), planner->getVelocity(), planner->getAcceleration());
+            if (err != MC_ErrorCode::GOOD)
+                return err;
+
+            if (signalActive(homingInfo->mHomingIndexSig, homingInfo->mHomingIndexSigBitOffset, true))
+            {
+                mFinalPos = planner->getPosition();
+                err = setHomingPosition(axis, mFinalPos, 0.0, 0.0);
+                if (err == MC_ErrorCode::GOOD)
+                {
+                    err = axis->setHomePosition(mPos - mFinalPos);
+                    if (err == MC_ErrorCode::GOOD)
+                    {
+                        err = setHomingPosition(axis, mFinalPos, 0.0, 0.0);
+                    }
+
+                    if (err == MC_ErrorCode::GOOD)
+                        stat = ExeclNodeExecStat::DONE;
+                }
+                return err;
+            }
+
+            if (plannerDone || overrideChanged(overrideFactor))
+                planIndexSearch(axis, homingInfo, planner, overrideFactor);
+
+            return MC_ErrorCode::GOOD;
+        }
         }
 
         planner->execute();
 
-        err = axis->setPosition(planner->getPosition(), planner->getVelocity(), planner->getAcceleration());
+        err = setHomingPosition(axis, planner->getPosition(), planner->getVelocity(), planner->getAcceleration());
 
         return err;
     }
@@ -201,22 +380,56 @@ namespace plcopen
 
             if (info.mHomingSigBitOffset < 0 || info.mHomingSigBitOffset > 7)
                 return MC_ErrorCode::HOMING_SIG_ILLEGAL;
+
+            if (homingModeUsesIndex(info.mHomingMode))
+            {
+                if (!info.mHomingIndexSig)
+                    return MC_ErrorCode::HOMING_SIG_ILLEGAL;
+
+                if (info.mHomingIndexSigBitOffset < 0 || info.mHomingIndexSigBitOffset > 7)
+                    return MC_ErrorCode::HOMING_SIG_ILLEGAL;
+            }
         }
 
         mImpl_->mHomingInfo.mHomingSig = info.mHomingSig;
         mImpl_->mHomingInfo.mHomingSigBitOffset = info.mHomingSigBitOffset;
+        mImpl_->mHomingInfo.mHomingIndexSig = info.mHomingIndexSig;
+        mImpl_->mHomingInfo.mHomingIndexSigBitOffset = info.mHomingIndexSigBitOffset;
         mImpl_->mHomingInfo.mHomingMode = info.mHomingMode;
         mImpl_->mHomingInfo.mHomingVelSearch = fabs(info.mHomingVelSearch);
         mImpl_->mHomingInfo.mHomingVelRegression = fabs(info.mHomingVelRegression);
         mImpl_->mHomingInfo.mHomingAcc = fabs(info.mHomingAcc);
         mImpl_->mHomingInfo.mHomingJerk = fabs(info.mHomingJerk);
         mImpl_->mHomingInfo.mHomingSigVal = false;
+        mImpl_->mHomingInfo.mStopOnIndex = false;
+        mImpl_->mHomingInfo.mIndexSearchAfterSwitch = true;
 
         switch (info.mHomingMode)
         {
         case MC_HomingMode::DIRECT:
             mImpl_->mHomingInfo.mHomingSig = nullptr;
+            mImpl_->mHomingInfo.mHomingIndexSig = nullptr;
             return MC_ErrorCode::GOOD;
+
+        case MC_HomingMode::MODE1:
+            mImpl_->mHomingInfo.mHomingSigVal = true;
+            [[fallthrough]];
+        case MC_HomingMode::MODE2:
+            mImpl_->mHomingInfo.mHomingVelSearch = -fabs(info.mHomingVelSearch);
+            mImpl_->mHomingInfo.mHomingVelRegression = fabs(info.mHomingVelRegression);
+            mImpl_->mHomingInfo.mStopOnIndex = true;
+            mImpl_->mHomingInfo.mIndexSearchAfterSwitch = true;
+            break;
+
+        case MC_HomingMode::MODE3:
+            mImpl_->mHomingInfo.mHomingSigVal = true;
+            [[fallthrough]];
+        case MC_HomingMode::MODE4:
+            mImpl_->mHomingInfo.mHomingVelSearch = fabs(info.mHomingVelSearch);
+            mImpl_->mHomingInfo.mHomingVelRegression = -fabs(info.mHomingVelRegression);
+            mImpl_->mHomingInfo.mStopOnIndex = true;
+            mImpl_->mHomingInfo.mIndexSearchAfterSwitch = true;
+            break;
 
         case MC_HomingMode::MODE5:
             mImpl_->mHomingInfo.mHomingSigVal = true;
@@ -234,6 +447,42 @@ namespace plcopen
             mImpl_->mHomingInfo.mHomingVelSearch = fabs(info.mHomingVelSearch);
 
             mImpl_->mHomingInfo.mHomingVelRegression = -fabs(info.mHomingVelRegression);
+            break;
+
+        case MC_HomingMode::MODE9:
+            mImpl_->mHomingInfo.mHomingSigVal = true;
+            [[fallthrough]];
+        case MC_HomingMode::MODE10:
+            mImpl_->mHomingInfo.mHomingVelSearch = -fabs(info.mHomingVelSearch);
+            mImpl_->mHomingInfo.mHomingVelRegression = -fabs(info.mHomingVelRegression);
+            mImpl_->mHomingInfo.mStopOnIndex = true;
+            mImpl_->mHomingInfo.mIndexSearchAfterSwitch = false;
+            break;
+
+        case MC_HomingMode::MODE11:
+            mImpl_->mHomingInfo.mHomingSigVal = true;
+            [[fallthrough]];
+        case MC_HomingMode::MODE12:
+            mImpl_->mHomingInfo.mHomingVelSearch = fabs(info.mHomingVelSearch);
+            mImpl_->mHomingInfo.mHomingVelRegression = fabs(info.mHomingVelRegression);
+            mImpl_->mHomingInfo.mStopOnIndex = true;
+            mImpl_->mHomingInfo.mIndexSearchAfterSwitch = false;
+            break;
+
+        case MC_HomingMode::MODE13:
+            mImpl_->mHomingInfo.mHomingSigVal = true;
+            mImpl_->mHomingInfo.mHomingVelSearch = -fabs(info.mHomingVelSearch);
+            mImpl_->mHomingInfo.mHomingVelRegression = fabs(info.mHomingVelRegression);
+            mImpl_->mHomingInfo.mStopOnIndex = true;
+            mImpl_->mHomingInfo.mIndexSearchAfterSwitch = true;
+            break;
+
+        case MC_HomingMode::MODE14:
+            mImpl_->mHomingInfo.mHomingSigVal = true;
+            mImpl_->mHomingInfo.mHomingVelSearch = fabs(info.mHomingVelSearch);
+            mImpl_->mHomingInfo.mHomingVelRegression = -fabs(info.mHomingVelRegression);
+            mImpl_->mHomingInfo.mStopOnIndex = true;
+            mImpl_->mHomingInfo.mIndexSearchAfterSwitch = true;
             break;
 
         default:

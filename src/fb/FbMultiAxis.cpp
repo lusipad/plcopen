@@ -205,33 +205,33 @@ MC_ErrorCode requireGroup(AXES_GROUP_REF group)
         return mAxesGroup->reset(isDone);
     }
 
-    MC_ErrorCode FbCombineAxes::onExecTriggered(bool &isDone)
+    MC_ErrorCode FbCombineAxes::onExecPosedge(void)
     {
-        MC_ErrorCode err = requireGroup(mAxesGroup);
-        if (err != MC_ErrorCode::GOOD)
-            return err;
+        if (!mMaster1 || !mMaster2 || !mSlave)
+            return MC_ErrorCode::AXIS_NO_TEXIST;
 
-        if (mAxis1 == mAxis2)
+        if (mMaster1 == mMaster2 || mMaster1 == mSlave || mMaster2 == mSlave)
             return MC_ErrorCode::AXIS_ALREADY_IN_GROUP;
 
-        err = mAxesGroup->canAddAxis(mAxis1);
-        if (err != MC_ErrorCode::GOOD && err != MC_ErrorCode::AXIS_ALREADY_IN_GROUP)
-            return err;
+        return mSlave->addCombineAxes(
+            this,
+            mMaster1,
+            mMaster2,
+            mGearRatioNumeratorM1,
+            mGearRatioDenominatorM1,
+            mGearRatioNumeratorM2,
+            mGearRatioDenominatorM2,
+            mCombineMode,
+            mMasterValueSourceM1,
+            mMasterValueSourceM2,
+            mBufferMode);
+    }
 
-        err = mAxesGroup->canAddAxis(mAxis2);
-        if (err != MC_ErrorCode::GOOD && err != MC_ErrorCode::AXIS_ALREADY_IN_GROUP)
-            return err;
-
-        err = mAxesGroup->addAxis(mAxis1);
-        if (err != MC_ErrorCode::GOOD && err != MC_ErrorCode::AXIS_ALREADY_IN_GROUP)
-            return err;
-
-        err = mAxesGroup->addAxis(mAxis2);
-        if (err != MC_ErrorCode::GOOD && err != MC_ErrorCode::AXIS_ALREADY_IN_GROUP)
-            return err;
-
-        isDone = true;
-        return MC_ErrorCode::GOOD;
+    void FbCombineAxes::onOperationDone(int32_t customId)
+    {
+        mCommandAborted = false;
+        mBusy = mActive = mDone = true;
+        clearError();
     }
 
     MC_ErrorCode FbGearIn::onMasterSlaveExecPosedge(void)
@@ -242,7 +242,8 @@ MC_ErrorCode requireGroup(AXES_GROUP_REF group)
     MC_ErrorCode FbGearInPos::onMasterSlaveExecPosedge(void)
     {
         return mSlave->addGearInPos(this, mMaster, mRatioNumerator, mRatioDenominator, mMasterSyncPosition,
-                                    mSlaveSyncPosition, mMasterStartDistance, mMasterValueSource, mBufferMode);
+                                    mSlaveSyncPosition, mMasterStartDistance, mVelocity, mAcceleration,
+                                    mDeceleration, mJerk, mMasterValueSource, mBufferMode);
     }
 
     MC_ErrorCode FbGearOut::onAxisExecPosedge(void)

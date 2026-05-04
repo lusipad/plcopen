@@ -76,12 +76,45 @@ class AxisMove::AxisMoveImpl
   public:
     AxisMove *mThis_;
     ProfilesPlanner mPlanner;
+    ProfilePlanner mSuperimposedPlanner;
     double mOverrideFactor = 1.0;
+    FunctionBlock *mSuperimposedFb = nullptr;
+    FunctionBlock *mHaltSuperimposedFb = nullptr;
+    int32_t mSuperimposedCustomId = 0;
+    int32_t mHaltSuperimposedCustomId = 0;
+    bool mSuperimposedActive = false;
+    bool mSuperimposedActiveNotified = false;
+    bool mSuperimposedDonePending = false;
+    bool mSuperimposedAbortPending = false;
+    bool mHaltSuperimposedActive = false;
+    bool mHaltSuperimposedActiveNotified = false;
+    bool mHaltSuperimposedDonePending = false;
+    bool mSuperimposedNeedPlan = false;
+    double mSuperimposedStartOffset = 0.0;
+    double mSuperimposedOffset = 0.0;
+    double mSuperimposedTargetOffset = 0.0;
+    double mSuperimposedStartVelocity = 0.0;
+    double mSuperimposedVelocity = 0.0;
+    double mSuperimposedAcceleration = 0.0;
+    double mSuperimposedVel = 0.0;
+    double mSuperimposedAcc = 0.0;
+    double mSuperimposedDec = 0.0;
+    double mSuperimposedJerk = 0.0;
+    double mBaseCmdPositionBeforeSuperimposed = 0.0;
+    double mBaseCmdVelocityBeforeSuperimposed = 0.0;
+    double mBaseCmdAccelerationBeforeSuperimposed = 0.0;
 
   public:
     MC_ErrorCode addMove(FunctionBlock *fb, double pos, double vel, double acc, double dec, double endVel, double jerk,
                          MC_ShiftingMode shiftingMode, MC_Direction dir, MC_BufferMode bufferMode,
                          MC_AxisStatus statusActive, MC_AxisStatus statusDone, bool isHold, int32_t customId);
+    MC_ErrorCode planSuperimposed(void);
+    void clearSuperimposed(void);
+    void abortSuperimposed(void);
+    void completeSuperimposed(void);
+    void completeHaltSuperimposed(void);
+    void processSuperimposed(void);
+    void applySuperimposed(void);
 };
 
 MC_ErrorCode MoveNode::onExecuting(ExeclQueue *queue, ExeclNodeExecStat &stat)
@@ -247,6 +280,201 @@ MC_ErrorCode AxisMove::AxisMoveImpl::addMove(FunctionBlock *fb, double pos, doub
         !queuedBufferMode, fb, statusActive, statusDone, customId, bufferMode);
 
     return err;
+}
+
+MC_ErrorCode AxisMove::AxisMoveImpl::planSuperimposed(void)
+{
+    const double overrideFactor = mOverrideFactor;
+    mSuperimposedVel *= overrideFactor;
+    mSuperimposedAcc *= overrideFactor;
+    mSuperimposedDec *= overrideFactor;
+    mSuperimposedJerk *= overrideFactor;
+
+    if (mSuperimposedVel <= 0.0 || !std::isfinite(mSuperimposedVel))
+        return MC_ErrorCode::VEL_ILLEGAL;
+
+    if (mSuperimposedAcc <= 0.0 || !std::isfinite(mSuperimposedAcc) ||
+        mSuperimposedDec <= 0.0 || !std::isfinite(mSuperimposedDec))
+        return MC_ErrorCode::ACC_ILLEGAL;
+
+    if (mSuperimposedJerk < 0.0 || !std::isfinite(mSuperimposedJerk))
+        return MC_ErrorCode::CFG_JERK_LIMIT_ILLEGAL;
+
+    mSuperimposedPlanner.setFrequency(static_cast<uint32_t>(mThis_->frequency()));
+    const bool planned = mSuperimposedPlanner.plan(
+        mSuperimposedStartOffset, mSuperimposedTargetOffset, mSuperimposedStartVelocity,
+        mSuperimposedVel, 0.0, mSuperimposedAcc, mSuperimposedDec, mSuperimposedJerk);
+    if (!planned)
+    {
+        mSuperimposedOffset = mSuperimposedTargetOffset;
+        mSuperimposedVelocity = 0.0;
+        mSuperimposedAcceleration = 0.0;
+        mSuperimposedNeedPlan = false;
+        return MC_ErrorCode::GOOD;
+    }
+
+    mSuperimposedNeedPlan = false;
+    return MC_ErrorCode::GOOD;
+}
+
+void AxisMove::AxisMoveImpl::clearSuperimposed(void)
+{
+    mSuperimposedFb = nullptr;
+    mSuperimposedCustomId = 0;
+    mSuperimposedActive = false;
+    mSuperimposedActiveNotified = false;
+    mSuperimposedDonePending = false;
+    mSuperimposedAbortPending = false;
+    mSuperimposedNeedPlan = false;
+    mSuperimposedStartOffset = 0.0;
+    mSuperimposedOffset = 0.0;
+    mSuperimposedTargetOffset = 0.0;
+    mSuperimposedStartVelocity = 0.0;
+    mSuperimposedVelocity = 0.0;
+    mSuperimposedAcceleration = 0.0;
+    mSuperimposedVel = 0.0;
+    mSuperimposedAcc = 0.0;
+    mSuperimposedDec = 0.0;
+    mSuperimposedJerk = 0.0;
+}
+
+void AxisMove::AxisMoveImpl::abortSuperimposed(void)
+{
+    if (!mSuperimposedFb)
+    {
+        clearSuperimposed();
+        return;
+    }
+
+    if (mSuperimposedActive && mSuperimposedActiveNotified)
+    {
+        mSuperimposedFb->onOperationAborted(mSuperimposedCustomId);
+    }
+    else if (mSuperimposedActive)
+    {
+        mSuperimposedAbortPending = true;
+    }
+
+    mSuperimposedFb = nullptr;
+    mSuperimposedCustomId = 0;
+    mSuperimposedActive = false;
+    mSuperimposedActiveNotified = false;
+    mSuperimposedDonePending = false;
+    mSuperimposedNeedPlan = false;
+}
+
+void AxisMove::AxisMoveImpl::completeSuperimposed(void)
+{
+    if (!mSuperimposedFb)
+        return;
+
+    if (mSuperimposedActive && mSuperimposedActiveNotified)
+    {
+        mSuperimposedFb->onOperationDone(mSuperimposedCustomId);
+    }
+    else if (mSuperimposedActive)
+    {
+        mSuperimposedDonePending = true;
+    }
+
+    mSuperimposedFb = nullptr;
+    mSuperimposedCustomId = 0;
+    mSuperimposedActive = false;
+    mSuperimposedActiveNotified = false;
+}
+
+void AxisMove::AxisMoveImpl::completeHaltSuperimposed(void)
+{
+    if (mHaltSuperimposedFb)
+        mHaltSuperimposedFb->onOperationDone(mHaltSuperimposedCustomId);
+
+    mHaltSuperimposedFb = nullptr;
+    mHaltSuperimposedCustomId = 0;
+    mHaltSuperimposedActive = false;
+    mHaltSuperimposedActiveNotified = false;
+    mHaltSuperimposedDonePending = false;
+}
+
+void AxisMove::AxisMoveImpl::processSuperimposed(void)
+{
+    if (!mSuperimposedFb && !mHaltSuperimposedActive)
+        return;
+
+    if (mSuperimposedFb && mSuperimposedActive && !mSuperimposedActiveNotified)
+    {
+        mSuperimposedFb->onOperationActive(mSuperimposedCustomId);
+        mSuperimposedActiveNotified = true;
+    }
+
+    if (mHaltSuperimposedFb && mHaltSuperimposedActive && !mHaltSuperimposedActiveNotified)
+    {
+        mHaltSuperimposedFb->onOperationActive(mHaltSuperimposedCustomId);
+        mHaltSuperimposedActiveNotified = true;
+    }
+
+    if (mSuperimposedNeedPlan)
+    {
+        MC_ErrorCode err = planSuperimposed();
+        if (err != MC_ErrorCode::GOOD)
+        {
+            if (mSuperimposedFb)
+                mSuperimposedFb->onOperationError(err, mSuperimposedCustomId);
+            clearSuperimposed();
+            if (mHaltSuperimposedActive)
+                completeHaltSuperimposed();
+            return;
+        }
+    }
+
+    if (mSuperimposedPlanner.execute())
+    {
+        mSuperimposedOffset = mSuperimposedTargetOffset;
+        mSuperimposedVelocity = 0.0;
+        mSuperimposedAcceleration = 0.0;
+        if (mHaltSuperimposedActive)
+        {
+            completeHaltSuperimposed();
+        }
+        else
+        {
+            completeSuperimposed();
+        }
+    }
+    else
+    {
+        mSuperimposedOffset = mSuperimposedPlanner.getPosition();
+        mSuperimposedVelocity = mSuperimposedPlanner.getVelocity();
+        mSuperimposedAcceleration = mSuperimposedPlanner.getAcceleration();
+    }
+}
+
+void AxisMove::AxisMoveImpl::applySuperimposed(void)
+{
+    if (!mSuperimposedActive && !mSuperimposedDonePending && !mSuperimposedAbortPending &&
+        std::fabs(mSuperimposedOffset) <= __EPSILON)
+    {
+        mBaseCmdPositionBeforeSuperimposed = mThis_->AxisBase::cmdPosition();
+        mBaseCmdVelocityBeforeSuperimposed = mThis_->AxisBase::cmdVelocity();
+        mBaseCmdAccelerationBeforeSuperimposed = mThis_->AxisBase::cmdAcceleration();
+        return;
+    }
+
+    if (mSuperimposedAbortPending && !mSuperimposedActive)
+    {
+        mSuperimposedAbortPending = false;
+        return;
+    }
+
+    if (mSuperimposedDonePending && !mSuperimposedActive)
+    {
+        mSuperimposedDonePending = false;
+        return;
+    }
+
+    (void)mThis_->setPosition(
+        mBaseCmdPositionBeforeSuperimposed + mSuperimposedOffset,
+        mBaseCmdVelocityBeforeSuperimposed + mSuperimposedVelocity,
+        mBaseCmdAccelerationBeforeSuperimposed + mSuperimposedAcceleration);
 }
 
 AxisMove::AxisMove()
@@ -467,11 +695,90 @@ MC_ErrorCode AxisMove::addHalt(FunctionBlock *fb, double dec, double jerk, MC_Bu
                            bufferMode, MC_AxisStatus::DISCRETE_MOTION, MC_AxisStatus::STANDSTILL, false, customId);
 }
 
+MC_ErrorCode AxisMove::addMoveSuperimposed(FunctionBlock *fb, double distance, double vel, double acc, double dec,
+                                           double jerk, MC_BufferMode bufferMode, int32_t customId)
+{
+    if (!isDefinedBufferMode(bufferMode))
+        return MC_ErrorCode::BLENDING_MODE_ILLEGAL;
+
+    if (!std::isfinite(distance))
+        return MC_ErrorCode::POS_ILLEGAL;
+
+    if (vel <= 0.0 || !std::isfinite(vel))
+        return MC_ErrorCode::VEL_ILLEGAL;
+
+    if (acc <= 0.0 || !std::isfinite(acc) || dec <= 0.0 || !std::isfinite(dec))
+        return MC_ErrorCode::ACC_ILLEGAL;
+
+    if (jerk < 0.0 || !std::isfinite(jerk))
+        return MC_ErrorCode::CFG_JERK_LIMIT_ILLEGAL;
+
+    if (mImpl_->mSuperimposedFb)
+        mImpl_->abortSuperimposed();
+
+    mImpl_->mSuperimposedFb = fb;
+    mImpl_->mSuperimposedCustomId = customId;
+    mImpl_->mSuperimposedActive = true;
+    mImpl_->mSuperimposedActiveNotified = false;
+    mImpl_->mSuperimposedDonePending = false;
+    mImpl_->mSuperimposedAbortPending = false;
+    mImpl_->mSuperimposedNeedPlan = true;
+    mImpl_->mSuperimposedStartOffset = mImpl_->mSuperimposedOffset;
+    mImpl_->mSuperimposedTargetOffset = mImpl_->mSuperimposedOffset + distance;
+    mImpl_->mSuperimposedStartVelocity = mImpl_->mSuperimposedVelocity;
+    mImpl_->mSuperimposedVel = vel;
+    mImpl_->mSuperimposedAcc = acc;
+    mImpl_->mSuperimposedDec = dec;
+    mImpl_->mSuperimposedJerk = jerk;
+
+    return MC_ErrorCode::GOOD;
+}
+
+MC_ErrorCode AxisMove::addHaltSuperimposed(FunctionBlock *fb, double dec, double jerk, MC_BufferMode bufferMode,
+                                           int32_t customId)
+{
+    if (!isDefinedBufferMode(bufferMode))
+        return MC_ErrorCode::BLENDING_MODE_ILLEGAL;
+
+    const double brakingVelocity = std::max(std::fabs(mImpl_->mSuperimposedVelocity), __EPSILON);
+    if (dec <= 0.0 || !std::isfinite(dec))
+        return MC_ErrorCode::ACC_ILLEGAL;
+
+    if (jerk < 0.0 || !std::isfinite(jerk))
+        return MC_ErrorCode::CFG_JERK_LIMIT_ILLEGAL;
+
+    mImpl_->abortSuperimposed();
+    mImpl_->mHaltSuperimposedFb = fb;
+    mImpl_->mHaltSuperimposedCustomId = customId;
+    mImpl_->mHaltSuperimposedActive = true;
+    mImpl_->mHaltSuperimposedActiveNotified = false;
+    mImpl_->mHaltSuperimposedDonePending = false;
+    mImpl_->mSuperimposedNeedPlan = true;
+    mImpl_->mSuperimposedStartOffset = mImpl_->mSuperimposedOffset;
+    mImpl_->mSuperimposedTargetOffset = mImpl_->mSuperimposedOffset +
+        ProfilePlanner::calculateDist(mImpl_->mSuperimposedVelocity, 0.0, dec, dec, jerk);
+    mImpl_->mSuperimposedStartVelocity = mImpl_->mSuperimposedVelocity;
+    mImpl_->mSuperimposedVel = brakingVelocity;
+    mImpl_->mSuperimposedAcc = dec;
+    mImpl_->mSuperimposedDec = dec;
+    mImpl_->mSuperimposedJerk = jerk;
+
+    return MC_ErrorCode::GOOD;
+}
+
 MC_ErrorCode AxisMove::addStop(FunctionBlock *fb, double dec, double jerk, int32_t customId)
 {
     const double brakingVelocity = std::max(std::fabs(cmdVelocity()), __EPSILON);
     return mImpl_->addMove(fb, NAN, brakingVelocity, dec, dec, 0, jerk, MC_ShiftingMode::ABSOLUTE, MC_Direction::CURRENT,
         MC_BufferMode::ABORTING, MC_AxisStatus::STOPPING, MC_AxisStatus::STOPPING, false, customId);
+}
+
+MC_ErrorCode AxisMove::setPosition(double pos, double vel, double acc)
+{
+    mImpl_->mBaseCmdPositionBeforeSuperimposed = pos;
+    mImpl_->mBaseCmdVelocityBeforeSuperimposed = vel;
+    mImpl_->mBaseCmdAccelerationBeforeSuperimposed = acc;
+    return AxisBase::setPosition(pos, vel, acc);
 }
 
 void AxisMove::cancelStopLater(void)
@@ -499,7 +806,24 @@ MC_ErrorCode AxisMove::setOverride(double overridePercent)
     if (overridePercent <= 0 || overridePercent > 100 || !std::isfinite(overridePercent))
         return MC_ErrorCode::OVERRIDE_ILLEGAL;
 
+    const double oldOverrideFactor = mImpl_->mOverrideFactor;
     mImpl_->mOverrideFactor = overridePercent * 0.01;
+
+    MoveNode *node = dynamic_cast<MoveNode *>(activeNode());
+    if (node && node->mStatusActive == MC_AxisStatus::DISCRETE_MOTION)
+    {
+        const double overrideRatio = mImpl_->mOverrideFactor / oldOverrideFactor;
+        node->mStartPos = cmdPosition();
+        node->mStartVel = cmdVelocity();
+        node->mStartAcc = cmdAcceleration();
+        node->mVel *= overrideRatio;
+        node->mAcc *= overrideRatio;
+        node->mDec *= overrideRatio;
+        node->mEndVel *= overrideRatio;
+        node->mJerk *= overrideRatio;
+        node->mNeedPlan = true;
+    }
+
     return MC_ErrorCode::GOOD;
 }
 
@@ -508,11 +832,35 @@ double AxisMove::override(void) const
     return mImpl_->mOverrideFactor * 100.0;
 }
 
+void AxisMove::onBeforeProcessExeclNode(void)
+{
+    mImpl_->mBaseCmdPositionBeforeSuperimposed = AxisBase::cmdPosition();
+    mImpl_->mBaseCmdVelocityBeforeSuperimposed = AxisBase::cmdVelocity();
+    mImpl_->mBaseCmdAccelerationBeforeSuperimposed = AxisBase::cmdAcceleration();
+}
+
+void AxisMove::onAfterProcessExeclNode(void)
+{
+    mImpl_->processSuperimposed();
+    mImpl_->applySuperimposed();
+}
+
 void AxisMove::onPowerStatusChangedHandler(AxisBase *this_, bool powerStatus)
 {
     AxisMove *this__ = dynamic_cast<AxisMove *>(this_);
     if (powerStatus)
+    {
         this__->mImpl_->mPlanner.setFrequency(this__->frequency());
+        this__->mImpl_->mSuperimposedPlanner.setFrequency(static_cast<uint32_t>(this__->frequency()));
+    }
+    else
+    {
+        this__->mImpl_->clearSuperimposed();
+        this__->mImpl_->mHaltSuperimposedFb = nullptr;
+        this__->mImpl_->mHaltSuperimposedActive = false;
+        this__->mImpl_->mHaltSuperimposedActiveNotified = false;
+        this__->mImpl_->mHaltSuperimposedDonePending = false;
+    }
 }
 
 void AxisMove::onPositionOffsetHandler(AxisBase *this_, double positionOffset)

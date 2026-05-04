@@ -74,6 +74,7 @@ namespace plcopen
         double cmdPosition(void) const;
         double cmdVelocity(void) const;
         double cmdAcceleration(void) const;
+        double sampleTime(void);
         double positionOffset(void) const;
     
         double actPosition(void) const;
@@ -82,6 +83,10 @@ namespace plcopen
         double actTorque(void) const;
         bool isHomed(void) const;
 
+        bool servoCommunicationReady(void) const;
+        bool servoReadyForPowerOn(void) const;
+        bool servoWarning(void) const;
+        bool servoReadLatchedPosition(int index, double& position);
         bool servoReadVal(int index, double& value);
         bool servoWriteVal(int index, double value);
         MC_ErrorCode armTouchProbe(int triggerInput, bool initialValue);

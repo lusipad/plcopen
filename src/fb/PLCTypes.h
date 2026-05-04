@@ -81,6 +81,7 @@ namespace plcopen
     typedef MC_CircPath MC_CIRC_PATHCHOICE;
     typedef MC_Direction MC_DIRECTION;
     typedef MC_Source MC_SOURCE;
+    typedef MC_CombineMode MC_COMBINE_MODE;
     typedef MC_ErrorCode MC_ERRORCODE;
     typedef MC_ServoErrorCode MC_SERVOERRORCODE;
 

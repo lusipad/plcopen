@@ -105,6 +105,23 @@ namespace plcopen
             MC_BufferMode bufferMode = MC_BufferMode::ABORTING,
             int32_t customId = 0);
 
+        MC_ErrorCode addMoveSuperimposed(
+            FunctionBlock *fb,
+            double distance,
+            double vel,
+            double acc,
+            double dec,
+            double jerk,
+            MC_BufferMode bufferMode = MC_BufferMode::ABORTING,
+            int32_t customId = 0);
+
+        MC_ErrorCode addHaltSuperimposed(
+            FunctionBlock *fb,
+            double dec,
+            double jerk,
+            MC_BufferMode bufferMode = MC_BufferMode::ABORTING,
+            int32_t customId = 0);
+
         MC_ErrorCode addStop(
             FunctionBlock *fb,
             double dec,
@@ -113,8 +130,13 @@ namespace plcopen
 
         MC_ErrorCode setOverride(double overridePercent);
         double override(void) const;
+        MC_ErrorCode setPosition(double pos, double vel, double acc);
 
         void cancelStopLater(void);
+
+    protected:
+        void onBeforeProcessExeclNode(void) override;
+        void onAfterProcessExeclNode(void) override;
 
     private:
         static void onPowerStatusChangedHandler(AxisBase *this_, bool powerStatus);

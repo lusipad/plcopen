@@ -53,6 +53,32 @@ struct LaggingPositionServo : Servo
     }
 };
 
+struct StaticActualServo : Servo
+{
+    int32_t submittedPosition = 0;
+    int32_t actualPosition = 0;
+
+    MC_ServoErrorCode setPos(int32_t pos) override
+    {
+        submittedPosition = pos;
+        return 0;
+    }
+
+    int32_t pos(void) override
+    {
+        return actualPosition;
+    }
+
+    void runCycle(double) override
+    {
+    }
+
+    void emergStop(void) override
+    {
+        submittedPosition = actualPosition;
+    }
+};
+
 struct DualAxisFbHarness
 {
     Scheduler scheduler;
@@ -113,6 +139,87 @@ struct DualAxisFbHarness
         runUntil(
             [&]() {
                 return masterPower.mStatus && masterPower.mValid && slavePower.mStatus && slavePower.mValid;
+            },
+            10,
+            "axes did not power on");
+    }
+};
+
+struct TripleAxisFbHarness
+{
+    Scheduler scheduler;
+    Axis *master1 = nullptr;
+    Axis *master2 = nullptr;
+    Axis *slave = nullptr;
+    FbPower master1Power;
+    FbPower master2Power;
+    FbPower slavePower;
+
+    TripleAxisFbHarness(
+        Servo *master1Servo = new Servo(),
+        Servo *master2Servo = new Servo(),
+        Servo *slaveServo = new Servo())
+    {
+        REQUIRE(scheduler.setFrequency(100.0) == MC_ErrorCode::GOOD);
+        master1 = scheduler.newAxis(1, master1Servo);
+        master2 = scheduler.newAxis(2, master2Servo);
+        slave = scheduler.newAxis(3, slaveServo);
+        REQUIRE(master1 != nullptr);
+        REQUIRE(master2 != nullptr);
+        REQUIRE(slave != nullptr);
+
+        master1Power.mAxis = master1;
+        master1Power.mEnable = true;
+        master1Power.mEnablePositive = true;
+        master1Power.mEnableNegative = true;
+
+        master2Power.mAxis = master2;
+        master2Power.mEnable = true;
+        master2Power.mEnablePositive = true;
+        master2Power.mEnableNegative = true;
+
+        slavePower.mAxis = slave;
+        slavePower.mEnable = true;
+        slavePower.mEnablePositive = true;
+        slavePower.mEnableNegative = true;
+    }
+
+    ~TripleAxisFbHarness()
+    {
+        scheduler.release();
+    }
+
+    template <typename... Blocks>
+    void runCycle(Blocks &...blocks)
+    {
+        scheduler.runCycle();
+        master1Power.call();
+        master2Power.call();
+        slavePower.call();
+        int unused[] = {0, (blocks.call(), 0)...};
+        (void)unused;
+    }
+
+    template <typename Predicate, typename... Blocks>
+    void runUntil(Predicate &&predicate, int maxCycles, const char *message, Blocks &...blocks)
+    {
+        for (int cycle = 0; cycle < maxCycles; ++cycle)
+        {
+            runCycle(blocks...);
+            if (predicate())
+                return;
+        }
+
+        FAIL(message);
+    }
+
+    void powerOn()
+    {
+        runUntil(
+            [&]() {
+                return master1Power.mStatus && master1Power.mValid &&
+                       master2Power.mStatus && master2Power.mValid &&
+                       slavePower.mStatus && slavePower.mValid;
             },
             10,
             "axes did not power on");
@@ -184,33 +291,115 @@ TEST_CASE("FbAddAxisToGroup, FbGroupEnable, and FbGroupReadStatus drive the grou
     REQUIRE_FALSE(readStatus.mStandby);
 }
 
-TEST_CASE("FbCombineAxes adds two axes to a disabled group", "[fb][multi-axis][group]")
+TEST_CASE("FbCombineAxes combines two master axes into the slave setpoint", "[fb][multi-axis][combine]")
 {
-    DualAxisFbHarness harness;
-    harness.powerOn();
+    struct Case
+    {
+        MC_CombineMode mode;
+        double sign;
+        const char *name;
+    };
 
-    AxesGroup group;
+    const Case cases[] = {
+        {MC_CombineMode::mcAddAxes, 1.0, "add"},
+        {MC_CombineMode::mcSubAxes, -1.0, "subtract"},
+    };
 
-    FbCombineAxes combineAxes;
-    combineAxes.mAxesGroup = &group;
-    combineAxes.mAxis1 = harness.master;
-    combineAxes.mAxis2 = harness.slave;
-    combineAxes.mExecute = true;
-    combineAxes.call();
+    for (const Case &testCase : cases)
+    {
+        DYNAMIC_SECTION(testCase.name)
+        {
+            auto *master1Servo = new StaticActualServo();
+            master1Servo->actualPosition = static_cast<int32_t>(1.5 * 8192.0);
+            TripleAxisFbHarness harness(master1Servo);
+            harness.powerOn();
 
-    REQUIRE(combineAxes.mDone);
-    REQUIRE_FALSE(combineAxes.mError);
-    REQUIRE(group.memberCount() == 2);
-    REQUIRE(group.containsAxis(harness.master));
-    REQUIRE(group.containsAxis(harness.slave));
+            REQUIRE(harness.master1->setPosition(4.0, 0.0, 0.0) == MC_ErrorCode::GOOD);
+            REQUIRE(harness.master2->setPosition(1.0, 0.0, 0.0) == MC_ErrorCode::GOOD);
+            harness.runCycle();
 
-    FbGroupEnable enable;
-    enable.mAxesGroup = &group;
-    enable.mExecute = true;
-    enable.call();
-    REQUIRE(enable.mDone);
-    REQUIRE_FALSE(enable.mError);
-    REQUIRE(group.status() == MC_GroupStatus::STANDBY);
+            FbCombineAxes combineAxes;
+            combineAxes.mMaster1 = harness.master1;
+            combineAxes.mMaster2 = harness.master2;
+            combineAxes.mSlave = harness.slave;
+            combineAxes.mCombineMode = testCase.mode;
+            combineAxes.mGearRatioNumeratorM1 = 2.0;
+            combineAxes.mGearRatioDenominatorM1 = 1.0;
+            combineAxes.mGearRatioNumeratorM2 = 3.0;
+            combineAxes.mGearRatioDenominatorM2 = 2.0;
+            combineAxes.mMasterValueSourceM1 = MC_Source::ACTUALVALUE;
+            combineAxes.mMasterValueSourceM2 = MC_Source::SETVALUE;
+            combineAxes.mExecute = true;
+
+            harness.runUntil(
+                [&]() { return combineAxes.mInSync; },
+                20,
+                "combine axes did not enter sync",
+                combineAxes);
+
+            REQUIRE_FALSE(combineAxes.mError);
+            REQUIRE(combineAxes.mBusy);
+            REQUIRE(combineAxes.mActive);
+            REQUIRE(combineAxes.mInSync);
+            REQUIRE(harness.master1->actPosition() != Catch::Approx(harness.master1->cmdPosition()).margin(1e-3));
+
+            const double expected =
+                harness.master1->actPosition() * 2.0 +
+                testCase.sign * harness.master2->cmdPosition() * 1.5;
+            REQUIRE(harness.slave->cmdPosition() == Catch::Approx(expected).margin(1e-6));
+        }
+    }
+}
+
+TEST_CASE("FbCombineAxes applies ContinuousUpdate to active combine parameters", "[fb][multi-axis][combine]")
+{
+    struct Case
+    {
+        bool continuousUpdate;
+        double expectedAfterInputChange;
+        const char *name;
+    };
+
+    const Case cases[] = {
+        {false, 7.0, "latched"},
+        {true, 1.0, "continuous"},
+    };
+
+    for (const Case &testCase : cases)
+    {
+        DYNAMIC_SECTION(testCase.name)
+        {
+            TripleAxisFbHarness harness;
+            harness.powerOn();
+
+            REQUIRE(harness.master1->setPosition(5.0, 0.0, 0.0) == MC_ErrorCode::GOOD);
+            REQUIRE(harness.master2->setPosition(2.0, 0.0, 0.0) == MC_ErrorCode::GOOD);
+            harness.runCycle();
+
+            FbCombineAxes combineAxes;
+            combineAxes.mMaster1 = harness.master1;
+            combineAxes.mMaster2 = harness.master2;
+            combineAxes.mSlave = harness.slave;
+            combineAxes.mCombineMode = MC_CombineMode::mcAddAxes;
+            combineAxes.mContinuousUpdate = testCase.continuousUpdate;
+            combineAxes.mExecute = true;
+
+            harness.runUntil(
+                [&]() { return combineAxes.mInSync; },
+                20,
+                "combine axes did not enter sync",
+                combineAxes);
+
+            REQUIRE(harness.slave->cmdPosition() == Catch::Approx(7.0).margin(1e-9));
+
+            combineAxes.mCombineMode = MC_CombineMode::mcSubAxes;
+            combineAxes.mGearRatioNumeratorM2 = 2.0;
+            harness.runCycle(combineAxes);
+
+            REQUIRE_FALSE(combineAxes.mError);
+            REQUIRE(harness.slave->cmdPosition() == Catch::Approx(testCase.expectedAfterInputChange).margin(1e-9));
+        }
+    }
 }
 
 TEST_CASE("FbRemoveAxisFromGroup removes disabled group members and reports invalid removal", "[fb][multi-axis][group]")
@@ -221,14 +410,8 @@ TEST_CASE("FbRemoveAxisFromGroup removes disabled group members and reports inva
     AxesGroup group;
     AxesGroup otherGroup;
 
-    FbCombineAxes combineAxes;
-    combineAxes.mAxesGroup = &group;
-    combineAxes.mAxis1 = harness.master;
-    combineAxes.mAxis2 = harness.slave;
-    combineAxes.mExecute = true;
-    combineAxes.call();
-    REQUIRE(combineAxes.mDone);
-    REQUIRE_FALSE(combineAxes.mError);
+    REQUIRE(group.addAxis(harness.master) == MC_ErrorCode::GOOD);
+    REQUIRE(group.addAxis(harness.slave) == MC_ErrorCode::GOOD);
 
     FbRemoveAxisFromGroup removeSlave;
     removeSlave.mAxesGroup = &group;
@@ -264,13 +447,8 @@ TEST_CASE("FbRemoveAxisFromGroup rejects removal while the group is stopping", "
 
     AxesGroup group;
 
-    FbCombineAxes combineAxes;
-    combineAxes.mAxesGroup = &group;
-    combineAxes.mAxis1 = harness.master;
-    combineAxes.mAxis2 = harness.slave;
-    combineAxes.mExecute = true;
-    combineAxes.call();
-    REQUIRE(combineAxes.mDone);
+    REQUIRE(group.addAxis(harness.master) == MC_ErrorCode::GOOD);
+    REQUIRE(group.addAxis(harness.slave) == MC_ErrorCode::GOOD);
 
     FbGroupEnable enable;
     enable.mAxesGroup = &group;
@@ -319,14 +497,8 @@ TEST_CASE("FbGroupReset clears member axis errors and returns the group to stand
 
     AxesGroup group;
 
-    FbCombineAxes combineAxes;
-    combineAxes.mAxesGroup = &group;
-    combineAxes.mAxis1 = harness.master;
-    combineAxes.mAxis2 = harness.slave;
-    combineAxes.mExecute = true;
-    combineAxes.call();
-    REQUIRE(combineAxes.mDone);
-    REQUIRE_FALSE(combineAxes.mError);
+    REQUIRE(group.addAxis(harness.master) == MC_ErrorCode::GOOD);
+    REQUIRE(group.addAxis(harness.slave) == MC_ErrorCode::GOOD);
 
     FbGroupEnable enable;
     enable.mAxesGroup = &group;
@@ -368,13 +540,8 @@ TEST_CASE("FbGroupReset rejects a disabled group", "[fb][multi-axis][group][rese
 
     AxesGroup group;
 
-    FbCombineAxes combineAxes;
-    combineAxes.mAxesGroup = &group;
-    combineAxes.mAxis1 = harness.master;
-    combineAxes.mAxis2 = harness.slave;
-    combineAxes.mExecute = true;
-    combineAxes.call();
-    REQUIRE(combineAxes.mDone);
+    REQUIRE(group.addAxis(harness.master) == MC_ErrorCode::GOOD);
+    REQUIRE(group.addAxis(harness.slave) == MC_ErrorCode::GOOD);
 
     FbGroupReset reset;
     reset.mAxesGroup = &group;
@@ -392,14 +559,8 @@ TEST_CASE("FbGroupReadActualPosition and FbGroupReadCommandPosition read member 
 
     AxesGroup group;
 
-    FbCombineAxes combineAxes;
-    combineAxes.mAxesGroup = &group;
-    combineAxes.mAxis1 = harness.master;
-    combineAxes.mAxis2 = harness.slave;
-    combineAxes.mExecute = true;
-    combineAxes.call();
-    REQUIRE(combineAxes.mDone);
-    REQUIRE_FALSE(combineAxes.mError);
+    REQUIRE(group.addAxis(harness.master) == MC_ErrorCode::GOOD);
+    REQUIRE(group.addAxis(harness.slave) == MC_ErrorCode::GOOD);
 
     auto moveMaster = makeMasterMove(harness.master, 2.0, 2.0);
     moveMaster.mExecute = true;
@@ -450,51 +611,48 @@ TEST_CASE("FbGroupReadActualPosition and FbGroupReadCommandPosition read member 
     REQUIRE(readCommand.mPosition == 0.0);
 }
 
-TEST_CASE("FbCombineAxes rejects invalid combinations without partial group mutation", "[fb][multi-axis][group][validation]")
+TEST_CASE("FbCombineAxes rejects invalid combine inputs before queueing", "[fb][multi-axis][combine][validation]")
 {
-    DualAxisFbHarness harness;
+    TripleAxisFbHarness harness;
     harness.powerOn();
 
-    AxesGroup group;
-    AxesGroup otherGroup;
-
-    FbAddAxisToGroup addToOther;
-    addToOther.mAxesGroup = &otherGroup;
-    addToOther.mAxis = harness.slave;
-    addToOther.mExecute = true;
-    addToOther.call();
-    REQUIRE(addToOther.mDone);
-
-    FbCombineAxes combineWithForeignAxis;
-    combineWithForeignAxis.mAxesGroup = &group;
-    combineWithForeignAxis.mAxis1 = harness.master;
-    combineWithForeignAxis.mAxis2 = harness.slave;
-    combineWithForeignAxis.mExecute = true;
-    combineWithForeignAxis.call();
-    REQUIRE(combineWithForeignAxis.mError);
-    REQUIRE(combineWithForeignAxis.mErrorID == MC_ErrorCode::AXIS_IN_OTHER_GROUP);
-    REQUIRE(group.memberCount() == 0);
-    REQUIRE_FALSE(group.containsAxis(harness.master));
-
-    FbCombineAxes combineWithMissingAxis;
-    combineWithMissingAxis.mAxesGroup = &group;
-    combineWithMissingAxis.mAxis1 = harness.master;
-    combineWithMissingAxis.mAxis2 = nullptr;
-    combineWithMissingAxis.mExecute = true;
-    combineWithMissingAxis.call();
-    REQUIRE(combineWithMissingAxis.mError);
-    REQUIRE(combineWithMissingAxis.mErrorID == MC_ErrorCode::AXIS_NO_TEXIST);
-    REQUIRE(group.memberCount() == 0);
+    FbCombineAxes combineMissingAxis;
+    combineMissingAxis.mMaster1 = harness.master1;
+    combineMissingAxis.mMaster2 = nullptr;
+    combineMissingAxis.mSlave = harness.slave;
+    combineMissingAxis.mExecute = true;
+    combineMissingAxis.call();
+    REQUIRE(combineMissingAxis.mError);
+    REQUIRE(combineMissingAxis.mErrorID == MC_ErrorCode::AXIS_NO_TEXIST);
 
     FbCombineAxes combineSameAxis;
-    combineSameAxis.mAxesGroup = &group;
-    combineSameAxis.mAxis1 = harness.master;
-    combineSameAxis.mAxis2 = harness.master;
+    combineSameAxis.mMaster1 = harness.master1;
+    combineSameAxis.mMaster2 = harness.master1;
+    combineSameAxis.mSlave = harness.slave;
     combineSameAxis.mExecute = true;
     combineSameAxis.call();
     REQUIRE(combineSameAxis.mError);
     REQUIRE(combineSameAxis.mErrorID == MC_ErrorCode::AXIS_ALREADY_IN_GROUP);
-    REQUIRE(group.memberCount() == 0);
+
+    FbCombineAxes combineBadRatio;
+    combineBadRatio.mMaster1 = harness.master1;
+    combineBadRatio.mMaster2 = harness.master2;
+    combineBadRatio.mSlave = harness.slave;
+    combineBadRatio.mGearRatioDenominatorM1 = 0.0;
+    combineBadRatio.mExecute = true;
+    combineBadRatio.call();
+    REQUIRE(combineBadRatio.mError);
+    REQUIRE(combineBadRatio.mErrorID == MC_ErrorCode::PARAMETER_NOT_SUPPORT);
+
+    FbCombineAxes combineBadSource;
+    combineBadSource.mMaster1 = harness.master1;
+    combineBadSource.mMaster2 = harness.master2;
+    combineBadSource.mSlave = harness.slave;
+    combineBadSource.mMasterValueSourceM1 = static_cast<MC_Source>(99);
+    combineBadSource.mExecute = true;
+    combineBadSource.call();
+    REQUIRE(combineBadSource.mError);
+    REQUIRE(combineBadSource.mErrorID == MC_ErrorCode::SOURCE_ILLEGAL);
 }
 
 TEST_CASE("FbGearIn makes the slave follow the master and FbGearOut detaches it", "[fb][multi-axis][gear]")
@@ -853,6 +1011,64 @@ TEST_CASE("FbGearInPos waits for the master start distance before approaching sy
     REQUIRE(harness.slave->cmdPosition() == Catch::Approx(gearInPos.mSlaveSyncPosition).margin(0.2));
 }
 
+TEST_CASE("FbGearInPos applies profiled approach limits before synchronization",
+          "[fb][multi-axis][gear][sync-position][profile]")
+{
+    DualAxisFbHarness harness;
+    harness.powerOn();
+
+    AxesGroup group;
+    REQUIRE(group.addAxis(harness.master) == MC_ErrorCode::GOOD);
+    REQUIRE(group.addAxis(harness.slave) == MC_ErrorCode::GOOD);
+    REQUIRE(group.enable() == MC_ErrorCode::GOOD);
+
+    FbGearInPos gearInPos;
+    gearInPos.mMaster = harness.master;
+    gearInPos.mSlave = harness.slave;
+    gearInPos.mRatioNumerator = 1.0;
+    gearInPos.mRatioDenominator = 1.0;
+    gearInPos.mMasterSyncPosition = 5.0;
+    gearInPos.mSlaveSyncPosition = 3.0;
+    gearInPos.mMasterStartDistance = 4.0;
+    gearInPos.mVelocity = 1.0;
+    gearInPos.mAcceleration = 4.0;
+    gearInPos.mDeceleration = 4.0;
+    gearInPos.mJerk = 40.0;
+    gearInPos.mExecute = true;
+
+    auto moveMaster = makeMasterMove(harness.master, 6.0, 0.5);
+    moveMaster.mExecute = true;
+
+    harness.runUntil(
+        [&]() { return gearInPos.mStartSync; },
+        400,
+        "profiled gear in pos did not start its approach window",
+        gearInPos,
+        moveMaster);
+
+    double firstNonZeroAcceleration = 0.0;
+    double maxAcceleration = 0.0;
+    double maxVelocity = std::fabs(harness.slave->cmdVelocity());
+    for (int i = 0; i < 16; ++i)
+    {
+        harness.runCycle(gearInPos, moveMaster);
+        const double acceleration = std::fabs(harness.slave->cmdAcceleration());
+        if (firstNonZeroAcceleration == 0.0 && acceleration > 0.0)
+            firstNonZeroAcceleration = acceleration;
+        maxAcceleration = std::max(maxAcceleration, acceleration);
+        maxVelocity = std::max(maxVelocity, std::fabs(harness.slave->cmdVelocity()));
+    }
+
+    REQUIRE_FALSE(gearInPos.mError);
+    REQUIRE_FALSE(gearInPos.mInGear);
+    REQUIRE(firstNonZeroAcceleration > 0.0);
+    REQUIRE(firstNonZeroAcceleration < gearInPos.mAcceleration);
+    REQUIRE(maxAcceleration > firstNonZeroAcceleration + 0.2);
+    REQUIRE(maxVelocity <= gearInPos.mVelocity + 1e-6);
+    REQUIRE(harness.slave->cmdPosition() > 0.0);
+    REQUIRE(harness.slave->cmdPosition() < gearInPos.mSlaveSyncPosition);
+}
+
 TEST_CASE("FbGearInPos rejects invalid group and sync position inputs", "[fb][multi-axis][gear][validation]")
 {
     {
@@ -974,6 +1190,54 @@ TEST_CASE("FbGearInPos rejects invalid group and sync position inputs", "[fb][mu
 
         REQUIRE(gearInPos.mError);
         REQUIRE(gearInPos.mErrorID == MC_ErrorCode::PARAMETER_NOT_SUPPORT);
+    }
+}
+
+TEST_CASE("FbGearInPos rejects invalid profiled approach inputs", "[fb][multi-axis][gear][validation][profile]")
+{
+    struct Case
+    {
+        double velocity;
+        double acceleration;
+        double deceleration;
+        double jerk;
+        MC_ErrorCode error;
+    };
+
+    const Case cases[] = {
+        {-1.0, 1.0, 1.0, 0.0, MC_ErrorCode::VEL_ILLEGAL},
+        {std::numeric_limits<double>::infinity(), 1.0, 1.0, 0.0, MC_ErrorCode::VEL_ILLEGAL},
+        {1.0, 0.0, 1.0, 0.0, MC_ErrorCode::ACC_ILLEGAL},
+        {1.0, 1.0, std::numeric_limits<double>::quiet_NaN(), 0.0, MC_ErrorCode::ACC_ILLEGAL},
+        {1.0, 1.0, 1.0, -1.0, MC_ErrorCode::CFG_JERK_LIMIT_ILLEGAL},
+        {1.0, 1.0, 1.0, std::numeric_limits<double>::infinity(), MC_ErrorCode::CFG_JERK_LIMIT_ILLEGAL},
+    };
+
+    for (const Case &testCase : cases)
+    {
+        DualAxisFbHarness harness;
+        harness.powerOn();
+
+        AxesGroup group;
+        REQUIRE(group.addAxis(harness.master) == MC_ErrorCode::GOOD);
+        REQUIRE(group.addAxis(harness.slave) == MC_ErrorCode::GOOD);
+        REQUIRE(group.enable() == MC_ErrorCode::GOOD);
+
+        FbGearInPos gearInPos;
+        gearInPos.mMaster = harness.master;
+        gearInPos.mSlave = harness.slave;
+        gearInPos.mMasterSyncPosition = 1.0;
+        gearInPos.mSlaveSyncPosition = 1.0;
+        gearInPos.mMasterStartDistance = 0.5;
+        gearInPos.mVelocity = testCase.velocity;
+        gearInPos.mAcceleration = testCase.acceleration;
+        gearInPos.mDeceleration = testCase.deceleration;
+        gearInPos.mJerk = testCase.jerk;
+        gearInPos.mExecute = true;
+        gearInPos.call();
+
+        REQUIRE(gearInPos.mError);
+        REQUIRE(gearInPos.mErrorID == testCase.error);
     }
 }
 

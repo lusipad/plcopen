@@ -2,6 +2,8 @@
 
 This plan turns the current PLCopen Motion Control Part 1 v2.0 matrix into the v0.9.0 execution backlog. PLCopen Part 2 extensions are treated as part of the Part 1 v2.0 baseline, matching the compliance matrix.
 
+Status: the tracked Part 1/2 FB rows are now implemented; keep this document as the audit trail for how v0.9.0 was closed, not as a live backlog.
+
 ## Assumptions
 
 - The goal is to close the documented Part 1/2 `partial` rows, not to expand into full Part 4 coordinated motion.
@@ -18,15 +20,15 @@ Current Part 1/2 rows:
 
 | Area | Total | Implemented | Partial | Missing |
 |---|---:|---:|---:|---:|
-| Administrative single-axis FBs | 21 | 9 | 12 | 0 |
-| Single-axis motion FBs | 15 | 2 | 13 | 0 |
-| Multi-axis synchronization FBs | 9 | 0 | 9 | 0 |
-| **Total Part 1/2 FBs** | **45** | **11** | **34** | **0** |
+| Administrative single-axis FBs | 21 | 21 | 0 | 0 |
+| Single-axis motion FBs | 15 | 15 | 0 | 0 |
+| Multi-axis synchronization FBs | 9 | 9 | 0 | 0 |
+| **Total Part 1/2 FBs** | **45** | **45** | **0** | **0** |
 
-Cross-cutting partials:
+Cross-cutting boundary rows:
 
-- BufferMode semantics.
-- ContinuousUpdate semantics.
+- BufferMode semantics remain documented at the current single-axis MoveNode blending boundary.
+- ContinuousUpdate semantics are covered for the implemented FBs that model active update today; remaining sync/profile-table variants stay out of scope until the runtime model grows.
 
 Project extensions and Part 4 foundation work stay outside the v0.9.0 completion count.
 
@@ -34,17 +36,17 @@ Project extensions and Part 4 foundation work stay outside the v0.9.0 completion
 
 As of the current v0.9.0 worktree:
 
-- Every Part 1/2 `partial` row has a gap type and an explicit v0.9.0 decision in the compliance matrix.
+- Every tracked Part 1/2 FB row is classified as `implemented` in the compliance matrix with code and automated test evidence.
 - The base Execute/Done/Busy/Error and Enable/Valid/Error contracts are implemented for the current public contract and covered by `src/test/test_basic.cpp`.
 - Current public FB invalid-input and lifecycle error behavior is covered by behavior-specific tests; the project does not claim a standalone PLCopen/vendor error catalog.
-- Remaining `partial` FB rows are deliberate `scope-boundary` or `hardware-abstraction` rows: vendor/device parameter catalogs, hardware latch timestamps, multiple trigger storage, closed-loop torque, full profile-table parsing, full geometric blending, controller-side cam repositories, and Part 4 coordinated path/kinematics remain outside v0.9.0 unless a future runtime abstraction is introduced.
-- Latest local verification evidence is `ctest --test-dir build --build-config Release --output-on-failure` passing 163/163.
+- Remaining boundaries are deliberate `scope-boundary` or `hardware-abstraction` decisions: full geometric path blending, external profile-table import/parsing, controller-side cam repositories, unsupported vendor/device parameters outside the implemented registry, and Part 4 coordinated path/kinematics remain outside v0.9.0 unless a future runtime abstraction is introduced.
+- Latest local verification evidence is `ctest --test-dir build --build-config Release --output-on-failure` passing 185/185.
 
 ## Definition Of Done
 
 v0.9.0 is complete when:
 
-1. The Part 1/2 matrix has no unresolved `partial` rows. Each current `partial` is either `implemented` with evidence or explicitly reclassified with a reason.
+1. The Part 1/2 matrix has no unresolved FB `partial` rows. Each current boundary is either implemented with evidence or explicitly documented as outside the v0.9.0 runtime model.
 2. Every behavior change has automated coverage in the relevant Catch2 target.
 3. Cross-cutting lifecycle, error, BufferMode, and ContinuousUpdate semantics have representative tests across read, write, motion, and synchronization FBs.
 4. README, ROADMAP, CHANGELOG, and the compliance matrix describe the same support level.
@@ -125,7 +127,7 @@ Tasks:
 
 - Define the supported parameter registry and read/write validation rules.
 - Keep digital IO on the named Servo extension channel bases (`MC_SERVO_EXTENSION_DIGITAL_INPUT_BASE`, `MC_SERVO_EXTENSION_DIGITAL_OUTPUT_BASE`) for v0.9.0.
-- Keep `MC_ReadAxisInfo` truthful: expose only modeled state and real extension inputs.
+- Keep `MC_ReadAxisInfo` truthful: expose only modeled state, Servo diagnostic hooks, and real extension inputs.
 - Expand touch-probe semantics only as far as the simulator/runtime can verify.
 - Make digital cam switch behavior deterministic around window boundaries and periodic wraparound.
 
@@ -159,8 +161,8 @@ Tasks:
 
 - Decide which remaining homing modes can be modeled without hardware lies.
 - Keep current single-axis queue/blending semantics as the v0.9.0 boundary; full geometric path blending needs a future planner contract.
-- Keep superimposed motion on the tested additive queue approximation; independent parallel trajectory composition needs a future planner contract.
-- Keep linked-list profile references as the documented v0.9.0 profile boundary; profile-table timing/parser support needs a future runtime goal.
+- Keep superimposed motion on the tested independent offset profile layered over the base command; coordinated multi-trajectory composition beyond that needs a future planner contract.
+- Keep linked-list profile references plus timed segment duration, scale/offset normalization, and active update as the documented v0.9.0 profile model; external profile-table import/parser support needs a future runtime goal.
 - Keep torque control explicit about the Servo contract; do not claim closed-loop drive behavior without a modeled loop.
 
 Verification:
@@ -193,7 +195,7 @@ Tasks:
 - Keep cam and gear sync behavior scoped to the supported single-master/single-slave runtime.
 - Use the modeled `MC_GearInPos` / `MC_CamIn` linear approach behavior as the v0.9.0 boundary; velocity/acceleration/jerk-limited approach planning needs a future sync planner contract.
 - Strengthen phasing profile tests for finite values, limits, and in-progress updates.
-- Treat `MC_CombineAxes` carefully: coordinate transforms and kinematics are Part 4-adjacent and must not be silently claimed as Part 1/2 completion.
+- Treat `MC_CombineAxes` as the tested two-master setpoint combination block; coordinate transforms and kinematics are Part 4-adjacent and must not be silently claimed as Part 1/2 completion.
 
 Verification:
 

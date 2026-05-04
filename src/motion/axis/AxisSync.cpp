@@ -26,10 +26,12 @@
 #include "AxesGroup.h"
 #include "Axis.h"
 #include "CamTable.h"
+#include "FbMultiAxis.h"
 #include "FunctionBlock.h"
 #include "ProfilePlanner.h"
 
 #include <cmath>
+#include <limits>
 
 namespace plcopen
 {
@@ -57,6 +59,64 @@ bool isDefinedMasterValueSource(MC_Source source)
     return source == MC_Source::SETVALUE || source == MC_Source::ACTUALVALUE;
 }
 
+bool isDefinedCombineMode(MC_CombineMode mode)
+{
+    return mode == MC_CombineMode::mcAddAxes || mode == MC_CombineMode::mcSubAxes;
+}
+
+struct CombineInputConfig
+{
+    MC_CombineMode mCombineMode = MC_CombineMode::mcAddAxes;
+    MC_Source mMasterValueSourceM1 = MC_Source::SETVALUE;
+    MC_Source mMasterValueSourceM2 = MC_Source::SETVALUE;
+    double mRatioM1 = 1.0;
+    double mRatioM2 = 1.0;
+};
+
+MC_ErrorCode makeCombineInputConfig(
+    MC_CombineMode combineMode,
+    double gearRatioNumeratorM1,
+    double gearRatioDenominatorM1,
+    double gearRatioNumeratorM2,
+    double gearRatioDenominatorM2,
+    MC_Source masterValueSourceM1,
+    MC_Source masterValueSourceM2,
+    CombineInputConfig &config)
+{
+    if (!isDefinedCombineMode(combineMode))
+        return MC_ErrorCode::PARAMETER_NOT_SUPPORT;
+
+    if (!isDefinedMasterValueSource(masterValueSourceM1) || !isDefinedMasterValueSource(masterValueSourceM2))
+        return MC_ErrorCode::SOURCE_ILLEGAL;
+
+    if (gearRatioDenominatorM1 == 0.0 || gearRatioDenominatorM2 == 0.0 ||
+        !std::isfinite(gearRatioNumeratorM1) || !std::isfinite(gearRatioDenominatorM1) ||
+        !std::isfinite(gearRatioNumeratorM2) || !std::isfinite(gearRatioDenominatorM2))
+        return MC_ErrorCode::PARAMETER_NOT_SUPPORT;
+
+    config.mCombineMode = combineMode;
+    config.mMasterValueSourceM1 = masterValueSourceM1;
+    config.mMasterValueSourceM2 = masterValueSourceM2;
+    config.mRatioM1 = gearRatioNumeratorM1 / gearRatioDenominatorM1;
+    config.mRatioM2 = gearRatioNumeratorM2 / gearRatioDenominatorM2;
+    return MC_ErrorCode::GOOD;
+}
+
+double sourcePosition(Axis *axis, MC_Source source)
+{
+    return source == MC_Source::ACTUALVALUE ? axis->actPosition() : axis->cmdPosition();
+}
+
+double sourceVelocity(Axis *axis, MC_Source source)
+{
+    return source == MC_Source::ACTUALVALUE ? axis->actVelocity() : axis->cmdVelocity();
+}
+
+double sourceAcceleration(Axis *axis, MC_Source source)
+{
+    return source == MC_Source::ACTUALVALUE ? axis->actAcceleration() : axis->cmdAcceleration();
+}
+
 class SyncNode : virtual public AxisExeclNode
 {
   public:
@@ -72,6 +132,14 @@ class SyncNode : virtual public AxisExeclNode
     double mStartSlavePosition = 0.0;
     double mSlaveSyncPosition = 0.0;
     bool mSlaveSyncPositionExplicit = false;
+    double mApproachVelocity = 0.0;
+    double mApproachAcceleration = 0.0;
+    double mApproachDeceleration = 0.0;
+    double mApproachJerk = 0.0;
+    uint32_t mApproachFrequency = 100;
+    ProfilePlanner mApproachPlanner;
+    bool mApproachPlannerActive = false;
+    double mApproachTargetPosition = std::numeric_limits<double>::quiet_NaN();
     MC_CAM_REF mCamTable;
     double mCamMasterOffset = 0.0;
     double mCamSlaveOffset = 0.0;
@@ -130,17 +198,25 @@ class SyncNode : virtual public AxisExeclNode
                     const double slaveSyncPosition = mSlaveSyncPositionExplicit
                         ? mSlaveSyncPosition
                         : camTargetAtMasterSyncPosition();
-                    double progress = (currentMasterPosition - mStartMasterPosition) / span;
-                    if (progress < 0.0)
-                        progress = 0.0;
-                    else if (progress > 1.0)
-                        progress = 1.0;
+                    MC_ErrorCode err = MC_ErrorCode::GOOD;
+                    if (mApproachVelocity > 0.0)
+                    {
+                        err = profileApproachToSync(slave, slaveSyncPosition);
+                    }
+                    else
+                    {
+                        double progress = (currentMasterPosition - mStartMasterPosition) / span;
+                        if (progress < 0.0)
+                            progress = 0.0;
+                        else if (progress > 1.0)
+                            progress = 1.0;
 
-                    const double targetPosition =
-                        mStartSlavePosition + (slaveSyncPosition - mStartSlavePosition) * progress;
-                    const double targetVelocity =
-                        masterVelocity() * (slaveSyncPosition - mStartSlavePosition) / span;
-                    const MC_ErrorCode err = slave->setPosition(targetPosition, targetVelocity, 0.0);
+                        const double targetPosition =
+                            mStartSlavePosition + (slaveSyncPosition - mStartSlavePosition) * progress;
+                        const double targetVelocity =
+                            masterVelocity() * (slaveSyncPosition - mStartSlavePosition) / span;
+                        err = slave->setPosition(targetPosition, targetVelocity, 0.0);
+                    }
                     if (err != MC_ErrorCode::GOOD)
                         return err;
                 }
@@ -216,6 +292,32 @@ class SyncNode : virtual public AxisExeclNode
         return mCamSlaveOffset + mCamSlaveScaling * mCamTable->sample(camMasterPosition);
     }
 
+    MC_ErrorCode profileApproachToSync(AxisSync *slave, double slaveSyncPosition)
+    {
+        const double startPosition = slave->cmdPosition();
+        if (std::fabs(slaveSyncPosition - startPosition) <= 1e-9)
+            return slave->setPosition(slaveSyncPosition, 0.0, 0.0);
+
+        if (!mApproachPlannerActive || mApproachTargetPosition != slaveSyncPosition)
+        {
+            mApproachPlanner.setFrequency(mApproachFrequency);
+            const bool planned =
+                mApproachPlanner.plan(startPosition, slaveSyncPosition, slave->cmdVelocity(), mApproachVelocity,
+                                      0.0, mApproachAcceleration, mApproachDeceleration, mApproachJerk);
+            if (!planned)
+                return slave->setPosition(slaveSyncPosition, 0.0, 0.0);
+
+            mApproachPlannerActive = true;
+            mApproachTargetPosition = slaveSyncPosition;
+        }
+
+        if (mApproachPlanner.execute())
+            return slave->setPosition(slaveSyncPosition, 0.0, 0.0);
+
+        return slave->setPosition(
+            mApproachPlanner.getPosition(), mApproachPlanner.getVelocity(), mApproachPlanner.getAcceleration());
+    }
+
     void notifyStartSync()
     {
         if (mStartSyncNotified)
@@ -224,6 +326,76 @@ class SyncNode : virtual public AxisExeclNode
         if (mFb)
             mFb->onOperationStartSync(mNodeCustomId);
         mStartSyncNotified = true;
+    }
+};
+
+class CombineAxesNode : virtual public AxisExeclNode
+{
+  public:
+    Axis *mMaster1 = nullptr;
+    Axis *mMaster2 = nullptr;
+    CombineInputConfig mLatchedInputConfig;
+    bool mHoldArmed = true;
+
+  protected:
+    MC_ErrorCode onExecuting(ExeclQueue *queue, ExeclNodeExecStat &stat) override
+    {
+        AxisSync *slave = dynamic_cast<AxisSync *>(queue);
+        if (!mMaster1 || !mMaster2)
+            return MC_ErrorCode::AXIS_NO_TEXIST;
+
+        if (!mMaster1->powerStatus() || !mMaster2->powerStatus())
+            return MC_ErrorCode::AXIS_POWER_OFF;
+
+        CombineInputConfig config = mLatchedInputConfig;
+        const auto *fb = dynamic_cast<const FbCombineAxes *>(mFb);
+        if (fb && fb->mContinuousUpdate)
+        {
+            MC_ErrorCode err = makeCombineInputConfig(
+                fb->mCombineMode,
+                fb->mGearRatioNumeratorM1,
+                fb->mGearRatioDenominatorM1,
+                fb->mGearRatioNumeratorM2,
+                fb->mGearRatioDenominatorM2,
+                fb->mMasterValueSourceM1,
+                fb->mMasterValueSourceM2,
+                config);
+            if (err != MC_ErrorCode::GOOD)
+                return err;
+        }
+
+        const double combineSign = config.mCombineMode == MC_CombineMode::mcAddAxes ? 1.0 : -1.0;
+        const double position =
+            sourcePosition(mMaster1, config.mMasterValueSourceM1) * config.mRatioM1 +
+            combineSign * sourcePosition(mMaster2, config.mMasterValueSourceM2) * config.mRatioM2;
+        const double velocity =
+            sourceVelocity(mMaster1, config.mMasterValueSourceM1) * config.mRatioM1 +
+            combineSign * sourceVelocity(mMaster2, config.mMasterValueSourceM2) * config.mRatioM2;
+        const double acceleration =
+            sourceAcceleration(mMaster1, config.mMasterValueSourceM1) * config.mRatioM1 +
+            combineSign * sourceAcceleration(mMaster2, config.mMasterValueSourceM2) * config.mRatioM2;
+
+        const MC_ErrorCode err = slave->setPosition(position, velocity, acceleration);
+        if (err != MC_ErrorCode::GOOD)
+            return err;
+
+        if (mHoldArmed)
+        {
+            stat = ExeclNodeExecStat::DONE;
+            mHoldArmed = false;
+        }
+
+        return MC_ErrorCode::GOOD;
+    }
+
+    void onDone(ExeclQueue *queue, bool &isHold) override
+    {
+        AxisExeclNode::onDone(queue, isHold);
+        isHold = true;
+    }
+
+    void onPositionOffset(ExeclQueue *queue, double positionOffset) override
+    {
     }
 };
 
@@ -302,6 +474,7 @@ class SyncOutNode : virtual public AxisExeclNode
 
     MC_ErrorCode AxisSync::addGearInPos(FunctionBlock *fb, Axis *master, double ratioNumerator, double ratioDenominator,
                                         double masterSyncPosition, double slaveSyncPosition, double masterStartDistance,
+                                        double velocity, double acceleration, double deceleration, double jerk,
                                         MC_Source masterValueSource, MC_BufferMode bufferMode, int32_t customId)
     {
         if (!master)
@@ -326,6 +499,19 @@ class SyncOutNode : virtual public AxisExeclNode
         if (!std::isfinite(masterStartDistance) || masterStartDistance < 0.0)
             return MC_ErrorCode::PARAMETER_NOT_SUPPORT;
 
+        if (velocity < 0.0 || !std::isfinite(velocity))
+            return MC_ErrorCode::VEL_ILLEGAL;
+
+        if (velocity > 0.0)
+        {
+            if (acceleration <= 0.0 || !std::isfinite(acceleration) ||
+                deceleration <= 0.0 || !std::isfinite(deceleration))
+                return MC_ErrorCode::ACC_ILLEGAL;
+
+            if (jerk < 0.0 || !std::isfinite(jerk))
+                return MC_ErrorCode::CFG_JERK_LIMIT_ILLEGAL;
+        }
+
         const double ratio = ratioNumerator / ratioDenominator;
         mImpl_->mGearPhaseOffset = slaveSyncPosition - masterSyncPosition * ratio;
 
@@ -335,6 +521,11 @@ class SyncOutNode : virtual public AxisExeclNode
              masterSyncPosition,
              slaveSyncPosition,
              masterStartDistance,
+             velocity,
+             acceleration,
+             deceleration,
+             jerk,
+             approachFrequency = static_cast<uint32_t>(frequency()),
              masterValueSource](void *baseNode) -> AxisExeclNode * {
                 auto *node = reinterpret_cast<SyncNode *>(baseNode);
                 new (node) SyncNode();
@@ -347,6 +538,11 @@ class SyncOutNode : virtual public AxisExeclNode
                 node->mMasterStartDistance = masterStartDistance;
                 node->mSlaveSyncPosition = slaveSyncPosition;
                 node->mSlaveSyncPositionExplicit = true;
+                node->mApproachVelocity = velocity;
+                node->mApproachAcceleration = acceleration;
+                node->mApproachDeceleration = deceleration;
+                node->mApproachJerk = jerk;
+                node->mApproachFrequency = approachFrequency;
                 return node;
             },
             !usesQueuedBufferModeSemantics(bufferMode),
@@ -518,6 +714,52 @@ class SyncOutNode : virtual public AxisExeclNode
     MC_ErrorCode AxisSync::addCamOut(FunctionBlock *fb, int32_t customId)
     {
         return addGearOut(fb, customId);
+    }
+
+    MC_ErrorCode AxisSync::addCombineAxes(FunctionBlock *fb, Axis *master1, Axis *master2,
+                                          double gearRatioNumeratorM1, double gearRatioDenominatorM1,
+                                          double gearRatioNumeratorM2, double gearRatioDenominatorM2,
+                                          MC_CombineMode combineMode,
+                                          MC_Source masterValueSourceM1, MC_Source masterValueSourceM2,
+                                          MC_BufferMode bufferMode, int32_t customId)
+    {
+        if (!master1 || !master2)
+            return MC_ErrorCode::AXIS_NO_TEXIST;
+
+        Axis *slaveAxis = dynamic_cast<Axis *>(this);
+        if (master1 == master2 || master1 == slaveAxis || master2 == slaveAxis)
+            return MC_ErrorCode::AXIS_ALREADY_IN_GROUP;
+
+        if (!isDefinedBufferMode(bufferMode))
+            return MC_ErrorCode::BLENDING_MODE_ILLEGAL;
+
+        CombineInputConfig config;
+        MC_ErrorCode err = makeCombineInputConfig(
+            combineMode,
+            gearRatioNumeratorM1,
+            gearRatioDenominatorM1,
+            gearRatioNumeratorM2,
+            gearRatioDenominatorM2,
+            masterValueSourceM1,
+            masterValueSourceM2,
+            config);
+        if (err != MC_ErrorCode::GOOD)
+            return err;
+
+        return pushAndNewData(
+            [master1, master2, config](void *baseNode) -> AxisExeclNode * {
+                auto *node = reinterpret_cast<CombineAxesNode *>(baseNode);
+                new (node) CombineAxesNode();
+                node->mMaster1 = master1;
+                node->mMaster2 = master2;
+                node->mLatchedInputConfig = config;
+                return node;
+            },
+            !usesQueuedBufferModeSemantics(bufferMode),
+            fb,
+            MC_AxisStatus::SYNCHRONIZED_MOTION,
+            MC_AxisStatus::SYNCHRONIZED_MOTION,
+            customId);
     }
 
 } // namespace plcopen

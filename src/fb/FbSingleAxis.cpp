@@ -47,6 +47,141 @@ namespace plcopen
             double value = 0;
             return axis->servoReadVal(index, value) && value != 0.0;
         }
+
+        double applyVelocityDirection(double velocity, MC_DIRECTION direction)
+        {
+            switch (direction)
+            {
+            case MC_Direction::POSITIVE:
+                return velocity;
+            case MC_Direction::NEGATIVE:
+                return -velocity;
+            case MC_Direction::CURRENT:
+            default:
+                return velocity;
+            }
+        }
+
+        bool moveVelocityDirectionSupported(MC_DIRECTION direction)
+        {
+            return direction == MC_Direction::POSITIVE ||
+                   direction == MC_Direction::NEGATIVE ||
+                   direction == MC_Direction::CURRENT;
+        }
+
+        bool profileScaleInputsValid(double timeScale, double valueScale, double valueOffset)
+        {
+            return timeScale > 0.0 && std::isfinite(timeScale) &&
+                   valueScale != 0.0 && std::isfinite(valueScale) &&
+                   std::isfinite(valueOffset);
+        }
+
+        struct PositionProfileCommand
+        {
+            double mPosition = 0.0;
+            double mVelocity = 0.0;
+            double mAcceleration = 0.0;
+            double mDeceleration = 0.0;
+            double mJerk = 0.0;
+            double mDuration = 0.0;
+            MC_ShiftingMode mShiftingMode = MC_ShiftingMode::ABSOLUTE;
+            MC_Direction mDirection = MC_Direction::CURRENT;
+        };
+
+        struct VelocityProfileCommand
+        {
+            double mVelocity = 0.0;
+            double mAcceleration = 0.0;
+            double mDeceleration = 0.0;
+            double mJerk = 0.0;
+            double mDuration = 0.0;
+        };
+
+        bool profileDurationInputValid(double duration)
+        {
+            return duration >= 0.0 && std::isfinite(duration);
+        }
+
+        bool timedProfileActive(double duration)
+        {
+            return duration > 0.0;
+        }
+
+        MC_ErrorCode buildPositionProfileCommand(const MC_PositionProfileData *profile, double timeScale,
+                                                 double positionScale, double positionOffset,
+                                                 PositionProfileCommand &command)
+        {
+            if (!profile)
+                return MC_ErrorCode::PARAMETER_NOT_SUPPORT;
+
+            if (!profileScaleInputsValid(timeScale, positionScale, positionOffset))
+                return MC_ErrorCode::PARAMETER_NOT_SUPPORT;
+
+            const double scaleMagnitude = std::fabs(positionScale);
+            const double timeScaleSquared = timeScale * timeScale;
+            command.mPosition = positionOffset + profile->mPosition * positionScale;
+            command.mVelocity = profile->mVelocity * scaleMagnitude / timeScale;
+            command.mAcceleration = profile->mAcceleration * scaleMagnitude / timeScaleSquared;
+            command.mDeceleration = profile->mDeceleration * scaleMagnitude / timeScaleSquared;
+            command.mJerk = profile->mJerk * scaleMagnitude / (timeScaleSquared * timeScale);
+            command.mDuration = profile->mDuration * timeScale;
+            command.mShiftingMode = profile->mShiftingMode;
+            command.mDirection = profile->mDirection;
+
+            if (!profileDurationInputValid(command.mDuration))
+                return MC_ErrorCode::PARAMETER_NOT_SUPPORT;
+
+            if (!std::isfinite(command.mPosition))
+                return MC_ErrorCode::POS_ILLEGAL;
+
+            return MC_ErrorCode::GOOD;
+        }
+
+        MC_ErrorCode buildVelocityProfileCommand(const MC_VelocityProfileData *profile, double timeScale,
+                                                 double velocityScale, double velocityOffset,
+                                                 VelocityProfileCommand &command)
+        {
+            if (!profile)
+                return MC_ErrorCode::PARAMETER_NOT_SUPPORT;
+
+            if (!profileScaleInputsValid(timeScale, velocityScale, velocityOffset))
+                return MC_ErrorCode::PARAMETER_NOT_SUPPORT;
+
+            const double scaleMagnitude = std::fabs(velocityScale);
+            command.mVelocity = velocityOffset + profile->mVelocity * velocityScale;
+            command.mAcceleration = profile->mAcceleration * scaleMagnitude / timeScale;
+            command.mDeceleration = profile->mDeceleration * scaleMagnitude / timeScale;
+            command.mJerk = profile->mJerk * scaleMagnitude / (timeScale * timeScale);
+
+            command.mDuration = profile->mDuration * timeScale;
+            if (!profileDurationInputValid(command.mDuration))
+                return MC_ErrorCode::PARAMETER_NOT_SUPPORT;
+
+            return MC_ErrorCode::GOOD;
+        }
+
+        MC_ErrorCode buildAccelerationProfileCommand(const MC_AccelerationProfileData *profile, double timeScale,
+                                                     double accelerationScale, double accelerationOffset,
+                                                     VelocityProfileCommand &command)
+        {
+            if (!profile)
+                return MC_ErrorCode::PARAMETER_NOT_SUPPORT;
+
+            if (!profileScaleInputsValid(timeScale, accelerationScale, accelerationOffset))
+                return MC_ErrorCode::PARAMETER_NOT_SUPPORT;
+
+            const double scaleMagnitude = std::fabs(accelerationScale);
+            command.mVelocity = profile->mVelocity;
+            command.mAcceleration = accelerationOffset + profile->mAcceleration * scaleMagnitude / timeScale;
+            command.mDeceleration = accelerationOffset + profile->mDeceleration * scaleMagnitude / timeScale;
+            command.mJerk = profile->mJerk * scaleMagnitude / (timeScale * timeScale);
+
+            command.mDuration = profile->mDuration * timeScale;
+            if (!profileDurationInputValid(command.mDuration))
+                return MC_ErrorCode::PARAMETER_NOT_SUPPORT;
+
+            return MC_ErrorCode::GOOD;
+        }
     }
 
     void FbPower::call(void)
@@ -107,7 +242,7 @@ namespace plcopen
 
     MC_ErrorCode FbHaltSuperimposed::onAxisExecPosedge(void)
     {
-        return mAxis->addHalt(this, mDeceleration, mJerk, mBufferMode);
+        return mAxis->addHaltSuperimposed(this, mDeceleration, mJerk, mBufferMode);
     }
 
     ////////////////////////////////////////////////////////////
@@ -138,8 +273,7 @@ namespace plcopen
 
     MC_ErrorCode FbMoveSuperimposed::onAxisExecPosedge(void)
     {
-        return mAxis->addMovePos(this, mDistance, mVelocity, mAcceleration, mDeceleration, mJerk, MC_ShiftingMode::ADDITIVE,
-            MC_Direction::CURRENT, mBufferMode);
+        return mAxis->addMoveSuperimposed(this, mDistance, mVelocity, mAcceleration, mDeceleration, mJerk, mBufferMode);
     }
 
     ////////////////////////////////////////////////////////////
@@ -163,20 +297,34 @@ namespace plcopen
             mLastAcceleration = mAcceleration;
             mLastDeceleration = mDeceleration;
             mLastJerk = mJerk;
+            mLastDirection = mDirection;
             mLastOverride = mAxis ? mAxis->override() : 100;
             mContinuousUpdateSnapshotValid = mBusy;
             return;
         }
 
-        if (!mContinuousUpdate)
-            return;
-
         const double currentOverride = mAxis ? mAxis->override() : 100;
         const bool overrideChanged = std::fabs(currentOverride - mLastOverride) > kOverridePercentEpsilon;
-        if (mVelocity == mLastVelocity && mAcceleration == mLastAcceleration &&
-            mDeceleration == mLastDeceleration && mJerk == mLastJerk)
+        if (!mContinuousUpdate && !overrideChanged)
         {
-            const double targetVelocity = mAxis ? mLastVelocity * mAxis->override() * 0.01 : mLastVelocity;
+            const double targetVelocity = mAxis ? applyVelocityDirection(mLastVelocity, mLastDirection) *
+                mAxis->override() * 0.01 : applyVelocityDirection(mLastVelocity, mLastDirection);
+            if (mAxis && std::fabs(mAxis->cmdVelocity() - targetVelocity) <= kVelocityReachedEpsilon)
+                mDone = true;
+            return;
+        }
+
+        if (!moveVelocityDirectionSupported(mDirection))
+        {
+            onOperationError(MC_ErrorCode::PARAMETER_NOT_SUPPORT, 0);
+            return;
+        }
+
+        if (mVelocity == mLastVelocity && mAcceleration == mLastAcceleration &&
+            mDeceleration == mLastDeceleration && mJerk == mLastJerk && mDirection == mLastDirection)
+        {
+            const double targetVelocity = mAxis ? applyVelocityDirection(mLastVelocity, mLastDirection) *
+                mAxis->override() * 0.01 : applyVelocityDirection(mLastVelocity, mLastDirection);
             if (mAxis && std::fabs(mAxis->cmdVelocity() - targetVelocity) <= kVelocityReachedEpsilon)
                 mDone = true;
 
@@ -184,7 +332,8 @@ namespace plcopen
                 return;
         }
 
-        MC_ErrorCode err = mAxis ? mAxis->updateMoveVel(this, mVelocity, mAcceleration, mDeceleration, mJerk)
+        MC_ErrorCode err = mAxis ? mAxis->updateMoveVel(this, applyVelocityDirection(mVelocity, mDirection),
+                                     mAcceleration, mDeceleration, mJerk)
                                  : MC_ErrorCode::AXIS_NO_TEXIST;
         if (MC_ErrorCode::GOOD != err)
         {
@@ -200,13 +349,18 @@ namespace plcopen
         mLastAcceleration = mAcceleration;
         mLastDeceleration = mDeceleration;
         mLastJerk = mJerk;
+        mLastDirection = mDirection;
         mLastOverride = currentOverride;
         clearError();
     }
 
     MC_ErrorCode FbMoveVelocity::onAxisExecPosedge(void)
     {
-        return mAxis->addMoveVel(this, mVelocity, mAcceleration, mDeceleration, mJerk, mBufferMode);
+        if (!moveVelocityDirectionSupported(mDirection))
+            return MC_ErrorCode::PARAMETER_NOT_SUPPORT;
+
+        return mAxis->addMoveVel(this, applyVelocityDirection(mVelocity, mDirection),
+            mAcceleration, mDeceleration, mJerk, mBufferMode);
     }
 
     ////////////////////////////////////////////////////////////
@@ -238,11 +392,11 @@ namespace plcopen
             return;
         }
 
-        if (!mContinuousUpdate)
-            return;
-
         const double currentOverride = mAxis ? mAxis->override() : 100;
         const bool overrideChanged = std::fabs(currentOverride - mLastOverride) > kOverridePercentEpsilon;
+        if (!mContinuousUpdate && !overrideChanged)
+            return;
+
         if (mPosition == mLastPosition && mVelocity == mLastVelocity && mEndVelocity == mLastEndVelocity &&
             mAcceleration == mLastAcceleration && mDeceleration == mLastDeceleration && mJerk == mLastJerk &&
             mDirection == mLastDirection)
@@ -319,11 +473,11 @@ namespace plcopen
             return;
         }
 
-        if (!mContinuousUpdate)
-            return;
-
         const double currentOverride = mAxis ? mAxis->override() : 100;
         const bool overrideChanged = std::fabs(currentOverride - mLastOverride) > kOverridePercentEpsilon;
+        if (!mContinuousUpdate && !overrideChanged)
+            return;
+
         if (mDistance == mLastDistance && mVelocity == mLastVelocity && mEndVelocity == mLastEndVelocity &&
             mAcceleration == mLastAcceleration && mDeceleration == mLastDeceleration && mJerk == mLastJerk)
         {
@@ -372,6 +526,122 @@ namespace plcopen
 
     ////////////////////////////////////////////////////////////
 
+    void FbPositionProfile::resetTimedState(void)
+    {
+        mTimedSegmentStartPosition = 0.0;
+        mTimedSegmentTargetPosition = 0.0;
+        mTimedSegmentElapsed = 0.0;
+        mTimedSegmentDuration = 0.0;
+        mTimedSegmentDonePending = false;
+    }
+
+    MC_ErrorCode FbPositionProfile::startTimedSegment(MC_POSITION_PROFILE_REF profile)
+    {
+        PositionProfileCommand command;
+        MC_ErrorCode err = buildPositionProfileCommand(
+            profile, mTimeScale, mPositionScale, mPositionOffset, command);
+        if (MC_ErrorCode::GOOD != err)
+            return err;
+
+        mCommandStartPosition = mAxis ? mAxis->cmdPosition() : 0;
+        LREAL targetPosition = command.mPosition;
+        if (command.mShiftingMode == MC_ShiftingMode::RELATIVE ||
+            command.mShiftingMode == MC_ShiftingMode::ADDITIVE)
+        {
+            targetPosition = mCommandStartPosition + command.mPosition;
+        }
+        else
+        {
+            targetPosition = mAxis ? mAxis->userPosToSys(mCommandStartPosition, command.mPosition, command.mDirection)
+                                   : command.mPosition;
+        }
+
+        mTimedSegmentStartPosition = mAxis ? mAxis->cmdPosition() : 0;
+        mTimedSegmentTargetPosition = targetPosition;
+        mTimedSegmentElapsed = 0.0;
+        mTimedSegmentDuration = command.mDuration;
+        mTimedSegmentDonePending = false;
+        mLastPosition = command.mPosition;
+        mLastVelocity = command.mVelocity;
+        mLastAcceleration = command.mAcceleration;
+        mLastDeceleration = command.mDeceleration;
+        mLastJerk = command.mJerk;
+        mLastShiftingMode = command.mShiftingMode;
+        mLastDirection = command.mDirection;
+        mLastOverride = mAxis ? mAxis->override() : 100;
+        mContinuousUpdateSnapshotValid = true;
+
+        err = mAxis ? mAxis->setPosition(mTimedSegmentStartPosition, 0.0, 0.0)
+                    : MC_ErrorCode::AXIS_NO_TEXIST;
+        if (MC_ErrorCode::GOOD != err)
+            return err;
+
+        return mAxis ? mAxis->setStatus(MC_AxisStatus::DISCRETE_MOTION)
+                     : MC_ErrorCode::AXIS_NO_TEXIST;
+    }
+
+    void FbPositionProfile::processTimedSegment(void)
+    {
+        if (!mAxis || !mActivePositionProfile || mTimedSegmentDuration <= 0.0)
+            return;
+
+        if (mTimedSegmentDonePending)
+        {
+            if (mActivePositionProfile->mNext)
+            {
+                mActivePositionProfile = mActivePositionProfile->mNext;
+                MC_ErrorCode err = startTimedSegment(mActivePositionProfile);
+                if (MC_ErrorCode::GOOD != err)
+                {
+                    onOperationError(err, 0);
+                    return;
+                }
+
+                mDone = false;
+                mBusy = true;
+                mActive = true;
+                mCommandAborted = false;
+                clearError();
+                return;
+            }
+
+            mActivePositionProfile = nullptr;
+            resetTimedState();
+            mAxis->setStatus(MC_AxisStatus::STANDSTILL);
+            FbSeqExecuteType::onOperationDone(0);
+            return;
+        }
+
+        mTimedSegmentElapsed += mAxis->sampleTime();
+        const double ratio = std::min(1.0, mTimedSegmentElapsed / mTimedSegmentDuration);
+        const double target = mTimedSegmentStartPosition +
+            (mTimedSegmentTargetPosition - mTimedSegmentStartPosition) * ratio;
+        const double velocity = (mTimedSegmentTargetPosition - mTimedSegmentStartPosition) / mTimedSegmentDuration;
+        MC_ErrorCode err = mAxis->setPosition(target, ratio < 1.0 ? velocity : 0.0, 0.0);
+        if (MC_ErrorCode::GOOD != err)
+        {
+            onOperationError(err, 0);
+            return;
+        }
+
+        if (ratio < 1.0)
+        {
+            mDone = false;
+            mBusy = true;
+            mActive = true;
+            mCommandAborted = false;
+            clearError();
+            return;
+        }
+
+        mTimedSegmentDonePending = true;
+        mDone = false;
+        mBusy = true;
+        mActive = true;
+        mCommandAborted = false;
+        clearError();
+    }
+
     void FbPositionProfile::call(void)
     {
         FbSeqExecuteType::call();
@@ -380,68 +650,75 @@ namespace plcopen
         {
             mContinuousUpdateSnapshotValid = false;
             mActivePositionProfile = nullptr;
+            resetTimedState();
             return;
         }
 
-        if (mError || !mActive)
+        if (mError)
             return;
 
-        if (!mPositionProfile)
+        if (mActivePositionProfile && mTimedSegmentDuration > 0.0)
         {
-            onOperationError(MC_ErrorCode::PARAMETER_NOT_SUPPORT, 0);
+            processTimedSegment();
+            return;
+        }
+
+        if (!mActive)
+            return;
+
+        PositionProfileCommand command;
+        MC_ErrorCode err = buildPositionProfileCommand(
+            mPositionProfile, mTimeScale, mPositionScale, mPositionOffset, command);
+        if (MC_ErrorCode::GOOD != err)
+        {
+            onOperationError(err, 0);
             return;
         }
 
         if (!mContinuousUpdateSnapshotValid)
         {
             mCommandStartPosition = mAxis ? mAxis->cmdPosition() : 0;
-            mLastPosition = mPositionProfile->mPosition;
-            mLastVelocity = mPositionProfile->mVelocity;
-            mLastAcceleration = mPositionProfile->mAcceleration;
-            mLastDeceleration = mPositionProfile->mDeceleration;
-            mLastJerk = mPositionProfile->mJerk;
-            mLastShiftingMode = mPositionProfile->mShiftingMode;
-            mLastDirection = mPositionProfile->mDirection;
+            mLastPosition = command.mPosition;
+            mLastVelocity = command.mVelocity;
+            mLastAcceleration = command.mAcceleration;
+            mLastDeceleration = command.mDeceleration;
+            mLastJerk = command.mJerk;
+            mLastShiftingMode = command.mShiftingMode;
+            mLastDirection = command.mDirection;
             mLastOverride = mAxis ? mAxis->override() : 100;
             mContinuousUpdateSnapshotValid = true;
             return;
         }
 
-        if (!mContinuousUpdate)
-            return;
-
         const double currentOverride = mAxis ? mAxis->override() : 100;
         const bool overrideChanged = std::fabs(currentOverride - mLastOverride) > kOverridePercentEpsilon;
-        if (mPositionProfile->mPosition == mLastPosition && mPositionProfile->mVelocity == mLastVelocity &&
-            mPositionProfile->mAcceleration == mLastAcceleration &&
-            mPositionProfile->mDeceleration == mLastDeceleration && mPositionProfile->mJerk == mLastJerk &&
-            mPositionProfile->mShiftingMode == mLastShiftingMode && mPositionProfile->mDirection == mLastDirection)
+        if (!mContinuousUpdate && !overrideChanged)
+            return;
+
+        if (command.mPosition == mLastPosition && command.mVelocity == mLastVelocity &&
+            command.mAcceleration == mLastAcceleration &&
+            command.mDeceleration == mLastDeceleration && command.mJerk == mLastJerk &&
+            command.mShiftingMode == mLastShiftingMode && command.mDirection == mLastDirection)
         {
             if (!overrideChanged)
                 return;
         }
 
-        if (!std::isfinite(mPositionProfile->mPosition))
+        LREAL targetPosition = command.mPosition;
+        MC_ShiftingMode shiftingMode = command.mShiftingMode;
+        MC_Direction direction = command.mDirection;
+        if (command.mShiftingMode == MC_ShiftingMode::RELATIVE ||
+            command.mShiftingMode == MC_ShiftingMode::ADDITIVE)
         {
-            onOperationError(MC_ErrorCode::POS_ILLEGAL, 0);
-            return;
-        }
-
-        LREAL targetPosition = mPositionProfile->mPosition;
-        MC_ShiftingMode shiftingMode = mPositionProfile->mShiftingMode;
-        MC_Direction direction = mPositionProfile->mDirection;
-        if (mPositionProfile->mShiftingMode == MC_ShiftingMode::RELATIVE ||
-            mPositionProfile->mShiftingMode == MC_ShiftingMode::ADDITIVE)
-        {
-            targetPosition = mCommandStartPosition + mPositionProfile->mPosition;
+            targetPosition = mCommandStartPosition + command.mPosition;
             shiftingMode = MC_ShiftingMode::ABSOLUTE;
             direction = MC_Direction::CURRENT;
         }
 
-        MC_ErrorCode err = mAxis ? mAxis->updateMovePos(this, targetPosition, mPositionProfile->mVelocity,
-                               mPositionProfile->mAcceleration, mPositionProfile->mDeceleration,
-                               mPositionProfile->mJerk, shiftingMode, direction)
-                                 : MC_ErrorCode::AXIS_NO_TEXIST;
+        err = mAxis ? mAxis->updateMovePos(this, targetPosition, command.mVelocity,
+                               command.mAcceleration, command.mDeceleration,
+                               command.mJerk, shiftingMode, direction)
+                    : MC_ErrorCode::AXIS_NO_TEXIST;
         if (MC_ErrorCode::GOOD != err)
         {
             onOperationError(err, 0);
@@ -452,52 +729,68 @@ namespace plcopen
         mBusy = true;
         mActive = true;
         mCommandAborted = false;
-        mLastPosition = mPositionProfile->mPosition;
-        mLastVelocity = mPositionProfile->mVelocity;
-        mLastAcceleration = mPositionProfile->mAcceleration;
-        mLastDeceleration = mPositionProfile->mDeceleration;
-        mLastJerk = mPositionProfile->mJerk;
-        mLastShiftingMode = mPositionProfile->mShiftingMode;
-        mLastDirection = mPositionProfile->mDirection;
+        mLastPosition = command.mPosition;
+        mLastVelocity = command.mVelocity;
+        mLastAcceleration = command.mAcceleration;
+        mLastDeceleration = command.mDeceleration;
+        mLastJerk = command.mJerk;
+        mTimedSegmentDuration = command.mDuration;
+        mLastShiftingMode = command.mShiftingMode;
+        mLastDirection = command.mDirection;
         mLastOverride = currentOverride;
         clearError();
     }
 
     MC_ErrorCode FbPositionProfile::onAxisExecPosedge(void)
     {
-        if (!mPositionProfile)
-            return MC_ErrorCode::PARAMETER_NOT_SUPPORT;
+        PositionProfileCommand command;
+        MC_ErrorCode err = buildPositionProfileCommand(
+            mPositionProfile, mTimeScale, mPositionScale, mPositionOffset, command);
+        if (MC_ErrorCode::GOOD != err)
+            return err;
 
-        if (!std::isfinite(mPositionProfile->mPosition))
-            return MC_ErrorCode::POS_ILLEGAL;
+        if (timedProfileActive(command.mDuration))
+        {
+            mActivePositionProfile = mPositionProfile;
+            return startTimedSegment(mActivePositionProfile);
+        }
 
         mCommandStartPosition = mAxis->cmdPosition();
-        mLastPosition = mPositionProfile->mPosition;
-        mLastVelocity = mPositionProfile->mVelocity;
-        mLastAcceleration = mPositionProfile->mAcceleration;
-        mLastDeceleration = mPositionProfile->mDeceleration;
-        mLastJerk = mPositionProfile->mJerk;
-        mLastShiftingMode = mPositionProfile->mShiftingMode;
-        mLastDirection = mPositionProfile->mDirection;
+        mLastPosition = command.mPosition;
+        mLastVelocity = command.mVelocity;
+        mLastAcceleration = command.mAcceleration;
+        mLastDeceleration = command.mDeceleration;
+        mLastJerk = command.mJerk;
+        mLastShiftingMode = command.mShiftingMode;
+        mLastDirection = command.mDirection;
         mLastOverride = mAxis->override();
         mActivePositionProfile = mPositionProfile;
         mContinuousUpdateSnapshotValid = true;
-        return mAxis->addMovePos(this, mPositionProfile->mPosition, mPositionProfile->mVelocity,
-            mPositionProfile->mAcceleration, mPositionProfile->mDeceleration, mPositionProfile->mJerk,
-            mPositionProfile->mShiftingMode, mPositionProfile->mDirection, mBufferMode);
+        return mAxis->addMovePos(this, command.mPosition, command.mVelocity,
+            command.mAcceleration, command.mDeceleration, command.mJerk,
+            command.mShiftingMode, command.mDirection, mBufferMode);
     }
 
     void FbPositionProfile::onOperationDone(int32_t customId)
     {
+        if (mActivePositionProfile && mTimedSegmentDuration > 0.0)
+            return;
+
         if (mExecute && mActivePositionProfile && mActivePositionProfile->mNext)
         {
             mActivePositionProfile = mActivePositionProfile->mNext;
-            MC_ErrorCode err = mAxis ? mAxis->addMovePos(this, mActivePositionProfile->mPosition,
-                                   mActivePositionProfile->mVelocity, mActivePositionProfile->mAcceleration,
-                                   mActivePositionProfile->mDeceleration, mActivePositionProfile->mJerk,
-                                   mActivePositionProfile->mShiftingMode, mActivePositionProfile->mDirection,
-                                   MC_BufferMode::BUFFERED)
-                                     : MC_ErrorCode::AXIS_NO_TEXIST;
+            PositionProfileCommand command;
+            MC_ErrorCode err = buildPositionProfileCommand(
+                mActivePositionProfile, mTimeScale, mPositionScale, mPositionOffset, command);
+            if (MC_ErrorCode::GOOD == err)
+            {
+                err = mAxis ? mAxis->addMovePos(this, command.mPosition,
+                                      command.mVelocity, command.mAcceleration,
+                                      command.mDeceleration, command.mJerk,
+                                      command.mShiftingMode, command.mDirection,
+                                      MC_BufferMode::BUFFERED)
+                            : MC_ErrorCode::AXIS_NO_TEXIST;
+            }
             if (MC_ErrorCode::GOOD != err)
             {
                 onOperationError(err, customId);
@@ -508,29 +801,98 @@ namespace plcopen
             mBusy = true;
             mActive = false;
             mCommandAborted = false;
-            mLastPosition = mActivePositionProfile->mPosition;
-            mLastVelocity = mActivePositionProfile->mVelocity;
-            mLastAcceleration = mActivePositionProfile->mAcceleration;
-            mLastDeceleration = mActivePositionProfile->mDeceleration;
-            mLastJerk = mActivePositionProfile->mJerk;
-            mLastShiftingMode = mActivePositionProfile->mShiftingMode;
-            mLastDirection = mActivePositionProfile->mDirection;
+            mLastPosition = command.mPosition;
+            mLastVelocity = command.mVelocity;
+            mLastAcceleration = command.mAcceleration;
+            mLastDeceleration = command.mDeceleration;
+            mLastJerk = command.mJerk;
+            mLastShiftingMode = command.mShiftingMode;
+            mLastDirection = command.mDirection;
             mLastOverride = mAxis ? mAxis->override() : 100;
             clearError();
             return;
         }
 
         mActivePositionProfile = nullptr;
+        resetTimedState();
         FbSeqExecuteType::onOperationDone(customId);
     }
 
     void FbPositionProfile::onOperationAborted(int32_t customId)
     {
         mActivePositionProfile = nullptr;
+        resetTimedState();
         FbSeqExecuteType::onOperationAborted(customId);
     }
 
     ////////////////////////////////////////////////////////////
+
+    void FbVelocityProfile::resetTimedState(void)
+    {
+        mTimedSegmentElapsed = 0.0;
+        mTimedSegmentDuration = 0.0;
+    }
+
+    MC_ErrorCode FbVelocityProfile::startTimedSegment(MC_VELOCITY_PROFILE_REF profile)
+    {
+        VelocityProfileCommand command;
+        MC_ErrorCode err = buildVelocityProfileCommand(
+            profile, mTimeScale, mVelocityScale, mVelocityOffset, command);
+        if (MC_ErrorCode::GOOD != err)
+            return err;
+
+        err = mAxis ? mAxis->updateMoveVel(this, command.mVelocity,
+                               command.mAcceleration, command.mDeceleration,
+                               command.mJerk)
+                    : MC_ErrorCode::AXIS_NO_TEXIST;
+        if (MC_ErrorCode::GOOD != err)
+            return err;
+
+        mTimedSegmentElapsed = 0.0;
+        mTimedSegmentDuration = command.mDuration;
+        mLastVelocity = command.mVelocity;
+        mLastAcceleration = command.mAcceleration;
+        mLastDeceleration = command.mDeceleration;
+        mLastJerk = command.mJerk;
+        mLastOverride = mAxis ? mAxis->override() : 100;
+        mContinuousUpdateSnapshotValid = true;
+        return MC_ErrorCode::GOOD;
+    }
+
+    void FbVelocityProfile::processTimedSegment(void)
+    {
+        if (!mAxis || !mActiveVelocityProfile || mTimedSegmentDuration <= 0.0)
+            return;
+
+        const double targetVelocity = mLastVelocity * mAxis->override() * 0.01;
+        if (std::fabs(mAxis->cmdVelocity() - targetVelocity) <= kProfileSegmentVelocityEpsilon)
+            mTimedSegmentElapsed += mAxis->sampleTime();
+
+        if (mTimedSegmentElapsed < mTimedSegmentDuration)
+            return;
+
+        if (mActiveVelocityProfile->mNext)
+        {
+            mActiveVelocityProfile = mActiveVelocityProfile->mNext;
+            MC_ErrorCode err = startTimedSegment(mActiveVelocityProfile);
+            if (MC_ErrorCode::GOOD != err)
+            {
+                onOperationError(err, 0);
+                return;
+            }
+
+            mDone = false;
+            mBusy = true;
+            mActive = true;
+            mCommandAborted = false;
+            clearError();
+            return;
+        }
+
+        mActiveVelocityProfile = nullptr;
+        resetTimedState();
+        mDone = true;
+    }
 
     void FbVelocityProfile::call(void)
     {
@@ -540,24 +902,34 @@ namespace plcopen
         {
             mContinuousUpdateSnapshotValid = false;
             mActiveVelocityProfile = nullptr;
+            resetTimedState();
             return;
         }
 
         if (mError || !mActive)
             return;
 
-        if (!mVelocityProfile)
+        if (mActiveVelocityProfile && mTimedSegmentDuration > 0.0)
         {
-            onOperationError(MC_ErrorCode::PARAMETER_NOT_SUPPORT, 0);
+            processTimedSegment();
+            return;
+        }
+
+        VelocityProfileCommand command;
+        MC_ErrorCode err = buildVelocityProfileCommand(
+            mVelocityProfile, mTimeScale, mVelocityScale, mVelocityOffset, command);
+        if (MC_ErrorCode::GOOD != err)
+        {
+            onOperationError(err, 0);
             return;
         }
 
         if (!mContinuousUpdateSnapshotValid)
         {
-            mLastVelocity = mVelocityProfile->mVelocity;
-            mLastAcceleration = mVelocityProfile->mAcceleration;
-            mLastDeceleration = mVelocityProfile->mDeceleration;
-            mLastJerk = mVelocityProfile->mJerk;
+            mLastVelocity = command.mVelocity;
+            mLastAcceleration = command.mAcceleration;
+            mLastDeceleration = command.mDeceleration;
+            mLastJerk = command.mJerk;
             mLastOverride = mAxis ? mAxis->override() : 100;
             mContinuousUpdateSnapshotValid = true;
             return;
@@ -571,19 +943,24 @@ namespace plcopen
                 if (mActiveVelocityProfile->mNext)
                 {
                     mActiveVelocityProfile = mActiveVelocityProfile->mNext;
-                    MC_ErrorCode err = mAxis->updateMoveVel(this, mActiveVelocityProfile->mVelocity,
-                        mActiveVelocityProfile->mAcceleration, mActiveVelocityProfile->mDeceleration,
-                        mActiveVelocityProfile->mJerk);
+                    err = buildVelocityProfileCommand(
+                        mActiveVelocityProfile, mTimeScale, mVelocityScale, mVelocityOffset, command);
+                    if (MC_ErrorCode::GOOD == err)
+                    {
+                        err = mAxis->updateMoveVel(this, command.mVelocity,
+                            command.mAcceleration, command.mDeceleration,
+                            command.mJerk);
+                    }
                     if (MC_ErrorCode::GOOD != err)
                     {
                         onOperationError(err, 0);
                         return;
                     }
 
-                    mLastVelocity = mActiveVelocityProfile->mVelocity;
-                    mLastAcceleration = mActiveVelocityProfile->mAcceleration;
-                    mLastDeceleration = mActiveVelocityProfile->mDeceleration;
-                    mLastJerk = mActiveVelocityProfile->mJerk;
+                    mLastVelocity = command.mVelocity;
+                    mLastAcceleration = command.mAcceleration;
+                    mLastDeceleration = command.mDeceleration;
+                    mLastJerk = command.mJerk;
                     mLastOverride = mAxis ? mAxis->override() : 100;
                     mDone = false;
                     clearError();
@@ -599,13 +976,13 @@ namespace plcopen
             }
         }
 
-        if (!mContinuousUpdate)
-            return;
-
         const double currentOverride = mAxis ? mAxis->override() : 100;
         const bool overrideChanged = std::fabs(currentOverride - mLastOverride) > kOverridePercentEpsilon;
-        if (mVelocityProfile->mVelocity == mLastVelocity && mVelocityProfile->mAcceleration == mLastAcceleration &&
-            mVelocityProfile->mDeceleration == mLastDeceleration && mVelocityProfile->mJerk == mLastJerk)
+        if (!mContinuousUpdate && !overrideChanged)
+            return;
+
+        if (command.mVelocity == mLastVelocity && command.mAcceleration == mLastAcceleration &&
+            command.mDeceleration == mLastDeceleration && command.mJerk == mLastJerk)
         {
             const double targetVelocity = mAxis ? mLastVelocity * mAxis->override() * 0.01 : mLastVelocity;
             if (mAxis && std::fabs(mAxis->cmdVelocity() - targetVelocity) <= kVelocityReachedEpsilon)
@@ -615,10 +992,10 @@ namespace plcopen
                 return;
         }
 
-        MC_ErrorCode err = mAxis ? mAxis->updateMoveVel(this, mVelocityProfile->mVelocity,
-                               mVelocityProfile->mAcceleration, mVelocityProfile->mDeceleration,
-                               mVelocityProfile->mJerk)
-                                 : MC_ErrorCode::AXIS_NO_TEXIST;
+        err = mAxis ? mAxis->updateMoveVel(this, command.mVelocity,
+                               command.mAcceleration, command.mDeceleration,
+                               command.mJerk)
+                    : MC_ErrorCode::AXIS_NO_TEXIST;
         if (MC_ErrorCode::GOOD != err)
         {
             onOperationError(err, 0);
@@ -629,39 +1006,57 @@ namespace plcopen
         mBusy = true;
         mActive = true;
         mCommandAborted = false;
-        mLastVelocity = mVelocityProfile->mVelocity;
-        mLastAcceleration = mVelocityProfile->mAcceleration;
-        mLastDeceleration = mVelocityProfile->mDeceleration;
-        mLastJerk = mVelocityProfile->mJerk;
+        mLastVelocity = command.mVelocity;
+        mLastAcceleration = command.mAcceleration;
+        mLastDeceleration = command.mDeceleration;
+        mLastJerk = command.mJerk;
+        mTimedSegmentDuration = command.mDuration;
         mLastOverride = currentOverride;
         clearError();
     }
 
     MC_ErrorCode FbVelocityProfile::onAxisExecPosedge(void)
     {
-        if (!mVelocityProfile)
-            return MC_ErrorCode::PARAMETER_NOT_SUPPORT;
+        VelocityProfileCommand command;
+        MC_ErrorCode err = buildVelocityProfileCommand(
+            mVelocityProfile, mTimeScale, mVelocityScale, mVelocityOffset, command);
+        if (MC_ErrorCode::GOOD != err)
+            return err;
 
-        mLastVelocity = mVelocityProfile->mVelocity;
-        mLastAcceleration = mVelocityProfile->mAcceleration;
-        mLastDeceleration = mVelocityProfile->mDeceleration;
-        mLastJerk = mVelocityProfile->mJerk;
+        const bool isTimed = timedProfileActive(command.mDuration);
+        mLastVelocity = command.mVelocity;
+        mLastAcceleration = command.mAcceleration;
+        mLastDeceleration = command.mDeceleration;
+        mLastJerk = command.mJerk;
         mLastOverride = mAxis->override();
         mActiveVelocityProfile = mVelocityProfile;
         mContinuousUpdateSnapshotValid = true;
-        return mAxis->addMoveVel(this, mVelocityProfile->mVelocity, mVelocityProfile->mAcceleration,
-            mVelocityProfile->mDeceleration, mVelocityProfile->mJerk, mBufferMode);
+        mTimedSegmentDuration = command.mDuration;
+        err = mAxis->addMoveVel(this, command.mVelocity, command.mAcceleration,
+            command.mDeceleration, command.mJerk, mBufferMode);
+        if (MC_ErrorCode::GOOD == err && !isTimed)
+            resetTimedState();
+        return err;
     }
 
     void FbVelocityProfile::onOperationDone(int32_t customId)
     {
+        if (mActiveVelocityProfile && mTimedSegmentDuration > 0.0)
+            return;
+
         if (mExecute && mActiveVelocityProfile && mActiveVelocityProfile->mNext)
         {
             mActiveVelocityProfile = mActiveVelocityProfile->mNext;
-            MC_ErrorCode err = mAxis ? mAxis->updateMoveVel(this, mActiveVelocityProfile->mVelocity,
-                                   mActiveVelocityProfile->mAcceleration, mActiveVelocityProfile->mDeceleration,
-                                   mActiveVelocityProfile->mJerk)
-                                     : MC_ErrorCode::AXIS_NO_TEXIST;
+            VelocityProfileCommand command;
+            MC_ErrorCode err = buildVelocityProfileCommand(
+                mActiveVelocityProfile, mTimeScale, mVelocityScale, mVelocityOffset, command);
+            if (MC_ErrorCode::GOOD == err)
+            {
+                err = mAxis ? mAxis->updateMoveVel(this, command.mVelocity,
+                                      command.mAcceleration, command.mDeceleration,
+                                      command.mJerk)
+                            : MC_ErrorCode::AXIS_NO_TEXIST;
+            }
             if (MC_ErrorCode::GOOD != err)
             {
                 onOperationError(err, customId);
@@ -672,26 +1067,95 @@ namespace plcopen
             mBusy = true;
             mActive = true;
             mCommandAborted = false;
-            mLastVelocity = mActiveVelocityProfile->mVelocity;
-            mLastAcceleration = mActiveVelocityProfile->mAcceleration;
-            mLastDeceleration = mActiveVelocityProfile->mDeceleration;
-            mLastJerk = mActiveVelocityProfile->mJerk;
+            mLastVelocity = command.mVelocity;
+            mLastAcceleration = command.mAcceleration;
+            mLastDeceleration = command.mDeceleration;
+            mLastJerk = command.mJerk;
             mLastOverride = mAxis ? mAxis->override() : 100;
             clearError();
             return;
         }
 
         mActiveVelocityProfile = nullptr;
+        resetTimedState();
         FbExecAxisBufferContType::onOperationDone(customId);
     }
 
     void FbVelocityProfile::onOperationAborted(int32_t customId)
     {
         mActiveVelocityProfile = nullptr;
+        resetTimedState();
         FbSeqExecuteType::onOperationAborted(customId);
     }
 
     ////////////////////////////////////////////////////////////
+
+    void FbAccelerationProfile::resetTimedState(void)
+    {
+        mTimedSegmentElapsed = 0.0;
+        mTimedSegmentDuration = 0.0;
+    }
+
+    MC_ErrorCode FbAccelerationProfile::startTimedSegment(MC_ACCELERATION_PROFILE_REF profile)
+    {
+        VelocityProfileCommand command;
+        MC_ErrorCode err = buildAccelerationProfileCommand(
+            profile, mTimeScale, mAccelerationScale, mAccelerationOffset, command);
+        if (MC_ErrorCode::GOOD != err)
+            return err;
+
+        err = mAxis ? mAxis->updateMoveVel(this, command.mVelocity,
+                               command.mAcceleration, command.mDeceleration,
+                               command.mJerk)
+                    : MC_ErrorCode::AXIS_NO_TEXIST;
+        if (MC_ErrorCode::GOOD != err)
+            return err;
+
+        mTimedSegmentElapsed = 0.0;
+        mTimedSegmentDuration = command.mDuration;
+        mLastVelocity = command.mVelocity;
+        mLastAcceleration = command.mAcceleration;
+        mLastDeceleration = command.mDeceleration;
+        mLastJerk = command.mJerk;
+        mLastOverride = mAxis ? mAxis->override() : 100;
+        mContinuousUpdateSnapshotValid = true;
+        return MC_ErrorCode::GOOD;
+    }
+
+    void FbAccelerationProfile::processTimedSegment(void)
+    {
+        if (!mAxis || !mActiveAccelerationProfile || mTimedSegmentDuration <= 0.0)
+            return;
+
+        const double targetVelocity = mLastVelocity * mAxis->override() * 0.01;
+        if (std::fabs(mAxis->cmdVelocity() - targetVelocity) <= kProfileSegmentVelocityEpsilon)
+            mTimedSegmentElapsed += mAxis->sampleTime();
+
+        if (mTimedSegmentElapsed < mTimedSegmentDuration)
+            return;
+
+        if (mActiveAccelerationProfile->mNext)
+        {
+            mActiveAccelerationProfile = mActiveAccelerationProfile->mNext;
+            MC_ErrorCode err = startTimedSegment(mActiveAccelerationProfile);
+            if (MC_ErrorCode::GOOD != err)
+            {
+                onOperationError(err, 0);
+                return;
+            }
+
+            mDone = false;
+            mBusy = true;
+            mActive = true;
+            mCommandAborted = false;
+            clearError();
+            return;
+        }
+
+        mActiveAccelerationProfile = nullptr;
+        resetTimedState();
+        mDone = true;
+    }
 
     void FbAccelerationProfile::call(void)
     {
@@ -701,24 +1165,34 @@ namespace plcopen
         {
             mContinuousUpdateSnapshotValid = false;
             mActiveAccelerationProfile = nullptr;
+            resetTimedState();
             return;
         }
 
         if (mError || !mActive)
             return;
 
-        if (!mAccelerationProfile)
+        if (mActiveAccelerationProfile && mTimedSegmentDuration > 0.0)
         {
-            onOperationError(MC_ErrorCode::PARAMETER_NOT_SUPPORT, 0);
+            processTimedSegment();
+            return;
+        }
+
+        VelocityProfileCommand command;
+        MC_ErrorCode err = buildAccelerationProfileCommand(
+            mAccelerationProfile, mTimeScale, mAccelerationScale, mAccelerationOffset, command);
+        if (MC_ErrorCode::GOOD != err)
+        {
+            onOperationError(err, 0);
             return;
         }
 
         if (!mContinuousUpdateSnapshotValid)
         {
-            mLastVelocity = mAccelerationProfile->mVelocity;
-            mLastAcceleration = mAccelerationProfile->mAcceleration;
-            mLastDeceleration = mAccelerationProfile->mDeceleration;
-            mLastJerk = mAccelerationProfile->mJerk;
+            mLastVelocity = command.mVelocity;
+            mLastAcceleration = command.mAcceleration;
+            mLastDeceleration = command.mDeceleration;
+            mLastJerk = command.mJerk;
             mLastOverride = mAxis ? mAxis->override() : 100;
             mContinuousUpdateSnapshotValid = true;
             return;
@@ -732,19 +1206,24 @@ namespace plcopen
                 if (mActiveAccelerationProfile->mNext)
                 {
                     mActiveAccelerationProfile = mActiveAccelerationProfile->mNext;
-                    MC_ErrorCode err = mAxis->updateMoveVel(this, mActiveAccelerationProfile->mVelocity,
-                        mActiveAccelerationProfile->mAcceleration, mActiveAccelerationProfile->mDeceleration,
-                        mActiveAccelerationProfile->mJerk);
+                    err = buildAccelerationProfileCommand(
+                        mActiveAccelerationProfile, mTimeScale, mAccelerationScale, mAccelerationOffset, command);
+                    if (MC_ErrorCode::GOOD == err)
+                    {
+                        err = mAxis->updateMoveVel(this, command.mVelocity,
+                            command.mAcceleration, command.mDeceleration,
+                            command.mJerk);
+                    }
                     if (MC_ErrorCode::GOOD != err)
                     {
                         onOperationError(err, 0);
                         return;
                     }
 
-                    mLastVelocity = mActiveAccelerationProfile->mVelocity;
-                    mLastAcceleration = mActiveAccelerationProfile->mAcceleration;
-                    mLastDeceleration = mActiveAccelerationProfile->mDeceleration;
-                    mLastJerk = mActiveAccelerationProfile->mJerk;
+                    mLastVelocity = command.mVelocity;
+                    mLastAcceleration = command.mAcceleration;
+                    mLastDeceleration = command.mDeceleration;
+                    mLastJerk = command.mJerk;
                     mLastOverride = mAxis ? mAxis->override() : 100;
                     mDone = false;
                     clearError();
@@ -760,14 +1239,14 @@ namespace plcopen
             }
         }
 
-        if (!mContinuousUpdate)
-            return;
-
         const double currentOverride = mAxis ? mAxis->override() : 100;
         const bool overrideChanged = std::fabs(currentOverride - mLastOverride) > kOverridePercentEpsilon;
-        if (mAccelerationProfile->mVelocity == mLastVelocity &&
-            mAccelerationProfile->mAcceleration == mLastAcceleration &&
-            mAccelerationProfile->mDeceleration == mLastDeceleration && mAccelerationProfile->mJerk == mLastJerk)
+        if (!mContinuousUpdate && !overrideChanged)
+            return;
+
+        if (command.mVelocity == mLastVelocity &&
+            command.mAcceleration == mLastAcceleration &&
+            command.mDeceleration == mLastDeceleration && command.mJerk == mLastJerk)
         {
             const double targetVelocity = mAxis ? mLastVelocity * mAxis->override() * 0.01 : mLastVelocity;
             if (mAxis && std::fabs(mAxis->cmdVelocity() - targetVelocity) <= kVelocityReachedEpsilon)
@@ -777,10 +1256,10 @@ namespace plcopen
                 return;
         }
 
-        MC_ErrorCode err = mAxis ? mAxis->updateMoveVel(this, mAccelerationProfile->mVelocity,
-                               mAccelerationProfile->mAcceleration, mAccelerationProfile->mDeceleration,
-                               mAccelerationProfile->mJerk)
-                                 : MC_ErrorCode::AXIS_NO_TEXIST;
+        err = mAxis ? mAxis->updateMoveVel(this, command.mVelocity,
+                               command.mAcceleration, command.mDeceleration,
+                               command.mJerk)
+                    : MC_ErrorCode::AXIS_NO_TEXIST;
         if (MC_ErrorCode::GOOD != err)
         {
             onOperationError(err, 0);
@@ -791,39 +1270,57 @@ namespace plcopen
         mBusy = true;
         mActive = true;
         mCommandAborted = false;
-        mLastVelocity = mAccelerationProfile->mVelocity;
-        mLastAcceleration = mAccelerationProfile->mAcceleration;
-        mLastDeceleration = mAccelerationProfile->mDeceleration;
-        mLastJerk = mAccelerationProfile->mJerk;
+        mLastVelocity = command.mVelocity;
+        mLastAcceleration = command.mAcceleration;
+        mLastDeceleration = command.mDeceleration;
+        mLastJerk = command.mJerk;
+        mTimedSegmentDuration = command.mDuration;
         mLastOverride = currentOverride;
         clearError();
     }
 
     MC_ErrorCode FbAccelerationProfile::onAxisExecPosedge(void)
     {
-        if (!mAccelerationProfile)
-            return MC_ErrorCode::PARAMETER_NOT_SUPPORT;
+        VelocityProfileCommand command;
+        MC_ErrorCode err = buildAccelerationProfileCommand(
+            mAccelerationProfile, mTimeScale, mAccelerationScale, mAccelerationOffset, command);
+        if (MC_ErrorCode::GOOD != err)
+            return err;
 
-        mLastVelocity = mAccelerationProfile->mVelocity;
-        mLastAcceleration = mAccelerationProfile->mAcceleration;
-        mLastDeceleration = mAccelerationProfile->mDeceleration;
-        mLastJerk = mAccelerationProfile->mJerk;
+        const bool isTimed = timedProfileActive(command.mDuration);
+        mLastVelocity = command.mVelocity;
+        mLastAcceleration = command.mAcceleration;
+        mLastDeceleration = command.mDeceleration;
+        mLastJerk = command.mJerk;
         mLastOverride = mAxis->override();
         mActiveAccelerationProfile = mAccelerationProfile;
         mContinuousUpdateSnapshotValid = true;
-        return mAxis->addMoveVel(this, mAccelerationProfile->mVelocity, mAccelerationProfile->mAcceleration,
-            mAccelerationProfile->mDeceleration, mAccelerationProfile->mJerk, mBufferMode);
+        mTimedSegmentDuration = command.mDuration;
+        err = mAxis->addMoveVel(this, command.mVelocity, command.mAcceleration,
+            command.mDeceleration, command.mJerk, mBufferMode);
+        if (MC_ErrorCode::GOOD == err && !isTimed)
+            resetTimedState();
+        return err;
     }
 
     void FbAccelerationProfile::onOperationDone(int32_t customId)
     {
+        if (mActiveAccelerationProfile && mTimedSegmentDuration > 0.0)
+            return;
+
         if (mExecute && mActiveAccelerationProfile && mActiveAccelerationProfile->mNext)
         {
             mActiveAccelerationProfile = mActiveAccelerationProfile->mNext;
-            MC_ErrorCode err = mAxis ? mAxis->updateMoveVel(this, mActiveAccelerationProfile->mVelocity,
-                                   mActiveAccelerationProfile->mAcceleration, mActiveAccelerationProfile->mDeceleration,
-                                   mActiveAccelerationProfile->mJerk)
-                                     : MC_ErrorCode::AXIS_NO_TEXIST;
+            VelocityProfileCommand command;
+            MC_ErrorCode err = buildAccelerationProfileCommand(
+                mActiveAccelerationProfile, mTimeScale, mAccelerationScale, mAccelerationOffset, command);
+            if (MC_ErrorCode::GOOD == err)
+            {
+                err = mAxis ? mAxis->updateMoveVel(this, command.mVelocity,
+                                      command.mAcceleration, command.mDeceleration,
+                                      command.mJerk)
+                            : MC_ErrorCode::AXIS_NO_TEXIST;
+            }
             if (MC_ErrorCode::GOOD != err)
             {
                 onOperationError(err, customId);
@@ -834,22 +1331,24 @@ namespace plcopen
             mBusy = true;
             mActive = true;
             mCommandAborted = false;
-            mLastVelocity = mActiveAccelerationProfile->mVelocity;
-            mLastAcceleration = mActiveAccelerationProfile->mAcceleration;
-            mLastDeceleration = mActiveAccelerationProfile->mDeceleration;
-            mLastJerk = mActiveAccelerationProfile->mJerk;
+            mLastVelocity = command.mVelocity;
+            mLastAcceleration = command.mAcceleration;
+            mLastDeceleration = command.mDeceleration;
+            mLastJerk = command.mJerk;
             mLastOverride = mAxis ? mAxis->override() : 100;
             clearError();
             return;
         }
 
         mActiveAccelerationProfile = nullptr;
+        resetTimedState();
         FbExecAxisBufferContType::onOperationDone(customId);
     }
 
     void FbAccelerationProfile::onOperationAborted(int32_t customId)
     {
         mActiveAccelerationProfile = nullptr;
+        resetTimedState();
         FbSeqExecuteType::onOperationAborted(customId);
     }
 
@@ -1101,8 +1600,12 @@ namespace plcopen
                         return;
                     }
 
-                    const double position = mAxis->actPosition();
-                    const bool captureEnabled = !mWindowOnly || (position >= mFirstPosition && position <= mLastPosition);
+                    double recordedPosition = mAxis->actPosition();
+                    mAxis->servoReadLatchedPosition(
+                        kDigitalInputBase + static_cast<int>(mTriggerInput),
+                        recordedPosition);
+                    const bool captureEnabled = !mWindowOnly ||
+                        (recordedPosition >= mFirstPosition && recordedPosition <= mLastPosition);
                     const MC_ErrorCode err = mAxis->updateTouchProbe(
                         static_cast<int>(mTriggerInput),
                         value != 0.0,
@@ -1115,7 +1618,7 @@ namespace plcopen
                     }
                     else if (triggered)
                     {
-                        mRecordedPosition = mAxis->actPosition();
+                        mRecordedPosition = recordedPosition;
                         mBusy = mActive = false;
                         mDone = true;
                         clearError();
@@ -1136,6 +1639,10 @@ namespace plcopen
 
     MC_ErrorCode FbAbortTrigger::onAxisTriggered(bool &isDone)
     {
+        double value = 0;
+        if (!mAxis->servoReadVal(kDigitalInputBase + static_cast<int>(mTriggerInput), value))
+            return MC_ErrorCode::PARAMETER_NOT_SUPPORT;
+
         const MC_ErrorCode err = mAxis->abortTouchProbe(static_cast<int>(mTriggerInput));
         if (err != MC_ErrorCode::GOOD)
             return err;
@@ -1305,11 +1812,11 @@ namespace plcopen
         mLimitSwitchNeg = readServoBool(mAxis, kAxisInfoNegativeLimitInput) ||
             (rangeLimit.mSwLimitNegative && position < rangeLimit.mLimitNegative);
         mSimulation = true;
-        mCommunicationReady = mAxis->errorCode() == MC_ErrorCode::GOOD;
-        mReadyForPowerOn = mAxis->errorCode() == MC_ErrorCode::GOOD;
+        mCommunicationReady = mAxis->servoCommunicationReady() && mAxis->errorCode() == MC_ErrorCode::GOOD;
+        mReadyForPowerOn = mAxis->servoReadyForPowerOn() && mAxis->errorCode() == MC_ErrorCode::GOOD;
         mPowerOn = mAxis->powerStatus();
         mIsHomed = mAxis->isHomed();
-        mAxisWarning = readServoBool(mAxis, kAxisInfoWarningInput);
+        mAxisWarning = mAxis->servoWarning() || readServoBool(mAxis, kAxisInfoWarningInput);
 
         isDone = true;
         return MC_ErrorCode::GOOD;

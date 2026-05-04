@@ -75,6 +75,11 @@ struct SingleAxisFbHarness
         }
 
         INFO("busy=" << block.mBusy << ", active=" << block.mActive << ", error=" << block.mError);
+        if (axis)
+        {
+            INFO("cmd_position=" << axis->cmdPosition() << ", act_position=" << axis->actPosition()
+                                 << ", cmd_velocity=" << axis->cmdVelocity());
+        }
         FAIL(message);
     }
 
@@ -125,10 +130,79 @@ struct HomingSwitchServo : Servo
     }
 };
 
+struct IndexedHomingServo : Servo
+{
+    uint8_t switchSignals = 0;
+    uint8_t indexSignals = 0;
+    double switchPosition = 0.0;
+    double indexPosition = 0.0;
+    uint8_t switchBit = 0;
+    uint8_t indexBit = 1;
+    bool switchStateAfterTrigger = true;
+    HomingTriggerDirection triggerDirection = HomingTriggerDirection::AT_OR_ABOVE;
+
+    IndexedHomingServo(double switchPos, double indexPos, bool activeAfterTrigger,
+                       HomingTriggerDirection direction)
+        : switchPosition(switchPos),
+          indexPosition(indexPos),
+          switchStateAfterTrigger(activeAfterTrigger),
+          triggerDirection(direction)
+    {
+    }
+
+    void runCycle(double freq) override
+    {
+        Servo::runCycle(freq);
+
+        const double currentPosition = static_cast<double>(pos()) / 8192.0;
+        const bool reachedSwitch = triggerDirection == HomingTriggerDirection::AT_OR_ABOVE
+            ? currentPosition >= switchPosition
+            : currentPosition <= switchPosition;
+        const bool switchState = reachedSwitch ? switchStateAfterTrigger : !switchStateAfterTrigger;
+        const uint8_t switchMask = static_cast<uint8_t>(1u << switchBit);
+        switchSignals = switchState ? static_cast<uint8_t>(switchSignals | switchMask)
+                                    : static_cast<uint8_t>(switchSignals & ~switchMask);
+
+        const bool indexState = std::fabs(currentPosition - indexPosition) <= 0.03;
+        const uint8_t indexMask = static_cast<uint8_t>(1u << indexBit);
+        indexSignals = indexState ? static_cast<uint8_t>(indexSignals | indexMask)
+                                  : static_cast<uint8_t>(indexSignals & ~indexMask);
+    }
+};
+
 struct DigitalIoServo : Servo
 {
     std::array<bool, 4> inputs = {false, true, false, false};
     std::array<bool, 4> outputs = {false, false, true, false};
+    bool communicationReadyFlag = true;
+    bool readyForPowerOnFlag = true;
+    bool warningFlag = false;
+    bool latchedPositionAvailable = false;
+    double latchedPosition = 0.0;
+
+    bool communicationReady(void) override
+    {
+        return communicationReadyFlag;
+    }
+
+    bool readyForPowerOn(void) override
+    {
+        return readyForPowerOnFlag;
+    }
+
+    bool warning(void) override
+    {
+        return warningFlag;
+    }
+
+    bool readLatchedPosition(int, double& position) override
+    {
+        if (!latchedPositionAvailable)
+            return false;
+
+        position = latchedPosition;
+        return true;
+    }
 
     bool readVal(int index, double& value) override
     {
@@ -369,6 +443,73 @@ TEST_CASE("FbMoveVelocity updates target velocity while ContinuousUpdate is enab
     REQUIRE(moveVelocity.mBusy);
     REQUIRE(moveVelocity.mActive);
     REQUIRE(harness.axis->status() == MC_AxisStatus::CONTINUOUS_MOTION);
+}
+
+TEST_CASE("FbMoveVelocity applies Direction during ContinuousUpdate", "[fb][axis][integration]")
+{
+    SingleAxisFbHarness harness;
+    harness.powerOn();
+
+    FbMoveVelocity moveVelocity;
+    moveVelocity.mAxis = harness.axis;
+    moveVelocity.mVelocity = 2.0;
+    moveVelocity.mAcceleration = 8.0;
+    moveVelocity.mDeceleration = 8.0;
+    moveVelocity.mDirection = MC_Direction::POSITIVE;
+    moveVelocity.mContinuousUpdate = true;
+    moveVelocity.mExecute = true;
+
+    harness.runUntil(
+        [&]() { return moveVelocity.mInVelocity && harness.axis->cmdVelocity() == Catch::Approx(2.0).margin(1e-6); },
+        400,
+        "MoveVelocity did not reach the positive directed velocity",
+        moveVelocity);
+
+    moveVelocity.mDirection = MC_Direction::NEGATIVE;
+    harness.runUntil(
+        [&]() { return moveVelocity.mInVelocity && harness.axis->cmdVelocity() == Catch::Approx(-2.0).margin(1e-6); },
+        800,
+        "MoveVelocity did not update to the negative directed velocity",
+        moveVelocity);
+
+    REQUIRE_FALSE(moveVelocity.mError);
+    REQUIRE(moveVelocity.mBusy);
+    REQUIRE(moveVelocity.mActive);
+    REQUIRE(harness.axis->status() == MC_AxisStatus::CONTINUOUS_MOTION);
+}
+
+TEST_CASE("FbMoveVelocity applies signed velocity direction semantics", "[fb][axis][integration]")
+{
+    SingleAxisFbHarness harness;
+    harness.powerOn();
+
+    FbMoveVelocity moveVelocity;
+    moveVelocity.mAxis = harness.axis;
+    moveVelocity.mVelocity = -2.0;
+    moveVelocity.mAcceleration = 8.0;
+    moveVelocity.mDeceleration = 8.0;
+    moveVelocity.mDirection = MC_Direction::NEGATIVE;
+    moveVelocity.mExecute = true;
+
+    harness.runUntil(
+        [&]() { return moveVelocity.mInVelocity && harness.axis->cmdVelocity() == Catch::Approx(2.0).margin(1e-6); },
+        400,
+        "MoveVelocity did not multiply signed velocity by negative direction",
+        moveVelocity);
+
+    REQUIRE_FALSE(moveVelocity.mError);
+
+    FbMoveVelocity invalidDirection;
+    invalidDirection.mAxis = harness.axis;
+    invalidDirection.mVelocity = 2.0;
+    invalidDirection.mAcceleration = 8.0;
+    invalidDirection.mDeceleration = 8.0;
+    invalidDirection.mDirection = MC_Direction::SHORTESTWAY;
+    invalidDirection.mExecute = true;
+    invalidDirection.call();
+
+    REQUIRE(invalidDirection.mError);
+    REQUIRE(invalidDirection.mErrorID == MC_ErrorCode::PARAMETER_NOT_SUPPORT);
 }
 
 TEST_CASE("FbMoveVelocity ignores input changes while ContinuousUpdate is disabled", "[fb][axis][integration]")
@@ -644,6 +785,40 @@ TEST_CASE("FbMoveContinuousAbsolute ignores target changes while ContinuousUpdat
     REQUIRE(harness.axis->cmdVelocity() == Catch::Approx(0.5).margin(1e-2));
 }
 
+TEST_CASE("FbMoveContinuousRelative ignores target changes while ContinuousUpdate is disabled", "[fb][axis][integration]")
+{
+    SingleAxisFbHarness harness;
+    harness.powerOn();
+
+    FbMoveContinuousRelative moveRelative;
+    moveRelative.mAxis = harness.axis;
+    moveRelative.mDistance = 4.0;
+    moveRelative.mVelocity = 2.0;
+    moveRelative.mEndVelocity = 0.5;
+    moveRelative.mAcceleration = 4.0;
+    moveRelative.mDeceleration = 4.0;
+    moveRelative.mExecute = true;
+
+    harness.runUntil(
+        [&]() { return moveRelative.mActive && harness.axis->cmdPosition() > 0.25; },
+        100,
+        "MoveContinuousRelative did not become active before ignored update",
+        moveRelative);
+
+    moveRelative.mDistance = 7.0;
+    harness.runUntil(
+        [&]() {
+            return moveRelative.mDone &&
+                   harness.axis->actPosition() == Catch::Approx(4.0).margin(3e-2);
+        },
+        600,
+        "MoveContinuousRelative did not keep the original target distance",
+        moveRelative);
+
+    REQUIRE_FALSE(moveRelative.mError);
+    REQUIRE(harness.axis->cmdVelocity() == Catch::Approx(0.5).margin(1e-2));
+}
+
 TEST_CASE("FbMoveContinuousAbsolute does not update after its command is aborted", "[fb][axis][integration]")
 {
     SingleAxisFbHarness harness;
@@ -707,6 +882,25 @@ TEST_CASE("FbMoveContinuousAbsolute rejects zero end velocity", "[fb][axis][inte
 
     REQUIRE(moveAbsolute.mError);
     REQUIRE(moveAbsolute.mErrorID == MC_ErrorCode::VEL_ILLEGAL);
+}
+
+TEST_CASE("FbMoveContinuousRelative rejects zero end velocity", "[fb][axis][integration][validation]")
+{
+    SingleAxisFbHarness harness;
+    harness.powerOn();
+
+    FbMoveContinuousRelative moveRelative;
+    moveRelative.mAxis = harness.axis;
+    moveRelative.mDistance = 4.0;
+    moveRelative.mVelocity = 4.0;
+    moveRelative.mEndVelocity = 0.0;
+    moveRelative.mAcceleration = 8.0;
+    moveRelative.mDeceleration = 8.0;
+    moveRelative.mExecute = true;
+    moveRelative.call();
+
+    REQUIRE(moveRelative.mError);
+    REQUIRE(moveRelative.mErrorID == MC_ErrorCode::VEL_ILLEGAL);
 }
 
 TEST_CASE("FbPositionProfile executes a minimal single-segment profile", "[fb][axis][integration][profile]")
@@ -786,6 +980,85 @@ TEST_CASE("FbPositionProfile executes linked profile segments", "[fb][axis][inte
     REQUIRE_FALSE(positionProfile.mError);
     REQUIRE(harness.axis->status() == MC_AxisStatus::STANDSTILL);
     REQUIRE(harness.axis->actPosition() == Catch::Approx(5.0).margin(1e-2));
+}
+
+TEST_CASE("FbPositionProfile holds timed linked segments for their duration", "[fb][axis][integration][profile]")
+{
+    SingleAxisFbHarness harness;
+    harness.powerOn();
+
+    MC_PositionProfileData firstSegment;
+    firstSegment.mPosition = 2.0;
+    firstSegment.mVelocity = 80.0;
+    firstSegment.mAcceleration = 800.0;
+    firstSegment.mDeceleration = 800.0;
+    firstSegment.mDuration = 0.20;
+
+    MC_PositionProfileData secondSegment;
+    secondSegment.mPosition = 3.0;
+    secondSegment.mVelocity = 80.0;
+    secondSegment.mAcceleration = 800.0;
+    secondSegment.mDeceleration = 800.0;
+    secondSegment.mDuration = 0.20;
+    secondSegment.mShiftingMode = MC_ShiftingMode::RELATIVE;
+    firstSegment.mNext = &secondSegment;
+
+    FbPositionProfile positionProfile;
+    positionProfile.mAxis = harness.axis;
+    positionProfile.mPositionProfile = &firstSegment;
+    positionProfile.mExecute = true;
+
+    bool leftFirstSegmentBeforeDuration = false;
+    for (int cycle = 0; cycle < 19; ++cycle)
+    {
+        harness.runCycle(positionProfile);
+        leftFirstSegmentBeforeDuration = leftFirstSegmentBeforeDuration ||
+            harness.axis->cmdPosition() > 2.25;
+    }
+
+    REQUIRE_FALSE(positionProfile.mError);
+    REQUIRE_FALSE(leftFirstSegmentBeforeDuration);
+    REQUIRE_FALSE(positionProfile.mDone);
+
+    harness.runUntil(
+        [&]() { return positionProfile.mDone; },
+        80,
+        "Timed linked PositionProfile did not finish",
+        positionProfile);
+
+    REQUIRE_FALSE(positionProfile.mError);
+    REQUIRE(harness.axis->status() == MC_AxisStatus::STANDSTILL);
+    REQUIRE(harness.axis->actPosition() == Catch::Approx(5.0).margin(1e-2));
+}
+
+TEST_CASE("FbPositionProfile applies profile scale and offset inputs", "[fb][axis][integration][profile]")
+{
+    SingleAxisFbHarness harness;
+    harness.powerOn();
+
+    MC_PositionProfileData profile;
+    profile.mPosition = 2.0;
+    profile.mVelocity = 2.0;
+    profile.mAcceleration = 4.0;
+    profile.mDeceleration = 4.0;
+
+    FbPositionProfile positionProfile;
+    positionProfile.mAxis = harness.axis;
+    positionProfile.mPositionProfile = &profile;
+    positionProfile.mTimeScale = 2.0;
+    positionProfile.mPositionScale = 2.0;
+    positionProfile.mPositionOffset = 1.0;
+    positionProfile.mExecute = true;
+
+    harness.runUntil(
+        [&]() { return positionProfile.mDone; },
+        1000,
+        "Scaled PositionProfile did not finish",
+        positionProfile);
+
+    REQUIRE_FALSE(positionProfile.mError);
+    REQUIRE(harness.axis->status() == MC_AxisStatus::STANDSTILL);
+    REQUIRE(harness.axis->actPosition() == Catch::Approx(5.0).margin(3e-2));
 }
 
 TEST_CASE("FbPositionProfile updates absolute target while ContinuousUpdate is enabled",
@@ -929,6 +1202,16 @@ TEST_CASE("FbPositionProfile rejects a missing profile reference", "[fb][axis][i
 
     REQUIRE(positionProfile.mError);
     REQUIRE(positionProfile.mErrorID == MC_ErrorCode::POS_ILLEGAL);
+
+    profile.mPosition = 2.0;
+    profile.mDuration = -0.01;
+    positionProfile.mExecute = false;
+    positionProfile.call();
+    positionProfile.mExecute = true;
+    positionProfile.call();
+
+    REQUIRE(positionProfile.mError);
+    REQUIRE(positionProfile.mErrorID == MC_ErrorCode::PARAMETER_NOT_SUPPORT);
 }
 
 TEST_CASE("FbVelocityProfile executes a minimal single-segment velocity profile", "[fb][axis][integration][profile]")
@@ -1024,6 +1307,52 @@ TEST_CASE("FbVelocityProfile executes linked velocity segments", "[fb][axis][int
     REQUIRE(velocityProfile.mActive);
 }
 
+TEST_CASE("FbVelocityProfile holds timed linked segments for their duration", "[fb][axis][integration][profile]")
+{
+    SingleAxisFbHarness harness;
+    harness.powerOn();
+
+    MC_VelocityProfileData firstSegment;
+    firstSegment.mVelocity = 2.0;
+    firstSegment.mAcceleration = 80.0;
+    firstSegment.mDeceleration = 80.0;
+    firstSegment.mDuration = 0.20;
+
+    MC_VelocityProfileData secondSegment;
+    secondSegment.mVelocity = 5.0;
+    secondSegment.mAcceleration = 80.0;
+    secondSegment.mDeceleration = 80.0;
+    secondSegment.mDuration = 0.20;
+    firstSegment.mNext = &secondSegment;
+
+    FbVelocityProfile velocityProfile;
+    velocityProfile.mAxis = harness.axis;
+    velocityProfile.mVelocityProfile = &firstSegment;
+    velocityProfile.mExecute = true;
+
+    bool leftFirstSegmentBeforeDuration = false;
+    for (int cycle = 0; cycle < 19; ++cycle)
+    {
+        harness.runCycle(velocityProfile);
+        leftFirstSegmentBeforeDuration = leftFirstSegmentBeforeDuration ||
+            harness.axis->cmdVelocity() > 2.25;
+    }
+
+    REQUIRE_FALSE(velocityProfile.mError);
+    REQUIRE_FALSE(leftFirstSegmentBeforeDuration);
+    REQUIRE_FALSE(velocityProfile.mDone);
+
+    harness.runUntil(
+        [&]() { return velocityProfile.mDone && harness.axis->cmdVelocity() == Catch::Approx(5.0).margin(3e-2); },
+        80,
+        "Timed linked VelocityProfile did not finish",
+        velocityProfile);
+
+    REQUIRE_FALSE(velocityProfile.mError);
+    REQUIRE(velocityProfile.mBusy);
+    REQUIRE(velocityProfile.mActive);
+}
+
 TEST_CASE("FbVelocityProfile updates target velocity while ContinuousUpdate is enabled",
           "[fb][axis][integration][profile]")
 {
@@ -1062,6 +1391,36 @@ TEST_CASE("FbVelocityProfile updates target velocity while ContinuousUpdate is e
     REQUIRE(velocityProfile.mActive);
 }
 
+TEST_CASE("FbVelocityProfile applies profile scale and offset inputs", "[fb][axis][integration][profile]")
+{
+    SingleAxisFbHarness harness;
+    harness.powerOn();
+
+    MC_VelocityProfileData profile;
+    profile.mVelocity = 2.0;
+    profile.mAcceleration = 4.0;
+    profile.mDeceleration = 4.0;
+
+    FbVelocityProfile velocityProfile;
+    velocityProfile.mAxis = harness.axis;
+    velocityProfile.mVelocityProfile = &profile;
+    velocityProfile.mTimeScale = 2.0;
+    velocityProfile.mVelocityScale = 2.0;
+    velocityProfile.mVelocityOffset = -1.0;
+    velocityProfile.mExecute = true;
+
+    harness.runUntil(
+        [&]() { return velocityProfile.mDone; },
+        400,
+        "Scaled VelocityProfile did not reach target velocity",
+        velocityProfile);
+
+    REQUIRE_FALSE(velocityProfile.mError);
+    REQUIRE(velocityProfile.mBusy);
+    REQUIRE(velocityProfile.mActive);
+    REQUIRE(harness.axis->cmdVelocity() == Catch::Approx(3.0).margin(1e-2));
+}
+
 TEST_CASE("FbVelocityProfile rejects invalid profile references", "[fb][axis][integration][profile][validation]")
 {
     SingleAxisFbHarness harness;
@@ -1098,6 +1457,16 @@ TEST_CASE("FbVelocityProfile rejects invalid profile references", "[fb][axis][in
 
     REQUIRE(velocityProfile.mError);
     REQUIRE(velocityProfile.mErrorID == MC_ErrorCode::ACC_ILLEGAL);
+
+    profile.mAcceleration = 6.0;
+    profile.mDuration = -0.01;
+    velocityProfile.mExecute = false;
+    velocityProfile.call();
+    velocityProfile.mExecute = true;
+    velocityProfile.call();
+
+    REQUIRE(velocityProfile.mError);
+    REQUIRE(velocityProfile.mErrorID == MC_ErrorCode::PARAMETER_NOT_SUPPORT);
 }
 
 TEST_CASE("FbAccelerationProfile executes a minimal single-segment acceleration profile", "[fb][axis][integration][profile]")
@@ -1193,6 +1562,52 @@ TEST_CASE("FbAccelerationProfile executes linked acceleration segments", "[fb][a
     REQUIRE(accelerationProfile.mActive);
 }
 
+TEST_CASE("FbAccelerationProfile holds timed linked segments for their duration", "[fb][axis][integration][profile]")
+{
+    SingleAxisFbHarness harness;
+    harness.powerOn();
+
+    MC_AccelerationProfileData firstSegment;
+    firstSegment.mVelocity = 2.0;
+    firstSegment.mAcceleration = 80.0;
+    firstSegment.mDeceleration = 80.0;
+    firstSegment.mDuration = 0.20;
+
+    MC_AccelerationProfileData secondSegment;
+    secondSegment.mVelocity = 5.0;
+    secondSegment.mAcceleration = 80.0;
+    secondSegment.mDeceleration = 80.0;
+    secondSegment.mDuration = 0.20;
+    firstSegment.mNext = &secondSegment;
+
+    FbAccelerationProfile accelerationProfile;
+    accelerationProfile.mAxis = harness.axis;
+    accelerationProfile.mAccelerationProfile = &firstSegment;
+    accelerationProfile.mExecute = true;
+
+    bool leftFirstSegmentBeforeDuration = false;
+    for (int cycle = 0; cycle < 19; ++cycle)
+    {
+        harness.runCycle(accelerationProfile);
+        leftFirstSegmentBeforeDuration = leftFirstSegmentBeforeDuration ||
+            harness.axis->cmdVelocity() > 2.25;
+    }
+
+    REQUIRE_FALSE(accelerationProfile.mError);
+    REQUIRE_FALSE(leftFirstSegmentBeforeDuration);
+    REQUIRE_FALSE(accelerationProfile.mDone);
+
+    harness.runUntil(
+        [&]() { return accelerationProfile.mDone && harness.axis->cmdVelocity() == Catch::Approx(5.0).margin(3e-2); },
+        80,
+        "Timed linked AccelerationProfile did not finish",
+        accelerationProfile);
+
+    REQUIRE_FALSE(accelerationProfile.mError);
+    REQUIRE(accelerationProfile.mBusy);
+    REQUIRE(accelerationProfile.mActive);
+}
+
 TEST_CASE("FbAccelerationProfile updates target velocity while ContinuousUpdate is enabled",
           "[fb][axis][integration][profile]")
 {
@@ -1231,6 +1646,43 @@ TEST_CASE("FbAccelerationProfile updates target velocity while ContinuousUpdate 
     REQUIRE(accelerationProfile.mActive);
 }
 
+TEST_CASE("FbAccelerationProfile applies acceleration scale and offset inputs", "[fb][axis][integration][profile]")
+{
+    SingleAxisFbHarness harness;
+    harness.powerOn();
+
+    MC_AccelerationProfileData profile;
+    profile.mVelocity = 3.0;
+    profile.mAcceleration = 4.0;
+    profile.mDeceleration = 4.0;
+
+    FbAccelerationProfile accelerationProfile;
+    accelerationProfile.mAxis = harness.axis;
+    accelerationProfile.mAccelerationProfile = &profile;
+    accelerationProfile.mTimeScale = 2.0;
+    accelerationProfile.mAccelerationScale = 2.0;
+    accelerationProfile.mAccelerationOffset = 1.0;
+    accelerationProfile.mExecute = true;
+
+    harness.runUntil(
+        [&]() { return accelerationProfile.mActive && harness.axis->cmdAcceleration() > 0.0; },
+        100,
+        "Scaled AccelerationProfile did not become active",
+        accelerationProfile);
+
+    REQUIRE_FALSE(accelerationProfile.mError);
+    REQUIRE(harness.axis->cmdAcceleration() == Catch::Approx(5.0).margin(1e-2));
+
+    harness.runUntil(
+        [&]() { return accelerationProfile.mDone; },
+        400,
+        "Scaled AccelerationProfile did not reach target velocity",
+        accelerationProfile);
+
+    REQUIRE_FALSE(accelerationProfile.mError);
+    REQUIRE(harness.axis->cmdVelocity() == Catch::Approx(3.0).margin(1e-2));
+}
+
 TEST_CASE("FbAccelerationProfile rejects invalid profile references", "[fb][axis][integration][profile][validation]")
 {
     SingleAxisFbHarness harness;
@@ -1267,6 +1719,16 @@ TEST_CASE("FbAccelerationProfile rejects invalid profile references", "[fb][axis
 
     REQUIRE(accelerationProfile.mError);
     REQUIRE(accelerationProfile.mErrorID == MC_ErrorCode::ACC_ILLEGAL);
+
+    profile.mAcceleration = 6.0;
+    profile.mDuration = -0.01;
+    accelerationProfile.mExecute = false;
+    accelerationProfile.call();
+    accelerationProfile.mExecute = true;
+    accelerationProfile.call();
+
+    REQUIRE(accelerationProfile.mError);
+    REQUIRE(accelerationProfile.mErrorID == MC_ErrorCode::PARAMETER_NOT_SUPPORT);
 }
 
 TEST_CASE("FbHalt with jerk reaches standstill after MoveVelocity", "[fb][axis][integration][jerk]")
@@ -1499,6 +1961,76 @@ TEST_CASE("FbHome ramps acceleration when homing jerk is configured", "[fb][axis
     REQUIRE_FALSE(home.mError);
 }
 
+TEST_CASE("FbSetOverride replans active homing search velocity", "[fb][axis][integration][home][override]")
+{
+    auto* servo = new HomingSwitchServo(100.0, 3, true);
+    SingleAxisFbHarness harness(servo);
+
+    AxisConfig config = makeHomingConfig(&servo->homingSignals, 3, MC_HomingMode::MODE7);
+    REQUIRE(harness.scheduler.setAxisConfig(harness.axis, config) == MC_ErrorCode::GOOD);
+    harness.powerOn();
+
+    FbHome home;
+    home.mAxis = harness.axis;
+    home.mPosition = 0.0;
+    home.mExecute = true;
+
+    harness.runUntil(
+        [&]() { return home.mBusy && harness.axis->cmdVelocity() >= 3.8; },
+        300,
+        "homing did not reach the unscaled search velocity",
+        home);
+
+    FbSetOverride setOverride;
+    setOverride.mAxis = harness.axis;
+    setOverride.mOverride = 50.0;
+    setOverride.mExecute = true;
+    harness.runCycle(setOverride, home);
+
+    REQUIRE_FALSE(setOverride.mError);
+    REQUIRE(setOverride.mDone);
+
+    harness.runUntil(
+        [&]() { return home.mBusy && harness.axis->cmdVelocity() <= 2.1; },
+        300,
+        "homing did not replan after override changed",
+        home);
+
+    REQUIRE_FALSE(home.mError);
+    REQUIRE(home.mBusy);
+}
+
+TEST_CASE("FbSetOverride scales newly planned homing velocity", "[fb][axis][integration][home][override]")
+{
+    auto* servo = new HomingSwitchServo(100.0, 3, true);
+    SingleAxisFbHarness harness(servo);
+
+    AxisConfig config = makeHomingConfig(&servo->homingSignals, 3, MC_HomingMode::MODE7);
+    REQUIRE(harness.scheduler.setAxisConfig(harness.axis, config) == MC_ErrorCode::GOOD);
+    harness.powerOn();
+
+    FbSetOverride setOverride;
+    setOverride.mAxis = harness.axis;
+    setOverride.mOverride = 50.0;
+    setOverride.mExecute = true;
+    harness.runCycle(setOverride);
+    REQUIRE_FALSE(setOverride.mError);
+
+    FbHome home;
+    home.mAxis = harness.axis;
+    home.mPosition = 0.0;
+    home.mExecute = true;
+
+    harness.runUntil(
+        [&]() { return home.mBusy && harness.axis->cmdVelocity() >= 1.9; },
+        300,
+        "homing did not reach the scaled search velocity",
+        home);
+
+    REQUIRE_FALSE(home.mError);
+    REQUIRE(harness.axis->cmdVelocity() == Catch::Approx(2.0).margin(0.2));
+}
+
 TEST_CASE("FbHome switch-based homing modes complete", "[fb][axis][integration][home]")
 {
     struct HomingModeCase
@@ -1558,6 +2090,66 @@ TEST_CASE("FbHome switch-based homing modes complete", "[fb][axis][integration][
 
             REQUIRE_FALSE(moveInUserSpace.mError);
             REQUIRE(harness.axis->actPosition() == Catch::Approx(rawHomePosition + 2.0).margin(1e-1));
+        }
+    }
+}
+
+TEST_CASE("FbHome indexed homing modes complete", "[fb][axis][integration][home][index]")
+{
+    struct HomingModeCase
+    {
+        MC_HomingMode mode;
+        const char* name;
+        double switchPosition;
+        double indexPosition;
+        bool activeWhenTriggered;
+        HomingTriggerDirection triggerDirection;
+    };
+
+    constexpr std::array<HomingModeCase, 10> cases = {{
+        {MC_HomingMode::MODE1, "MODE1", -5.0, -4.5, true, HomingTriggerDirection::AT_OR_BELOW},
+        {MC_HomingMode::MODE2, "MODE2", -5.0, -4.5, false, HomingTriggerDirection::AT_OR_BELOW},
+        {MC_HomingMode::MODE3, "MODE3", 5.0, 4.5, true, HomingTriggerDirection::AT_OR_ABOVE},
+        {MC_HomingMode::MODE4, "MODE4", 5.0, 4.5, false, HomingTriggerDirection::AT_OR_ABOVE},
+        {MC_HomingMode::MODE9, "MODE9", -5.0, -5.5, true, HomingTriggerDirection::AT_OR_BELOW},
+        {MC_HomingMode::MODE10, "MODE10", -5.0, -5.5, false, HomingTriggerDirection::AT_OR_BELOW},
+        {MC_HomingMode::MODE11, "MODE11", 5.0, 5.5, true, HomingTriggerDirection::AT_OR_ABOVE},
+        {MC_HomingMode::MODE12, "MODE12", 5.0, 5.5, false, HomingTriggerDirection::AT_OR_ABOVE},
+        {MC_HomingMode::MODE13, "MODE13", -5.0, -4.5, true, HomingTriggerDirection::AT_OR_BELOW},
+        {MC_HomingMode::MODE14, "MODE14", 5.0, 4.5, true, HomingTriggerDirection::AT_OR_ABOVE},
+    }};
+
+    for (const auto& testCase : cases)
+    {
+        DYNAMIC_SECTION(testCase.name)
+        {
+            auto* servo = new IndexedHomingServo(
+                testCase.switchPosition,
+                testCase.indexPosition,
+                testCase.activeWhenTriggered,
+                testCase.triggerDirection);
+            SingleAxisFbHarness harness(servo);
+
+            AxisConfig config = makeHomingConfig(&servo->switchSignals, servo->switchBit, testCase.mode);
+            config.mHomingInfo.mHomingIndexSig = &servo->indexSignals;
+            config.mHomingInfo.mHomingIndexSigBitOffset = servo->indexBit;
+            REQUIRE(harness.scheduler.setAxisConfig(harness.axis, config) == MC_ErrorCode::GOOD);
+            harness.powerOn();
+
+            FbHome home;
+            home.mAxis = harness.axis;
+            home.mPosition = 3.0;
+            home.mExecute = true;
+
+            harness.runUntilDone(
+                home,
+                1000,
+                "Indexed homing did not finish",
+                home);
+
+            REQUIRE_FALSE(home.mError);
+            REQUIRE(harness.axis->AxisBase::actPosition() == Catch::Approx(testCase.indexPosition).margin(0.15));
+            REQUIRE(harness.axis->actPosition() == Catch::Approx(3.0).margin(0.2));
         }
     }
 }
@@ -2522,6 +3114,128 @@ TEST_CASE("Parameter write and bool parameter blocks update supported axis param
     REQUIRE_FALSE(unsupportedBoolWrite.mBusy);
 }
 
+TEST_CASE("Parameter blocks cover the explicit supported registry", "[fb][axis][integration][parameter]")
+{
+    SingleAxisFbHarness harness;
+
+    AxisRangeLimitInfo rangeLimit = harness.axis->rangeLimitInfo();
+    rangeLimit.mSwLimitPositive = true;
+    rangeLimit.mSwLimitNegative = false;
+    rangeLimit.mLimitPositive = 10.0;
+    rangeLimit.mLimitNegative = -10.0;
+    REQUIRE(harness.axis->setRangeLimitInfo(rangeLimit) == MC_ErrorCode::GOOD);
+
+    AxisMotionLimitInfo motionLimit = harness.axis->motionLimitInfo();
+    motionLimit.mVelLimit = 120.0;
+    motionLimit.mAccLimit = 60.0;
+    motionLimit.mJerkLimit = 30.0;
+    motionLimit.mPosLagLimit = 5.0;
+    motionLimit.mEnablePosLagMonitoring = true;
+    REQUIRE(harness.axis->setMotionLimitInfo(motionLimit) == MC_ErrorCode::GOOD);
+
+    struct NumericReadCase
+    {
+        MC_Parameter parameter;
+        double expected;
+    };
+
+    const std::array<NumericReadCase, 17> numericReadCases = {{
+        {MC_Parameter::COMMANDED_POSITION, harness.axis->cmdPosition()},
+        {MC_Parameter::SWLIMIT_POS, 10.0},
+        {MC_Parameter::SWLIMIT_NEG, -10.0},
+        {MC_Parameter::ENABLE_LIMIT_POS, 1.0},
+        {MC_Parameter::ENABLE_LIMIT_NEG, 0.0},
+        {MC_Parameter::ENABLE_POS_LAG_MONITORING, 1.0},
+        {MC_Parameter::MAX_POSITION_LAG, 5.0},
+        {MC_Parameter::MAX_VELOCITY_SYSTEM, 120.0},
+        {MC_Parameter::MAX_VELOCITY_APPL, 120.0},
+        {MC_Parameter::ACTUAL_VELOCITY, harness.axis->actVelocity()},
+        {MC_Parameter::COMMANDED_VELOCITY, harness.axis->cmdVelocity()},
+        {MC_Parameter::MAX_ACCELERATION_SYSTEM, 60.0},
+        {MC_Parameter::MAX_ACCELERATION_APPL, 60.0},
+        {MC_Parameter::MAX_DECELERATION_SYSTEM, 60.0},
+        {MC_Parameter::MAX_DECELERATION_APPL, 60.0},
+        {MC_Parameter::MAX_JERK_SYSTEM, 30.0},
+        {MC_Parameter::MAX_JERK_APPL, 30.0},
+    }};
+
+    FbReadParameter readParameter;
+    readParameter.mAxis = harness.axis;
+    readParameter.mEnable = true;
+    for (const auto& test : numericReadCases)
+    {
+        INFO("numeric read parameter " << static_cast<int>(test.parameter));
+        readParameter.mParameterNumber = test.parameter;
+        readParameter.call();
+        REQUIRE(readParameter.mValid);
+        REQUIRE_FALSE(readParameter.mError);
+        REQUIRE(readParameter.mValue == Catch::Approx(test.expected).margin(1e-6));
+    }
+
+    auto writeNumeric = [&](MC_Parameter parameter, double value) {
+        FbWriteParameter writeParameter;
+        writeParameter.mAxis = harness.axis;
+        writeParameter.mParameterNumber = parameter;
+        writeParameter.mValue = value;
+        writeParameter.mExecute = true;
+        writeParameter.call();
+        INFO("numeric write parameter " << static_cast<int>(parameter));
+        REQUIRE_FALSE(writeParameter.mError);
+        REQUIRE(writeParameter.mDone);
+    };
+
+    writeNumeric(MC_Parameter::SWLIMIT_POS, 15.0);
+    REQUIRE(harness.axis->rangeLimitInfo().mLimitPositive == Catch::Approx(15.0).margin(1e-6));
+    writeNumeric(MC_Parameter::SWLIMIT_NEG, -15.0);
+    REQUIRE(harness.axis->rangeLimitInfo().mLimitNegative == Catch::Approx(-15.0).margin(1e-6));
+    writeNumeric(MC_Parameter::MAX_POSITION_LAG, 6.0);
+    REQUIRE(harness.axis->motionLimitInfo().mPosLagLimit == Catch::Approx(6.0).margin(1e-6));
+    writeNumeric(MC_Parameter::MAX_VELOCITY_SYSTEM, 130.0);
+    REQUIRE(harness.axis->motionLimitInfo().mVelLimit == Catch::Approx(130.0).margin(1e-6));
+    writeNumeric(MC_Parameter::MAX_VELOCITY_APPL, 140.0);
+    REQUIRE(harness.axis->motionLimitInfo().mVelLimit == Catch::Approx(140.0).margin(1e-6));
+    writeNumeric(MC_Parameter::MAX_ACCELERATION_SYSTEM, 70.0);
+    REQUIRE(harness.axis->motionLimitInfo().mAccLimit == Catch::Approx(70.0).margin(1e-6));
+    writeNumeric(MC_Parameter::MAX_ACCELERATION_APPL, 80.0);
+    REQUIRE(harness.axis->motionLimitInfo().mAccLimit == Catch::Approx(80.0).margin(1e-6));
+    writeNumeric(MC_Parameter::MAX_DECELERATION_SYSTEM, 90.0);
+    REQUIRE(harness.axis->motionLimitInfo().mAccLimit == Catch::Approx(90.0).margin(1e-6));
+    writeNumeric(MC_Parameter::MAX_DECELERATION_APPL, 100.0);
+    REQUIRE(harness.axis->motionLimitInfo().mAccLimit == Catch::Approx(100.0).margin(1e-6));
+    writeNumeric(MC_Parameter::MAX_JERK_SYSTEM, 35.0);
+    REQUIRE(harness.axis->motionLimitInfo().mJerkLimit == Catch::Approx(35.0).margin(1e-6));
+    writeNumeric(MC_Parameter::MAX_JERK_APPL, 40.0);
+    REQUIRE(harness.axis->motionLimitInfo().mJerkLimit == Catch::Approx(40.0).margin(1e-6));
+
+    auto writeBool = [&](MC_Parameter parameter, bool value) {
+        FbWriteBoolParameter writeBoolParameter;
+        writeBoolParameter.mAxis = harness.axis;
+        writeBoolParameter.mParameterNumber = parameter;
+        writeBoolParameter.mValue = value;
+        writeBoolParameter.mExecute = true;
+        writeBoolParameter.call();
+        INFO("bool write parameter " << static_cast<int>(parameter));
+        REQUIRE_FALSE(writeBoolParameter.mError);
+        REQUIRE(writeBoolParameter.mDone);
+
+        FbReadBoolParameter readBoolParameter;
+        readBoolParameter.mAxis = harness.axis;
+        readBoolParameter.mParameterNumber = parameter;
+        readBoolParameter.mEnable = true;
+        readBoolParameter.call();
+        REQUIRE(readBoolParameter.mValid);
+        REQUIRE_FALSE(readBoolParameter.mError);
+        REQUIRE(readBoolParameter.mValue == value);
+    };
+
+    writeBool(MC_Parameter::ENABLE_LIMIT_POS, false);
+    REQUIRE_FALSE(harness.axis->rangeLimitInfo().mSwLimitPositive);
+    writeBool(MC_Parameter::ENABLE_LIMIT_NEG, true);
+    REQUIRE(harness.axis->rangeLimitInfo().mSwLimitNegative);
+    writeBool(MC_Parameter::ENABLE_POS_LAG_MONITORING, false);
+    REQUIRE_FALSE(harness.axis->motionLimitInfo().mEnablePosLagMonitoring);
+}
+
 TEST_CASE("Position lag monitoring bool parameter controls lag emergency stop", "[fb][axis][integration][parameter][position-lag]")
 {
     {
@@ -2777,6 +3491,58 @@ TEST_CASE("FbAbortTrigger only disarms a matching touch probe input", "[fb][axis
     REQUIRE_FALSE(touchProbe.mBusy);
 }
 
+TEST_CASE("FbTouchProbe tracks multiple armed trigger inputs independently", "[fb][axis][integration][trigger]")
+{
+    auto* servo = new DigitalIoServo();
+    servo->inputs[0] = false;
+    servo->inputs[1] = false;
+    SingleAxisFbHarness harness(servo);
+    harness.powerOn();
+
+    FbTouchProbe firstProbe;
+    firstProbe.mAxis = harness.axis;
+    firstProbe.mTriggerInput = 0;
+    firstProbe.mExecute = true;
+
+    FbTouchProbe secondProbe;
+    secondProbe.mAxis = harness.axis;
+    secondProbe.mTriggerInput = 1;
+    secondProbe.mExecute = true;
+
+    harness.runCycle(firstProbe, secondProbe);
+    REQUIRE(firstProbe.mBusy);
+    REQUIRE(secondProbe.mBusy);
+
+    servo->inputs[1] = true;
+    harness.runCycle(firstProbe, secondProbe);
+    REQUIRE(firstProbe.mBusy);
+    REQUIRE_FALSE(firstProbe.mCommandAborted);
+    REQUIRE(secondProbe.mDone);
+    REQUIRE_FALSE(secondProbe.mError);
+
+    servo->inputs[0] = true;
+    harness.runCycle(firstProbe, secondProbe);
+    REQUIRE(firstProbe.mDone);
+    REQUIRE_FALSE(firstProbe.mError);
+}
+
+TEST_CASE("FbAbortTrigger rejects unsupported trigger input channels", "[fb][axis][integration][trigger]")
+{
+    auto* servo = new DigitalIoServo();
+    SingleAxisFbHarness harness(servo);
+
+    FbAbortTrigger abortTrigger;
+    abortTrigger.mAxis = harness.axis;
+    abortTrigger.mTriggerInput = 99;
+    abortTrigger.mExecute = true;
+    abortTrigger.call();
+
+    REQUIRE(abortTrigger.mError);
+    REQUIRE(abortTrigger.mErrorID == MC_ErrorCode::PARAMETER_NOT_SUPPORT);
+    REQUIRE_FALSE(abortTrigger.mDone);
+    REQUIRE_FALSE(abortTrigger.mBusy);
+}
+
 TEST_CASE("FbTouchProbe window only captures rising edges inside the position window", "[fb][axis][integration][trigger]")
 {
     auto* servo = new DigitalIoServo();
@@ -2817,6 +3583,35 @@ TEST_CASE("FbTouchProbe window only captures rising edges inside the position wi
     REQUIRE_FALSE(touchProbe.mError);
     REQUIRE(touchProbe.mRecordedPosition >= 1.0);
     REQUIRE(touchProbe.mRecordedPosition <= 2.0);
+}
+
+TEST_CASE("FbTouchProbe records Servo latched positions", "[fb][axis][integration][trigger]")
+{
+    auto* servo = new DigitalIoServo();
+    servo->inputs[0] = false;
+    servo->latchedPositionAvailable = true;
+    servo->latchedPosition = 0.35;
+    SingleAxisFbHarness harness(servo);
+    harness.powerOn();
+
+    FbTouchProbe touchProbe;
+    touchProbe.mAxis = harness.axis;
+    touchProbe.mTriggerInput = 0;
+    touchProbe.mWindowOnly = true;
+    touchProbe.mFirstPosition = 0.25;
+    touchProbe.mLastPosition = 0.45;
+    touchProbe.mExecute = true;
+
+    harness.runCycle(touchProbe);
+    REQUIRE(touchProbe.mBusy);
+    REQUIRE_FALSE(touchProbe.mDone);
+
+    servo->inputs[0] = true;
+    harness.runCycle(touchProbe);
+
+    REQUIRE(touchProbe.mDone);
+    REQUIRE_FALSE(touchProbe.mError);
+    REQUIRE(touchProbe.mRecordedPosition == Catch::Approx(0.35).margin(1e-6));
 }
 
 TEST_CASE("FbTouchProbe rejects invalid position windows", "[fb][axis][integration][trigger]")
@@ -3129,6 +3924,36 @@ TEST_CASE("FbReadAxisInfo reads servo extension switch and warning inputs", "[fb
     REQUIRE_FALSE(readInfo.mAxisWarning);
 }
 
+TEST_CASE("FbReadAxisInfo reads servo diagnostic readiness and warning flags", "[fb][axis][integration][axis-info]")
+{
+    auto* servo = new DigitalIoServo();
+    servo->inputs[3] = false;
+    servo->communicationReadyFlag = false;
+    servo->readyForPowerOnFlag = false;
+    servo->warningFlag = true;
+    SingleAxisFbHarness harness(servo);
+
+    FbReadAxisInfo readInfo;
+    readInfo.mAxis = harness.axis;
+    readInfo.mEnable = true;
+    readInfo.call();
+
+    REQUIRE(readInfo.mValid);
+    REQUIRE_FALSE(readInfo.mError);
+    REQUIRE_FALSE(readInfo.mCommunicationReady);
+    REQUIRE_FALSE(readInfo.mReadyForPowerOn);
+    REQUIRE(readInfo.mAxisWarning);
+
+    servo->communicationReadyFlag = true;
+    servo->readyForPowerOnFlag = true;
+    servo->warningFlag = false;
+    readInfo.call();
+
+    REQUIRE(readInfo.mCommunicationReady);
+    REQUIRE(readInfo.mReadyForPowerOn);
+    REQUIRE_FALSE(readInfo.mAxisWarning);
+}
+
 TEST_CASE("FbSetOverride scales newly planned motion commands and rejects invalid values", "[fb][axis][integration][override]")
 {
     SingleAxisFbHarness harness;
@@ -3164,7 +3989,7 @@ TEST_CASE("FbSetOverride scales newly planned motion commands and rejects invali
     REQUIRE(invalidOverride.mErrorID == MC_ErrorCode::OVERRIDE_ILLEGAL);
 }
 
-TEST_CASE("FbSetOverride leaves active non-continuous position moves on their original profile", "[fb][axis][integration][override]")
+TEST_CASE("FbSetOverride replans active non-continuous position moves", "[fb][axis][integration][override]")
 {
     SingleAxisFbHarness harness;
     harness.powerOn();
@@ -3186,14 +4011,17 @@ TEST_CASE("FbSetOverride leaves active non-continuous position moves on their or
     REQUIRE_FALSE(setOverride.mError);
     REQUIRE(setOverride.mDone);
 
-    harness.runUntil(
-        [&]() { return moveAbsolute.mActive && harness.axis->cmdVelocity() >= 3.8; },
-        200,
-        "MoveAbsolute was replanned by an active override change",
-        moveAbsolute);
+    double maxVelocityAfterOverride = 0.0;
+    for (int cycle = 0; cycle < 160 && moveAbsolute.mActive; ++cycle)
+    {
+        harness.runCycle(moveAbsolute);
+        const double velocity = std::fabs(harness.axis->cmdVelocity());
+        if (velocity > maxVelocityAfterOverride)
+            maxVelocityAfterOverride = velocity;
+    }
 
     REQUIRE_FALSE(moveAbsolute.mError);
-    REQUIRE(harness.axis->cmdVelocity() == Catch::Approx(4.0).margin(0.25));
+    REQUIRE(maxVelocityAfterOverride <= 2.05);
 }
 
 TEST_CASE("FbSetOverride replans active MoveVelocity continuous update", "[fb][axis][integration][override]")
@@ -3207,6 +4035,44 @@ TEST_CASE("FbSetOverride replans active MoveVelocity continuous update", "[fb][a
     moveVelocity.mAcceleration = 8.0;
     moveVelocity.mDeceleration = 8.0;
     moveVelocity.mContinuousUpdate = true;
+    moveVelocity.mExecute = true;
+
+    harness.runUntil(
+        [&]() { return moveVelocity.mInVelocity; },
+        400,
+        "MoveVelocity did not reach the initial velocity",
+        moveVelocity);
+
+    REQUIRE(harness.axis->cmdVelocity() == Catch::Approx(4.0).margin(1e-6));
+
+    FbSetOverride setOverride;
+    setOverride.mAxis = harness.axis;
+    setOverride.mOverride = 50.0;
+    setOverride.mExecute = true;
+    harness.runCycle(setOverride, moveVelocity);
+
+    REQUIRE_FALSE(setOverride.mError);
+    REQUIRE(setOverride.mDone);
+
+    harness.runUntil(
+        [&]() { return moveVelocity.mInVelocity && harness.axis->cmdVelocity() == Catch::Approx(2.0).margin(1e-6); },
+        400,
+        "MoveVelocity did not replan after override changed",
+        moveVelocity);
+
+    REQUIRE_FALSE(moveVelocity.mError);
+}
+
+TEST_CASE("FbSetOverride replans active MoveVelocity without ContinuousUpdate", "[fb][axis][integration][override]")
+{
+    SingleAxisFbHarness harness;
+    harness.powerOn();
+
+    FbMoveVelocity moveVelocity;
+    moveVelocity.mAxis = harness.axis;
+    moveVelocity.mVelocity = 4.0;
+    moveVelocity.mAcceleration = 8.0;
+    moveVelocity.mDeceleration = 8.0;
     moveVelocity.mExecute = true;
 
     harness.runUntil(
@@ -3451,12 +4317,12 @@ TEST_CASE("FbSetOverride replans active profile continuous updates", "[fb][axis]
     }
 }
 
-TEST_CASE("FbMoveSuperimposed adds an offset on top of the current single-axis motion stack", "[fb][axis][integration][superimposed]")
+TEST_CASE("FbMoveSuperimposed runs an independent offset on top of base motion", "[fb][axis][integration][superimposed]")
 {
     SingleAxisFbHarness harness;
     harness.powerOn();
 
-    auto baseMove = makeMoveAbsolute(harness.axis, 5.0, 3.0, 6.0, 6.0);
+    auto baseMove = makeMoveAbsolute(harness.axis, 5.0, 1.0, 2.0, 2.0);
     baseMove.mExecute = true;
     harness.runCycle(baseMove);
     harness.runUntil(
@@ -3476,9 +4342,21 @@ TEST_CASE("FbMoveSuperimposed adds an offset on top of the current single-axis m
     harness.runCycle(baseMove, superimposed);
 
     harness.runUntil(
-        [&]() { return superimposed.mDone; },
-        500,
-        "superimposed move did not finish",
+        [&]() { return baseMove.mActive && superimposed.mActive && harness.axis->cmdPosition() > 0.25; },
+        100,
+        "base and superimposed moves did not run together",
+        baseMove,
+        superimposed);
+
+    REQUIRE_FALSE(baseMove.mCommandAborted);
+    REQUIRE_FALSE(superimposed.mCommandAborted);
+    REQUIRE(baseMove.mActive);
+    REQUIRE(superimposed.mActive);
+
+    harness.runUntil(
+        [&]() { return baseMove.mDone && superimposed.mDone; },
+        1000,
+        "base and superimposed moves did not finish",
         baseMove,
         superimposed);
 
@@ -3486,12 +4364,12 @@ TEST_CASE("FbMoveSuperimposed adds an offset on top of the current single-axis m
     REQUIRE(harness.axis->actPosition() == Catch::Approx(7.0).margin(1e-2));
 }
 
-TEST_CASE("FbHaltSuperimposed halts the current single-axis superimposed approximation", "[fb][axis][integration][superimposed]")
+TEST_CASE("FbHaltSuperimposed stops only the independent superimposed offset", "[fb][axis][integration][superimposed]")
 {
     SingleAxisFbHarness harness;
     harness.powerOn();
 
-    auto baseMove = makeMoveAbsolute(harness.axis, 3.0, 3.0, 6.0, 6.0);
+    auto baseMove = makeMoveAbsolute(harness.axis, 8.0, 1.0, 2.0, 2.0);
     baseMove.mExecute = true;
 
     FbMoveSuperimposed superimposed;
@@ -3513,6 +4391,7 @@ TEST_CASE("FbHaltSuperimposed halts the current single-axis superimposed approxi
         superimposed);
 
     const double positionBeforeHalt = harness.axis->actPosition();
+    REQUIRE(baseMove.mActive);
 
     FbHaltSuperimposed haltSuperimposed;
     haltSuperimposed.mAxis = harness.axis;
@@ -3533,9 +4412,24 @@ TEST_CASE("FbHaltSuperimposed halts the current single-axis superimposed approxi
         haltSuperimposed);
 
     REQUIRE_FALSE(haltSuperimposed.mError);
-    REQUIRE(harness.axis->status() == MC_AxisStatus::STANDSTILL);
+    REQUIRE(baseMove.mActive);
+    REQUIRE_FALSE(baseMove.mCommandAborted);
+    REQUIRE(harness.axis->status() == MC_AxisStatus::DISCRETE_MOTION);
     REQUIRE(harness.axis->actPosition() >= positionBeforeHalt);
-    REQUIRE(harness.axis->actPosition() < 9.0);
+    REQUIRE(harness.axis->actPosition() < 14.0);
+
+    const double positionAfterHalt = harness.axis->actPosition();
+    harness.runUntilDone(
+        baseMove,
+        1000,
+        "base move did not continue after halt superimposed",
+        baseMove,
+        superimposed,
+        haltSuperimposed);
+
+    REQUIRE_FALSE(baseMove.mError);
+    REQUIRE(harness.axis->actPosition() > positionAfterHalt);
+    REQUIRE(harness.axis->actPosition() < 14.0);
 }
 
 TEST_CASE("FbTorqueControl writes a torque setpoint to the servo abstraction", "[fb][axis][integration][torque]")

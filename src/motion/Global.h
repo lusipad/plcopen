@@ -255,6 +255,15 @@ namespace plcopen
         ADDITIVE = 2,
     };
 
+    /**
+     * @brief CombineAxes 的组合方式。
+     */
+    enum class MC_CombineMode
+    {
+        mcAddAxes = 0,
+        mcSubAxes = 1,
+    };
+
     // TODO: 回零要调整，应该是按照固定、直接设定等方式的回零
     /**
      * @brief 当前实现支持的 homing 模式。
@@ -263,10 +272,20 @@ namespace plcopen
     {
         DIRECT = 1000, // 直接以当前位置作为零点
 
+        MODE1 = 1001,
+        MODE2 = 1002,
+        MODE3 = 1003,
+        MODE4 = 1004,
         MODE5 = 1005, // 负向移动寻找回零开关，触发后正向移动离开回零开关，最终停留在刚离开回零开关处，回零开关为上升沿触发
         MODE6 = 1006, // 负向移动寻找回零开关，触发后正向移动离开回零开关，最终停留在刚离开回零开关处，回零开关为下降沿触发
         MODE7 = 1007, // 正向移动寻找回零开关，触发后负向移动离开回零开关，最终停留在刚离开回零开关处，回零开关为上升沿触发
         MODE8 = 1008, // 正向移动寻找回零开关，触发后负向移动离开回零开关，最终停留在刚离开回零开关处，回零开关为下降沿触发
+        MODE9 = 1009,
+        MODE10 = 1010,
+        MODE11 = 1011,
+        MODE12 = 1012,
+        MODE13 = 1013,
+        MODE14 = 1014,
     };
 
     enum class MC_TouchProbeStatus
@@ -374,6 +393,8 @@ namespace plcopen
     {
         uint8_t *mHomingSig = 0;                          // 回零信号地址
         uint8_t mHomingSigBitOffset = 0;                  // 回零信号偏移
+        uint8_t *mHomingIndexSig = 0;                     // 回零 index 信号地址
+        uint8_t mHomingIndexSigBitOffset = 0;             // 回零 index 信号偏移
         MC_HomingMode mHomingMode = MC_HomingMode::DIRECT; // 回零模式
         double mHomingVelSearch = 0;                      // 寻找回零信号速度
         double mHomingVelRegression = 0;                  // 返回零位速度

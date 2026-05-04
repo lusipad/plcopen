@@ -88,7 +88,9 @@ namespace plcopen
 
     void AxisMotionBase::runCycle(void)
     {
+        onBeforeProcessExeclNode();
         processExeclNode();
+        onAfterProcessExeclNode();
         AxisBase::runCycle();
     }
 

@@ -62,6 +62,14 @@ namespace plcopen
         virtual int32_t acc(void);
         /// Read the actual torque.
         virtual double torque(void);
+        /// Report whether communication with the servo is healthy.
+        virtual bool communicationReady(void);
+        /// Report whether the servo is ready to be powered on.
+        virtual bool readyForPowerOn(void);
+        /// Report a non-fatal servo warning.
+        virtual bool warning(void);
+        /// Read a drive-latched position for an input channel when available.
+        virtual bool readLatchedPosition(int index, double &position);
         virtual bool readVal(int index, double &value);
         virtual bool writeVal(int index, double value);
         virtual MC_ServoErrorCode resetError(bool &isDone);

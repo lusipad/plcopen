@@ -78,6 +78,10 @@ namespace plcopen
             FunctionBlock *fb, int32_t customId, MC_ErrorCode errorCode) {}
         AxesGroup *group(void) const;
 
+    protected:
+        virtual void onBeforeProcessExeclNode(void) {}
+        virtual void onAfterProcessExeclNode(void) {}
+
     private:
         static void onErrorHandler(AxisBase *this_, MC_ErrorCode errorCode);
         static void onPowerStatusChangedHandler(AxisBase *this_, bool powerStatus);

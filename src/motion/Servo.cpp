@@ -91,6 +91,26 @@ namespace plcopen
         return mImpl_->mTorque;
     }
 
+    bool Servo::communicationReady(void)
+    {
+        return true;
+    }
+
+    bool Servo::readyForPowerOn(void)
+    {
+        return true;
+    }
+
+    bool Servo::warning(void)
+    {
+        return false;
+    }
+
+    bool Servo::readLatchedPosition(int index, double &position)
+    {
+        return false;
+    }
+
     bool Servo::readVal(int index, double &value)
     {
         return false;
