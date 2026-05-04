@@ -2329,6 +2329,56 @@ TEST_CASE("Buffered home waits for the active move to finish", "[fb][axis][integ
     REQUIRE(harness.axis->homePosition() == Catch::Approx(-5.0).margin(1e-2));
 }
 
+TEST_CASE("Non-aborting home buffer modes queue behind the active move", "[fb][axis][integration][home][buffer]")
+{
+    for (const auto& modeCase : kNonAbortingBufferModes)
+    {
+        DYNAMIC_SECTION(modeCase.name)
+        {
+            SingleAxisFbHarness harness;
+            harness.powerOn();
+
+            auto moveAbsolute = makeMoveAbsolute(harness.axis, 5.0);
+            moveAbsolute.mExecute = true;
+            harness.runCycle(moveAbsolute);
+            harness.runUntil(
+                [&]() { return moveAbsolute.mActive; },
+                20,
+                "MoveAbsolute did not become active before queued home",
+                moveAbsolute);
+
+            FbHome home;
+            home.mAxis = harness.axis;
+            home.mPosition = 0.0;
+            home.mBufferMode = modeCase.mode;
+            home.mExecute = true;
+            harness.runCycle(moveAbsolute, home);
+
+            REQUIRE(moveAbsolute.mBusy);
+            REQUIRE_FALSE(moveAbsolute.mCommandAborted);
+            REQUIRE_FALSE(home.mActive);
+
+            harness.runUntil(
+                [&]() { return moveAbsolute.mDone; },
+                400,
+                "MoveAbsolute did not finish before queued home",
+                moveAbsolute,
+                home);
+
+            harness.runUntilDone(
+                home,
+                50,
+                "Queued home did not finish after the move",
+                moveAbsolute,
+                home);
+
+            REQUIRE_FALSE(moveAbsolute.mCommandAborted);
+            REQUIRE_FALSE(home.mError);
+            REQUIRE(harness.axis->homePosition() == Catch::Approx(-5.0).margin(1e-2));
+        }
+    }
+}
+
 TEST_CASE("Aborting moves replace the active command immediately", "[fb][axis][integration][buffer]")
 {
     SingleAxisFbHarness harness;

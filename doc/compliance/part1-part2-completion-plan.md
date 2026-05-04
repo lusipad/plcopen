@@ -27,8 +27,8 @@ Current Part 1/2 rows:
 
 Cross-cutting boundary rows:
 
-- BufferMode semantics remain documented at the current single-axis MoveNode blending boundary.
-- ContinuousUpdate semantics are covered for the implemented FBs that model active update today; remaining sync/profile-table variants stay out of scope until the runtime model grows.
+- BufferMode semantics are implemented for the current public contract: single-axis MoveNode blending, Homing queued handoff, Sync aborting handoff, and Sync non-aborting queued handoff all have automated coverage.
+- ContinuousUpdate semantics are implemented for the current public contract: active single-axis continuous/profile commands, `MC_GearIn`, `MC_GearInPos`, `MC_CamIn`, and `MC_CombineAxes` all have automated coverage.
 
 Project extensions and Part 4 foundation work stay outside the v0.9.0 completion count.
 
@@ -39,8 +39,8 @@ As of the current v0.9.0 worktree:
 - Every tracked Part 1/2 FB row is classified as `implemented` in the compliance matrix with code and automated test evidence.
 - The base Execute/Done/Busy/Error and Enable/Valid/Error contracts are implemented for the current public contract and covered by `src/test/test_basic.cpp`.
 - Current public FB invalid-input and lifecycle error behavior is covered by behavior-specific tests; the project does not claim a standalone PLCopen/vendor error catalog.
-- Remaining boundaries are deliberate `scope-boundary` or `hardware-abstraction` decisions: full geometric path blending, external profile-table import/parsing, controller-side cam repositories, unsupported vendor/device parameters outside the implemented registry, and Part 4 coordinated path/kinematics remain outside v0.9.0 unless a future runtime abstraction is introduced.
-- Latest local verification evidence is `ctest --test-dir build --build-config Release --output-on-failure` passing 185/185.
+- Remaining boundaries are deliberate new-feature or hardware-abstraction decisions: external profile-table import/parsing, controller-side cam repositories, unsupported vendor/device parameters outside the implemented registry, and Part 4 coordinated path/kinematics remain outside v0.9.0 unless a future runtime abstraction is introduced.
+- Latest local verification evidence is `ctest --test-dir build --build-config Release --output-on-failure` passing 191/191, including the all-partial closure slice's focused BufferMode and sync ContinuousUpdate coverage.
 
 ## Definition Of Done
 

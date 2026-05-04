@@ -226,6 +226,21 @@ struct TripleAxisFbHarness
     }
 };
 
+struct BufferModeCase
+{
+    MC_BufferMode mode;
+    const char *name;
+};
+
+const BufferModeCase kNonAbortingBufferModes[] = {
+    {MC_BufferMode::BUFFERED, "BUFFERED"},
+    {MC_BufferMode::BLENDING_LOW, "BLENDING_LOW"},
+    {MC_BufferMode::BLENDING_PREVIOUS, "BLENDING_PREVIOUS"},
+    {MC_BufferMode::BLENDING_NEXT, "BLENDING_NEXT"},
+    {MC_BufferMode::BLENDING_HIGH, "BLENDING_HIGH"},
+    {MC_BufferMode::BLENDING_CNC, "BLENDING_CNC"},
+};
+
 FbMoveAbsolute makeMasterMove(Axis *axis, double position, double velocity = 4.0)
 {
     FbMoveAbsolute move;
@@ -397,6 +412,259 @@ TEST_CASE("FbCombineAxes applies ContinuousUpdate to active combine parameters",
             harness.runCycle(combineAxes);
 
             REQUIRE_FALSE(combineAxes.mError);
+            REQUIRE(harness.slave->cmdPosition() == Catch::Approx(testCase.expectedAfterInputChange).margin(1e-9));
+        }
+    }
+}
+
+TEST_CASE("FbGearIn applies ContinuousUpdate to active ratio inputs", "[fb][multi-axis][gear]")
+{
+    struct Case
+    {
+        bool continuousUpdate;
+        double expectedAfterInputChange;
+        const char *name;
+    };
+
+    const Case cases[] = {
+        {false, 2.0, "latched"},
+        {true, 4.0, "continuous"},
+    };
+
+    for (const Case &testCase : cases)
+    {
+        DYNAMIC_SECTION(testCase.name)
+        {
+            DualAxisFbHarness harness;
+            harness.powerOn();
+
+            AxesGroup group;
+            REQUIRE(group.addAxis(harness.master) == MC_ErrorCode::GOOD);
+            REQUIRE(group.addAxis(harness.slave) == MC_ErrorCode::GOOD);
+            REQUIRE(group.enable() == MC_ErrorCode::GOOD);
+
+            REQUIRE(harness.master->setPosition(2.0, 0.0, 0.0) == MC_ErrorCode::GOOD);
+            harness.runCycle();
+
+            FbGearIn gearIn;
+            gearIn.mMaster = harness.master;
+            gearIn.mSlave = harness.slave;
+            gearIn.mContinuousUpdate = testCase.continuousUpdate;
+            gearIn.mExecute = true;
+
+            harness.runUntil(
+                [&]() { return gearIn.mInGear; },
+                20,
+                "gear in did not enter sync",
+                gearIn);
+
+            REQUIRE(harness.slave->cmdPosition() == Catch::Approx(2.0).margin(1e-9));
+
+            gearIn.mRatioNumerator = 2.0;
+            harness.runCycle(gearIn);
+
+            REQUIRE_FALSE(gearIn.mError);
+            REQUIRE(harness.slave->cmdPosition() == Catch::Approx(testCase.expectedAfterInputChange).margin(1e-9));
+        }
+    }
+}
+
+TEST_CASE("FbGearIn aborting buffer mode interrupts active slave motion", "[fb][multi-axis][gear][buffer]")
+{
+    DualAxisFbHarness harness;
+    harness.powerOn();
+
+    AxesGroup group;
+    REQUIRE(group.addAxis(harness.master) == MC_ErrorCode::GOOD);
+    REQUIRE(group.addAxis(harness.slave) == MC_ErrorCode::GOOD);
+    REQUIRE(group.enable() == MC_ErrorCode::GOOD);
+
+    auto slaveMove = makeMasterMove(harness.slave, 5.0, 2.0);
+    slaveMove.mExecute = true;
+    harness.runUntil(
+        [&]() { return slaveMove.mActive; },
+        20,
+        "slave move did not become active before aborting gear in",
+        slaveMove);
+
+    FbGearIn gearIn;
+    gearIn.mMaster = harness.master;
+    gearIn.mSlave = harness.slave;
+    gearIn.mBufferMode = MC_BufferMode::ABORTING;
+    gearIn.mExecute = true;
+    harness.runCycle(slaveMove, gearIn);
+
+    REQUIRE(slaveMove.mCommandAborted);
+    REQUIRE(gearIn.mBusy);
+
+    harness.runUntil(
+        [&]() { return gearIn.mInGear; },
+        20,
+        "aborting gear in did not start after interrupting slave motion",
+        slaveMove,
+        gearIn);
+}
+
+TEST_CASE("FbGearIn non-aborting buffer modes queue behind active slave motion", "[fb][multi-axis][gear][buffer]")
+{
+    for (const auto &modeCase : kNonAbortingBufferModes)
+    {
+        DYNAMIC_SECTION(modeCase.name)
+        {
+            DualAxisFbHarness harness;
+            harness.powerOn();
+
+            AxesGroup group;
+            REQUIRE(group.addAxis(harness.master) == MC_ErrorCode::GOOD);
+            REQUIRE(group.addAxis(harness.slave) == MC_ErrorCode::GOOD);
+            REQUIRE(group.enable() == MC_ErrorCode::GOOD);
+
+            auto slaveMove = makeMasterMove(harness.slave, 5.0, 2.0);
+            slaveMove.mExecute = true;
+            harness.runUntil(
+                [&]() { return slaveMove.mActive; },
+                20,
+                "slave move did not become active before queued gear in",
+                slaveMove);
+
+            FbGearIn gearIn;
+            gearIn.mMaster = harness.master;
+            gearIn.mSlave = harness.slave;
+            gearIn.mBufferMode = modeCase.mode;
+            gearIn.mExecute = true;
+            harness.runCycle(slaveMove, gearIn);
+
+            REQUIRE(slaveMove.mBusy);
+            REQUIRE_FALSE(slaveMove.mCommandAborted);
+            REQUIRE_FALSE(gearIn.mInGear);
+
+            harness.runUntil(
+                [&]() { return slaveMove.mDone; },
+                400,
+                "slave move did not finish before queued gear in",
+                slaveMove,
+                gearIn);
+
+            harness.runUntil(
+                [&]() { return gearIn.mInGear; },
+                20,
+                "queued gear in did not start after slave move",
+                slaveMove,
+                gearIn);
+
+            REQUIRE_FALSE(slaveMove.mCommandAborted);
+            REQUIRE_FALSE(gearIn.mError);
+            REQUIRE(harness.slave->status() == MC_AxisStatus::SYNCHRONIZED_MOTION);
+        }
+    }
+}
+
+TEST_CASE("FbGearInPos applies ContinuousUpdate to active ratio inputs", "[fb][multi-axis][gear]")
+{
+    struct Case
+    {
+        bool continuousUpdate;
+        double expectedAfterInputChange;
+        const char *name;
+    };
+
+    const Case cases[] = {
+        {false, 2.0, "latched"},
+        {true, 4.0, "continuous"},
+    };
+
+    for (const Case &testCase : cases)
+    {
+        DYNAMIC_SECTION(testCase.name)
+        {
+            DualAxisFbHarness harness;
+            harness.powerOn();
+
+            AxesGroup group;
+            REQUIRE(group.addAxis(harness.master) == MC_ErrorCode::GOOD);
+            REQUIRE(group.addAxis(harness.slave) == MC_ErrorCode::GOOD);
+            REQUIRE(group.enable() == MC_ErrorCode::GOOD);
+
+            REQUIRE(harness.master->setPosition(2.0, 0.0, 0.0) == MC_ErrorCode::GOOD);
+            harness.runCycle();
+
+            FbGearInPos gearInPos;
+            gearInPos.mMaster = harness.master;
+            gearInPos.mSlave = harness.slave;
+            gearInPos.mMasterSyncPosition = 2.0;
+            gearInPos.mSlaveSyncPosition = 2.0;
+            gearInPos.mContinuousUpdate = testCase.continuousUpdate;
+            gearInPos.mExecute = true;
+
+            harness.runUntil(
+                [&]() { return gearInPos.mInGear; },
+                20,
+                "gear in pos did not enter sync",
+                gearInPos);
+
+            REQUIRE(harness.slave->cmdPosition() == Catch::Approx(2.0).margin(1e-9));
+
+            gearInPos.mRatioNumerator = 2.0;
+            harness.runCycle(gearInPos);
+
+            REQUIRE_FALSE(gearInPos.mError);
+            REQUIRE(harness.slave->cmdPosition() == Catch::Approx(testCase.expectedAfterInputChange).margin(1e-9));
+        }
+    }
+}
+
+TEST_CASE("FbCamIn applies ContinuousUpdate to active cam scaling inputs", "[fb][multi-axis][cam]")
+{
+    struct Case
+    {
+        bool continuousUpdate;
+        double expectedAfterInputChange;
+        const char *name;
+    };
+
+    const Case cases[] = {
+        {false, 2.0, "latched"},
+        {true, 4.0, "continuous"},
+    };
+
+    for (const Case &testCase : cases)
+    {
+        DYNAMIC_SECTION(testCase.name)
+        {
+            DualAxisFbHarness harness;
+            harness.powerOn();
+
+            AxesGroup group;
+            REQUIRE(group.addAxis(harness.master) == MC_ErrorCode::GOOD);
+            REQUIRE(group.addAxis(harness.slave) == MC_ErrorCode::GOOD);
+            REQUIRE(group.enable() == MC_ErrorCode::GOOD);
+
+            REQUIRE(harness.master->setPosition(2.0, 0.0, 0.0) == MC_ErrorCode::GOOD);
+            harness.runCycle();
+
+            MC_CAM_REF table = std::make_shared<CamTable>();
+            table->addPoint(0.0, 0.0);
+            table->addPoint(2.0, 2.0);
+
+            FbCamIn camIn;
+            camIn.mMaster = harness.master;
+            camIn.mSlave = harness.slave;
+            camIn.mCamTable = table;
+            camIn.mContinuousUpdate = testCase.continuousUpdate;
+            camIn.mExecute = true;
+
+            harness.runUntil(
+                [&]() { return camIn.mInSync; },
+                20,
+                "cam in did not enter sync",
+                camIn);
+
+            REQUIRE(harness.slave->cmdPosition() == Catch::Approx(2.0).margin(1e-9));
+
+            camIn.mSlaveScaling = 2.0;
+            harness.runCycle(camIn);
+
+            REQUIRE_FALSE(camIn.mError);
             REQUIRE(harness.slave->cmdPosition() == Catch::Approx(testCase.expectedAfterInputChange).margin(1e-9));
         }
     }

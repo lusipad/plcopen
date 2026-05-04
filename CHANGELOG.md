@@ -8,6 +8,7 @@ All notable changes to this project will be documented in this file.
 
 - MSVC builds now export `/utf-8` through the `plcopen` target, avoiding source-charset warnings in the library, Python binding, and CMake consumers.
 - Third-party pybind11 CMake deprecation noise is now suppressed during the vendored FetchContent configure step so release builds stay warning-clean.
+- Cross-cutting `BufferMode` and `ContinuousUpdate` are now classified as implemented after adding Homing/Sync buffer-mode regressions and active `MC_GearIn`, `MC_GearInPos`, and `MC_CamIn` continuous-update support.
 - `MC_Home` is now classified as implemented after completing indexed homing modes 1-4 and 9-14 alongside direct and switch-based modes.
 - `MC_MoveSuperimposed` and `MC_HaltSuperimposed` are now classified as implemented against the independent single-axis superimposed offset trajectory contract.
 - `MC_CombineAxes` is now classified as implemented after replacing group-membership convenience behavior with two-master add/sub setpoint combination, per-master ratios, command/actual source selection, `ContinuousUpdate`, and validation coverage.

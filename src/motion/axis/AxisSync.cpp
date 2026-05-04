@@ -155,11 +155,15 @@ class SyncNode : virtual public AxisExeclNode
         if (!mMaster)
             return MC_ErrorCode::AXIS_NO_TEXIST;
 
-        if (mMode == SyncMode::CAM && (!mCamTable || mCamTable->empty()))
-            return MC_ErrorCode::PARAMETER_NOT_SUPPORT;
-
         if (!mMaster->powerStatus())
             return MC_ErrorCode::AXIS_POWER_OFF;
+
+        MC_ErrorCode err = updateContinuousInputs(slave);
+        if (err != MC_ErrorCode::GOOD)
+            return err;
+
+        if (mMode == SyncMode::CAM && (!mCamTable || mCamTable->empty() || !mCamTable->valid()))
+            return MC_ErrorCode::PARAMETER_NOT_SUPPORT;
 
         if (mWaitForMasterSyncPosition)
         {
@@ -198,7 +202,6 @@ class SyncNode : virtual public AxisExeclNode
                     const double slaveSyncPosition = mSlaveSyncPositionExplicit
                         ? mSlaveSyncPosition
                         : camTargetAtMasterSyncPosition();
-                    MC_ErrorCode err = MC_ErrorCode::GOOD;
                     if (mApproachVelocity > 0.0)
                     {
                         err = profileApproachToSync(slave, slaveSyncPosition);
@@ -244,9 +247,9 @@ class SyncNode : virtual public AxisExeclNode
             targetAcceleration = 0.0;
         }
 
-        const MC_ErrorCode err = slave->setPosition(targetPosition, targetVelocity, targetAcceleration);
-        if (err != MC_ErrorCode::GOOD)
-            return err;
+        const MC_ErrorCode setPositionErr = slave->setPosition(targetPosition, targetVelocity, targetAcceleration);
+        if (setPositionErr != MC_ErrorCode::GOOD)
+            return setPositionErr;
 
         if (mHoldArmed)
         {
@@ -268,6 +271,133 @@ class SyncNode : virtual public AxisExeclNode
     }
 
   private:
+    MC_ErrorCode updateGearInputs(double ratioNumerator, double ratioDenominator, MC_Source masterValueSource)
+    {
+        if (!isDefinedMasterValueSource(masterValueSource))
+            return MC_ErrorCode::SOURCE_ILLEGAL;
+
+        if (ratioDenominator == 0.0 || !std::isfinite(ratioNumerator) || !std::isfinite(ratioDenominator))
+            return MC_ErrorCode::PARAMETER_NOT_SUPPORT;
+
+        mRatio = ratioNumerator / ratioDenominator;
+        mMasterValueSource = masterValueSource;
+        return MC_ErrorCode::GOOD;
+    }
+
+    MC_ErrorCode updateContinuousInputs(AxisSync *slave)
+    {
+        if (auto *fb = dynamic_cast<const FbGearIn *>(mFb))
+        {
+            if (!fb->mContinuousUpdate)
+                return MC_ErrorCode::GOOD;
+
+            return updateGearInputs(fb->mRatioNumerator, fb->mRatioDenominator, fb->mMasterValueSource);
+        }
+
+        if (auto *fb = dynamic_cast<const FbGearInPos *>(mFb))
+        {
+            if (!fb->mContinuousUpdate)
+                return MC_ErrorCode::GOOD;
+
+            MC_ErrorCode err = updateGearInputs(fb->mRatioNumerator, fb->mRatioDenominator, fb->mMasterValueSource);
+            if (err != MC_ErrorCode::GOOD)
+                return err;
+
+            if (!std::isfinite(fb->mMasterSyncPosition) || !std::isfinite(fb->mSlaveSyncPosition))
+                return MC_ErrorCode::POS_ILLEGAL;
+
+            if (!std::isfinite(fb->mMasterStartDistance) || fb->mMasterStartDistance < 0.0)
+                return MC_ErrorCode::PARAMETER_NOT_SUPPORT;
+
+            if (fb->mVelocity < 0.0 || !std::isfinite(fb->mVelocity))
+                return MC_ErrorCode::VEL_ILLEGAL;
+
+            if (fb->mVelocity > 0.0)
+            {
+                if (fb->mAcceleration <= 0.0 || !std::isfinite(fb->mAcceleration) ||
+                    fb->mDeceleration <= 0.0 || !std::isfinite(fb->mDeceleration))
+                    return MC_ErrorCode::ACC_ILLEGAL;
+
+                if (fb->mJerk < 0.0 || !std::isfinite(fb->mJerk))
+                    return MC_ErrorCode::CFG_JERK_LIMIT_ILLEGAL;
+            }
+
+            if (mWaitForMasterSyncPosition)
+            {
+                const bool syncWindowChanged =
+                    mMasterSyncPosition != fb->mMasterSyncPosition ||
+                    mSlaveSyncPosition != fb->mSlaveSyncPosition ||
+                    mMasterStartDistance != fb->mMasterStartDistance;
+
+                mMasterSyncPosition = fb->mMasterSyncPosition;
+                mSlaveSyncPosition = fb->mSlaveSyncPosition;
+                mMasterStartDistance = fb->mMasterStartDistance;
+                mApproachVelocity = fb->mVelocity;
+                mApproachAcceleration = fb->mAcceleration;
+                mApproachDeceleration = fb->mDeceleration;
+                mApproachJerk = fb->mJerk;
+
+                if (syncWindowChanged)
+                {
+                    mMasterSyncPositionInitialized = false;
+                    mApproachPlannerActive = false;
+                    mApproachTargetPosition = std::numeric_limits<double>::quiet_NaN();
+                }
+
+                return slave->setGearPhaseOffset(mSlaveSyncPosition - mMasterSyncPosition * mRatio);
+            }
+
+            return MC_ErrorCode::GOOD;
+        }
+
+        if (auto *fb = dynamic_cast<const FbCamIn *>(mFb))
+        {
+            if (!fb->mContinuousUpdate)
+                return MC_ErrorCode::GOOD;
+
+            if (!isDefinedMasterValueSource(fb->mMasterValueSource))
+                return MC_ErrorCode::SOURCE_ILLEGAL;
+
+            if (!fb->mCamTable || fb->mCamTable->empty() || !fb->mCamTable->valid())
+                return MC_ErrorCode::PARAMETER_NOT_SUPPORT;
+
+            if (!std::isfinite(fb->mMasterStartDistance) || fb->mMasterStartDistance < 0.0)
+                return MC_ErrorCode::PARAMETER_NOT_SUPPORT;
+
+            if (fb->mMasterStartDistance > 0.0 && !std::isfinite(fb->mMasterSyncPosition))
+                return MC_ErrorCode::POS_ILLEGAL;
+
+            if (!std::isfinite(fb->mMasterOffset) || !std::isfinite(fb->mSlaveOffset))
+                return MC_ErrorCode::POS_ILLEGAL;
+
+            if (!std::isfinite(fb->mMasterScaling) || fb->mMasterScaling == 0.0 ||
+                !std::isfinite(fb->mSlaveScaling))
+                return MC_ErrorCode::PARAMETER_NOT_SUPPORT;
+
+            if (mWaitForMasterSyncPosition)
+            {
+                const bool syncWindowChanged =
+                    mMasterSyncPosition != fb->mMasterSyncPosition ||
+                    mMasterStartDistance != fb->mMasterStartDistance;
+
+                mMasterSyncPosition = fb->mMasterSyncPosition;
+                mMasterStartDistance = fb->mMasterStartDistance;
+
+                if (syncWindowChanged)
+                    mMasterSyncPositionInitialized = false;
+            }
+
+            mMasterValueSource = fb->mMasterValueSource;
+            mCamTable = fb->mCamTable;
+            mCamMasterOffset = fb->mMasterOffset;
+            mCamSlaveOffset = fb->mSlaveOffset;
+            mCamMasterScaling = fb->mMasterScaling;
+            mCamSlaveScaling = fb->mSlaveScaling;
+        }
+
+        return MC_ErrorCode::GOOD;
+    }
+
     double masterPosition() const
     {
         return mMasterValueSource == MC_Source::ACTUALVALUE ? mMaster->actPosition() : mMaster->cmdPosition();
