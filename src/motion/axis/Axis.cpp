@@ -1,4 +1,4 @@
-ï»¿/*
+/*
  * Axis.cpp
  *
  * Copyright 2020 (C) SYMG(Shanghai) Intelligence System Co.,Ltd
@@ -50,14 +50,14 @@ namespace plcopen
 
     void Axis::vprintLog(MC_LogLevel level, const char *fmt, va_list ap)
     {
-        // ¶¨ÒåÒ»¸ö×ã¹»´óµÄ³£Á¿£¬È·±£²»»á³¬³öÊµ¼ÊÐèÒªµÄ´óÐ¡
+        // å®šä¹‰ä¸€ä¸ªè¶³å¤Ÿå¤§çš„å¸¸é‡ï¼Œç¡®ä¿ä¸ä¼šè¶…å‡ºå®žé™…éœ€è¦çš„å¤§å°
         const size_t BUFFER_SIZE = 1024;
         char fmtAxis[BUFFER_SIZE];
 
-        // Ê¹ÓÃ snprintf °²È«µØ¸ñÊ½»¯×Ö·û´®
+        // ä½¿ç”¨ snprintf å®‰å…¨åœ°æ ¼å¼åŒ–å­—ç¬¦ä¸²
         snprintf(fmtAxis, BUFFER_SIZE, "Axis %d: %s", axisId(), fmt);
 
-        // µ÷ÓÃ mSched µÄ vprintLog ·½·¨
+        // è°ƒç”¨ mSched çš„ vprintLog æ–¹æ³•
         mSched->vprintLog(level, fmtAxis, ap);
     }
 

@@ -43,6 +43,10 @@ target_include_directories(
 
 set_target_properties(${PROJECT_NAME} PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS TRUE)
 
+if(MSVC)
+    target_compile_options(${PROJECT_NAME} PUBLIC /utf-8)
+endif()
+
 if(PLCOPEN_BUILD_DEMOS)
     add_executable(axis_move demo/axis_move.cpp)
     target_link_libraries(axis_move ${PROJECT_NAME})
@@ -79,7 +83,21 @@ if(PLCOPEN_BUILD_PYTHON_BINDINGS)
         GIT_REPOSITORY https://github.com/pybind/pybind11.git
         GIT_TAG v2.13.6
     )
+    if(DEFINED CMAKE_WARN_DEPRECATED)
+        set(_PLCOPEN_WARN_DEPRECATED_DEFINED TRUE)
+        set(_PLCOPEN_WARN_DEPRECATED_VALUE "${CMAKE_WARN_DEPRECATED}")
+    else()
+        set(_PLCOPEN_WARN_DEPRECATED_DEFINED FALSE)
+    endif()
+    set(CMAKE_WARN_DEPRECATED OFF CACHE BOOL "" FORCE)
     FetchContent_MakeAvailable(pybind11)
+    if(_PLCOPEN_WARN_DEPRECATED_DEFINED)
+        set(CMAKE_WARN_DEPRECATED "${_PLCOPEN_WARN_DEPRECATED_VALUE}" CACHE BOOL "" FORCE)
+    else()
+        unset(CMAKE_WARN_DEPRECATED CACHE)
+    endif()
+    unset(_PLCOPEN_WARN_DEPRECATED_DEFINED)
+    unset(_PLCOPEN_WARN_DEPRECATED_VALUE)
 
     pybind11_add_module(pyplcopen python/pyplcopen.cpp)
     target_link_libraries(pyplcopen PRIVATE ${PROJECT_NAME})

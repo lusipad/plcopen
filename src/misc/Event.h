@@ -1,4 +1,4 @@
-ï»¿/*
+/*
  * Event.h
  *
  * Copyright 2020 (C) SYMG(Shanghai) Intelligence System Co.,Ltd
@@ -38,7 +38,7 @@ namespace plcopen
 #define URANUS_MSG(...)
 #endif
 
-// TODO: ĞèÒªÊµÏÖÄÚºËÌ¬¼æÈİµÄ°æ±¾£¬µ±Ç°Ê¹ÓÃstd::listÔÚÄÚºËÌ¬²»¿ÉÓÃ£¬ĞèÒªµ÷ÕûÎª×Ô¶¨ÒåÈİÆ÷
+// TODO: éœ€è¦å®ç°å†…æ ¸æ€å…¼å®¹çš„ç‰ˆæœ¬ï¼Œå½“å‰ä½¿ç”¨std::liståœ¨å†…æ ¸æ€ä¸å¯ç”¨ï¼Œéœ€è¦è°ƒæ•´ä¸ºè‡ªå®šä¹‰å®¹å™¨
 #define URANUS_DEFINE_EVENT(Event, ...) std::list<void (*)(__VA_ARGS__)> Event;
 #define URANUS_ADD_HANDLER(Event, FuncPtr) Event.push_back(FuncPtr);
 #define URANUS_CALL_EVENT(Event, ...) \
