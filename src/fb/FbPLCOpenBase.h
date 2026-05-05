@@ -22,8 +22,8 @@
  * 
  */
 
-#ifndef _URANUS_FBPLCOPENBASE_HPP_
-#define _URANUS_FBPLCOPENBASE_HPP_
+#ifndef PLCOPEN_FBPLCOPENBASE_HPP_
+#define PLCOPEN_FBPLCOPENBASE_HPP_
 
 #include "FunctionBlock.h"
 #include "PLCTypes.h"
@@ -194,7 +194,7 @@ namespace plcopen
     {
     public:
         FB_INPUT MC_TRANSITION_MODE mTransitionMode = MC_TransitionMode::NONE;
-        FB_INPUT LREAL mTransitionParameter[URANUS_TRANSITIONPARAMETER_NUM] = {0};
+        FB_INPUT LREAL mTransitionParameter[PLCOPEN_TRANSITIONPARAMETER_NUM] = {0};
     };
 
     /**
@@ -265,4 +265,4 @@ namespace plcopen
 
 }
 
-#endif /** _URANUS_FBPLCOPENBASE_HPP_ **/
+#endif /** PLCOPEN_FBPLCOPENBASE_HPP_ **/

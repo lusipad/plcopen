@@ -24,8 +24,8 @@
 
 /* lagacy code */
 
-#ifndef _URANUS_PROFILEPLANNER_HPP_
-#define _URANUS_PROFILEPLANNER_HPP_
+#ifndef PLCOPEN_PROFILEPLANNER_HPP_
+#define PLCOPEN_PROFILEPLANNER_HPP_
 
 #include <cstdint>
 #include <vector>
@@ -157,4 +157,4 @@ void print_all(ProfilePlanner::Segment* segments, int num = 5);
 
 }
 
-#endif /** _URANUS_PROFILEPLANNER_HPP_ **/
+#endif /** PLCOPEN_PROFILEPLANNER_HPP_ **/

@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef _URANUS_EXECLQUEUE_HPP_
-#define _URANUS_EXECLQUEUE_HPP_
+#ifndef PLCOPEN_EXECLQUEUE_HPP_
+#define PLCOPEN_EXECLQUEUE_HPP_
 
 #include "Global.h"
 #include "Event.h"
@@ -83,8 +83,8 @@ namespace plcopen
     protected:
         ExeclNode *activeNode(void) const;
 
-        URANUS_DEFINE_EVENT(onAllNodesAborted, ExeclQueue *);
-        URANUS_DEFINE_EVENT(onAllNodesError, ExeclQueue *, MC_ErrorCode);
+        PLCOPEN_DEFINE_EVENT(onAllNodesAborted, ExeclQueue *);
+        PLCOPEN_DEFINE_EVENT(onAllNodesError, ExeclQueue *, MC_ErrorCode);
 
     private:
         class ExeclQueueImpl;
@@ -93,4 +93,4 @@ namespace plcopen
 
 }
 
-#endif /** _URANUS_EXECLQUEUE_HPP_ **/
+#endif /** PLCOPEN_EXECLQUEUE_HPP_ **/

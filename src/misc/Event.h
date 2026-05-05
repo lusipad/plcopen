@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef _URANUS_EVENT_HPP_
-#define _URANUS_EVENT_HPP_
+#ifndef PLCOPEN_EVENT_HPP_
+#define PLCOPEN_EVENT_HPP_
 
 #include <cstdint>
 #include <list>
@@ -32,19 +32,19 @@
 namespace plcopen
 {
 
-#ifdef URANUS_DEBUGMSG
-#define URANUS_MSG(...) printf(__VA_ARGS__)
+#ifdef PLCOPEN_DEBUGMSG
+#define PLCOPEN_MSG(...) printf(__VA_ARGS__)
 #else
-#define URANUS_MSG(...)
+#define PLCOPEN_MSG(...)
 #endif
 
 // TODO: 需要实现内核态兼容的版本，当前使用std::list在内核态不可用，需要调整为自定义容器
-#define URANUS_DEFINE_EVENT(Event, ...) std::list<void (*)(__VA_ARGS__)> Event;
-#define URANUS_ADD_HANDLER(Event, FuncPtr) Event.push_back(FuncPtr);
-#define URANUS_CALL_EVENT(Event, ...) \
+#define PLCOPEN_DEFINE_EVENT(Event, ...) std::list<void (*)(__VA_ARGS__)> Event;
+#define PLCOPEN_ADD_HANDLER(Event, FuncPtr) Event.push_back(FuncPtr);
+#define PLCOPEN_CALL_EVENT(Event, ...) \
     for (auto &f : Event)             \
         (*f)(__VA_ARGS__);
 
 }
 
-#endif /** _URANUS_EVENT_HPP_ **/
+#endif /** PLCOPEN_EVENT_HPP_ **/

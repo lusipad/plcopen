@@ -143,7 +143,10 @@ function Invoke-CMakeBuild {
     $BuildArgs = @(
         "--build", $BuildDir,
         "--config", $Configuration,
-        "--parallel"
+        "--parallel",
+        "--",
+        "/p:TrackFileAccess=false",
+        "/nodeReuse:false"
     )
     
     Write-Info "Build command: cmake $($BuildArgs -join ' ')"
@@ -163,55 +166,21 @@ function Invoke-Tests {
     }
     
     Write-Info "Executing test suite..."
-    
-    # Check test executable
-    $BuildOutputDir = Get-BuildOutputDir
-    $TestExe = Find-BuildArtifact "test_basic.exe"
-    if (-not $TestExe -or -not (Test-Path $TestExe)) {
-        Write-Warning "Test executable not found: $TestExe"
-        return
+
+    $CTestArgs = @(
+        "--test-dir", $BuildDir,
+        "--build-config", $Configuration,
+        "--output-on-failure"
+    )
+
+    Write-Info "Test command: ctest $($CTestArgs -join ' ')"
+    $Result = & ctest @CTestArgs 2>&1
+    if ($LASTEXITCODE -ne 0) {
+        Write-Output $Result
+        throw "CTest failed"
     }
 
-    $TestRunDir = Join-Path $OutDir "testrun"
-    if (Test-Path $TestRunDir) {
-        Remove-Item $TestRunDir -Recurse -Force
-    }
-    New-Item -ItemType Directory -Path $TestRunDir -Force | Out-Null
-
-    Copy-Item $TestExe $TestRunDir -Force
-
-    $LibraryDll = Find-BuildArtifact "plcopen.dll"
-    if ($LibraryDll -and (Test-Path $LibraryDll)) {
-        Copy-Item $LibraryDll $TestRunDir -Force
-    }
-    
-    $RunnableTestExe = (Resolve-Path (Join-Path $TestRunDir "test_basic.exe")).Path
-    Write-Info "Running tests: $RunnableTestExe"
-
-    $StdOutPath = Join-Path $TestRunDir "test_basic.stdout.txt"
-    $StdErrPath = Join-Path $TestRunDir "test_basic.stderr.txt"
-    $TestProcess = Start-Process `
-        -FilePath $RunnableTestExe `
-        -NoNewWindow `
-        -Wait `
-        -PassThru `
-        -RedirectStandardOutput $StdOutPath `
-        -RedirectStandardError $StdErrPath
-    $TestExitCode = $TestProcess.ExitCode
-    $TestResult = @()
-    if (Test-Path $StdOutPath) {
-        $TestResult += Get-Content $StdOutPath
-    }
-    if (Test-Path $StdErrPath) {
-        $TestResult += Get-Content $StdErrPath
-    }
-    
-    if ($TestExitCode -eq 0) {
-        Write-Success "All tests passed"
-    } else {
-        Write-Error "Tests failed (exit code: $TestExitCode)"
-        Write-Output $TestResult
-    }
+    Write-Success "All tests passed"
 }
 
 # Install function

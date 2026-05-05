@@ -22,8 +22,8 @@
  * 
  */
  
-#ifndef _URANUS_PROFILESPLANNER_HPP_
-#define _URANUS_PROFILESPLANNER_HPP_
+#ifndef PLCOPEN_PROFILESPLANNER_HPP_
+#define PLCOPEN_PROFILESPLANNER_HPP_
 
 #include "ExeclQueue.h"
 #include "ProfilePlanner.h"
@@ -68,4 +68,4 @@ private:
 
 }
 
-#endif /** _URANUS_PROFILESPLANNER_HPP_ **/
+#endif /** PLCOPEN_PROFILESPLANNER_HPP_ **/

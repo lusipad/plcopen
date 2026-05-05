@@ -33,7 +33,7 @@
 namespace plcopen
 {
 
-#define URANUS_AXISNAMESIZE 64
+#define PLCOPEN_AXISNAMESIZE 64
 
     class AxisBase::AxisBaseImpl
     {
@@ -42,7 +42,7 @@ namespace plcopen
 
         Servo *mServo = nullptr;
 
-        char mAxisName[URANUS_AXISNAMESIZE] = "Axis";
+        char mAxisName[PLCOPEN_AXISNAMESIZE] = "Axis";
         AxisMetricInfo mMetric;
         AxisRangeLimitInfo mRangeLimit;
         AxisMotionLimitInfo mMotionLimit;
@@ -150,7 +150,7 @@ namespace plcopen
 
         if (mEncoderOverflowOffset)
         {
-            URANUS_CALL_EVENT(mThis_->onPositionOffset, mThis_, mEncoderOverflowOffset);
+            PLCOPEN_CALL_EVENT(mThis_->onPositionOffset, mThis_, mEncoderOverflowOffset);
             mCmdPos += mEncoderOverflowOffset;
         }
 
@@ -230,7 +230,7 @@ namespace plcopen
                     mThis_->printLog(MC_LogLevel::INFO, "Power off\n");
                 }
                 mPowerStatusValid = true;
-                URANUS_CALL_EVENT(mThis_->onPowerStatusChanged, mThis_, mPowerStatus);
+                PLCOPEN_CALL_EVENT(mThis_->onPowerStatusChanged, mThis_, mPowerStatus);
             }
         }
         else if (!mPowerStatus && mPowerStatusValid)
@@ -398,8 +398,8 @@ namespace plcopen
 
     void AxisBase::setAxisName(const char *name)
     {
-        strncpy(mImpl_->mAxisName, name, URANUS_AXISNAMESIZE);
-        mImpl_->mAxisName[URANUS_AXISNAMESIZE - 1] = '\0';
+        strncpy(mImpl_->mAxisName, name, PLCOPEN_AXISNAMESIZE);
+        mImpl_->mAxisName[PLCOPEN_AXISNAMESIZE - 1] = '\0';
     }
 
     MC_ErrorCode AxisBase::setMetricInfo(const AxisMetricInfo &info)
@@ -563,7 +563,7 @@ namespace plcopen
         mImpl_->mNeedReset = false;
         mImpl_->mServo->emergStop();
         printLog(MC_LogLevel::WARN, "EmergStop, ErrorID 0x%x, AxisErrorID 0x%x\n", errorCode(), devErrorCode());
-        URANUS_CALL_EVENT(onError, this, errorCode());
+        PLCOPEN_CALL_EVENT(onError, this, errorCode());
     }
 
     MC_ErrorCode AxisBase::resetError(bool &isDone)

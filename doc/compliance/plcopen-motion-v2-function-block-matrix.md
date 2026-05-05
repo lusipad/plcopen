@@ -59,7 +59,7 @@ v0.9.0 gap types:
 
 | Item | Status | Evidence | Next action |
 |---|---|---|---|
-| Default test target coverage | no blocker | `src/CMakeLists.txt` includes `test_axes_group.cpp` in the default `PLCOPEN_TEST_SOURCES`; local `ctest --test-dir build --build-config Release --output-on-failure` passed 185/185 | Keep AxesGroup foundation tests in the default regression set |
+| Default test target coverage | no blocker | `src/CMakeLists.txt` includes the default Catch2 sources plus local `test_main.cpp`; local `ctest --test-dir build --build-config Release --output-on-failure --timeout 60` passed 191/191 | Keep AxesGroup foundation tests in the default regression set |
 | Release metadata mismatch | fixed | root `CMakeLists.txt` now matches `.version` at `0.9.0` | Keep version surfaces synced before release |
 
 ## Administrative Single-Axis Function Blocks
@@ -141,5 +141,5 @@ v0.9.0 gap types:
 | BufferMode | implemented | `src/motion/Global.h`, `src/test/test_fb_single_axis.cpp`, `src/test/test_fb_multi_axis.cpp` | `ABORTING`, `BUFFERED`, single-axis MoveNode `BLENDING_LOW` / `BLENDING_HIGH` handoff, blending aliases, Homing queued handoff, Sync aborting handoff, and Sync non-aborting queued handoff are covered |
 | ContinuousUpdate | implemented | `src/fb/FbSingleAxis.h`, `src/fb/FbSingleAxis.cpp`, `src/fb/FbMultiAxis.h`, `src/fb/FbMultiAxis.cpp`, `src/motion/axis/AxisSync.*` | `src/test/test_fb_single_axis.cpp`, `src/test/test_fb_multi_axis.cpp` | Implemented for active `MC_MoveVelocity`, `MC_MoveContinuousAbsolute`, `MC_MoveContinuousRelative`, `MC_PositionProfile`, `MC_VelocityProfile`, `MC_AccelerationProfile`, `MC_GearIn`, `MC_GearInPos`, `MC_CamIn`, and `MC_CombineAxes` |
 | Error code coverage | implemented | `src/motion/Global.h`, `src/test/test_basic.cpp`, `src/test/test_fb_single_axis.cpp`, `src/test/test_fb_multi_axis.cpp` | Current public FB invalid-input and lifecycle errors are covered by behavior-specific tests; this is not a standalone PLCopen/vendor error catalog |
-| Install/export surface | implemented | `src/CMakeLists.txt`, local install and FetchContent consumer smoke tests, demo smoke tests, `pyplcopen_smoke` | Installed package headers compile through `find_package(plcopen)` consumer; source-tree consumption compiles through `FetchContent_MakeAvailable(plcopen)`; local demo and Python smoke tests are part of the Release `ctest` gate |
-| Docs target | implemented | root `CMakeLists.txt`, `cmake/Doxyfile.in`, local docs build smoke test | `PLCOPEN_BUILD_DOCS=ON` configures; `docs` target runs the documented missing-Doxygen fallback when Doxygen is unavailable |
+| Install/export surface | implemented | `src/CMakeLists.txt`, `test_package/find_package`, `test_package/fetchcontent`, local install and FetchContent consumer smoke tests, demo smoke tests, `pyplcopen_smoke` | Installed package headers compile through `find_package(plcopen)` consumer; source-tree consumption compiles through `FetchContent_MakeAvailable(plcopen)` including Windows backslash `PLCOPEN_SOURCE_DIR` normalization; local demo and Python smoke tests are part of the Release `ctest` gate |
+| Docs target | implemented | root `CMakeLists.txt`, `cmake/Doxyfile.in`, local docs build smoke test | `PLCOPEN_BUILD_DOCS=ON` configures; local MSVC/NMake docs smoke ran the documented missing-Doxygen fallback when Doxygen is unavailable |

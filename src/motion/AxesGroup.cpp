@@ -131,7 +131,7 @@ bool isReadyMember(Axis *axis)
         if (axis->group() && axis->group() != this)
             return MC_ErrorCode::AXIS_IN_OTHER_GROUP;
 
-        if (mMemberCount >= URANUS_AXESGROUP_IDENT_NUM)
+        if (mMemberCount >= PLCOPEN_AXESGROUP_IDENT_NUM)
             return MC_ErrorCode::QUEUEFULL;
 
         return MC_ErrorCode::GOOD;

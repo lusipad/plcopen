@@ -59,7 +59,7 @@
 - ✅ 环境检查（PowerShell 版本、CMake、操作系统）
 - ✅ 多配置构建（Debug/Release）
 - ✅ 自动 CMake 配置和构建
-- ✅ 单元测试执行
+- ✅ CTest 全量测试执行
 - ✅ 自动安装到输出目录
 - ✅ 彩色输出和进度显示
 - ✅ 错误处理和报告
@@ -76,7 +76,7 @@
 
 - `plcopen.dll` - 主库文件
 - `plcopen.lib` - 导入库
-- `test_basic.exe` - 基本测试程序
+- `test_basic.exe` - CTest 使用的 Catch2 测试程序
 - `axis_move.exe` - 轴运动演示程序
 - `axis_homing.exe` - 轴回零演示程序
 - `axis_move_oscilloscope.exe` - 轴振荡运动演示程序
@@ -103,6 +103,13 @@
    - 查看 CMake 输出日志
    - 尝试清理后重新构建：`.\build.ps1 -Clean`
 
+5. **Visual Studio / MSBuild 构建长时间卡住**
+   - `build.ps1` 会通过 `/p:TrackFileAccess=false` 禁用 MSBuild file tracking，以避免部分 Windows 环境中 `cl.exe` 长时间无输出挂起；同时通过 `/nodeReuse:false` 避免构建完成后保留后台 MSBuild 节点。
+   - 手动构建时可追加同样参数：
+     ```powershell
+     cmake --build build --config Release -- /p:TrackFileAccess=false /nodeReuse:false
+     ```
+
 ### 手动构建步骤
 
 如果脚本有问题，可以手动执行以下步骤：
@@ -118,9 +125,8 @@ cmake -DCMAKE_BUILD_TYPE=Release ..
 # 3. 构建项目
 cmake --build . --config Release --parallel
 
-# 4. 运行测试
-$testExe = Get-ChildItem . -Recurse -Filter test_basic.exe | Select-Object -First 1
-& $testExe.FullName
+# 4. 运行 CTest 全量测试
+ctest --test-dir . --build-config Release --output-on-failure
 ```
 
 ## 开发说明

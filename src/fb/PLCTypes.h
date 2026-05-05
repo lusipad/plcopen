@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef _URANUS_PLCTYPES_HPP_
-#define _URANUS_PLCTYPES_HPP_
+#ifndef PLCOPEN_PLCTYPES_HPP_
+#define PLCOPEN_PLCTYPES_HPP_
 
 #include <cstdint>
 #include <memory>
@@ -101,4 +101,4 @@ namespace plcopen
 
 }
 
-#endif /** _URANUS_PLCTYPES_HPP_ **/
+#endif /** PLCOPEN_PLCTYPES_HPP_ **/

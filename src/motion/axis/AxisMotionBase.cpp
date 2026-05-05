@@ -76,9 +76,9 @@ namespace plcopen
     AxisMotionBase::AxisMotionBase()
     {
         mImpl_ = new AxisMotionBaseImpl();
-        URANUS_ADD_HANDLER(onError, onErrorHandler);
-        URANUS_ADD_HANDLER(onPowerStatusChanged, onPowerStatusChangedHandler);
-        URANUS_ADD_HANDLER(onPositionOffset, onPositionOffsetHandler);
+        PLCOPEN_ADD_HANDLER(onError, onErrorHandler);
+        PLCOPEN_ADD_HANDLER(onPowerStatusChanged, onPowerStatusChangedHandler);
+        PLCOPEN_ADD_HANDLER(onPositionOffset, onPositionOffsetHandler);
     }
 
     AxisMotionBase::~AxisMotionBase()

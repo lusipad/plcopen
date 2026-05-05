@@ -1,5 +1,5 @@
-#ifndef _URANUS_AXISSYNC_HPP_
-#define _URANUS_AXISSYNC_HPP_
+#ifndef PLCOPEN_AXISSYNC_HPP_
+#define PLCOPEN_AXISSYNC_HPP_
 
 #include "AxisMotionBase.h"
 #include "PLCTypes.h"
@@ -94,4 +94,4 @@ namespace plcopen
 
 } // namespace plcopen
 
-#endif /** _URANUS_AXISSYNC_HPP_ **/
+#endif /** PLCOPEN_AXISSYNC_HPP_ **/

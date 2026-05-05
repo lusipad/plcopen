@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef _URANUS_MOTION_GLOBAL_HPP_
-#define _URANUS_MOTION_GLOBAL_HPP_
+#ifndef PLCOPEN_MOTION_GLOBAL_HPP_
+#define PLCOPEN_MOTION_GLOBAL_HPP_
 
 #include <cstdint>
 #include <cstddef>
@@ -34,10 +34,10 @@ namespace plcopen
 #pragma pack(push)
 #pragma pack(4)
 
-#define URANUS_AXESGROUP_IDENT_NUM 8
-#define URANUS_CARTESIAN_DIMENSION3 3
-#define URANUS_CARTESIAN_DIMENSION6 6
-#define URANUS_TRANSITIONPARAMETER_NUM 4
+#define PLCOPEN_AXESGROUP_IDENT_NUM 8
+#define PLCOPEN_CARTESIAN_DIMENSION3 3
+#define PLCOPEN_CARTESIAN_DIMENSION6 6
+#define PLCOPEN_TRANSITIONPARAMETER_NUM 4
 
     /**
      * @brief Servo::readVal/writeVal extension-channel bases used by the digital IO FBs.
@@ -433,4 +433,4 @@ namespace plcopen
 
 }
 
-#endif /** _URANUS_MOTION_GLOBAL_HPP_ **/
+#endif /** PLCOPEN_MOTION_GLOBAL_HPP_ **/

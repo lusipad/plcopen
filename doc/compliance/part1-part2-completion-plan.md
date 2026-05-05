@@ -40,7 +40,7 @@ As of the current v0.9.0 worktree:
 - The base Execute/Done/Busy/Error and Enable/Valid/Error contracts are implemented for the current public contract and covered by `src/test/test_basic.cpp`.
 - Current public FB invalid-input and lifecycle error behavior is covered by behavior-specific tests; the project does not claim a standalone PLCopen/vendor error catalog.
 - Remaining boundaries are deliberate new-feature or hardware-abstraction decisions: external profile-table import/parsing, controller-side cam repositories, unsupported vendor/device parameters outside the implemented registry, and Part 4 coordinated path/kinematics remain outside v0.9.0 unless a future runtime abstraction is introduced.
-- Latest local verification evidence is `ctest --test-dir build --build-config Release --output-on-failure` passing 191/191, including the all-partial closure slice's focused BufferMode and sync ContinuousUpdate coverage.
+- Latest local verification evidence is `.\build.ps1 -Configuration Release -Test` plus `ctest --test-dir build --build-config Release --output-on-failure --timeout 60` passing 191/191. The current release smoke also covers local install + `find_package(plcopen)`, local `FetchContent_MakeAvailable(plcopen)`, and `PLCOPEN_BUILD_DOCS=ON` docs fallback using MSVC via `vcvars64.bat` + NMake Makefiles on Windows.
 
 ## Definition Of Done
 

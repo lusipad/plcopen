@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef _URANUS_AXISSTATUS_HPP_
-#define _URANUS_AXISSTATUS_HPP_
+#ifndef PLCOPEN_AXISSTATUS_HPP_
+#define PLCOPEN_AXISSTATUS_HPP_
 
 #include "AxisBase.h"
 
@@ -51,4 +51,4 @@ namespace plcopen
 
 }
 
-#endif /** _URANUS_AXISSTATUS_HPP_ **/
+#endif /** PLCOPEN_AXISSTATUS_HPP_ **/

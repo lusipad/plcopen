@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef _URANUS_SCHEDULER_HPP_
-#define _URANUS_SCHEDULER_HPP_
+#ifndef PLCOPEN_SCHEDULER_HPP_
+#define PLCOPEN_SCHEDULER_HPP_
 
 #include "Global.h"
 #include "Servo.h"
@@ -98,4 +98,4 @@ namespace plcopen
 
 }
 
-#endif /** _URANUS_SCHEDULER_HPP_ **/
+#endif /** PLCOPEN_SCHEDULER_HPP_ **/

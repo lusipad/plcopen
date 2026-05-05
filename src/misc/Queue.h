@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef _URANUS_QUEUE_HPP_
-#define _URANUS_QUEUE_HPP_
+#ifndef PLCOPEN_QUEUE_HPP_
+#define PLCOPEN_QUEUE_HPP_
 
 template <typename T, size_t Size>
 class Queue
@@ -182,4 +182,4 @@ size_t Queue<T, Size>::used(void) const
 #undef INC
 #undef DEC
 
-#endif /** _URANUS_QUEUE_HPP_ **/
+#endif /** PLCOPEN_QUEUE_HPP_ **/

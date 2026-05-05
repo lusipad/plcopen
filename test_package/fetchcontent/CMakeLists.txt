@@ -10,6 +10,7 @@ include(FetchContent)
 if(NOT DEFINED PLCOPEN_SOURCE_DIR)
   message(FATAL_ERROR "Set PLCOPEN_SOURCE_DIR to a local plcopen checkout.")
 endif()
+file(TO_CMAKE_PATH "${PLCOPEN_SOURCE_DIR}" PLCOPEN_SOURCE_DIR)
 
 FetchContent_Declare(
   plcopen

@@ -356,8 +356,8 @@ namespace
     {
         mImpl_ = new AxisHomingImpl();
 
-        URANUS_ADD_HANDLER(onPowerStatusChanged, onPowerStatusChangedHandler);
-        URANUS_ADD_HANDLER(onPositionOffset, onPositionOffsetHandler);
+        PLCOPEN_ADD_HANDLER(onPowerStatusChanged, onPowerStatusChangedHandler);
+        PLCOPEN_ADD_HANDLER(onPositionOffset, onPositionOffsetHandler);
     }
 
     AxisHoming::~AxisHoming()

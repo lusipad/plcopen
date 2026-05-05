@@ -6,6 +6,10 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- Test executables now provide a local Catch2 `main` and link `Catch2::Catch2` directly, avoiding unnecessary `Catch2WithMain` rebuilds on MSVC.
+- `build.ps1 -Test` now runs the full CTest suite instead of copying and running only `test_basic.exe`, and MSBuild runs disable file tracking and node reuse for cleaner Windows builds.
+- Internal legacy `URANUS_*` include guards, constants, and event helper macros are now normalized to `PLCOPEN_*`.
+- The FetchContent smoke package now normalizes `PLCOPEN_SOURCE_DIR` to CMake-style paths so Windows backslash paths work in `FetchContent_Declare(SOURCE_DIR ...)`.
 - MSVC builds now export `/utf-8` through the `plcopen` target, avoiding source-charset warnings in the library, Python binding, and CMake consumers.
 - Third-party pybind11 CMake deprecation noise is now suppressed during the vendored FetchContent configure step so release builds stay warning-clean.
 - Cross-cutting `BufferMode` and `ContinuousUpdate` are now classified as implemented after adding Homing/Sync buffer-mode regressions and active `MC_GearIn`, `MC_GearInPos`, and `MC_CamIn` continuous-update support.

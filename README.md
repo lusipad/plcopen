@@ -142,6 +142,7 @@ cd plcopen
 # 跨平台通用命令
 cmake -S . -B build
 cmake --build build --config Release
+ctest --test-dir build --build-config Release --output-on-failure
 ```
 
 ### 生成 API 文档（可选）
@@ -467,6 +468,8 @@ target_link_libraries(app PRIVATE plcopen::plcopen)
 | [ROADMAP.md](ROADMAP.md) | 近期路线（6-12 个月） |
 | [BUILD_README.md](BUILD_README.md) | 详细构建指南 |
 | [BUILD_LINUX.md](BUILD_LINUX.md) | Ubuntu 22.04 构建说明 |
+| [doc/compliance/plcopen-motion-v2-function-block-matrix.md](doc/compliance/plcopen-motion-v2-function-block-matrix.md) | Part 1/2 功能块支持矩阵 |
+| [doc/compliance/part1-part2-completion-plan.md](doc/compliance/part1-part2-completion-plan.md) | v0.9.0 Part 1/2 completion 审计记录 |
 | [`src/fb/FbBasic.h`](src/fb/FbBasic.h) | 基础 IEC 功能块公开头文件 |
 | [`src/fb/FbMultiAxis.h`](src/fb/FbMultiAxis.h) | 多轴同步功能块公开头文件 |
 | [CLAUDE.md](CLAUDE.md) | AI 协作的行为规范 |

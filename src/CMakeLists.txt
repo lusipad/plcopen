@@ -140,6 +140,7 @@ if(PLCOPEN_BUILD_TESTS AND BUILD_TESTING)
     include(Catch)
 
     set(PLCOPEN_TEST_SOURCES
+        test/test_main.cpp
         test/test_basic.cpp
         test/test_axis_status.cpp
         test/test_fb_basic.cpp
@@ -150,7 +151,7 @@ if(PLCOPEN_BUILD_TESTS AND BUILD_TESTING)
     )
 
     add_executable(test_basic ${PLCOPEN_TEST_SOURCES})
-    target_link_libraries(test_basic PRIVATE ${PROJECT_NAME} Catch2::Catch2WithMain)
+    target_link_libraries(test_basic PRIVATE ${PROJECT_NAME} Catch2::Catch2)
     catch_discover_tests(test_basic DISCOVERY_MODE PRE_TEST)
 
     if(PLCOPEN_BUILD_DEMOS)

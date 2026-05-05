@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef _URANUS_LINKLIST_HPP_
-#define _URANUS_LINKLIST_HPP_
+#ifndef PLCOPEN_LINKLIST_HPP_
+#define PLCOPEN_LINKLIST_HPP_
 
 namespace plcopen
 {
@@ -47,4 +47,4 @@ namespace plcopen
 
 }
 
-#endif /** _URANUS_LINKLIST_HPP_ **/
+#endif /** PLCOPEN_LINKLIST_HPP_ **/

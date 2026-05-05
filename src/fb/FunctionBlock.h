@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef _URANUS_FUNCTIONBLOCK_HPP_
-#define _URANUS_FUNCTIONBLOCK_HPP_
+#ifndef PLCOPEN_FUNCTIONBLOCK_HPP_
+#define PLCOPEN_FUNCTIONBLOCK_HPP_
 
 #include "Global.h"
 
@@ -62,4 +62,4 @@ namespace plcopen
     #pragma pack(pop)
 }
 
-#endif /** _URANUS_FUNCTIONBLOCK_HPP_ **/
+#endif /** PLCOPEN_FUNCTIONBLOCK_HPP_ **/

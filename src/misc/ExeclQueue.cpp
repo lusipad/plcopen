@@ -30,13 +30,13 @@
 namespace plcopen
 {
 
-#define URANUS_AXISEXECLLISTSIZE 6
-#define URANUS_AXISEXECLNODESIZE 1024
+#define PLCOPEN_AXISEXECLLISTSIZE 6
+#define PLCOPEN_AXISEXECLNODESIZE 1024
 
     struct ExeclNodeContainer
     {
         ExeclNode *node = nullptr;
-        uint8_t data[URANUS_AXISEXECLNODESIZE];
+        uint8_t data[PLCOPEN_AXISEXECLNODESIZE];
     };
 
     ExeclNode::ExeclNode()
@@ -52,7 +52,7 @@ namespace plcopen
     public:
         ExeclQueue *mThis_ = nullptr;
         
-        Queue<ExeclNodeContainer, URANUS_AXISEXECLLISTSIZE> mQueue;
+        Queue<ExeclNodeContainer, PLCOPEN_AXISEXECLLISTSIZE> mQueue;
         ExeclNode *mHoldNode = nullptr;
 
     public:
@@ -230,7 +230,7 @@ namespace plcopen
             mImpl_->mQueue.pop_front();
         }
 
-        URANUS_CALL_EVENT(onAllNodesAborted, this);
+        PLCOPEN_CALL_EVENT(onAllNodesAborted, this);
     }
 
     void ExeclQueue::setAllNodesError(MC_ErrorCode errorCodeToSet)
@@ -251,7 +251,7 @@ namespace plcopen
             mImpl_->mQueue.pop_front();
         }
 
-        URANUS_CALL_EVENT(onAllNodesError, this, errorCodeToSet);
+        PLCOPEN_CALL_EVENT(onAllNodesError, this, errorCodeToSet);
     }
 
 } // namespace plcopen

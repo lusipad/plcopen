@@ -22,8 +22,8 @@
  * 
  */
 
-#ifndef _URANUS_AXISBASE_HPP_
-#define _URANUS_AXISBASE_HPP_
+#ifndef PLCOPEN_AXISBASE_HPP_
+#define PLCOPEN_AXISBASE_HPP_
 
 #include "Global.h"
 #include "Event.h"
@@ -100,9 +100,9 @@ namespace plcopen
         void printLog(MC_LogLevel level, const char* fmt, ...);
     
     protected: //事件通知
-        URANUS_DEFINE_EVENT(onError, AxisBase*, MC_ErrorCode);
-        URANUS_DEFINE_EVENT(onPowerStatusChanged, AxisBase*, bool);
-        URANUS_DEFINE_EVENT(onPositionOffset, AxisBase*, double);
+        PLCOPEN_DEFINE_EVENT(onError, AxisBase*, MC_ErrorCode);
+        PLCOPEN_DEFINE_EVENT(onPowerStatusChanged, AxisBase*, bool);
+        PLCOPEN_DEFINE_EVENT(onPositionOffset, AxisBase*, double);
 
     protected:
         virtual double frequency(void) = 0;
@@ -116,4 +116,4 @@ namespace plcopen
 
 }
 
-#endif /** _URANUS_AXISBASE_HPP_ **/
+#endif /** PLCOPEN_AXISBASE_HPP_ **/

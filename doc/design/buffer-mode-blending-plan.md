@@ -1,5 +1,7 @@
 # Buffer Mode Blending 实现计划
 
+> 状态：历史执行计划。当前 v0.9.0 已完成本计划中与现有 MoveNode queue/blending 合同对应的代码、测试和矩阵同步；本文保留为设计审计记录，不再表示 live backlog。未来若要做完整几何 blending 或连续速度过渡，应新建 planner/runtime 设计，而不是继续追加本计划。
+
 基于 [buffer-mode-blending-design.md](buffer-mode-blending-design.md)。
 
 ## 前置知识：已有调用链分析

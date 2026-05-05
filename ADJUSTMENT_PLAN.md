@@ -4,7 +4,7 @@
 **评审来源**: CEO plan review
 **评审模式**: SCOPE REDUCTION（范围削减）
 **项目定位**: 期望建立有用户、有社区的开源项目
-**当前状态**: 计划待审批；部分前置动作已 stage 未 commit（见 §9）
+**当前状态（2026-05-05）**: 历史执行计划；Sprint 0 文档重组已完成，项目正式名称已决策为 `plcopen`，公开面与内部 `PLCOPEN_*` 宏/guard 已统一。
 
 ---
 
@@ -166,7 +166,7 @@
 | 5 | 写 `VISION.md`（北极星） | 保留野心 | ⏳ 待开始 |
 | 6 | 写 `ROADMAP.md`（6-12 个月路线） | 近期承诺 | ⏳ 待开始 |
 | 7 | 重写 `README.md`（定位 + 对比表） | 首屏清晰 | ⏳ 待开始 |
-| 8 | 命名决策：`plcopen` vs `Uranus` | 待用户决定 | ⏳ 阻塞 |
+| 8 | 命名决策：`plcopen` | 公开面与内部 `PLCOPEN_*` 宏/guard 统一 | ✅ 完成 |
 
 ### Sprint 1（第 3-6 周）—— 基础设施
 
@@ -261,9 +261,7 @@ git checkout -- .
    - B) 回滚（重新讨论归档策略）
 
 2. **项目正式名称？**
-   - A) 保留 `plcopen`（仓库名，`CMakeLists` 顶层名）
-   - B) 保留 `Uranus`（`src/CMakeLists.txt`、生成物名、namespace 名）
-   - C) 起一个新名字
+   - 已决策：保留 `plcopen` 作为仓库名、CMake project/package target、public namespace，并将内部 legacy macro / include guard 统一为 `PLCOPEN_*`。
 
 3. **Sprint 0 剩余步骤（4-7）的节奏？**
    - A) 一气呵成：VISION → ROADMAP → README 一次性写完

@@ -1,5 +1,5 @@
-#ifndef _URANUS_AXESGROUP_HPP_
-#define _URANUS_AXESGROUP_HPP_
+#ifndef PLCOPEN_AXESGROUP_HPP_
+#define PLCOPEN_AXESGROUP_HPP_
 
 #include "Global.h"
 
@@ -30,11 +30,11 @@ namespace plcopen
         MC_ErrorCode reset(bool &isDone);
 
     private:
-        Axis *mMembers[URANUS_AXESGROUP_IDENT_NUM] = {nullptr};
+        Axis *mMembers[PLCOPEN_AXESGROUP_IDENT_NUM] = {nullptr};
         std::size_t mMemberCount = 0;
         bool mEnabled = false;
     };
 
 } // namespace plcopen
 
-#endif /** _URANUS_AXESGROUP_HPP_ **/
+#endif /** PLCOPEN_AXESGROUP_HPP_ **/

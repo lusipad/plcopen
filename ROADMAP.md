@@ -34,7 +34,7 @@
 | 0.3 | 写 `ROADMAP.md`（本文） | 明确 v0.2.0 具体任务和 DoD | ✅ 完成 |
 | 0.4 | 写 `doc/vision/README.md` 归档前言 | 说明归档文档的性质，避免被当路线图 | ✅ 完成 |
 | 0.5 | 重写根目录 `README.md` | 首屏有一句话定位 + 对比表 + 快速开始 | ✅ 完成 |
-| 0.6 | 命名统一（`plcopen` 为主） | CMake、生成物、namespace 一致 | ✅ 完成 |
+| 0.6 | 命名统一（`plcopen` 为主） | 仓库名、CMake project、package target、public namespace、内部 include guard / legacy macro 统一到 `plcopen` / `PLCOPEN_*` | ✅ 完成 |
 | 0.7 | Commit Sprint 0 所有变更 | 一次清晰的 commit，message 说清搬家意图 | ✅ 完成 |
 
 ### Sprint 1：测试与 CI（2026-05 → 2026-06，约 4 周）
@@ -221,7 +221,7 @@
 - Part 1/2 标准 FB：45 个 tracked rows。
 - 当前 FB 状态：45 个 `implemented`，0 个 `partial`，0 个 `missing`；剩余限制均转入明确的 runtime boundary / out-of-scope 说明。
 - Profile FB 已补链式多段、timed segment、scale/offset 归一化和 active update 回归；外部 profile-table import/parser 仍是未来 runtime goal。
-- 跨切语义：Execute/Done/Busy/Error、Enable/Valid/Error、当前公开错误码覆盖已归为 implemented；BufferMode 与未建模的 ContinuousUpdate 变体保持 documented scope-boundary。
+- 跨切语义：Execute/Done/Busy/Error、Enable/Valid/Error、当前公开错误码覆盖已归为 implemented；BufferMode 与当前公开 ContinuousUpdate 合同已归为 implemented，未来几何 blending、外部 profile-table import/parser、未建模同步 planner 变体另列新 runtime feature。
 
 **候选目标**（按优先级）：
 

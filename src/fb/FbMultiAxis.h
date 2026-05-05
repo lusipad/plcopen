@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef _URANUS_FBMULTIAXIS_HPP_
-#define _URANUS_FBMULTIAXIS_HPP_
+#ifndef PLCOPEN_FBMULTIAXIS_HPP_
+#define PLCOPEN_FBMULTIAXIS_HPP_
 
 #include "FbPLCOpenBase.h"
 #include "CamTable.h"
@@ -271,4 +271,4 @@ namespace plcopen
 
 } // namespace plcopen
 
-#endif /** _URANUS_FBMULTIAXIS_HPP_ **/
+#endif /** PLCOPEN_FBMULTIAXIS_HPP_ **/

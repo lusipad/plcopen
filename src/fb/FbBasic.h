@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef _URANUS_FBBASIC_HPP_
-#define _URANUS_FBBASIC_HPP_
+#ifndef PLCOPEN_FBBASIC_HPP_
+#define PLCOPEN_FBBASIC_HPP_
 
 #include "FbPLCOpenBase.h"
 
@@ -263,4 +263,4 @@ namespace plcopen
 
 } // namespace plcopen
 
-#endif /** _URANUS_FBBASIC_HPP_ **/
+#endif /** PLCOPEN_FBBASIC_HPP_ **/

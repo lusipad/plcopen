@@ -63,8 +63,8 @@ MC_ErrorCode AxisStatus::AxisStatusImpl::statusToError(void)
 AxisStatus::AxisStatus()
 {
     mImpl_ = new AxisStatusImpl();
-    URANUS_ADD_HANDLER(onError, onErrorHandler);
-    URANUS_ADD_HANDLER(onPowerStatusChanged, onPowerStatusChangedHandler);
+    PLCOPEN_ADD_HANDLER(onError, onErrorHandler);
+    PLCOPEN_ADD_HANDLER(onPowerStatusChanged, onPowerStatusChangedHandler);
 }
 
 AxisStatus::~AxisStatus()

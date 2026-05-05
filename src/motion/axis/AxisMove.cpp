@@ -482,10 +482,10 @@ AxisMove::AxisMove()
     mImpl_ = new AxisMoveImpl();
     mImpl_->mThis_ = this;
 
-    URANUS_ADD_HANDLER(onPowerStatusChanged, onPowerStatusChangedHandler);
-    URANUS_ADD_HANDLER(onPositionOffset, onPositionOffsetHandler);
-    URANUS_ADD_HANDLER(onAllNodesAborted, onAllNodesAbortedHandler);
-    URANUS_ADD_HANDLER(onAllNodesError, onAllNodesErrorHandler);
+    PLCOPEN_ADD_HANDLER(onPowerStatusChanged, onPowerStatusChangedHandler);
+    PLCOPEN_ADD_HANDLER(onPositionOffset, onPositionOffsetHandler);
+    PLCOPEN_ADD_HANDLER(onAllNodesAborted, onAllNodesAbortedHandler);
+    PLCOPEN_ADD_HANDLER(onAllNodesError, onAllNodesErrorHandler);
 }
 
 AxisMove::~AxisMove()

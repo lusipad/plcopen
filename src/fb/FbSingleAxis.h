@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef _URANUS_FBSINGLEAXIS_HPP_
-#define _URANUS_FBSINGLEAXIS_HPP_
+#ifndef PLCOPEN_FBSINGLEAXIS_HPP_
+#define PLCOPEN_FBSINGLEAXIS_HPP_
 
 #include "FbPLCOpenBase.h"
 
@@ -797,4 +797,4 @@ namespace plcopen
 
 }
 
-#endif /** _URANUS_FBSINGLEAXIS_HPP_ **/
+#endif /** PLCOPEN_FBSINGLEAXIS_HPP_ **/

@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef _URANUS_AXIS_HPP_
-#define _URANUS_AXIS_HPP_
+#ifndef PLCOPEN_AXIS_HPP_
+#define PLCOPEN_AXIS_HPP_
 
 #include "AxisMotion.h"
 
@@ -50,4 +50,4 @@ namespace plcopen
     };
 }
 
-#endif /** _URANUS_AXIS_HPP_ **/
+#endif /** PLCOPEN_AXIS_HPP_ **/

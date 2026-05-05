@@ -1,5 +1,5 @@
-#ifndef _URANUS_CAMTABLE_HPP_
-#define _URANUS_CAMTABLE_HPP_
+#ifndef PLCOPEN_CAMTABLE_HPP_
+#define PLCOPEN_CAMTABLE_HPP_
 
 #include <utility>
 #include <vector>
@@ -24,4 +24,4 @@ namespace plcopen
 
 } // namespace plcopen
 
-#endif /** _URANUS_CAMTABLE_HPP_ **/
+#endif /** PLCOPEN_CAMTABLE_HPP_ **/

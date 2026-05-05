@@ -22,8 +22,8 @@
  * 
  */
  
-#ifndef _URANUS_MATHUTILS_HPP_
-#define _URANUS_MATHUTILS_HPP_
+#ifndef PLCOPEN_MATHUTILS_HPP_
+#define PLCOPEN_MATHUTILS_HPP_
 
 #include <cmath>
 
@@ -78,4 +78,4 @@ inline bool isOpposite(double num1, double num2) {
 
 }
 
-#endif /** _URANUS_MATHUTILS_HPP_ **/
+#endif /** PLCOPEN_MATHUTILS_HPP_ **/

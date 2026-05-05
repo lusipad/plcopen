@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef _URANUS_AXISMOTIONBASE_HPP_
-#define _URANUS_AXISMOTIONBASE_HPP_
+#ifndef PLCOPEN_AXISMOTIONBASE_HPP_
+#define PLCOPEN_AXISMOTIONBASE_HPP_
 
 #include "AxisStatus.h"
 #include "ExeclQueue.h"
@@ -96,4 +96,4 @@ namespace plcopen
 
 }
 
-#endif /** _URANUS_AXISMOTIONBASE_HPP_ **/
+#endif /** PLCOPEN_AXISMOTIONBASE_HPP_ **/

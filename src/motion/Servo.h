@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef _URANUS_SERVO_HPP_
-#define _URANUS_SERVO_HPP_
+#ifndef PLCOPEN_SERVO_HPP_
+#define PLCOPEN_SERVO_HPP_
 
 #include "Global.h"
 #include <stdarg.h>
@@ -86,4 +86,4 @@ namespace plcopen
 
 }
 
-#endif /** _URANUS_SERVO_HPP_ **/
+#endif /** PLCOPEN_SERVO_HPP_ **/
