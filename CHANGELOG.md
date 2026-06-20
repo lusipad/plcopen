@@ -4,8 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-06-20
+
 ### Changed
 
+- Windows CI now enforces current coverage, installed `find_package` consumption, and Windows-path `FetchContent` consumption in addition to the full CTest suite.
+- Linux CI now verifies installed and `FetchContent` consumers, the optional Python binding smoke test, and real Doxygen generation on the GCC lane while retaining GCC/Clang core coverage.
+- `coverage.ps1` now disables MSBuild file tracking and node reuse so the coverage gate uses the same stable build contract as `build.ps1`.
 - Test executables now provide a local Catch2 `main` and link `Catch2::Catch2` directly, avoiding unnecessary `Catch2WithMain` rebuilds on MSVC.
 - `build.ps1 -Test` now runs the full CTest suite instead of copying and running only `test_basic.exe`, and MSBuild runs disable file tracking and node reuse for cleaner Windows builds.
 - Internal legacy `URANUS_*` include guards, constants, and event helper macros are now normalized to `PLCOPEN_*`.

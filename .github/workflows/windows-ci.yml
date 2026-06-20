@@ -17,8 +17,48 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Build and run test_basic
+      - name: Clean build and run full CTest suite
         run: .\build.ps1 -Clean -Test
 
-      - name: Verify CTest suite
-        run: ctest --test-dir build --build-config Release --output-on-failure
+      - name: Collect coverage
+        run: .\coverage.ps1
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-coverage
+          path: out/coverage
+          retention-days: 14
+
+      - name: Verify installed find_package consumer
+        run: |
+          $InstallPrefix = Join-Path $env:GITHUB_WORKSPACE "build/ci-install"
+          cmake --install build --config Release --prefix $InstallPrefix
+          cmake -S test_package/find_package -B build/ci-find "-DCMAKE_PREFIX_PATH=$InstallPrefix"
+          cmake --build build/ci-find --config Release --parallel -- /p:TrackFileAccess=false /nodeReuse:false
+
+          $Consumer = Get-ChildItem build/ci-find -Recurse -File -Filter plcopen_find_package_smoke.exe | Select-Object -First 1
+          if (-not $Consumer) {
+            throw "find_package consumer executable was not produced"
+          }
+          $env:PATH = "$(Join-Path $InstallPrefix 'bin');$env:PATH"
+          & $Consumer.FullName
+          if ($LASTEXITCODE -ne 0) {
+            throw "find_package consumer failed"
+          }
+
+      - name: Verify FetchContent consumer with Windows path
+        run: |
+          cmake -S test_package/fetchcontent -B build/ci-fetch "-DPLCOPEN_SOURCE_DIR=$env:GITHUB_WORKSPACE"
+          cmake --build build/ci-fetch --config Release --parallel -- /p:TrackFileAccess=false /nodeReuse:false
+
+          $Library = Get-ChildItem build/ci-fetch -Recurse -File -Filter plcopen.dll | Select-Object -First 1
+          $Consumer = Get-ChildItem build/ci-fetch -Recurse -File -Filter plcopen_fetchcontent_smoke.exe | Select-Object -First 1
+          if (-not $Library -or -not $Consumer) {
+            throw "FetchContent consumer artifacts were not produced"
+          }
+          $env:PATH = "$($Library.DirectoryName);$env:PATH"
+          & $Consumer.FullName
+          if ($LASTEXITCODE -ne 0) {
+            throw "FetchContent consumer failed"
+          }

@@ -25,6 +25,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Set up Python
+        if: matrix.compiler == 'gcc'
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
       - name: Configure CMake
         run: >
           cmake -S . -B build
@@ -37,3 +43,54 @@ jobs:
 
       - name: Test
         run: ctest --test-dir build --output-on-failure
+
+      - name: Verify installed find_package consumer
+        if: matrix.compiler == 'gcc'
+        run: |
+          install_prefix="$PWD/build/ci-install"
+          cmake --install build --prefix "$install_prefix"
+          cmake -S test_package/find_package -B build/ci-find -DCMAKE_PREFIX_PATH="$install_prefix"
+          cmake --build build/ci-find --parallel
+          LD_LIBRARY_PATH="$install_prefix/lib:${LD_LIBRARY_PATH:-}" ./build/ci-find/plcopen_find_package_smoke
+
+      - name: Verify FetchContent consumer
+        if: matrix.compiler == 'gcc'
+        run: |
+          cmake -S test_package/fetchcontent -B build/ci-fetch -DPLCOPEN_SOURCE_DIR="$PWD"
+          cmake --build build/ci-fetch --parallel
+          library="$(find build/ci-fetch -name 'libplcopen.so' -print -quit)"
+          consumer="$(find build/ci-fetch -name 'plcopen_fetchcontent_smoke' -type f -print -quit)"
+          test -n "$library"
+          test -n "$consumer"
+          library_dir="$(dirname "$library")"
+          LD_LIBRARY_PATH="$library_dir:${LD_LIBRARY_PATH:-}" "$consumer"
+
+      - name: Build and test Python bindings
+        if: matrix.compiler == 'gcc'
+        run: |
+          cmake -S . -B build-python \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_CXX_COMPILER=${{ matrix.cxx }} \
+            -DPLCOPEN_BUILD_DEMOS=OFF \
+            -DPLCOPEN_BUILD_TESTS=OFF \
+            -DPLCOPEN_BUILD_PYTHON_BINDINGS=ON
+          cmake --build build-python --parallel
+          ctest --test-dir build-python -R pyplcopen_smoke --output-on-failure
+
+      - name: Install Doxygen
+        if: matrix.compiler == 'gcc'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y doxygen
+
+      - name: Generate API documentation
+        if: matrix.compiler == 'gcc'
+        run: |
+          cmake -S . -B build-docs \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_CXX_COMPILER=${{ matrix.cxx }} \
+            -DBUILD_TESTING=OFF \
+            -DPLCOPEN_BUILD_DEMOS=OFF \
+            -DPLCOPEN_BUILD_TESTS=OFF \
+            -DPLCOPEN_BUILD_DOCS=ON
+          cmake --build build-docs --target docs

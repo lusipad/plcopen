@@ -81,7 +81,16 @@ if (-not (Test-Path $ResolvedBuildDir)) {
 }
 
 Write-Info "Building test_basic ($Configuration)..."
-& cmake --build $ResolvedBuildDir --config $Configuration --target test_basic --parallel
+$BuildArgs = @(
+    "--build", $ResolvedBuildDir,
+    "--config", $Configuration,
+    "--target", "test_basic",
+    "--parallel",
+    "--",
+    "/p:TrackFileAccess=false",
+    "/nodeReuse:false"
+)
+& cmake @BuildArgs
 if ($LASTEXITCODE -ne 0) {
     throw "Build failed."
 }

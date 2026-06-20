@@ -238,6 +238,27 @@
 
 ---
 
+## 当前发布里程碑：v0.10.0（发布与采用收口）
+
+**时间窗口**：2026-Q2
+
+**发布日期**：2026-06-20
+
+**核心目标**：不扩展运行时能力，把 `v0.9.0` tag 之后已经完成的 Part 1/2 语义收口和发布门禁修正，整理成可重复验证、可被下游消费的正式版本。
+
+**完成定义**：
+
+- Windows 与 Linux GCC/Clang 从全新 checkout 完成构建和全量 CTest。
+- Windows 覆盖率报告可重复生成并保持至少 50% 的门槛。
+- CI 实际运行安装后的 `find_package` consumer 与源码树 `FetchContent` consumer。
+- Linux GCC 通道实际运行 Python binding smoke，并用 Doxygen 生成 API 文档。
+- CMake、`.version`、README、CHANGELOG、ROADMAP、VISION、tag 和 GitHub Release 的版本口径一致。
+- 只发布源码与 Release Notes；`v1.0` 前不承诺平台二进制 ABI。
+
+**发布后节奏**：进入 30 天反馈观察期，优先处理真实集成问题。下一功能里程碑由 Issues、Discussions 和实际项目需求决定；没有新证据时不启动 Part 4、IEC 或平台化扩面。
+
+---
+
 ## 每季度复盘（每季度第 1 周）
 
 **固定 4 个问题**：
@@ -257,7 +278,7 @@
 
 ## 当前**不在**路线图上的能力
 
-以下能力**不会**出现在 v0.2 / v0.3 / v0.4 / v0.5，除非解锁条件满足：
+以下能力**不会**因为 `v0.10.0` 发布而自动进入下一里程碑，除非解锁条件满足：
 
 - ST / IL / LD / FBD / SFC 编译器 & 编辑器
 - Electron IDE
