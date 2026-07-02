@@ -119,6 +119,13 @@ function Invoke-CMakeConfigure {
     $CMakeVars = @(
         "-DCMAKE_BUILD_TYPE=$Configuration"
     )
+
+    if ($Test) {
+        $CMakeVars += @(
+            "-DBUILD_TESTING=ON",
+            "-DPLCOPEN_BUILD_TESTS=ON"
+        )
+    }
     
     # Execute CMake configuration
     $CMakeArgs = $CMakeVars + $ProjectRoot
@@ -136,18 +143,41 @@ function Invoke-CMakeConfigure {
     }
 }
 
+function Get-CMakeGenerator {
+    $CachePath = Join-Path $BuildDir "CMakeCache.txt"
+    if (-not (Test-Path $CachePath)) {
+        return ""
+    }
+
+    $GeneratorLine = Select-String -Path $CachePath -Pattern "^CMAKE_GENERATOR:INTERNAL=" | Select-Object -First 1
+    if (-not $GeneratorLine) {
+        return ""
+    }
+
+    return ($GeneratorLine.Line -replace "^CMAKE_GENERATOR:INTERNAL=", "")
+}
+
 # Build function
 function Invoke-CMakeBuild {
     Write-Info "Building project (Configuration: $Configuration)..."
-    
+
+    $Generator = Get-CMakeGenerator
     $BuildArgs = @(
         "--build", $BuildDir,
-        "--config", $Configuration,
-        "--parallel",
-        "--",
-        "/p:TrackFileAccess=false",
-        "/nodeReuse:false"
+        "--config", $Configuration
     )
+
+    if ($Generator -notlike "NMake*") {
+        $BuildArgs += "--parallel"
+    }
+
+    if ($Generator -like "Visual Studio*") {
+        $BuildArgs += @(
+            "--",
+            "/p:TrackFileAccess=false",
+            "/nodeReuse:false"
+        )
+    }
     
     Write-Info "Build command: cmake $($BuildArgs -join ' ')"
     
@@ -166,6 +196,31 @@ function Invoke-Tests {
     }
     
     Write-Info "Executing test suite..."
+
+    $CTestListArgs = @(
+        "--test-dir", $BuildDir,
+        "--build-config", $Configuration,
+        "--show-only=json-v1"
+    )
+
+    $CTestListResult = & ctest @CTestListArgs 2>&1
+    if ($LASTEXITCODE -ne 0) {
+        Write-Output $CTestListResult
+        throw "CTest discovery failed"
+    }
+
+    try {
+        $CTestList = ($CTestListResult -join [Environment]::NewLine) | ConvertFrom-Json
+    } catch {
+        throw "CTest discovery returned invalid JSON"
+    }
+
+    $TestCount = @($CTestList.tests).Count
+    if ($TestCount -eq 0) {
+        throw "CTest discovered zero tests"
+    }
+
+    Write-Info "CTest discovered $TestCount tests"
 
     $CTestArgs = @(
         "--test-dir", $BuildDir,

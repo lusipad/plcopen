@@ -309,6 +309,28 @@ namespace plcopen
         ACS = 0,
         MCS = 1,
         PCS = 2,
+        WCS = 3,
+        FCS = 4,
+        TCS = 5,
+    };
+
+    /** Transition velocity selection defined by PLCopen Part 4. */
+    enum class MC_TransitionVelocity
+    {
+        ZERO = 0,
+        LOW = 1,
+        PREVIOUS = 2,
+        NEXT = 3,
+        HIGH = 4,
+    };
+
+    /** Orientation interpolation modes defined by PLCopen Part 4. */
+    enum class MC_OrientationMode
+    {
+        LINEAR = 0,
+        JOINT_INTERPOLATED = 1,
+        FIXED = 2,
+        PATH_BASED = 3,
     };
 
     enum class MC_CircMode

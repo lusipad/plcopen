@@ -115,13 +115,24 @@ namespace plcopen
         void onDisable(void);
     };
 
+    /** Stops the axes group on its current path and holds GroupStopping while Execute is true. */
     class FbGroupStop : public FbComExecuteType
     {
     public:
         FB_INPUT AXES_GROUP_REF mAxesGroup = nullptr;
+        FB_INPUT LREAL mDeceleration = 0.0;
+        FB_INPUT LREAL mJerk = 0.0;
+
+        FB_OUTPUT BOOL mCommandAborted = false;
 
     public:
+        void call(void) override;
         MC_ErrorCode onExecTriggered(bool &isDone);
+        void onOperationAborted(int32_t customId) override;
+
+    private:
+        bool mExecutePrevious = false;
+        bool mStopRequested = false;
     };
 
     class FbGroupReset : public FbComExecuteType
@@ -131,6 +142,63 @@ namespace plcopen
 
     public:
         MC_ErrorCode onExecTriggered(bool &isDone);
+    };
+
+    /** Common PLCopen Part 4 contract for coordinated linear group moves. */
+    class FbGroupLinearMoveType : public FbSeqExecuteType
+    {
+    public:
+        FB_INPUT AXES_GROUP_REF mAxesGroup = nullptr;
+        FB_INPUT LREAL mVelocity = 0.0;
+        FB_INPUT LREAL mAcceleration = 0.0;
+        FB_INPUT LREAL mDeceleration = 0.0;
+        FB_INPUT LREAL mJerk = 0.0;
+        FB_INPUT MC_COORD_SYSTEM mCoordSystem = MC_CoordSystem::ACS;
+        FB_INPUT MC_BUFFER_MODE mBufferMode = MC_BufferMode::ABORTING;
+        FB_INPUT MC_TRANSITION_VELOCITY mTransitionVelocity = MC_TransitionVelocity::ZERO;
+        FB_INPUT MC_TRANSITION_MODE mTransitionMode = MC_TransitionMode::NONE;
+        FB_INPUT MC_TRANSITION_PARAMETER mTransitionParameter = {0};
+        FB_INPUT MC_ORIENTATION_MODE mOrientationMode = MC_OrientationMode::LINEAR;
+
+        FB_OUTPUT BOOL mCommandAccepted = false;
+        FB_OUTPUT MC_COMMAND_ID mCommandID = 0;
+
+    public:
+        MC_ErrorCode onExecPosedge(void) override final;
+        void onOperationActive(int32_t customId) override;
+        void onOperationAborted(int32_t customId) override;
+        void onOperationDone(int32_t customId) override;
+        void onOperationError(MC_ErrorCode errorCode, int32_t customId) override;
+
+    protected:
+        virtual const MC_POS_REF &positionRef(void) const = 0;
+        virtual bool isRelative(void) const = 0;
+
+    private:
+        bool isCurrentCommand(int32_t customId) const;
+        void clearCommandAcceptance(void);
+    };
+
+    /** Executes an ACS linear move to an absolute member-position vector. */
+    class FbMoveLinearAbsolute : public FbGroupLinearMoveType
+    {
+    public:
+        FB_INPUT MC_POS_REF mPosition{};
+
+    protected:
+        const MC_POS_REF &positionRef(void) const override;
+        bool isRelative(void) const override;
+    };
+
+    /** Executes an ACS linear move by a relative member-distance vector. */
+    class FbMoveLinearRelative : public FbGroupLinearMoveType
+    {
+    public:
+        FB_INPUT MC_DISTANCE_REF mDistance{};
+
+    protected:
+        const MC_POS_REF &positionRef(void) const override;
+        bool isRelative(void) const override;
     };
 
     class FbCombineAxes : public FbSeqExecuteType

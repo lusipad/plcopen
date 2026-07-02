@@ -7,12 +7,15 @@ OUTPUT_LANGUAGE        = Chinese
 
 INPUT                  = "@CMAKE_CURRENT_SOURCE_DIR@/README.md" \
                          "@CMAKE_CURRENT_SOURCE_DIR@/src/fb/FunctionBlock.h" \
+                         "@CMAKE_CURRENT_SOURCE_DIR@/src/fb/FbMultiAxis.h" \
                          "@CMAKE_CURRENT_SOURCE_DIR@/src/fb/FbPLCOpenBase.h" \
                          "@CMAKE_CURRENT_SOURCE_DIR@/src/fb/FbSingleAxis.h" \
                          "@CMAKE_CURRENT_SOURCE_DIR@/src/fb/PLCTypes.h" \
+                         "@CMAKE_CURRENT_SOURCE_DIR@/src/motion/AxesGroup.h" \
                          "@CMAKE_CURRENT_SOURCE_DIR@/src/motion/Global.h" \
                          "@CMAKE_CURRENT_SOURCE_DIR@/src/motion/Scheduler.h" \
-                         "@CMAKE_CURRENT_SOURCE_DIR@/src/motion/Servo.h"
+                         "@CMAKE_CURRENT_SOURCE_DIR@/src/motion/Servo.h" \
+                         "@CMAKE_CURRENT_SOURCE_DIR@/src/motion/interpolation/GroupLinearPlanner.h"
 FILE_PATTERNS          = *.h *.md
 RECURSIVE              = NO
 USE_MDFILE_AS_MAINPAGE = "@CMAKE_CURRENT_SOURCE_DIR@/README.md"
@@ -31,6 +34,9 @@ HTML_OUTPUT            = html
 MARKDOWN_SUPPORT       = YES
 SOURCE_BROWSER         = YES
 INLINE_SOURCES         = NO
+HAVE_DOT               = YES
+CLASS_DIAGRAMS         = YES
+DOT_IMAGE_FORMAT       = png
 
 QUIET                  = YES
 WARN_IF_UNDOCUMENTED   = NO

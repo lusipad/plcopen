@@ -76,7 +76,9 @@ namespace plcopen
 
     typedef MC_BufferMode MC_BUFFER_MODE;
     typedef MC_TransitionMode MC_TRANSITION_MODE;
+    typedef MC_TransitionVelocity MC_TRANSITION_VELOCITY;
     typedef MC_CoordSystem MC_COORD_SYSTEM;
+    typedef MC_OrientationMode MC_ORIENTATION_MODE;
     typedef MC_CircMode MC_CIRC_MODE;
     typedef MC_CircPath MC_CIRC_PATHCHOICE;
     typedef MC_Direction MC_DIRECTION;
@@ -84,6 +86,22 @@ namespace plcopen
     typedef MC_CombineMode MC_COMBINE_MODE;
     typedef MC_ErrorCode MC_ERRORCODE;
     typedef MC_ServoErrorCode MC_SERVOERRORCODE;
+
+    /** Fixed-capacity ACS position vector mapped by AxesGroup member slot. */
+    struct MC_PositionRef
+    {
+        UINT mCount = 0;
+        LREAL mValues[PLCOPEN_AXESGROUP_IDENT_NUM] = {0};
+    };
+
+    /// Absolute axes-group position reference.
+    typedef MC_PositionRef MC_POS_REF;
+    /// Relative axes-group distance reference.
+    typedef MC_PositionRef MC_DISTANCE_REF;
+    /// Group-local command identifier; zero means that no command was accepted.
+    typedef UDINT MC_COMMAND_ID;
+    /// PLCopen Part 4 transition parameter vector.
+    typedef LREAL MC_TRANSITION_PARAMETER[PLCOPEN_TRANSITIONPARAMETER_NUM];
 
     /// Single-axis reference type.
     class Axis;

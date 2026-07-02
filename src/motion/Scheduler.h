@@ -35,6 +35,7 @@ namespace plcopen
 #pragma pack(4)
 
     class Axis;
+    class AxesGroup;
     /**
      * @brief 单线程周期调度器。
      *
@@ -89,9 +90,13 @@ namespace plcopen
         virtual void vprintLog(MC_LogLevel level, const char *fmt, va_list ap) {}
 
     private:
+        void registerGroup(AxesGroup *group);
+        void unregisterGroup(AxesGroup *group);
+
         class SchedulerImpl;
         SchedulerImpl *mImpl_;
         friend class Axis;
+        friend class AxesGroup;
     };
 
 #pragma pack(pop)

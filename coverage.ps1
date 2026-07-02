@@ -62,6 +62,48 @@ function Get-RelativeFilePath {
     return $FullPath
 }
 
+function Get-CMakeGenerator {
+    param([string]$ResolvedBuildDir)
+
+    $CachePath = Join-Path $ResolvedBuildDir "CMakeCache.txt"
+    if (-not (Test-Path $CachePath)) {
+        return ""
+    }
+
+    $GeneratorLine = Select-String -Path $CachePath -Pattern "^CMAKE_GENERATOR:INTERNAL=" | Select-Object -First 1
+    if (-not $GeneratorLine) {
+        return ""
+    }
+
+    return ($GeneratorLine.Line -replace "^CMAKE_GENERATOR:INTERNAL=", "")
+}
+
+function Find-TestExecutable {
+    param(
+        [string]$ResolvedBuildDir,
+        [string]$Configuration
+    )
+
+    $Candidates = @(
+        (Join-Path $ResolvedBuildDir "src\$Configuration\test_basic.exe"),
+        (Join-Path $ResolvedBuildDir "src\test_basic.exe")
+    )
+
+    foreach ($Candidate in $Candidates) {
+        if (Test-Path $Candidate) {
+            return $Candidate
+        }
+    }
+
+    $Discovered = Get-ChildItem -Path $ResolvedBuildDir -Recurse -File -Filter test_basic.exe -ErrorAction SilentlyContinue |
+        Select-Object -First 1 -ExpandProperty FullName
+    if ($Discovered) {
+        return $Discovered
+    }
+
+    return $null
+}
+
 $ProjectRoot = (Resolve-Path $PSScriptRoot).Path
 $ResolvedBuildDir = Join-Path $ProjectRoot $BuildDir
 $ResolvedOutputDir = Join-Path $ProjectRoot $OutputDir
@@ -74,22 +116,29 @@ Write-Info "Using code coverage tool: $CoverageTool"
 
 if (-not (Test-Path $ResolvedBuildDir)) {
     Write-Info "Configuring CMake project..."
-    & cmake -S $ProjectRoot -B $ResolvedBuildDir
+    & cmake -S $ProjectRoot -B $ResolvedBuildDir -DCMAKE_BUILD_TYPE=$Configuration
     if ($LASTEXITCODE -ne 0) {
         throw "CMake configure failed."
     }
 }
 
 Write-Info "Building test_basic ($Configuration)..."
+$Generator = Get-CMakeGenerator -ResolvedBuildDir $ResolvedBuildDir
 $BuildArgs = @(
     "--build", $ResolvedBuildDir,
     "--config", $Configuration,
-    "--target", "test_basic",
-    "--parallel",
-    "--",
-    "/p:TrackFileAccess=false",
-    "/nodeReuse:false"
+    "--target", "test_basic"
 )
+if ($Generator -notlike "NMake*") {
+    $BuildArgs += "--parallel"
+}
+if ($Generator -like "Visual Studio*") {
+    $BuildArgs += @(
+        "--",
+        "/p:TrackFileAccess=false",
+        "/nodeReuse:false"
+    )
+}
 & cmake @BuildArgs
 if ($LASTEXITCODE -ne 0) {
     throw "Build failed."
@@ -100,8 +149,8 @@ if (Test-Path $ResolvedOutputDir) {
 }
 New-Item -ItemType Directory -Path $ResolvedOutputDir | Out-Null
 
-$TestExePath = Join-Path $ResolvedBuildDir "src\$Configuration\test_basic.exe"
-if (-not (Test-Path $TestExePath)) {
+$TestExePath = Find-TestExecutable -ResolvedBuildDir $ResolvedBuildDir -Configuration $Configuration
+if (-not $TestExePath -or -not (Test-Path $TestExePath)) {
     throw "Test executable not found: $TestExePath"
 }
 

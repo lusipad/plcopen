@@ -47,6 +47,7 @@ namespace plcopen
         Scheduler *mSched = nullptr;
         int32_t mAxisId = 0;
         friend class Scheduler;
+        friend class AxesGroup;
     };
 }
 

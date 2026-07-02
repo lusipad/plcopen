@@ -8,9 +8,11 @@
 [![Windows CI](https://github.com/lusipad/plcopen/actions/workflows/windows-ci.yml/badge.svg)](https://github.com/lusipad/plcopen/actions/workflows/windows-ci.yml)
 [![Linux CI](https://github.com/lusipad/plcopen/actions/workflows/linux-ci.yml/badge.svg)](https://github.com/lusipad/plcopen/actions/workflows/linux-ci.yml)
 [![C++17](https://img.shields.io/badge/C%2B%2B-17-blue.svg)](https://en.cppreference.com/w/cpp/17)
-[![Version](https://img.shields.io/badge/latest%20release-v0.10.0-orange.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/source%20version-v0.11.0-orange.svg)](CHANGELOG.md)
 
-> **项目状态**：最新发布检查点为 `v0.10.0`。项目现在具备 CI、自动化测试、覆盖率门禁、Linux 构建、CMake 安装与 FetchContent 消费验证、Python/docs smoke、单轴与 homing 的 jerk-aware 规划、基础 IEC 61131-3 功能块、单轴管理/运动功能块、已收口的 homing/profile/superimposed/combine 语义、已覆盖 BufferMode / ContinuousUpdate 的 gear/cam 多轴同步功能块，以及 `AxesGroup Foundation`；在 `v1.0` 前 API 仍可能变化。
+> **项目状态**：当前源码检查点为 `v0.11.0`。项目现在具备 CI、自动化测试、覆盖率门禁、Linux 构建、CMake 安装与 FetchContent 消费验证、Python/docs smoke、单轴与 homing 的 jerk-aware 规划、基础 IEC 61131-3 功能块、单轴管理/运动功能块、已收口的 homing/profile/superimposed/combine 语义、已覆盖 BufferMode / ContinuousUpdate 的 gear/cam 多轴同步功能块，以及 `AxesGroup Foundation`；在 `v1.0` 前 API 仍可能变化。
+>
+> **本版新增**：`v0.11.0` 增加 ACS 下的 `MC_MoveLinearAbsolute` / `MC_MoveLinearRelative`。当前代码已贯通共享组路径、2-8 轴执行、Aborting/Buffered、CommandID、GroupStop、成员限制和 CMake consumer。详见 [Part 4 linear matrix](doc/compliance/plcopen-motion-part4-linear-matrix.md)。
 >
 > 详情见 [ROADMAP.md](ROADMAP.md)；长期方向见 [VISION.md](VISION.md)。
 
@@ -52,7 +54,7 @@ plcopen 想填补的空白是**"现代 C++ 的可嵌入 PLCopen 运动控制库"
 
 ## 当前状态
 
-### 已实现（截至 v0.10.0）
+### 已实现（截至 v0.11.0）
 
 | 能力 | 说明 |
 |------|------|
@@ -69,7 +71,7 @@ plcopen 想填补的空白是**"现代 C++ 的可嵌入 PLCopen 运动控制库"
 
 ### 当前能力亮点
 
-- 最新发布检查点是 `v0.10.0`；Part 1/2 completion 的实现基线来自 `v0.9.0`，详细口径见 [v0.9.0 Part 1/2 Completion Plan](doc/compliance/part1-part2-completion-plan.md) 和 [compliance matrix](doc/compliance/plcopen-motion-v2-function-block-matrix.md)。
+- 当前源码检查点是 `v0.11.0`；Part 1/2 completion 的实现基线来自 `v0.9.0`，详细口径见 [v0.9.0 Part 1/2 Completion Plan](doc/compliance/part1-part2-completion-plan.md) 和 [compliance matrix](doc/compliance/plcopen-motion-v2-function-block-matrix.md)。
 
 - 新增 `AxesGroup` runtime，支持成员管理、group 启停、状态读取、停组与组复位。
 - 新增 `MC_GroupReadActualPosition` / `MC_GroupReadCommandPosition`，按 0-based 成员槽位读取实际/指令位置；索引不是 axis id，移除成员后后续槽位会前移。
@@ -152,7 +154,7 @@ cmake -S . -B build -DPLCOPEN_BUILD_DOCS=ON
 cmake --build build --config Release --target docs
 ```
 
-如果本机未安装 Doxygen，`docs` target 会打印安装提示并优雅退出。
+生成带类图的完整 API 文档需要 Doxygen 和 Graphviz；未安装 Doxygen 时，`docs` target 会打印安装提示并优雅退出。
 
 ### 构建 Python 绑定（可选）
 
@@ -219,6 +221,7 @@ int main() {
 - `axis_gear.cpp` —— 概念级固定齿轮比 follow demo
 - `axis_cam.cpp` —— 概念级离散 cam table follow demo
 - `axes_group_lifecycle.cpp` —— `AxesGroup` add-axis / enable / disable 的最小 lifecycle demo
+- `group_linear_move.cpp` —— 两轴共享路径的 ACS 线性绝对运动 demo
 
 这些 demo 现在与仓库里的 `MC_Cam*` / `MC_Gear*` 最小实现保持一致，用于展示当前公开同步块的基础用法与边界。
 
@@ -261,6 +264,17 @@ enable.mAxesGroup = &group;
 enable.mExecute = true;
 enable.call();
 
+FbMoveLinearAbsolute move;
+move.mAxesGroup = &group;
+move.mPosition.mCount = 2;
+move.mPosition.mValues[0] = 3.0;
+move.mPosition.mValues[1] = 4.0;
+move.mVelocity = 2.0;
+move.mAcceleration = 4.0;
+move.mDeceleration = 4.0;
+move.mExecute = true;
+move.call();
+
 FbGearIn gearIn;
 gearIn.mMaster = master;
 gearIn.mSlave = slave;
@@ -269,9 +283,9 @@ gearIn.mRatioDenominator = 1.0;
 gearIn.mExecute = true;
 ```
 
-可直接运行 `src/demo/axes_group_lifecycle.cpp`，看一遍 add-axis → enable → disable 的完整最小闭环。
+可运行 `src/demo/axes_group_lifecycle.cpp` 查看 group 生命周期，或运行 `src/demo/group_linear_move.cpp` 查看共享路径线性运动。
 
-当前阶段的边界是：有了真实 `AxesGroup` 和 group lifecycle，但还没有 `MC_MoveLinear*`、kinematics、坐标变换或多从轴 coordinated motion。
+`v0.11.0` 当前只承诺 ACS、2-8 轴、`ABORTING` / `BUFFERED`、零过渡速度、无 transition geometry 和 linear orientation。MCS/WCS/PCS/FCS/TCS、kinematics、坐标变换、圆弧和 look-ahead 均显式不支持。
 
 ### 下游 CMake 消费
 
@@ -396,8 +410,10 @@ target_link_libraries(app PRIVATE plcopen::plcopen)
 | MC_GroupDisable | 禁用 group 逻辑生命周期 | ✅ |
 | MC_GroupReadStatus | 读取 group 状态 | ✅ |
 | MC_GroupReadActualPosition / MC_GroupReadCommandPosition | 按成员轴索引读取实际/指令位置 | ✅ |
-| MC_GroupStop | 对成员轴发起停组 | ✅ |
+| MC_GroupStop | 沿当前组路径受控减速，并在 Execute 为真时保持 GroupStopping | ✅ |
 | MC_GroupReset | 复位成员轴错误并恢复 group standby | ✅ |
+| MC_MoveLinearAbsolute | ACS 下由共享标量路径驱动的 2-8 轴线性绝对运动 | ✅ |
+| MC_MoveLinearRelative | ACS 下由共享标量路径驱动的 2-8 轴线性相对运动 | ✅ |
 
 ---
 
@@ -448,7 +464,7 @@ target_link_libraries(app PRIVATE plcopen::plcopen)
 - `MC_MoveVelocity` 当前支持 `Direction` 符号选择，并支持 `ContinuousUpdate = TRUE` 时在 `Execute` 保持为真期间更新目标速度和方向；`MC_MoveContinuousAbsolute` / `MC_MoveContinuousRelative` 当前支持到达目标后保持非零结束速度、active 命令重规划连续位置目标、disabled-update 边界和 override 重规划，其中 relative 更新按本次命令触发时的起点重新计算目标距离；`MC_PositionProfile` / `MC_VelocityProfile` / `MC_AccelerationProfile` 当前支持 active 当前段的命令更新；`MC_GearIn`、`MC_GearInPos`、`MC_CamIn` 和 `MC_CombineAxes` 支持 active 同步参数的 `ContinuousUpdate`。
 - `MC_PositionProfile` / `MC_VelocityProfile` / `MC_AccelerationProfile` 当前支持通过 profile data 的 `mNext` 指针顺序消费链式多段 profile，并在进入当前段命令前应用各自的 timed segment、time scale、value scale 与 offset 输入；`MC_VelocityProfile` 与 `MC_AccelerationProfile` 都复用当前速度运动路径，尚不包含标准 profile table 解析、时间戳/延迟消费或复杂插补。
 - `MC_TorqueControl` 当前把扭矩设定直接透传给伺服抽象，执行成功后置 `InTorque`，`Execute` 拉低时清零扭矩设定；更深入的 torque-mode 闭环控制仍取决于具体伺服实现。
-- `AxesGroup` 当前只提供 foundation：成员管理、group lifecycle、状态读取、成员轴位置 readback、停组与组复位；`MC_GroupReset` 复用成员轴 reset 错误恢复，不包含 coordinated motion 级路径恢复；`MC_GroupReadActualPosition` / `MC_GroupReadCommandPosition` 读取的是 0-based 成员槽位位置，索引不是 axis id，移除成员后后续槽位会前移；readback 只要求 group 引用存在且索引有效，不要求 group 已 enable；返回值不是 Cartesian group pose；不包含 `MC_MoveLinear*`、kinematics、坐标变换、多从轴协调或高级平滑脱开策略。
+- `AxesGroup` 除 foundation 生命周期外，`v0.11.0` 支持 ACS 下 2-8 轴 `MC_MoveLinearAbsolute` / `MC_MoveLinearRelative` 的共享标量路径、Aborting/Buffered、CommandID、成员共同限制、GroupStop 与错误传播；`MC_GroupStop` 按当前路径和 Deceleration/Jerk 受控减速，速度为零后置 Done，并在 Execute 保持为真时继续保持 GroupStopping。当前不支持非 ACS 坐标系、kinematics、Cartesian pose、几何 transition、圆弧、look-ahead 或硬件级同步。`MC_GroupReadActualPosition` / `MC_GroupReadCommandPosition` 仍读取 0-based 成员槽位，不是 Cartesian group pose。
 - `MC_Gear* / MC_Cam*` 当前是单主单从同步实现，要求主从轴位于同一个已启用的 `AxesGroup` 中；`MC_GearIn`、`MC_GearInPos` 和 `MC_CamIn` 支持 `MasterValueSource` 的 command/actual 两种采样来源，并支持 active 期间的 `ContinuousUpdate`；`MC_GearInPos` 支持 `MasterStartDistance`，会在接近窗口内按线性或 profiled 轨迹把从轴带到 `SlaveSyncPosition`，再按 `SlaveSyncPosition - MasterSyncPosition * ratio` 建立相位偏移并进入同步；扩展 `SyncMode` 属于未来同步模型扩展。
 - `MC_PhasingAbsolute` / `MC_PhasingRelative` 在 `Velocity > 0` 时按速度、加速度、减速度和 jerk 规划 phase offset 过渡；`Velocity = 0` 保留直接调整语义；目标和 profile 输入在当前 execute 周期内锁存，执行中输入变化需重新触发后才会影响下一次命令。
 - `MC_CombineAxes` 当前是 tested two-master setpoint combination 块，会按 add/sub 模式、每路 gear ratio 和 master value source 生成 slave setpoint；坐标系、kinematics 和 Part 4 路径合成仍不在范围内。

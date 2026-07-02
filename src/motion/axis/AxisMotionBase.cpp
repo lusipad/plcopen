@@ -23,6 +23,7 @@
  */
 
 #include "AxisMotionBase.h"
+#include "AxesGroup.h"
 #include "FunctionBlock.h"
 
 namespace plcopen
@@ -98,6 +99,13 @@ namespace plcopen
                                                 FunctionBlock *fb, MC_AxisStatus statusActive, MC_AxisStatus statusDone,
                                                 int32_t nodeCustomId, MC_BufferMode bufferMode)
     {
+        if (group())
+        {
+            const MC_ErrorCode groupError = group()->motionOwnerError();
+            if (groupError != MC_ErrorCode::GOOD)
+                return groupError;
+        }
+
         if (MC_ErrorCode::GOOD != errorCode())
             return errorCode();
 

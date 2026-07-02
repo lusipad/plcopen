@@ -6,7 +6,7 @@ endif()
 
 project(
   plcopen
-  VERSION 0.10.0
+  VERSION 0.11.0
   DESCRIPTION "a c++ library for plcopen"
   HOMEPAGE_URL "http://github.com/lusipad/plcopen"
   LANGUAGES CXX)

@@ -23,7 +23,12 @@
  */
 
 #include "Scheduler.h"
+#include "AxesGroup.h"
 #include "Axis.h"
+
+#include <algorithm>
+#include <cmath>
+#include <vector>
 
 namespace plcopen
 {
@@ -32,6 +37,7 @@ class Scheduler::SchedulerImpl
 {
   public:
     Axis mAxisHead;
+    std::vector<AxesGroup *> mGroups;
     double mFreq = 1000.0;
     uint32_t mTick = 0;
 };
@@ -43,11 +49,15 @@ Scheduler::Scheduler()
 
 Scheduler::~Scheduler()
 {
+    release();
     delete mImpl_;
 }
 
 void Scheduler::runCycle(void)
 {
+    for (AxesGroup *group : mImpl_->mGroups)
+        group->runCycle();
+
     Axis *axis = axisListFirst();
     while (axis)
     {
@@ -58,9 +68,20 @@ void Scheduler::runCycle(void)
     ++mImpl_->mTick;
 }
 
+void Scheduler::registerGroup(AxesGroup *group)
+{
+    if (std::find(mImpl_->mGroups.begin(), mImpl_->mGroups.end(), group) == mImpl_->mGroups.end())
+        mImpl_->mGroups.push_back(group);
+}
+
+void Scheduler::unregisterGroup(AxesGroup *group)
+{
+    mImpl_->mGroups.erase(std::remove(mImpl_->mGroups.begin(), mImpl_->mGroups.end(), group), mImpl_->mGroups.end());
+}
+
 MC_ErrorCode Scheduler::setFrequency(double frequency)
 {
-    if (frequency <= 0)
+    if (!std::isfinite(frequency) || frequency <= 0)
         return MC_ErrorCode::FREQUENCY_ILLEGAL;
 
     if (axisListFirst())
@@ -151,6 +172,10 @@ Axis *Scheduler::axisListNext(const Axis *one) const
 
 void Scheduler::release(void)
 {
+    for (AxesGroup *group : mImpl_->mGroups)
+        group->onSchedulerRelease();
+    mImpl_->mGroups.clear();
+
     LinkNode *node;
     while ((node = axisListFirst()))
     {

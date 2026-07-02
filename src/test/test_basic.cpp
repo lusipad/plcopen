@@ -178,6 +178,8 @@ TEST_CASE("Scheduler validates frequency input", "[scheduler]")
     REQUIRE(sched.frequency() == 1000.0);
     REQUIRE(sched.setFrequency(-100.0) == MC_ErrorCode::FREQUENCY_ILLEGAL);
     REQUIRE(sched.setFrequency(0.0) == MC_ErrorCode::FREQUENCY_ILLEGAL);
+    REQUIRE(sched.setFrequency(std::numeric_limits<double>::quiet_NaN()) == MC_ErrorCode::FREQUENCY_ILLEGAL);
+    REQUIRE(sched.setFrequency(std::numeric_limits<double>::infinity()) == MC_ErrorCode::FREQUENCY_ILLEGAL);
 }
 
 TEST_CASE("Scheduler manages axis instances by id", "[scheduler][axis]")
@@ -236,6 +238,34 @@ TEST_CASE("PLCOpen base types keep their expected sizes", "[types]")
     REQUIRE(sizeof(DATE_AND_TIME) == 8);
     REQUIRE(sizeof(DT) == 8);
     REQUIRE(sizeof(WSTRING) == sizeof(void*));
+}
+
+TEST_CASE("Part 4 linear motion types expose fixed group positions and standard modes", "[types][part4]")
+{
+    MC_POS_REF position{};
+    REQUIRE(position.mCount == 0);
+    REQUIRE((sizeof(position.mValues) / sizeof(position.mValues[0])) == PLCOPEN_AXESGROUP_IDENT_NUM);
+
+    position.mCount = 2;
+    position.mValues[0] = 10.0;
+    position.mValues[1] = -5.0;
+
+    MC_DISTANCE_REF distance = position;
+    REQUIRE(distance.mCount == 2);
+    REQUIRE(distance.mValues[0] == 10.0);
+    REQUIRE(distance.mValues[1] == -5.0);
+
+    MC_COMMAND_ID commandId = 0;
+    REQUIRE(commandId == 0);
+
+    MC_TRANSITION_PARAMETER transitionParameter = {0};
+    REQUIRE(transitionParameter[0] == 0.0);
+    REQUIRE(transitionParameter[PLCOPEN_TRANSITIONPARAMETER_NUM - 1] == 0.0);
+
+    REQUIRE(MC_CoordSystem::WCS != MC_CoordSystem::ACS);
+    REQUIRE(MC_CoordSystem::FCS != MC_CoordSystem::TCS);
+    REQUIRE(MC_TransitionVelocity::ZERO != MC_TransitionVelocity::HIGH);
+    REQUIRE(MC_OrientationMode::LINEAR != MC_OrientationMode::PATH_BASED);
 }
 
 TEST_CASE("FbComExecuteType tracks busy and done until execute drops", "[fb][base][com-execute]")

@@ -69,6 +69,9 @@ if(PLCOPEN_BUILD_DEMOS)
     add_executable(axes_group_lifecycle demo/axes_group_lifecycle.cpp)
     target_link_libraries(axes_group_lifecycle ${PROJECT_NAME})
 
+    add_executable(group_linear_move demo/group_linear_move.cpp)
+    target_link_libraries(group_linear_move ${PROJECT_NAME})
+
     add_executable(basic_fb_cycle demo/basic_fb_cycle.cpp)
     target_link_libraries(basic_fb_cycle ${PROJECT_NAME})
 endif()
@@ -146,6 +149,7 @@ if(PLCOPEN_BUILD_TESTS AND BUILD_TESTING)
         test/test_fb_basic.cpp
         test/test_fb_multi_axis.cpp
         test/test_profile_planner.cpp
+        test/test_group_linear_planner.cpp
         test/test_fb_single_axis.cpp
         test/test_axes_group.cpp
     )
@@ -159,6 +163,7 @@ if(PLCOPEN_BUILD_TESTS AND BUILD_TESTING)
         add_test(NAME axis_gear_smoke COMMAND axis_gear --no-sleep)
         add_test(NAME axis_cam_smoke COMMAND axis_cam --no-sleep)
         add_test(NAME axes_group_lifecycle_smoke COMMAND axes_group_lifecycle --no-sleep)
+        add_test(NAME group_linear_move_smoke COMMAND group_linear_move --no-sleep)
         add_test(NAME basic_fb_cycle_smoke COMMAND basic_fb_cycle --no-sleep)
     endif()
 endif()
@@ -197,5 +202,6 @@ install(FILES
     motion/interpolation/MathUtils.h
     motion/interpolation/ProfilePlanner.h
     motion/interpolation/ProfilesPlanner.h
+    motion/interpolation/GroupLinearPlanner.h
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/plcopen
 )

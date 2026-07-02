@@ -194,7 +194,7 @@ namespace plcopen
     {
     public:
         FB_INPUT MC_TRANSITION_MODE mTransitionMode = MC_TransitionMode::NONE;
-        FB_INPUT LREAL mTransitionParameter[PLCOPEN_TRANSITIONPARAMETER_NUM] = {0};
+        FB_INPUT MC_TRANSITION_PARAMETER mTransitionParameter = {0};
     };
 
     /**

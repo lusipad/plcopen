@@ -81,7 +81,8 @@ jobs:
         if: matrix.compiler == 'gcc'
         run: |
           sudo apt-get update
-          sudo apt-get install -y doxygen
+          sudo apt-get install -y doxygen graphviz
+          dot -V
 
       - name: Generate API documentation
         if: matrix.compiler == 'gcc'
@@ -94,3 +95,6 @@ jobs:
             -DPLCOPEN_BUILD_TESTS=OFF \
             -DPLCOPEN_BUILD_DOCS=ON
           cmake --build build-docs --target docs
+          test -s build-docs/docs/api/html/index.html
+          find build-docs/docs/api/html -name '*.png' -type f -print -quit | grep -q .
+          find build-docs/docs/api/html -name '*.map' -type f -print -quit | grep -q .

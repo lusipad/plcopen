@@ -2,7 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+## [0.11.0] - 2026-07-02
+
+### Added
+
+- 增加 PLCopen Part 4 v2.0 线性运动合同矩阵，以及固定容量 8 轴的 `MC_POS_REF` / `MC_DISTANCE_REF`、`MC_COMMAND_ID`、transition velocity 和 orientation mode 公共类型。
+- 增加共享标量路径的 `GroupLinearPlanner`、Scheduler 驱动的组命令队列，以及 ACS 下的 `MC_MoveLinearAbsolute` / `MC_MoveLinearRelative` 功能块。
+- 增加 2/3/8 轴共线、Absolute/Relative、Aborting/Buffered、CommandAccepted/CommandID、成员限制、GroupStop、错误传播和 scheduler 生命周期回归。
+- 增加 `group_linear_move` demo，并将安装后 `find_package` 与源码树 `FetchContent` consumer 扩展为真实两轴线性运动 smoke。
+
+### Changed
+
+- `MC_GroupStop` 现在按 `Deceleration` / `Jerk` 沿 active group path 受控停止，仅在全部成员实际回到 Standstill 后置 `Done`，并在 `Execute` 保持为真时维持 GroupStopping；GroupDisable 或成员掉电会通过 `CommandAborted` 结束停止命令。
+- 组线性功能块现在按当前 `CommandID` 过滤异步回调，支持在 `CommandAccepted` 后复用同一实例而不受旧命令回调污染。
+- `Scheduler::release()` 与析构现在会先安全脱离存活的 `AxesGroup`，再释放其拥有的成员轴。
+- `Scheduler` 频率校验现在拒绝 NaN/Inf；`build.ps1 -Test` 显式启用测试并拒绝 CTest 发现 0 个测试；Linux docs CI 安装 Graphviz 并校验 Doxygen 图产物。
 
 ## [0.10.0] - 2026-06-20
 

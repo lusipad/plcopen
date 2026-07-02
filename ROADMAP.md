@@ -238,7 +238,7 @@
 
 ---
 
-## 当前发布里程碑：v0.10.0（发布与采用收口）
+## 最新发布里程碑：v0.10.0（发布与采用收口）
 
 **时间窗口**：2026-Q2
 
@@ -255,7 +255,36 @@
 - CMake、`.version`、README、CHANGELOG、ROADMAP、VISION、tag 和 GitHub Release 的版本口径一致。
 - 只发布源码与 Release Notes；`v1.0` 前不承诺平台二进制 ABI。
 
-**发布后节奏**：进入 30 天反馈观察期，优先处理真实集成问题。下一功能里程碑由 Issues、Discussions 和实际项目需求决定；没有新证据时不启动 Part 4、IEC 或平台化扩面。
+**发布后节奏**：继续优先处理真实集成问题。由于当前用户反馈量不足以单独决定路线，2026-06-21 起由维护者主动规划一个窄范围的 Part 4 里程碑；Issues、Discussions 和实际项目需求仍可随时提高缺陷或集成问题的优先级。
+
+---
+
+## 当前开发里程碑：v0.11.0（Part 4 Linear Motion Foundation）
+
+**时间窗口**：2026-Q3，按单人兼职投入预计 6-8 周。
+
+**核心目标**：在现有 `AxesGroup Foundation` 上增加第一个真正共享路径参数的协调运动闭环，让 2-8 个同调度器成员轴完成 ACS 下的线性绝对/相对运动。
+
+**范围**：
+
+- 为 `AxesGroup` 增加由 `Scheduler::runCycle()` 每周期恰好推进一次的组命令运行时。
+- 使用单一标量路径进度驱动所有成员轴，保证成员位置来自同一条参数化直线，而不是同时启动多个独立单轴规划器。
+- 增加 `MC_MoveLinearAbsolute` 和 `MC_MoveLinearRelative` 的公开功能块入口。
+- 当前版本只支持 ACS、原子命令提交以及 `ABORTING` / `BUFFERED`；其余坐标系或过渡模式必须显式拒绝，不能静默降级。
+- 补齐错误传播、组停止、端点/共线性、成员限制、2/3/8 轴和下游消费测试。
+
+**明确不做**：
+
+- MCS / PCS、kinematics、Cartesian / coordinate transform
+- 圆弧、路径表、几何 blending、look-ahead
+- `MC_GroupHome`、`MC_GroupInterrupt` / `MC_GroupContinue`
+- 跨调度器成员、硬件同步时钟或工业总线适配
+
+**启动门槛**：实现前先取得并核对 PLCopen Part 4 原始规范，建立本里程碑的接口/语义矩阵；同时修复 `build.ps1 -Test` 的零测试假成功和 Doxygen 图生成错误未使 CI 失败这两个发布门禁缺口。
+
+**当前进度（2026-07-02）**：启动门槛、共享组路径、Scheduler 推进、2/3/8 轴 Absolute/Relative、CommandID、Aborting/Buffered、成员共同限制、沿原路径受控减速且保持 GroupStopping 的 GroupStop、错误传播、demo 与 `find_package` / `FetchContent` consumer 均已形成本地自动化闭环。源码版本面已收口到 `0.11.0`；推送后的 GitHub Windows/Linux/coverage/docs 工作流是最终发布证据。
+
+**完成定义**：代码、自动化测试、Part 4 范围矩阵、README、CHANGELOG、安装导出和 CI 对支持范围给出一致结论；完整执行计划见 [v0.11.0 Part 4 Linear Motion Foundation Plan](doc/design/part4-linear-motion-plan.md)。
 
 ---
 

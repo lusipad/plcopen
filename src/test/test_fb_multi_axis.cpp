@@ -306,6 +306,692 @@ TEST_CASE("FbAddAxisToGroup, FbGroupEnable, and FbGroupReadStatus drive the grou
     REQUIRE_FALSE(readStatus.mStandby);
 }
 
+TEST_CASE("FbMoveLinearAbsolute exposes Part 4 command acceptance and completes a shared path",
+          "[fb][multi-axis][group][linear]")
+{
+    DualAxisFbHarness harness;
+    harness.powerOn();
+
+    AxesGroup group;
+    REQUIRE(group.addAxis(harness.master) == MC_ErrorCode::GOOD);
+    REQUIRE(group.addAxis(harness.slave) == MC_ErrorCode::GOOD);
+    REQUIRE(group.enable() == MC_ErrorCode::GOOD);
+
+    FbMoveLinearAbsolute move;
+    move.mAxesGroup = &group;
+    move.mPosition.mCount = 2;
+    move.mPosition.mValues[0] = 3.0;
+    move.mPosition.mValues[1] = 4.0;
+    move.mVelocity = 2.0;
+    move.mAcceleration = 4.0;
+    move.mDeceleration = 4.0;
+    move.mJerk = 16.0;
+    move.mExecute = true;
+    move.call();
+
+    REQUIRE(move.mBusy);
+    REQUIRE_FALSE(move.mActive);
+    REQUIRE(move.mCommandAccepted);
+    REQUIRE(move.mCommandID != 0);
+
+    move.mPosition.mValues[0] = 30.0;
+    move.mPosition.mValues[1] = 40.0;
+    move.mVelocity = 0.0;
+    move.mAcceleration = 0.0;
+    move.mDeceleration = 0.0;
+    move.mJerk = -1.0;
+
+    harness.runUntil([&]() { return move.mDone; }, 1000, "linear absolute move did not complete", move);
+
+    REQUIRE_FALSE(move.mBusy);
+    REQUIRE_FALSE(move.mActive);
+    REQUIRE_FALSE(move.mCommandAccepted);
+    REQUIRE(move.mCommandID == 0);
+    REQUIRE(harness.master->cmdPosition() == Catch::Approx(3.0).margin(1e-8));
+    REQUIRE(harness.slave->cmdPosition() == Catch::Approx(4.0).margin(1e-8));
+}
+
+TEST_CASE("FbMoveLinearAbsolute completes a zero-distance group command",
+          "[fb][multi-axis][group][linear][boundary]")
+{
+    DualAxisFbHarness harness;
+    harness.powerOn();
+
+    AxesGroup group;
+    REQUIRE(group.addAxis(harness.master) == MC_ErrorCode::GOOD);
+    REQUIRE(group.addAxis(harness.slave) == MC_ErrorCode::GOOD);
+    REQUIRE(group.enable() == MC_ErrorCode::GOOD);
+
+    FbMoveLinearAbsolute move;
+    move.mAxesGroup = &group;
+    move.mPosition.mCount = 2;
+    move.mVelocity = 1.0;
+    move.mAcceleration = 2.0;
+    move.mDeceleration = 2.0;
+    move.mExecute = true;
+    move.call();
+
+    REQUIRE(move.mCommandAccepted);
+    harness.runUntil([&]() { return move.mDone; }, 10, "zero-distance group move did not complete", move);
+
+    REQUIRE_FALSE(move.mBusy);
+    REQUIRE_FALSE(move.mActive);
+    REQUIRE_FALSE(move.mCommandAccepted);
+    REQUIRE(move.mCommandID == 0);
+    REQUIRE(group.status() == MC_GroupStatus::STANDBY);
+}
+
+TEST_CASE("FbMoveLinearRelative resolves distance from the command start", "[fb][multi-axis][group][linear]")
+{
+    DualAxisFbHarness harness;
+    harness.powerOn();
+    REQUIRE(harness.master->setPosition(2.0, 0.0, 0.0) == MC_ErrorCode::GOOD);
+    REQUIRE(harness.slave->setPosition(-1.0, 0.0, 0.0) == MC_ErrorCode::GOOD);
+    harness.runCycle();
+
+    AxesGroup group;
+    REQUIRE(group.addAxis(harness.master) == MC_ErrorCode::GOOD);
+    REQUIRE(group.addAxis(harness.slave) == MC_ErrorCode::GOOD);
+    REQUIRE(group.enable() == MC_ErrorCode::GOOD);
+
+    FbMoveLinearRelative move;
+    move.mAxesGroup = &group;
+    move.mDistance.mCount = 2;
+    move.mDistance.mValues[0] = 3.0;
+    move.mDistance.mValues[1] = 4.0;
+    move.mVelocity = 2.0;
+    move.mAcceleration = 4.0;
+    move.mDeceleration = 4.0;
+    move.mExecute = true;
+    move.call();
+
+    harness.runUntil([&]() { return move.mDone; }, 1000, "linear relative move did not complete", move);
+
+    REQUIRE(harness.master->cmdPosition() == Catch::Approx(5.0).margin(1e-8));
+    REQUIRE(harness.slave->cmdPosition() == Catch::Approx(3.0).margin(1e-8));
+}
+
+TEST_CASE("FbMoveLinearAbsolute rejects unsupported Part 4 modes", "[fb][multi-axis][group][linear][validation]")
+{
+    DualAxisFbHarness harness;
+    harness.powerOn();
+
+    AxesGroup group;
+    REQUIRE(group.addAxis(harness.master) == MC_ErrorCode::GOOD);
+    REQUIRE(group.addAxis(harness.slave) == MC_ErrorCode::GOOD);
+    REQUIRE(group.enable() == MC_ErrorCode::GOOD);
+
+    auto requireRejected = [&](FbMoveLinearAbsolute &move, MC_ErrorCode expectedError) {
+        move.mAxesGroup = &group;
+        move.mPosition.mCount = 2;
+        move.mPosition.mValues[0] = 1.0;
+        move.mVelocity = 1.0;
+        move.mAcceleration = 2.0;
+        move.mDeceleration = 2.0;
+        move.mExecute = true;
+        move.call();
+
+        REQUIRE(move.mError);
+        REQUIRE(move.mErrorID == expectedError);
+        REQUIRE_FALSE(move.mCommandAccepted);
+        REQUIRE(move.mCommandID == 0);
+        REQUIRE(group.status() == MC_GroupStatus::STANDBY);
+    };
+
+    for (MC_CoordSystem coordSystem :
+         {MC_CoordSystem::MCS, MC_CoordSystem::WCS, MC_CoordSystem::PCS, MC_CoordSystem::FCS, MC_CoordSystem::TCS})
+    {
+        FbMoveLinearAbsolute move;
+        move.mCoordSystem = coordSystem;
+        requireRejected(move, MC_ErrorCode::PARAMETER_NOT_SUPPORT);
+    }
+
+    for (MC_TransitionVelocity transitionVelocity : {MC_TransitionVelocity::LOW,
+                                                       MC_TransitionVelocity::PREVIOUS,
+                                                       MC_TransitionVelocity::NEXT,
+                                                       MC_TransitionVelocity::HIGH})
+    {
+        FbMoveLinearAbsolute move;
+        move.mTransitionVelocity = transitionVelocity;
+        requireRejected(move, MC_ErrorCode::PARAMETER_NOT_SUPPORT);
+    }
+
+    for (MC_OrientationMode orientationMode : {MC_OrientationMode::JOINT_INTERPOLATED,
+                                                MC_OrientationMode::FIXED,
+                                                MC_OrientationMode::PATH_BASED})
+    {
+        FbMoveLinearAbsolute move;
+        move.mOrientationMode = orientationMode;
+        requireRejected(move, MC_ErrorCode::PARAMETER_NOT_SUPPORT);
+    }
+
+    FbMoveLinearAbsolute transitionMode;
+    transitionMode.mTransitionMode = MC_TransitionMode::START_VELOCITY;
+    requireRejected(transitionMode, MC_ErrorCode::PARAMETER_NOT_SUPPORT);
+
+    FbMoveLinearAbsolute transitionParameter;
+    transitionParameter.mTransitionParameter[0] = 1.0;
+    requireRejected(transitionParameter, MC_ErrorCode::PARAMETER_NOT_SUPPORT);
+
+    FbMoveLinearAbsolute obsoleteBlending;
+    obsoleteBlending.mBufferMode = MC_BufferMode::BLENDING_LOW;
+    requireRejected(obsoleteBlending, MC_ErrorCode::BLENDING_MODE_ILLEGAL);
+}
+
+TEST_CASE("FbGroupStop aborts an active linear group move and reports done only after standstill",
+          "[fb][multi-axis][group][linear][group-stop]")
+{
+    DualAxisFbHarness harness;
+    harness.powerOn();
+
+    AxesGroup group;
+    REQUIRE(group.addAxis(harness.master) == MC_ErrorCode::GOOD);
+    REQUIRE(group.addAxis(harness.slave) == MC_ErrorCode::GOOD);
+    REQUIRE(group.enable() == MC_ErrorCode::GOOD);
+
+    FbMoveLinearAbsolute move;
+    move.mAxesGroup = &group;
+    move.mPosition.mCount = 2;
+    move.mPosition.mValues[0] = 10.0;
+    move.mPosition.mValues[1] = 5.0;
+    move.mVelocity = 2.0;
+    move.mAcceleration = 4.0;
+    move.mDeceleration = 4.0;
+    move.mExecute = true;
+    move.call();
+
+    harness.runUntil(
+        [&]() { return move.mActive && std::fabs(harness.master->cmdVelocity()) > 0.1; },
+        100,
+        "linear group move never accelerated",
+        move);
+
+    FbGroupStop stop;
+    stop.mAxesGroup = &group;
+    stop.mDeceleration = 1.0;
+    stop.mJerk = 4.0;
+    stop.mExecute = true;
+    stop.call();
+
+    REQUIRE(stop.mBusy);
+    REQUIRE_FALSE(stop.mDone);
+    REQUIRE(move.mCommandAborted);
+
+    for (int cycle = 0; cycle < 500 && !stop.mDone; ++cycle)
+    {
+        harness.runCycle(move, stop);
+        REQUIRE(group.status() == MC_GroupStatus::STOPPING);
+        REQUIRE(harness.master->cmdPosition() ==
+                Catch::Approx(2.0 * harness.slave->cmdPosition()).margin(1e-8));
+    }
+
+    REQUIRE(stop.mDone);
+    REQUIRE_FALSE(stop.mBusy);
+    REQUIRE_FALSE(stop.mError);
+    REQUIRE(group.status() == MC_GroupStatus::STOPPING);
+    REQUIRE(harness.master->status() == MC_AxisStatus::STANDSTILL);
+    REQUIRE(harness.slave->status() == MC_AxisStatus::STANDSTILL);
+
+    FbMoveLinearRelative rejected;
+    rejected.mAxesGroup = &group;
+    rejected.mDistance.mCount = 2;
+    rejected.mDistance.mValues[0] = 1.0;
+    rejected.mVelocity = 1.0;
+    rejected.mAcceleration = 2.0;
+    rejected.mDeceleration = 2.0;
+    rejected.mExecute = true;
+    rejected.call();
+    REQUIRE(rejected.mError);
+    REQUIRE(rejected.mErrorID == MC_ErrorCode::GROUP_STOPPING);
+
+    stop.mExecute = false;
+    stop.call();
+    REQUIRE(group.status() == MC_GroupStatus::STANDBY);
+}
+
+TEST_CASE("FbGroupDisable aborts a held group stop", "[fb][multi-axis][group][linear][group-stop][disable]")
+{
+    DualAxisFbHarness harness;
+    harness.powerOn();
+
+    AxesGroup group;
+    REQUIRE(group.addAxis(harness.master) == MC_ErrorCode::GOOD);
+    REQUIRE(group.addAxis(harness.slave) == MC_ErrorCode::GOOD);
+    REQUIRE(group.enable() == MC_ErrorCode::GOOD);
+
+    FbMoveLinearAbsolute move;
+    move.mAxesGroup = &group;
+    move.mPosition.mCount = 2;
+    move.mPosition.mValues[0] = 10.0;
+    move.mPosition.mValues[1] = 5.0;
+    move.mVelocity = 2.0;
+    move.mAcceleration = 4.0;
+    move.mDeceleration = 4.0;
+    move.mExecute = true;
+    move.call();
+    harness.runUntil(
+        [&]() { return move.mActive && std::fabs(harness.master->cmdVelocity()) > 0.1; },
+        100,
+        "linear command never accelerated",
+        move);
+
+    FbGroupStop stop;
+    stop.mAxesGroup = &group;
+    stop.mDeceleration = 1.0;
+    stop.mExecute = true;
+    stop.call();
+    harness.runCycle(move, stop);
+    REQUIRE(group.status() == MC_GroupStatus::STOPPING);
+
+    FbGroupDisable disable;
+    disable.mAxesGroup = &group;
+    disable.mExecute = true;
+    disable.call();
+
+    REQUIRE(disable.mDone);
+    REQUIRE_FALSE(disable.mError);
+    REQUIRE(stop.mCommandAborted);
+    REQUIRE(group.status() == MC_GroupStatus::DISABLED);
+
+    stop.mExecute = false;
+    stop.call();
+    REQUIRE_FALSE(stop.mCommandAborted);
+}
+
+TEST_CASE("FbGroupStop remains busy after Execute falls until zero velocity",
+          "[fb][multi-axis][group][linear][group-stop][falling-edge]")
+{
+    DualAxisFbHarness harness;
+    harness.powerOn();
+    AxesGroup group;
+    REQUIRE(group.addAxis(harness.master) == MC_ErrorCode::GOOD);
+    REQUIRE(group.addAxis(harness.slave) == MC_ErrorCode::GOOD);
+    REQUIRE(group.enable() == MC_ErrorCode::GOOD);
+
+    FbMoveLinearAbsolute move;
+    move.mAxesGroup = &group;
+    move.mPosition.mCount = 2;
+    move.mPosition.mValues[0] = 10.0;
+    move.mPosition.mValues[1] = 5.0;
+    move.mVelocity = 2.0;
+    move.mAcceleration = 4.0;
+    move.mDeceleration = 4.0;
+    move.mExecute = true;
+    move.call();
+    harness.runUntil(
+        [&]() { return move.mActive && std::fabs(harness.master->cmdVelocity()) > 0.1; },
+        100,
+        "linear command never accelerated",
+        move);
+
+    FbGroupStop stop;
+    stop.mAxesGroup = &group;
+    stop.mDeceleration = 1.0;
+    stop.mExecute = true;
+    stop.call();
+    REQUIRE(stop.mBusy);
+
+    stop.mExecute = false;
+    stop.call();
+    REQUIRE(stop.mBusy);
+    REQUIRE_FALSE(stop.mDone);
+    REQUIRE(group.status() == MC_GroupStatus::STOPPING);
+
+    harness.runUntil(
+        [&]() { return group.status() == MC_GroupStatus::STANDBY; },
+        500,
+        "group stop did not finish after Execute fell",
+        move,
+        stop);
+    REQUIRE_FALSE(stop.mBusy);
+    REQUIRE_FALSE(stop.mDone);
+}
+
+TEST_CASE("Power-off during FbGroupStop disables the group and aborts the stop",
+          "[fb][multi-axis][group][linear][group-stop][power-off]")
+{
+    DualAxisFbHarness harness;
+    harness.powerOn();
+    AxesGroup group;
+    REQUIRE(group.addAxis(harness.master) == MC_ErrorCode::GOOD);
+    REQUIRE(group.addAxis(harness.slave) == MC_ErrorCode::GOOD);
+    REQUIRE(group.enable() == MC_ErrorCode::GOOD);
+
+    FbMoveLinearAbsolute move;
+    move.mAxesGroup = &group;
+    move.mPosition.mCount = 2;
+    move.mPosition.mValues[0] = 10.0;
+    move.mPosition.mValues[1] = 5.0;
+    move.mVelocity = 2.0;
+    move.mAcceleration = 4.0;
+    move.mDeceleration = 4.0;
+    move.mExecute = true;
+    move.call();
+    harness.runUntil(
+        [&]() { return move.mActive && std::fabs(harness.master->cmdVelocity()) > 0.1; },
+        100,
+        "linear command never accelerated",
+        move);
+
+    FbGroupStop stop;
+    stop.mAxesGroup = &group;
+    stop.mDeceleration = 1.0;
+    stop.mExecute = true;
+    stop.call();
+    REQUIRE(stop.mBusy);
+
+    harness.slavePower.mEnable = false;
+    harness.runUntil(
+        [&]() { return stop.mCommandAborted; },
+        20,
+        "group stop was not aborted after member power-off",
+        move,
+        stop);
+
+    REQUIRE_FALSE(stop.mError);
+    REQUIRE_FALSE(stop.mDone);
+    REQUIRE_FALSE(stop.mBusy);
+    REQUIRE(group.status() == MC_GroupStatus::DISABLED);
+}
+
+TEST_CASE("FbGroupStop rejects invalid dynamics", "[fb][multi-axis][group-stop][validation]")
+{
+    DualAxisFbHarness harness;
+    harness.powerOn();
+    AxesGroup group;
+    REQUIRE(group.addAxis(harness.master) == MC_ErrorCode::GOOD);
+    REQUIRE(group.addAxis(harness.slave) == MC_ErrorCode::GOOD);
+    REQUIRE(group.enable() == MC_ErrorCode::GOOD);
+
+    SECTION("negative deceleration")
+    {
+        FbGroupStop stop;
+        stop.mAxesGroup = &group;
+        stop.mDeceleration = -1.0;
+        stop.mExecute = true;
+        stop.call();
+        REQUIRE(stop.mError);
+        REQUIRE(stop.mErrorID == MC_ErrorCode::ACC_ILLEGAL);
+        REQUIRE(group.status() == MC_GroupStatus::STANDBY);
+    }
+
+    SECTION("non-finite jerk")
+    {
+        FbGroupStop stop;
+        stop.mAxesGroup = &group;
+        stop.mJerk = std::numeric_limits<double>::infinity();
+        stop.mExecute = true;
+        stop.call();
+        REQUIRE(stop.mError);
+        REQUIRE(stop.mErrorID == MC_ErrorCode::CFG_JERK_LIMIT_ILLEGAL);
+        REQUIRE(group.status() == MC_GroupStatus::STANDBY);
+    }
+}
+
+TEST_CASE("Buffered linear group move waits for the active command", "[fb][multi-axis][group][linear][buffer]")
+{
+    DualAxisFbHarness harness;
+    harness.powerOn();
+
+    AxesGroup group;
+    REQUIRE(group.addAxis(harness.master) == MC_ErrorCode::GOOD);
+    REQUIRE(group.addAxis(harness.slave) == MC_ErrorCode::GOOD);
+    REQUIRE(group.enable() == MC_ErrorCode::GOOD);
+
+    FbMoveLinearAbsolute first;
+    first.mAxesGroup = &group;
+    first.mPosition.mCount = 2;
+    first.mPosition.mValues[0] = 2.0;
+    first.mPosition.mValues[1] = 1.0;
+    first.mVelocity = 2.0;
+    first.mAcceleration = 4.0;
+    first.mDeceleration = 4.0;
+    first.mExecute = true;
+    first.call();
+    harness.runUntil([&]() { return first.mActive; }, 100, "first linear command never became active", first);
+
+    FbMoveLinearAbsolute second;
+    second.mAxesGroup = &group;
+    second.mPosition.mCount = 2;
+    second.mPosition.mValues[0] = 4.0;
+    second.mPosition.mValues[1] = -2.0;
+    second.mVelocity = 2.0;
+    second.mAcceleration = 4.0;
+    second.mDeceleration = 4.0;
+    second.mBufferMode = MC_BufferMode::BUFFERED;
+    second.mExecute = true;
+    second.call();
+
+    REQUIRE(second.mBusy);
+    REQUIRE_FALSE(second.mActive);
+    REQUIRE(second.mCommandAccepted);
+    REQUIRE(second.mCommandID != 0);
+    REQUIRE(second.mCommandID != first.mCommandID);
+
+    harness.runUntil([&]() { return first.mDone; }, 1000, "first buffered sequence command did not finish", first, second);
+    REQUIRE_FALSE(second.mDone);
+
+    harness.runUntil([&]() { return second.mActive; }, 100, "buffered command did not become active", first, second);
+    harness.runUntil([&]() { return second.mDone; }, 1000, "buffered command did not complete", first, second);
+
+    REQUIRE(harness.master->cmdPosition() == Catch::Approx(4.0).margin(1e-8));
+    REQUIRE(harness.slave->cmdPosition() == Catch::Approx(-2.0).margin(1e-8));
+}
+
+TEST_CASE("A linear group FB can be reused after command acceptance without stale callbacks",
+          "[fb][multi-axis][group][linear][buffer][reuse]")
+{
+    DualAxisFbHarness harness;
+    harness.powerOn();
+
+    AxesGroup group;
+    REQUIRE(group.addAxis(harness.master) == MC_ErrorCode::GOOD);
+    REQUIRE(group.addAxis(harness.slave) == MC_ErrorCode::GOOD);
+    REQUIRE(group.enable() == MC_ErrorCode::GOOD);
+
+    FbMoveLinearAbsolute move;
+    move.mAxesGroup = &group;
+    move.mPosition.mCount = 2;
+    move.mPosition.mValues[0] = 2.0;
+    move.mPosition.mValues[1] = 1.0;
+    move.mVelocity = 2.0;
+    move.mAcceleration = 4.0;
+    move.mDeceleration = 4.0;
+    move.mExecute = true;
+    move.call();
+    REQUIRE(move.mCommandAccepted);
+    const MC_COMMAND_ID firstId = move.mCommandID;
+
+    harness.runUntil([&]() { return move.mActive; }, 100, "first reused command never became active", move);
+
+    move.mExecute = false;
+    move.call();
+    REQUIRE(move.mBusy);
+    REQUIRE(move.mCommandAccepted);
+    REQUIRE(move.mCommandID == firstId);
+
+    move.mPosition.mValues[0] = 4.0;
+    move.mPosition.mValues[1] = -2.0;
+    move.mBufferMode = MC_BufferMode::BUFFERED;
+    move.mExecute = true;
+    move.call();
+
+    const MC_COMMAND_ID secondId = move.mCommandID;
+    REQUIRE(secondId != 0);
+    REQUIRE(secondId != firstId);
+    REQUIRE(move.mCommandAccepted);
+
+    harness.runUntil(
+        [&]() { return harness.master->cmdPosition() == Catch::Approx(2.0).margin(1e-8); },
+        1000,
+        "first reused command did not reach its endpoint",
+        move);
+
+    REQUIRE(move.mBusy);
+    REQUIRE_FALSE(move.mDone);
+    REQUIRE(move.mCommandAccepted);
+    REQUIRE(move.mCommandID == secondId);
+
+    harness.runUntil([&]() { return move.mDone; }, 1000, "second reused command did not complete", move);
+    REQUIRE(move.mCommandID == 0);
+    REQUIRE_FALSE(move.mCommandAccepted);
+    REQUIRE(harness.master->cmdPosition() == Catch::Approx(4.0).margin(1e-8));
+    REQUIRE(harness.slave->cmdPosition() == Catch::Approx(-2.0).margin(1e-8));
+}
+
+TEST_CASE("Aborting linear group move cancels the active and buffered commands",
+          "[fb][multi-axis][group][linear][buffer]")
+{
+    DualAxisFbHarness harness;
+    harness.powerOn();
+
+    AxesGroup group;
+    REQUIRE(group.addAxis(harness.master) == MC_ErrorCode::GOOD);
+    REQUIRE(group.addAxis(harness.slave) == MC_ErrorCode::GOOD);
+    REQUIRE(group.enable() == MC_ErrorCode::GOOD);
+
+    FbMoveLinearAbsolute first;
+    first.mAxesGroup = &group;
+    first.mPosition.mCount = 2;
+    first.mPosition.mValues[0] = 10.0;
+    first.mPosition.mValues[1] = 5.0;
+    first.mVelocity = 2.0;
+    first.mAcceleration = 4.0;
+    first.mDeceleration = 4.0;
+    first.mExecute = true;
+    first.call();
+    harness.runUntil([&]() { return first.mActive; }, 100, "first linear command never became active", first);
+
+    FbMoveLinearAbsolute buffered;
+    buffered.mAxesGroup = &group;
+    buffered.mPosition.mCount = 2;
+    buffered.mPosition.mValues[0] = 20.0;
+    buffered.mPosition.mValues[1] = 10.0;
+    buffered.mVelocity = 2.0;
+    buffered.mAcceleration = 4.0;
+    buffered.mDeceleration = 4.0;
+    buffered.mBufferMode = MC_BufferMode::BUFFERED;
+    buffered.mExecute = true;
+    buffered.call();
+    REQUIRE(buffered.mCommandAccepted);
+
+    FbMoveLinearAbsolute replacement;
+    replacement.mAxesGroup = &group;
+    replacement.mPosition.mCount = 2;
+    replacement.mPosition.mValues[0] = -1.0;
+    replacement.mPosition.mValues[1] = 2.0;
+    replacement.mVelocity = 2.0;
+    replacement.mAcceleration = 4.0;
+    replacement.mDeceleration = 4.0;
+    replacement.mExecute = true;
+    replacement.call();
+
+    REQUIRE(first.mCommandAborted);
+    REQUIRE(buffered.mCommandAborted);
+    REQUIRE(replacement.mCommandAccepted);
+    REQUIRE(replacement.mCommandID != 0);
+
+    harness.runUntil(
+        [&]() { return replacement.mDone; }, 1000, "aborting replacement command did not complete", first, buffered, replacement);
+
+    REQUIRE(harness.master->cmdPosition() == Catch::Approx(-1.0).margin(1e-8));
+    REQUIRE(harness.slave->cmdPosition() == Catch::Approx(2.0).margin(1e-8));
+}
+
+TEST_CASE("A member error fails both active and buffered linear group commands",
+          "[fb][multi-axis][group][linear][buffer][error]")
+{
+    DualAxisFbHarness harness;
+    harness.powerOn();
+
+    AxesGroup group;
+    REQUIRE(group.addAxis(harness.master) == MC_ErrorCode::GOOD);
+    REQUIRE(group.addAxis(harness.slave) == MC_ErrorCode::GOOD);
+    REQUIRE(group.enable() == MC_ErrorCode::GOOD);
+
+    FbMoveLinearAbsolute active;
+    active.mAxesGroup = &group;
+    active.mPosition.mCount = 2;
+    active.mPosition.mValues[0] = 10.0;
+    active.mPosition.mValues[1] = 5.0;
+    active.mVelocity = 2.0;
+    active.mAcceleration = 4.0;
+    active.mDeceleration = 4.0;
+    active.mExecute = true;
+    active.call();
+    harness.runUntil([&]() { return active.mActive; }, 100, "linear command never became active", active);
+
+    FbMoveLinearAbsolute buffered;
+    buffered.mAxesGroup = &group;
+    buffered.mPosition.mCount = 2;
+    buffered.mPosition.mValues[0] = 20.0;
+    buffered.mPosition.mValues[1] = 10.0;
+    buffered.mVelocity = 2.0;
+    buffered.mAcceleration = 4.0;
+    buffered.mDeceleration = 4.0;
+    buffered.mBufferMode = MC_BufferMode::BUFFERED;
+    buffered.mExecute = true;
+    buffered.call();
+    REQUIRE(buffered.mCommandAccepted);
+
+    harness.slave->emergStop(MC_ErrorCode::CMD_VEL_OVERLIMIT);
+    harness.runCycle(active, buffered);
+
+    REQUIRE(active.mError);
+    REQUIRE(active.mErrorID == MC_ErrorCode::CMD_VEL_OVERLIMIT);
+    REQUIRE(buffered.mError);
+    REQUIRE(buffered.mErrorID == MC_ErrorCode::CMD_VEL_OVERLIMIT);
+    REQUIRE_FALSE(active.mCommandAccepted);
+    REQUIRE_FALSE(buffered.mCommandAccepted);
+    REQUIRE(group.status() == MC_GroupStatus::ERRORSTOP);
+    REQUIRE(harness.master->status() == MC_AxisStatus::STANDSTILL);
+}
+
+TEST_CASE("Group reset waits for a powered-off linear member to recover",
+          "[fb][multi-axis][group][linear][error][reset]")
+{
+    DualAxisFbHarness harness;
+    harness.powerOn();
+
+    AxesGroup group;
+    REQUIRE(group.addAxis(harness.master) == MC_ErrorCode::GOOD);
+    REQUIRE(group.addAxis(harness.slave) == MC_ErrorCode::GOOD);
+    REQUIRE(group.enable() == MC_ErrorCode::GOOD);
+
+    FbMoveLinearAbsolute move;
+    move.mAxesGroup = &group;
+    move.mPosition.mCount = 2;
+    move.mPosition.mValues[0] = 10.0;
+    move.mPosition.mValues[1] = 5.0;
+    move.mVelocity = 2.0;
+    move.mAcceleration = 4.0;
+    move.mDeceleration = 4.0;
+    move.mExecute = true;
+    move.call();
+    harness.runUntil([&]() { return move.mActive; }, 100, "linear command never became active", move);
+
+    harness.slavePower.mEnable = false;
+    harness.runUntil(
+        [&]() { return group.status() == MC_GroupStatus::ERRORSTOP; },
+        20,
+        "group did not enter error stop after member power-off",
+        move);
+    REQUIRE_FALSE(harness.slave->powerStatus());
+
+    FbGroupReset reset;
+    reset.mAxesGroup = &group;
+    reset.mExecute = true;
+    reset.call();
+    REQUIRE(reset.mBusy);
+    REQUIRE_FALSE(reset.mDone);
+
+    harness.slavePower.mEnable = true;
+    harness.runUntil([&]() { return reset.mDone; }, 20, "group reset did not wait for member recovery", move, reset);
+
+    REQUIRE(group.status() == MC_GroupStatus::STANDBY);
+    REQUIRE(harness.slave->powerStatus());
+}
+
 TEST_CASE("FbCombineAxes combines two master axes into the slave setpoint", "[fb][multi-axis][combine]")
 {
     struct Case
@@ -2535,9 +3221,11 @@ TEST_CASE("FbGroupStop aborts member motion and returns the group to standby", "
 
     FbGroupStop stop;
     stop.mAxesGroup = &group;
+    stop.mDeceleration = 4.0;
     stop.mExecute = true;
     stop.call();
-    REQUIRE(stop.mDone);
+    REQUIRE(stop.mBusy);
+    REQUIRE_FALSE(stop.mDone);
     REQUIRE_FALSE(stop.mError);
 
     harness.runUntil(
@@ -2548,7 +3236,10 @@ TEST_CASE("FbGroupStop aborts member motion and returns the group to standby", "
         200,
         "group stop did not bring members to standstill",
         gearIn,
-        moveMaster);
+        moveMaster,
+        stop);
+
+    REQUIRE(stop.mDone);
 
     REQUIRE(gearIn.mCommandAborted);
     REQUIRE(moveMaster.mCommandAborted);
@@ -2558,7 +3249,13 @@ TEST_CASE("FbGroupStop aborts member motion and returns the group to standby", "
     readStatus.mEnable = true;
     readStatus.call();
     REQUIRE(readStatus.mValid);
-    REQUIRE(readStatus.mStandby);
+    REQUIRE(readStatus.mStopping);
     REQUIRE_FALSE(readStatus.mMoving);
+    REQUIRE_FALSE(readStatus.mStandby);
+
+    stop.mExecute = false;
+    stop.call();
+    readStatus.call();
+    REQUIRE(readStatus.mStandby);
     REQUIRE_FALSE(readStatus.mStopping);
 }

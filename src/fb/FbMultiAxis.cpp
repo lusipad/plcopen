@@ -182,18 +182,61 @@ MC_ErrorCode requireGroup(AXES_GROUP_REF group)
         mPosition = 0.0;
     }
 
+    void FbGroupStop::call(void)
+    {
+        const bool risingEdge = mExecute && !mExecutePrevious;
+        if (risingEdge)
+            mCommandAborted = false;
+
+        if (mCommandAborted)
+        {
+            if (!mExecute)
+            {
+                mCommandAborted = false;
+                mDone = false;
+                mBusy = false;
+                clearError();
+            }
+            mExecutePrevious = mExecute;
+            return;
+        }
+
+        FbComExecuteType::call();
+        if (mStopRequested && !mExecute)
+        {
+            if (mAxesGroup)
+                mAxesGroup->releaseStop(this);
+            if (mAxesGroup && mAxesGroup->stopOwnedBy(this))
+                mBusy = true;
+            else
+                mStopRequested = false;
+        }
+        mExecutePrevious = mExecute;
+    }
+
     MC_ErrorCode FbGroupStop::onExecTriggered(bool &isDone)
     {
         MC_ErrorCode err = requireGroup(mAxesGroup);
         if (err != MC_ErrorCode::GOOD)
             return err;
 
-        err = mAxesGroup->stop();
+        err = mAxesGroup->startStop(this, mDeceleration, mJerk);
         if (err != MC_ErrorCode::GOOD)
             return err;
 
-        isDone = true;
+        mStopRequested = true;
+        isDone = mAxesGroup->stopComplete();
         return MC_ErrorCode::GOOD;
+    }
+
+    void FbGroupStop::onOperationAborted(int32_t customId)
+    {
+        (void)customId;
+        mDone = false;
+        mBusy = false;
+        mCommandAborted = true;
+        mStopRequested = false;
+        clearError();
     }
 
     MC_ErrorCode FbGroupReset::onExecTriggered(bool &isDone)
@@ -203,6 +246,103 @@ MC_ErrorCode requireGroup(AXES_GROUP_REF group)
             return err;
 
         return mAxesGroup->reset(isDone);
+    }
+
+    MC_ErrorCode FbGroupLinearMoveType::onExecPosedge(void)
+    {
+        clearCommandAcceptance();
+
+        MC_ErrorCode err = requireGroup(mAxesGroup);
+        if (err != MC_ErrorCode::GOOD)
+            return err;
+        if (mCoordSystem != MC_CoordSystem::ACS || mTransitionVelocity != MC_TransitionVelocity::ZERO ||
+            mTransitionMode != MC_TransitionMode::NONE || mOrientationMode != MC_OrientationMode::LINEAR)
+            return MC_ErrorCode::PARAMETER_NOT_SUPPORT;
+
+        for (double parameter : mTransitionParameter)
+        {
+            if (parameter != 0.0)
+                return MC_ErrorCode::PARAMETER_NOT_SUPPORT;
+        }
+
+        MC_COMMAND_ID commandId = 0;
+        err = mAxesGroup->addLinearMove(
+            this,
+            positionRef(),
+            isRelative(),
+            mVelocity,
+            mAcceleration,
+            mDeceleration,
+            mJerk,
+            mBufferMode,
+            commandId);
+        if (err != MC_ErrorCode::GOOD)
+            return err;
+
+        mCommandAccepted = true;
+        mCommandID = commandId;
+        return MC_ErrorCode::GOOD;
+    }
+
+    void FbGroupLinearMoveType::onOperationActive(int32_t customId)
+    {
+        if (isCurrentCommand(customId))
+            FbSeqExecuteType::onOperationActive(customId);
+    }
+
+    void FbGroupLinearMoveType::onOperationAborted(int32_t customId)
+    {
+        if (!isCurrentCommand(customId))
+            return;
+        FbSeqExecuteType::onOperationAborted(customId);
+        clearCommandAcceptance();
+    }
+
+    void FbGroupLinearMoveType::onOperationDone(int32_t customId)
+    {
+        if (!isCurrentCommand(customId))
+            return;
+        FbSeqExecuteType::onOperationDone(customId);
+        clearCommandAcceptance();
+    }
+
+    void FbGroupLinearMoveType::onOperationError(MC_ErrorCode errorCode, int32_t customId)
+    {
+        if (customId != 0 && !isCurrentCommand(customId))
+            return;
+        FbSeqExecuteType::onOperationError(errorCode, customId);
+        clearCommandAcceptance();
+    }
+
+    bool FbGroupLinearMoveType::isCurrentCommand(int32_t customId) const
+    {
+        return mCommandID != 0 && static_cast<MC_COMMAND_ID>(customId) == mCommandID;
+    }
+
+    void FbGroupLinearMoveType::clearCommandAcceptance(void)
+    {
+        mCommandAccepted = false;
+        mCommandID = 0;
+    }
+
+    const MC_POS_REF &FbMoveLinearAbsolute::positionRef(void) const
+    {
+        return mPosition;
+    }
+
+    bool FbMoveLinearAbsolute::isRelative(void) const
+    {
+        return false;
+    }
+
+    const MC_POS_REF &FbMoveLinearRelative::positionRef(void) const
+    {
+        return mDistance;
+    }
+
+    bool FbMoveLinearRelative::isRelative(void) const
+    {
+        return true;
     }
 
     MC_ErrorCode FbCombineAxes::onExecPosedge(void)
