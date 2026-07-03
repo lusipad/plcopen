@@ -23,6 +23,9 @@ jobs:
       - name: Verify generated compliance matrix
         run: cmake -P cmake/generate_part1_part2_matrix.cmake
 
+      - name: Verify replay fixtures
+        run: cmake -P cmake/verify_replay_fixtures.cmake
+
       - name: Clean build and run full CTest suite
         run: .\build.ps1 -Clean -Test
 

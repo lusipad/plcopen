@@ -1,0 +1,25 @@
+{
+  "schema": "plcopen-golden-replay-manifest-v1",
+  "status": "format-fixture-only",
+  "note": "Real v0.x golden replay files are recorded during R0 after the freeze point.",
+  "fixtures": [
+    {
+      "id": "format-smoke-single-axis",
+      "path": "format-smoke-single-axis.jsonl",
+      "source": "manual format fixture",
+      "coverage": ["schema", "single-axis setpoint fields"]
+    },
+    {
+      "id": "format-smoke-two-axis",
+      "path": "format-smoke-two-axis.jsonl",
+      "source": "manual format fixture",
+      "coverage": ["schema", "multi-axis ordering"]
+    },
+    {
+      "id": "format-smoke-stop",
+      "path": "format-smoke-stop.jsonl",
+      "source": "manual format fixture",
+      "coverage": ["schema", "deceleration-to-zero shape"]
+    }
+  ]
+}
