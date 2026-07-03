@@ -5,6 +5,13 @@ This directory holds deterministic replay fixtures for the rewrite.
 R0 starts with a format fixture only. Real golden files must be recorded from
 the frozen v0.x engine and reviewed before they are used as migration gates.
 
+The fixture format is verified by the `replay_fixture_format` CTest entry and
+can also be checked directly:
+
+```bash
+cmake -P cmake/verify_replay_fixtures.cmake
+```
+
 ## Format
 
 Each `.jsonl` file contains one JSON object per line:

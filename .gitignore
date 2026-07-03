@@ -33,6 +33,7 @@
 
 .vs
 build
+build-*/
 out
 .cache
 .playwright-cli/

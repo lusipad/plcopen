@@ -32,6 +32,12 @@ unset(PLCOPEN_DEFAULT_BUILD_TESTS)
 
 add_subdirectory(src)
 
+if(PLCOPEN_IS_TOP_LEVEL AND BUILD_TESTING)
+  add_test(
+    NAME replay_fixture_format
+    COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/verify_replay_fixtures.cmake)
+endif()
+
 if(PLCOPEN_BUILD_DOCS)
   find_package(Doxygen QUIET)
 
