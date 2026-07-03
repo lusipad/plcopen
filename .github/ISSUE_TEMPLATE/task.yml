@@ -1,0 +1,63 @@
+name: AI executable task
+description: A bounded task with acceptance criteria and verification evidence.
+title: "[Task] "
+labels:
+  - task
+body:
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: What should be true when this task is complete?
+      placeholder: "Example: Add a regression test for KB-001 and make it pass."
+    validations:
+      required: true
+
+  - type: dropdown
+    id: risk
+    attributes:
+      label: Risk level
+      description: Use the project T0-T3 change policy from CLAUDE.md.
+      options:
+        - T0 - docs, comments, demos, tests, formatting, CI scripts
+        - T1 - non-RT implementation, tooling, pyplcopen, build config
+        - T2 - RT path, OTG/planner algorithms, state semantics, public API
+        - T3 - license, provenance, release tags, external safety claims
+    validations:
+      required: true
+
+  - type: input
+    id: scope
+    attributes:
+      label: Affected layers or KB ids
+      description: Name the core layer(s), compliance rows, or known-boundary ids.
+      placeholder: "Example: L0 rt, KB-001, Part 1 MC_MoveAbsolute"
+    validations:
+      required: true
+
+  - type: textarea
+    id: done
+    attributes:
+      label: Definition of done
+      description: List the observable acceptance criteria.
+      placeholder: "- Failing test added first\n- Implementation passes the test\n- Docs updated if public behavior changes"
+    validations:
+      required: true
+
+  - type: textarea
+    id: verification
+    attributes:
+      label: Verification commands
+      description: Commands that must pass before the task is done.
+      placeholder: ".\\build.ps1 -Test"
+    validations:
+      required: true
+
+  - type: textarea
+    id: docs
+    attributes:
+      label: Documentation impact
+      description: State which docs change, or why no docs change is needed.
+      placeholder: "Example: Update doc/compliance/...; no docs change for test-only task."
+    validations:
+      required: true

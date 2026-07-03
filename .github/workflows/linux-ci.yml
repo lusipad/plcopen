@@ -25,6 +25,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
+      - name: Run RT-safety static scan
+        run: cmake -P cmake/rt_safety_scan.cmake
+
       - name: Set up Python
         if: matrix.compiler == 'gcc'
         uses: actions/setup-python@v6

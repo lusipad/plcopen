@@ -89,15 +89,15 @@ AI 产出不靠「相信它写对了」进主干，靠**机器可判定的门禁
 **并入 M0（与 rewrite-plan 3.6 文档整合同批，净增 ~2 天）**：
 
 - [x] CLAUDE.md 重写为项目操作手册，AGENTS.md 改为指针（随本方案落地）
-- [ ] Issue / PR 模板（工单化 + 证据包）
-- [ ] clang-format 配置（仅新核 `core/` 生效，旧线冻结不动——遵守 surgical changes 原则）
-- [ ] `doc/design/decisions/` 目录与 ADR 模板
+- [x] Issue / PR 模板（工单化 + 证据包）
+- [x] clang-format 配置（仅新核 `core/` 生效，旧线冻结不动——遵守 surgical changes 原则）
+- [x] `doc/design/decisions/` 目录与 ADR 模板
 
 **并入 R1（与验证基建同批，净增 ~3 天）**：
 
 - [ ] 合规矩阵机读化（先 Part 1/2）+ markdown 生成脚本
 - [ ] 已知边界编号化（KB-xxx）
-- [ ] RT-safety 静态扫描进 CI
+- [x] RT-safety 静态扫描进 CI
 - [ ] 变异测试抽查管线（每周任务，非每 PR）
 
 **R2-R4**：模块 README 随层建立；R4 相似度抽查覆盖 AI 产出。
