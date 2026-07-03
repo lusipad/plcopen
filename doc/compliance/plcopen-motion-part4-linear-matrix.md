@@ -49,8 +49,8 @@
 
 | 功能块 | 必需输入 | 必需输出 | v0.11.0 支持边界 | 当前状态 |
 |---|---|---|---|---|
-| `MC_MoveLinearAbsolute` | AxesGroup, Execute, Position, Velocity, Acceleration, Deceleration, Jerk, CoordSystem, BufferMode, TransitionVelocity, TransitionMode, TransitionParameter, OrientationMode | Done, Busy, Active, CommandAccepted, CommandAborted, Error, ErrorID, CommandID | ACS、2-8 轴、absolute dynamics、Aborting/Buffered、零过渡 | implemented |
-| `MC_MoveLinearRelative` | AxesGroup, Execute, Distance, Velocity, Acceleration, Deceleration, Jerk, CoordSystem, BufferMode, TransitionVelocity, TransitionMode, TransitionParameter, OrientationMode | Done, Busy, Active, CommandAccepted, CommandAborted, Error, ErrorID, CommandID | ACS、2-8 轴、absolute dynamics、Aborting/Buffered、零过渡 | implemented |
+| `MC_MoveLinearAbsolute` | AxesGroup, Execute, Position, Velocity, Acceleration, Deceleration, Jerk, CoordSystem, BufferMode, TransitionVelocity, TransitionMode, TransitionParameter, OrientationMode | Done, Busy, Active, CommandAccepted, CommandAborted, Error, ErrorID, CommandID | ACS、2-8 轴、absolute dynamics、Aborting/Buffered、零过渡（`KB-012`） | implemented |
+| `MC_MoveLinearRelative` | AxesGroup, Execute, Distance, Velocity, Acceleration, Deceleration, Jerk, CoordSystem, BufferMode, TransitionVelocity, TransitionMode, TransitionParameter, OrientationMode | Done, Busy, Active, CommandAccepted, CommandAborted, Error, ErrorID, CommandID | ACS、2-8 轴、absolute dynamics、Aborting/Buffered、零过渡（`KB-012`） | implemented |
 
 ## 跨切语义矩阵
 
@@ -65,9 +65,9 @@
 | 成员限制 | path dynamics 必须保持成员可执行 | 提交前计算共同约束；严格成员限制约束整组 | implemented |
 | group stop | `MC_GroupStop` 沿原路径受控减速；速度为零后置 `Done`，且 Execute 为 TRUE 时保持 GroupStopping | 支持 Deceleration/Jerk；Execute 下降且已停止后回 GroupStandby；GroupDisable 或成员掉电会置 `CommandAborted` 并禁用 group | implemented |
 | 错误传播 | 任一轴 ErrorStop 使 group 进入 GroupErrorStop | 其他成员不得继续完成原路径；reset 后才恢复 | implemented |
-| 非 ACS | 规范支持多个 coordinate systems | MCS/WCS/PCS/FCS/TCS 返回明确 unsupported error | out-of-scope |
-| transition geometry | 规范定义多种 TransitionVelocity/Mode | 非零 transition 与 blending 显式拒绝 | out-of-scope |
-| orientation interpolation | 规范定义四种 orientation mode | 非 `mcLinear` 显式拒绝 | out-of-scope |
+| 非 ACS | 规范支持多个 coordinate systems | MCS/WCS/PCS/FCS/TCS 返回明确 unsupported error（`KB-012`） | out-of-scope |
+| transition geometry | 规范定义多种 TransitionVelocity/Mode | 非零 transition 与 blending 显式拒绝（`KB-012`） | out-of-scope |
+| orientation interpolation | 规范定义四种 orientation mode | 非 `mcLinear` 显式拒绝（`KB-012`） | out-of-scope |
 
 ## 必需测试证据
 

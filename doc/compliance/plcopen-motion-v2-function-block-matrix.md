@@ -22,18 +22,20 @@ v0.9.0 gap types:
 
 ## v0.9.0 Boundary Classification
 
+Known-boundary IDs are anchored in the README "已知边界" section.
+
 | Row(s) | Boundary type | Current evidence | Next action |
 |---|---|---|---|
 | `MC_Home` | hardware-abstraction | Direct homing, switch-based modes 5-8, indexed modes 1-4 and 9-14, invalid configuration, buffer interaction, and override replanning are covered | Keep drive-specific sensor details behind explicit Servo signal abstractions |
-| `MC_PositionProfile`, `MC_VelocityProfile`, `MC_AccelerationProfile` | scope-boundary | Linked `mNext` multi-segment references, timed segment duration, scale/offset normalization, `ContinuousUpdate`, and invalid-reference behavior are covered | Implement an external profile-table parser/import model only if it becomes an explicit runtime goal |
-| `MC_CombineAxes` | scope-boundary | Add/sub two-master setpoint combination, per-master ratios, command/actual source selection, `ContinuousUpdate`, and invalid inputs are covered | Keep coordinate transforms and kinematics in Part 4 foundation, not Part 1/2 completion |
+| `MC_PositionProfile`, `MC_VelocityProfile`, `MC_AccelerationProfile` | scope-boundary | Linked `mNext` multi-segment references, timed segment duration, scale/offset normalization, `ContinuousUpdate`, and invalid-reference behavior are covered (`KB-010`) | Implement an external profile-table parser/import model only if it becomes an explicit runtime goal |
+| `MC_CombineAxes` | scope-boundary | Add/sub two-master setpoint combination, per-master ratios, command/actual source selection, `ContinuousUpdate`, and invalid inputs are covered (`KB-015`) | Keep coordinate transforms and kinematics in Part 4 foundation, not Part 1/2 completion |
 | Cross-cutting Execute/Done/Busy/Error and Enable/Valid/Error contracts | scope-boundary | Base tests cover busy/done persistence, falling-edge error recovery, enable valid/busy/error clearing, and sync `StartSync` pulse latching | Treat the current base contract as implemented for v0.9.0; add representative tests when future FB-specific overrides introduce new lifecycle behavior |
-| Cross-cutting BufferMode and ContinuousUpdate | implemented | Single-axis move/profile, Homing, GearIn, GearInPos, CamIn, and CombineAxes tests cover the current public buffer and active-update contract | Treat future geometric blending or external profile-table import as new planner/runtime features, not unresolved v0.9.0 partials |
+| Cross-cutting BufferMode and ContinuousUpdate | implemented | Single-axis move/profile, Homing, GearIn, GearInPos, CamIn, and CombineAxes tests cover the current public buffer and active-update contract (`KB-001`, `KB-009`) | Treat future geometric blending or external profile-table import as new planner/runtime features, not unresolved v0.9.0 partials |
 | Cross-cutting Error code coverage | scope-boundary | Existing invalid input tests cover current public FB errors, including torque invalid-input recovery | Do not claim a standalone PLCopen/vendor error catalog; add standard-relevant errors only with behavior-specific tests |
 
 ## Supported Parameter Registry
 
-`MC_ReadParameter`, `MC_ReadBoolParameter`, `MC_WriteParameter`, and `MC_WriteBoolParameter` are implemented against the explicit simulator-backed registry below. Unsupported PLCopen or vendor parameters return `PARAMETER_NOT_SUPPORT`.
+`MC_ReadParameter`, `MC_ReadBoolParameter`, `MC_WriteParameter`, and `MC_WriteBoolParameter` are implemented against the explicit simulator-backed registry below. Unsupported PLCopen or vendor parameters return `PARAMETER_NOT_SUPPORT` (`KB-006`).
 
 | Parameter | Numeric read | Numeric write | Bool read/write | Backing state | Validation |
 |---|---|---|---|---|---|
