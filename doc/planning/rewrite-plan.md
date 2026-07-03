@@ -68,6 +68,8 @@
 
 ### 2.1 分层与依赖规则
 
+> 正式架构图（Mermaid 单一事实源）见 [doc/design/core/architecture.md](../design/core/architecture.md)；本节 ASCII 为提案期快照。
+
 ```
         ┌────────────────────────────────────────────────┐
   L7    │ adapters: servo-sim / fieldbus(独立仓库) /      │  外圈可脏
@@ -242,7 +244,7 @@ R0 录制的语料 = 旧引擎在全量测试场景下的逐周期 setpoint 流�
 
 **第二拍（R1-R3，设计文档随码写）**：`doc/design/core/` 每层一份设计文档（L0-L1 随 R1、L2-L4 随 R2、L5-L6 随 R3），与实现同 PR 合入。**不预写**——为不存在的系统预先设计正是本项目 v0.1 时期的历史教训（见 `ADJUSTMENT_PLAN.md` 诊断表）。
 
-**第三拍（R4，切换收口）**：README 全面改写为新核并承载唯一架构图（ASCII，与仓库风格一致，不引入绘图工具链）；旧设计文档移入 `doc/design/v0/`；CHANGELOG 写版本纪元说明。
+**第三拍（R4，切换收口）**：README 全面改写为新核，架构图单一事实源为 [doc/design/core/architecture.md](../design/core/architecture.md)（Mermaid，GitHub 原生渲染，README 仅嵌入/链接）；旧设计文档移入 `doc/design/v0/`；CHANGELOG 写版本纪元说明。
 
 **不做清单**：不把 planning 文档并入 VISION/ROADMAP（职责与节奏不同，互链即可）；不删任何历史文档（归档 ≠ 删除，git 历史不能替代可发现的归档）；暂不建文档站（Phase C 事项）。
 
