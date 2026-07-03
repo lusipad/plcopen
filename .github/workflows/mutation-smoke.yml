@@ -1,0 +1,17 @@
+name: Mutation Smoke
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 3 * * 1'
+
+jobs:
+  mutation-smoke:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Run mutation smoke
+        run: cmake -P cmake/mutation_smoke.cmake

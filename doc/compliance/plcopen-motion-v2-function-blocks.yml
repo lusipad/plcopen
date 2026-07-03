@@ -1,0 +1,296 @@
+schema: plcopen-compliance-function-blocks-v1
+rows:
+  - fb: MC_Power
+    category: Administrative Single-Axis
+    status: implemented
+    standard: true
+    tests: src/test/test_fb_single_axis.cpp
+    kb: -
+  - fb: MC_ReadStatus
+    category: Administrative Single-Axis
+    status: implemented
+    standard: true
+    tests: src/test/test_fb_single_axis.cpp
+    kb: -
+  - fb: MC_ReadAxisError
+    category: Administrative Single-Axis
+    status: implemented
+    standard: true
+    tests: src/test/test_fb_single_axis.cpp
+    kb: -
+  - fb: MC_ReadParameter
+    category: Administrative Single-Axis
+    status: implemented
+    standard: true
+    tests: src/test/test_fb_single_axis.cpp
+    kb: KB-006
+  - fb: MC_ReadBoolParameter
+    category: Administrative Single-Axis
+    status: implemented
+    standard: true
+    tests: src/test/test_fb_single_axis.cpp
+    kb: KB-006
+  - fb: MC_WriteParameter
+    category: Administrative Single-Axis
+    status: implemented
+    standard: true
+    tests: src/test/test_fb_single_axis.cpp
+    kb: KB-006
+  - fb: MC_WriteBoolParameter
+    category: Administrative Single-Axis
+    status: implemented
+    standard: true
+    tests: src/test/test_fb_single_axis.cpp
+    kb: KB-006
+  - fb: MC_ReadDigitalInput
+    category: Administrative Single-Axis
+    status: implemented
+    standard: true
+    tests: src/test/test_fb_single_axis.cpp
+    kb: -
+  - fb: MC_ReadDigitalOutput
+    category: Administrative Single-Axis
+    status: implemented
+    standard: true
+    tests: src/test/test_fb_single_axis.cpp
+    kb: -
+  - fb: MC_WriteDigitalOutput
+    category: Administrative Single-Axis
+    status: implemented
+    standard: true
+    tests: src/test/test_fb_single_axis.cpp
+    kb: -
+  - fb: MC_ReadActualPosition
+    category: Administrative Single-Axis
+    status: implemented
+    standard: true
+    tests: src/test/test_fb_single_axis.cpp
+    kb: -
+  - fb: MC_ReadActualVelocity
+    category: Administrative Single-Axis
+    status: implemented
+    standard: true
+    tests: src/test/test_fb_single_axis.cpp
+    kb: -
+  - fb: MC_ReadActualTorque
+    category: Administrative Single-Axis
+    status: implemented
+    standard: true
+    tests: src/test/test_fb_single_axis.cpp
+    kb: -
+  - fb: MC_ReadAxisInfo
+    category: Administrative Single-Axis
+    status: implemented
+    standard: true
+    tests: src/test/test_fb_single_axis.cpp
+    kb: KB-007
+  - fb: MC_ReadMotionState
+    category: Administrative Single-Axis
+    status: implemented
+    standard: true
+    tests: src/test/test_fb_single_axis.cpp
+    kb: -
+  - fb: MC_SetPosition
+    category: Administrative Single-Axis
+    status: implemented
+    standard: true
+    tests: src/test/test_fb_single_axis.cpp
+    kb: -
+  - fb: MC_SetOverride
+    category: Administrative Single-Axis
+    status: implemented
+    standard: true
+    tests: src/test/test_fb_single_axis.cpp
+    kb: KB-003
+  - fb: MC_TouchProbe
+    category: Administrative Single-Axis
+    status: implemented
+    standard: true
+    tests: src/test/test_fb_single_axis.cpp
+    kb: KB-004
+  - fb: MC_AbortTrigger
+    category: Administrative Single-Axis
+    status: implemented
+    standard: true
+    tests: src/test/test_fb_single_axis.cpp
+    kb: KB-004
+  - fb: MC_DigitalCamSwitch
+    category: Administrative Single-Axis
+    status: implemented
+    standard: true
+    tests: src/test/test_fb_single_axis.cpp
+    kb: KB-005
+  - fb: MC_Reset
+    category: Administrative Single-Axis
+    status: implemented
+    standard: true
+    tests: src/test/test_fb_single_axis.cpp
+    kb: -
+  - fb: MC_Home
+    category: Single-Axis Motion
+    status: implemented
+    standard: true
+    tests: src/test/test_fb_single_axis.cpp
+    kb: KB-003
+  - fb: MC_Stop
+    category: Single-Axis Motion
+    status: implemented
+    standard: true
+    tests: src/test/test_fb_single_axis.cpp
+    kb: -
+  - fb: MC_Halt
+    category: Single-Axis Motion
+    status: implemented
+    standard: true
+    tests: src/test/test_fb_single_axis.cpp
+    kb: -
+  - fb: MC_HaltSuperimposed
+    category: Single-Axis Motion
+    status: implemented
+    standard: true
+    tests: src/test/test_fb_single_axis.cpp
+    kb: KB-008
+  - fb: MC_MoveAbsolute
+    category: Single-Axis Motion
+    status: implemented
+    standard: true
+    tests: src/test/test_fb_single_axis.cpp
+    kb: KB-001, KB-003
+  - fb: MC_MoveRelative
+    category: Single-Axis Motion
+    status: implemented
+    standard: true
+    tests: src/test/test_fb_single_axis.cpp
+    kb: KB-001, KB-003
+  - fb: MC_MoveAdditive
+    category: Single-Axis Motion
+    status: implemented
+    standard: true
+    tests: src/test/test_fb_single_axis.cpp
+    kb: KB-001, KB-003
+  - fb: MC_MoveSuperimposed
+    category: Single-Axis Motion
+    status: implemented
+    standard: true
+    tests: src/test/test_fb_single_axis.cpp
+    kb: KB-008
+  - fb: MC_MoveVelocity
+    category: Single-Axis Motion
+    status: implemented
+    standard: true
+    tests: src/test/test_fb_single_axis.cpp
+    kb: KB-009
+  - fb: MC_MoveContinuousAbsolute
+    category: Single-Axis Motion
+    status: implemented
+    standard: true
+    tests: src/test/test_fb_single_axis.cpp
+    kb: KB-009
+  - fb: MC_MoveContinuousRelative
+    category: Single-Axis Motion
+    status: implemented
+    standard: true
+    tests: src/test/test_fb_single_axis.cpp
+    kb: KB-009
+  - fb: MC_PositionProfile
+    category: Single-Axis Motion
+    status: implemented
+    standard: true
+    tests: src/test/test_fb_single_axis.cpp
+    kb: KB-009, KB-010
+  - fb: MC_VelocityProfile
+    category: Single-Axis Motion
+    status: implemented
+    standard: true
+    tests: src/test/test_fb_single_axis.cpp
+    kb: KB-009, KB-010
+  - fb: MC_AccelerationProfile
+    category: Single-Axis Motion
+    status: implemented
+    standard: true
+    tests: src/test/test_fb_single_axis.cpp
+    kb: KB-009, KB-010
+  - fb: MC_TorqueControl
+    category: Single-Axis Motion
+    status: implemented
+    standard: true
+    tests: src/test/test_fb_single_axis.cpp
+    kb: KB-011
+  - fb: MC_CamTableSelect
+    category: Multi-Axis Synchronization
+    status: implemented
+    standard: true
+    tests: src/test/test_fb_multi_axis.cpp
+    kb: KB-016
+  - fb: MC_CamIn
+    category: Multi-Axis Synchronization
+    status: implemented
+    standard: true
+    tests: src/test/test_fb_multi_axis.cpp
+    kb: KB-013, KB-016, KB-017
+  - fb: MC_CamOut
+    category: Multi-Axis Synchronization
+    status: implemented
+    standard: true
+    tests: src/test/test_fb_multi_axis.cpp
+    kb: KB-013
+  - fb: MC_GearIn
+    category: Multi-Axis Synchronization
+    status: implemented
+    standard: true
+    tests: src/test/test_fb_multi_axis.cpp
+    kb: KB-013
+  - fb: MC_GearInPos
+    category: Multi-Axis Synchronization
+    status: implemented
+    standard: true
+    tests: src/test/test_fb_multi_axis.cpp
+    kb: KB-013, KB-017
+  - fb: MC_GearOut
+    category: Multi-Axis Synchronization
+    status: implemented
+    standard: true
+    tests: src/test/test_fb_multi_axis.cpp
+    kb: KB-013
+  - fb: MC_PhasingAbsolute
+    category: Multi-Axis Synchronization
+    status: implemented
+    standard: true
+    tests: src/test/test_fb_multi_axis.cpp
+    kb: KB-014
+  - fb: MC_PhasingRelative
+    category: Multi-Axis Synchronization
+    status: implemented
+    standard: true
+    tests: src/test/test_fb_multi_axis.cpp
+    kb: KB-014
+  - fb: MC_CombineAxes
+    category: Multi-Axis Synchronization
+    status: implemented
+    standard: true
+    tests: src/test/test_fb_multi_axis.cpp
+    kb: KB-015
+  - fb: MC_ReadCommandPosition
+    category: Project Extensions And Adjacent Work
+    status: extension
+    standard: false
+    tests: src/test/test_fb_single_axis.cpp
+    kb: -
+  - fb: MC_ReadCommandVelocity
+    category: Project Extensions And Adjacent Work
+    status: extension
+    standard: false
+    tests: src/test/test_fb_single_axis.cpp
+    kb: -
+  - fb: MC_EmergencyStop
+    category: Project Extensions And Adjacent Work
+    status: extension
+    standard: false
+    tests: src/test/test_fb_single_axis.cpp
+    kb: -
+  - fb: AxesGroup foundation
+    category: Project Extensions And Adjacent Work
+    status: out-of-scope
+    standard: false
+    tests: src/test/test_axes_group.cpp, src/test/test_fb_multi_axis.cpp
+    kb: KB-012

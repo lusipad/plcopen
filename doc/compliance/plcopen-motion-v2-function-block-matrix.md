@@ -5,6 +5,8 @@ PLCopen states that Part 2 Extensions were merged into Part 1 in release 2.0, so
 
 v0.9.0 completion planning is tracked in [v0.9.0 Part 1/2 Completion Plan](part1-part2-completion-plan.md).
 
+Machine-readable function-block coverage is maintained in [plcopen-motion-v2-function-blocks.yml](plcopen-motion-v2-function-blocks.yml); the generated Markdown table is [generated/plcopen-motion-v2-function-blocks.md](generated/plcopen-motion-v2-function-blocks.md).
+
 Status values:
 
 - `implemented`: public FB exists and has automated coverage.

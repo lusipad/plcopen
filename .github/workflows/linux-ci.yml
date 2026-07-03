@@ -28,6 +28,9 @@ jobs:
       - name: Run RT-safety static scan
         run: cmake -P cmake/rt_safety_scan.cmake
 
+      - name: Verify generated compliance matrix
+        run: cmake -P cmake/generate_part1_part2_matrix.cmake
+
       - name: Set up Python
         if: matrix.compiler == 'gcc'
         uses: actions/setup-python@v6
