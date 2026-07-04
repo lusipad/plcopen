@@ -109,11 +109,11 @@
 | D1 | **configure → freeze → run 生命周期** | 轴数/组数/队列深/前瞻窗全部前置声明；`freeze()` 后零分配，分配器 hook 断言守卫 | 运行中隐式分配 |
 | D2 | **时间 = 整型周期计数** | 物理时间只在边界换算；规划输出以 tick 为单位 | `t += dt` 浮点累积（T8） |
 | D3 | **RT 路径无异常、无 RTTI、无系统调用** | 错误码 + `Result<T>` 风格；可 `-fno-exceptions` 构建 | 隐式异常路径 |
-| D4 | **内层零开销多态，边界窄虚接口** | L0-L4 用 C++20 concepts/模板；只有 Servo/Kinematics/TraceSink 是虚接口（每轴每周期一次调用，成本可接受，换 ABI 稳定） | 到处虚函数或到处模板的两个极端 |
+| D4 | **内层零开销多态，边界窄虚接口** | L0-L4 用 C++17 模板和小型类型约定；只有 Servo/Kinematics/TraceSink 是虚接口（每轴每周期一次调用，成本可接受，换 ABI 稳定） | 到处虚函数或到处模板的两个极端 |
 | D5 | **运行时是值** | 整个运行时状态可快照、可序列化 → 确定性回放、数字孪生、断点续测都是副产品 | 隐藏全局状态 |
 | D6 | **核心永不碰 OS** | 用户（或参考 executor）拥有线程与时钟；仿真=虚拟时间下调 `cycle()`，仿真与真机同构 | —（这是现架构做对的一点，保留并强化） |
 | D7 | **观测性内建** | 编译期可关的 trace 点从第一天进核心；二进制录波格式 v1 与内核同步设计 | 事后补观测（改造成本极高） |
-| D8 | **C++20** | concepts、`span`、designated initializers；MSVC 2022 / GCC 10+ / Clang 10+ 全覆盖 | C++17 的接口约束表达力不足 |
+| D8 | **C++17** | 新核与冻结的 v0.x 线、consumer 示例保持同一工具链口径；需要裁决见 ADR-0002 | 过早引入 C++20 导致同仓双工具链故事 |
 
 ### 2.4 关键接口速写（定基调，非最终签名）
 
@@ -163,7 +163,7 @@ FbMoveAbsolute move{rt.axis(1)};     // 门面只做命令封装 + 快照读取
 |------|------|--------|------|
 | Tier 1 | 嵌入式 Linux（ARM64 Cortex-A：i.MX8/RK3588/TI Sitara/树莓派 + PREEMPT_RT） | **现在就可行**（本质是小型工控机；PREEMPT_RT 主线支持 ARM64） | 正式支持：R1 起 CI 增加 ARM64 交叉编译 + QEMU 测试，Phase B HIL 台架含一块 ARM 板 |
 | Tier 2 | RTOS/MCU，双精度 FPU（Cortex-M7/M85、R5F @ ≥300MHz，FreeRTOS/Zephyr/裸机） | **新核可行，旧核不可行**（旧核 STL 动态分配/异常；新核 L0-L4 + L5/L6 子集按 `Config` 缩容即可） | 构建档支持：`-fno-exceptions -fno-rtti` + 交叉编译 CI + footprint 门禁进 R1；MCU 参考 demo（如 STM32H7 双轴）列 Phase B 机会项（P2） |
-| Tier 3 | 单精度 FPU（Cortex-M4）、DSP（C2000）、无 FPU | 不承诺（double 软浮点慢 10-20×；float 标量模板会翻倍测试矩阵且伤精度口径；C2000 工具链无 C++20） | 范围外；未来如有真实需求，走 C ABI 边界评估 |
+| Tier 3 | 单精度 FPU（Cortex-M4）、DSP（C2000）、无 FPU | 不承诺（double 软浮点慢 10-20×；float 标量模板会翻倍测试矩阵且伤精度口径；C2000 工具链支持度需单独验证） | 范围外；未来如有真实需求，走 C ABI 边界评估 |
 
 **Tier 2 的量化边界**（R1 footprint 门禁实证前为估算）：2-4 轴、32 段前瞻窗、1-4kHz 插补周期；RAM 数十 KB 级（OTG profile <1KB/轴、前瞻段 ~300B/段）、Flash 200-400KB；look-ahead 走低优先级任务摊销（双层架构在 RTOS 上同样成立）。总线侧 MCU 场景通常不跑 EtherCAT 主站，`Servo` 抽象直接对接本地 step/dir、PWM 或电流环。
 
