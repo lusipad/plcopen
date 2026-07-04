@@ -89,9 +89,24 @@ public:
         axis_.cycle();
     }
 
+    void stop(double deceleration = 1.0, double jerk = 1.0, int max_cycles = 5000)
+    {
+        plcopen::core::axis::AxisCommand command{};
+        command.kind = plcopen::core::axis::CommandKind::stop;
+        command.deceleration = deceleration;
+        command.jerk = jerk;
+        submit_and_wait(command, "stop", max_cycles);
+    }
+
     void home_direct(double position = 0.0)
     {
-        throw_on_error("home_direct", axis_.set_position(position));
+        throw_on_error("home_direct", axis_.home_direct(position));
+        home_position_ = position;
+    }
+
+    double home_position() const
+    {
+        return home_position_;
     }
 
     double actual_position() const
@@ -112,6 +127,16 @@ public:
     double command_velocity() const
     {
         return axis_.snapshot().command_velocity;
+    }
+
+    double actual_acceleration() const
+    {
+        return axis_.snapshot().actual_acceleration;
+    }
+
+    double command_acceleration() const
+    {
+        return axis_.snapshot().command_acceleration;
     }
 
     plcopen::core::axis::AxisStatus status() const
@@ -144,6 +169,7 @@ private:
     }
 
     plcopen::core::axis::AxisModel axis_;
+    double home_position_ = 0.0;
 };
 } // namespace
 
@@ -172,10 +198,15 @@ PYBIND11_MODULE(pyplcopen, module)
         .def("move_velocity", &AxisSim::move_velocity, py::arg("velocity"), py::arg("acceleration") = 1.0,
              py::arg("deceleration") = 1.0, py::arg("jerk") = 1.0, py::arg("cycles") = 1)
         .def("halt", &AxisSim::halt)
+        .def("stop", &AxisSim::stop, py::arg("deceleration") = 1.0, py::arg("jerk") = 1.0,
+             py::arg("max_cycles") = 5000)
         .def("home_direct", &AxisSim::home_direct, py::arg("position") = 0.0)
+        .def("home_position", &AxisSim::home_position)
         .def("actual_position", &AxisSim::actual_position)
         .def("command_position", &AxisSim::command_position)
         .def("actual_velocity", &AxisSim::actual_velocity)
         .def("command_velocity", &AxisSim::command_velocity)
+        .def("actual_acceleration", &AxisSim::actual_acceleration)
+        .def("command_acceleration", &AxisSim::command_acceleration)
         .def("status", &AxisSim::status);
 }

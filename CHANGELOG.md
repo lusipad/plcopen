@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- Restore the full v0.x `pyplcopen` facade on the rewrite core: `stop`, `home_position`, and `command/actual_acceleration` readback (with `actual_acceleration` added to `AxisSnapshot` and `AxisModel::home_direct` carrying the MC_Home direct-mode homed flag); the Python smoke now exercises the restored surface.
 - Complete the v0.x function-block surface on the rewrite core: fixed digital IO banks and diagnostic info bits on `AxisModel` (`set_digital_input/output`, `set_axis_info_inputs`; the touch-probe trigger channels are the digital inputs), plus `core/fb/io.h` facades (`FbReadDigitalInput/Output`, `FbWriteDigitalOutput`, `FbDigitalCamSwitch` with periodic windows, `FbReadAxisInfo`, `FbReadMotionState`) with the `plcopen_core_r3_io_tests` acceptance suite.
 - Add the B9-lite trajectory-stream demo (`core/demo/trajectory_stream.cpp`): a sparse low-rate waypoint stream upsampled to cycle rate through online jerk-limited OTG re-planning, with safety-envelope assertions and hold-last-profile behavior on stream stalls (rewrite-plan 3.1b stretch item).
 - Migrate the group administration and readback facades onto the rewrite core (`core/fb/group.h`): `FbAddAxisToGroup`, `FbRemoveAxisFromGroup`, `FbGroupReset`, `FbGroupReadStatus` (folding member-level sync into moving/standby), and `FbGroupReadActual/CommandPosition` with the `plcopen_core_r3_group_fb_tests` acceptance suite.

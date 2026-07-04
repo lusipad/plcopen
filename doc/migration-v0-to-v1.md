@@ -95,9 +95,10 @@
 绑定源码从 `src/python/pyplcopen.cpp`（绑旧 API）移到顶层 `python/pyplcopen.cpp`（绑新核 `AxisModel`），
 构建开关仍是 `-DPLCOPEN_BUILD_PYTHON_BINDINGS=ON`（经 FetchContent 拉取 pybind11），模块名与类名不变（`pyplcopen.AxisSim`）。
 
-保留的方法：`power_on`、`move_absolute`、`move_relative`、`move_velocity`、`halt`、`home_direct`、
-`status`、`command_position/velocity`、`actual_position/velocity`。
-暂未保留：`stop`、`home_position`、`command_acceleration`、`actual_acceleration`（随新核 facade 扩面排期，扩面前先补合规矩阵条目）。
+保留的方法：`power_on`、`move_absolute`、`move_relative`、`move_velocity`、`halt`、`stop`、
+`home_direct`、`home_position`、`status`、`command_position/velocity/acceleration`、
+`actual_position/velocity/acceleration`。v0.x 公开 Python 面已全量恢复；`home_direct` 现按
+MC_Home 直接回零语义置 homed 标志。
 
 ## 迁移步骤建议
 

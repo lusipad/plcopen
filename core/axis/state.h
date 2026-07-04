@@ -207,6 +207,7 @@ struct AxisSnapshot
     double command_acceleration = 0.0;
     double actual_position = 0.0;
     double actual_velocity = 0.0;
+    double actual_acceleration = 0.0;
     double actual_torque = 0.0;
     bool powered = false;
     bool homed = false;
@@ -680,13 +681,25 @@ public:
     }
 
     // Adapter hook: inject measured feedback without touching command state.
-    rt::ErrorCode set_actual_feedback(double position, double velocity)
+    rt::ErrorCode set_actual_feedback(double position, double velocity, double acceleration = 0.0)
     {
-        if(!std::isfinite(position) || !std::isfinite(velocity)) {
+        if(!std::isfinite(position) || !std::isfinite(velocity) || !std::isfinite(acceleration)) {
             return rt::ErrorCode::invalid_argument;
         }
         snapshot_.actual_position = position;
         snapshot_.actual_velocity = velocity;
+        snapshot_.actual_acceleration = acceleration;
+        return rt::ErrorCode::ok;
+    }
+
+    // MC_Home direct mode: remap the coordinate and mark the axis homed.
+    rt::ErrorCode home_direct(double position)
+    {
+        const rt::ErrorCode set = set_position(position);
+        if(set != rt::ErrorCode::ok) {
+            return set;
+        }
+        snapshot_.homed = true;
         return rt::ErrorCode::ok;
     }
 
@@ -1266,6 +1279,8 @@ private:
             base_velocity_ = velocity;
             snapshot_.command_velocity = velocity;
             snapshot_.actual_velocity = velocity;
+            snapshot_.command_acceleration = 0.0;
+            snapshot_.actual_acceleration = 0.0;
             snapshot_.command_position += velocity;
             snapshot_.actual_position = snapshot_.command_position;
             if(!continuous_holding_ && active_command_.min_duration_cycles > 0) {
@@ -1294,6 +1309,7 @@ private:
         snapshot_.command_acceleration = state.acceleration;
         snapshot_.actual_position = snapshot_.command_position;
         snapshot_.actual_velocity = state.velocity;
+        snapshot_.actual_acceleration = state.acceleration;
         base_velocity_ = state.velocity;
 
         if(active_tick_ >= active_profile_.duration_cycles()) {
@@ -1356,6 +1372,7 @@ private:
         snapshot_.command_velocity = 0.0;
         snapshot_.actual_velocity = 0.0;
         snapshot_.command_acceleration = 0.0;
+        snapshot_.actual_acceleration = 0.0;
         snapshot_.status = snapshot_.powered ? AxisStatus::standstill : AxisStatus::disabled;
         start_next_queued();
     }
@@ -1391,6 +1408,7 @@ private:
         snapshot_.command_velocity = 0.0;
         snapshot_.actual_velocity = 0.0;
         snapshot_.command_acceleration = 0.0;
+        snapshot_.actual_acceleration = 0.0;
     }
 
     void reset_superimposed()

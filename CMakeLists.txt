@@ -112,12 +112,20 @@ axis = pyplcopen.AxisSim()
 axis.power_on()
 axis.move_absolute(2.0, 1.0, 1.0, 1.0)
 assert abs(axis.command_position() - 2.0) < 1e-8
+assert axis.command_acceleration() == 0.0
+assert axis.actual_acceleration() == 0.0
 axis.move_relative(-0.5, 1.0, 1.0, 1.0)
 assert abs(axis.command_position() - 1.5) < 1e-8
 axis.move_velocity(1.0)
 assert axis.command_velocity() > 0.0
 axis.halt()
 assert axis.status() == pyplcopen.AxisStatus.STANDSTILL
+axis.move_velocity(1.0)
+axis.stop()
+assert axis.status() == pyplcopen.AxisStatus.STANDSTILL
+axis.home_direct(0.25)
+assert abs(axis.home_position() - 0.25) < 1e-12
+assert abs(axis.actual_position() - 0.25) < 1e-12
 ]=])
     add_test(NAME pyplcopen_smoke COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/pyplcopen_smoke_$<CONFIG>.py)
   endif()
