@@ -274,7 +274,16 @@ int check_read_motion_state()
         return fail("motion state constant positive velocity");
     }
 
-    // A discrete profile reports an acceleration phase from the command source.
+    // A discrete profile reports an acceleration phase from the command
+    // source; halt to rest first so the profile starts with acceleration.
+    axis::AxisCommand halt{};
+    halt.kind = axis::CommandKind::halt;
+    if(!axis.submit(halt)) {
+        return fail("motion state halt accepted");
+    }
+    for(int i = 0; i < 100 && axis.status() != axis::AxisStatus::standstill; ++i) {
+        axis.cycle();
+    }
     axis::AxisCommand move{};
     move.kind = axis::CommandKind::move_absolute;
     move.value = 10.0;

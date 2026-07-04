@@ -86,6 +86,7 @@
 - `KB-025`：连续运动与速度/加速度剖面的 `Done` 为持续态非锁存完成态；`MC_HaltSuperimposed` 当周期完成。
 - `KB-026`：离散运动经近时间最优 7 段 S 曲线规划，时长显著短于 v0.x/早期新核的保守剖面；加速度形状为梯形/三角相位。
 - `KB-027`：组线性命令共享路径参数承接完整动力学输入（jerk-limited 剖面，以行程最长成员为基准）；`MC_GroupStop` 沿原路径按 `Deceleration`/`Jerk` 受控减速（承接 v0.x 合同），刹车距离超出剩余路径时在命令终点停住。
+- `KB-028`：单轴 `MC_Halt`/`MC_Stop` 受控减速（承接 v0.x 合同）；aborting 接管保持运动学连续（不再把速度瞬移为零重规划）；速度限位更紧的接管按减速进入新包络处理。`pyplcopen` 的 `halt` 相应等待停止完成并增加 `deceleration`/`jerk` 参数。
 
 至此 v0.x 公开 FB 面已全量由新核承接。旧线仍可经 `PLCOPEN_BUILD_LEGACY=ON` 构建作回放
 基线；真实硬件的 Servo 虚接口（D4 决策中的窄虚边界）仍是 L7 适配层设计项（Phase B5/B7），

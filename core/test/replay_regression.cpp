@@ -80,7 +80,9 @@ void run_single_axis_move(Recording &recording)
 
 void run_velocity_stop(Recording &recording)
 {
-    recording.id = "core-velocity-stop";
+    // v2: declared change — MC_Stop decelerates from the takeover velocity
+    // with a controlled halt profile (KB-028); v1 recorded the immediate stop.
+    recording.id = "core-velocity-stop-v2";
     axis::AxisModel axis;
     axis.set_power(true);
 
@@ -98,7 +100,7 @@ void run_velocity_stop(Recording &recording)
     axis::AxisCommand stop{};
     stop.kind = axis::CommandKind::stop;
     axis.submit(stop);
-    for(; tick < 40; ++tick) {
+    for(; tick < 80; ++tick) {
         axis.cycle();
         recording.emit(tick, 0, axis.snapshot());
         if(axis.status() == axis::AxisStatus::standstill) {

@@ -55,9 +55,17 @@ int verify_profile(const char *name,
         return 1;
     }
 
+    // An entry velocity above the limit is allowed to decay monotonically
+    // into the envelope; the transient bound covers the zeroing ramp.
+    const double entry_bound =
+        std::fabs(from.velocity) +
+        std::fabs(from.acceleration) *
+            std::ceil(std::fabs(from.acceleration) / limits.max_jerk);
+    const double velocity_bound =
+        limits.max_velocity > entry_bound ? limits.max_velocity : entry_bound;
     for(std::int64_t cycle = 1; cycle <= profile.duration_cycles(); ++cycle) {
         const otg::State1D state = otg::sample(profile, rt::CycleTick::from_cycles(cycle));
-        if(std::fabs(state.velocity) > limits.max_velocity + tolerance ||
+        if(std::fabs(state.velocity) > velocity_bound + tolerance ||
            state.acceleration > limits.max_acceleration + tolerance ||
            state.acceleration < -limits.max_deceleration - tolerance) {
             std::printf("FAIL %s envelope at cycle %lld (v=%.9f a=%.9f)\n", name,
@@ -136,9 +144,14 @@ int check_validation()
        rt::ErrorCode::infeasible) {
         return fail("entry acceleration above limit is infeasible");
     }
-    if(otg::plan_time_optimal({0.0, 5.0, 0.0}, {1.0, 0.0, 0.0}, limits).error() !=
+    // Entry above the velocity limit decelerates into the envelope
+    // (takeover by a tighter command).
+    if(check_case("entry-above-limit", {0.0, 5.0, 0.0}, {30.0, 0.0, 0.0}, limits) != 0) {
+        return fail("entry velocity above limit plans a deceleration entry");
+    }
+    if(otg::plan_time_optimal({0.0, 0.0, 0.0}, {1.0, 5.0, 0.0}, limits).error() !=
        rt::ErrorCode::infeasible) {
-        return fail("entry velocity above limit is infeasible");
+        return fail("target velocity above limit is infeasible");
     }
     if(otg::plan_time_optimal({0.0, 0.0, 0.0}, {1.0, 0.0, 0.0}, {0.0, 1.0, 1.0, 1.0}).error() !=
        rt::ErrorCode::invalid_argument) {

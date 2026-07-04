@@ -476,8 +476,17 @@ public:
         // The additive target resolves against the endpoint that was committed
         // before an aborting takeover discards it.
         const double takeover_endpoint = queued_endpoint();
+        // Aborting takeovers keep kinematic continuity: abort_motion() zeroes
+        // the command velocity/acceleration, but the new command must plan
+        // from the state the axis was actually in (KB-026).
+        const double takeover_velocity = snapshot_.command_velocity;
+        const double takeover_acceleration = snapshot_.command_acceleration;
         if(command.buffer_mode == BufferMode::aborting) {
             abort_motion();
+            snapshot_.command_velocity = takeover_velocity;
+            snapshot_.command_acceleration = takeover_acceleration;
+            snapshot_.actual_velocity = takeover_velocity;
+            snapshot_.actual_acceleration = takeover_acceleration;
         }
         command = normalize(command, takeover_endpoint);
         if((command.kind == CommandKind::move_absolute ||
@@ -1230,6 +1239,40 @@ private:
         }
 
         if(command.kind == CommandKind::halt || command.kind == CommandKind::stop) {
+            // Controlled stop (MC_Halt/MC_Stop carry over the v0.x contract):
+            // decelerate from the current state with the commanded
+            // deceleration/jerk. The braking target is exempt from the
+            // software position limits — the axis must be allowed to come to
+            // rest. A resting axis still finishes within one cycle.
+            halt_profiled_ = false;
+            const double v0 = snapshot_.command_velocity;
+            const double a0 = snapshot_.command_acceleration;
+            if(v0 != 0.0 || a0 != 0.0) {
+                double brake_velocity = v0;
+                double brake_shift = 0.0;
+                if(a0 != 0.0) {
+                    const double zero_cycles = std::ceil(std::fabs(a0) / command.jerk);
+                    brake_velocity += 0.5 * a0 * zero_cycles;
+                    brake_shift += v0 * zero_cycles + a0 * zero_cycles * zero_cycles / 3.0;
+                }
+                const otg::Limits1D halt_limits{
+                    std::fabs(v0) + std::fabs(brake_velocity) + 1e-9,
+                    std::fabs(a0) > command.acceleration ? std::fabs(a0) : command.acceleration,
+                    command.deceleration,
+                    command.jerk};
+                const double stop_position =
+                    snapshot_.command_position + brake_shift +
+                    otg::detail::ramp_between(brake_velocity, 0.0, halt_limits).distance;
+                const rt::Result<otg::Profile1D> halt = otg::plan_time_optimal(
+                    {snapshot_.command_position, v0, a0}, {stop_position, 0.0, 0.0},
+                    halt_limits);
+                if(halt) {
+                    active_profile_ = halt.value();
+                    active_last_sample_ = snapshot_.command_position;
+                    active_target_ = stop_position;
+                    halt_profiled_ = true;
+                }
+            }
             active_ = true;
             snapshot_.status = AxisStatus::stopping;
             return rt::ErrorCode::ok;
@@ -1293,7 +1336,9 @@ private:
             return;
         }
 
-        if(active_command_.kind == CommandKind::halt || active_command_.kind == CommandKind::stop) {
+        if((active_command_.kind == CommandKind::halt ||
+            active_command_.kind == CommandKind::stop) &&
+           !halt_profiled_) {
             finish_active();
             return;
         }
@@ -1458,6 +1503,7 @@ private:
     std::uint32_t next_command_id_ = 1;
     bool active_ = false;
     bool continuous_holding_ = false;
+    bool halt_profiled_ = false;
 
     otg::Profile1D superimposed_profile_{};
     std::int64_t superimposed_tick_ = 0;

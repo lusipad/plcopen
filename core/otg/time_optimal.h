@@ -118,57 +118,94 @@ inline rt::ErrorCode push_cubic_phase(Profile1D &profile,
     return rt::ErrorCode::ok;
 }
 
-// Appends one jerk-limited ramp (up to three constant-jerk phases) between
-// same-direction velocities.
+// Ramp quantization strategy. floored keeps the continuous-time jerk and
+// floors the phase durations — closest to time-optimal, leaving a residue for
+// the final quintic correction (which can fail for large residues; the caller
+// treats that construction as one candidate). exact uses ceil'd phase counts
+// with the adjusted jerk j' = Δv/(n1·(n1+n2)) so the end velocity is hit
+// exactly and the chained acceleration returns exactly to zero — always
+// feasible, but slower on cycle-scale ramps.
+enum class RampRounding
+{
+    floored,
+    exact,
+};
+
+// Appends one jerk-limited ramp between same-direction velocities.
 inline rt::ErrorCode push_ramp(Profile1D &profile,
                                State1D &state,
                                double vb,
-                               const Limits1D &limits)
+                               const Limits1D &limits,
+                               RampRounding rounding)
 {
     const double va = state.velocity;
-    const double delta = std::fabs(vb - va);
-    if(delta <= 0.0) {
+    const double delta = vb - va;
+    if(delta == 0.0) {
         return rt::ErrorCode::ok;
     }
     const double bound = ramp_bound(va, vb, limits);
     const double jerk = limits.max_jerk;
-    const double direction = vb > va ? 1.0 : -1.0;
 
-    if(delta <= bound * bound / jerk) {
-        const double phase = std::sqrt(delta / jerk);
-        rt::ErrorCode pushed = push_cubic_phase(profile, state, direction * jerk, phase);
+    double jerk_phase = 0.0;
+    double hold_phase = 0.0;
+    if(std::fabs(delta) <= bound * bound / jerk) {
+        jerk_phase = std::sqrt(std::fabs(delta) / jerk);
+    } else {
+        jerk_phase = bound / jerk;
+        hold_phase = std::fabs(delta) / bound - bound / jerk;
+    }
+
+    if(rounding == RampRounding::floored) {
+        const double direction = delta > 0.0 ? 1.0 : -1.0;
+        rt::ErrorCode pushed = push_cubic_phase(profile, state, direction * jerk, jerk_phase);
         if(pushed != rt::ErrorCode::ok) {
             return pushed;
         }
-        return push_cubic_phase(profile, state, -direction * jerk, phase);
+        if(hold_phase > 0.0) {
+            pushed = push_cubic_phase(profile, state, 0.0, hold_phase);
+            if(pushed != rt::ErrorCode::ok) {
+                return pushed;
+            }
+        }
+        return push_cubic_phase(profile, state, -direction * jerk, jerk_phase);
     }
 
-    const double jerk_phase = bound / jerk;
-    const double hold_phase = delta / bound - bound / jerk;
-    rt::ErrorCode pushed = push_cubic_phase(profile, state, direction * jerk, jerk_phase);
+    const std::int64_t n1 =
+        static_cast<std::int64_t>(std::ceil(jerk_phase)) > 0
+            ? static_cast<std::int64_t>(std::ceil(jerk_phase))
+            : 1;
+    const std::int64_t n2 = static_cast<std::int64_t>(std::ceil(hold_phase));
+    const double adjusted_jerk =
+        delta / (static_cast<double>(n1) * static_cast<double>(n1 + n2));
+
+    rt::ErrorCode pushed =
+        push_cubic_phase(profile, state, adjusted_jerk, static_cast<double>(n1));
     if(pushed != rt::ErrorCode::ok) {
         return pushed;
     }
-    pushed = push_cubic_phase(profile, state, 0.0, hold_phase);
-    if(pushed != rt::ErrorCode::ok) {
-        return pushed;
+    if(n2 > 0) {
+        pushed = push_cubic_phase(profile, state, 0.0, static_cast<double>(n2));
+        if(pushed != rt::ErrorCode::ok) {
+            return pushed;
+        }
     }
-    return push_cubic_phase(profile, state, -direction * jerk, jerk_phase);
+    return push_cubic_phase(profile, state, -adjusted_jerk, static_cast<double>(n1));
 }
 
 inline rt::ErrorCode push_ramp_with_crossing(Profile1D &profile,
                                              State1D &state,
                                              double vb,
-                                             const Limits1D &limits)
+                                             const Limits1D &limits,
+                                             RampRounding rounding)
 {
     const double va = state.velocity;
     if((va < 0.0 && vb > 0.0) || (va > 0.0 && vb < 0.0)) {
-        const rt::ErrorCode pushed = push_ramp(profile, state, 0.0, limits);
+        const rt::ErrorCode pushed = push_ramp(profile, state, 0.0, limits, rounding);
         if(pushed != rt::ErrorCode::ok) {
             return pushed;
         }
     }
-    return push_ramp(profile, state, vb, limits);
+    return push_ramp(profile, state, vb, limits, rounding);
 }
 
 // Smallest feasible quintic duration for zero boundary accelerations. Longer
@@ -225,6 +262,52 @@ inline rt::ErrorCode push_quintic_correction(Profile1D &profile,
     return profile.add_segment(make_quintic_segment(state, to, cycles.value()));
 }
 
+// One full multiphase candidate: acceleration-zeroing reduction, entry ramp,
+// cruise, exit ramp, and the exact quintic correction.
+inline rt::Result<Profile1D> build_multiphase(State1D from,
+                                              Target1D to,
+                                              const Limits1D &limits,
+                                              double cruise_velocity,
+                                              double cruise_duration,
+                                              RampRounding rounding)
+{
+    Profile1D profile{};
+    State1D state = from;
+    if(from.acceleration != 0.0) {
+        const double zero_cycles = std::ceil(std::fabs(from.acceleration) / limits.max_jerk);
+        const double zero_jerk = -from.acceleration / zero_cycles;
+        const rt::ErrorCode pushed = push_cubic_phase(profile, state, zero_jerk, zero_cycles);
+        if(pushed != rt::ErrorCode::ok) {
+            return rt::Result<Profile1D>::failure(pushed);
+        }
+        state.acceleration = 0.0;
+    }
+
+    rt::ErrorCode built =
+        push_ramp_with_crossing(profile, state, cruise_velocity, limits, rounding);
+    if(built != rt::ErrorCode::ok) {
+        return rt::Result<Profile1D>::failure(built);
+    }
+    if(cruise_duration > 0.0 && cruise_velocity != 0.0) {
+        built = push_cubic_phase(profile, state, 0.0, cruise_duration);
+        if(built != rt::ErrorCode::ok) {
+            return rt::Result<Profile1D>::failure(built);
+        }
+    }
+    built = push_ramp_with_crossing(profile, state, to.velocity, limits, rounding);
+    if(built != rt::ErrorCode::ok) {
+        return rt::Result<Profile1D>::failure(built);
+    }
+    built = push_quintic_correction(profile, state, to, limits);
+    if(built != rt::ErrorCode::ok) {
+        return rt::Result<Profile1D>::failure(built);
+    }
+    if(profile.segment_count() == 0 || profile.duration_cycles() < 1) {
+        return rt::Result<Profile1D>::failure(rt::ErrorCode::infeasible);
+    }
+    return rt::Result<Profile1D>::success(profile);
+}
+
 } // namespace detail
 
 // Time-optimal jerk-limited plan. Nonzero initial accelerations reduce to the
@@ -243,32 +326,23 @@ inline rt::Result<Profile1D> plan_time_optimal(State1D from, Target1D to, Limits
     if(to.acceleration != 0.0) {
         return rt::Result<Profile1D>::failure(rt::ErrorCode::unsupported);
     }
-    if(std::fabs(from.velocity) > limits.max_velocity ||
-       std::fabs(to.velocity) > limits.max_velocity ||
+    // The entry velocity may exceed the limit (takeover by a command with a
+    // tighter velocity limit): the entry ramp is monotone toward the cruise
+    // velocity, which the selection caps at ±vmax, so the profile drops into
+    // the envelope and never leaves it again.
+    if(std::fabs(to.velocity) > limits.max_velocity ||
        from.acceleration > limits.max_acceleration ||
        from.acceleration < -limits.max_deceleration) {
         return rt::Result<Profile1D>::failure(rt::ErrorCode::infeasible);
     }
 
-    Profile1D profile{};
+    // Reduction exit state (the zeroing ramp itself is built per candidate).
     State1D state = from;
     if(from.acceleration != 0.0) {
-        const double zero_cycles =
-            std::ceil(std::fabs(from.acceleration) / limits.max_jerk);
-        const double zero_jerk = -from.acceleration / zero_cycles;
-        const double exit_velocity =
-            from.velocity + 0.5 * from.acceleration * zero_cycles;
-        if(std::fabs(exit_velocity) > limits.max_velocity) {
-            // Entry states whose zeroing ramp leaves the velocity envelope are
-            // beyond the v1 reduction (declared follow-up).
-            return rt::Result<Profile1D>::failure(rt::ErrorCode::infeasible);
-        }
-        const rt::ErrorCode pushed =
-            detail::push_cubic_phase(profile, state, zero_jerk, zero_cycles);
-        if(pushed != rt::ErrorCode::ok) {
-            return rt::Result<Profile1D>::failure(pushed);
-        }
-        // The adjusted jerk cancels a0 exactly up to one rounding ulp.
+        const double zero_cycles = std::ceil(std::fabs(from.acceleration) / limits.max_jerk);
+        state.velocity = from.velocity + 0.5 * from.acceleration * zero_cycles;
+        state.position = from.position + from.velocity * zero_cycles +
+                         from.acceleration * zero_cycles * zero_cycles / 3.0;
         state.acceleration = 0.0;
     }
 
@@ -304,38 +378,19 @@ inline rt::Result<Profile1D> plan_time_optimal(State1D from, Target1D to, Limits
         cruise_duration = 0.0;
     }
 
-    rt::ErrorCode built = detail::push_ramp_with_crossing(profile, state, cruise_velocity, limits);
-    if(built != rt::ErrorCode::ok) {
-        return rt::Result<Profile1D>::failure(built);
-    }
-    if(cruise_duration > 0.0 && cruise_velocity != 0.0) {
-        // The floored jerk phases are symmetric, so the chained acceleration
-        // is exactly zero here; cruise at the achieved velocity and let the
-        // final correction absorb the small distance residue.
-        built = detail::push_cubic_phase(profile, state, 0.0, cruise_duration);
-        if(built != rt::ErrorCode::ok) {
-            return rt::Result<Profile1D>::failure(built);
-        }
-    }
-    built = detail::push_ramp_with_crossing(profile, state, vt, limits);
-    if(built != rt::ErrorCode::ok) {
-        return rt::Result<Profile1D>::failure(built);
-    }
-
-    built = detail::push_quintic_correction(profile, state, to, limits);
-    if(built != rt::ErrorCode::ok) {
-        return rt::Result<Profile1D>::failure(built);
-    }
-    // Candidate selection. The phase construction can lose to a quintic in
-    // two regimes: very short moves (constant quantization overhead) and
-    // tiny velocity limits where the floored ramp phases degenerate. The
-    // baseline plan() candidate additionally makes the "never slower than the
-    // baseline planner" promise hold by construction (its duration guess is
-    // not minimal, so it is not sufficient on its own). The minimal-quintic
-    // candidate requires zero boundary accelerations for its bisection to be
-    // valid.
-    Profile1D best = profile;
-    bool have_best = profile.segment_count() > 0 && profile.duration_cycles() >= 1;
+    // Candidate selection, shortest feasible wins:
+    // - floored multiphase: continuous-time jerks with floored durations —
+    //   closest to time-optimal, but its correction can fail for cycle-scale
+    //   ramps whose phases round away;
+    // - exact multiphase: integer phases with adjusted jerks — always
+    //   feasible, slower on cycle-scale ramps;
+    // - minimal single quintic (zero boundary accelerations only: the
+    //   feasibility bisection is monotone only there);
+    // - baseline plan(): makes the "never slower than the baseline planner"
+    //   promise hold by construction (its duration guess is not minimal, so
+    //   it is not sufficient on its own).
+    Profile1D best{};
+    bool have_best = false;
 
     const auto consider = [&](const rt::Result<Profile1D> &candidate) {
         if(candidate && candidate.value().duration_cycles() >= 1 &&
@@ -345,6 +400,10 @@ inline rt::Result<Profile1D> plan_time_optimal(State1D from, Target1D to, Limits
         }
     };
 
+    consider(detail::build_multiphase(from, to, limits, cruise_velocity, cruise_duration,
+                                      detail::RampRounding::floored));
+    consider(detail::build_multiphase(from, to, limits, cruise_velocity, cruise_duration,
+                                      detail::RampRounding::exact));
     if(from.acceleration == 0.0) {
         const rt::Result<std::int64_t> minimal =
             detail::min_feasible_quintic_cycles(from, to, limits);

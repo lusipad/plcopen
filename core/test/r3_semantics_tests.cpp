@@ -224,7 +224,15 @@ int check_axis_state_and_motion()
     if(!axis.submit(halt)) {
         return fail("axis halt accepted");
     }
+    // Controlled halt: the axis decelerates from the takeover velocity
+    // instead of stopping within one cycle.
     axis.cycle();
+    if(axis.status() != axis::AxisStatus::stopping) {
+        return fail("axis halt enters stopping");
+    }
+    for(int i = 0; i < 100 && axis.status() != axis::AxisStatus::standstill; ++i) {
+        axis.cycle();
+    }
     if(axis.status() != axis::AxisStatus::standstill) {
         return fail("axis halt standstill");
     }

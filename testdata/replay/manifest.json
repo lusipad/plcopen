@@ -36,8 +36,14 @@
     {
       "id": "core-velocity-stop",
       "path": "core-velocity-stop.jsonl",
+      "source": "plcopen_core_replay_regression --record (immediate stop)",
+      "coverage": ["rewrite-core", "velocity hold and stop takeover", "superseded by core-velocity-stop-v2 (KB-028)"]
+    },
+    {
+      "id": "core-velocity-stop-v2",
+      "path": "core-velocity-stop-v2.jsonl",
       "source": "plcopen_core_replay_regression --record",
-      "coverage": ["rewrite-core", "velocity hold and stop takeover"]
+      "coverage": ["rewrite-core", "velocity hold and controlled stop deceleration (KB-028)"]
     },
     {
       "id": "core-group-linear",
