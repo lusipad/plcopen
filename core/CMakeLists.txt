@@ -36,6 +36,11 @@ if(BUILD_TESTING AND PLCOPEN_BUILD_CORE_TESTS)
     plcopen_core_rt_compile_options(plcopen_core_otg_oracle)
     add_test(NAME plcopen_core_otg_oracle COMMAND plcopen_core_otg_oracle)
 
+    add_executable(plcopen_core_r2_tests test/r2_motion_tests.cpp)
+    target_link_libraries(plcopen_core_r2_tests PRIVATE plcopen::core)
+    plcopen_core_rt_compile_options(plcopen_core_r2_tests)
+    add_test(NAME plcopen_core_r2_tests COMMAND plcopen_core_r2_tests)
+
     add_executable(plcopen_core_benchmark bench/core_benchmark.cpp)
     target_link_libraries(plcopen_core_benchmark PRIVATE plcopen::core)
     plcopen_core_rt_compile_options(plcopen_core_benchmark)

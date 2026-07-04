@@ -133,6 +133,8 @@ R1 不做：路径缓冲、圆弧、FB 迁移、pyplcopen 迁移。
 
 R2 降级线：若时间不足，look-ahead 深度和 blending 品质可保守，但 R2.5 / R2.8 / R2.10 不能砍。
 
+**R2 启动状态（2026-07-04）**：首个软件切片已接入 L2 line / arc / arc-length table、L3 固定容量路径缓冲 / look-ahead / blending 决策元数据、L4 committed path sampler 与效果指标日志。Spline、真实几何 blending 重写、gear / cam / overlay primitive 仍留在后续 R2 小切片。
+
 ## R3：L5/L6 语义迁移（M8-M10）
 
 目标：把 v0.x 的可执行规格迁到新核上。测试先行，语义默认不变，故意变更必须写迁移说明。

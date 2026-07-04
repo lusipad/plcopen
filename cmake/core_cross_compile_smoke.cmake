@@ -6,7 +6,8 @@ file(MAKE_DIRECTORY "${BUILD_DIR}")
 
 set(SMOKE_SOURCE "${BUILD_DIR}/core_cross_smoke.cpp")
 file(WRITE "${SMOKE_SOURCE}" [=[
-#include "otg/profile1d.h"
+#include "exec/sampler.h"
+#include "geom/geometry.h"
 #include "rt/spsc_queue.h"
 
 int main()
@@ -16,8 +17,19 @@ int main()
     queue.push(1);
     int value = 0;
     queue.pop(value);
+    const auto line = geom::make_line({0.0, 0.0, 0.0}, {1.0, 0.0, 0.0});
+    if(!line.ok()) {
+        return 1;
+    }
+    exec::CommittedPath<1> path;
+    path.push(geom::as_path_segment(line.value()));
     const auto profile = otg::plan({0.0, 0.0, 0.0}, {1.0, 0.0, 0.0}, {2.0, 1.0, 1.0, 1.0});
-    return profile.ok() && value == 1 ? 0 : 1;
+    if(!profile.ok()) {
+        return 1;
+    }
+    const geom::Vec3 finish = exec::sample_profiled_path(
+        path, profile.value(), rt::CycleTick::from_cycles(profile.value().duration_cycles()));
+    return value == 1 && finish.x > 0.999 ? 0 : 1;
 }
 ]=])
 
