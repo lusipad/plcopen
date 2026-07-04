@@ -1,6 +1,7 @@
 #include <cstdio>
 #include <ctime>
 
+#include "axis/state.h"
 #include "exec/sampler.h"
 #include "exec/sync.h"
 #include "geom/geometry.h"
@@ -90,6 +91,37 @@ int main()
     }
     const double path_sample_ms = millis_since(start);
 
+    // L5 cycle path: discrete profile + superimposed offset + armed probe on
+    // the base axis, gear-synchronized slave sampling it. This is the widest
+    // per-cycle branch set added in R3.
+    axis::AxisModel bench_master;
+    axis::AxisModel bench_slave;
+    bench_master.set_power(true);
+    bench_slave.set_power(true);
+    {
+        axis::AxisCommand move{};
+        move.kind = axis::CommandKind::move_absolute;
+        move.value = 1.0e9;
+        move.velocity = 0.001;
+        move.acceleration = 0.001;
+        move.deceleration = 0.001;
+        move.jerk = 0.001;
+        bench_master.submit(move);
+        bench_master.submit_superimposed(1.0e9, 0.0005, 0.001, 0.001, 0.001);
+        bench_master.arm_touch_probe(0, false, 0.0, 0.0);
+        axis::GearInCommand gear{};
+        gear.master = &bench_master;
+        gear.ratio_numerator = 2.0;
+        bench_slave.gear_in(gear);
+    }
+    start = std::clock();
+    for(int i = 0; i < Iterations; ++i) {
+        bench_master.cycle();
+        bench_slave.cycle();
+    }
+    const double axis_cycle_ms = millis_since(start);
+    position_sum += bench_slave.snapshot().command_position;
+
     const double speed_ripple =
         std::fabs(lookahead.value().exit_speed[0] - lookahead.value().entry_speed[1]);
     const double path_error = geom::norm(path_buffer.sample(path_buffer.total_length()) -
@@ -99,8 +131,9 @@ int main()
     const double overlay_checksum = overlaid.x + overlaid.y + overlaid.z;
 
     std::printf("BENCH_BASELINE static_vector_ms=%.3f spsc_ms=%.3f sample_ms=%.3f "
-                "path_sample_ms=%.3f checksum=%.3f\n",
-                vector_ms, queue_ms, sample_ms, path_sample_ms, position_sum + sink);
+                "path_sample_ms=%.3f axis_cycle_pair_ms=%.3f checksum=%.3f\n",
+                vector_ms, queue_ms, sample_ms, path_sample_ms, axis_cycle_ms,
+                position_sum + sink);
     std::printf("PATH_METRICS speed_ripple=%.6f path_error=%.12f cycle_efficiency=%.6f "
                 "blend_deviation=%.12f cam_error=%.12f overlay_checksum=%.6f\n",
                 speed_ripple, path_error, committed.total_length() / path_buffer.total_length(),

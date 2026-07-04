@@ -5,7 +5,9 @@
 | 文档 | 状态 | 说明 |
 |------|------|------|
 | [core/architecture.md](core/architecture.md) | 当前 | 新核 L0-L7 架构入口；默认消费面以 `core/` 为准 |
+| [core/l0-l1-rt-otg.md](core/l0-l1-rt-otg.md) | 当前 | 新核实时地基与 OTG 求解器设计 |
 | [core/l2-l4-motion-core.md](core/l2-l4-motion-core.md) | 当前 | 新核几何、路径、执行层设计 |
+| [core/l5-l6-semantic-layer.md](core/l5-l6-semantic-layer.md) | 当前 | 新核轴/组语义层与 FB 门面设计（R3） |
 | [part4-linear-motion-plan.md](part4-linear-motion-plan.md) | 历史完成计划 | v0.11.0 Part 4 linear foundation 执行记录 |
 | [design_doc.md](design_doc.md) | v0.x 基线参考 | 旧 `src/` 架构记录，不代表 R4 当前架构 |
 | [buffer-mode-blending-design.md](buffer-mode-blending-design.md) | v0.x 基线参考 | 旧线 MoveNode buffer/blending 设计记录 |
