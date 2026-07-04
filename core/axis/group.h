@@ -5,6 +5,9 @@
 #include <cstdint>
 
 #include "axis/state.h"
+#include "otg/profile1d.h"
+#include "otg/time_optimal.h"
+#include "rt/cycle.h"
 #include "rt/error.h"
 #include "rt/static_vector.h"
 
@@ -31,7 +34,13 @@ struct GroupCommand
 {
     GroupPosition target{};
     bool relative = false;
+    // Shared-path dynamics: the scalar path parameter is planned as one
+    // jerk-limited 1D profile; velocity/limits apply to the member with the
+    // longest travel (the fastest-moving member).
     double velocity = 1.0;
+    double acceleration = 1.0;
+    double deceleration = 1.0;
+    double jerk = 1.0;
     BufferMode buffer_mode = BufferMode::aborting;
     std::uint32_t command_id = 0;
 };
@@ -143,7 +152,10 @@ public:
     {
         if((status_ != GroupStatus::standby && status_ != GroupStatus::moving) || axes_.size() < 2 ||
            command.target.size != axes_.size() || command.velocity <= 0.0 ||
-           !std::isfinite(command.velocity) || !finite(command.target)) {
+           !std::isfinite(command.velocity) || command.acceleration <= 0.0 ||
+           !std::isfinite(command.acceleration) || command.deceleration <= 0.0 ||
+           !std::isfinite(command.deceleration) || command.jerk <= 0.0 ||
+           !std::isfinite(command.jerk) || !finite(command.target)) {
             return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
         }
         for(std::size_t i = 0; i < axes_.size(); ++i) {
@@ -199,9 +211,12 @@ public:
         }
 
         ++active_tick_;
-        double ratio = static_cast<double>(active_tick_) / static_cast<double>(active_duration_);
-        if(ratio > 1.0) {
-            ratio = 1.0;
+        double ratio = 1.0;
+        if(active_path_length_ > 0.0) {
+            const otg::State1D state =
+                otg::sample(active_profile_, rt::CycleTick::from_cycles(active_tick_));
+            ratio = state.position / active_path_length_;
+            ratio = ratio < 0.0 ? 0.0 : (ratio > 1.0 ? 1.0 : ratio);
         }
         for(std::size_t i = 0; i < axes_.size(); ++i) {
             const double position =
@@ -290,8 +305,22 @@ private:
             }
         }
 
-        active_duration_ = static_cast<std::int64_t>(std::ceil(longest / command.velocity));
-        if(active_duration_ < 1) {
+        // Shared scalar path: one jerk-limited 1D profile drives the path
+        // parameter, so members are collinear by construction and the group
+        // honors the full command dynamics (KB-027).
+        active_path_length_ = longest;
+        if(longest > 0.0) {
+            const rt::Result<otg::Profile1D> profile = otg::plan_time_optimal(
+                {0.0, 0.0, 0.0},
+                {longest, 0.0, 0.0},
+                {command.velocity, command.acceleration, command.deceleration, command.jerk});
+            if(!profile) {
+                return profile.error();
+            }
+            active_profile_ = profile.value();
+            active_duration_ = active_profile_.duration_cycles();
+        } else {
+            active_profile_ = otg::Profile1D{};
             active_duration_ = 1;
         }
         active_ = true;
@@ -339,6 +368,8 @@ private:
     GroupCommand active_command_{};
     std::array<double, MaxAxes> active_start_{};
     std::array<double, MaxAxes> active_finish_{};
+    otg::Profile1D active_profile_{};
+    double active_path_length_ = 0.0;
     std::int64_t active_tick_ = 0;
     std::int64_t active_duration_ = 1;
     std::uint32_t next_command_id_ = 1;

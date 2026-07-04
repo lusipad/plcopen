@@ -42,8 +42,14 @@
     {
       "id": "core-group-linear",
       "path": "core-group-linear.jsonl",
+      "source": "plcopen_core_replay_regression --record (constant-velocity path)",
+      "coverage": ["rewrite-core", "two-axis shared-path linear move", "superseded by core-group-linear-v2 (KB-027)"]
+    },
+    {
+      "id": "core-group-linear-v2",
+      "path": "core-group-linear-v2.jsonl",
       "source": "plcopen_core_replay_regression --record",
-      "coverage": ["rewrite-core", "two-axis shared-path linear move"]
+      "coverage": ["rewrite-core", "two-axis shared-path linear move with jerk-limited path dynamics (KB-027)"]
     }
   ]
 }

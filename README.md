@@ -428,6 +428,7 @@ target_link_libraries(app PRIVATE plcopen::plcopen)
 - `KB-024`：新核轨迹表为调用方持有的定长段数组（≤8 段，替代 `mNext` 链表），段时长为周期计数且 `TimeScale` 作用于时长；`ContinuousUpdate` 仅支持单段剖面；速度/加速度剖面终段无限保持（修订 `KB-010`）。
 - `KB-025`：新核 `MC_MoveContinuous*` 与速度/加速度剖面的 `Done` 表示"保持终速中"的持续状态而非锁存完成态，被接管时报 `CommandAborted`；`MC_HaltSuperimposed` 当周期完成，不建模叠加偏移的减速段（补充 `KB-008`）。
 - `KB-026`：新核离散运动（含叠加偏移与连续运动的规划段）经近时间最优 7 段 jerk-limited S 曲线求解器规划（`otg::plan_time_optimal`）：同等约束下运动时长显著缩短（零初始加速度状态域总时长约为原保守 quintic 求解器的 65%），加速度形状由平滑多项式变为梯形/三角相位；包络与端点承诺不变，回放基线升级为 `core-single-axis-move-v2`。aborting 接管现承接当前命令加速度（接管处加速度连续）；若新命令的限位容不下当前状态（如更小的加速度限位），接管显式报 infeasible 而非假装加速度为零。
+- `KB-027`：组线性命令的共享标量路径参数由 jerk-limited 1D 剖面驱动（此前新核为恒速线性插值），`Acceleration`/`Deceleration`/`Jerk` 输入生效，动力学以行程最长成员为基准；成员共线性由单一路径参数构造保证不变；回放基线升级为 `core-group-linear-v2`。组级 `MC_GroupStop` 仍为立即停（受控减速沿路径停车属后续项）。
 
 ---
 

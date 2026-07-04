@@ -109,7 +109,10 @@ void run_velocity_stop(Recording &recording)
 
 void run_group_linear(Recording &recording)
 {
-    recording.id = "core-group-linear";
+    // v2: declared change — the shared path parameter is planned as one
+    // jerk-limited profile honoring the command dynamics (KB-027); v1
+    // recorded the constant-velocity linear interpolation.
+    recording.id = "core-group-linear-v2";
     axis::AxisModel x;
     axis::AxisModel y;
     x.set_power(true);

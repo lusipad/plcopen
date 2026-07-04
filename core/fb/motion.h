@@ -680,6 +680,9 @@ class FbMoveLinearAbsolute : public GroupExecuteFb
 public:
     axis::GroupPosition position{};
     double velocity = 1.0;
+    double acceleration = 1.0;
+    double deceleration = 1.0;
+    double jerk = 1.0;
     axis::BufferMode buffer_mode = axis::BufferMode::aborting;
 
     void call()
@@ -701,6 +704,9 @@ protected:
         command.target = position;
         command.relative = relative;
         command.velocity = velocity;
+        command.acceleration = acceleration;
+        command.deceleration = deceleration;
+        command.jerk = jerk;
         command.buffer_mode = buffer_mode;
         accept(group_ref->submit_linear(command));
     }
