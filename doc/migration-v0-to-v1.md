@@ -67,6 +67,8 @@
 | `FbPositionProfile` / `FbVelocityProfile` / `FbAccelerationProfile` | 同名（`fb/profile.h`） | 表为调用方持有的 `axis::ProfileSegment` 定长数组（≤8 段，替代 `mNext` 链表）；段时长为周期计数，`TimeScale` 乘于时长；速度/加速度剖面 `Done` 表示"保持终段速度中"；`ContinuousUpdate` 仅支持单段剖面；加速度整形不建模（加速度缩放仅作用于限值输入） |
 | `FbTouchProbe` / `FbAbortTrigger` | 同名（`fb/probe.h`） | 触发源换 `AxisModel::set_trigger_input` 适配器钩子（固定 4 通道，替代 Servo 数字输入通道）；上升沿捕获、`WindowOnly` 门控、按通道独立、解除空闲通道非错误等边界一致；Servo 锁存位置回读不承接（记录 capture 周期的 actual position） |
 | `FbEmergencyStop`（项目扩展） | `fb::FbEmergencyStop` | 驱动 errorstop，经 `FbReset` 恢复 |
+| `FbAddAxisToGroup` / `FbRemoveAxisFromGroup` / `FbGroupReset` | 同名（`fb/group.h`） | 薄门面包装 `AxisGroup::add_axis/remove_axis/reset`；移除仍要求组 disabled |
+| `FbGroupReadStatus` / `FbGroupReadActualPosition` / `FbGroupReadCommandPosition` | 同名 | Enable 型；`moving`/`standby` 合入成员级 gear/cam 同步状态（承接旧线可观察组状态） |
 
 同步族已声明的行为边界（新核为最小语义层，回放仲裁外的变化以此为准）：
 
@@ -81,7 +83,6 @@
 
 - 数字凸轮开关：`FbDigitalCamSwitch`（依赖 Servo 数字输出抽象，随 L7 适配层排期）
 - 数字 IO 与轴信息：`FbReadDigitalInput/Output`、`FbWriteDigitalOutput`、`FbReadAxisInfo`、`FbReadMotionState`（依赖 Servo 扩展通道/信号源抽象，随 L7 适配层排期）
-- 组管理 FB 形态：`FbAddAxisToGroup` / `FbRemoveAxisFromGroup` / `FbGroupRead*`（新核用 `AxisGroup::add_axis/remove_axis` 直接方法）
 
 对应旧线语义边界（`KB-001` 起）见 [README 已知边界](../README.md#已知边界)；未迁移项在新核中调用不存在的符号会在编译期失败，不会静默降级。
 

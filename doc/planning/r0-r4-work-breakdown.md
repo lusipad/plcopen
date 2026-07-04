@@ -154,11 +154,14 @@ R2 降级线：若时间不足，look-ahead 深度和 blending 品质可保守�
 
 R3 不做：新功能、坐标系、EtherCAT、kinematics。任何“顺手增强”进 Phase B backlog。
 
-**R3 软件闭环状态（2026-07-04）**：首批 L5/L6 新核语义层已接入 `core/axis` 与
-`core/fb`。迁移批次矩阵见 [r3-migration-matrix.md](r3-migration-matrix.md)；当前自动化
-证据为 `plcopen_core_r3_tests`，覆盖 axis/group 生命周期、single-axis command buffering、
-Part 4 linear shared-path、Execute/Enable 生命周期与基础 IEC FB 边界。R4 前不切换
-install/export 面，也不删除旧 `src/`。
+**R3 软件闭环状态（2026-07-05 更新）**：L5/L6 新核语义层已接入 `core/axis` 与
+`core/fb`。迁移批次矩阵见 [r3-migration-matrix.md](r3-migration-matrix.md)；自动化证据为
+`plcopen_core_r3_tests` 及 5 个族级验收套件（sync / motion-family / parameter / profile /
+probe / group-fb），覆盖 axis/group 生命周期、single-axis command buffering、多轴同步
+（gear/cam/phasing/combine）、叠加/连续/附加运动、轨迹表、参数注册表、探针触发与组管理
+FB 形态。旧线独有 FB 面仅剩 Servo 通道依赖项（DigitalCamSwitch、数字 IO、AxisInfo、
+MotionState），随 L7 适配层排期；已声明行为边界见
+[migration-v0-to-v1.md](../migration-v0-to-v1.md)。
 
 ## R4：切换收口（M11-M12）
 

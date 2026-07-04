@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- Migrate the group administration and readback facades onto the rewrite core (`core/fb/group.h`): `FbAddAxisToGroup`, `FbRemoveAxisFromGroup`, `FbGroupReset`, `FbGroupReadStatus` (folding member-level sync into moving/standby), and `FbGroupReadActual/CommandPosition` with the `plcopen_core_r3_group_fb_tests` acceptance suite.
 - Migrate the touch-probe/trigger/emergency-stop family onto the rewrite core: a fixed 4-channel trigger-input bank on `AxisModel` (`set_trigger_input` adapter hook, rising-edge capture with `WindowOnly` gating) and `core/fb/probe.h` facades (`FbTouchProbe`, `FbAbortTrigger`, `FbEmergencyStop`) with the `plcopen_core_r3_probe_tests` acceptance suite.
 - Migrate the profile-table family onto the rewrite core: fixed-array `axis::ProfileSegment` tables (≤8 segments, replacing the v0.x `mNext` linked references), cycle-count segment durations with timed holds, and `core/fb/profile.h` facades (`FbPositionProfile`, `FbVelocityProfile`, `FbAccelerationProfile`) with the `plcopen_core_r3_profile_tests` acceptance suite.
 - Migrate the parameter and state read/write family onto the rewrite core: the supported parameter registry on `AxisModel` (`axis::AxisParameter`, unsupported entries report `rt::ErrorCode::unsupported`), `core/fb/parameter.h` facades (`FbRead/WriteParameter`, bool variants, `FbReadActual*`, `FbReadCommand*`, `FbReadStatus`, `FbReadAxisError`, `FbSetPosition`), and the `plcopen_core_r3_parameter_tests` acceptance suite.

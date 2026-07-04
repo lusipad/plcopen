@@ -57,6 +57,11 @@ public:
         return axes_.size();
     }
 
+    const AxisModel *member(std::size_t index) const
+    {
+        return index < axes_.size() ? axes_[index] : nullptr;
+    }
+
     bool contains(const AxisModel &axis) const
     {
         return find(axis) < axes_.size();
