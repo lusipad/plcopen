@@ -1,0 +1,470 @@
+#include <cmath>
+#include <cstdio>
+
+#include "axis/group.h"
+#include "fb/base.h"
+#include "fb/basic.h"
+#include "fb/motion.h"
+
+namespace
+{
+
+bool near(double lhs, double rhs, double tolerance)
+{
+    return std::fabs(lhs - rhs) <= tolerance;
+}
+
+int fail(const char *name)
+{
+    std::printf("FAIL %s\n", name);
+    return 1;
+}
+
+int check_basic_fb_contracts()
+{
+    using namespace plcopen::core::fb;
+
+    RTrig rising;
+    rising.clk = true;
+    rising.cycle();
+    if(!rising.q) {
+        return fail("r_trig rising pulse");
+    }
+    rising.cycle();
+    if(rising.q) {
+        return fail("r_trig one cycle");
+    }
+
+    FTrig falling;
+    falling.clk = true;
+    falling.cycle();
+    falling.clk = false;
+    falling.cycle();
+    if(!falling.q) {
+        return fail("f_trig falling pulse");
+    }
+
+    SR sr;
+    sr.set = true;
+    sr.reset = true;
+    sr.cycle();
+    if(!sr.q) {
+        return fail("sr set dominant");
+    }
+    RS rs;
+    rs.set = true;
+    rs.reset = true;
+    rs.cycle();
+    if(rs.q) {
+        return fail("rs reset dominant");
+    }
+
+    TON ton;
+    ton.set_cycle_time(10);
+    ton.pt = 20;
+    ton.in = true;
+    ton.cycle();
+    if(ton.q || ton.et != 10) {
+        return fail("ton before pt");
+    }
+    ton.cycle();
+    if(!ton.q || ton.et != 20) {
+        return fail("ton reaches pt");
+    }
+    ton.in = false;
+    ton.cycle();
+    if(ton.q || ton.et != 0) {
+        return fail("ton clears");
+    }
+
+    TOF tof;
+    tof.set_cycle_time(10);
+    tof.pt = 20;
+    tof.in = true;
+    tof.cycle();
+    tof.in = false;
+    tof.cycle();
+    if(!tof.q || tof.et != 10) {
+        return fail("tof holds");
+    }
+    tof.cycle();
+    if(tof.q || tof.et != 20) {
+        return fail("tof drops");
+    }
+
+    CTUD counter;
+    counter.pv = 2;
+    counter.cu = true;
+    counter.cd = true;
+    counter.cycle();
+    if(counter.cv != 0 || !counter.qd) {
+        return fail("ctud simultaneous edges cancel");
+    }
+    counter.cd = false;
+    counter.cycle();
+    counter.cu = false;
+    counter.cycle();
+    counter.cu = true;
+    counter.cycle();
+    if(counter.cv != 1 || counter.qu) {
+        return fail("ctud counts after cold start");
+    }
+
+    RTC rtc;
+    rtc.set_cycle_time(5);
+    rtc.pdt = 100;
+    rtc.enable = true;
+    rtc.cycle();
+    rtc.cycle();
+    if(!rtc.q || rtc.dt != 105) {
+        return fail("rtc advances");
+    }
+    rtc.enable = false;
+    rtc.cycle();
+    if(rtc.q || rtc.dt != 0) {
+        return fail("rtc clears");
+    }
+
+    return 0;
+}
+
+int check_base_latches()
+{
+    using namespace plcopen::core;
+
+    fb::ExecuteLatch execute;
+    execute.cycle(true, fb::ExecuteStep::busy);
+    if(!execute.busy || !execute.active) {
+        return fail("execute busy");
+    }
+    execute.cycle(true, fb::ExecuteStep::done);
+    if(!execute.done || execute.busy || execute.active) {
+        return fail("execute done hold");
+    }
+    execute.cycle(false, fb::ExecuteStep::busy);
+    if(execute.done || execute.error || execute.command_aborted) {
+        return fail("execute falling edge clears");
+    }
+    execute.cycle(true, fb::ExecuteStep::error, rt::ErrorCode::out_of_range);
+    if(!execute.error || execute.error_id != rt::ErrorCode::out_of_range || execute.busy) {
+        return fail("execute error");
+    }
+
+    fb::ReadInfoLatch read;
+    read.cycle(true, false, rt::ErrorCode::invalid_argument);
+    if(!read.error || read.valid) {
+        return fail("read-info error");
+    }
+    read.cycle(false, true);
+    if(read.error || read.valid) {
+        return fail("read-info disable clears");
+    }
+
+    fb::StartSyncPulse pulse;
+    pulse.complete(true);
+    if(!pulse.start_sync) {
+        return fail("start-sync first pulse");
+    }
+    pulse.complete(true);
+    if(pulse.start_sync) {
+        return fail("start-sync one cycle");
+    }
+
+    return 0;
+}
+
+int check_axis_state_and_motion()
+{
+    using namespace plcopen::core;
+
+    axis::AxisModel axis;
+    if(axis.status() != axis::AxisStatus::disabled) {
+        return fail("axis initial disabled");
+    }
+    if(axis.set_power(true) != rt::ErrorCode::ok ||
+       axis.status() != axis::AxisStatus::standstill) {
+        return fail("axis power standstill");
+    }
+
+    axis::AxisCommand move{};
+    move.kind = axis::CommandKind::move_absolute;
+    move.value = 4.0;
+    move.velocity = 2.0;
+    move.acceleration = 1.0;
+    move.deceleration = 1.0;
+    move.jerk = 1.0;
+    const rt::Result<std::uint32_t> accepted = axis.submit(move);
+    if(!accepted || accepted.value() == 0 || axis.status() != axis::AxisStatus::discrete_motion) {
+        return fail("axis move accepted");
+    }
+    for(int i = 0; i < 200 && axis.status() != axis::AxisStatus::standstill; ++i) {
+        axis.cycle();
+    }
+    if(axis.status() != axis::AxisStatus::standstill ||
+       !near(axis.snapshot().command_position, 4.0, 1e-8)) {
+        return fail("axis move complete");
+    }
+
+    axis::AxisCommand velocity{};
+    velocity.kind = axis::CommandKind::move_velocity;
+    velocity.value = -1.0;
+    velocity.velocity = 0.5;
+    const double before_velocity = axis.snapshot().command_position;
+    if(!axis.submit(velocity)) {
+        return fail("axis velocity accepted");
+    }
+    axis.cycle();
+    if(axis.status() != axis::AxisStatus::continuous_motion ||
+       axis.snapshot().command_position >= before_velocity) {
+        return fail("axis velocity direction");
+    }
+
+    axis::AxisCommand halt{};
+    halt.kind = axis::CommandKind::halt;
+    if(!axis.submit(halt)) {
+        return fail("axis halt accepted");
+    }
+    axis.cycle();
+    if(axis.status() != axis::AxisStatus::standstill) {
+        return fail("axis halt standstill");
+    }
+
+    if(axis.trigger_error() != rt::ErrorCode::ok ||
+       axis.status() != axis::AxisStatus::errorstop ||
+       axis.reset_error() != rt::ErrorCode::ok ||
+       axis.status() != axis::AxisStatus::standstill) {
+        return fail("axis error recovery");
+    }
+
+    return 0;
+}
+
+int check_axis_buffering_and_limits()
+{
+    using namespace plcopen::core;
+
+    axis::AxisModel axis;
+    axis::MotionLimits limits{};
+    limits.max_velocity = 2.0;
+    limits.max_acceleration = 1.0;
+    limits.max_deceleration = 1.0;
+    limits.max_jerk = 1.0;
+    limits.max_position = 10.0;
+    limits.max_position_enabled = true;
+    if(axis.configure_limits(limits) != rt::ErrorCode::ok || axis.set_power(true) != rt::ErrorCode::ok) {
+        return fail("axis limits setup");
+    }
+
+    axis::AxisCommand first{};
+    first.kind = axis::CommandKind::move_absolute;
+    first.value = 1.0;
+    first.velocity = 1.0;
+    first.buffer_mode = axis::BufferMode::aborting;
+    axis::AxisCommand second = first;
+    second.kind = axis::CommandKind::move_relative;
+    second.value = 2.0;
+    second.buffer_mode = axis::BufferMode::buffered;
+    axis::AxisCommand third = second;
+    third.value = 3.0;
+    if(!axis.submit(first) || !axis.submit(second) || !axis.submit(third)) {
+        return fail("axis buffered queue");
+    }
+    for(int i = 0; i < 400 && axis.status() != axis::AxisStatus::standstill; ++i) {
+        axis.cycle();
+    }
+    if(!near(axis.snapshot().command_position, 6.0, 1e-8)) {
+        return fail("axis buffered relative endpoint");
+    }
+
+    first.value = 4.0;
+    if(!axis.submit(first)) {
+        return fail("axis aborting setup");
+    }
+    axis.cycle();
+    const double abort_base = axis.snapshot().command_position;
+    axis::AxisCommand aborting_relative = second;
+    aborting_relative.value = 1.0;
+    aborting_relative.buffer_mode = axis::BufferMode::aborting;
+    if(!axis.submit(aborting_relative)) {
+        return fail("axis aborting relative");
+    }
+    for(int i = 0; i < 400 && axis.status() != axis::AxisStatus::standstill; ++i) {
+        axis.cycle();
+    }
+    if(!near(axis.snapshot().command_position, abort_base + 1.0, 1e-8)) {
+        return fail("axis aborting relative base");
+    }
+
+    axis::AxisCommand rejected = first;
+    rejected.value = 11.0;
+    if(axis.submit(rejected).error() != rt::ErrorCode::out_of_range) {
+        return fail("axis limit rejection");
+    }
+    return 0;
+}
+
+int check_group_linear_contract()
+{
+    using namespace plcopen::core;
+
+    axis::AxisModel x;
+    axis::AxisModel y;
+    x.set_power(true);
+    y.set_power(true);
+
+    axis::AxisGroup group;
+    if(group.add_axis(x) != rt::ErrorCode::ok || group.add_axis(y) != rt::ErrorCode::ok ||
+       group.enable() != rt::ErrorCode::ok) {
+        return fail("group enable");
+    }
+
+    axis::GroupCommand linear{};
+    linear.target.size = 2;
+    linear.target.value[0] = 3.0;
+    linear.target.value[1] = 4.0;
+    linear.velocity = 1.0;
+    const rt::Result<std::uint32_t> accepted = group.submit_linear(linear);
+    if(!accepted || accepted.value() == 0 || group.status() != axis::GroupStatus::moving) {
+        return fail("group linear accepted");
+    }
+    bool saw_collinear = false;
+    for(int i = 0; i < 20 && group.status() != axis::GroupStatus::standby; ++i) {
+        group.cycle();
+        if(group.status() == axis::GroupStatus::moving && y.snapshot().command_position > 0.0) {
+            saw_collinear =
+                near(4.0 * x.snapshot().command_position,
+                     3.0 * y.snapshot().command_position,
+                     1e-9);
+        }
+    }
+    if(!saw_collinear || group.status() != axis::GroupStatus::standby ||
+       !near(x.snapshot().command_position, 3.0, 1e-9) ||
+       !near(y.snapshot().command_position, 4.0, 1e-9)) {
+        return fail("group linear completion");
+    }
+
+    linear.target.value[0] = 5.0;
+    linear.target.value[1] = 4.0;
+    linear.buffer_mode = axis::BufferMode::aborting;
+    if(!group.submit_linear(linear)) {
+        return fail("group second command");
+    }
+    if(group.stop() != rt::ErrorCode::ok) {
+        return fail("group stop accepted");
+    }
+    group.cycle();
+    if(group.status() != axis::GroupStatus::standby) {
+        return fail("group stop returns standby");
+    }
+
+    if(!group.submit_linear(linear)) {
+        return fail("group error setup");
+    }
+    x.trigger_error();
+    group.cycle();
+    if(group.status() != axis::GroupStatus::errorstop || group.reset() != rt::ErrorCode::ok ||
+       group.status() != axis::GroupStatus::standby) {
+        return fail("group error reset");
+    }
+
+    return 0;
+}
+
+int check_motion_facades()
+{
+    using namespace plcopen::core;
+
+    axis::AxisModel axis;
+    fb::FbPower power;
+    power.axis_ref = &axis;
+    power.enable = true;
+    power.call();
+    if(!power.valid || !power.status) {
+        return fail("fb power");
+    }
+
+    fb::FbMoveAbsolute move;
+    move.axis_ref = &axis;
+    move.execute = true;
+    move.position = 2.0;
+    move.velocity = 1.0;
+    move.call();
+    if(!move.outputs.command_accepted || move.outputs.command_id == 0) {
+        return fail("fb move accepted");
+    }
+    for(int i = 0; i < 300 && !move.outputs.done; ++i) {
+        axis.cycle();
+        move.call();
+    }
+    if(!move.outputs.done || !near(axis.snapshot().command_position, 2.0, 1e-8)) {
+        return fail("fb move done");
+    }
+    move.execute = false;
+    move.call();
+    if(move.outputs.done) {
+        return fail("fb move falling edge");
+    }
+
+    fb::FbTorqueControl torque;
+    torque.axis_ref = &axis;
+    torque.execute = true;
+    torque.torque = 3.0;
+    torque.call();
+    if(!torque.in_torque || !near(axis.snapshot().actual_torque, 3.0, 1e-12)) {
+        return fail("fb torque");
+    }
+    torque.execute = false;
+    torque.call();
+    if(torque.in_torque || !near(axis.snapshot().actual_torque, 0.0, 1e-12)) {
+        return fail("fb torque clears");
+    }
+
+    axis::AxisModel x;
+    axis::AxisModel y;
+    x.set_power(true);
+    y.set_power(true);
+    axis::AxisGroup group;
+    group.add_axis(x);
+    group.add_axis(y);
+    fb::FbGroupEnable enable;
+    enable.group_ref = &group;
+    enable.execute = true;
+    enable.call();
+    if(!enable.outputs.done || group.status() != axis::GroupStatus::standby) {
+        return fail("fb group enable");
+    }
+
+    fb::FbMoveLinearAbsolute linear;
+    linear.group_ref = &group;
+    linear.execute = true;
+    linear.position.size = 2;
+    linear.position.value[0] = 1.0;
+    linear.position.value[1] = 2.0;
+    linear.call();
+    if(!linear.outputs.command_accepted) {
+        return fail("fb linear accepted");
+    }
+    for(int i = 0; i < 100 && !linear.outputs.done; ++i) {
+        group.cycle();
+        linear.call();
+    }
+    if(!linear.outputs.done || !near(x.snapshot().command_position, 1.0, 1e-9) ||
+       !near(y.snapshot().command_position, 2.0, 1e-9)) {
+        return fail("fb linear done");
+    }
+
+    return 0;
+}
+
+} // namespace
+
+int main()
+{
+    if(check_basic_fb_contracts() != 0 || check_base_latches() != 0 ||
+       check_axis_state_and_motion() != 0 || check_axis_buffering_and_limits() != 0 ||
+       check_group_linear_contract() != 0 || check_motion_facades() != 0) {
+        return 1;
+    }
+    std::printf("PASS r3 semantics tests\n");
+    return 0;
+}
