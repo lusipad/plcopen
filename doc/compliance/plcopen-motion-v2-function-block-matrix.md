@@ -5,6 +5,16 @@ PLCopen states that Part 2 Extensions were merged into Part 1 in release 2.0, so
 
 v0.9.0 completion planning is tracked in [v0.9.0 Part 1/2 Completion Plan](part1-part2-completion-plan.md).
 
+**Rewrite-core carry-over status (R3/R4)**: the implementation and test references in the
+rows below describe the frozen v0.x `src/` line, which remains the recorded completion
+baseline. The rewrite core (`core/`) now carries the full public FB surface of this matrix;
+its per-family acceptance evidence is the `plcopen_core_r3_*` CTest suites plus the
+`plcopen_core_replay_regression` golden replays, and the v0.x → v1 name/behavior mapping
+(including declared boundary changes) is maintained in
+[doc/migration-v0-to-v1.md](../migration-v0-to-v1.md) and
+[doc/planning/r3-migration-matrix.md](../planning/r3-migration-matrix.md). Rows are not
+rewritten in place so the v0.x completion audit stays traceable.
+
 Machine-readable function-block coverage is maintained in [plcopen-motion-v2-function-blocks.yml](plcopen-motion-v2-function-blocks.yml); the generated Markdown table is [generated/plcopen-motion-v2-function-blocks.md](generated/plcopen-motion-v2-function-blocks.md).
 
 Status values:
