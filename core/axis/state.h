@@ -60,6 +60,31 @@ struct MotionLimits
     bool max_position_enabled = false;
 };
 
+// Supported parameter registry (MC_Read/WriteParameter). Unsupported entries
+// return rt::ErrorCode::unsupported instead of guessing (KB-006 carried over).
+// Position-lag monitoring is not modeled in the rewrite core; its parameters
+// stay in the enum so callers get the explicit unsupported error.
+enum class AxisParameter
+{
+    commanded_position,
+    sw_limit_pos,
+    sw_limit_neg,
+    enable_limit_pos,
+    enable_limit_neg,
+    enable_pos_lag_monitoring,
+    max_position_lag,
+    max_velocity_system,
+    max_velocity_appl,
+    actual_velocity,
+    commanded_velocity,
+    max_acceleration_system,
+    max_acceleration_appl,
+    max_deceleration_system,
+    max_deceleration_appl,
+    max_jerk_system,
+    max_jerk_appl,
+};
+
 struct AxisCommand
 {
     CommandKind kind = CommandKind::move_absolute;
@@ -258,6 +283,119 @@ public:
         snapshot_.command_velocity = 0.0;
         snapshot_.actual_velocity = 0.0;
         return rt::ErrorCode::ok;
+    }
+
+    rt::Result<double> read_parameter(AxisParameter parameter) const
+    {
+        switch(parameter) {
+        case AxisParameter::commanded_position:
+            return rt::Result<double>::success(snapshot_.command_position);
+        case AxisParameter::sw_limit_pos:
+            return rt::Result<double>::success(limits_.max_position);
+        case AxisParameter::sw_limit_neg:
+            return rt::Result<double>::success(limits_.min_position);
+        case AxisParameter::enable_limit_pos:
+            return rt::Result<double>::success(limits_.max_position_enabled ? 1.0 : 0.0);
+        case AxisParameter::enable_limit_neg:
+            return rt::Result<double>::success(limits_.min_position_enabled ? 1.0 : 0.0);
+        case AxisParameter::max_velocity_system:
+        case AxisParameter::max_velocity_appl:
+            return rt::Result<double>::success(limits_.max_velocity);
+        case AxisParameter::actual_velocity:
+            return rt::Result<double>::success(snapshot_.actual_velocity);
+        case AxisParameter::commanded_velocity:
+            return rt::Result<double>::success(snapshot_.command_velocity);
+        case AxisParameter::max_acceleration_system:
+        case AxisParameter::max_acceleration_appl:
+            return rt::Result<double>::success(limits_.max_acceleration);
+        case AxisParameter::max_deceleration_system:
+        case AxisParameter::max_deceleration_appl:
+            return rt::Result<double>::success(limits_.max_deceleration);
+        case AxisParameter::max_jerk_system:
+        case AxisParameter::max_jerk_appl:
+            return rt::Result<double>::success(limits_.max_jerk);
+        default:
+            return rt::Result<double>::failure(rt::ErrorCode::unsupported);
+        }
+    }
+
+    rt::Result<bool> read_bool_parameter(AxisParameter parameter) const
+    {
+        switch(parameter) {
+        case AxisParameter::enable_limit_pos:
+            return rt::Result<bool>::success(limits_.max_position_enabled);
+        case AxisParameter::enable_limit_neg:
+            return rt::Result<bool>::success(limits_.min_position_enabled);
+        default:
+            return rt::Result<bool>::failure(rt::ErrorCode::unsupported);
+        }
+    }
+
+    rt::ErrorCode write_parameter(AxisParameter parameter, double value)
+    {
+        if(!std::isfinite(value)) {
+            return rt::ErrorCode::invalid_argument;
+        }
+        switch(parameter) {
+        case AxisParameter::sw_limit_pos:
+            if(limits_.min_position_enabled && limits_.max_position_enabled &&
+               value < limits_.min_position) {
+                return rt::ErrorCode::invalid_argument;
+            }
+            limits_.max_position = value;
+            return rt::ErrorCode::ok;
+        case AxisParameter::sw_limit_neg:
+            if(limits_.min_position_enabled && limits_.max_position_enabled &&
+               value > limits_.max_position) {
+                return rt::ErrorCode::invalid_argument;
+            }
+            limits_.min_position = value;
+            return rt::ErrorCode::ok;
+        case AxisParameter::max_velocity_system:
+        case AxisParameter::max_velocity_appl:
+            if(value <= 0.0) {
+                return rt::ErrorCode::invalid_argument;
+            }
+            limits_.max_velocity = value;
+            return rt::ErrorCode::ok;
+        case AxisParameter::max_acceleration_system:
+        case AxisParameter::max_acceleration_appl:
+            if(value <= 0.0) {
+                return rt::ErrorCode::invalid_argument;
+            }
+            limits_.max_acceleration = value;
+            return rt::ErrorCode::ok;
+        case AxisParameter::max_deceleration_system:
+        case AxisParameter::max_deceleration_appl:
+            if(value <= 0.0) {
+                return rt::ErrorCode::invalid_argument;
+            }
+            limits_.max_deceleration = value;
+            return rt::ErrorCode::ok;
+        case AxisParameter::max_jerk_system:
+        case AxisParameter::max_jerk_appl:
+            if(value <= 0.0) {
+                return rt::ErrorCode::invalid_argument;
+            }
+            limits_.max_jerk = value;
+            return rt::ErrorCode::ok;
+        default:
+            return rt::ErrorCode::unsupported;
+        }
+    }
+
+    rt::ErrorCode write_bool_parameter(AxisParameter parameter, bool value)
+    {
+        switch(parameter) {
+        case AxisParameter::enable_limit_pos:
+            limits_.max_position_enabled = value;
+            return rt::ErrorCode::ok;
+        case AxisParameter::enable_limit_neg:
+            limits_.min_position_enabled = value;
+            return rt::ErrorCode::ok;
+        default:
+            return rt::ErrorCode::unsupported;
+        }
     }
 
     rt::ErrorCode set_override(double percent)

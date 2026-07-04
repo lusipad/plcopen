@@ -59,6 +59,11 @@
 | `FbMoveAdditive` | `fb::FbMoveAdditive` | aborting 时目标基于被中止命令的原承诺终点解析 |
 | `FbMoveContinuousAbsolute` / `FbMoveContinuousRelative` | `fb::FbMoveContinuousAbsolute` / `FbMoveContinuousRelative` | 到达目标后以 `end_velocity` 保持；`Done` 表示"保持终速中"（非锁存完成态），被接管报 `CommandAborted`；`ContinuousUpdate` 支持在线改目标（relative 从原命令起点重解析） |
 | `FbMoveSuperimposed` / `FbHaltSuperimposed` | `fb::FbMoveSuperimposed` / `FbHaltSuperimposed` | 独立偏移剖面叠加在基础运动之上；halt 只停偏移且当周期完成（不建模减速段），已累计偏移保留 |
+| `FbReadParameter` / `FbReadBoolParameter` / `FbWriteParameter` / `FbWriteBoolParameter` | 同名（`fb/parameter.h`） | 参数号换 `axis::AxisParameter` 枚举；不支持参数报 `rt::ErrorCode::unsupported`；位置滞后监控两参数在新核不建模（显式 unsupported） |
+| `FbReadActualPosition` / `FbReadActualVelocity` / `FbReadActualTorque` | 同名 | Enable 型快照读 |
+| `FbReadCommandPosition` / `FbReadCommandVelocity`（项目扩展） | 同名 | 同上 |
+| `FbReadStatus` / `FbReadAxisError` | 同名 | 状态布尔按 PLCopen 轴状态逐一暴露；`axis_error` 读 `snapshot().error` |
+| `FbSetPosition` | `fb::FbSetPosition` | 支持 `relative`；运动中拒绝（含同步与叠加偏移进行中） |
 
 同步族已声明的行为边界（新核为最小语义层，回放仲裁外的变化以此为准）：
 
@@ -74,7 +79,7 @@
 - 轨迹表族：`FbPositionProfile` / `FbVelocityProfile` / `FbAccelerationProfile`
 - 数字凸轮开关：`FbDigitalCamSwitch`（依赖 Servo 数字输出抽象，随 L7 适配层排期）
 - 探针与触发：`FbTouchProbe` / `FbAbortTrigger`、`FbEmergencyStop`
-- 参数与状态读写族：`FbRead*` / `FbWrite*`（新核以 `AxisModel` 查询接口与 `snapshot()` 部分替代）
+- 数字 IO 与轴信息：`FbReadDigitalInput/Output`、`FbWriteDigitalOutput`、`FbReadAxisInfo`、`FbReadMotionState`（依赖 Servo 扩展通道/信号源抽象，随 L7 适配层排期）
 - 组管理 FB 形态：`FbAddAxisToGroup` / `FbRemoveAxisFromGroup` / `FbGroupRead*`（新核用 `AxisGroup::add_axis/remove_axis` 直接方法）
 
 对应旧线语义边界（`KB-001` 起）见 [README 已知边界](../README.md#已知边界)；未迁移项在新核中调用不存在的符号会在编译期失败，不会静默降级。

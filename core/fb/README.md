@@ -18,6 +18,12 @@ Boundaries carried from the v0.x executable spec:
   acceleration/jerk-shaped approach profiles are not modeled in the rewrite core.
 - Phase inputs of the phasing blocks are latched on the rising edge.
 
+`parameter.h` carries the parameter and state read/write facades: enable-based reads
+(`FbReadParameter`, `FbReadBoolParameter`, `FbReadActual*`, `FbReadCommand*`, `FbReadStatus`,
+`FbReadAxisError`) and execute-based writes (`FbWriteParameter`, `FbWriteBoolParameter`,
+`FbSetPosition`). The supported parameter registry lives on `axis::AxisModel`; unsupported
+parameters report `rt::ErrorCode::unsupported` instead of guessing (KB-006 carried over).
+
 Non-goals:
 
 - No one-class-per-legacy-FB copy until the public v1 facade is switched in R4.

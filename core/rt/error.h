@@ -11,6 +11,7 @@ enum class ErrorCode
     capacity_exceeded,
     infeasible,
     precondition_failed,
+    unsupported,
 };
 
 template <typename T> class Result
