@@ -67,19 +67,16 @@ jobs:
           cmake --install build --prefix "$install_prefix"
           cmake -S test_package/find_package -B build/ci-find -DCMAKE_PREFIX_PATH="$install_prefix"
           cmake --build build/ci-find --parallel
-          LD_LIBRARY_PATH="$install_prefix/lib:${LD_LIBRARY_PATH:-}" ./build/ci-find/plcopen_find_package_smoke
+          ./build/ci-find/plcopen_find_package_smoke
 
       - name: Verify FetchContent consumer
         if: matrix.compiler == 'gcc'
         run: |
           cmake -S test_package/fetchcontent -B build/ci-fetch -DPLCOPEN_SOURCE_DIR="$PWD"
           cmake --build build/ci-fetch --parallel
-          library="$(find build/ci-fetch -name 'libplcopen.so' -print -quit)"
           consumer="$(find build/ci-fetch -name 'plcopen_fetchcontent_smoke' -type f -print -quit)"
-          test -n "$library"
           test -n "$consumer"
-          library_dir="$(dirname "$library")"
-          LD_LIBRARY_PATH="$library_dir:${LD_LIBRARY_PATH:-}" "$consumer"
+          "$consumer"
 
       - name: Build and test Python bindings
         if: matrix.compiler == 'gcc'

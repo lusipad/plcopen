@@ -50,7 +50,6 @@ jobs:
           if (-not $Consumer) {
             throw "find_package consumer executable was not produced"
           }
-          $env:PATH = "$(Join-Path $InstallPrefix 'bin');$env:PATH"
           & $Consumer.FullName
           if ($LASTEXITCODE -ne 0) {
             throw "find_package consumer failed"
@@ -61,12 +60,10 @@ jobs:
           cmake -S test_package/fetchcontent -B build/ci-fetch "-DPLCOPEN_SOURCE_DIR=$env:GITHUB_WORKSPACE"
           cmake --build build/ci-fetch --config Release --parallel -- /p:TrackFileAccess=false /nodeReuse:false
 
-          $Library = Get-ChildItem build/ci-fetch -Recurse -File -Filter plcopen.dll | Select-Object -First 1
           $Consumer = Get-ChildItem build/ci-fetch -Recurse -File -Filter plcopen_fetchcontent_smoke.exe | Select-Object -First 1
-          if (-not $Library -or -not $Consumer) {
+          if (-not $Consumer) {
             throw "FetchContent consumer artifacts were not produced"
           }
-          $env:PATH = "$($Library.DirectoryName);$env:PATH"
           & $Consumer.FullName
           if ($LASTEXITCODE -ne 0) {
             throw "FetchContent consumer failed"

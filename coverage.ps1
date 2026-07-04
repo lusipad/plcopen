@@ -85,8 +85,8 @@ function Find-TestExecutable {
     )
 
     $Candidates = @(
-        (Join-Path $ResolvedBuildDir "src\$Configuration\test_basic.exe"),
-        (Join-Path $ResolvedBuildDir "src\test_basic.exe")
+        (Join-Path $ResolvedBuildDir "core\$Configuration\plcopen_core_r3_tests.exe"),
+        (Join-Path $ResolvedBuildDir "core\plcopen_core_r3_tests.exe")
     )
 
     foreach ($Candidate in $Candidates) {
@@ -95,7 +95,7 @@ function Find-TestExecutable {
         }
     }
 
-    $Discovered = Get-ChildItem -Path $ResolvedBuildDir -Recurse -File -Filter test_basic.exe -ErrorAction SilentlyContinue |
+    $Discovered = Get-ChildItem -Path $ResolvedBuildDir -Recurse -File -Filter plcopen_core_r3_tests.exe -ErrorAction SilentlyContinue |
         Select-Object -First 1 -ExpandProperty FullName
     if ($Discovered) {
         return $Discovered
@@ -122,12 +122,12 @@ if (-not (Test-Path $ResolvedBuildDir)) {
     }
 }
 
-Write-Info "Building test_basic ($Configuration)..."
+Write-Info "Building plcopen_core_r3_tests ($Configuration)..."
 $Generator = Get-CMakeGenerator -ResolvedBuildDir $ResolvedBuildDir
 $BuildArgs = @(
     "--build", $ResolvedBuildDir,
     "--config", $Configuration,
-    "--target", "test_basic"
+    "--target", "plcopen_core_r3_tests"
 )
 if ($Generator -notlike "NMake*") {
     $BuildArgs += "--parallel"
@@ -155,7 +155,7 @@ if (-not $TestExePath -or -not (Test-Path $TestExePath)) {
 }
 
 Write-Info "Collecting coverage from $TestExePath"
-Push-Location (Join-Path $ResolvedBuildDir "src")
+Push-Location $ResolvedBuildDir
 try {
     & $CoverageTool collect $TestExePath --output $CoverageXmlPath --output-format cobertura --nologo
     if ($LASTEXITCODE -ne 0) {
@@ -167,12 +167,16 @@ finally {
 }
 
 $CoverageXml = [xml](Get-Content $CoverageXmlPath)
-$PlcopenPackage = @($CoverageXml.coverage.packages.package) | Where-Object { $_.name -eq "plcopen" } | Select-Object -First 1
-if (-not $PlcopenPackage) {
-    throw "Coverage report did not contain the plcopen package."
+$CoverageClasses = foreach ($Package in @($CoverageXml.coverage.packages.package)) {
+    @($Package.classes.class)
 }
 
-$FileCoverage = foreach ($class in @($PlcopenPackage.classes.class)) {
+$FileCoverage = foreach ($class in $CoverageClasses) {
+    $RelativeFile = Get-RelativeFilePath -ProjectRoot $ProjectRoot -FullPath $class.filename
+    if ($RelativeFile -notlike "core\*" -and $RelativeFile -notlike "core/*") {
+        continue
+    }
+
     $covered = 0
     $valid = 0
 
@@ -184,10 +188,14 @@ $FileCoverage = foreach ($class in @($PlcopenPackage.classes.class)) {
     }
 
     [pscustomobject]@{
-        File = Get-RelativeFilePath -ProjectRoot $ProjectRoot -FullPath $class.filename
+        File = $RelativeFile
         Covered = $covered
         Valid = $valid
     }
+}
+
+if (-not $FileCoverage) {
+    throw "Coverage report did not contain core files."
 }
 
 $AggregatedFiles = $FileCoverage |
@@ -215,7 +223,7 @@ $Summary = [ordered]@{
     generatedAt = (Get-Date).ToString("s")
     configuration = $Configuration
     minimumLineRate = [math]::Round($MinimumLineRate, 4)
-    module = "plcopen"
+    module = "plcopen_core"
     lineRate = [math]::Round($LineRate, 4)
     linesCovered = [int]$LinesCovered
     linesValid = [int]$LinesValid
@@ -233,7 +241,7 @@ $SummaryLines = @(
     "",
     "- Generated: $($Summary.generatedAt)",
     "- Configuration: $Configuration",
-    "- Module: plcopen",
+    "- Module: plcopen_core",
     ("- Line coverage: {0:P2} ({1}/{2})" -f $LineRate, $LinesCovered, $LinesValid),
     ("- Threshold: {0:P2}" -f $MinimumLineRate),
     ("- Result: {0}" -f ($(if ($Summary.passed) { "PASS" } else { "FAIL" }))),
@@ -249,7 +257,7 @@ foreach ($file in $TopWeakFiles) {
 
 $SummaryLines | Set-Content $SummaryMdPath
 
-Write-Info ("plcopen line coverage: {0:P2} ({1}/{2})" -f $LineRate, $LinesCovered, $LinesValid)
+Write-Info ("plcopen_core line coverage: {0:P2} ({1}/{2})" -f $LineRate, $LinesCovered, $LinesValid)
 Write-Info "Cobertura report: $CoverageXmlPath"
 Write-Info "Summary: $SummaryMdPath"
 
