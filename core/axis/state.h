@@ -420,12 +420,59 @@ public:
         }
     }
 
+    // MC_SetOverride carries the KB-003 contract: newly planned commands scale
+    // by the override, velocity commands respond per cycle through
+    // signed_velocity(), and an active profile-driven command re-plans from
+    // its current state under the re-scaled velocity limit (an override drop
+    // below the current velocity plans a deceleration entry). A failed replan
+    // keeps the previous override and the running profile untouched.
     rt::ErrorCode set_override(double percent)
     {
         if(!std::isfinite(percent) || percent <= 0.0 || percent > 100.0) {
             return rt::ErrorCode::invalid_argument;
         }
+        const double previous = override_;
         override_ = percent;
+        if(previous == percent) {
+            return rt::ErrorCode::ok;
+        }
+
+        const bool profile_driven =
+            active_ && active_command_.kind != CommandKind::move_velocity &&
+            active_command_.kind != CommandKind::halt && active_command_.kind != CommandKind::stop;
+        if(!profile_driven) {
+            return rt::ErrorCode::ok;
+        }
+
+        const double direction =
+            active_target_ >= snapshot_.command_position ? 1.0 : -1.0;
+        const double end_velocity =
+            is_continuous_kind(active_command_.kind)
+                ? direction * active_command_.end_velocity * (override_ / 100.0)
+                : 0.0;
+        if(continuous_holding_) {
+            continuous_hold_velocity_ = end_velocity;
+            return rt::ErrorCode::ok;
+        }
+
+        otg::Limits1D limits{active_command_.velocity * (override_ / 100.0),
+                             active_command_.acceleration,
+                             active_command_.deceleration,
+                             active_command_.jerk};
+        const rt::Result<otg::Profile1D> profile = otg::plan_time_optimal(
+            {snapshot_.command_position, snapshot_.command_velocity,
+             snapshot_.command_acceleration},
+            {active_target_, end_velocity, 0.0},
+            limits);
+        if(!profile) {
+            override_ = previous;
+            return profile.error();
+        }
+        active_profile_ = profile.value();
+        active_tick_ = 0;
+        active_last_sample_ = snapshot_.command_position;
+        continuous_hold_velocity_ = end_velocity;
+        snapshot_.active_command_reached_target = false;
         return rt::ErrorCode::ok;
     }
 
@@ -900,6 +947,23 @@ public:
     std::uint32_t superimposed_completed_id() const
     {
         return superimposed_completed_id_;
+    }
+
+    // ContinuousUpdate for the active velocity command (MC_MoveVelocity,
+    // KB-009): the new signed direction and magnitude apply from the next
+    // cycle; the override keeps scaling per cycle.
+    rt::ErrorCode update_active_velocity(std::uint32_t command_id,
+                                         double direction_value,
+                                         double velocity)
+    {
+        if(!active_ || snapshot_.active_command_id != command_id || command_id == 0 ||
+           active_command_.kind != CommandKind::move_velocity ||
+           !std::isfinite(direction_value) || !std::isfinite(velocity) || velocity <= 0.0) {
+            return rt::ErrorCode::invalid_argument;
+        }
+        active_command_.value = direction_value;
+        active_command_.velocity = velocity;
+        return rt::ErrorCode::ok;
     }
 
     // Retargets the active move_continuous_* or move_absolute command

@@ -250,14 +250,32 @@ class FbMoveVelocity : public FbMoveAbsolute
 {
 public:
     double direction = 1.0;
+    bool continuous_update = false;
 
     void call()
     {
         if(rising_edge()) {
+            last_velocity_ = velocity;
+            last_direction_ = direction;
             submit(axis::CommandKind::move_velocity, direction);
+        } else if(execute && continuous_update && tracked_command_id_ != 0 &&
+                  axis_ref != nullptr &&
+                  (velocity != last_velocity_ || direction != last_direction_)) {
+            last_velocity_ = velocity;
+            last_direction_ = direction;
+            const rt::ErrorCode updated =
+                axis_ref->update_active_velocity(tracked_command_id_, direction, velocity);
+            if(updated != rt::ErrorCode::ok) {
+                outputs.error = true;
+                outputs.error_id = updated;
+            }
         }
         observe_axis();
     }
+
+private:
+    double last_velocity_ = 0.0;
+    double last_direction_ = 0.0;
 };
 
 class FbHome : public FbMoveAbsolute

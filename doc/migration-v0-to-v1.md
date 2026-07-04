@@ -78,7 +78,7 @@
 [README 已知边界](../README.md#已知边界)，测试与 PR 说明应引用这些编号）：
 
 - `KB-019`：同步从轴只接受 aborting 命令接管（非 aborting 显式报 `invalid_argument`）；组级 `stop` 不中止成员级同步；同步接入与 aborting 基础命令清除叠加偏移。
-- `KB-020`：`MC_SetOverride` 只作用于新规划的命令，不重规划 active 命令（含连续运动保持段）。
+- `KB-020`：`MC_SetOverride` 承接 v0.x 的 active 重规划合同（离散/homing/连续剖面从当前状态按新限重规划，velocity 命令逐周期响应）；`MC_MoveVelocity` 的 `ContinuousUpdate` 同步承接（KB-009）。
 - `KB-021`：同步逼近段按主轴行程线性插值 + 可选每周期速度上限，无加速度/加加速度整形；相位过渡为速度斜坡。
 - `KB-022`：TouchProbe 触发源为固定 4 通道数字输入组，记录 capture 周期 actual position，无 Servo 锁存回读。
 - `KB-023`：位置滞后监控参数显式 `unsupported`；错误码粗映射（`PARAMETER_NOT_SUPPORT` → `unsupported`，组前置失败 → `precondition_failed`）。

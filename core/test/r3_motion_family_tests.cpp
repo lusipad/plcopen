@@ -363,6 +363,111 @@ int check_superimposed_boundaries()
     return 0;
 }
 
+int check_override_replanning()
+{
+    axis::AxisModel axis;
+    axis.set_power(true);
+
+    // Override drop mid-move replans under the tighter envelope and still
+    // reaches the target exactly.
+    if(!axis.submit(make_move(axis::CommandKind::move_absolute, 8.0, 0.2))) {
+        return fail("override move accepted");
+    }
+    for(int i = 0; i < 30; ++i) {
+        axis.cycle();
+    }
+    if(axis.status() != axis::AxisStatus::discrete_motion) {
+        return fail("override move active");
+    }
+    if(axis.set_override(25.0) != rt::ErrorCode::ok) {
+        return fail("override drop accepted");
+    }
+    double max_velocity_after_settle = 0.0;
+    bool settled = false;
+    for(int i = 0; i < 4000 && axis.status() != axis::AxisStatus::standstill; ++i) {
+        axis.cycle();
+        const double speed = std::fabs(axis.snapshot().command_velocity);
+        if(speed <= 0.05 + 1e-9) {
+            settled = true;
+        }
+        if(settled && speed > max_velocity_after_settle) {
+            max_velocity_after_settle = speed;
+        }
+    }
+    if(axis.status() != axis::AxisStatus::standstill ||
+       !near(axis.snapshot().command_position, 8.0, 1e-6)) {
+        return fail("override replanned move reaches target");
+    }
+    if(!settled || max_velocity_after_settle > 0.05 + 1e-9) {
+        return fail("override drop enforces the rescaled envelope");
+    }
+
+    // Velocity commands respond to the override per cycle without a replan.
+    axis::AxisCommand velocity{};
+    velocity.kind = axis::CommandKind::move_velocity;
+    velocity.value = 1.0;
+    velocity.velocity = 0.5;
+    if(!axis.submit(velocity)) {
+        return fail("override velocity accepted");
+    }
+    axis.cycle();
+    if(!near(axis.snapshot().command_velocity, 0.125, 1e-12)) {
+        return fail("override velocity live scaling (25%)");
+    }
+    if(axis.set_override(100.0) != rt::ErrorCode::ok) {
+        return fail("override restore accepted");
+    }
+    axis.cycle();
+    if(!near(axis.snapshot().command_velocity, 0.5, 1e-12)) {
+        return fail("override velocity live scaling (100%)");
+    }
+
+    return 0;
+}
+
+int check_move_velocity_continuous_update()
+{
+    axis::AxisModel axis;
+    axis.set_power(true);
+
+    fb::FbMoveVelocity move;
+    move.axis_ref = &axis;
+    move.velocity = 0.5;
+    move.direction = 1.0;
+    move.continuous_update = true;
+    move.execute = true;
+    move.call();
+    axis.cycle();
+    if(!near(axis.snapshot().command_velocity, 0.5, 1e-12)) {
+        return fail("velocity cu baseline");
+    }
+
+    move.velocity = 0.2;
+    move.direction = -1.0;
+    move.call();
+    axis.cycle();
+    if(!near(axis.snapshot().command_velocity, -0.2, 1e-12)) {
+        return fail("velocity cu applies new velocity and direction");
+    }
+
+    // Latched behavior without ContinuousUpdate.
+    fb::FbMoveVelocity latched;
+    latched.axis_ref = &axis;
+    latched.velocity = 0.3;
+    latched.direction = 1.0;
+    latched.execute = true;
+    latched.call();
+    axis.cycle();
+    latched.velocity = 0.9;
+    latched.call();
+    axis.cycle();
+    if(!near(axis.snapshot().command_velocity, 0.3, 1e-12)) {
+        return fail("velocity without cu stays latched");
+    }
+
+    return 0;
+}
+
 } // namespace
 
 int main()
@@ -370,7 +475,8 @@ int main()
     if(check_move_additive() != 0 || check_move_superimposed() != 0 ||
        check_halt_superimposed() != 0 || check_move_continuous() != 0 ||
        check_move_continuous_relative_and_update() != 0 ||
-       check_superimposed_boundaries() != 0) {
+       check_superimposed_boundaries() != 0 || check_override_replanning() != 0 ||
+       check_move_velocity_continuous_update() != 0) {
         return 1;
     }
     std::printf("PASS r3 motion family tests\n");
