@@ -74,14 +74,16 @@
 | `FbAddAxisToGroup` / `FbRemoveAxisFromGroup` / `FbGroupReset` | 同名（`fb/group.h`） | 薄门面包装 `AxisGroup::add_axis/remove_axis/reset`；移除仍要求组 disabled |
 | `FbGroupReadStatus` / `FbGroupReadActualPosition` / `FbGroupReadCommandPosition` | 同名 | Enable 型；`moving`/`standby` 合入成员级 gear/cam 同步状态（承接旧线可观察组状态） |
 
-同步族已声明的行为边界（新核为最小语义层，回放仲裁外的变化以此为准）：
+已声明的行为边界（新核为最小语义层，回放仲裁外的变化以此为准；编号锚点见
+[README 已知边界](../README.md#已知边界)，测试与 PR 说明应引用这些编号）：
 
-- 逼近段（`MasterStartDistance` 窗口）按主轴行程线性插值 + 可选每周期速度上限；不建模加速度/加加速度整形的逼近轮廓（`Acceleration/Deceleration/Jerk` 输入不再暴露）。
-- 同步中的从轴只接受 aborting 命令接管；非 aborting 运动命令显式报 `invalid_argument`（旧线为排队等待，但同步无定义完成点）。
-- 组级 `stop` 不再中止成员级 gear/cam 同步（新核组命令与成员同步分属两个写者）；`disable` 或从轴 aborting 命令/`sync_out` 会解除同步。
-- 组前置校验失败（不同组/组未使能）报 `rt::ErrorCode::precondition_failed`（旧线 `AXIS_GROUP_MISMATCH` / `GROUP_DISABLED`）。
-- 叠加偏移与同步互斥：同步接入清除运行中的叠加偏移；aborting 基础命令同样清除叠加偏移。
-- `MC_SetOverride` 对已激活命令的重规划未承接（新核 override 只作用于新规划的命令，含连续运动的保持段）。
+- `KB-019`：同步从轴只接受 aborting 命令接管（非 aborting 显式报 `invalid_argument`）；组级 `stop` 不中止成员级同步；同步接入与 aborting 基础命令清除叠加偏移。
+- `KB-020`：`MC_SetOverride` 只作用于新规划的命令，不重规划 active 命令（含连续运动保持段）。
+- `KB-021`：同步逼近段按主轴行程线性插值 + 可选每周期速度上限，无加速度/加加速度整形；相位过渡为速度斜坡。
+- `KB-022`：TouchProbe 触发源为固定 4 通道数字输入组，记录 capture 周期 actual position，无 Servo 锁存回读。
+- `KB-023`：位置滞后监控参数显式 `unsupported`；错误码粗映射（`PARAMETER_NOT_SUPPORT` → `unsupported`，组前置失败 → `precondition_failed`）。
+- `KB-024`：轨迹表为定长段数组（≤8 段）、时长按周期计数、`ContinuousUpdate` 仅单段、终段速度无限保持。
+- `KB-025`：连续运动与速度/加速度剖面的 `Done` 为持续态非锁存完成态；`MC_HaltSuperimposed` 当周期完成。
 
 至此 v0.x 公开 FB 面已全量由新核承接。旧线仍可经 `PLCOPEN_BUILD_LEGACY=ON` 构建作回放
 基线；真实硬件的 Servo 虚接口（D4 决策中的窄虚边界）仍是 L7 适配层设计项（Phase B5/B7），

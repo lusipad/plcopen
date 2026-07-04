@@ -417,6 +417,17 @@ target_link_libraries(app PRIVATE plcopen::plcopen)
 - `KB-017`：`mStartSync` 当前建模为 `MC_GearInPos` / `MC_CamIn` 接近窗口启动和同步进入时的一拍脉冲。
 - `KB-018`：`pyplcopen` 当前只暴露新核单轴 smoke facade，不是完整 Python PLCopen SDK。
 
+以下条目描述新核 `core/` 相对 v0.x 行为的**已声明边界**（迁移背景见
+[doc/migration-v0-to-v1.md](doc/migration-v0-to-v1.md)；对应旧口径条目在括号中注明）：
+
+- `KB-019`：新核中同步（gear/cam/combine）从轴只接受 aborting 命令接管，非 aborting 运动命令显式报 `invalid_argument`（同步无定义完成点，旧线为排队等待）；组级 `stop` 不中止成员级同步（组命令与成员同步分属两个写者），`disable`、从轴 aborting 命令或 `sync_out` 会解除；同步接入与 aborting 基础命令都会清除运行中的叠加偏移。
+- `KB-020`：新核 `MC_SetOverride` 只作用于**新规划**的命令（含连续运动保持段的规划时点），不重规划任何 active 命令（修订 `KB-003` 的 active 重规划部分）。
+- `KB-021`：新核同步逼近段（`MasterStartDistance` 窗口）按主轴行程线性插值并支持可选每周期速度上限，不建模加速度/加加速度整形的接入轨迹（修订 `KB-013` / `KB-016` 的 profiled approach）；相位过渡（`MC_Phasing*`）为速度斜坡，加速度/减速度/jerk 输入不再暴露（修订 `KB-014`）。
+- `KB-022`：新核 `MC_TouchProbe` 触发源为 `AxisModel` 固定 4 通道数字输入组（`set_digital_input`），记录 capture 周期的 actual position，不承接 Servo 锁存位置回读（修订 `KB-004`）。
+- `KB-023`：新核参数注册表不建模位置滞后监控（`ENABLE_POS_LAG_MONITORING` / `MAX_POSITION_LAG` 显式报 `unsupported`，修订 `KB-006`）；错误码粗映射：`PARAMETER_NOT_SUPPORT` → `unsupported`，`AXIS_GROUP_MISMATCH` / `GROUP_DISABLED` → `precondition_failed`。
+- `KB-024`：新核轨迹表为调用方持有的定长段数组（≤8 段，替代 `mNext` 链表），段时长为周期计数且 `TimeScale` 作用于时长；`ContinuousUpdate` 仅支持单段剖面；速度/加速度剖面终段无限保持（修订 `KB-010`）。
+- `KB-025`：新核 `MC_MoveContinuous*` 与速度/加速度剖面的 `Done` 表示"保持终速中"的持续状态而非锁存完成态，被接管时报 `CommandAborted`；`MC_HaltSuperimposed` 当周期完成，不建模叠加偏移的减速段（补充 `KB-008`）。
+
 ---
 
 ## 文档
