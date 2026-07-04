@@ -20,6 +20,7 @@
 # 
 
 include(plcopen.cmake)
+option(PLCOPEN_INSTALL_LEGACY "Install legacy v0.x src target and headers" OFF)
 
 file(GLOB_RECURSE PLCOPEN_HEADER ${CMAKE_CURRENT_SOURCE_DIR}/*.h)
 source_group("Header Files" FILES ${PLCOPEN_HEADER})
@@ -85,57 +86,6 @@ if(BUILD_TESTING AND PLCOPEN_BUILD_DEMOS)
         COMMAND golden_replay_recorder --output ${CMAKE_CURRENT_BINARY_DIR}/golden_replay_recorder_smoke.jsonl)
 endif()
 
-if(PLCOPEN_BUILD_PYTHON_BINDINGS)
-    include(FetchContent)
-    find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
-
-    set(PYBIND11_FINDPYTHON ON CACHE BOOL "" FORCE)
-    FetchContent_Declare(
-        pybind11
-        GIT_REPOSITORY https://github.com/pybind/pybind11.git
-        GIT_TAG v2.13.6
-    )
-    if(DEFINED CMAKE_WARN_DEPRECATED)
-        set(_PLCOPEN_WARN_DEPRECATED_DEFINED TRUE)
-        set(_PLCOPEN_WARN_DEPRECATED_VALUE "${CMAKE_WARN_DEPRECATED}")
-    else()
-        set(_PLCOPEN_WARN_DEPRECATED_DEFINED FALSE)
-    endif()
-    set(CMAKE_WARN_DEPRECATED OFF CACHE BOOL "" FORCE)
-    FetchContent_MakeAvailable(pybind11)
-    if(_PLCOPEN_WARN_DEPRECATED_DEFINED)
-        set(CMAKE_WARN_DEPRECATED "${_PLCOPEN_WARN_DEPRECATED_VALUE}" CACHE BOOL "" FORCE)
-    else()
-        unset(CMAKE_WARN_DEPRECATED CACHE)
-    endif()
-    unset(_PLCOPEN_WARN_DEPRECATED_DEFINED)
-    unset(_PLCOPEN_WARN_DEPRECATED_VALUE)
-
-    pybind11_add_module(pyplcopen python/pyplcopen.cpp)
-    target_link_libraries(pyplcopen PRIVATE ${PROJECT_NAME})
-
-    if(BUILD_TESTING)
-        file(GENERATE
-            OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/pyplcopen_smoke_$<CONFIG>.py
-            CONTENT [=[
-import sys
-sys.path.insert(0, r"$<TARGET_FILE_DIR:pyplcopen>")
-import pyplcopen
-
-axis = pyplcopen.AxisSim(100.0)
-axis.power_on()
-axis.move_absolute(1.0, 2.0, 4.0, 4.0, 32.0)
-assert abs(axis.actual_position() - 1.0) < 1e-2
-axis.move_velocity(1.0, 4.0, 4.0, 32.0)
-assert axis.command_velocity() > 0.0
-assert axis.command_acceleration() >= 0.0
-axis.halt(4.0, 32.0)
-assert axis.status() == pyplcopen.AxisStatus.STANDSTILL
-]=])
-        add_test(NAME pyplcopen_smoke COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/pyplcopen_smoke_$<CONFIG>.py)
-    endif()
-endif()
-
 if(PLCOPEN_BUILD_TESTS AND BUILD_TESTING)
     include(FetchContent)
 
@@ -177,40 +127,42 @@ if(PLCOPEN_BUILD_TESTS AND BUILD_TESTING)
     endif()
 endif()
 
-install(TARGETS ${PROJECT_NAME}
-    EXPORT plcopenTargets
-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-)
+if(PLCOPEN_INSTALL_LEGACY)
+    install(TARGETS ${PROJECT_NAME}
+        EXPORT plcopenTargets
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    )
 
-install(FILES
-    fb/FunctionBlock.h 
-    fb/FbBasic.h
-    fb/FbMultiAxis.h
-    fb/FbPLCOpenBase.h 
-    fb/FbSingleAxis.h
-    fb/PLCTypes.h
-    misc/Event.h
-    misc/ExeclQueue.h
-    misc/LinkList.h
-    misc/Queue.h
-    motion/AxesGroup.h
-    motion/CamTable.h
-    motion/Servo.h 
-    motion/Global.h 
-    motion/Scheduler.h
-    motion/axis/Axis.h
-    motion/axis/AxisBase.h
-    motion/axis/AxisHoming.h
-    motion/axis/AxisMotion.h
-    motion/axis/AxisMotionBase.h
-    motion/axis/AxisMove.h
-    motion/axis/AxisStatus.h
-    motion/axis/AxisSync.h
-    motion/interpolation/MathUtils.h
-    motion/interpolation/ProfilePlanner.h
-    motion/interpolation/ProfilesPlanner.h
-    motion/interpolation/GroupLinearPlanner.h
-    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/plcopen
-)
+    install(FILES
+        fb/FunctionBlock.h
+        fb/FbBasic.h
+        fb/FbMultiAxis.h
+        fb/FbPLCOpenBase.h
+        fb/FbSingleAxis.h
+        fb/PLCTypes.h
+        misc/Event.h
+        misc/ExeclQueue.h
+        misc/LinkList.h
+        misc/Queue.h
+        motion/AxesGroup.h
+        motion/CamTable.h
+        motion/Servo.h
+        motion/Global.h
+        motion/Scheduler.h
+        motion/axis/Axis.h
+        motion/axis/AxisBase.h
+        motion/axis/AxisHoming.h
+        motion/axis/AxisMotion.h
+        motion/axis/AxisMotionBase.h
+        motion/axis/AxisMove.h
+        motion/axis/AxisStatus.h
+        motion/axis/AxisSync.h
+        motion/interpolation/MathUtils.h
+        motion/interpolation/ProfilePlanner.h
+        motion/interpolation/ProfilesPlanner.h
+        motion/interpolation/GroupLinearPlanner.h
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/plcopen/legacy
+    )
+endif()
