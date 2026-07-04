@@ -63,7 +63,9 @@ axis::AxisCommand make_move(double target, double velocity)
 
 void run_single_axis_move(Recording &recording)
 {
-    recording.id = "core-single-axis-move";
+    // v2: declared change — discrete moves plan through otg::plan_time_optimal
+    // (KB-026); v1 recorded the baseline single-quintic profiles.
+    recording.id = "core-single-axis-move-v2";
     axis::AxisModel axis;
     axis.set_power(true);
     axis.submit(make_move(3.0, 0.05));

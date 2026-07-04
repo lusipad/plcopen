@@ -24,8 +24,14 @@
     {
       "id": "core-single-axis-move",
       "path": "core-single-axis-move.jsonl",
+      "source": "plcopen_core_replay_regression --record (baseline quintic planner)",
+      "coverage": ["rewrite-core", "single-axis OTG profile setpoints", "superseded by core-single-axis-move-v2 (KB-026)"]
+    },
+    {
+      "id": "core-single-axis-move-v2",
+      "path": "core-single-axis-move-v2.jsonl",
       "source": "plcopen_core_replay_regression --record",
-      "coverage": ["rewrite-core", "single-axis OTG profile setpoints"]
+      "coverage": ["rewrite-core", "single-axis time-optimal OTG profile setpoints (KB-026)"]
     },
     {
       "id": "core-velocity-stop",

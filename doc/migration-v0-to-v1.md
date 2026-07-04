@@ -84,6 +84,7 @@
 - `KB-023`：位置滞后监控参数显式 `unsupported`；错误码粗映射（`PARAMETER_NOT_SUPPORT` → `unsupported`，组前置失败 → `precondition_failed`）。
 - `KB-024`：轨迹表为定长段数组（≤8 段）、时长按周期计数、`ContinuousUpdate` 仅单段、终段速度无限保持。
 - `KB-025`：连续运动与速度/加速度剖面的 `Done` 为持续态非锁存完成态；`MC_HaltSuperimposed` 当周期完成。
+- `KB-026`：离散运动经近时间最优 7 段 S 曲线规划，时长显著短于 v0.x/早期新核的保守剖面；加速度形状为梯形/三角相位。
 
 至此 v0.x 公开 FB 面已全量由新核承接。旧线仍可经 `PLCOPEN_BUILD_LEGACY=ON` 构建作回放
 基线；真实硬件的 Servo 虚接口（D4 决策中的窄虚边界）仍是 L7 适配层设计项（Phase B5/B7），

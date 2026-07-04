@@ -7,6 +7,7 @@
 
 #include "exec/sync.h"
 #include "otg/profile1d.h"
+#include "otg/time_optimal.h"
 #include "rt/error.h"
 #include "rt/static_vector.h"
 
@@ -850,7 +851,7 @@ public:
 
         otg::Limits1D limits{velocity * (override_ / 100.0), acceleration, deceleration, jerk};
         const rt::Result<otg::Profile1D> profile =
-            otg::plan({0.0, 0.0, 0.0}, {distance, 0.0, 0.0}, limits);
+            otg::plan_time_optimal({0.0, 0.0, 0.0}, {distance, 0.0, 0.0}, limits);
         if(!profile) {
             return rt::Result<std::uint32_t>::failure(profile.error());
         }
@@ -916,7 +917,7 @@ public:
                              active_command_.deceleration,
                              active_command_.jerk};
         const rt::Result<otg::Profile1D> profile =
-            otg::plan({snapshot_.command_position, snapshot_.command_velocity, 0.0},
+            otg::plan_time_optimal({snapshot_.command_position, snapshot_.command_velocity, 0.0},
                       {target, end_velocity, 0.0},
                       limits);
         if(!profile) {
@@ -1251,7 +1252,7 @@ private:
                              command.deceleration,
                              command.jerk};
         const rt::Result<otg::Profile1D> profile =
-            otg::plan({snapshot_.command_position, snapshot_.command_velocity, 0.0},
+            otg::plan_time_optimal({snapshot_.command_position, snapshot_.command_velocity, 0.0},
                       {target, target_velocity, 0.0},
                       limits);
         if(!profile) {
