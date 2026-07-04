@@ -21,6 +21,7 @@ if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
 endif()
 
 option(PLCOPEN_BUILD_DEMOS "Build plcopen demo executables" ${PLCOPEN_IS_TOP_LEVEL})
+option(PLCOPEN_BUILD_CORE "Build plcopen rewrite core targets" ON)
 option(PLCOPEN_BUILD_DOCS "Build plcopen API docs with Doxygen" OFF)
 option(PLCOPEN_BUILD_PYTHON_BINDINGS "Build pybind11-based Python bindings" OFF)
 set(PLCOPEN_DEFAULT_BUILD_TESTS OFF)
@@ -29,6 +30,10 @@ if(PLCOPEN_IS_TOP_LEVEL)
 endif()
 option(PLCOPEN_BUILD_TESTS "Build plcopen tests" ${PLCOPEN_DEFAULT_BUILD_TESTS})
 unset(PLCOPEN_DEFAULT_BUILD_TESTS)
+
+if(PLCOPEN_BUILD_CORE)
+  add_subdirectory(core)
+endif()
 
 add_subdirectory(src)
 
