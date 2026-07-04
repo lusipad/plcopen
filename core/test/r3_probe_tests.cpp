@@ -52,7 +52,7 @@ int check_touch_probe_capture()
     bool fired = false;
     for(int i = 0; i < 400 && !probe.outputs.done; ++i) {
         if(!fired && axis.snapshot().command_position > 0.25) {
-            axis.set_trigger_input(0, true);
+            axis.set_digital_input(0, true);
             fired = true;
         }
         axis.cycle();
@@ -72,10 +72,10 @@ int check_touch_probe_capture()
     if(probe.outputs.done || !probe.outputs.busy) {
         return fail("probe ignores already-high input at arm");
     }
-    axis.set_trigger_input(0, false);
+    axis.set_digital_input(0, false);
     axis.cycle();
     probe.call();
-    axis.set_trigger_input(0, true);
+    axis.set_digital_input(0, true);
     axis.cycle();
     probe.call();
     if(!probe.outputs.done) {
@@ -167,7 +167,7 @@ int check_independent_probes()
     second.execute = true;
     second.call();
 
-    axis.set_trigger_input(1, true);
+    axis.set_digital_input(1, true);
     axis.cycle();
     first.call();
     second.call();
@@ -175,7 +175,7 @@ int check_independent_probes()
         return fail("probes track inputs independently");
     }
 
-    axis.set_trigger_input(0, true);
+    axis.set_digital_input(0, true);
     axis.cycle();
     first.call();
     if(!first.outputs.done) {
@@ -210,7 +210,7 @@ int check_window_only()
     bool fired_early = false;
     for(int i = 0; i < 400 && axis.snapshot().command_position < 1.2; ++i) {
         if(!fired_early && axis.snapshot().command_position > 0.25) {
-            axis.set_trigger_input(0, true);
+            axis.set_digital_input(0, true);
             fired_early = true;
         }
         axis.cycle();
@@ -221,10 +221,10 @@ int check_window_only()
     }
 
     // A fresh edge inside the window captures.
-    axis.set_trigger_input(0, false);
+    axis.set_digital_input(0, false);
     axis.cycle();
     probe.call();
-    axis.set_trigger_input(0, true);
+    axis.set_digital_input(0, true);
     axis.cycle();
     probe.call();
     if(!probe.outputs.done || probe.recorded_position < 1.0 || probe.recorded_position > 2.0) {

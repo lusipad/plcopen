@@ -690,19 +690,69 @@ public:
         return rt::ErrorCode::ok;
     }
 
-    // Trigger-input bank for MC_TouchProbe / MC_AbortTrigger. Adapters feed
-    // levels through set_trigger_input; probes capture on the rising edge
-    // evaluated inside cycle(). An input that is already high when the probe
-    // arms does not capture until a fresh edge.
-    static constexpr std::size_t TriggerInputCount = 4;
+    // Digital IO banks. Adapters feed input levels through set_digital_input
+    // and consume outputs written by the IO function blocks. The touch-probe
+    // trigger channels are these digital inputs (v0.x Servo extension channel
+    // semantics); probes capture on the rising edge evaluated inside cycle().
+    // An input that is already high when the probe arms does not capture until
+    // a fresh edge.
+    static constexpr std::size_t DigitalInputCount = 4;
+    static constexpr std::size_t DigitalOutputCount = 4;
 
-    rt::ErrorCode set_trigger_input(std::size_t input, bool level)
+    rt::ErrorCode set_digital_input(std::size_t input, bool level)
     {
-        if(input >= TriggerInputCount) {
+        if(input >= DigitalInputCount) {
             return rt::ErrorCode::unsupported;
         }
-        trigger_level_[input] = level;
+        digital_input_[input] = level;
         return rt::ErrorCode::ok;
+    }
+
+    rt::Result<bool> digital_input(std::size_t input) const
+    {
+        if(input >= DigitalInputCount) {
+            return rt::Result<bool>::failure(rt::ErrorCode::unsupported);
+        }
+        return rt::Result<bool>::success(digital_input_[input]);
+    }
+
+    rt::ErrorCode set_digital_output(std::size_t output, bool level)
+    {
+        if(output >= DigitalOutputCount) {
+            return rt::ErrorCode::unsupported;
+        }
+        digital_output_[output] = level;
+        return rt::ErrorCode::ok;
+    }
+
+    rt::Result<bool> digital_output(std::size_t output) const
+    {
+        if(output >= DigitalOutputCount) {
+            return rt::Result<bool>::failure(rt::ErrorCode::unsupported);
+        }
+        return rt::Result<bool>::success(digital_output_[output]);
+    }
+
+    // Diagnostic info bits for MC_ReadAxisInfo. Defaults describe the built-in
+    // simulation (ready, no switches, no warning); adapters override them.
+    struct AxisInfoInputs
+    {
+        bool communication_ready = true;
+        bool ready_for_power_on = true;
+        bool home_abs_switch = false;
+        bool limit_switch_pos = false;
+        bool limit_switch_neg = false;
+        bool warning = false;
+    };
+
+    void set_axis_info_inputs(const AxisInfoInputs &inputs)
+    {
+        axis_info_ = inputs;
+    }
+
+    const AxisInfoInputs &axis_info_inputs() const
+    {
+        return axis_info_;
     }
 
     rt::Result<std::uint32_t> arm_touch_probe(std::size_t input,
@@ -710,7 +760,7 @@ public:
                                               double first_position,
                                               double last_position)
     {
-        if(input >= TriggerInputCount) {
+        if(input >= DigitalInputCount) {
             return rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported);
         }
         if(window_only && (!std::isfinite(first_position) || !std::isfinite(last_position) ||
@@ -724,7 +774,7 @@ public:
         slot.first_position = first_position;
         slot.last_position = last_position;
         slot.recorded_position = 0.0;
-        slot.last_level = trigger_level_[input];
+        slot.last_level = digital_input_[input];
         slot.command_id = next_command_id_++;
         return rt::Result<std::uint32_t>::success(slot.command_id);
     }
@@ -732,7 +782,7 @@ public:
     // Disarming an idle input is not an error (matches the v0.x boundary).
     rt::ErrorCode abort_trigger(std::size_t input)
     {
-        if(input >= TriggerInputCount) {
+        if(input >= DigitalInputCount) {
             return rt::ErrorCode::unsupported;
         }
         probes_[input].armed = false;
@@ -743,17 +793,17 @@ public:
 
     std::uint32_t probe_command_id(std::size_t input) const
     {
-        return input < TriggerInputCount ? probes_[input].command_id : 0;
+        return input < DigitalInputCount ? probes_[input].command_id : 0;
     }
 
     bool probe_captured(std::size_t input) const
     {
-        return input < TriggerInputCount && probes_[input].captured;
+        return input < DigitalInputCount && probes_[input].captured;
     }
 
     double probe_recorded_position(std::size_t input) const
     {
-        return input < TriggerInputCount ? probes_[input].recorded_position : 0.0;
+        return input < DigitalInputCount ? probes_[input].recorded_position : 0.0;
     }
 
     void cycle()
@@ -1354,9 +1404,9 @@ private:
 
     void cycle_probes()
     {
-        for(std::size_t input = 0; input < TriggerInputCount; ++input) {
+        for(std::size_t input = 0; input < DigitalInputCount; ++input) {
             ProbeSlot &slot = probes_[input];
-            const bool level = trigger_level_[input];
+            const bool level = digital_input_[input];
             const bool rising = level && !slot.last_level;
             slot.last_level = level;
             if(!slot.armed || !rising) {
@@ -1408,8 +1458,10 @@ private:
         double recorded_position = 0.0;
         std::uint32_t command_id = 0;
     };
-    std::array<bool, TriggerInputCount> trigger_level_{};
-    std::array<ProbeSlot, TriggerInputCount> probes_{};
+    std::array<bool, DigitalInputCount> digital_input_{};
+    std::array<bool, DigitalOutputCount> digital_output_{};
+    std::array<ProbeSlot, DigitalInputCount> probes_{};
+    AxisInfoInputs axis_info_{};
 
     SyncKind sync_kind_ = SyncKind::none;
     SyncPhase sync_phase_ = SyncPhase::idle;

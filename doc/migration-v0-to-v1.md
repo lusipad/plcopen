@@ -65,7 +65,11 @@
 | `FbReadStatus` / `FbReadAxisError` | 同名 | 状态布尔按 PLCopen 轴状态逐一暴露；`axis_error` 读 `snapshot().error` |
 | `FbSetPosition` | `fb::FbSetPosition` | 支持 `relative`；运动中拒绝（含同步与叠加偏移进行中） |
 | `FbPositionProfile` / `FbVelocityProfile` / `FbAccelerationProfile` | 同名（`fb/profile.h`） | 表为调用方持有的 `axis::ProfileSegment` 定长数组（≤8 段，替代 `mNext` 链表）；段时长为周期计数，`TimeScale` 乘于时长；速度/加速度剖面 `Done` 表示"保持终段速度中"；`ContinuousUpdate` 仅支持单段剖面；加速度整形不建模（加速度缩放仅作用于限值输入） |
-| `FbTouchProbe` / `FbAbortTrigger` | 同名（`fb/probe.h`） | 触发源换 `AxisModel::set_trigger_input` 适配器钩子（固定 4 通道，替代 Servo 数字输入通道）；上升沿捕获、`WindowOnly` 门控、按通道独立、解除空闲通道非错误等边界一致；Servo 锁存位置回读不承接（记录 capture 周期的 actual position） |
+| `FbTouchProbe` / `FbAbortTrigger` | 同名（`fb/probe.h`） | 触发源即数字输入组 `AxisModel::set_digital_input`（固定 4 通道，替代 Servo 数字输入通道）；上升沿捕获、`WindowOnly` 门控、按通道独立、解除空闲通道非错误等边界一致；Servo 锁存位置回读不承接（记录 capture 周期的 actual position） |
+| `FbReadDigitalInput` / `FbReadDigitalOutput` / `FbWriteDigitalOutput` | 同名（`fb/io.h`） | 通道即 `AxisModel` 数字 IO 组（输入/输出各固定 4 通道）；不支持通道报 `unsupported` |
+| `FbDigitalCamSwitch` | `fb::FbDigitalCamSwitch` | 位置窗驱动一路数字输出；周期窗支持跨界（`on > off`）；换通道/禁用清旧输出；非周期反向窗显式报错 |
+| `FbReadAxisInfo` | `fb::FbReadAxisInfo` | 诊断位经 `AxisModel::set_axis_info_inputs` 适配器注入（默认仿真就绪态）；limit switch 输出合并适配器位与软限位越界状态 |
+| `FbReadMotionState` | `fb::FbReadMotionState` | 方向/加减速相位由所选源速度与命令加速度导出；源为类型化枚举（旧 `SOURCE_ILLEGAL` 错误不再可表示） |
 | `FbEmergencyStop`（项目扩展） | `fb::FbEmergencyStop` | 驱动 errorstop，经 `FbReset` 恢复 |
 | `FbAddAxisToGroup` / `FbRemoveAxisFromGroup` / `FbGroupReset` | 同名（`fb/group.h`） | 薄门面包装 `AxisGroup::add_axis/remove_axis/reset`；移除仍要求组 disabled |
 | `FbGroupReadStatus` / `FbGroupReadActualPosition` / `FbGroupReadCommandPosition` | 同名 | Enable 型；`moving`/`standby` 合入成员级 gear/cam 同步状态（承接旧线可观察组状态） |
@@ -79,10 +83,10 @@
 - 叠加偏移与同步互斥：同步接入清除运行中的叠加偏移；aborting 基础命令同样清除叠加偏移。
 - `MC_SetOverride` 对已激活命令的重规划未承接（新核 override 只作用于新规划的命令，含连续运动的保持段）。
 
-尚未迁移到新核（旧线 P0 窗口内仍可经 `PLCOPEN_BUILD_LEGACY=ON` 使用；新核排期见规划文档）：
-
-- 数字凸轮开关：`FbDigitalCamSwitch`（依赖 Servo 数字输出抽象，随 L7 适配层排期）
-- 数字 IO 与轴信息：`FbReadDigitalInput/Output`、`FbWriteDigitalOutput`、`FbReadAxisInfo`、`FbReadMotionState`（依赖 Servo 扩展通道/信号源抽象，随 L7 适配层排期）
+至此 v0.x 公开 FB 面已全量由新核承接。旧线仍可经 `PLCOPEN_BUILD_LEGACY=ON` 构建作回放
+基线；真实硬件的 Servo 虚接口（D4 决策中的窄虚边界）仍是 L7 适配层设计项（Phase B5/B7），
+当前由 `AxisModel` 的适配器钩子（`set_actual_feedback` / `set_digital_input` /
+`set_axis_info_inputs`）暂代。
 
 对应旧线语义边界（`KB-001` 起）见 [README 已知边界](../README.md#已知边界)；未迁移项在新核中调用不存在的符号会在编译期失败，不会静默降级。
 

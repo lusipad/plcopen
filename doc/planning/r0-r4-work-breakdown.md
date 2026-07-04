@@ -159,10 +159,11 @@ R3 不做：新功能、坐标系、EtherCAT、kinematics。任何“顺手增�
 `plcopen_core_r3_tests` 及 5 个族级验收套件（sync / motion-family / parameter / profile /
 probe / group-fb），覆盖 axis/group 生命周期、single-axis command buffering、多轴同步
 （gear/cam/phasing/combine）、叠加/连续/附加运动、轨迹表、参数注册表、探针触发与组管理
-FB 形态。旧线独有 FB 面仅剩 Servo 通道依赖项（DigitalCamSwitch、数字 IO、AxisInfo、
-MotionState），随 L7 适配层排期；已声明行为边界见
-[migration-v0-to-v1.md](../migration-v0-to-v1.md)。rewrite-plan 3.1b 的 stretch 项
-B9-lite（轨迹流 + OTG 在线滤波 demo）已以 `plcopen_core_trajectory_stream` 落地。
+FB 形态、数字 IO/DigitalCamSwitch/AxisInfo/MotionState（经 `AxisModel` 固定 IO 组与诊断位）。
+**v0.x 公开 FB 面已全量由新核承接**；真实硬件的 Servo 虚接口仍是 L7 适配层设计项
+（Phase B5/B7）。已声明行为边界见 [migration-v0-to-v1.md](../migration-v0-to-v1.md)。
+rewrite-plan 3.1b 的 stretch 项 B9-lite（轨迹流 + OTG 在线滤波 demo）已以
+`plcopen_core_trajectory_stream` 落地。
 
 ## R4：切换收口（M11-M12）
 

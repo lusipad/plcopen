@@ -30,9 +30,14 @@ parameters report `rt::ErrorCode::unsupported` instead of guessing (KB-006 carri
 while holding the final segment velocity. External profile-table import stays out of the
 runtime (KB-010).
 
-`probe.h` carries `FbTouchProbe`, `FbAbortTrigger`, and `FbEmergencyStop`. Trigger levels come
-from the fixed trigger-input bank on `AxisModel` (adapters call `set_trigger_input`); capture is
-the rising edge evaluated in the axis cycle, optionally gated by the position window.
+`probe.h` carries `FbTouchProbe`, `FbAbortTrigger`, and `FbEmergencyStop`. Trigger levels are
+the digital inputs on `AxisModel` (adapters call `set_digital_input`); capture is the rising
+edge evaluated in the axis cycle, optionally gated by the position window.
+
+`io.h` carries the digital IO and diagnostic facades (`FbReadDigitalInput/Output`,
+`FbWriteDigitalOutput`, `FbDigitalCamSwitch`, `FbReadAxisInfo`, `FbReadMotionState`) over the
+fixed `AxisModel` IO banks and info bits. With it the v0.x public FB surface is fully carried;
+the hardware `Servo` virtual interface remains an L7 adapter design item.
 
 Non-goals:
 

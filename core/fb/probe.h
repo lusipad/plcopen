@@ -12,7 +12,7 @@ namespace plcopen::core::fb
 
 // MC_TouchProbe: arms one trigger input and reports the position captured on
 // its rising edge. window_only gates the capture to [first, last]. The trigger
-// levels are fed by adapters through AxisModel::set_trigger_input.
+// levels are fed by adapters through AxisModel::set_digital_input.
 class FbTouchProbe
 {
 public:

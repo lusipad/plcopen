@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- Complete the v0.x function-block surface on the rewrite core: fixed digital IO banks and diagnostic info bits on `AxisModel` (`set_digital_input/output`, `set_axis_info_inputs`; the touch-probe trigger channels are the digital inputs), plus `core/fb/io.h` facades (`FbReadDigitalInput/Output`, `FbWriteDigitalOutput`, `FbDigitalCamSwitch` with periodic windows, `FbReadAxisInfo`, `FbReadMotionState`) with the `plcopen_core_r3_io_tests` acceptance suite.
 - Add the B9-lite trajectory-stream demo (`core/demo/trajectory_stream.cpp`): a sparse low-rate waypoint stream upsampled to cycle rate through online jerk-limited OTG re-planning, with safety-envelope assertions and hold-last-profile behavior on stream stalls (rewrite-plan 3.1b stretch item).
 - Migrate the group administration and readback facades onto the rewrite core (`core/fb/group.h`): `FbAddAxisToGroup`, `FbRemoveAxisFromGroup`, `FbGroupReset`, `FbGroupReadStatus` (folding member-level sync into moving/standby), and `FbGroupReadActual/CommandPosition` with the `plcopen_core_r3_group_fb_tests` acceptance suite.
 - Migrate the touch-probe/trigger/emergency-stop family onto the rewrite core: a fixed 4-channel trigger-input bank on `AxisModel` (`set_trigger_input` adapter hook, rising-edge capture with `WindowOnly` gating) and `core/fb/probe.h` facades (`FbTouchProbe`, `FbAbortTrigger`, `FbEmergencyStop`) with the `plcopen_core_r3_probe_tests` acceptance suite.
