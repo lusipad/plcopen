@@ -72,6 +72,57 @@ if(PLCOPEN_BUILD_DOCS)
   endif()
 endif()
 
+if(PLCOPEN_BUILD_PYTHON_BINDINGS)
+  include(FetchContent)
+  find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
+
+  set(PYBIND11_FINDPYTHON ON CACHE BOOL "" FORCE)
+  FetchContent_Declare(
+    pybind11
+    GIT_REPOSITORY https://github.com/pybind/pybind11.git
+    GIT_TAG v2.13.6)
+  if(DEFINED CMAKE_WARN_DEPRECATED)
+    set(_PLCOPEN_WARN_DEPRECATED_DEFINED TRUE)
+    set(_PLCOPEN_WARN_DEPRECATED_VALUE "${CMAKE_WARN_DEPRECATED}")
+  else()
+    set(_PLCOPEN_WARN_DEPRECATED_DEFINED FALSE)
+  endif()
+  set(CMAKE_WARN_DEPRECATED OFF CACHE BOOL "" FORCE)
+  FetchContent_MakeAvailable(pybind11)
+  if(_PLCOPEN_WARN_DEPRECATED_DEFINED)
+    set(CMAKE_WARN_DEPRECATED "${_PLCOPEN_WARN_DEPRECATED_VALUE}" CACHE BOOL "" FORCE)
+  else()
+    unset(CMAKE_WARN_DEPRECATED CACHE)
+  endif()
+  unset(_PLCOPEN_WARN_DEPRECATED_DEFINED)
+  unset(_PLCOPEN_WARN_DEPRECATED_VALUE)
+
+  pybind11_add_module(pyplcopen python/pyplcopen.cpp)
+  target_link_libraries(pyplcopen PRIVATE plcopen::plcopen)
+
+  if(BUILD_TESTING)
+    file(GENERATE
+      OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/pyplcopen_smoke_$<CONFIG>.py
+      CONTENT [=[
+import sys
+sys.path.insert(0, r"$<TARGET_FILE_DIR:pyplcopen>")
+import pyplcopen
+
+axis = pyplcopen.AxisSim()
+axis.power_on()
+axis.move_absolute(2.0, 1.0, 1.0, 1.0)
+assert abs(axis.command_position() - 2.0) < 1e-8
+axis.move_relative(-0.5, 1.0, 1.0, 1.0)
+assert abs(axis.command_position() - 1.5) < 1e-8
+axis.move_velocity(1.0)
+assert axis.command_velocity() > 0.0
+axis.halt()
+assert axis.status() == pyplcopen.AxisStatus.STANDSTILL
+]=])
+    add_test(NAME pyplcopen_smoke COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/pyplcopen_smoke_$<CONFIG>.py)
+  endif()
+endif()
+
 configure_package_config_file(
   ${CMAKE_CURRENT_SOURCE_DIR}/cmake/plcopenConfig.cmake.in
   ${CMAKE_CURRENT_BINARY_DIR}/plcopenConfig.cmake

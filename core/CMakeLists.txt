@@ -1,11 +1,16 @@
 add_library(plcopen_core INTERFACE)
 add_library(plcopen::core ALIAS plcopen_core)
+if(NOT TARGET plcopen::plcopen)
+    add_library(plcopen::plcopen ALIAS plcopen_core)
+endif()
 
 target_include_directories(
     plcopen_core
     INTERFACE
-        ${CMAKE_CURRENT_SOURCE_DIR})
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/plcopen>)
 target_compile_features(plcopen_core INTERFACE cxx_std_17)
+set_target_properties(plcopen_core PROPERTIES EXPORT_NAME plcopen)
 
 function(plcopen_core_rt_compile_options target)
     if(MSVC)
@@ -52,3 +57,23 @@ if(BUILD_TESTING AND PLCOPEN_BUILD_CORE_TESTS)
     add_test(NAME plcopen_core_benchmark COMMAND plcopen_core_benchmark)
     set_tests_properties(plcopen_core_benchmark PROPERTIES LABELS benchmark)
 endif()
+
+if(PLCOPEN_BUILD_DEMOS)
+    add_executable(plcopen_core_basic_fb_cycle demo/basic_fb_cycle.cpp)
+    target_link_libraries(plcopen_core_basic_fb_cycle PRIVATE plcopen::plcopen)
+
+    add_executable(plcopen_core_group_linear_move demo/group_linear_move.cpp)
+    target_link_libraries(plcopen_core_group_linear_move PRIVATE plcopen::plcopen)
+
+    if(BUILD_TESTING)
+        add_test(NAME plcopen_core_basic_fb_cycle_smoke COMMAND plcopen_core_basic_fb_cycle)
+        add_test(NAME plcopen_core_group_linear_move_smoke COMMAND plcopen_core_group_linear_move)
+    endif()
+endif()
+
+install(TARGETS plcopen_core
+    EXPORT plcopenTargets)
+
+install(DIRECTORY axis exec fb geom otg plan rt
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/plcopen
+    FILES_MATCHING PATTERN "*.h")
