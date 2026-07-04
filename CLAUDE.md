@@ -31,8 +31,8 @@ cmake -S . -B build -DPLCOPEN_BUILD_DOCS=ON && cmake --build build --target docs
 | 级别 | 范围 | AI 权限 |
 |------|------|---------|
 | T0 | 文档、注释、demo、新增测试、格式化、CI 脚本 | 自主推进，门禁绿即可 |
-| T1 | 非 RT 路径实现、工具链、pyplcopen、构建配置 | 实现+自检+证据包，人轻评审 |
-| T2 | RT 周期路径、OTG/规划器算法、状态机语义、公开 API | 全门禁+24h 冷却，**人逐行评审后合入** |
+| T1 | 非 RT 路径实现、工具链、pyplcopen、构建配置 | 实现 + 自检 + 证据包，人轻评审 |
+| T2 | RT 周期路径、OTG/规划器算法、状态机语义、公开 API | 全门禁 +24h 冷却，**人逐行评审后合入** |
 | T3 | LICENSE/NOTICE/PROVENANCE、发布 tag、安全边界对外声明 | 只起草，不落地 |
 
 ## 硬规则
@@ -51,6 +51,10 @@ cmake -S . -B build -DPLCOPEN_BUILD_DOCS=ON && cmake --build build --target docs
 - **最小实现**：不做没被要求的功能、抽象、配置项。写完自问：资深工程师会说这过度设计吗？
 - **外科手术式修改**：只动任务要求的行；不顺手改邻近代码/注释/格式；旧线 `src/` 尤其如此。
 - **目标驱动**：每个任务先定义可验证的完成标准，循环直到验证通过；弱标准（"能跑就行"）不接受。
+
+## commit-log
+使用 angular 规则
+
 
 ---
 
