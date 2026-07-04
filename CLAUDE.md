@@ -53,7 +53,7 @@ cmake -S . -B build -DPLCOPEN_BUILD_DOCS=ON && cmake --build build --target docs
 - **目标驱动**：每个任务先定义可验证的完成标准，循环直到验证通过；弱标准（"能跑就行"）不接受。
 
 ## commit-log
-使用 angular 规则
+使用 angular 规则，内容用中文，包括：修改的目的、设计思路、修改内容、影响范围
 
 
 ---
