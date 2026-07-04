@@ -23,6 +23,7 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- Fix the coverage gate to measure the whole rewrite core: `coverage.ps1` now collects every `plcopen_core_*` executable (family suites, oracle/fuzz, replay regression, demos) and merges the sessions with per-line hit union — previously it only ran `plcopen_core_r3_tests`, badly understating the surface after the acceptance tests were split per family.
 - Isolate the legacy `src/` line behind `PLCOPEN_BUILD_LEGACY=ON`; default demos, CMake consumers, README quick start, and design entry points now target the rewrite core.
 
 ## [0.11.0] - 2026-07-02

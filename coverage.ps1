@@ -2,8 +2,10 @@
 
 [CmdletBinding()]
 param(
+    # Coverage must run on unoptimized code: with /O1+/O2 the header-inline
+    # methods get folded into their callers and the tool attributes them 0 hits.
     [Parameter()]
-    [string]$Configuration = "RelWithDebInfo",
+    [string]$Configuration = "Debug",
 
     [Parameter()]
     [double]$MinimumLineRate = 0.50,
@@ -78,30 +80,31 @@ function Get-CMakeGenerator {
     return ($GeneratorLine.Line -replace "^CMAKE_GENERATOR:INTERNAL=", "")
 }
 
-function Find-TestExecutable {
+# Coverage runs every deterministic core executable (family test suites,
+# oracle/fuzz, replay regression, benchmark, demos); a single suite badly
+# understates the surface now that acceptance tests are split per family.
+function Get-CoverageExecutables {
     param(
         [string]$ResolvedBuildDir,
         [string]$Configuration
     )
 
-    $Candidates = @(
-        (Join-Path $ResolvedBuildDir "core\$Configuration\plcopen_core_r3_tests.exe"),
-        (Join-Path $ResolvedBuildDir "core\plcopen_core_r3_tests.exe")
+    $SearchDirs = @(
+        (Join-Path $ResolvedBuildDir "core\$Configuration"),
+        (Join-Path $ResolvedBuildDir "core")
     )
 
-    foreach ($Candidate in $Candidates) {
-        if (Test-Path $Candidate) {
-            return $Candidate
+    foreach ($Dir in $SearchDirs) {
+        if (-not (Test-Path $Dir)) {
+            continue
+        }
+        $Found = Get-ChildItem -Path $Dir -File -Filter 'plcopen_core_*.exe' -ErrorAction SilentlyContinue
+        if ($Found) {
+            return @($Found | Sort-Object Name | Select-Object -ExpandProperty FullName)
         }
     }
 
-    $Discovered = Get-ChildItem -Path $ResolvedBuildDir -Recurse -File -Filter plcopen_core_r3_tests.exe -ErrorAction SilentlyContinue |
-        Select-Object -First 1 -ExpandProperty FullName
-    if ($Discovered) {
-        return $Discovered
-    }
-
-    return $null
+    return @()
 }
 
 $ProjectRoot = (Resolve-Path $PSScriptRoot).Path
@@ -122,12 +125,11 @@ if (-not (Test-Path $ResolvedBuildDir)) {
     }
 }
 
-Write-Info "Building plcopen_core_r3_tests ($Configuration)..."
+Write-Info "Building core targets ($Configuration)..."
 $Generator = Get-CMakeGenerator -ResolvedBuildDir $ResolvedBuildDir
 $BuildArgs = @(
     "--build", $ResolvedBuildDir,
-    "--config", $Configuration,
-    "--target", "plcopen_core_r3_tests"
+    "--config", $Configuration
 )
 if ($Generator -notlike "NMake*") {
     $BuildArgs += "--parallel"
@@ -149,17 +151,38 @@ if (Test-Path $ResolvedOutputDir) {
 }
 New-Item -ItemType Directory -Path $ResolvedOutputDir | Out-Null
 
-$TestExePath = Find-TestExecutable -ResolvedBuildDir $ResolvedBuildDir -Configuration $Configuration
-if (-not $TestExePath -or -not (Test-Path $TestExePath)) {
-    throw "Test executable not found: $TestExePath"
+$TestExecutables = Get-CoverageExecutables -ResolvedBuildDir $ResolvedBuildDir -Configuration $Configuration
+if (-not $TestExecutables -or $TestExecutables.Count -eq 0) {
+    throw "No plcopen_core_* executables found under $ResolvedBuildDir"
 }
 
-Write-Info "Collecting coverage from $TestExePath"
+# Per-executable arguments for tools that need them.
+$ExecutableArgs = @{
+    "plcopen_core_replay_regression" = @((Join-Path $ProjectRoot "testdata\replay"))
+}
+
+$RawCoverageFiles = @()
 Push-Location $ResolvedBuildDir
 try {
-    & $CoverageTool collect $TestExePath --output $CoverageXmlPath --output-format cobertura --nologo
+    foreach ($TestExePath in $TestExecutables) {
+        $ExeName = [System.IO.Path]::GetFileNameWithoutExtension($TestExePath)
+        $RawCoveragePath = Join-Path $ResolvedOutputDir "$ExeName.coverage"
+        $ExtraArgs = @()
+        if ($ExecutableArgs.ContainsKey($ExeName)) {
+            $ExtraArgs = $ExecutableArgs[$ExeName]
+        }
+        Write-Info "Collecting coverage from $ExeName"
+        & $CoverageTool collect $TestExePath @ExtraArgs --output $RawCoveragePath --nologo
+        if ($LASTEXITCODE -ne 0) {
+            throw "Coverage collection failed for $ExeName."
+        }
+        $RawCoverageFiles += $RawCoveragePath
+    }
+
+    Write-Info "Merging $($RawCoverageFiles.Count) coverage sessions"
+    & $CoverageTool merge @RawCoverageFiles --output $CoverageXmlPath --output-format cobertura --nologo
     if ($LASTEXITCODE -ne 0) {
-        throw "Coverage collection failed."
+        throw "Coverage merge failed."
     }
 }
 finally {
@@ -171,48 +194,48 @@ $CoverageClasses = foreach ($Package in @($CoverageXml.coverage.packages.package
     @($Package.classes.class)
 }
 
-$FileCoverage = foreach ($class in $CoverageClasses) {
+# The merged report repeats a file once per coverage session, so line hits must
+# be unioned per line number instead of summed per class entry.
+$FileLineHits = @{}
+foreach ($class in $CoverageClasses) {
     $RelativeFile = Get-RelativeFilePath -ProjectRoot $ProjectRoot -FullPath $class.filename
     if ($RelativeFile -notlike "core\*" -and $RelativeFile -notlike "core/*") {
         continue
     }
 
-    $covered = 0
-    $valid = 0
-
-    foreach ($line in @($class.lines.line)) {
-        $valid += 1
-        if ([int]$line.hits -gt 0) {
-            $covered += 1
-        }
+    if (-not $FileLineHits.ContainsKey($RelativeFile)) {
+        $FileLineHits[$RelativeFile] = @{}
     }
-
-    [pscustomobject]@{
-        File = $RelativeFile
-        Covered = $covered
-        Valid = $valid
+    $LineHits = $FileLineHits[$RelativeFile]
+    foreach ($line in @($class.lines.line)) {
+        $LineNumber = [int]$line.number
+        $Hit = [int]$line.hits -gt 0
+        if ($LineHits.ContainsKey($LineNumber)) {
+            $LineHits[$LineNumber] = $LineHits[$LineNumber] -or $Hit
+        }
+        else {
+            $LineHits[$LineNumber] = $Hit
+        }
     }
 }
 
-if (-not $FileCoverage) {
+if ($FileLineHits.Count -eq 0) {
     throw "Coverage report did not contain core files."
 }
 
-$AggregatedFiles = $FileCoverage |
-    Group-Object File |
-    ForEach-Object {
-        $covered = ($_.Group | Measure-Object Covered -Sum).Sum
-        $valid = ($_.Group | Measure-Object Valid -Sum).Sum
+$AggregatedFiles = foreach ($File in $FileLineHits.Keys) {
+    $LineHits = $FileLineHits[$File]
+    $valid = $LineHits.Count
+    $covered = @($LineHits.Values | Where-Object { $_ }).Count
 
-        [pscustomobject]@{
-            file = $_.Name
-            covered = [int]$covered
-            valid = [int]$valid
-            lineRate = if ($valid) { [math]::Round($covered / [double]$valid, 4) } else { 0.0 }
-        }
-    } |
-    Where-Object { $_.valid -gt 0 } |
-    Sort-Object lineRate, file
+    [pscustomobject]@{
+        file = $File
+        covered = [int]$covered
+        valid = [int]$valid
+        lineRate = if ($valid) { [math]::Round($covered / [double]$valid, 4) } else { 0.0 }
+    }
+}
+$AggregatedFiles = @($AggregatedFiles | Where-Object { $_.valid -gt 0 } | Sort-Object lineRate, file)
 
 $LinesCovered = ($AggregatedFiles | Measure-Object covered -Sum).Sum
 $LinesValid = ($AggregatedFiles | Measure-Object valid -Sum).Sum

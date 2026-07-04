@@ -16,7 +16,7 @@
 | R4.6 | 旧设计文档归档 | `doc/design/README.md` 标注当前/历史入口；旧设计文档加归档提示；docs target fallback 通过 | 已验证 |
 | R4.7 | 删除或隔离旧 `src/` | 默认不再 `add_subdirectory(src)`；显式 `PLCOPEN_BUILD_LEGACY=ON` 才构建旧线；默认 full CTest 只有新核/fixture/demo 门禁 | 已验证 |
 | R4.8 | v0.x EOL 公告 | 本文提供草案，需人工审签 | 草案 |
-| R4.9 | `v1.0.0-alpha` 证据包 | 本文提供草案，需人工发布 | 草案 |
+| R4.9 | `v1.0.0-alpha` 证据包 | 完整发布草案见 [v1.0.0-alpha-release-draft.md](v1.0.0-alpha-release-draft.md)（含 Release notes 草稿、DoD 对照、人工检查单），需人工发布 | 草案 |
 
 ## 本地验证记录
 
@@ -34,6 +34,12 @@
 - `cmake -DPLCOPEN_MUTATION_GENERATOR="NMake Makefiles" -DPLCOPEN_MUTATION_BUILD_DIR=build-r4-mutation -P cmake/mutation_smoke.cmake`
 - `ctest --test-dir build-r4-python -R pyplcopen_smoke --output-on-failure`
 - `cmake --build build-r4-docs --target docs`：本机无 Doxygen，fallback target 通过
+
+补充（2026-07-05，FB 面收齐后）：
+
+- v0.x 公开 FB 面与 pyplcopen 面已全量由新核承接（迁移证据见 [r3-migration-matrix.md](r3-migration-matrix.md)）；全量 CTest 19 项通过。
+- 覆盖率门禁修复后重测：`coverage.ps1 -BuildDir build-sync -Configuration Debug` 全套件合并行覆盖 **85.37%**（5245/6144；此前工具只采 `plcopen_core_r3_tests` 单套件且 RelWithDebInfo 内联吸收头内函数，数字失真）。
+- 新核黄金回放回归上线：`plcopen_core_replay_regression` 对 3 个 `core-*.jsonl` 黄金文件逐周期比对。
 
 补充（2026-07-05）：
 
