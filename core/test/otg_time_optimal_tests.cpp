@@ -115,7 +115,10 @@ int check_fixed_cases()
        check_case("zero-distance", {3.0, 0.0, 0.0}, {3.0, 0.0, 0.0}, limits) != 0 ||
        check_case("velocity-transition-in-place", {0.0, 1.0, 0.0}, {0.0, -1.0, 0.0}, limits) !=
            0 ||
-       check_case("cruise-at-limit", {0.0, 0.0, 0.0}, {200.0, 0.0, 0.0}, limits) != 0) {
+       check_case("cruise-at-limit", {0.0, 0.0, 0.0}, {200.0, 0.0, 0.0}, limits) != 0 ||
+       check_case("takeover-accelerating", {0.0, 1.0, 1.5}, {8.0, 0.0, 0.0}, limits) != 0 ||
+       check_case("takeover-decelerating", {0.0, 2.0, -1.8}, {6.0, 0.5, 0.0}, limits) != 0 ||
+       check_case("takeover-reverse-accel", {0.0, -1.0, 1.0}, {-5.0, 0.0, 0.0}, limits) != 0) {
         return 1;
     }
     return 0;
@@ -125,13 +128,13 @@ int check_validation()
 {
     const otg::Limits1D limits{3.0, 2.0, 2.0, 2.5};
 
-    if(otg::plan_time_optimal({0.0, 0.0, 0.5}, {1.0, 0.0, 0.0}, limits).error() !=
-       rt::ErrorCode::unsupported) {
-        return fail("nonzero initial acceleration is declared unsupported");
-    }
     if(otg::plan_time_optimal({0.0, 0.0, 0.0}, {1.0, 0.0, 0.5}, limits).error() !=
        rt::ErrorCode::unsupported) {
         return fail("nonzero target acceleration is declared unsupported");
+    }
+    if(otg::plan_time_optimal({0.0, 0.0, 5.0}, {1.0, 0.0, 0.0}, limits).error() !=
+       rt::ErrorCode::infeasible) {
+        return fail("entry acceleration above limit is infeasible");
     }
     if(otg::plan_time_optimal({0.0, 5.0, 0.0}, {1.0, 0.0, 0.0}, limits).error() !=
        rt::ErrorCode::infeasible) {
@@ -154,7 +157,10 @@ int check_fuzz_against_baseline(int iterations)
     long long baseline_total = 0;
 
     for(int i = 0; i < iterations; ++i) {
-        const otg::State1D from{rng.range(-10.0, 10.0), rng.range(-2.5, 2.5), 0.0};
+        // The velocity/acceleration ranges keep the zeroing-ramp exit velocity
+        // inside the envelope, so every sampled case must plan successfully.
+        const otg::State1D from{rng.range(-10.0, 10.0), rng.range(-2.0, 2.0),
+                                rng.range(-1.8, 1.8)};
         const otg::Target1D to{rng.range(-10.0, 10.0), rng.range(-2.0, 2.0), 0.0};
 
         const rt::Result<otg::Profile1D> optimal = otg::plan_time_optimal(from, to, limits);

@@ -917,7 +917,7 @@ public:
                              active_command_.deceleration,
                              active_command_.jerk};
         const rt::Result<otg::Profile1D> profile =
-            otg::plan_time_optimal({snapshot_.command_position, snapshot_.command_velocity, 0.0},
+            otg::plan_time_optimal({snapshot_.command_position, snapshot_.command_velocity, snapshot_.command_acceleration},
                       {target, end_velocity, 0.0},
                       limits);
         if(!profile) {
@@ -1252,7 +1252,7 @@ private:
                              command.deceleration,
                              command.jerk};
         const rt::Result<otg::Profile1D> profile =
-            otg::plan_time_optimal({snapshot_.command_position, snapshot_.command_velocity, 0.0},
+            otg::plan_time_optimal({snapshot_.command_position, snapshot_.command_velocity, snapshot_.command_acceleration},
                       {target, target_velocity, 0.0},
                       limits);
         if(!profile) {

@@ -171,9 +171,10 @@ inline rt::ErrorCode push_ramp_with_crossing(Profile1D &profile,
     return push_ramp(profile, state, vb, limits);
 }
 
-// Smallest feasible quintic duration for the given boundary states. Longer
-// durations relax the internal peaks, so feasibility is monotone and the
-// minimum is found exactly by doubling to an upper bound and bisecting.
+// Smallest feasible quintic duration for zero boundary accelerations. Longer
+// durations then relax the internal peaks, so feasibility is monotone and the
+// minimum is found exactly by doubling to an upper bound and bisecting (with
+// nonzero boundary accelerations this monotonicity does not hold).
 inline rt::Result<std::int64_t> min_feasible_quintic_cycles(State1D from,
                                                             Target1D to,
                                                             const Limits1D &limits)
@@ -202,25 +203,10 @@ inline rt::Result<std::int64_t> min_feasible_quintic_cycles(State1D from,
     return rt::Result<std::int64_t>::success(high);
 }
 
-// Smallest feasible single-quintic profile. For very short moves the quantized
-// multi-phase construction pays a constant overhead; this fallback keeps the
-// planner's "never slower than a single quintic" promise strict.
-inline rt::Result<Profile1D> plan_single_quintic(State1D from, Target1D to, Limits1D limits)
-{
-    const rt::Result<std::int64_t> cycles = min_feasible_quintic_cycles(from, to, limits);
-    if(!cycles) {
-        return rt::Result<Profile1D>::failure(cycles.error());
-    }
-    Profile1D profile{};
-    const rt::ErrorCode pushed =
-        profile.add_segment(make_quintic_segment(from, to, cycles.value()));
-    if(pushed != rt::ErrorCode::ok) {
-        return rt::Result<Profile1D>::failure(pushed);
-    }
-    return rt::Result<Profile1D>::success(profile);
-}
-
-// Minimal feasible quintic correction to the exact target state.
+// Minimal feasible quintic correction to the exact target state. Both
+// boundary accelerations are zero here (the phase construction guarantees
+// it), which is what makes feasibility monotone in the duration and the
+// bisection in min_feasible_quintic_cycles valid.
 inline rt::ErrorCode push_quintic_correction(Profile1D &profile,
                                              State1D state,
                                              Target1D to,
@@ -241,8 +227,12 @@ inline rt::ErrorCode push_quintic_correction(Profile1D &profile,
 
 } // namespace detail
 
-// Time-optimal jerk-limited plan for zero boundary accelerations. The result
-// reuses Profile1D, so the RT-side sample() path is unchanged.
+// Time-optimal jerk-limited plan. Nonzero initial accelerations reduce to the
+// zero-acceleration problem through one exact zeroing ramp: n0 = ceil(|a0|/j)
+// integer cycles with the adjusted jerk -a0/n0 (magnitude ≤ j) bring the
+// acceleration to exactly zero. Nonzero *target* accelerations stay the
+// declared follow-up. The result reuses Profile1D, so the RT-side sample()
+// path is unchanged.
 inline rt::Result<Profile1D> plan_time_optimal(State1D from, Target1D to, Limits1D limits)
 {
     if(!is_finite(from) || !is_finite(to) || !is_finite(limits) || limits.max_velocity <= 0.0 ||
@@ -250,17 +240,40 @@ inline rt::Result<Profile1D> plan_time_optimal(State1D from, Target1D to, Limits
        limits.max_jerk <= 0.0) {
         return rt::Result<Profile1D>::failure(rt::ErrorCode::invalid_argument);
     }
-    if(from.acceleration != 0.0 || to.acceleration != 0.0) {
-        // Nonzero boundary accelerations are the declared follow-up scope.
+    if(to.acceleration != 0.0) {
         return rt::Result<Profile1D>::failure(rt::ErrorCode::unsupported);
     }
     if(std::fabs(from.velocity) > limits.max_velocity ||
-       std::fabs(to.velocity) > limits.max_velocity) {
+       std::fabs(to.velocity) > limits.max_velocity ||
+       from.acceleration > limits.max_acceleration ||
+       from.acceleration < -limits.max_deceleration) {
         return rt::Result<Profile1D>::failure(rt::ErrorCode::infeasible);
     }
 
-    const double distance = to.position - from.position;
-    const double v0 = from.velocity;
+    Profile1D profile{};
+    State1D state = from;
+    if(from.acceleration != 0.0) {
+        const double zero_cycles =
+            std::ceil(std::fabs(from.acceleration) / limits.max_jerk);
+        const double zero_jerk = -from.acceleration / zero_cycles;
+        const double exit_velocity =
+            from.velocity + 0.5 * from.acceleration * zero_cycles;
+        if(std::fabs(exit_velocity) > limits.max_velocity) {
+            // Entry states whose zeroing ramp leaves the velocity envelope are
+            // beyond the v1 reduction (declared follow-up).
+            return rt::Result<Profile1D>::failure(rt::ErrorCode::infeasible);
+        }
+        const rt::ErrorCode pushed =
+            detail::push_cubic_phase(profile, state, zero_jerk, zero_cycles);
+        if(pushed != rt::ErrorCode::ok) {
+            return rt::Result<Profile1D>::failure(pushed);
+        }
+        // The adjusted jerk cancels a0 exactly up to one rounding ulp.
+        state.acceleration = 0.0;
+    }
+
+    const double distance = to.position - state.position;
+    const double v0 = state.velocity;
     const double vt = to.velocity;
 
     // Cruise-velocity selection: D(vc) is continuous and monotone increasing,
@@ -291,8 +304,6 @@ inline rt::Result<Profile1D> plan_time_optimal(State1D from, Target1D to, Limits
         cruise_duration = 0.0;
     }
 
-    Profile1D profile{};
-    State1D state = from;
     rt::ErrorCode built = detail::push_ramp_with_crossing(profile, state, cruise_velocity, limits);
     if(built != rt::ErrorCode::ok) {
         return rt::Result<Profile1D>::failure(built);
@@ -315,18 +326,42 @@ inline rt::Result<Profile1D> plan_time_optimal(State1D from, Target1D to, Limits
     if(built != rt::ErrorCode::ok) {
         return rt::Result<Profile1D>::failure(built);
     }
-    // Short moves: the quantized phase construction pays a constant overhead,
-    // so fall back to the smallest feasible single quintic when it wins.
-    const rt::Result<Profile1D> single = detail::plan_single_quintic(from, to, limits);
-    if(single &&
-       (profile.duration_cycles() < 1 ||
-        single.value().duration_cycles() < profile.duration_cycles())) {
-        return single;
+    // Candidate selection. The phase construction can lose to a quintic in
+    // two regimes: very short moves (constant quantization overhead) and
+    // tiny velocity limits where the floored ramp phases degenerate. The
+    // baseline plan() candidate additionally makes the "never slower than the
+    // baseline planner" promise hold by construction (its duration guess is
+    // not minimal, so it is not sufficient on its own). The minimal-quintic
+    // candidate requires zero boundary accelerations for its bisection to be
+    // valid.
+    Profile1D best = profile;
+    bool have_best = profile.segment_count() > 0 && profile.duration_cycles() >= 1;
+
+    const auto consider = [&](const rt::Result<Profile1D> &candidate) {
+        if(candidate && candidate.value().duration_cycles() >= 1 &&
+           (!have_best || candidate.value().duration_cycles() < best.duration_cycles())) {
+            best = candidate.value();
+            have_best = true;
+        }
+    };
+
+    if(from.acceleration == 0.0) {
+        const rt::Result<std::int64_t> minimal =
+            detail::min_feasible_quintic_cycles(from, to, limits);
+        if(minimal) {
+            Profile1D single{};
+            if(single.add_segment(make_quintic_segment(from, to, minimal.value())) ==
+               rt::ErrorCode::ok) {
+                consider(rt::Result<Profile1D>::success(single));
+            }
+        }
     }
-    if(profile.segment_count() == 0 || profile.duration_cycles() < 1) {
+    consider(plan(from, to, limits));
+
+    if(!have_best) {
         return rt::Result<Profile1D>::failure(rt::ErrorCode::infeasible);
     }
-    return rt::Result<Profile1D>::success(profile);
+    return rt::Result<Profile1D>::success(best);
 }
 
 } // namespace plcopen::core::otg
