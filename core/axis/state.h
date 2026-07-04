@@ -1,6 +1,8 @@
 #pragma once
 
+#include <array>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 
 #include "exec/sync.h"
@@ -688,16 +690,84 @@ public:
         return rt::ErrorCode::ok;
     }
 
+    // Trigger-input bank for MC_TouchProbe / MC_AbortTrigger. Adapters feed
+    // levels through set_trigger_input; probes capture on the rising edge
+    // evaluated inside cycle(). An input that is already high when the probe
+    // arms does not capture until a fresh edge.
+    static constexpr std::size_t TriggerInputCount = 4;
+
+    rt::ErrorCode set_trigger_input(std::size_t input, bool level)
+    {
+        if(input >= TriggerInputCount) {
+            return rt::ErrorCode::unsupported;
+        }
+        trigger_level_[input] = level;
+        return rt::ErrorCode::ok;
+    }
+
+    rt::Result<std::uint32_t> arm_touch_probe(std::size_t input,
+                                              bool window_only,
+                                              double first_position,
+                                              double last_position)
+    {
+        if(input >= TriggerInputCount) {
+            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported);
+        }
+        if(window_only && (!std::isfinite(first_position) || !std::isfinite(last_position) ||
+                           first_position > last_position)) {
+            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
+        }
+        ProbeSlot &slot = probes_[input];
+        slot.armed = true;
+        slot.captured = false;
+        slot.window_only = window_only;
+        slot.first_position = first_position;
+        slot.last_position = last_position;
+        slot.recorded_position = 0.0;
+        slot.last_level = trigger_level_[input];
+        slot.command_id = next_command_id_++;
+        return rt::Result<std::uint32_t>::success(slot.command_id);
+    }
+
+    // Disarming an idle input is not an error (matches the v0.x boundary).
+    rt::ErrorCode abort_trigger(std::size_t input)
+    {
+        if(input >= TriggerInputCount) {
+            return rt::ErrorCode::unsupported;
+        }
+        probes_[input].armed = false;
+        probes_[input].captured = false;
+        probes_[input].command_id = 0;
+        return rt::ErrorCode::ok;
+    }
+
+    std::uint32_t probe_command_id(std::size_t input) const
+    {
+        return input < TriggerInputCount ? probes_[input].command_id : 0;
+    }
+
+    bool probe_captured(std::size_t input) const
+    {
+        return input < TriggerInputCount && probes_[input].captured;
+    }
+
+    double probe_recorded_position(std::size_t input) const
+    {
+        return input < TriggerInputCount ? probes_[input].recorded_position : 0.0;
+    }
+
     void cycle()
     {
         if(snapshot_.status == AxisStatus::errorstop) {
             return;
         }
         if(sync_cycle()) {
+            cycle_probes();
             return;
         }
         cycle_base_motion();
         cycle_superimposed();
+        cycle_probes();
     }
 
     // Independent offset profile on top of the base motion (MC_MoveSuperimposed).
@@ -1282,6 +1352,27 @@ private:
         superimposed_last_ = 0.0;
     }
 
+    void cycle_probes()
+    {
+        for(std::size_t input = 0; input < TriggerInputCount; ++input) {
+            ProbeSlot &slot = probes_[input];
+            const bool level = trigger_level_[input];
+            const bool rising = level && !slot.last_level;
+            slot.last_level = level;
+            if(!slot.armed || !rising) {
+                continue;
+            }
+            const double position = snapshot_.actual_position;
+            if(slot.window_only &&
+               (position < slot.first_position || position > slot.last_position)) {
+                continue;
+            }
+            slot.armed = false;
+            slot.captured = true;
+            slot.recorded_position = position;
+        }
+    }
+
     int domain_id_ = 0;
     void *group_owner_ = nullptr;
     AxisSnapshot snapshot_{};
@@ -1305,6 +1396,20 @@ private:
     std::uint32_t superimposed_id_ = 0;
     std::uint32_t superimposed_completed_id_ = 0;
     bool superimposed_active_ = false;
+
+    struct ProbeSlot
+    {
+        bool armed = false;
+        bool captured = false;
+        bool window_only = false;
+        bool last_level = false;
+        double first_position = 0.0;
+        double last_position = 0.0;
+        double recorded_position = 0.0;
+        std::uint32_t command_id = 0;
+    };
+    std::array<bool, TriggerInputCount> trigger_level_{};
+    std::array<ProbeSlot, TriggerInputCount> probes_{};
 
     SyncKind sync_kind_ = SyncKind::none;
     SyncPhase sync_phase_ = SyncPhase::idle;

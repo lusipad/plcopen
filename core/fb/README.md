@@ -30,6 +30,10 @@ parameters report `rt::ErrorCode::unsupported` instead of guessing (KB-006 carri
 while holding the final segment velocity. External profile-table import stays out of the
 runtime (KB-010).
 
+`probe.h` carries `FbTouchProbe`, `FbAbortTrigger`, and `FbEmergencyStop`. Trigger levels come
+from the fixed trigger-input bank on `AxisModel` (adapters call `set_trigger_input`); capture is
+the rising edge evaluated in the axis cycle, optionally gated by the position window.
+
 Non-goals:
 
 - No one-class-per-legacy-FB copy until the public v1 facade is switched in R4.
