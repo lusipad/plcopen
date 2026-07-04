@@ -7,6 +7,7 @@ file(MAKE_DIRECTORY "${BUILD_DIR}")
 set(SMOKE_SOURCE "${BUILD_DIR}/core_cross_smoke.cpp")
 file(WRITE "${SMOKE_SOURCE}" [=[
 #include "exec/sampler.h"
+#include "exec/sync.h"
 #include "geom/geometry.h"
 #include "rt/spsc_queue.h"
 
@@ -29,7 +30,12 @@ int main()
     }
     const geom::Vec3 finish = exec::sample_profiled_path(
         path, profile.value(), rt::CycleTick::from_cycles(profile.value().duration_cycles()));
-    return value == 1 && finish.x > 0.999 ? 0 : 1;
+    const double geared = exec::sample_gear(2.0, {2.0, 1.0});
+    exec::CamTable<2> cam;
+    cam.push({0.0, 0.0});
+    cam.push({1.0, 2.0});
+    const auto cam_value = cam.sample(0.5);
+    return value == 1 && finish.x > 0.999 && geared > 4.999 && cam_value.ok() ? 0 : 1;
 }
 ]=])
 

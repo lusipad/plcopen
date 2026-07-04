@@ -2,6 +2,7 @@
 #include <cstdio>
 
 #include "exec/sampler.h"
+#include "exec/sync.h"
 #include "geom/geometry.h"
 #include "plan/path.h"
 
@@ -62,6 +63,37 @@ int check_arc_geometry()
     return 0;
 }
 
+int check_spline_and_blending()
+{
+    using namespace plcopen::core;
+    const rt::Result<geom::CubicBezierSegment> spline = geom::make_cubic_bezier(
+        {0.0, 0.0, 0.0}, {1.0, 0.0, 0.0}, {1.0, 1.0, 0.0}, {2.0, 1.0, 0.0});
+    if(!spline || spline.value().length <= 2.0) {
+        return fail("cubic bezier length");
+    }
+    const geom::Vec3 midpoint = geom::sample(spline.value(), spline.value().length * 0.5);
+    if(midpoint.x <= 0.9 || midpoint.x >= 1.1 || midpoint.y <= 0.4 || midpoint.y >= 0.6) {
+        return fail("cubic bezier sample");
+    }
+
+    const geom::LineSegment before =
+        geom::make_line({0.0, 0.0, 0.0}, {1.0, 0.0, 0.0}).value();
+    const geom::LineSegment after =
+        geom::make_line({1.0, 0.0, 0.0}, {1.0, 1.0, 0.0}).value();
+    const plan::BlendDecision blend =
+        plan::decide_blend(geom::as_path_segment(before), geom::as_path_segment(after), 0.1);
+    if(!blend.enabled || blend.curve.kind != geom::SegmentKind::quadratic_blend ||
+       blend.curve.blend.max_deviation > 0.1) {
+        return fail("quadratic blend curve");
+    }
+    const geom::Vec3 start = blend.curve.start();
+    const geom::Vec3 finish = blend.curve.finish();
+    if(!near(start.y, 0.0, 1e-12) || !near(finish.x, 1.0, 1e-12)) {
+        return fail("blend endpoints stay on source segments");
+    }
+    return 0;
+}
+
 int check_path_buffer_and_lookahead()
 {
     using namespace plcopen::core;
@@ -92,7 +124,8 @@ int check_path_buffer_and_lookahead()
 
     const plan::BlendDecision blend =
         plan::decide_blend(geom::as_path_segment(a), geom::as_path_segment(b), 0.1);
-    if(!blend.enabled || blend.radius > 0.1 || blend.allowed_deviation != 0.1) {
+    if(!blend.enabled || blend.radius > 0.1 || blend.allowed_deviation != 0.1 ||
+       blend.curve.length() <= 0.0) {
         return fail("blend decision");
     }
     return 0;
@@ -120,12 +153,39 @@ int check_sampler()
     return 0;
 }
 
+int check_sync_primitives()
+{
+    using namespace plcopen::core;
+    const double geared = exec::sample_gear(2.0, {3.0, -1.0});
+    if(!near(geared, 5.0, 1e-12)) {
+        return fail("gear map");
+    }
+
+    exec::CamTable<4> cam;
+    if(cam.push({0.0, 0.0}) != rt::ErrorCode::ok || cam.push({1.0, 2.0}) != rt::ErrorCode::ok ||
+       cam.push({0.5, 1.0}) != rt::ErrorCode::invalid_argument) {
+        return fail("cam table ordering");
+    }
+    const rt::Result<double> slave = cam.sample(0.25);
+    if(!slave || !near(slave.value(), 0.5, 1e-12)) {
+        return fail("cam interpolation");
+    }
+
+    const geom::Vec3 overlaid = exec::apply_overlay({1.0, 2.0, 3.0}, {0.5, -0.5, 1.0});
+    if(!near(overlaid.x, 1.5, 1e-12) || !near(overlaid.y, 1.5, 1e-12) ||
+       !near(overlaid.z, 4.0, 1e-12)) {
+        return fail("overlay");
+    }
+    return 0;
+}
+
 } // namespace
 
 int main()
 {
     if(check_line_geometry() != 0 || check_arc_geometry() != 0 ||
-       check_path_buffer_and_lookahead() != 0 || check_sampler() != 0) {
+       check_spline_and_blending() != 0 || check_path_buffer_and_lookahead() != 0 ||
+       check_sampler() != 0 || check_sync_primitives() != 0) {
         return 1;
     }
     std::printf("PASS r2 motion tests\n");

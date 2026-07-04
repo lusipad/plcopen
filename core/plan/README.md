@@ -7,7 +7,7 @@ R2 v1 scope:
 - fixed-capacity path buffer;
 - monotonic front consumption;
 - bounded look-ahead speed pass over the current buffer;
-- blending decision metadata constrained by tolerance.
+- blending decisions that produce a bounded quadratic Bezier curve constrained by tolerance.
 
-R2 v1 does not rewrite path geometry for blending yet. It records the allowed blend radius and keeps
-the original path unless a later slice commits a curve insertion policy.
+R2 v1 keeps the curve insertion policy explicit: the caller receives the blend segment and chooses
+where to splice it into a committed path. The planner does not mutate source buffers in place.

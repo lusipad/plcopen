@@ -142,6 +142,7 @@ struct BlendDecision
     bool enabled = false;
     double radius = 0.0;
     double allowed_deviation = 0.0;
+    geom::PathSegment curve{};
 };
 
 inline BlendDecision decide_blend(const geom::PathSegment &before,
@@ -159,11 +160,22 @@ inline BlendDecision decide_blend(const geom::PathSegment &before,
         return {};
     }
 
+    const double shortest = before.length() < after.length() ? before.length() : after.length();
+    const double radius = tolerance < shortest * 0.5 ? tolerance : shortest * 0.5;
+    const geom::Vec3 corner = before.finish();
+    const geom::Vec3 start = corner - t0 * radius;
+    const geom::Vec3 finish = corner + t1 * radius;
+    const rt::Result<geom::QuadraticBlendSegment> curve =
+        geom::make_quadratic_blend(start, corner, finish, tolerance);
+    if(!curve) {
+        return {};
+    }
+
     BlendDecision decision{};
     decision.enabled = true;
     decision.allowed_deviation = tolerance;
-    const double shortest = before.length() < after.length() ? before.length() : after.length();
-    decision.radius = tolerance < shortest * 0.5 ? tolerance : shortest * 0.5;
+    decision.radius = radius;
+    decision.curve = geom::as_path_segment(curve.value());
     return decision;
 }
 

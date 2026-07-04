@@ -7,6 +7,7 @@ R2 v1 scope:
 - fixed-capacity committed path storage;
 - O(number-of-segments) bounded sampling over a small fixed capacity;
 - scalar OTG profile position mapped onto L2 geometry.
+- minimal gear, cam, and overlay primitives needed by later PLCopen semantic migration.
 
-The first sampler intentionally does not implement gear/cam/overlay primitives yet. Those enter a
-later R2 slice after the path sampling contract is stable.
+Gear and cam are pure value mappings. Overlay is vector addition on sampled path output; state and
+command lifecycle stay out of L4 until R3.

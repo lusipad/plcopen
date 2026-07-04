@@ -2,6 +2,7 @@
 #include <ctime>
 
 #include "exec/sampler.h"
+#include "exec/sync.h"
 #include "geom/geometry.h"
 #include "otg/profile1d.h"
 #include "plan/path.h"
@@ -48,6 +49,11 @@ int main()
     exec::CommittedPath<2> committed;
     committed.push(geom::as_path_segment(line_a));
     committed.push(geom::as_path_segment(line_b));
+    const plan::BlendDecision blend =
+        plan::decide_blend(geom::as_path_segment(line_a), geom::as_path_segment(line_b), 0.05);
+    exec::CamTable<4> cam;
+    cam.push({0.0, 0.0});
+    cam.push({5.0, 10.0});
 
     constexpr int Iterations = 200000;
     int sink = 0;
@@ -88,11 +94,16 @@ int main()
         std::fabs(lookahead.value().exit_speed[0] - lookahead.value().entry_speed[1]);
     const double path_error = geom::norm(path_buffer.sample(path_buffer.total_length()) -
                                          geom::Vec3{5.0, 5.0, 0.0});
+    const double cam_error = std::fabs(cam.sample(2.5).value() - 5.0);
+    const geom::Vec3 overlaid = exec::apply_overlay({1.0, 1.0, 1.0}, {0.25, -0.25, 0.5});
+    const double overlay_checksum = overlaid.x + overlaid.y + overlaid.z;
 
     std::printf("BENCH_BASELINE static_vector_ms=%.3f spsc_ms=%.3f sample_ms=%.3f "
                 "path_sample_ms=%.3f checksum=%.3f\n",
                 vector_ms, queue_ms, sample_ms, path_sample_ms, position_sum + sink);
-    std::printf("PATH_METRICS speed_ripple=%.6f path_error=%.12f cycle_efficiency=%.6f\n",
-                speed_ripple, path_error, committed.total_length() / path_buffer.total_length());
+    std::printf("PATH_METRICS speed_ripple=%.6f path_error=%.12f cycle_efficiency=%.6f "
+                "blend_deviation=%.12f cam_error=%.12f overlay_checksum=%.6f\n",
+                speed_ripple, path_error, committed.total_length() / path_buffer.total_length(),
+                blend.curve.blend.max_deviation, cam_error, overlay_checksum);
     return 0;
 }
