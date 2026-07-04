@@ -137,14 +137,68 @@ public:
         return rt::ErrorCode::ok;
     }
 
-    rt::ErrorCode stop()
+    // MC_GroupStop: controlled deceleration along the original path. The halt
+    // profile re-plans the path parameter from its current sampled state to
+    // the minimal braking point, so members stay collinear on the commanded
+    // line while stopping (KB-027).
+    rt::ErrorCode stop(double deceleration = 1.0, double jerk = 1.0)
     {
-        if(status_ == GroupStatus::disabled || status_ == GroupStatus::errorstop) {
+        if(status_ == GroupStatus::disabled || status_ == GroupStatus::errorstop ||
+           !std::isfinite(deceleration) || deceleration <= 0.0 || !std::isfinite(jerk) ||
+           jerk <= 0.0) {
             return rt::ErrorCode::invalid_argument;
         }
-        if(status_ == GroupStatus::moving) {
-            status_ = GroupStatus::stopping;
+        if(status_ != GroupStatus::moving) {
+            return rt::ErrorCode::ok;
         }
+        queue_.clear();
+        if(!active_ || active_path_length_ <= 0.0) {
+            abort_motion();
+            status_ = GroupStatus::standby;
+            return rt::ErrorCode::ok;
+        }
+
+        const otg::State1D state =
+            otg::sample(active_profile_, rt::CycleTick::from_cycles(active_tick_));
+        if(state.velocity <= 0.0) {
+            abort_motion();
+            status_ = GroupStatus::standby;
+            return rt::ErrorCode::ok;
+        }
+
+        // Minimal braking distance: fold the acceleration-zeroing ramp, then
+        // the jerk-limited ramp to rest (same primitives as the planner). The
+        // acceleration bound stays the original command's so the current
+        // profile state is always inside the halt envelope.
+        const otg::Limits1D halt_limits{active_command_.velocity,
+                                        active_command_.acceleration, deceleration, jerk};
+        double brake_velocity = state.velocity;
+        double brake_shift = 0.0;
+        if(state.acceleration != 0.0) {
+            const double zero_cycles = std::ceil(std::fabs(state.acceleration) / jerk);
+            brake_velocity += 0.5 * state.acceleration * zero_cycles;
+            brake_shift += state.velocity * zero_cycles +
+                           state.acceleration * zero_cycles * zero_cycles / 3.0;
+        }
+        if(brake_velocity < 0.0) {
+            brake_velocity = 0.0;
+        }
+        const double stop_position = state.position + brake_shift +
+                                     otg::detail::ramp_between(brake_velocity, 0.0, halt_limits)
+                                         .distance;
+
+        const rt::Result<otg::Profile1D> halt = otg::plan_time_optimal(
+            state, {stop_position, 0.0, 0.0}, halt_limits);
+        if(!halt) {
+            // Fall back to the immediate stop rather than continuing motion.
+            abort_motion();
+            status_ = GroupStatus::standby;
+            return rt::ErrorCode::ok;
+        }
+        active_profile_ = halt.value();
+        active_tick_ = 0;
+        active_duration_ = active_profile_.duration_cycles();
+        status_ = GroupStatus::stopping;
         return rt::ErrorCode::ok;
     }
 
@@ -201,12 +255,10 @@ public:
             }
         }
 
-        if(status_ == GroupStatus::stopping) {
-            abort_motion();
-            status_ = GroupStatus::standby;
-            return;
-        }
         if(!active_) {
+            if(status_ == GroupStatus::stopping) {
+                status_ = GroupStatus::standby;
+            }
             return;
         }
 

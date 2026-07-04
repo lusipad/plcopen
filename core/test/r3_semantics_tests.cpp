@@ -343,18 +343,29 @@ int check_group_linear_contract()
         return fail("group linear completion");
     }
 
-    linear.target.value[0] = 5.0;
+    // A long move so the braking distance is clearly shorter than the path.
+    linear.target.value[0] = 15.0;
     linear.target.value[1] = 4.0;
     linear.buffer_mode = axis::BufferMode::aborting;
     if(!group.submit_linear(linear)) {
         return fail("group second command");
     }
+    group.cycle();
     if(group.stop() != rt::ErrorCode::ok) {
         return fail("group stop accepted");
     }
-    group.cycle();
+    // Controlled stop: the group decelerates along the path before standby.
+    if(group.status() != axis::GroupStatus::stopping) {
+        return fail("group stop enters stopping");
+    }
+    for(int i = 0; i < 200 && group.status() != axis::GroupStatus::standby; ++i) {
+        group.cycle();
+    }
     if(group.status() != axis::GroupStatus::standby) {
         return fail("group stop returns standby");
+    }
+    if(x.snapshot().command_position >= 14.0 || x.snapshot().command_position <= 3.0) {
+        return fail("group stop halts short of the aborted target");
     }
 
     if(!group.submit_linear(linear)) {

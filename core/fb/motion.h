@@ -659,13 +659,16 @@ public:
 class FbGroupStop : public GroupExecuteFb
 {
 public:
+    double deceleration = 1.0;
+    double jerk = 1.0;
+
     void call()
     {
         if(rising_edge()) {
             if(group_ref == nullptr) {
                 accept(rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument));
             } else {
-                const rt::ErrorCode stopped = group_ref->stop();
+                const rt::ErrorCode stopped = group_ref->stop(deceleration, jerk);
                 accept(stopped == rt::ErrorCode::ok
                            ? rt::Result<std::uint32_t>::success(1)
                            : rt::Result<std::uint32_t>::failure(stopped));
