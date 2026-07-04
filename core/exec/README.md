@@ -11,3 +11,7 @@ R2 v1 scope:
 
 Gear and cam are pure value mappings. Overlay is vector addition on sampled path output; state and
 command lifecycle stay out of L4 until R3.
+
+`CamTableView` is the non-owning cam table handle used by L5/L6: full table validation
+(`valid()`) is an engage-time concern; the cycle-path `sample()` only guards emptiness and
+finiteness and supports optional periodic wrap over the master span.

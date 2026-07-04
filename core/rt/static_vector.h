@@ -67,6 +67,16 @@ public:
         return data_[index];
     }
 
+    constexpr const T *data() const
+    {
+        return data_.data();
+    }
+
+    constexpr T *data()
+    {
+        return data_.data();
+    }
+
 private:
     std::array<T, Capacity> data_{};
     std::size_t size_ = 0;

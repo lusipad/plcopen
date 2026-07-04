@@ -51,6 +51,11 @@ if(BUILD_TESTING AND PLCOPEN_BUILD_CORE_TESTS)
     plcopen_core_rt_compile_options(plcopen_core_r3_tests)
     add_test(NAME plcopen_core_r3_tests COMMAND plcopen_core_r3_tests)
 
+    add_executable(plcopen_core_r3_sync_tests test/r3_sync_tests.cpp)
+    target_link_libraries(plcopen_core_r3_sync_tests PRIVATE plcopen::core)
+    plcopen_core_rt_compile_options(plcopen_core_r3_sync_tests)
+    add_test(NAME plcopen_core_r3_sync_tests COMMAND plcopen_core_r3_sync_tests)
+
     add_executable(plcopen_core_benchmark bench/core_benchmark.cpp)
     target_link_libraries(plcopen_core_benchmark PRIVATE plcopen::core)
     plcopen_core_rt_compile_options(plcopen_core_benchmark)

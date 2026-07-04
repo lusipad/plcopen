@@ -72,6 +72,11 @@ protected:
         if(!execute || tracked_command_id_ == 0 || axis_ref == nullptr) {
             return;
         }
+        // Done holds while Execute stays high; a later takeover command must
+        // not retroactively turn a completed command into an aborted one.
+        if(outputs.done) {
+            return;
+        }
         const axis::AxisSnapshot &snapshot = axis_ref->snapshot();
         if(snapshot.active_command_id == tracked_command_id_) {
             outputs.busy = true;

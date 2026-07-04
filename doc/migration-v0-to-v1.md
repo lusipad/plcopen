@@ -52,12 +52,23 @@
 | `FbMoveLinearAbsolute` / `FbMoveLinearRelative` | `fb::FbMoveLinearAbsolute` / `FbMoveLinearRelative` | 位置用 `GroupPosition{size,value[]}` |
 | `FbRTrig` / `FbFTrig` / `FbSr` / `FbRs` | `fb::RTrig` / `FTrig` / `SR` / `RS` | 去掉 `Fb` 前缀 |
 | `FbTon` / `FbTof` / `FbTp` / `FbCtu` / `FbCtd` / `FbCtud` / `FbRtc` | `fb::TON` / `TOF` / `TP` / `CTU` / `CTD` / `CTUD` / `RTC` | 周期用 `set_cycle_time(ticks)` |
+| `FbGearIn` / `FbGearInPos` / `FbGearOut` | `fb::FbGearIn` / `FbGearInPos` / `FbGearOut`（`fb/sync.h`） | `mInGear` → `in_sync`；`StartSync` → `start_sync`（逼近开始与入同步各脉冲一周期） |
+| `FbCamTableSelect` / `FbCamIn` / `FbCamOut` | `fb::FbCamTableSelect` / `FbCamIn` / `FbCamOut` | cam 表句柄换为非拥有的 `exec::CamTableView`；周期表用 `CamTable::set_periodic` |
+| `FbPhasingAbsolute` / `FbPhasingRelative` | `fb::FbPhasingAbsolute` / `FbPhasingRelative` | 相位输入上升沿锁存；`Velocity=0` 保持直接设置语义 |
+| `FbCombineAxes` | `fb::FbCombineAxes` | add/sub 两主轴合成，`ContinuousUpdate` 支持模式与配比在线更新 |
+
+同步族已声明的行为边界（新核为最小语义层，回放仲裁外的变化以此为准）：
+
+- 逼近段（`MasterStartDistance` 窗口）按主轴行程线性插值 + 可选每周期速度上限；不建模加速度/加加速度整形的逼近轮廓（`Acceleration/Deceleration/Jerk` 输入不再暴露）。
+- 同步中的从轴只接受 aborting 命令接管；非 aborting 运动命令显式报 `invalid_argument`（旧线为排队等待，但同步无定义完成点）。
+- 组级 `stop` 不再中止成员级 gear/cam 同步（新核组命令与成员同步分属两个写者）；`disable` 或从轴 aborting 命令/`sync_out` 会解除同步。
+- 组前置校验失败（不同组/组未使能）报 `rt::ErrorCode::precondition_failed`（旧线 `AXIS_GROUP_MISMATCH` / `GROUP_DISABLED`）。
 
 尚未迁移到新核（旧线 P0 窗口内仍可经 `PLCOPEN_BUILD_LEGACY=ON` 使用；新核排期见规划文档）：
 
 - 叠加与连续运动族：`FbMoveSuperimposed` / `FbHaltSuperimposed`、`FbMoveContinuous*`、`FbMoveAdditive`
 - 轨迹表族：`FbPositionProfile` / `FbVelocityProfile` / `FbAccelerationProfile`
-- 同步族：`FbGearIn(Pos)/Out`、`FbCamIn/Out/TableSelect`、`FbPhasing*`、`FbCombineAxes`、`FbDigitalCamSwitch`
+- 数字凸轮开关：`FbDigitalCamSwitch`（依赖 Servo 数字输出抽象，随 L7 适配层排期）
 - 探针与触发：`FbTouchProbe` / `FbAbortTrigger`、`FbEmergencyStop`
 - 参数与状态读写族：`FbRead*` / `FbWrite*`（新核以 `AxisModel` 查询接口与 `snapshot()` 部分替代）
 - 组管理 FB 形态：`FbAddAxisToGroup` / `FbRemoveAxisFromGroup` / `FbGroupRead*`（新核用 `AxisGroup::add_axis/remove_axis` 直接方法）

@@ -10,6 +10,7 @@ enum class ErrorCode
     out_of_range,
     capacity_exceeded,
     infeasible,
+    precondition_failed,
 };
 
 template <typename T> class Result
