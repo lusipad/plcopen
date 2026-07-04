@@ -6,6 +6,7 @@
 #include "exec/sync.h"
 #include "geom/geometry.h"
 #include "otg/profile1d.h"
+#include "otg/time_optimal.h"
 #include "plan/path.h"
 #include "rt/spsc_queue.h"
 #include "rt/static_vector.h"
@@ -122,6 +123,33 @@ int main()
     const double axis_cycle_ms = millis_since(start);
     position_sum += bench_slave.snapshot().command_position;
 
+    // Cycle-time efficiency trend (long-term-plan 6.5): total duration of the
+    // time-optimal planner over the baseline planner on a fixed case set.
+    long long optimal_cycles = 0;
+    long long baseline_cycles = 0;
+    {
+        const otg::Limits1D otg_limits{3.0, 2.0, 2.0, 2.5};
+        const otg::State1D froms[] = {
+            {0.0, 0.0, 0.0}, {0.0, 1.5, 0.0}, {0.0, -2.0, 0.0}, {0.0, 2.0, -1.5}};
+        const otg::Target1D tos[] = {
+            {8.0, 0.0, 0.0}, {30.0, 1.0, 0.0}, {-6.0, 0.0, 0.0}, {2.5, 0.0, 0.0}};
+        for(std::size_t i = 0; i < 4; ++i) {
+            const rt::Result<otg::Profile1D> optimal =
+                otg::plan_time_optimal(froms[i], tos[i], otg_limits);
+            const rt::Result<otg::Profile1D> baseline = otg::plan(froms[i], tos[i], otg_limits);
+            if(!optimal || !baseline) {
+                std::printf("BENCH_FAIL efficiency case %zu\n", i);
+                return 1;
+            }
+            optimal_cycles += optimal.value().duration_cycles();
+            baseline_cycles += baseline.value().duration_cycles();
+        }
+    }
+    const double cycle_time_efficiency =
+        baseline_cycles > 0
+            ? static_cast<double>(optimal_cycles) / static_cast<double>(baseline_cycles)
+            : 0.0;
+
     const double speed_ripple =
         std::fabs(lookahead.value().exit_speed[0] - lookahead.value().entry_speed[1]);
     const double path_error = geom::norm(path_buffer.sample(path_buffer.total_length()) -
@@ -135,8 +163,10 @@ int main()
                 vector_ms, queue_ms, sample_ms, path_sample_ms, axis_cycle_ms,
                 position_sum + sink);
     std::printf("PATH_METRICS speed_ripple=%.6f path_error=%.12f cycle_efficiency=%.6f "
-                "blend_deviation=%.12f cam_error=%.12f overlay_checksum=%.6f\n",
+                "blend_deviation=%.12f cam_error=%.12f overlay_checksum=%.6f "
+                "otg_duration_vs_baseline=%.4f\n",
                 speed_ripple, path_error, committed.total_length() / path_buffer.total_length(),
-                blend.curve.blend.max_deviation, cam_error, overlay_checksum);
+                blend.curve.blend.max_deviation, cam_error, overlay_checksum,
+                cycle_time_efficiency);
     return 0;
 }
