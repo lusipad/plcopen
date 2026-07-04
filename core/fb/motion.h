@@ -84,6 +84,20 @@ protected:
             outputs.done = false;
             return;
         }
+        // A completed command reports done even when a queued or blending
+        // successor started within the same cycle.
+        if(snapshot.last_completed_command_id == tracked_command_id_) {
+            outputs.done = true;
+            outputs.busy = false;
+            outputs.active = false;
+            return;
+        }
+        // A command waiting in the buffered queue is busy, not aborted.
+        if(axis_ref->command_pending(tracked_command_id_)) {
+            outputs.busy = true;
+            outputs.active = false;
+            return;
+        }
         if(snapshot.status == axis::AxisStatus::standstill ||
            snapshot.status == axis::AxisStatus::disabled) {
             outputs.done = true;

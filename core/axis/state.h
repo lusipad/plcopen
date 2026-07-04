@@ -217,6 +217,9 @@ struct AxisSnapshot
     // reaching the target position.
     bool active_command_reached_target = false;
     std::uint32_t active_command_id = 0;
+    // Id of the most recently *completed* (not aborted) command, so facades
+    // can latch Done even when a queued successor starts in the same cycle.
+    std::uint32_t last_completed_command_id = 0;
 };
 
 inline bool is_finite_command(const AxisCommand &command)
@@ -949,6 +952,21 @@ public:
         return superimposed_completed_id_;
     }
 
+    // True while the command sits in the buffered queue (facades report Busy
+    // for queued successors instead of misreading them as aborted).
+    bool command_pending(std::uint32_t command_id) const
+    {
+        if(command_id == 0) {
+            return false;
+        }
+        for(std::size_t i = 0; i < queue_.size(); ++i) {
+            if(queue_[i].command_id == command_id) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     // ContinuousUpdate for the active velocity command (MC_MoveVelocity,
     // KB-009): the new signed direction and magnitude apply from the next
     // cycle; the override keeps scaling per cycle.
@@ -1293,6 +1311,7 @@ private:
         active_command_ = command;
         active_tick_ = 0;
         continuous_holding_ = false;
+        blend_armed_ = false;
         snapshot_.active_command_reached_target = false;
         snapshot_.active_command_id = command.command_id;
 
@@ -1422,6 +1441,29 @@ private:
         snapshot_.actual_acceleration = state.acceleration;
         base_velocity_ = state.velocity;
 
+        // KB-001 velocity-threshold blending: arm once the speed exceeds the
+        // successor's threshold of the nominal command velocity, hand over
+        // once it falls back below. Short moves that never arm degrade to
+        // BUFFERED; homing, halt/stop, and continuous holds do not blend.
+        const bool blend_eligible =
+            active_command_.kind == CommandKind::move_absolute && !queue_.empty() &&
+            (queue_[0].buffer_mode == BufferMode::blending_low ||
+             queue_[0].buffer_mode == BufferMode::blending_high);
+        if(blend_eligible) {
+            const double nominal = active_command_.velocity * (override_ / 100.0);
+            const double threshold =
+                (queue_[0].buffer_mode == BufferMode::blending_low ? 0.3 : 0.7) * nominal;
+            const double speed = std::fabs(state.velocity);
+            if(speed > threshold) {
+                blend_armed_ = true;
+            } else if(blend_armed_) {
+                blend_into_next();
+                return;
+            }
+        } else {
+            blend_armed_ = false;
+        }
+
         if(active_tick_ >= active_profile_.duration_cycles()) {
             // Timed profile segments hold at the target until their minimum
             // duration elapses (otg::sample keeps returning the finish state).
@@ -1477,6 +1519,7 @@ private:
         active_ = false;
         continuous_holding_ = false;
         base_velocity_ = 0.0;
+        snapshot_.last_completed_command_id = snapshot_.active_command_id;
         snapshot_.active_command_id = 0;
         snapshot_.active_command_reached_target = false;
         snapshot_.command_velocity = 0.0;
@@ -1484,6 +1527,16 @@ private:
         snapshot_.command_acceleration = 0.0;
         snapshot_.actual_acceleration = 0.0;
         snapshot_.status = snapshot_.powered ? AxisStatus::standstill : AxisStatus::disabled;
+        start_next_queued();
+    }
+
+    // KB-001 velocity-threshold blending: the queued successor takes over
+    // while the active profile is still decelerating, planning from the live
+    // state (the predecessor counts as completed at the handover point).
+    void blend_into_next()
+    {
+        snapshot_.last_completed_command_id = snapshot_.active_command_id;
+        blend_armed_ = false;
         start_next_queued();
     }
 
@@ -1568,6 +1621,7 @@ private:
     bool active_ = false;
     bool continuous_holding_ = false;
     bool halt_profiled_ = false;
+    bool blend_armed_ = false;
 
     otg::Profile1D superimposed_profile_{};
     std::int64_t superimposed_tick_ = 0;

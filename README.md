@@ -428,6 +428,7 @@ target_link_libraries(app PRIVATE plcopen::plcopen)
 - `KB-024`：新核轨迹表为调用方持有的定长段数组（≤8 段，替代 `mNext` 链表），段时长为周期计数且 `TimeScale` 作用于时长；`ContinuousUpdate` 仅支持单段剖面；速度/加速度剖面终段无限保持（修订 `KB-010`）。
 - `KB-025`：新核 `MC_MoveContinuous*` 与速度/加速度剖面的 `Done` 表示"保持终速中"的持续状态而非锁存完成态，被接管时报 `CommandAborted`；`MC_HaltSuperimposed` 当周期完成，不建模叠加偏移的减速段（补充 `KB-008`）。
 - `KB-026`：新核离散运动（含叠加偏移与连续运动的规划段）经近时间最优 7 段 jerk-limited S 曲线求解器规划（`otg::plan_time_optimal`）：同等约束下运动时长显著缩短（零初始加速度状态域总时长约为原保守 quintic 求解器的 65%），加速度形状由平滑多项式变为梯形/三角相位；包络与端点承诺不变，回放基线升级为 `core-single-axis-move-v2`。aborting 接管现承接当前命令加速度（接管处加速度连续）；若新命令的限位容不下当前状态（如更小的加速度限位），接管显式报 infeasible 而非假装加速度为零。
+- `KB-029`：新核承接 `KB-001` 的单轴速度阈值 blending：后继命令为 `BLENDING_LOW`/`BLENDING_HIGH` 时，前一 `move_absolute` 剖面速度先超过再跌破标称速度的 30%/70% 阈值即提前交接（后继从实时状态规划，前命令在交接点报 `Done`）；未达阈值的短行程退化为 `BUFFERED`；homing、halt/stop 与连续保持不参与 blending。快照新增 `last_completed_command_id` 与 `command_pending` 查询：buffered/blending 链中已完成的前命令报 `Done`、排队中的后继报 `Busy`（修复此前二者都被误报 `CommandAborted` 的观察缺陷）。
 - `KB-028`：单轴 `MC_Halt`/`MC_Stop` 按命令 `Deceleration`/`Jerk` 从接管速度受控减速到静止（承接 v0.x 合同；此前新核为一周期即停），刹车目标豁免软限位检查（轴必须被允许停下）；aborting 接管全面保持运动学连续（新命令从被接管时的真实速度/加速度规划，此前 abort 会把速度瞬移为零再规划），速度限位低于当前速度的接管按"减速进入新包络"规划而非拒绝；回放基线升级为 `core-velocity-stop-v2`。
 - `KB-027`：组线性命令的共享标量路径参数由 jerk-limited 1D 剖面驱动（此前新核为恒速线性插值），`Acceleration`/`Deceleration`/`Jerk` 输入生效，动力学以行程最长成员为基准；成员共线性由单一路径参数构造保证不变；回放基线升级为 `core-group-linear-v2`。`MC_GroupStop` 按 `Deceleration`/`Jerk` 沿原路径受控减速（刹车距离超出剩余路径时在命令终点停住），停车清空命令队列；对成员级 gear/cam 同步仍不生效（`KB-019`）。
 

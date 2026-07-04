@@ -468,6 +468,131 @@ int check_move_velocity_continuous_update()
     return 0;
 }
 
+int check_velocity_threshold_blending()
+{
+    axis::AxisModel axis;
+    axis.set_power(true);
+
+    // blending_low: the successor takes over while the first move is still
+    // decelerating (before its endpoint) and the first reports done, not
+    // aborted.
+    // Gentle deceleration limits give the profile a wide deceleration tail so
+    // the threshold crossing is far from the endpoint.
+    fb::FbMoveAbsolute first;
+    first.axis_ref = &axis;
+    first.position = 6.0;
+    first.velocity = 0.5;
+    first.acceleration = 0.01;
+    first.deceleration = 0.01;
+    first.jerk = 0.01;
+    first.execute = true;
+    first.call();
+    if(!first.outputs.command_accepted) {
+        return fail("blend first accepted");
+    }
+
+    fb::FbMoveAbsolute second;
+    second.axis_ref = &axis;
+    second.position = 12.0;
+    second.velocity = 0.5;
+    second.acceleration = 0.01;
+    second.deceleration = 0.01;
+    second.jerk = 0.01;
+    second.buffer_mode = axis::BufferMode::blending_low;
+    second.execute = true;
+    second.call();
+    if(!second.outputs.command_accepted) {
+        return fail("blend second accepted");
+    }
+
+    double first_done_position = -1.0;
+    for(int i = 0; i < 4000 && !second.outputs.done; ++i) {
+        axis.cycle();
+        first.call();
+        second.call();
+        if(first.outputs.command_aborted) {
+            return fail("blend predecessor must not report aborted");
+        }
+        if(first.outputs.done && first_done_position < 0.0) {
+            first_done_position = axis.snapshot().command_position;
+        }
+    }
+    if(!first.outputs.done || !second.outputs.done) {
+        return fail("blend chain completes");
+    }
+    if(first_done_position < 0.0 || first_done_position >= 6.0 - 0.1) {
+        return fail("blend hands over before the first endpoint");
+    }
+    if(!near(axis.snapshot().command_position, 12.0, 1e-6)) {
+        return fail("blend chain final endpoint");
+    }
+
+    // A short first move that never exceeds the threshold degrades to
+    // BUFFERED (runs to its endpoint first).
+    axis::AxisModel slow;
+    slow.set_power(true);
+    axis::AxisCommand tiny = make_move(axis::CommandKind::move_absolute, 0.001, 0.5);
+    if(!slow.submit(tiny)) {
+        return fail("blend degrade first accepted");
+    }
+    axis::AxisCommand chained = make_move(axis::CommandKind::move_absolute, 1.0, 0.5);
+    chained.buffer_mode = axis::BufferMode::blending_high;
+    if(!slow.submit(chained)) {
+        return fail("blend degrade second accepted");
+    }
+    bool reached_first_endpoint = false;
+    for(int i = 0; i < 4000 && slow.status() != axis::AxisStatus::standstill; ++i) {
+        slow.cycle();
+        if(near(slow.snapshot().command_position, 0.001, 1e-12)) {
+            reached_first_endpoint = true;
+        }
+    }
+    if(!reached_first_endpoint || !near(slow.snapshot().command_position, 1.0, 1e-6)) {
+        return fail("blend below threshold degrades to buffered");
+    }
+
+    return 0;
+}
+
+int check_buffered_chain_done_observation()
+{
+    axis::AxisModel axis;
+    axis.set_power(true);
+
+    fb::FbMoveAbsolute first;
+    first.axis_ref = &axis;
+    first.position = 1.0;
+    first.velocity = 0.2;
+    first.execute = true;
+    first.call();
+
+    fb::FbMoveAbsolute second;
+    second.axis_ref = &axis;
+    second.position = 2.0;
+    second.velocity = 0.2;
+    second.buffer_mode = axis::BufferMode::buffered;
+    second.execute = true;
+    second.call();
+    if(!first.outputs.command_accepted || !second.outputs.command_accepted) {
+        return fail("buffered chain accepted");
+    }
+
+    for(int i = 0; i < 4000 && !second.outputs.done; ++i) {
+        axis.cycle();
+        first.call();
+        second.call();
+        if(first.outputs.command_aborted) {
+            return fail("buffered predecessor must not report aborted");
+        }
+    }
+    if(!first.outputs.done || !second.outputs.done ||
+       !near(axis.snapshot().command_position, 2.0, 1e-6)) {
+        return fail("buffered chain done observation");
+    }
+
+    return 0;
+}
+
 } // namespace
 
 int main()
@@ -476,7 +601,9 @@ int main()
        check_halt_superimposed() != 0 || check_move_continuous() != 0 ||
        check_move_continuous_relative_and_update() != 0 ||
        check_superimposed_boundaries() != 0 || check_override_replanning() != 0 ||
-       check_move_velocity_continuous_update() != 0) {
+       check_move_velocity_continuous_update() != 0 ||
+       check_velocity_threshold_blending() != 0 ||
+       check_buffered_chain_done_observation() != 0) {
         return 1;
     }
     std::printf("PASS r3 motion family tests\n");
