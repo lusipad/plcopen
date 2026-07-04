@@ -48,7 +48,10 @@ struct Segment1D
 class Profile1D
 {
 public:
-    static constexpr std::size_t MaxSegments = 7;
+    // Sized for the time-optimal planner's worst case: a zero-crossing entry
+    // ramp (up to 6 jerk phases), cruise, exit ramp (3 phases), and the
+    // integer-quantization correction segment.
+    static constexpr std::size_t MaxSegments = 16;
 
     rt::ErrorCode add_segment(const Segment1D &segment)
     {

@@ -17,7 +17,10 @@ jobs:
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 
       - name: Build core fuzz
-        run: cmake --build build --target plcopen_core_otg_fuzz --parallel
+        run: cmake --build build --target plcopen_core_otg_fuzz plcopen_core_otg_time_optimal_tests --parallel
 
       - name: Run deterministic OTG fuzz
         run: ./build/core/plcopen_core_otg_fuzz --iterations 1000000
+
+      - name: Run time-optimal OTG fuzz
+        run: ./build/core/plcopen_core_otg_time_optimal_tests --iterations 1000000
