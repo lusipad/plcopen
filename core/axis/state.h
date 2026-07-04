@@ -95,9 +95,27 @@ struct AxisCommand
     double jerk = 1.0;
     // Only used by the move_continuous_* kinds; must be positive there.
     double end_velocity = 0.0;
+    // Minimum command time in cycles (profile-table segments). A position
+    // command holds at its target until the duration elapses; a velocity
+    // command finishes after it (0 keeps the plain unlimited hold).
+    std::int64_t min_duration_cycles = 0;
     BufferMode buffer_mode = BufferMode::aborting;
     bool continuous_update = false;
     std::uint32_t command_id = 0;
+};
+
+// One profile-table segment (MC_Position/Velocity/AccelerationProfile).
+// target is a position for position profiles and a signed velocity for
+// velocity/acceleration profiles.
+struct ProfileSegment
+{
+    double target = 0.0;
+    double velocity = 1.0;
+    double acceleration = 1.0;
+    double deceleration = 1.0;
+    double jerk = 1.0;
+    std::int64_t duration_cycles = 0;
+    bool relative = false;
 };
 
 enum class MasterValueSource
@@ -741,20 +759,25 @@ public:
         return superimposed_completed_id_;
     }
 
-    // Retargets the active move_continuous_* command (ContinuousUpdate).
+    // Retargets the active move_continuous_* or move_absolute command
+    // (ContinuousUpdate).
     rt::ErrorCode update_active_target(std::uint32_t command_id, double target)
     {
         if(!active_ || snapshot_.active_command_id != command_id || command_id == 0 ||
-           !std::isfinite(target) || !is_continuous_kind(active_command_.kind)) {
+           !std::isfinite(target) ||
+           (!is_continuous_kind(active_command_.kind) &&
+            active_command_.kind != CommandKind::move_absolute)) {
             return rt::ErrorCode::invalid_argument;
         }
         if(!target_inside_limits(target)) {
             return rt::ErrorCode::out_of_range;
         }
 
-        const double direction = target >= snapshot_.command_position ? 1.0 : -1.0;
-        const double end_velocity =
-            direction * active_command_.end_velocity * (override_ / 100.0);
+        double end_velocity = 0.0;
+        if(is_continuous_kind(active_command_.kind)) {
+            const double direction = target >= snapshot_.command_position ? 1.0 : -1.0;
+            end_velocity = direction * active_command_.end_velocity * (override_ / 100.0);
+        }
         otg::Limits1D limits{active_command_.velocity * (override_ / 100.0),
                              active_command_.acceleration,
                              active_command_.deceleration,
@@ -1125,6 +1148,12 @@ private:
             snapshot_.actual_velocity = velocity;
             snapshot_.command_position += velocity;
             snapshot_.actual_position = snapshot_.command_position;
+            if(!continuous_holding_ && active_command_.min_duration_cycles > 0) {
+                ++active_tick_;
+                if(active_tick_ >= active_command_.min_duration_cycles) {
+                    finish_active();
+                }
+            }
             return;
         }
 
@@ -1148,6 +1177,11 @@ private:
         base_velocity_ = state.velocity;
 
         if(active_tick_ >= active_profile_.duration_cycles()) {
+            // Timed profile segments hold at the target until their minimum
+            // duration elapses (otg::sample keeps returning the finish state).
+            if(active_tick_ < active_command_.min_duration_cycles) {
+                return;
+            }
             if(active_command_.kind == CommandKind::home) {
                 snapshot_.homed = true;
             }

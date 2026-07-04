@@ -1,0 +1,338 @@
+#pragma once
+
+#include <cmath>
+#include <cstdint>
+
+#include "axis/state.h"
+#include "fb/motion.h"
+#include "rt/error.h"
+
+namespace plcopen::core::fb
+{
+
+// Profile-table facades (MC_Position/Velocity/AccelerationProfile). The table
+// is a caller-owned fixed array of axis::ProfileSegment; external profile-table
+// import/parsing stays outside the runtime (KB-010 carried over). Segment
+// durations are cycle counts; time_scale multiplies them.
+class ProfileFbBase
+{
+public:
+    axis::AxisModel *axis_ref = nullptr;
+    const axis::ProfileSegment *segments = nullptr;
+    std::size_t segment_count = 0;
+    double time_scale = 1.0;
+    bool continuous_update = false;
+    bool execute = false;
+    MotionOutputs outputs{};
+
+protected:
+    bool rising_edge()
+    {
+        const bool rising = execute && !last_execute_;
+        last_execute_ = execute;
+        if(!execute) {
+            clear(outputs);
+            first_id_ = 0;
+            last_id_ = 0;
+        }
+        return rising;
+    }
+
+    bool inputs_valid() const
+    {
+        return axis_ref != nullptr && segments != nullptr && segment_count >= 1 &&
+               segment_count <= axis::AxisModel::QueueCapacity && std::isfinite(time_scale) &&
+               time_scale > 0.0;
+    }
+
+    void fail(rt::ErrorCode code)
+    {
+        clear(outputs);
+        outputs.error = true;
+        outputs.error_id = code;
+        first_id_ = 0;
+        last_id_ = 0;
+    }
+
+    std::int64_t scaled_duration(std::int64_t duration_cycles) const
+    {
+        if(duration_cycles <= 0) {
+            return 0;
+        }
+        const double scaled = static_cast<double>(duration_cycles) * time_scale;
+        return static_cast<std::int64_t>(scaled + 0.5);
+    }
+
+    void track(std::uint32_t first_id, std::uint32_t last_id)
+    {
+        first_id_ = first_id;
+        last_id_ = last_id;
+        clear(outputs);
+        outputs.command_id = first_id;
+        outputs.command_accepted = true;
+        outputs.busy = true;
+        outputs.active = true;
+    }
+
+    bool tracked_active(std::uint32_t active_id) const
+    {
+        return active_id >= first_id_ && active_id <= last_id_;
+    }
+
+    std::uint32_t first_id_ = 0;
+    std::uint32_t last_id_ = 0;
+
+private:
+    bool last_execute_ = false;
+};
+
+class FbPositionProfile : public ProfileFbBase
+{
+public:
+    double position_scale = 1.0;
+    double position_offset = 0.0;
+
+    void call()
+    {
+        if(rising_edge()) {
+            submit();
+        } else {
+            update();
+        }
+        observe();
+    }
+
+private:
+    void submit()
+    {
+        if(!inputs_valid() || !std::isfinite(position_scale) || !std::isfinite(position_offset)) {
+            fail(rt::ErrorCode::invalid_argument);
+            return;
+        }
+        last_target_ = segments[0].target;
+        start_position_ = axis_ref->snapshot().command_position;
+
+        std::uint32_t first_id = 0;
+        std::uint32_t last_id = 0;
+        for(std::size_t i = 0; i < segment_count; ++i) {
+            const axis::ProfileSegment &segment = segments[i];
+            axis::AxisCommand command{};
+            command.kind = segment.relative ? axis::CommandKind::move_relative
+                                            : axis::CommandKind::move_absolute;
+            command.value = segment.relative
+                                ? segment.target * position_scale
+                                : segment.target * position_scale + position_offset;
+            command.velocity = segment.velocity;
+            command.acceleration = segment.acceleration;
+            command.deceleration = segment.deceleration;
+            command.jerk = segment.jerk;
+            command.min_duration_cycles = scaled_duration(segment.duration_cycles);
+            command.buffer_mode =
+                i == 0 ? axis::BufferMode::aborting : axis::BufferMode::buffered;
+            const rt::Result<std::uint32_t> accepted = axis_ref->submit(command);
+            if(!accepted) {
+                fail(accepted.error());
+                return;
+            }
+            if(i == 0) {
+                first_id = accepted.value();
+            }
+            last_id = accepted.value();
+        }
+        track(first_id, last_id);
+    }
+
+    void update()
+    {
+        // ContinuousUpdate retargets single-segment profiles only; the linked
+        // multi-segment case has no defined retarget point in the rewrite core.
+        if(!execute || !continuous_update || first_id_ == 0 || axis_ref == nullptr ||
+           segment_count != 1 || segments == nullptr || segments[0].target == last_target_) {
+            return;
+        }
+        last_target_ = segments[0].target;
+        // Relative retargets re-resolve from the original command start.
+        const double target = segments[0].relative
+                                  ? start_position_ + segments[0].target * position_scale
+                                  : segments[0].target * position_scale + position_offset;
+        const rt::ErrorCode updated = axis_ref->update_active_target(first_id_, target);
+        if(updated != rt::ErrorCode::ok) {
+            outputs.error = true;
+            outputs.error_id = updated;
+        }
+    }
+
+    void observe()
+    {
+        if(!execute || first_id_ == 0 || axis_ref == nullptr || outputs.done) {
+            return;
+        }
+        const axis::AxisSnapshot &snapshot = axis_ref->snapshot();
+        if(tracked_active(snapshot.active_command_id)) {
+            outputs.busy = true;
+            outputs.active = true;
+            return;
+        }
+        if(snapshot.active_command_id == 0 && snapshot.status == axis::AxisStatus::standstill) {
+            outputs.done = true;
+            outputs.busy = false;
+            outputs.active = false;
+            return;
+        }
+        outputs.command_aborted = true;
+        outputs.busy = false;
+        outputs.active = false;
+        first_id_ = 0;
+        last_id_ = 0;
+    }
+
+    double last_target_ = 0.0;
+    double start_position_ = 0.0;
+};
+
+// Shared implementation for the velocity-driving profiles. done means "final
+// segment velocity is being held" — an ongoing state, not a completed command.
+class VelocityProfileFbBase : public ProfileFbBase
+{
+protected:
+    // scale/offset semantics differ per block: the velocity profile transforms
+    // the target velocity, the acceleration profile transforms the
+    // acceleration/deceleration limits.
+    void submit_segments(double velocity_scale,
+                         double velocity_offset,
+                         double acceleration_scale,
+                         double acceleration_offset)
+    {
+        if(!inputs_valid() || !std::isfinite(velocity_scale) || !std::isfinite(velocity_offset) ||
+           !std::isfinite(acceleration_scale) || !std::isfinite(acceleration_offset)) {
+            fail(rt::ErrorCode::invalid_argument);
+            return;
+        }
+        last_target_ = segments[0].target;
+
+        std::uint32_t first_id = 0;
+        std::uint32_t last_id = 0;
+        for(std::size_t i = 0; i < segment_count; ++i) {
+            const axis::ProfileSegment &segment = segments[i];
+            const double target_velocity = segment.target * velocity_scale + velocity_offset;
+            const double acceleration =
+                segment.acceleration * acceleration_scale + acceleration_offset;
+            const double deceleration =
+                segment.deceleration * acceleration_scale + acceleration_offset;
+            const bool final_segment = i + 1 == segment_count;
+            if(target_velocity == 0.0 || acceleration <= 0.0 || deceleration <= 0.0 ||
+               (!final_segment && segment.duration_cycles <= 0)) {
+                fail(rt::ErrorCode::invalid_argument);
+                if(i > 0) {
+                    axis_ref->submit(halt_command());
+                }
+                return;
+            }
+
+            axis::AxisCommand command{};
+            command.kind = axis::CommandKind::move_velocity;
+            command.value = target_velocity;
+            command.velocity = std::fabs(target_velocity);
+            command.acceleration = acceleration;
+            command.deceleration = deceleration;
+            command.jerk = segment.jerk;
+            // The final segment holds its velocity; earlier segments finish
+            // after their scaled duration.
+            command.min_duration_cycles =
+                final_segment ? 0 : scaled_duration(segment.duration_cycles);
+            command.buffer_mode =
+                i == 0 ? axis::BufferMode::aborting : axis::BufferMode::buffered;
+            const rt::Result<std::uint32_t> accepted = axis_ref->submit(command);
+            if(!accepted) {
+                fail(accepted.error());
+                return;
+            }
+            if(i == 0) {
+                first_id = accepted.value();
+            }
+            last_id = accepted.value();
+        }
+        track(first_id, last_id);
+    }
+
+    void update_segments(double velocity_scale,
+                         double velocity_offset,
+                         double acceleration_scale,
+                         double acceleration_offset)
+    {
+        if(!execute || !continuous_update || first_id_ == 0 || axis_ref == nullptr ||
+           segment_count != 1 || segments == nullptr || segments[0].target == last_target_) {
+            return;
+        }
+        // Velocity applies within one cycle in the rewrite core, so retarget
+        // is a plain aborting re-submission with a fresh command id.
+        submit_segments(velocity_scale, velocity_offset, acceleration_scale,
+                        acceleration_offset);
+    }
+
+    void observe()
+    {
+        if(!execute || first_id_ == 0 || axis_ref == nullptr) {
+            return;
+        }
+        const axis::AxisSnapshot &snapshot = axis_ref->snapshot();
+        if(tracked_active(snapshot.active_command_id)) {
+            outputs.busy = true;
+            outputs.active = true;
+            outputs.done = snapshot.active_command_id == last_id_;
+            return;
+        }
+        outputs.command_aborted = true;
+        outputs.done = false;
+        outputs.busy = false;
+        outputs.active = false;
+        first_id_ = 0;
+        last_id_ = 0;
+    }
+
+private:
+    static axis::AxisCommand halt_command()
+    {
+        axis::AxisCommand command{};
+        command.kind = axis::CommandKind::halt;
+        return command;
+    }
+
+    double last_target_ = 0.0;
+};
+
+class FbVelocityProfile : public VelocityProfileFbBase
+{
+public:
+    double velocity_scale = 1.0;
+    double velocity_offset = 0.0;
+
+    void call()
+    {
+        if(rising_edge()) {
+            submit_segments(velocity_scale, velocity_offset, 1.0, 0.0);
+        } else {
+            update_segments(velocity_scale, velocity_offset, 1.0, 0.0);
+        }
+        observe();
+    }
+};
+
+class FbAccelerationProfile : public VelocityProfileFbBase
+{
+public:
+    double acceleration_scale = 1.0;
+    double acceleration_offset = 0.0;
+
+    void call()
+    {
+        if(rising_edge()) {
+            submit_segments(1.0, 0.0, acceleration_scale, acceleration_offset);
+        } else {
+            update_segments(1.0, 0.0, acceleration_scale, acceleration_offset);
+        }
+        observe();
+    }
+};
+
+} // namespace plcopen::core::fb

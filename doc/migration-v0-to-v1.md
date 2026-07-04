@@ -64,6 +64,7 @@
 | `FbReadCommandPosition` / `FbReadCommandVelocity`（项目扩展） | 同名 | 同上 |
 | `FbReadStatus` / `FbReadAxisError` | 同名 | 状态布尔按 PLCopen 轴状态逐一暴露；`axis_error` 读 `snapshot().error` |
 | `FbSetPosition` | `fb::FbSetPosition` | 支持 `relative`；运动中拒绝（含同步与叠加偏移进行中） |
+| `FbPositionProfile` / `FbVelocityProfile` / `FbAccelerationProfile` | 同名（`fb/profile.h`） | 表为调用方持有的 `axis::ProfileSegment` 定长数组（≤8 段，替代 `mNext` 链表）；段时长为周期计数，`TimeScale` 乘于时长；速度/加速度剖面 `Done` 表示"保持终段速度中"；`ContinuousUpdate` 仅支持单段剖面；加速度整形不建模（加速度缩放仅作用于限值输入） |
 
 同步族已声明的行为边界（新核为最小语义层，回放仲裁外的变化以此为准）：
 
@@ -76,7 +77,6 @@
 
 尚未迁移到新核（旧线 P0 窗口内仍可经 `PLCOPEN_BUILD_LEGACY=ON` 使用；新核排期见规划文档）：
 
-- 轨迹表族：`FbPositionProfile` / `FbVelocityProfile` / `FbAccelerationProfile`
 - 数字凸轮开关：`FbDigitalCamSwitch`（依赖 Servo 数字输出抽象，随 L7 适配层排期）
 - 探针与触发：`FbTouchProbe` / `FbAbortTrigger`、`FbEmergencyStop`
 - 数字 IO 与轴信息：`FbReadDigitalInput/Output`、`FbWriteDigitalOutput`、`FbReadAxisInfo`、`FbReadMotionState`（依赖 Servo 扩展通道/信号源抽象，随 L7 适配层排期）

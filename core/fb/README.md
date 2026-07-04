@@ -24,6 +24,12 @@ Boundaries carried from the v0.x executable spec:
 `FbSetPosition`). The supported parameter registry lives on `axis::AxisModel`; unsupported
 parameters report `rt::ErrorCode::unsupported` instead of guessing (KB-006 carried over).
 
+`profile.h` carries the profile-table facades (`FbPositionProfile`, `FbVelocityProfile`,
+`FbAccelerationProfile`): tables are caller-owned fixed arrays of `axis::ProfileSegment`
+(≤ queue capacity), durations are cycle counts, and velocity-driving profiles report done
+while holding the final segment velocity. External profile-table import stays out of the
+runtime (KB-010).
+
 Non-goals:
 
 - No one-class-per-legacy-FB copy until the public v1 facade is switched in R4.
