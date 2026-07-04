@@ -161,7 +161,8 @@ probe / group-fb），覆盖 axis/group 生命周期、single-axis command buffe
 （gear/cam/phasing/combine）、叠加/连续/附加运动、轨迹表、参数注册表、探针触发与组管理
 FB 形态。旧线独有 FB 面仅剩 Servo 通道依赖项（DigitalCamSwitch、数字 IO、AxisInfo、
 MotionState），随 L7 适配层排期；已声明行为边界见
-[migration-v0-to-v1.md](../migration-v0-to-v1.md)。
+[migration-v0-to-v1.md](../migration-v0-to-v1.md)。rewrite-plan 3.1b 的 stretch 项
+B9-lite（轨迹流 + OTG 在线滤波 demo）已以 `plcopen_core_trajectory_stream` 落地。
 
 ## R4：切换收口（M11-M12）
 
