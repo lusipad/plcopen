@@ -1,0 +1,86 @@
+# v0.x → v1.0 迁移指南（旧 `src/` 线 → 新核 `core/`）
+
+状态：随 `v1.0.0-alpha` 草案发布，对应 [rewrite-plan](planning/rewrite-plan.md) §5 DoD 第 5 条。
+语义仲裁以 [doc/compliance/](compliance/) 矩阵与黄金回放 diff 为准；本文只描述消费面变化，不新增语义承诺。
+
+## 版本与维护口径
+
+| 线 | 最后功能版本 | 维护政策 |
+|----|--------------|----------|
+| 旧 `src/`（v0.x） | `v0.11.0` | P0-only 维护窗口（见 [EOL 公告草案](planning/r4-evidence-package.md)），窗口结束后仅保留 tag 作回放基线 |
+| 新核 `core/`（v1.x） | `v1.0.0-alpha`（草案） | 活跃开发线，默认消费面 |
+
+## 构建与 CMake 消费
+
+| 项 | v0.x | v1.0 |
+|----|------|------|
+| 包目标 | `plcopen::plcopen`（编译产物库） | `plcopen::plcopen`（header-only `INTERFACE`，即 `plcopen::core`） |
+| 链接产物 | `plcopen.dll` / `libplcopen.so`，需要 `PATH` / `LD_LIBRARY_PATH` | 无产物、无运行时路径注入 |
+| 头文件布局 | `include/plcopen/` 平铺（`Axis.h`、`FbSingleAxis.h`…） | `include/plcopen/` 分层（`rt/`、`otg/`、`geom/`、`plan/`、`exec/`、`axis/`、`fb/`） |
+| 旧线构建 | 默认 | 显式 `-DPLCOPEN_BUILD_LEGACY=ON`（仅源码树） |
+| 旧线安装 | 默认 | 另需 `-DPLCOPEN_INSTALL_LEGACY=ON`，旧头装入 `include/plcopen/legacy/` |
+| C++ 标准 | C++17 | C++17；RT 路径兼容 `-fno-exceptions -fno-rtti` |
+
+`find_package(plcopen)` 与 `FetchContent` 的写法不变，直接指向新核；参考
+[test_package/](../test_package/) 两个 consumer。
+
+## 运行模型
+
+| 项 | v0.x | v1.0 |
+|----|------|------|
+| 命名空间 | `plcopen` | `plcopen::core`（子空间 `axis` / `fb` / `rt` 等） |
+| 轴生命周期 | `Scheduler::newAxis()` 集中创建，`Scheduler::runCycle()` 推进 | `axis::AxisModel` / `axis::AxisGroup` 值语义对象，调用方按周期显式 `cycle()` |
+| 错误码 | `MC_ErrorCode::GOOD` | `rt::ErrorCode::ok` |
+| FB 字段命名 | `mAxis`、`mEnable`、`mDone`（成员前缀） | `axis_ref` / `group_ref`、`enable` / `execute`，运动输出集中在 `outputs.done` 等（snake_case） |
+| 时间 | 浮点频率（`setFrequency`） | 整型周期计数（如 `TON::set_cycle_time(ticks)`），禁浮点时间累加 |
+
+迁移前后对照的最小可运行示例：`git diff v0.11.0..HEAD -- test_package/find_package/main.cpp`。
+
+## 功能块映射
+
+已在 `v1.0.0-alpha` 提供（头文件 `fb/motion.h`、`fb/basic.h`）：
+
+| v0.x | v1.0 | 备注 |
+|------|------|------|
+| `FbPower` | `fb::FbPower` | 输出 `status` / `valid` / `error` |
+| `FbReset` | `fb::FbReset` | |
+| `FbSetOverride` | `fb::FbSetOverride` | override 语义边界见合规矩阵 |
+| `FbMoveAbsolute` / `FbMoveRelative` / `FbMoveVelocity` | `fb::FbMoveAbsolute` / `FbMoveRelative` / `FbMoveVelocity` | 输出移入 `outputs` |
+| `FbHome` / `FbHalt` / `FbStop` | `fb::FbHome` / `FbHalt` / `FbStop` | |
+| `FbTorqueControl` | `fb::FbTorqueControl` | |
+| `FbGroupEnable` / `FbGroupDisable` / `FbGroupStop` | `fb::FbGroupEnable` / `FbGroupDisable` / `FbGroupStop` | 组由 `axis::AxisGroup` 承载，无独立 `AxesGroup` 类 |
+| `FbMoveLinearAbsolute` / `FbMoveLinearRelative` | `fb::FbMoveLinearAbsolute` / `FbMoveLinearRelative` | 位置用 `GroupPosition{size,value[]}` |
+| `FbRTrig` / `FbFTrig` / `FbSr` / `FbRs` | `fb::RTrig` / `FTrig` / `SR` / `RS` | 去掉 `Fb` 前缀 |
+| `FbTon` / `FbTof` / `FbTp` / `FbCtu` / `FbCtd` / `FbCtud` / `FbRtc` | `fb::TON` / `TOF` / `TP` / `CTU` / `CTD` / `CTUD` / `RTC` | 周期用 `set_cycle_time(ticks)` |
+
+尚未迁移到新核（旧线 P0 窗口内仍可经 `PLCOPEN_BUILD_LEGACY=ON` 使用；新核排期见规划文档）：
+
+- 叠加与连续运动族：`FbMoveSuperimposed` / `FbHaltSuperimposed`、`FbMoveContinuous*`、`FbMoveAdditive`
+- 轨迹表族：`FbPositionProfile` / `FbVelocityProfile` / `FbAccelerationProfile`
+- 同步族：`FbGearIn(Pos)/Out`、`FbCamIn/Out/TableSelect`、`FbPhasing*`、`FbCombineAxes`、`FbDigitalCamSwitch`
+- 探针与触发：`FbTouchProbe` / `FbAbortTrigger`、`FbEmergencyStop`
+- 参数与状态读写族：`FbRead*` / `FbWrite*`（新核以 `AxisModel` 查询接口与 `snapshot()` 部分替代）
+- 组管理 FB 形态：`FbAddAxisToGroup` / `FbRemoveAxisFromGroup` / `FbGroupRead*`（新核用 `AxisGroup::add_axis/remove_axis` 直接方法）
+
+对应旧线语义边界（`KB-001` 起）见 [README 已知边界](../README.md#已知边界)；未迁移项在新核中调用不存在的符号会在编译期失败，不会静默降级。
+
+## Python 绑定
+
+绑定源码从 `src/python/pyplcopen.cpp`（绑旧 API）移到顶层 `python/pyplcopen.cpp`（绑新核 `AxisModel`），
+构建开关仍是 `-DPLCOPEN_BUILD_PYTHON_BINDINGS=ON`（经 FetchContent 拉取 pybind11），模块名与类名不变（`pyplcopen.AxisSim`）。
+
+保留的方法：`power_on`、`move_absolute`、`move_relative`、`move_velocity`、`halt`、`home_direct`、
+`status`、`command_position/velocity`、`actual_position/velocity`。
+暂未保留：`stop`、`home_position`、`command_acceleration`、`actual_acceleration`（随新核 facade 扩面排期，扩面前先补合规矩阵条目）。
+
+## 迁移步骤建议
+
+1. 先把消费方式切到 `find_package(plcopen)` / `FetchContent` 新核目标，确认编译期暴露的缺失符号清单。
+2. 缺失符号落在"尚未迁移"分组的，评估：等新核排期，或临时锁定 `v0.11.0` + `PLCOPEN_BUILD_LEGACY=ON`。
+3. 逐个替换 FB：字段改 snake_case、输出读 `outputs.*`、错误码换 `rt::ErrorCode`。
+4. 把调度改为显式周期：删除 `Scheduler`，按控制周期调用 `AxisGroup::cycle()` / 各 FB `call()`。
+5. 用回放/自有测试对比行为；与合规矩阵不符的差异按缺陷上报，引用 KB 编号。
+
+---
+
+*本文档随 R4 证据包维护；发现映射错漏请提 issue 并引用本文行号。*

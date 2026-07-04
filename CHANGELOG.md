@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file.
 ### Added
 
 - Start the R4 cutover by exporting the rewrite `core/` target as the default `plcopen::plcopen` package target, adding core demo and Python smoke entries, and drafting the R4 evidence package.
+- Add the v0.x → v1.0 migration guide (`doc/migration-v0-to-v1.md`) covering CMake consumption, runtime model, function-block mapping, and Python facade changes.
 - Wire the R0 golden replay fixture format check into CTest, with manifest and JSONL schema validation for the current rewrite fixtures.
 - Add the R0 evidence package, old-line P0-only maintenance wording, PROVENANCE updates, license ADR draft, and golden replay recorder smoke.
 

@@ -35,6 +35,12 @@
 - `ctest --test-dir build-r4-python -R pyplcopen_smoke --output-on-failure`
 - `cmake --build build-r4-docs --target docs`：本机无 Doxygen，fallback target 通过
 
+补充（2026-07-05）：
+
+- R4 变更按风险分级拆为 4 个 commit 合入 `main` 并推送（`75b8a50` T2 隔离、`1cfc7a5` 消费面、`7827a46` CI 工具、`6ea90f4` 文档）。
+- Linux GCC 11 交叉验证：`-std=c++17 -O2 -fno-exceptions -fno-rtti` 手工编译新核 5 组测试 + 基准 + 2 个 demo + 2 个 consumer main，全部通过、零告警（验证环境无 CMake，构建系统路径以 Windows 记录与 CI 首跑为准）。
+- rewrite-plan §5 DoD 第 5 条的迁移指南落地：[doc/migration-v0-to-v1.md](../migration-v0-to-v1.md)；`PROVENANCE.md` 维持 T3 草案；第 6 条 EOL 公告发布仍待人工执行。
+
 ## v0.x EOL 公告草案
 
 `v0.11.0` 是旧 `src/` 线的最后一个功能性检查点。R4 切换后，默认 CMake 包目标、FetchContent、demo 和 Python smoke 均指向新核 `core/`。旧 `src/` 线进入 P0-only 维护窗口：只接收构建失败、数据损坏、错误安全边界和已发布行为的高优先级缺陷修复，不再新增功能块、规划器能力或旧 API 扩面。
@@ -71,3 +77,4 @@ Release notes 应包含：
 - pyplcopen smoke
 - docs target
 - Windows/Linux CI 链接
+- [迁移指南](../migration-v0-to-v1.md)（rewrite-plan §5 DoD 第 5 条）

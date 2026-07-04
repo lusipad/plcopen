@@ -429,6 +429,7 @@ target_link_libraries(app PRIVATE plcopen::plcopen)
 | [ROADMAP.md](ROADMAP.md) | 近期路线（6-12 个月） |
 | [BUILD_README.md](BUILD_README.md) | 详细构建指南 |
 | [BUILD_LINUX.md](BUILD_LINUX.md) | Ubuntu 22.04 构建说明 |
+| [doc/migration-v0-to-v1.md](doc/migration-v0-to-v1.md) | v0.x → v1.0 迁移指南（旧→新 API 变更表） |
 | [doc/compliance/plcopen-motion-v2-function-block-matrix.md](doc/compliance/plcopen-motion-v2-function-block-matrix.md) | Part 1/2 功能块支持矩阵 |
 | [doc/compliance/part1-part2-completion-plan.md](doc/compliance/part1-part2-completion-plan.md) | v0.9.0 Part 1/2 completion 审计记录 |
 | [`core/fb/basic.h`](core/fb/basic.h) | 新核基础 IEC 功能块公开头文件 |
