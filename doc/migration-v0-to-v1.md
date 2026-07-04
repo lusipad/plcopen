@@ -56,6 +56,9 @@
 | `FbCamTableSelect` / `FbCamIn` / `FbCamOut` | `fb::FbCamTableSelect` / `FbCamIn` / `FbCamOut` | cam 表句柄换为非拥有的 `exec::CamTableView`；周期表用 `CamTable::set_periodic` |
 | `FbPhasingAbsolute` / `FbPhasingRelative` | `fb::FbPhasingAbsolute` / `FbPhasingRelative` | 相位输入上升沿锁存；`Velocity=0` 保持直接设置语义 |
 | `FbCombineAxes` | `fb::FbCombineAxes` | add/sub 两主轴合成，`ContinuousUpdate` 支持模式与配比在线更新 |
+| `FbMoveAdditive` | `fb::FbMoveAdditive` | aborting 时目标基于被中止命令的原承诺终点解析 |
+| `FbMoveContinuousAbsolute` / `FbMoveContinuousRelative` | `fb::FbMoveContinuousAbsolute` / `FbMoveContinuousRelative` | 到达目标后以 `end_velocity` 保持；`Done` 表示"保持终速中"（非锁存完成态），被接管报 `CommandAborted`；`ContinuousUpdate` 支持在线改目标（relative 从原命令起点重解析） |
+| `FbMoveSuperimposed` / `FbHaltSuperimposed` | `fb::FbMoveSuperimposed` / `FbHaltSuperimposed` | 独立偏移剖面叠加在基础运动之上；halt 只停偏移且当周期完成（不建模减速段），已累计偏移保留 |
 
 同步族已声明的行为边界（新核为最小语义层，回放仲裁外的变化以此为准）：
 
@@ -63,10 +66,11 @@
 - 同步中的从轴只接受 aborting 命令接管；非 aborting 运动命令显式报 `invalid_argument`（旧线为排队等待，但同步无定义完成点）。
 - 组级 `stop` 不再中止成员级 gear/cam 同步（新核组命令与成员同步分属两个写者）；`disable` 或从轴 aborting 命令/`sync_out` 会解除同步。
 - 组前置校验失败（不同组/组未使能）报 `rt::ErrorCode::precondition_failed`（旧线 `AXIS_GROUP_MISMATCH` / `GROUP_DISABLED`）。
+- 叠加偏移与同步互斥：同步接入清除运行中的叠加偏移；aborting 基础命令同样清除叠加偏移。
+- `MC_SetOverride` 对已激活命令的重规划未承接（新核 override 只作用于新规划的命令，含连续运动的保持段）。
 
 尚未迁移到新核（旧线 P0 窗口内仍可经 `PLCOPEN_BUILD_LEGACY=ON` 使用；新核排期见规划文档）：
 
-- 叠加与连续运动族：`FbMoveSuperimposed` / `FbHaltSuperimposed`、`FbMoveContinuous*`、`FbMoveAdditive`
 - 轨迹表族：`FbPositionProfile` / `FbVelocityProfile` / `FbAccelerationProfile`
 - 数字凸轮开关：`FbDigitalCamSwitch`（依赖 Servo 数字输出抽象，随 L7 适配层排期）
 - 探针与触发：`FbTouchProbe` / `FbAbortTrigger`、`FbEmergencyStop`

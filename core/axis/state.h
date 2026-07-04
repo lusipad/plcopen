@@ -34,7 +34,14 @@ enum class CommandKind
 {
     move_absolute,
     move_relative,
+    // move_additive resolves against the previous commanded endpoint even when
+    // it aborts the active command (MC_MoveAdditive boundary).
+    move_additive,
     move_velocity,
+    // move_continuous_* reach the target with a non-zero end velocity and then
+    // hold it (MC_MoveContinuousAbsolute/Relative).
+    move_continuous_absolute,
+    move_continuous_relative,
     home,
     halt,
     stop,
@@ -61,6 +68,8 @@ struct AxisCommand
     double acceleration = 1.0;
     double deceleration = 1.0;
     double jerk = 1.0;
+    // Only used by the move_continuous_* kinds; must be positive there.
+    double end_velocity = 0.0;
     BufferMode buffer_mode = BufferMode::aborting;
     bool continuous_update = false;
     std::uint32_t command_id = 0;
@@ -157,6 +166,9 @@ struct AxisSnapshot
     bool powered = false;
     bool homed = false;
     bool error = false;
+    // Set while a move_continuous_* command holds its end velocity after
+    // reaching the target position.
+    bool active_command_reached_target = false;
     std::uint32_t active_command_id = 0;
 };
 
@@ -164,7 +176,13 @@ inline bool is_finite_command(const AxisCommand &command)
 {
     return std::isfinite(command.value) && std::isfinite(command.velocity) &&
            std::isfinite(command.acceleration) && std::isfinite(command.deceleration) &&
-           std::isfinite(command.jerk);
+           std::isfinite(command.jerk) && std::isfinite(command.end_velocity);
+}
+
+inline bool is_continuous_kind(CommandKind kind)
+{
+    return kind == CommandKind::move_continuous_absolute ||
+           kind == CommandKind::move_continuous_relative;
 }
 
 class AxisModel
@@ -282,6 +300,9 @@ public:
         if(sync_kind_ != SyncKind::none && command.buffer_mode != BufferMode::aborting) {
             return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
         }
+        if(is_continuous_kind(command.kind) && command.end_velocity <= 0.0) {
+            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
+        }
 
         if(command.command_id == 0) {
             command.command_id = next_command_id_++;
@@ -292,11 +313,16 @@ public:
             return rt::Result<std::uint32_t>::success(command.command_id);
         }
 
+        // The additive target resolves against the endpoint that was committed
+        // before an aborting takeover discards it.
+        const double takeover_endpoint = queued_endpoint();
         if(command.buffer_mode == BufferMode::aborting) {
             abort_motion();
         }
-        command = normalize(command);
-        if((command.kind == CommandKind::move_absolute || command.kind == CommandKind::home) &&
+        command = normalize(command, takeover_endpoint);
+        if((command.kind == CommandKind::move_absolute ||
+            command.kind == CommandKind::move_continuous_absolute ||
+            command.kind == CommandKind::home) &&
            !target_inside_limits(command.value)) {
             return rt::Result<std::uint32_t>::failure(rt::ErrorCode::out_of_range);
         }
@@ -514,39 +540,104 @@ public:
         if(sync_cycle()) {
             return;
         }
-        if(!active_) {
-            return;
+        cycle_base_motion();
+        cycle_superimposed();
+    }
+
+    // Independent offset profile on top of the base motion (MC_MoveSuperimposed).
+    rt::Result<std::uint32_t> submit_superimposed(double distance,
+                                                  double velocity,
+                                                  double acceleration,
+                                                  double deceleration,
+                                                  double jerk)
+    {
+        if(!snapshot_.powered || snapshot_.status == AxisStatus::errorstop ||
+           sync_kind_ != SyncKind::none || !std::isfinite(distance) || !std::isfinite(velocity) ||
+           velocity <= 0.0 || !std::isfinite(acceleration) || acceleration <= 0.0 ||
+           !std::isfinite(deceleration) || deceleration <= 0.0 || !std::isfinite(jerk) ||
+           jerk <= 0.0) {
+            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
         }
 
-        if(active_command_.kind == CommandKind::move_velocity) {
-            const double velocity = signed_velocity(active_command_);
-            snapshot_.command_velocity = velocity;
-            snapshot_.actual_velocity = velocity;
-            snapshot_.command_position += velocity;
-            snapshot_.actual_position = snapshot_.command_position;
-            return;
+        otg::Limits1D limits{velocity * (override_ / 100.0), acceleration, deceleration, jerk};
+        const rt::Result<otg::Profile1D> profile =
+            otg::plan({0.0, 0.0, 0.0}, {distance, 0.0, 0.0}, limits);
+        if(!profile) {
+            return rt::Result<std::uint32_t>::failure(profile.error());
         }
 
-        if(active_command_.kind == CommandKind::halt || active_command_.kind == CommandKind::stop) {
-            finish_active();
-            return;
+        superimposed_profile_ = profile.value();
+        superimposed_tick_ = 0;
+        superimposed_last_ = 0.0;
+        superimposed_active_ = true;
+        superimposed_id_ = next_command_id_++;
+        superimposed_completed_id_ = 0;
+        return rt::Result<std::uint32_t>::success(superimposed_id_);
+    }
+
+    // Stops only the superimposed offset; the base command keeps running. The
+    // contribution accumulated so far persists in the command position.
+    rt::ErrorCode halt_superimposed()
+    {
+        if(!snapshot_.powered || snapshot_.status == AxisStatus::errorstop) {
+            return rt::ErrorCode::invalid_argument;
+        }
+        superimposed_active_ = false;
+        superimposed_id_ = 0;
+        superimposed_completed_id_ = 0;
+        return rt::ErrorCode::ok;
+    }
+
+    bool superimposed_active() const
+    {
+        return superimposed_active_;
+    }
+
+    std::uint32_t superimposed_command_id() const
+    {
+        return superimposed_id_;
+    }
+
+    std::uint32_t superimposed_completed_id() const
+    {
+        return superimposed_completed_id_;
+    }
+
+    // Retargets the active move_continuous_* command (ContinuousUpdate).
+    rt::ErrorCode update_active_target(std::uint32_t command_id, double target)
+    {
+        if(!active_ || snapshot_.active_command_id != command_id || command_id == 0 ||
+           !std::isfinite(target) || !is_continuous_kind(active_command_.kind)) {
+            return rt::ErrorCode::invalid_argument;
+        }
+        if(!target_inside_limits(target)) {
+            return rt::ErrorCode::out_of_range;
         }
 
-        ++active_tick_;
-        const otg::State1D state =
-            otg::sample(active_profile_, rt::CycleTick::from_cycles(active_tick_));
-        snapshot_.command_position = state.position;
-        snapshot_.command_velocity = state.velocity;
-        snapshot_.command_acceleration = state.acceleration;
-        snapshot_.actual_position = state.position;
-        snapshot_.actual_velocity = state.velocity;
-
-        if(active_tick_ >= active_profile_.duration_cycles()) {
-            if(active_command_.kind == CommandKind::home) {
-                snapshot_.homed = true;
-            }
-            finish_active();
+        const double direction = target >= snapshot_.command_position ? 1.0 : -1.0;
+        const double end_velocity =
+            direction * active_command_.end_velocity * (override_ / 100.0);
+        otg::Limits1D limits{active_command_.velocity * (override_ / 100.0),
+                             active_command_.acceleration,
+                             active_command_.deceleration,
+                             active_command_.jerk};
+        const rt::Result<otg::Profile1D> profile =
+            otg::plan({snapshot_.command_position, snapshot_.command_velocity, 0.0},
+                      {target, end_velocity, 0.0},
+                      limits);
+        if(!profile) {
+            return profile.error();
         }
+
+        active_profile_ = profile.value();
+        active_tick_ = 0;
+        active_last_sample_ = snapshot_.command_position;
+        active_target_ = target;
+        active_command_.value = target;
+        continuous_holding_ = false;
+        continuous_hold_velocity_ = end_velocity;
+        snapshot_.active_command_reached_target = false;
+        return rt::ErrorCode::ok;
     }
 
     void set_synchronized_position(double position)
@@ -578,6 +669,9 @@ private:
             // Re-synchronizing a synchronized axis is only defined as a takeover.
             return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
         }
+        // Synchronization owns the axis position; a running superimposed offset
+        // cannot compose with it.
+        reset_superimposed();
         sync_kind_ = kind;
         sync_id_ = next_command_id_++;
         sync_phase_ = active_ ? SyncPhase::queued : SyncPhase::idle;
@@ -785,18 +879,26 @@ private:
         double endpoint = active_ ? active_target_ : snapshot_.command_position;
         for(std::size_t i = 0; i < queue_.size(); ++i) {
             const AxisCommand &queued = queue_[i];
-            if(queued.kind == CommandKind::move_absolute || queued.kind == CommandKind::home) {
+            if(queued.kind == CommandKind::move_absolute ||
+               queued.kind == CommandKind::move_continuous_absolute ||
+               queued.kind == CommandKind::home) {
                 endpoint = queued.value;
             }
         }
         return endpoint;
     }
 
-    AxisCommand normalize(AxisCommand command) const
+    AxisCommand normalize(AxisCommand command, double takeover_endpoint) const
     {
         if(command.kind == CommandKind::move_relative) {
             command.value = queued_endpoint() + command.value;
             command.kind = CommandKind::move_absolute;
+        } else if(command.kind == CommandKind::move_additive) {
+            command.value = takeover_endpoint + command.value;
+            command.kind = CommandKind::move_absolute;
+        } else if(command.kind == CommandKind::move_continuous_relative) {
+            command.value = queued_endpoint() + command.value;
+            command.kind = CommandKind::move_continuous_absolute;
         }
         return command;
     }
@@ -822,6 +924,8 @@ private:
     {
         active_command_ = command;
         active_tick_ = 0;
+        continuous_holding_ = false;
+        snapshot_.active_command_reached_target = false;
         snapshot_.active_command_id = command.command_id;
 
         if(command.kind == CommandKind::move_velocity) {
@@ -841,6 +945,12 @@ private:
             return rt::ErrorCode::out_of_range;
         }
 
+        double target_velocity = 0.0;
+        if(is_continuous_kind(command.kind)) {
+            const double direction = target >= snapshot_.command_position ? 1.0 : -1.0;
+            target_velocity = direction * command.end_velocity * (override_ / 100.0);
+        }
+
         active_target_ = target;
         otg::Limits1D limits{command.velocity * (override_ / 100.0),
                              command.acceleration,
@@ -848,22 +958,109 @@ private:
                              command.jerk};
         const rt::Result<otg::Profile1D> profile =
             otg::plan({snapshot_.command_position, snapshot_.command_velocity, 0.0},
-                      {target, 0.0, 0.0},
+                      {target, target_velocity, 0.0},
                       limits);
         if(!profile) {
             return profile.error();
         }
 
         active_profile_ = profile.value();
+        active_last_sample_ = snapshot_.command_position;
+        continuous_hold_velocity_ = target_velocity;
         active_ = true;
-        snapshot_.status = AxisStatus::discrete_motion;
+        snapshot_.status = is_continuous_kind(command.kind) ? AxisStatus::continuous_motion
+                                                            : AxisStatus::discrete_motion;
         return rt::ErrorCode::ok;
+    }
+
+    void cycle_base_motion()
+    {
+        if(!active_) {
+            return;
+        }
+
+        if(active_command_.kind == CommandKind::move_velocity || continuous_holding_) {
+            const double velocity = continuous_holding_ ? continuous_hold_velocity_
+                                                        : signed_velocity(active_command_);
+            base_velocity_ = velocity;
+            snapshot_.command_velocity = velocity;
+            snapshot_.actual_velocity = velocity;
+            snapshot_.command_position += velocity;
+            snapshot_.actual_position = snapshot_.command_position;
+            return;
+        }
+
+        if(active_command_.kind == CommandKind::halt || active_command_.kind == CommandKind::stop) {
+            finish_active();
+            return;
+        }
+
+        ++active_tick_;
+        const otg::State1D state =
+            otg::sample(active_profile_, rt::CycleTick::from_cycles(active_tick_));
+        // Incremental application lets the superimposed offset compose with the
+        // base profile without a second position bookkeeping domain.
+        const double step = state.position - active_last_sample_;
+        active_last_sample_ = state.position;
+        snapshot_.command_position += step;
+        snapshot_.command_velocity = state.velocity;
+        snapshot_.command_acceleration = state.acceleration;
+        snapshot_.actual_position = snapshot_.command_position;
+        snapshot_.actual_velocity = state.velocity;
+        base_velocity_ = state.velocity;
+
+        if(active_tick_ >= active_profile_.duration_cycles()) {
+            if(active_command_.kind == CommandKind::home) {
+                snapshot_.homed = true;
+            }
+            if(is_continuous_kind(active_command_.kind)) {
+                snapshot_.active_command_reached_target = true;
+                continuous_holding_ = true;
+                snapshot_.status = AxisStatus::continuous_motion;
+                return;
+            }
+            finish_active();
+        }
+    }
+
+    void cycle_superimposed()
+    {
+        if(!superimposed_active_) {
+            return;
+        }
+        if(!active_ && snapshot_.status == AxisStatus::standstill) {
+            snapshot_.status = AxisStatus::discrete_motion;
+        }
+
+        ++superimposed_tick_;
+        const otg::State1D state =
+            otg::sample(superimposed_profile_, rt::CycleTick::from_cycles(superimposed_tick_));
+        const double step = state.position - superimposed_last_;
+        superimposed_last_ = state.position;
+        snapshot_.command_position += step;
+        snapshot_.actual_position = snapshot_.command_position;
+        snapshot_.command_velocity = base_velocity_ + state.velocity;
+        snapshot_.actual_velocity = snapshot_.command_velocity;
+
+        if(superimposed_tick_ >= superimposed_profile_.duration_cycles()) {
+            superimposed_active_ = false;
+            superimposed_completed_id_ = superimposed_id_;
+            superimposed_id_ = 0;
+            snapshot_.command_velocity = base_velocity_;
+            snapshot_.actual_velocity = base_velocity_;
+            if(!active_ && snapshot_.status == AxisStatus::discrete_motion) {
+                snapshot_.status = AxisStatus::standstill;
+            }
+        }
     }
 
     void finish_active()
     {
         active_ = false;
+        continuous_holding_ = false;
+        base_velocity_ = 0.0;
         snapshot_.active_command_id = 0;
+        snapshot_.active_command_reached_target = false;
         snapshot_.command_velocity = 0.0;
         snapshot_.actual_velocity = 0.0;
         snapshot_.command_acceleration = 0.0;
@@ -889,15 +1086,28 @@ private:
     {
         active_ = false;
         active_tick_ = 0;
+        continuous_holding_ = false;
+        base_velocity_ = 0.0;
         queue_.clear();
         reset_sync();
+        reset_superimposed();
         if(snapshot_.status == AxisStatus::synchronized_motion) {
             snapshot_.status = snapshot_.powered ? AxisStatus::standstill : AxisStatus::disabled;
         }
         snapshot_.active_command_id = 0;
+        snapshot_.active_command_reached_target = false;
         snapshot_.command_velocity = 0.0;
         snapshot_.actual_velocity = 0.0;
         snapshot_.command_acceleration = 0.0;
+    }
+
+    void reset_superimposed()
+    {
+        superimposed_active_ = false;
+        superimposed_id_ = 0;
+        superimposed_completed_id_ = 0;
+        superimposed_tick_ = 0;
+        superimposed_last_ = 0.0;
     }
 
     int domain_id_ = 0;
@@ -908,10 +1118,21 @@ private:
     AxisCommand active_command_{};
     otg::Profile1D active_profile_{};
     double active_target_ = 0.0;
+    double active_last_sample_ = 0.0;
+    double base_velocity_ = 0.0;
+    double continuous_hold_velocity_ = 0.0;
     double override_ = 100.0;
     std::int64_t active_tick_ = 0;
     std::uint32_t next_command_id_ = 1;
     bool active_ = false;
+    bool continuous_holding_ = false;
+
+    otg::Profile1D superimposed_profile_{};
+    std::int64_t superimposed_tick_ = 0;
+    double superimposed_last_ = 0.0;
+    std::uint32_t superimposed_id_ = 0;
+    std::uint32_t superimposed_completed_id_ = 0;
+    bool superimposed_active_ = false;
 
     SyncKind sync_kind_ = SyncKind::none;
     SyncPhase sync_phase_ = SyncPhase::idle;

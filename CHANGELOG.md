@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- Migrate the superimposed/continuous/additive motion family onto the rewrite core: `MC_MoveAdditive` endpoint resolution, `MC_MoveContinuousAbsolute/Relative` with end-velocity hold and ContinuousUpdate retargeting, and `MC_MoveSuperimposed`/`MC_HaltSuperimposed` as an independent offset profile composed incrementally with the base motion (`plcopen_core_r3_motion_family_tests`).
 - Migrate the multi-axis synchronization family onto the rewrite core: slave-side gear/cam/combine sync in `core/axis`, a non-owning periodic-capable `exec::CamTableView`, and `core/fb/sync.h` facades (`FbGearIn`, `FbGearInPos`, `FbGearOut`, `FbCamTableSelect`, `FbCamIn`, `FbCamOut`, `FbPhasingAbsolute/Relative`, `FbCombineAxes`) with the `plcopen_core_r3_sync_tests` acceptance suite; declared behavior boundaries are listed in the migration guide.
 - Start the R4 cutover by exporting the rewrite `core/` target as the default `plcopen::plcopen` package target, adding core demo and Python smoke entries, and drafting the R4 evidence package.
 - Add the v0.x → v1.0 migration guide (`doc/migration-v0-to-v1.md`) covering CMake consumption, runtime model, function-block mapping, and Python facade changes.

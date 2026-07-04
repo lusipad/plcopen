@@ -19,6 +19,16 @@ Synchronization semantics carried from the v0.x tests:
   point); an aborting command or `sync_out` disengages.
 - `clear_synchronized` (used by group abort/disable) also disengages the axis's own sync.
 
+Motion-family semantics carried from the v0.x tests:
+
+- `move_additive` resolves its target against the endpoint committed before an aborting takeover.
+- `move_continuous_*` reach the target with a positive end velocity and then hold it
+  (`active_command_reached_target` flags the hold); `update_active_target` retargets the active
+  continuous command for ContinuousUpdate.
+- The superimposed offset is an independent OTG profile composed incrementally with the base
+  motion; aborting commands and sync engagement clear it, `halt_superimposed` keeps the
+  accumulated contribution.
+
 Non-goals:
 
 - No EtherCAT, kinematics, coordinate transforms, or install/export switching.
