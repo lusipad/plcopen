@@ -74,6 +74,15 @@ if(PLCOPEN_BUILD_DEMOS)
 
     add_executable(basic_fb_cycle demo/basic_fb_cycle.cpp)
     target_link_libraries(basic_fb_cycle ${PROJECT_NAME})
+
+    add_executable(golden_replay_recorder demo/golden_replay_recorder.cpp)
+    target_link_libraries(golden_replay_recorder ${PROJECT_NAME})
+endif()
+
+if(BUILD_TESTING AND PLCOPEN_BUILD_DEMOS)
+    add_test(
+        NAME golden_replay_recorder_smoke
+        COMMAND golden_replay_recorder --output ${CMAKE_CURRENT_BINARY_DIR}/golden_replay_recorder_smoke.jsonl)
 endif()
 
 if(PLCOPEN_BUILD_PYTHON_BINDINGS)

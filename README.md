@@ -14,6 +14,8 @@
 >
 > **本版新增**：`v0.11.0` 增加 ACS 下的 `MC_MoveLinearAbsolute` / `MC_MoveLinearRelative`。当前代码已贯通共享组路径、2-8 轴执行、Aborting/Buffered、CommandID、GroupStop、成员限制和 CMake consumer。详见 [Part 4 linear matrix](doc/compliance/plcopen-motion-part4-linear-matrix.md)。
 >
+> **R0 冻结口径**：`v0.11.0` tag / Release 发布后，旧 `src/` v0.x 线进入 P0-only 维护窗口；旧线只保留缺陷修复和 golden replay 基线价值，不再新增旧线功能。新架构工作从 [R0-R4 重写拆解](doc/planning/r0-r4-work-breakdown.md) 和 [core architecture](doc/design/core/architecture.md) 进入。
+>
 > 详情见 [ROADMAP.md](ROADMAP.md)；长期方向见 [VISION.md](VISION.md)。
 
 ---

@@ -286,6 +286,8 @@
 
 **完成定义**：代码、自动化测试、Part 4 范围矩阵、README、CHANGELOG、安装导出和 CI 对支持范围给出一致结论；完整执行计划见 [v0.11.0 Part 4 Linear Motion Foundation Plan](doc/design/part4-linear-motion-plan.md)。
 
+**R0 冻结决策（2026-07-04）**：`v0.11.0` 发布收口后，旧 `src/` v0.x 线进入 P0-only 维护窗口；不再把旧线作为新功能承载面。下一段主线工作是 [R0-R4 重写冲刺](doc/planning/r0-r4-work-breakdown.md)：旧线作为 golden replay 基线保留，新核在 `core/` 按 L0-L7 分层生长。
+
 ---
 
 ## 每季度复盘（每季度第 1 周）

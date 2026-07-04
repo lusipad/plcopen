@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file.
 ### Added
 
 - Wire the R0 golden replay fixture format check into CTest, with manifest and JSONL schema validation for the current rewrite fixtures.
+- Add the R0 evidence package, old-line P0-only maintenance wording, PROVENANCE updates, license ADR draft, and golden replay recorder smoke.
 
 ## [0.11.0] - 2026-07-02
 

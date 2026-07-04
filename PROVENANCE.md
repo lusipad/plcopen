@@ -23,6 +23,17 @@ structure from:
   section 0, except as audit targets.
 - Unreviewed AI-generated code from external sessions.
 
+R0 avoidance rule: treat the legacy hot-path files identified by
+`doc/planning/rewrite-plan.md` section 0 as audit targets, not implementation
+templates. The highest-risk named files are:
+
+- `src/motion/interpolation/ProfilePlanner.cpp`
+- `src/motion/axis/AxisMove.cpp`
+- `src/motion/axis/Axis.cpp`
+
+The full 18-file audit set remains owned by `rewrite-plan.md`; if that list is
+expanded there, update this file before starting the affected `core/` module.
+
 ## Module Provenance Ledger
 
 | Module | Status | Allowed semantic sources | Notes |
@@ -53,3 +64,10 @@ Before any v1 release candidate:
 - Run the golden replay gate and record the result.
 - Run similarity/provenance review for rewritten hot paths.
 - Have a human reviewer approve license and provenance statements.
+
+Before the `v0.11.0` source-only release:
+
+- Confirm R0 evidence is recorded in `doc/planning/r0-evidence-package.md`.
+- Confirm no license file changes are included.
+- Have a human reviewer approve this draft before treating it as release
+  provenance evidence.
