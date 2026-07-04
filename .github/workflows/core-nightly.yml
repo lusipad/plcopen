@@ -1,0 +1,23 @@
+name: Core Nightly
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '23 2 * * *'
+
+jobs:
+  otg-fuzz:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Configure CMake
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build core fuzz
+        run: cmake --build build --target plcopen_core_otg_fuzz --parallel
+
+      - name: Run deterministic OTG fuzz
+        run: ./build/core/plcopen_core_otg_fuzz --iterations 1000000

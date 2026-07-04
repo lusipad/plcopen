@@ -76,6 +76,8 @@ R0 不做：新核实现、旧线功能、Phase B 硬件计划展开。
 
 目标：先交付最小、可独立验证的实时地基和 OTG 求解器。R1 是 AI 吞吐的放大器，不是功能展示。
 
+**软件闭环状态（2026-07-04）**：R1A/R1B/R1C 的仓库内自动化部分已接入 `core/`、CTest、RT-safety scan、fuzz smoke、oracle、benchmark、nightly fuzz 入口和交叉编译 smoke 脚本；72h PREEMPT_RT 报告仍是模板，需真实硬件环境填写。
+
 ### R1A：构建骨架与 RT 基础
 
 | ID | 任务 | 等级 | 前置 | DoD | 验证 |

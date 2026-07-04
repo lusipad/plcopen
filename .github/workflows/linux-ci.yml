@@ -53,6 +53,13 @@ jobs:
       - name: Test
         run: ctest --test-dir build --output-on-failure
 
+      - name: Print core benchmark baseline
+        run: ctest --test-dir build --output-on-failure -R plcopen_core_benchmark -V
+
+      - name: Core cross-compile smoke
+        if: matrix.compiler == 'gcc'
+        run: cmake -P cmake/core_cross_compile_smoke.cmake
+
       - name: Verify installed find_package consumer
         if: matrix.compiler == 'gcc'
         run: |
