@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- Add the rewrite-core golden replay regression (`plcopen_core_replay_regression`): three deterministic scenarios (single-axis OTG move, velocity hold + stop takeover, two-axis shared-path linear) recorded as `core-*.jsonl` fixtures and compared cycle-by-cycle in CTest, turning undeclared cycle-path changes into gate failures (A7/R3.9).
 - Restore the full v0.x `pyplcopen` facade on the rewrite core: `stop`, `home_position`, and `command/actual_acceleration` readback (with `actual_acceleration` added to `AxisSnapshot` and `AxisModel::home_direct` carrying the MC_Home direct-mode homed flag); the Python smoke now exercises the restored surface.
 - Complete the v0.x function-block surface on the rewrite core: fixed digital IO banks and diagnostic info bits on `AxisModel` (`set_digital_input/output`, `set_axis_info_inputs`; the touch-probe trigger channels are the digital inputs), plus `core/fb/io.h` facades (`FbReadDigitalInput/Output`, `FbWriteDigitalOutput`, `FbDigitalCamSwitch` with periodic windows, `FbReadAxisInfo`, `FbReadMotionState`) with the `plcopen_core_r3_io_tests` acceptance suite.
 - Add the B9-lite trajectory-stream demo (`core/demo/trajectory_stream.cpp`): a sparse low-rate waypoint stream upsampled to cycle rate through online jerk-limited OTG re-planning, with safety-envelope assertions and hold-last-profile behavior on stream stalls (rewrite-plan 3.1b stretch item).

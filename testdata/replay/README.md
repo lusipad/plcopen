@@ -18,6 +18,18 @@ The minimal recorder smoke is available through CTest:
 ctest --test-dir build --build-config Release -R golden_replay_recorder_smoke --output-on-failure
 ```
 
+## Rewrite-core golden replays (`core-*.jsonl`)
+
+The `core-*` fixtures are cycle-by-cycle setpoint baselines of the rewrite
+core itself, guarded by the `plcopen_core_replay_regression` CTest entry
+(tolerance: 1e-9 relative + 1e-12 absolute). Any diff means an undeclared
+semantic change in the axis/group cycle path. Regenerate them only for a
+reviewed, declared change:
+
+```bash
+plcopen_core_replay_regression --record testdata/replay
+```
+
 ## Format
 
 Each `.jsonl` file contains one JSON object per line:

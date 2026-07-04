@@ -1,7 +1,7 @@
 {
   "schema": "plcopen-golden-replay-manifest-v1",
-  "status": "r0-format-fixtures-recorder-smoke",
-  "note": "Reviewed v0.x golden replay files are recorded after the freeze point; the R0 recorder smoke proves the JSONL entry path.",
+  "status": "r0-format-fixtures-plus-core-golden-replays",
+  "note": "Reviewed v0.x golden replay files are recorded after the freeze point; the R0 recorder smoke proves the JSONL entry path. The core-* fixtures are rewrite-core golden replays regenerated only for reviewed, declared changes via plcopen_core_replay_regression --record.",
   "fixtures": [
     {
       "id": "format-smoke-single-axis",
@@ -20,6 +20,24 @@
       "path": "format-smoke-stop.jsonl",
       "source": "manual format fixture",
       "coverage": ["schema", "deceleration-to-zero shape"]
+    },
+    {
+      "id": "core-single-axis-move",
+      "path": "core-single-axis-move.jsonl",
+      "source": "plcopen_core_replay_regression --record",
+      "coverage": ["rewrite-core", "single-axis OTG profile setpoints"]
+    },
+    {
+      "id": "core-velocity-stop",
+      "path": "core-velocity-stop.jsonl",
+      "source": "plcopen_core_replay_regression --record",
+      "coverage": ["rewrite-core", "velocity hold and stop takeover"]
+    },
+    {
+      "id": "core-group-linear",
+      "path": "core-group-linear.jsonl",
+      "source": "plcopen_core_replay_regression --record",
+      "coverage": ["rewrite-core", "two-axis shared-path linear move"]
     }
   ]
 }

@@ -86,6 +86,12 @@ if(BUILD_TESTING AND PLCOPEN_BUILD_CORE_TESTS)
     plcopen_core_rt_compile_options(plcopen_core_r3_io_tests)
     add_test(NAME plcopen_core_r3_io_tests COMMAND plcopen_core_r3_io_tests)
 
+    add_executable(plcopen_core_replay_regression test/replay_regression.cpp)
+    target_link_libraries(plcopen_core_replay_regression PRIVATE plcopen::core)
+    plcopen_core_rt_compile_options(plcopen_core_replay_regression)
+    add_test(NAME plcopen_core_replay_regression
+             COMMAND plcopen_core_replay_regression ${CMAKE_CURRENT_SOURCE_DIR}/../testdata/replay)
+
     add_executable(plcopen_core_benchmark bench/core_benchmark.cpp)
     target_link_libraries(plcopen_core_benchmark PRIVATE plcopen::core)
     plcopen_core_rt_compile_options(plcopen_core_benchmark)
