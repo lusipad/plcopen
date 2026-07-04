@@ -19,6 +19,7 @@
 | [rewrite-plan.md](rewrite-plan.md) | 核心重写：i5 审计与许可证决策、目标架构 L0-L7、嵌入式分级（2.7）、迁移 R0-R4 与 12 个月冲刺排期（3.1b）、文档整合（3.7） | 第 3 稿，待评审 |
 | [r0-r4-work-breakdown.md](r0-r4-work-breakdown.md) | 第 1 年重写冲刺的 issue / PR 级拆解：R0-R4 任务、DoD、前置条件、验证入口和首批建议 issue | 初稿，执行拆解 |
 | [r0-evidence-package.md](r0-evidence-package.md) | R0 完成证据包：v0.11.0 发布状态、Release 草案、旧线维护边界、replay / PROVENANCE / 许可证人工项 | R0 证据包 |
+| [r4-evidence-package.md](r4-evidence-package.md) | R4 切换收口证据包：新核消费入口、旧线隔离、v0.x EOL 草案和 v1.0.0-alpha 发布草案 | R4 证据包 |
 | [robot-integration.md](robot-integration.md) | 机器人集成蓝图：按形态可行性、两个参考架构、差距→计划映射 | 初稿，待评审 |
 | [ai-collaboration.md](ai-collaboration.md) | AI-First 工程体系：门禁代替信任、六工作流改造、风险分级政策、有效性度量（CLAUDE.md/AGENTS.md 已随之落地） | 初稿，已部分生效 |
 

@@ -1,5 +1,7 @@
 # PLCOpen 库设计文档
 
+> 状态：v0.x 基线参考。R4 切换后，默认架构入口是 [core/architecture.md](core/architecture.md)；本文只保留旧 `src/` 线的历史设计语境。
+
 ## 1. 概述
 
 本文档描述了PLCOpen库的设计架构、实现细节和技术决策。PLCOpen库是一个C++库，实现了PLCopen运动控制标准（Part 1 & 2）中的功能块，旨在提供一个基础的PLC运动控制库，用于构建工业自动化和运动控制系统。

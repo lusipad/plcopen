@@ -1,6 +1,6 @@
 # v0.11.0 Part 4 Linear Motion Foundation Plan
 
-> 状态：当前执行计划。PLCopen Motion Control Part 4 Version 2.0 原始规范已于 2026-06-21 从 PLCopen 官方下载页核对；公开合同以 [Part 4 linear matrix](../compliance/plcopen-motion-part4-linear-matrix.md) 为准。
+> 状态：历史完成计划。PLCopen Motion Control Part 4 Version 2.0 原始规范已于 2026-06-21 从 PLCopen 官方下载页核对；公开合同以 [Part 4 linear matrix](../compliance/plcopen-motion-part4-linear-matrix.md) 为准。R4 切换后，当前架构入口是 [core/architecture.md](core/architecture.md)。
 
 ## 决策
 

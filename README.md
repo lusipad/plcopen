@@ -1,8 +1,8 @@
 # plcopen
 
-> **现代 C++ 的 PLCopen 运动控制库 —— 嵌入到你的控制器里，不替代你的控制器。**
+> **现代 C++ 的 PLCopen 运动控制内核 —— 嵌入到你的控制器里，不替代你的控制器。**
 >
-> *A modern C++ motion-control library implementing core PLCopen Part 1 building blocks and selected coordinated-motion foundation concepts. Embed it in your controller, not replace your controller.*
+> *A modern C++ motion-control core for PLCopen-style function blocks and coordinated-motion foundations. Embed it in your controller, not replace your controller.*
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Windows CI](https://github.com/lusipad/plcopen/actions/workflows/windows-ci.yml/badge.svg)](https://github.com/lusipad/plcopen/actions/workflows/windows-ci.yml)
@@ -10,11 +10,11 @@
 [![C++17](https://img.shields.io/badge/C%2B%2B-17-blue.svg)](https://en.cppreference.com/w/cpp/17)
 [![Version](https://img.shields.io/badge/source%20version-v0.11.0-orange.svg)](CHANGELOG.md)
 
-> **项目状态**：当前源码检查点为 `v0.11.0`。项目现在具备 CI、自动化测试、覆盖率门禁、Linux 构建、CMake 安装与 FetchContent 消费验证、Python/docs smoke、单轴与 homing 的 jerk-aware 规划、基础 IEC 61131-3 功能块、单轴管理/运动功能块、已收口的 homing/profile/superimposed/combine 语义、已覆盖 BufferMode / ContinuousUpdate 的 gear/cam 多轴同步功能块，以及 `AxesGroup Foundation`；在 `v1.0` 前 API 仍可能变化。
+> **项目状态**：当前进入 R4 切换收口。默认 `plcopen::plcopen` 包目标已指向新核 `core/`；旧 `src/` v0.x 线不再参与主构建，只在显式 `PLCOPEN_BUILD_LEGACY=ON` 时作为回放和迁移基线构建。在 `v1.0` 前 API 仍可能变化。
 >
 > **本版新增**：`v0.11.0` 增加 ACS 下的 `MC_MoveLinearAbsolute` / `MC_MoveLinearRelative`。当前代码已贯通共享组路径、2-8 轴执行、Aborting/Buffered、CommandID、GroupStop、成员限制和 CMake consumer。详见 [Part 4 linear matrix](doc/compliance/plcopen-motion-part4-linear-matrix.md)。
 >
-> **R0 冻结口径**：`v0.11.0` tag / Release 发布后，旧 `src/` v0.x 线进入 P0-only 维护窗口；旧线只保留缺陷修复和 golden replay 基线价值，不再新增旧线功能。新架构工作从 [R0-R4 重写拆解](doc/planning/r0-r4-work-breakdown.md) 和 [core architecture](doc/design/core/architecture.md) 进入。
+> **R4 口径**：新核 `core/` 是当前安装、FetchContent、demo 和 Python smoke 的默认入口；旧线只保留 P0-only 维护、golden replay 基线和迁移参考价值。新架构见 [core architecture](doc/design/core/architecture.md)，执行拆解见 [R0-R4 重写拆解](doc/planning/r0-r4-work-breakdown.md)。
 >
 > 详情见 [ROADMAP.md](ROADMAP.md)；长期方向见 [VISION.md](VISION.md)。
 
@@ -22,7 +22,7 @@
 
 ## 这是什么
 
-plcopen 是一个 **C++17 运动控制库**，实现 PLCopen Motion Control Part 1 的核心功能块与状态机，并开始补齐 Part 4 coordinated motion 的基础层。它被设计成**可嵌入的库**，不是完整的 PLC 运行时。
+plcopen 是一个 **C++17 运动控制内核**，把实时基础设施、运动规划、轴/组状态和 PLCopen 风格功能块分层放在 `core/`。它被设计成**可嵌入的库**，不是完整的 PLC 运行时。
 
 ### 适合你，如果你……
 
@@ -56,22 +56,19 @@ plcopen 想填补的空白是**"现代 C++ 的可嵌入 PLCopen 运动控制库"
 
 ## 当前状态
 
-### 已实现（截至 v0.11.0）
+### 默认消费面（R4 新核）
 
 | 能力 | 说明 |
 |------|------|
-| 轴状态机 | PLCopen 标准的 8 状态机（Disabled、Standstill、DiscreteMotion 等） |
-| 单轴管理/运动功能块 | MC_Power、MC_Reset、MC_ReadStatus、MC_ReadAxisError、MC_ReadActualPosition、MC_ReadCommandPosition、MC_ReadActualVelocity、MC_ReadCommandVelocity、MC_ReadActualTorque、MC_ReadParameter、MC_ReadBoolParameter、MC_WriteParameter、MC_WriteBoolParameter、MC_ReadDigitalInput、MC_ReadDigitalOutput、MC_WriteDigitalOutput、MC_DigitalCamSwitch、MC_ReadAxisInfo、MC_SetPosition、MC_SetOverride、MC_TouchProbe、MC_AbortTrigger、MC_MoveAbsolute、MC_MoveRelative、MC_MoveAdditive、MC_MoveSuperimposed、MC_MoveVelocity、MC_MoveContinuousAbsolute、MC_MoveContinuousRelative、MC_PositionProfile、MC_VelocityProfile、MC_AccelerationProfile、MC_Stop、MC_Halt、MC_HaltSuperimposed、MC_Home、MC_TorqueControl |
-| 基础 IEC 功能块 | R_TRIG、F_TRIG、SR、RS、TON、TOF、TP、CTU、CTD、CTUD、RTC |
-| AxesGroup Foundation | `AxesGroup` runtime、`MC_AddAxisToGroup`、`MC_RemoveAxisFromGroup`、`MC_GroupEnable`、`MC_GroupDisable`、`MC_GroupReadStatus`、`MC_GroupReadActualPosition`、`MC_GroupReadCommandPosition`、`MC_GroupStop`、`MC_GroupReset` |
-| 多轴同步功能块 | MC_CamTableSelect、MC_CamIn / MC_CamOut、MC_GearIn / MC_GearInPos / MC_GearOut、MC_PhasingAbsolute / MC_PhasingRelative、MC_CombineAxes |
-| 运动规划 | 梯形 + 单轴 jerk-aware S 曲线 |
-| Buffer mode | Aborting / Buffered 等缓冲切换 |
-| 调度器 | 单线程周期调度（用户负责在 tick 里调用 `runCycle()`） |
-| 示波器 demo | 可视化轴状态变化 |
-| CMake 构建 | Windows + Visual Studio 2022 |
+| L0/L1 | 整型周期时间、定长容器、SPSC 队列、错误码、`Profile1D` OTG smoke/oracle |
+| L2-L4 | line / arc / Bezier 几何、固定容量路径缓冲、look-ahead、blend 决策、committed path sampler |
+| L5 | `AxisModel`、`AxisGroup`、共享线性路径、Aborting/Buffered、GroupStop/ErrorStop |
+| L6 | 基础 IEC FB、单轴 motion facade、组 linear facade |
+| 消费入口 | `plcopen::plcopen` / `plcopen::core`、安装后 `find_package`、源码树 `FetchContent`、core demo、Python smoke |
 
-### 当前能力亮点
+### v0.x legacy 能力基线（只作回放/迁移参考）
+
+以下清单来自旧 `src/` 线，保留为 `v0.11.0` golden replay 基线和迁移参考；它不是 R4 之后的默认 install/export 面。需要临时构建旧线时显式传入 `-DPLCOPEN_BUILD_LEGACY=ON`。
 
 - 当前源码检查点是 `v0.11.0`；Part 1/2 completion 的实现基线来自 `v0.9.0`，详细口径见 [v0.9.0 Part 1/2 Completion Plan](doc/compliance/part1-part2-completion-plan.md) 和 [compliance matrix](doc/compliance/plcopen-motion-v2-function-block-matrix.md)。
 
@@ -143,8 +140,8 @@ cd plcopen
 # Windows（推荐使用 build.ps1，详见 BUILD_README.md）
 .\build.ps1 -Test
 
-# 跨平台通用命令
-cmake -S . -B build
+# 跨平台通用命令（默认只构建新核 core）
+cmake -S . -B build -DPLCOPEN_BUILD_TESTS=ON
 cmake --build build --config Release
 ctest --test-dir build --build-config Release --output-on-failure
 ```
@@ -158,7 +155,7 @@ cmake --build build --config Release --target docs
 
 生成带类图的完整 API 文档需要 Doxygen 和 Graphviz；未安装 Doxygen 时，`docs` target 会打印安装提示并优雅退出。
 
-### 构建 Python 绑定（可选）
+### 构建新核 Python smoke facade（可选）
 
 ```bash
 cmake -S . -B build -DPLCOPEN_BUILD_PYTHON_BINDINGS=ON
@@ -166,126 +163,82 @@ cmake --build build --config Release
 ctest --test-dir build --build-config Release -R pyplcopen_smoke --output-on-failure
 ```
 
-### 最简示例：让一个轴从 0 走到 500
+### 最简示例：让一个轴从 0 走到 5
 
 ```cpp
-#include "FbSingleAxis.h"
-#include "Scheduler.h"
-#include <thread>
-#include <chrono>
+#include "axis/state.h"
+#include "fb/motion.h"
 
-using namespace plcopen;
+using namespace plcopen::core;
 
 int main() {
-    // 1. 建调度器和轴
-    Scheduler sched;
-    sched.setFrequency(100);                       // 100Hz 调度
-    Axis* axis = sched.newAxis(1, new Servo());    // 轴 ID = 1
+    axis::AxisModel axis;
 
-    // 2. 使能轴
-    FbPower power;
-    power.mAxis = axis;
-    power.mEnable = true;
-    power.mEnablePositive = true;
-    power.mEnableNegative = true;
+    fb::FbPower power;
+    power.axis_ref = &axis;
+    power.enable = true;
+    power.call();
+    if (!power.status)
+        return 1;
 
-    // 3. 准备一次绝对运动：到位置 500，最大速度 400
-    FbMoveAbsolute move;
-    move.mAxis = axis;
-    move.mPosition = 500;
-    move.mVelocity = 400;
-    move.mAcceleration = 500;
-    move.mDeceleration = 500;
+    fb::FbMoveAbsolute move;
+    move.axis_ref = &axis;
+    move.position = 5.0;
+    move.velocity = 1.0;
+    move.acceleration = 1.0;
+    move.deceleration = 1.0;
+    move.execute = true;
 
-    // 4. 周期性调用（这里用 sleep 模拟实时 tick）
-    while (!move.mDone) {
-        sched.runCycle();
-        power.call();
+    for (int cycle = 0; cycle < 100 && !move.outputs.done; ++cycle) {
         move.call();
-
-        if (power.mStatus && power.mValid && !move.mExecute)
-            move.mExecute = true;    // 使能成功后触发运动
-
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        axis.cycle();
     }
 
-    sched.release();
-    return 0;
+    return move.outputs.done ? 0 : 2;
 }
 ```
 
-完整示例见 `src/demo/`：
+完整默认示例见 `core/demo/`：
 - `basic_fb_cycle.cpp` —— 基础 IEC 功能块的 scan-cycle 调用示例
-- `axis_move.cpp` —— 点到点运动 + Buffer mode
-- `axis_homing.cpp` —— 回零示例（已覆盖核心路径）
-- `axis_move_oscilloscope.cpp` —— 带状态示波器的演示
-- `axis_sync.cpp` —— 概念级 1:1 双轴同步 demo
-- `axis_gear.cpp` —— 概念级固定齿轮比 follow demo
-- `axis_cam.cpp` —— 概念级离散 cam table follow demo
-- `axes_group_lifecycle.cpp` —— `AxesGroup` add-axis / enable / disable 的最小 lifecycle demo
 - `group_linear_move.cpp` —— 两轴共享路径的 ACS 线性绝对运动 demo
 
-这些 demo 现在与仓库里的 `MC_Cam*` / `MC_Gear*` 最小实现保持一致，用于展示当前公开同步块的基础用法与边界。
+旧 `src/demo/` 只在 `PLCOPEN_BUILD_LEGACY=ON` 时构建，用于迁移参考。
 
 ### AxesGroup Quick Start
 
-当前 `MC_Gear* / MC_Cam*` 必须运行在同一个已启用的 `AxesGroup` 中。最小生命周期如下：
+当前新核组线性运动必须运行在同一个已启用的 `AxisGroup` 中。最小生命周期如下：
 
 ```cpp
-#include "AxesGroup.h"
-#include "FbMultiAxis.h"
-#include "FbSingleAxis.h"
-#include "Scheduler.h"
+#include "axis/group.h"
+#include "fb/motion.h"
 
-using namespace plcopen;
+using namespace plcopen::core;
 
-Scheduler sched;
-sched.setFrequency(100.0);
+axis::AxisModel x;
+axis::AxisModel y;
+x.set_power(true);
+y.set_power(true);
 
-Axis *master = sched.newAxis(1, new Servo());
-Axis *slave = sched.newAxis(2, new Servo());
+axis::AxisGroup group;
+group.add_axis(x);
+group.add_axis(y);
 
-// 先按单轴流程完成 MC_Power 使能；AxesGroup 只管理 group 生命周期，不负责成员轴上电。
-
-AxesGroup group;
-
-FbAddAxisToGroup addMaster;
-addMaster.mAxesGroup = &group;
-addMaster.mAxis = master;
-addMaster.mExecute = true;
-addMaster.call();
-
-FbAddAxisToGroup addSlave;
-addSlave.mAxesGroup = &group;
-addSlave.mAxis = slave;
-addSlave.mExecute = true;
-addSlave.call();
-
-FbGroupEnable enable;
-enable.mAxesGroup = &group;
-enable.mExecute = true;
+fb::FbGroupEnable enable;
+enable.group_ref = &group;
+enable.execute = true;
 enable.call();
 
-FbMoveLinearAbsolute move;
-move.mAxesGroup = &group;
-move.mPosition.mCount = 2;
-move.mPosition.mValues[0] = 3.0;
-move.mPosition.mValues[1] = 4.0;
-move.mVelocity = 2.0;
-move.mAcceleration = 4.0;
-move.mDeceleration = 4.0;
-move.mExecute = true;
+fb::FbMoveLinearAbsolute move;
+move.group_ref = &group;
+move.position.size = 2;
+move.position.value[0] = 3.0;
+move.position.value[1] = 4.0;
+move.velocity = 2.0;
+move.execute = true;
 move.call();
-
-FbGearIn gearIn;
-gearIn.mMaster = master;
-gearIn.mSlave = slave;
-gearIn.mRatioNumerator = 2.0;
-gearIn.mRatioDenominator = 1.0;
-gearIn.mExecute = true;
 ```
 
-可运行 `src/demo/axes_group_lifecycle.cpp` 查看 group 生命周期，或运行 `src/demo/group_linear_move.cpp` 查看共享路径线性运动。
+可运行 `core/demo/group_linear_move.cpp` 查看共享路径线性运动。
 
 `v0.11.0` 当前只承诺 ACS、2-8 轴、`ABORTING` / `BUFFERED`、零过渡速度、无 transition geometry 和 linear orientation。MCS/WCS/PCS/FCS/TCS、kinematics、坐标变换、圆弧和 look-ahead 均显式不支持。
 
@@ -300,7 +253,7 @@ add_executable(app main.cpp)
 target_link_libraries(app PRIVATE plcopen::plcopen)
 ```
 
-Windows 下运行独立 consumer 时，需要确保安装前缀的 `bin` 目录在 `PATH` 中，或把 `plcopen.dll` 放到可执行文件同目录。
+R4 默认包目标是 header-only 新核目标，不再要求复制旧线 `plcopen.dll`。
 
 或在同一个源码树里用 `FetchContent` 消费：
 
@@ -341,7 +294,7 @@ target_link_libraries(app PRIVATE plcopen::plcopen)
 | CTUD | 双向计数器 | ✅ |
 | RTC | 实时时钟累加器 | ✅ |
 
-### PLCopen 运动功能块
+### PLCopen 运动功能块（v0.x legacy 基线）
 
 #### 单轴管理功能块
 
@@ -422,34 +375,22 @@ target_link_libraries(app PRIVATE plcopen::plcopen)
 ## 架构
 
 ```
-  ┌──────────────────────────────────────────┐
-  │  功能块层 (src/fb/)                      │
-  │  FbPower, FbMoveAbsolute, FbTon, ...    │
-  └──────────────────────────────────────────┘
-                     ▼
-  ┌──────────────────────────────────────────┐
-  │  轴控制层 (src/motion/axis/)             │
-  │  Axis, AxisBase, 状态机, AxisMove, ...  │
-  └──────────────────────────────────────────┘
-                     ▼
-  ┌──────────────────────────────────────────┐
-  │  运动规划层 (src/motion/interpolation/)  │
-  │  ProfilePlanner (梯形 + jerk-aware)      │
-  └──────────────────────────────────────────┘
-                     ▼
-  ┌──────────────────────────────────────────┐
-  │  调度层 (src/motion/Scheduler.*)         │
-  │  单线程周期调度；轴由 runCycle 推进      │
-  │  功能块由用户每周期显式 call()          │
-  └──────────────────────────────────────────┘
-                     ▼
-  ┌──────────────────────────────────────────┐
-  │  Servo 接口 (src/motion/Servo.*)         │
-  │  对接真实伺服或仿真（由使用者实现）      │
-  └──────────────────────────────────────────┘
+  core/fb      PLCopen-style facade and IEC basic blocks
+      ↓
+  core/axis    AxisModel, AxisGroup, command lifecycle
+      ↓
+  core/exec    committed path sampling and sync primitives
+      ↓
+  core/plan    path buffer, look-ahead, blend decisions
+      ↓
+  core/geom    line / arc / Bezier geometry
+      ↓
+  core/otg     bounded 1D profile generation
+      ↓
+  core/rt      fixed-capacity containers, cycle time, errors
 ```
 
-设计文档见 [doc/design/design_doc.md](doc/design/design_doc.md)。
+当前设计入口见 [doc/design/core/architecture.md](doc/design/core/architecture.md)；旧 [doc/design/design_doc.md](doc/design/design_doc.md) 是 v0.x 基线参考。
 
 ---
 
@@ -474,7 +415,7 @@ target_link_libraries(app PRIVATE plcopen::plcopen)
 - `KB-015`：`MC_CombineAxes` 当前是 tested two-master setpoint combination 块，会按 add/sub 模式、每路 gear ratio 和 master value source 生成 slave setpoint；坐标系、kinematics 和 Part 4 路径合成仍不在范围内。
 - `KB-016`：`MC_CamTableSelect` 当前负责表校验和句柄传递，要求 `CamTable` 非空、master/slave 点有限且 master 点严格递增；`MC_CamIn` 直接消费选定的 `CamTable` 句柄并复用同一校验；`CamTable` 支持显式 opt-in 的周期采样；`MC_CamIn` 支持 master/slave offset 与 scaling，可在 `MasterStartDistance > 0` 时按线性轨迹接近 `MasterSyncPosition` 处的凸轮目标；尚不支持标准 profile-table 解析、独立控制器侧表仓库或速度/加速度/jerk 限制的接入轨迹。
 - `KB-017`：`mStartSync` 当前建模为 `MC_GearInPos` / `MC_CamIn` 接近窗口启动和同步进入时的一拍脉冲。
-- `KB-018`：`pyplcopen` 当前只暴露单轴仿真 facade，不是完整 Python PLCopen SDK。
+- `KB-018`：`pyplcopen` 当前只暴露新核单轴 smoke facade，不是完整 Python PLCopen SDK。
 
 ---
 
@@ -490,10 +431,10 @@ target_link_libraries(app PRIVATE plcopen::plcopen)
 | [BUILD_LINUX.md](BUILD_LINUX.md) | Ubuntu 22.04 构建说明 |
 | [doc/compliance/plcopen-motion-v2-function-block-matrix.md](doc/compliance/plcopen-motion-v2-function-block-matrix.md) | Part 1/2 功能块支持矩阵 |
 | [doc/compliance/part1-part2-completion-plan.md](doc/compliance/part1-part2-completion-plan.md) | v0.9.0 Part 1/2 completion 审计记录 |
-| [`src/fb/FbBasic.h`](src/fb/FbBasic.h) | 基础 IEC 功能块公开头文件 |
-| [`src/fb/FbMultiAxis.h`](src/fb/FbMultiAxis.h) | 多轴同步功能块公开头文件 |
+| [`core/fb/basic.h`](core/fb/basic.h) | 新核基础 IEC 功能块公开头文件 |
+| [`core/fb/motion.h`](core/fb/motion.h) | 新核单轴/组 motion facade 公开头文件 |
 | [CLAUDE.md](CLAUDE.md) | AI 协作的行为规范 |
-| [doc/design/](doc/design/) | 当前代码的设计文档 |
+| [doc/design/core/architecture.md](doc/design/core/architecture.md) | 新核当前架构入口 |
 | [doc/reference/](doc/reference/) | PLCopen 标准原文（PDF） |
 | [doc/vision/](doc/vision/) | 愿景期探索性设计（非当前路线图） |
 

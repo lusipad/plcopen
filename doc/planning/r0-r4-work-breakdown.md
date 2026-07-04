@@ -176,6 +176,12 @@ install/export 面，也不删除旧 `src/`。
 | R4.8 | v0.x EOL 公告 | T3 | R4.7 | P0-only 窗口、结束日期、迁移路径明确 | 人工审签 |
 | R4.9 | `v1.0.0-alpha` 证据包 | T3 | R4.1-R4.8 | release notes、DoD、已知限制、未声明商用级 | 人工发布 |
 
+**R4 软件闭环状态（2026-07-04）**：默认 CMake 包目标、install/export、
+`find_package`、`FetchContent`、demo 和 `pyplcopen` smoke 已切到新核 `core/`；
+旧 `src/` 默认隔离到 `PLCOPEN_BUILD_LEGACY=ON`。本地证据见
+[r4-evidence-package.md](r4-evidence-package.md)。`v0.x` EOL 与 `v1.0.0-alpha`
+发布仍是 T3 草案，需人工审签/发布。
+
 ## 跨阶段固定门禁
 
 这些门禁一旦上线，不为赶进度关闭：

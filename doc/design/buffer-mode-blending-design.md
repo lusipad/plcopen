@@ -1,6 +1,6 @@
 # Buffer Mode Blending 差异化设计
 
-> 状态：历史设计记录。当前 v0.9.0 代码已吸收本设计中的 MoveNode `BLENDING_LOW` / `BLENDING_HIGH` / blending alias 行为，并把 Homing/Sync 的非 aborting 模式明确收口为 queued handoff。后续完整几何轨迹拼接、连续速度过渡和更复杂 planner 合同应作为新的 runtime feature 立项，而不是作为 v0.9.0 未完成项继续追踪。
+> 状态：v0.x 基线参考。当前 v0.9.0 旧线代码已吸收本设计中的 MoveNode `BLENDING_LOW` / `BLENDING_HIGH` / blending alias 行为，并把 Homing/Sync 的非 aborting 模式明确收口为 queued handoff。R4 切换后，默认架构入口是 [core/architecture.md](core/architecture.md)；后续完整几何轨迹拼接、连续速度过渡和更复杂 planner 合同应作为新核 runtime feature 立项。
 
 ## 1. 概述
 
