@@ -18,6 +18,7 @@
 | [long-term-plan.md](long-term-plan.md) | 5 年战略：商用级定义、差距分析、Phase A-D、团队/资源与单人+AI 模式（4.4）、技术难点 T1-T12、性能与效果权衡（6.4 加减速算法栈、6.7 可达性论证与反证点） | 第 6 稿，待评审 |
 | [rewrite-plan.md](rewrite-plan.md) | 核心重写：i5 审计与许可证决策、目标架构 L0-L7、嵌入式分级（2.7）、迁移 R0-R4 与 12 个月冲刺排期（3.1b）、文档整合（3.7） | 第 3 稿，待评审 |
 | [r0-r4-work-breakdown.md](r0-r4-work-breakdown.md) | 第 1 年重写冲刺的 issue / PR 级拆解：R0-R4 任务、DoD、前置条件、验证入口和首批建议 issue | 初稿，执行拆解 |
+| [phase-b-software-work-breakdown.md](phase-b-software-work-breakdown.md) | Phase B 纯软件子集的 issue / PR 级拆解：BS1 轨迹流 → BS6 总线抽象批次、语义矩阵先行门、硬件延后清单 | 初稿，执行拆解 |
 | [r0-evidence-package.md](r0-evidence-package.md) | R0 完成证据包：v0.11.0 发布状态、Release 草案、旧线维护边界、replay / PROVENANCE / 许可证人工项 | R0 证据包 |
 | [r4-evidence-package.md](r4-evidence-package.md) | R4 切换收口证据包：新核消费入口、旧线隔离、v0.x EOL 草案和 v1.0.0-alpha 发布草案 | R4 证据包 |
 | [robot-integration.md](robot-integration.md) | 机器人集成蓝图：按形态可行性、两个参考架构、差距→计划映射 | 初稿，待评审 |
@@ -32,4 +33,4 @@
 
 ---
 
-*本索引最后更新：2026-07-05*
+*本索引最后更新：2026-07-05（增补 Phase B 纯软件拆解）*
