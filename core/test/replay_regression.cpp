@@ -192,10 +192,11 @@ void run_group_circular(Recording &recording)
 
 void run_group_blend(Recording &recording)
 {
-    // A4: shallow-corner quintic blend chain (KB-031) — the successor with
-    // MaxCornerDeviation fuses the two linear legs into one Euclidean chain
-    // profile that passes the corner without stopping.
-    recording.id = "core-group-blend";
+    // v2: declared change — the blend chain executes as an A5 look-ahead
+    // window (KB-032): per-segment profiles joined at node velocities instead
+    // of one fused chain profile capped at the corner speed. v1 recorded the
+    // fused-chain setpoints (KB-031).
+    recording.id = "core-group-blend-v2";
     axis::AxisModel x;
     axis::AxisModel y;
     x.set_power(true);
@@ -238,10 +239,64 @@ void run_group_blend(Recording &recording)
     }
 }
 
+void run_group_window(Recording &recording)
+{
+    // A5 (KB-032): four-segment zigzag look-ahead window, every corner
+    // blended with MaxCornerDeviation and passed at a scanned node velocity.
+    recording.id = "core-group-window";
+    axis::AxisModel x;
+    axis::AxisModel y;
+    x.set_power(true);
+    y.set_power(true);
+    axis::AxisGroup group;
+    group.add_axis(x);
+    group.add_axis(y);
+    group.enable();
+
+    axis::GroupCommand first{};
+    first.target.size = 2;
+    first.target.value[0] = 1.0;
+    first.target.value[1] = 0.0;
+    first.velocity = 0.05;
+    first.acceleration = 0.004;
+    first.deceleration = 0.004;
+    first.jerk = 0.004;
+    group.submit_linear(first);
+    std::int64_t tick = 0;
+    for(; tick < 3; ++tick) {
+        group.cycle();
+        recording.emit(tick, 0, x.snapshot());
+        recording.emit(tick, 1, y.snapshot());
+    }
+
+    const double targets[3][2] = {
+        {1.93969262078591, 0.342020143325669},   // +20 degrees
+        {2.93969262078591, 0.342020143325669},   // back to 0 degrees
+        {3.87938524157182, 0.684040286651337},   // +20 degrees
+    };
+    for(int leg = 0; leg < 3; ++leg) {
+        axis::GroupCommand blend = first;
+        blend.target.value[0] = targets[leg][0];
+        blend.target.value[1] = targets[leg][1];
+        blend.buffer_mode = axis::BufferMode::blending_high;
+        blend.transition_mode = axis::TransitionMode::max_corner_deviation;
+        blend.transition_parameter = 0.04;
+        group.submit_linear(blend);
+    }
+    for(; tick < 4000; ++tick) {
+        group.cycle();
+        recording.emit(tick, 0, x.snapshot());
+        recording.emit(tick, 1, y.snapshot());
+        if(group.status() == axis::GroupStatus::standby) {
+            break;
+        }
+    }
+}
+
 using ScenarioRunner = void (*)(Recording &);
 constexpr ScenarioRunner kScenarios[] = {run_single_axis_move, run_velocity_stop,
                                          run_group_linear, run_group_circular,
-                                         run_group_blend};
+                                         run_group_blend, run_group_window};
 
 int write_recording(const Recording &recording, const std::string &directory)
 {

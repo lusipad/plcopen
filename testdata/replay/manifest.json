@@ -102,7 +102,26 @@
       "source": "plcopen_core_replay_regression --record",
       "coverage": [
         "rewrite-core",
-        "shallow-corner quintic blend chain, MaxCornerDeviation (A4, KB-031)"
+        "shallow-corner quintic blend chain, MaxCornerDeviation (A4, KB-031)",
+        "superseded by core-group-blend-v2 (KB-032)"
+      ]
+    },
+    {
+      "id": "core-group-blend-v2",
+      "path": "core-group-blend-v2.jsonl",
+      "source": "plcopen_core_replay_regression --record",
+      "coverage": [
+        "rewrite-core",
+        "shallow-corner blend as an A5 look-ahead window, per-segment node-velocity profiles (KB-032)"
+      ]
+    },
+    {
+      "id": "core-group-window",
+      "path": "core-group-window.jsonl",
+      "source": "plcopen_core_replay_regression --record",
+      "coverage": [
+        "rewrite-core",
+        "four-segment zigzag look-ahead window, scanned node velocities (A5, KB-032)"
       ]
     }
   ]

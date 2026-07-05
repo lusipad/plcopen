@@ -4,9 +4,11 @@
 > Phase A4（公差带几何 blending v1）的验收规格（normative），实现与验收
 > 测试以本矩阵为准。曲线选型依据 long-term-plan 6.3-#4（五次 Bézier，C2
 > 加速度连续）。验收证据：`plcopen_core_a4_blending_tests` + 回放场景
-> `core-group-blend`。实现形态（KB-031）：接受的 blending 链融合为单一
-> 欧氏弧长路径 + 单一 jerk-limited 剖面（链上限速 = 拐角安全速度），并以
-> "链时长优于完全停止基线"为构造性提交门槛，不达则显式降级 BUFFERED。
+> `core-group-blend`。实现形态：KB-031 的整链单剖面执行已被
+> A5 look-ahead 窗口取代（KB-032，见
+> [part4-lookahead-semantics.md](part4-lookahead-semantics.md)）：分段剖面
+> 按扫描结点速度衔接，直线段不再被拐角限速拖慢；公差承诺、显式降级与
+> 构造性节拍门槛语义保持。
 
 ## 提案范围（v1）
 

@@ -204,6 +204,56 @@ public:
             return rt::ErrorCode::ok;
         }
         queue_.clear();
+        if(window_active_) {
+            // Controlled stop along the committed window geometry (KB-032):
+            // one halt profile over the composite arc length; not-yet-started
+            // commands are cleared (they never execute), the geometry is kept
+            // for braking. Mirrors the KB-027 clamp trick: the halt target may
+            // lie past the path end, sampling clamps at the terminal point.
+            if(window_stop_) {
+                return rt::ErrorCode::ok;
+            }
+            double s_live = 0.0;
+            double v_live = 0.0;
+            double a_live = 0.0;
+            window_live_state(s_live, v_live, a_live);
+            if(v_live <= 0.0) {
+                window_reset();
+                clear_axes_synchronized();
+                status_ = GroupStatus::standby;
+                return rt::ErrorCode::ok;
+            }
+            const WindowSegment &seg = window_[window_index_];
+            const otg::Limits1D halt_limits{seg.limits.max_velocity,
+                                            seg.limits.max_acceleration, deceleration, jerk};
+            double brake_velocity = v_live;
+            double brake_shift = 0.0;
+            if(a_live != 0.0) {
+                const double zero_cycles = std::ceil(std::fabs(a_live) / jerk);
+                brake_velocity += 0.5 * a_live * zero_cycles;
+                brake_shift += v_live * zero_cycles + a_live * zero_cycles * zero_cycles / 3.0;
+            }
+            if(brake_velocity < 0.0) {
+                brake_velocity = 0.0;
+            }
+            const double stop_position =
+                brake_shift +
+                otg::detail::ramp_between(brake_velocity, 0.0, halt_limits).distance;
+            const rt::Result<otg::Profile1D> halt = otg::plan_time_optimal(
+                {0.0, v_live, a_live}, {stop_position, 0.0, 0.0}, halt_limits);
+            if(!halt) {
+                window_reset();
+                clear_axes_synchronized();
+                status_ = GroupStatus::standby;
+                return rt::ErrorCode::ok;
+            }
+            window_stop_ = true;
+            window_stop_profile_ = halt.value();
+            window_stop_origin_ = s_live;
+            window_tick_ = 0;
+            status_ = GroupStatus::stopping;
+            return rt::ErrorCode::ok;
+        }
         if(!active_ || active_path_length_ <= 0.0) {
             abort_motion();
             status_ = GroupStatus::standby;
@@ -316,7 +366,7 @@ public:
             return submit_blend(command);
         }
 
-        if(command.buffer_mode == BufferMode::aborting || !active_) {
+        if(command.buffer_mode == BufferMode::aborting || (!active_ && !window_active_)) {
             const rt::ErrorCode started = start(command);
             if(started != rt::ErrorCode::ok) {
                 return rt::Result<std::uint32_t>::failure(started);
@@ -324,11 +374,8 @@ public:
             return rt::Result<std::uint32_t>::success(command.command_id);
         }
 
-        if(blend_chain_) {
-            // v1 boundary (KB-031): a committed blend chain cannot be
-            // extended with further buffered commands.
-            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported);
-        }
+        // A buffered command behind an active look-ahead window queues
+        // normally: the window terminates at rest (approved A5 matrix).
         const rt::ErrorCode queued = queue_.push_back(command);
         if(queued != rt::ErrorCode::ok) {
             return rt::Result<std::uint32_t>::failure(queued);
@@ -428,16 +475,12 @@ public:
         if(aborting) {
             abort_motion();
         }
-        if(aborting || !active_) {
+        if(aborting || (!active_ && !window_active_)) {
             const rt::ErrorCode started = start(command);
             if(started != rt::ErrorCode::ok) {
                 return rt::Result<std::uint32_t>::failure(started);
             }
             return rt::Result<std::uint32_t>::success(command.command_id);
-        }
-        if(blend_chain_) {
-            // v1 boundary (KB-031): a committed blend chain cannot be extended.
-            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported);
         }
         const rt::ErrorCode queued = queue_.push_back(command);
         if(queued != rt::ErrorCode::ok) {
@@ -466,6 +509,11 @@ public:
             }
         }
 
+        if(window_active_) {
+            window_cycle();
+            return;
+        }
+
         if(!active_) {
             if(status_ == GroupStatus::stopping) {
                 status_ = GroupStatus::standby;
@@ -481,9 +529,7 @@ public:
             ratio = state.position / active_path_length_;
             ratio = ratio < 0.0 ? 0.0 : (ratio > 1.0 ? 1.0 : ratio);
         }
-        if(blend_chain_) {
-            sample_chain(ratio * active_path_length_);
-        } else if(active_kind_ == GroupPathKind::circular) {
+        if(active_kind_ == GroupPathKind::circular) {
             // Arc-length parameterized sampling: the first two axes trace the
             // arc, remaining axes follow the path parameter linearly.
             const geom::Vec3 point = geom::sample(active_arc_, ratio * active_path_length_);
@@ -547,8 +593,10 @@ private:
 
     double queued_finish(std::size_t axis_index) const
     {
-        double finish =
-            active_ ? active_finish_[axis_index] : axes_[axis_index]->snapshot().command_position;
+        double finish = window_active_
+                            ? window_[window_.size() - 1].target[axis_index]
+                            : (active_ ? active_finish_[axis_index]
+                                       : axes_[axis_index]->snapshot().command_position);
         for(std::size_t i = 0; i < queue_.size(); ++i) {
             const GroupCommand &queued = queue_[i];
             finish = queued.relative ? finish + queued.target.value[axis_index]
@@ -571,7 +619,6 @@ private:
 
     rt::ErrorCode start(GroupCommand command)
     {
-        blend_chain_ = false;
         active_command_ = command;
         active_tick_ = 0;
         double longest = 0.0;
@@ -617,7 +664,6 @@ private:
     void finish_active()
     {
         active_ = false;
-        blend_chain_ = false;
         for(std::size_t i = 0; i < axes_.size(); ++i) {
             axes_[i]->clear_synchronized();
         }
@@ -641,7 +687,7 @@ private:
     void abort_motion()
     {
         active_ = false;
-        blend_chain_ = false;
+        window_reset();
         queue_.clear();
         active_tick_ = 0;
         for(std::size_t i = 0; i < axes_.size(); ++i) {
@@ -649,226 +695,643 @@ private:
         }
     }
 
-    // A4 v1 geometric blending (KB-031): the accepted chain fuses the rest of
-    // the active linear segment, the quintic corner curve, and the successor
-    // segment into ONE Euclidean arc-length path driven by ONE jerk-limited
-    // profile whose velocity limit is corner-safe (min of both commands and
-    // the curvature bound). Planning happens synchronously at submit; the
-    // cycle path only samples precomputed data. The chain commits only when
-    // it beats the full-stop baseline, otherwise the request degrades to
-    // BUFFERED and the degradation is reported.
+    // A5 look-ahead window (KB-032, approved A5 matrix): consecutive blending
+    // successors form a window of linear segments joined by quintic corner
+    // curves. Node velocities come from a trapezoid-level bidirectional scan
+    // capped by the corner curvature bound; every segment runs its own
+    // jerk-limited profile between node velocities (the OTG nonzero-target
+    // cruise domain), so straight parts are no longer dragged down to the
+    // sharpest corner speed. All planning happens synchronously at submit;
+    // the cycle path only samples precomputed data.
     static constexpr std::size_t BlendTableSize = 33;
+    static constexpr std::size_t WindowCapacity = 64;
+
+    struct WindowNode
+    {
+        bool has_curve = false;
+        std::array<std::array<double, MaxAxes>, 6> ctrl{};
+        std::array<double, BlendTableSize> cumulative{};
+        double curve_length = 0.0;
+        double corner_cap = 0.0;
+        double curve_velocity = 0.0;
+        std::int64_t curve_cycles = 0;
+    };
+
+    struct WindowSegment
+    {
+        std::array<double, MaxAxes> entry{}; // line start (after entry trim)
+        std::array<double, MaxAxes> dir{};   // unit direction
+        std::array<double, MaxAxes> target{};
+        double full_length = 0.0;            // corner-to-corner euclidean
+        double trim_in = 0.0;
+        double trim_out = 0.0;
+        otg::Limits1D limits{};              // euclidean dynamics
+        std::uint32_t command_id = 0;
+        double entry_velocity = 0.0;
+        double exit_velocity = 0.0;
+        otg::Profile1D profile{};            // line profile entry_v -> exit_v
+        WindowNode node{};                   // corner to the NEXT segment
+
+        double line_length() const
+        {
+            const double length = full_length - trim_in - trim_out;
+            return length > 0.0 ? length : 0.0;
+        }
+    };
 
     rt::Result<std::uint32_t> submit_blend(GroupCommand command)
     {
-        // v1 declared boundary (KB-031): blending applies onto the active
-        // linear command with an empty queue; other configurations are
-        // explicit errors.
-        if(!active_ || active_kind_ != GroupPathKind::linear || !queue_.empty() ||
-           blend_chain_ || status_ != GroupStatus::moving || active_path_length_ <= 0.0) {
+        // v1 declared boundary: blending extends the active window (or the
+        // active plain linear command); a stopping window, plain queued
+        // commands, or anything else is an explicit error.
+        if(window_stop_ || !queue_.empty()) {
             return rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported);
         }
-
-        // Euclidean geometry of the predecessor and successor segments.
-        double length1 = 0.0;
-        double length2 = 0.0;
-        std::array<double, MaxAxes> u1{};
-        std::array<double, MaxAxes> u2{};
-        double longest2 = 0.0;
-        for(std::size_t i = 0; i < axes_.size(); ++i) {
-            const double d1 = active_finish_[i] - active_start_[i];
-            const double d2 = command.target.value[i] - active_finish_[i];
-            length1 += d1 * d1;
-            length2 += d2 * d2;
-            u1[i] = d1;
-            u2[i] = d2;
-            const double travel2 = std::fabs(d2);
-            if(travel2 > longest2) {
-                longest2 = travel2;
+        if(!window_active_) {
+            if(!active_ || active_kind_ != GroupPathKind::linear ||
+               status_ != GroupStatus::moving || active_path_length_ <= 0.0) {
+                return rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported);
             }
         }
-        length1 = std::sqrt(length1);
+        if(window_active_ && window_.full()) {
+            // Window capacity is a declared limit, never a silent drop.
+            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::capacity_exceeded);
+        }
+
+        // Predecessor tail geometry (window tail or the active linear command).
+        std::array<double, MaxAxes> pred_target{};
+        std::array<double, MaxAxes> pred_dir{};
+        double pred_full = 0.0;
+        double pred_trim_out_room = 0.0; // half-length truncation budget
+        otg::Limits1D pred_limits{};
+        if(window_active_) {
+            const WindowSegment &tail = window_[window_.size() - 1];
+            pred_target = tail.target;
+            pred_dir = tail.dir;
+            pred_full = tail.full_length;
+            pred_limits = tail.limits;
+        } else {
+            double length1 = 0.0;
+            for(std::size_t i = 0; i < axes_.size(); ++i) {
+                const double d = active_finish_[i] - active_start_[i];
+                pred_dir[i] = d;
+                pred_target[i] = active_finish_[i];
+                length1 += d * d;
+            }
+            length1 = std::sqrt(length1);
+            if(length1 <= 1e-12) {
+                return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
+            }
+            for(std::size_t i = 0; i < axes_.size(); ++i) {
+                pred_dir[i] /= length1;
+            }
+            pred_full = length1;
+            const double scale1 = length1 / active_path_length_;
+            pred_limits = otg::Limits1D{active_command_.velocity * scale1,
+                                        active_command_.acceleration * scale1,
+                                        active_command_.deceleration * scale1,
+                                        active_command_.jerk * scale1};
+        }
+        pred_trim_out_room = pred_full * 0.5;
+
+        // Successor geometry.
+        double length2 = 0.0;
+        double longest2 = 0.0;
+        std::array<double, MaxAxes> u2{};
+        for(std::size_t i = 0; i < axes_.size(); ++i) {
+            const double d = command.target.value[i] - pred_target[i];
+            u2[i] = d;
+            length2 += d * d;
+            const double travel = std::fabs(d);
+            if(travel > longest2) {
+                longest2 = travel;
+            }
+        }
         length2 = std::sqrt(length2);
-        if(length1 <= 1e-12 || length2 <= 1e-12) {
+        if(length2 <= 1e-12) {
             return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
         }
         double alignment = 0.0;
         for(std::size_t i = 0; i < axes_.size(); ++i) {
-            u1[i] /= length1;
             u2[i] /= length2;
-            alignment += u1[i] * u2[i];
+            alignment += pred_dir[i] * u2[i];
         }
-
-        // Euclidean conversions: KB-027 states dynamics in the longest-member
-        // metric; the chain runs in Euclidean arc length.
-        const double scale1 = length1 / active_path_length_;
         const double scale2 = longest2 > 0.0 ? length2 / longest2 : 1.0;
-        const otg::State1D raw =
-            otg::sample(active_profile_, rt::CycleTick::from_cycles(active_tick_));
-        const otg::State1D now{raw.position * scale1, raw.velocity * scale1,
-                               raw.acceleration * scale1};
-        const otg::Limits1D limits1{active_command_.velocity * scale1,
-                                    active_command_.acceleration * scale1,
-                                    active_command_.deceleration * scale1,
-                                    active_command_.jerk * scale1};
         const otg::Limits1D limits2{command.velocity * scale2,
                                     command.acceleration * scale2,
-                                    command.deceleration * scale2,
-                                    command.jerk * scale2};
+                                    command.deceleration * scale2, command.jerk * scale2};
 
         if(alignment < -0.999) {
-            // Reflex corner: degrade to a BUFFERED full stop, reported.
+            // Reflex corner: degrade to a BUFFERED full-stop join, reported.
             return degrade_blend(command);
         }
 
-        double distance = 0.0;
-        double blend_length = 0.0;
-        double corner_velocity =
-            limits1.max_velocity < limits2.max_velocity ? limits1.max_velocity
-                                                        : limits2.max_velocity;
-        bool has_curve = false;
-        std::array<std::array<double, MaxAxes>, 6> control{};
-        std::array<double, BlendTableSize> cumulative{};
-
+        // Corner construction (geometry frozen at creation).
+        WindowNode node{};
+        double trim = 0.0;
+        double corner_cap =
+            pred_limits.max_velocity < limits2.max_velocity ? pred_limits.max_velocity
+                                                            : limits2.max_velocity;
         if(alignment <= 0.999) {
             double turn = 0.0;
             for(std::size_t i = 0; i < axes_.size(); ++i) {
-                const double diff = u2[i] - u1[i];
+                const double diff = u2[i] - pred_dir[i];
                 turn += diff * diff;
             }
             turn = std::sqrt(turn);
-            distance = command.transition_parameter * 96.0 / (23.0 * turn);
-            if(distance > length1 * 0.5) {
-                distance = length1 * 0.5;
+            trim = command.transition_parameter * 96.0 / (23.0 * turn);
+            if(trim > pred_trim_out_room) {
+                trim = pred_trim_out_room;
             }
-            if(distance > length2 * 0.5) {
-                distance = length2 * 0.5;
+            if(trim > length2 * 0.5) {
+                trim = length2 * 0.5;
             }
-            if(now.position >= length1 - distance) {
-                // Already inside (or past) the would-be transition region.
-                return degrade_blend(command);
-            }
-
             for(std::size_t i = 0; i < axes_.size(); ++i) {
-                const double corner = active_finish_[i];
-                control[0][i] = corner - u1[i] * distance;
-                control[1][i] = corner - u1[i] * (distance * 2.0 / 3.0);
-                control[2][i] = corner - u1[i] * (distance / 3.0);
-                control[3][i] = corner + u2[i] * (distance / 3.0);
-                control[4][i] = corner + u2[i] * (distance * 2.0 / 3.0);
-                control[5][i] = corner + u2[i] * distance;
+                const double corner = pred_target[i];
+                node.ctrl[0][i] = corner - pred_dir[i] * trim;
+                node.ctrl[1][i] = corner - pred_dir[i] * (trim * 2.0 / 3.0);
+                node.ctrl[2][i] = corner - pred_dir[i] * (trim / 3.0);
+                node.ctrl[3][i] = corner + u2[i] * (trim / 3.0);
+                node.ctrl[4][i] = corner + u2[i] * (trim * 2.0 / 3.0);
+                node.ctrl[5][i] = corner + u2[i] * trim;
             }
-
-            // Arc-length table and peak curvature (planning-phase work).
             double accumulated = 0.0;
             std::array<double, MaxAxes> previous{};
-            blend_point(control, 0.0, previous);
-            cumulative[0] = 0.0;
+            blend_point(node.ctrl, 0.0, previous);
+            node.cumulative[0] = 0.0;
             for(std::size_t step = 1; step < BlendTableSize; ++step) {
                 const double u =
                     static_cast<double>(step) / static_cast<double>(BlendTableSize - 1);
                 std::array<double, MaxAxes> point{};
-                blend_point(control, u, point);
+                blend_point(node.ctrl, u, point);
                 double chord = 0.0;
                 for(std::size_t i = 0; i < axes_.size(); ++i) {
                     const double diff = point[i] - previous[i];
                     chord += diff * diff;
                 }
                 accumulated += std::sqrt(chord);
-                cumulative[step] = accumulated;
+                node.cumulative[step] = accumulated;
                 previous = point;
             }
-            blend_length = accumulated;
-            if(!std::isfinite(blend_length) || blend_length <= 0.0) {
+            node.curve_length = accumulated;
+            if(!std::isfinite(node.curve_length) || node.curve_length <= 0.0) {
                 return degrade_blend(command);
             }
             double max_curvature = 0.0;
             for(std::size_t step = 0; step <= 64; ++step) {
                 const double u = static_cast<double>(step) / 64.0;
-                const double curvature = blend_curvature(control, u);
+                const double curvature = blend_curvature(node.ctrl, u);
                 if(curvature > max_curvature) {
                     max_curvature = curvature;
                 }
             }
             if(max_curvature > 0.0) {
-                double junction_acceleration =
-                    limits1.max_acceleration < limits1.max_deceleration
-                        ? limits1.max_acceleration
-                        : limits1.max_deceleration;
-                if(limits2.max_acceleration < junction_acceleration) {
-                    junction_acceleration = limits2.max_acceleration;
+                double junction = pred_limits.max_acceleration;
+                if(pred_limits.max_deceleration < junction) {
+                    junction = pred_limits.max_deceleration;
                 }
-                if(limits2.max_deceleration < junction_acceleration) {
-                    junction_acceleration = limits2.max_deceleration;
+                if(limits2.max_acceleration < junction) {
+                    junction = limits2.max_acceleration;
                 }
-                const double geometric = std::sqrt(junction_acceleration / max_curvature);
-                if(geometric < corner_velocity) {
-                    corner_velocity = geometric;
+                if(limits2.max_deceleration < junction) {
+                    junction = limits2.max_deceleration;
+                }
+                const double geometric = std::sqrt(junction / max_curvature);
+                if(geometric < corner_cap) {
+                    corner_cap = geometric;
                 }
             }
-            has_curve = true;
+            node.has_curve = true;
         }
-        // Collinear pass-through keeps has_curve false: the segments join
-        // directly at the corner and the chain cruises through it.
+        node.corner_cap = corner_cap;
 
-        // One profile over the composite chain, with the corner-safe velocity
-        // limit and the conservative envelope of both commands (KB-031).
-        const otg::Limits1D chain_limits{
-            corner_velocity,
-            limits1.max_acceleration < limits2.max_acceleration ? limits1.max_acceleration
-                                                                : limits2.max_acceleration,
-            limits1.max_deceleration < limits2.max_deceleration ? limits1.max_deceleration
-                                                                : limits2.max_deceleration,
-            limits1.max_jerk < limits2.max_jerk ? limits1.max_jerk : limits2.max_jerk,
-        };
-        const double chain_total = (length1 - distance) + blend_length + (length2 - distance);
-        const rt::Result<otg::Profile1D> chain = otg::plan_time_optimal(
-            now, {chain_total, 0.0, 0.0}, chain_limits);
-        if(!chain) {
+        // Baseline for the constructive cycle-time gate (captured pre-append).
+        const std::int64_t old_remaining = window_active_ ? window_remaining_cycles() : -1;
+
+        // Convert the active linear command into window segment zero.
+        bool converted = false;
+        if(!window_active_) {
+            WindowSegment seg0{};
+            for(std::size_t i = 0; i < axes_.size(); ++i) {
+                seg0.entry[i] = active_start_[i];
+                seg0.dir[i] = pred_dir[i];
+                seg0.target[i] = pred_target[i];
+            }
+            seg0.full_length = pred_full;
+            seg0.limits = pred_limits;
+            seg0.command_id = active_command_.command_id;
+            // Live state in euclidean units for the rebuild below.
+            const double scale1 = pred_full / active_path_length_;
+            const otg::State1D raw =
+                otg::sample(active_profile_, rt::CycleTick::from_cycles(active_tick_));
+            seg0.entry_velocity = raw.velocity * scale1; // updated by rebuild
+            seg0.profile = active_profile_;              // replaced by rebuild
+            window_.clear();
+            window_.push_back(seg0);
+            window_seed_state_ = otg::State1D{raw.position * scale1, raw.velocity * scale1,
+                                              raw.acceleration * scale1};
+            window_index_ = 0;
+            window_in_curve_ = false;
+            window_tick_ = 0;
+            converted = true;
+        }
+
+        // Append: tail gains the corner, the new segment enters the window.
+        WindowSegment &tail = window_[window_.size() - 1];
+        const double saved_trim_out = tail.trim_out;
+        const WindowNode saved_node = tail.node;
+        tail.trim_out = trim;
+        tail.node = node;
+
+        WindowSegment fresh{};
+        for(std::size_t i = 0; i < axes_.size(); ++i) {
+            fresh.entry[i] = node.has_curve ? node.ctrl[5][i] : pred_target[i];
+            fresh.dir[i] = u2[i];
+            fresh.target[i] = command.target.value[i];
+        }
+        fresh.full_length = length2;
+        fresh.trim_in = trim;
+        fresh.limits = limits2;
+        fresh.command_id = command.command_id;
+        if(window_.push_back(fresh) != rt::ErrorCode::ok) {
+            tail.trim_out = saved_trim_out;
+            tail.node = saved_node;
+            if(converted) {
+                window_.clear();
+            }
+            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::capacity_exceeded);
+        }
+
+        bool late = false;
+        if(!window_rebuild(late)) {
+            window_.pop_back();
+            WindowSegment &restore = window_[window_.size() - 1];
+            restore.trim_out = saved_trim_out;
+            restore.node = saved_node;
+            if(converted) {
+                window_.clear();
+            } else if(!window_rebuild(late)) {
+                // Restoring the previous window must succeed; if the live
+                // state has drifted past a boundary, stop safely.
+                window_reset();
+                clear_axes_synchronized();
+                status_ = GroupStatus::standby;
+                abort_motion();
+            }
             return degrade_blend(command);
         }
 
-        // Constructive cycle-time gate: commit only when the chain beats the
-        // full-stop baseline, otherwise degrade (reported).
-        const rt::Result<otg::Profile1D> stop_leg = otg::plan_time_optimal(
-            now, {length1, 0.0, 0.0}, limits1);
-        const rt::Result<otg::Profile1D> next_leg = otg::plan_time_optimal(
-            {0.0, 0.0, 0.0}, {length2, 0.0, 0.0}, limits2);
-        if(stop_leg && next_leg &&
-           chain.value().duration_cycles() >=
-               stop_leg.value().duration_cycles() + next_leg.value().duration_cycles()) {
-            return degrade_blend(command);
+        // Constructive cycle-time gate (KB-031 carried over): the extended
+        // window must beat "previous window then a standalone full-stop move".
+        if(old_remaining >= 0) {
+            const rt::Result<otg::Profile1D> standalone = otg::plan_time_optimal(
+                {0.0, 0.0, 0.0}, {length2, 0.0, 0.0}, limits2);
+            if(standalone &&
+               window_remaining_cycles() >=
+                   old_remaining + standalone.value().duration_cycles()) {
+                window_.pop_back();
+                WindowSegment &restore = window_[window_.size() - 1];
+                restore.trim_out = saved_trim_out;
+                restore.node = saved_node;
+                if(!window_rebuild(late)) {
+                    window_reset();
+                    clear_axes_synchronized();
+                    status_ = GroupStatus::standby;
+                    abort_motion();
+                }
+                return degrade_blend(command);
+            }
         }
 
-        // Commit. The active profile and dynamics switch to the chain.
-        blend_chain_ = true;
-        blend_has_curve_ = has_curve;
-        blend_ctrl_ = control;
-        blend_cumulative_ = cumulative;
-        blend_length_ = blend_length;
-        chain_s1_ = length1 - distance;
-        for(std::size_t i = 0; i < axes_.size(); ++i) {
-            chain_u1_[i] = u1[i];
-            chain_u2_[i] = u2[i];
-            chain_leg2_start_[i] =
-                has_curve ? control[5][i] : active_finish_[i];
+        if(converted) {
+            active_ = false;
+            window_active_ = true;
         }
-        active_profile_ = chain.value();
-        active_tick_ = 0;
-        active_duration_ = active_profile_.duration_cycles();
-        active_path_length_ = chain_total;
-        active_command_ = command;
-        active_command_.velocity = chain_limits.max_velocity;
-        active_command_.acceleration = chain_limits.max_acceleration;
-        active_command_.deceleration = chain_limits.max_deceleration;
-        active_command_.jerk = chain_limits.max_jerk;
-        for(std::size_t i = 0; i < axes_.size(); ++i) {
-            // active_start_ keeps the leg1 origin: chain arc length zero is
-            // the original segment start. active_finish_ is the chain target.
-            active_finish_[i] = command.target.value[i];
-        }
-        active_kind_ = GroupPathKind::linear;
+        status_ = GroupStatus::moving;
         return rt::Result<std::uint32_t>::success(command.command_id);
+    }
+
+    // Trapezoid-level bidirectional scan + per-segment profile planning over
+    // the not-yet-started part of the window. Returns false when any segment
+    // profile is infeasible (caller degrades).
+    bool window_rebuild(bool &late)
+    {
+        late = false;
+        const std::size_t count = window_.size();
+        if(count == 0 || window_index_ >= count) {
+            return false;
+        }
+
+        // Live state along the current line piece (euclidean, local coords).
+        double s_live = 0.0;
+        double v_live = 0.0;
+        double a_live = 0.0;
+        std::size_t first = window_index_;
+        if(window_active_) {
+            if(window_in_curve_) {
+                // The current curve is committed; rebuild from the next line.
+                const WindowNode &cur = window_[window_index_].node;
+                double s_curve = cur.curve_velocity * static_cast<double>(window_tick_);
+                if(s_curve > cur.curve_length) {
+                    s_curve = cur.curve_length;
+                }
+                (void)s_curve;
+                first = window_index_ + 1;
+                if(first >= count) {
+                    return false;
+                }
+                s_live = 0.0;
+                v_live = cur.curve_velocity;
+                a_live = 0.0;
+            } else {
+                const otg::State1D raw = otg::sample(
+                    window_[window_index_].profile, rt::CycleTick::from_cycles(window_tick_));
+                s_live = raw.position;
+                v_live = raw.velocity;
+                a_live = raw.acceleration;
+            }
+        } else {
+            // Fresh conversion: seed state captured in submit_blend.
+            s_live = window_seed_state_.position;
+            v_live = window_seed_state_.velocity;
+            a_live = window_seed_state_.acceleration;
+        }
+
+        // Late submission: already inside (or past) the tail transition region.
+        const WindowSegment &first_seg = window_[first];
+        if(first == count - 2 || count == 2) {
+            // The newly trimmed segment is the live one: check the room.
+        }
+        if(first < count && window_[first].line_length() <= 0.0 && first + 1 < count) {
+            // Fully consumed line between two corners is allowed only when
+            // both node velocities agree; v1 degrades instead.
+            return false;
+        }
+        if(!window_in_curve_ && s_live >= window_[first].line_length()) {
+            late = true;
+            return false;
+        }
+        (void)first_seg;
+
+        // Forward pass (accelerating limit), then backward pass (braking).
+        std::array<double, WindowCapacity> node_v{};
+        double forward = v_live;
+        for(std::size_t i = first; i < count; ++i) {
+            const double length = i == first && !window_in_curve_
+                                      ? window_[i].line_length() - s_live
+                                      : window_[i].line_length();
+            const double usable = length > 0.0 ? length : 0.0;
+            double reachable = std::sqrt(
+                forward * forward + 2.0 * window_[i].limits.max_acceleration * usable);
+            if(i + 1 < count) {
+                const double cap = window_[i].node.corner_cap;
+                if(reachable > cap) {
+                    reachable = cap;
+                }
+                node_v[i] = reachable;
+                forward = reachable;
+            } else {
+                node_v[i] = 0.0; // terminal rest
+            }
+        }
+        double backward = 0.0;
+        for(std::size_t r = count; r > first; --r) {
+            const std::size_t i = r - 1;
+            const double length = i == first && !window_in_curve_
+                                      ? window_[i].line_length() - s_live
+                                      : window_[i].line_length();
+            const double usable = length > 0.0 ? length : 0.0;
+            if(i + 1 < count && backward < node_v[i]) {
+                node_v[i] = backward;
+            }
+            backward = std::sqrt(node_v[i] * node_v[i] +
+                                 2.0 * window_[i].limits.max_deceleration * usable);
+            if(i + 1 < count) {
+                backward = backward; // entry allowance of segment i
+            }
+        }
+
+        // Quantize curve velocities and plan the per-segment profiles.
+        double entry_velocity = v_live;
+        double entry_acceleration = a_live;
+        double entry_position = window_in_curve_ ? 0.0 : s_live;
+        for(std::size_t i = first; i < count; ++i) {
+            WindowSegment &seg = window_[i];
+            double exit_velocity = 0.0;
+            if(i + 1 < count) {
+                if(seg.node.has_curve) {
+                    double v = node_v[i];
+                    if(v <= 1e-12) {
+                        return false; // corner requires rest: degrade
+                    }
+                    std::int64_t cycles = static_cast<std::int64_t>(
+                        std::ceil(seg.node.curve_length / v));
+                    if(cycles < 1) {
+                        cycles = 1;
+                    }
+                    seg.node.curve_velocity =
+                        seg.node.curve_length / static_cast<double>(cycles);
+                    seg.node.curve_cycles = cycles;
+                    exit_velocity = seg.node.curve_velocity;
+                } else {
+                    exit_velocity = node_v[i];
+                }
+            }
+            const rt::Result<otg::Profile1D> profile = otg::plan_time_optimal(
+                {entry_position, entry_velocity, entry_acceleration},
+                {seg.line_length(), exit_velocity, 0.0}, seg.limits);
+            if(!profile) {
+                return false;
+            }
+            seg.entry_velocity = entry_velocity;
+            seg.exit_velocity = exit_velocity;
+            seg.profile = profile.value();
+            entry_velocity = exit_velocity;
+            entry_acceleration = 0.0;
+            entry_position = 0.0;
+        }
+        if(!window_in_curve_) {
+            // The live line profile was replanned from the live state; its
+            // tick restarts. A committed curve keeps its own progress.
+            window_tick_ = 0;
+        }
+        return true;
+    }
+
+    std::int64_t window_remaining_cycles() const
+    {
+        std::int64_t total = 0;
+        for(std::size_t i = window_index_; i < window_.size(); ++i) {
+            if(!(i == window_index_ && window_in_curve_)) {
+                total += window_[i].profile.duration_cycles();
+            }
+            if(i + 1 < window_.size() && window_[i].node.has_curve) {
+                total += window_[i].node.curve_cycles;
+            }
+        }
+        return total;
+    }
+
+    void window_cycle()
+    {
+        ++window_tick_;
+        if(window_stop_) {
+            const otg::State1D st = otg::sample(window_stop_profile_,
+                                                rt::CycleTick::from_cycles(window_tick_));
+            sample_window_arclength(window_stop_origin_ + st.position);
+            if(window_tick_ >= window_stop_profile_.duration_cycles()) {
+                window_reset();
+                clear_axes_synchronized();
+                status_ = GroupStatus::standby;
+                start_next_queued();
+            }
+            return;
+        }
+
+        WindowSegment &seg = window_[window_index_];
+        if(window_in_curve_) {
+            double s = seg.node.curve_velocity * static_cast<double>(window_tick_);
+            if(s > seg.node.curve_length) {
+                s = seg.node.curve_length;
+            }
+            sample_window_curve(seg.node, s);
+            if(window_tick_ >= seg.node.curve_cycles) {
+                ++window_index_;
+                window_in_curve_ = false;
+                window_tick_ = 0;
+            }
+            return;
+        }
+
+        const otg::State1D st =
+            otg::sample(seg.profile, rt::CycleTick::from_cycles(window_tick_));
+        // No clamping: a terminal profile may legally overshoot the target by
+        // a hair inside its envelope and come back; clamping would turn that
+        // into a hard stop (acceleration step). The final sample lands on the
+        // exact segment end by the profile's endpoint contract.
+        const double s = st.position;
+        for(std::size_t i = 0; i < axes_.size(); ++i) {
+            axes_[i]->set_synchronized_position(seg.entry[i] + seg.dir[i] * s);
+        }
+        if(window_tick_ >= seg.profile.duration_cycles()) {
+            if(window_index_ + 1 < window_.size()) {
+                if(seg.node.has_curve) {
+                    window_in_curve_ = true;
+                    window_tick_ = 0;
+                } else {
+                    ++window_index_;
+                    window_tick_ = 0;
+                }
+            } else {
+                window_reset();
+                clear_axes_synchronized();
+                status_ = GroupStatus::standby;
+                start_next_queued();
+            }
+        }
+    }
+
+    void sample_window_curve(const WindowNode &node, double arclength)
+    {
+        double target = arclength;
+        if(target < 0.0) {
+            target = 0.0;
+        }
+        if(target > node.curve_length) {
+            target = node.curve_length;
+        }
+        std::size_t low = 0;
+        for(std::size_t i = 1; i < BlendTableSize; ++i) {
+            if(node.cumulative[i] >= target) {
+                low = i - 1;
+                break;
+            }
+            low = i - 1;
+        }
+        const double segment = node.cumulative[low + 1] - node.cumulative[low];
+        const double fraction =
+            segment > 0.0 ? (target - node.cumulative[low]) / segment : 0.0;
+        const double u = (static_cast<double>(low) + fraction) /
+                         static_cast<double>(BlendTableSize - 1);
+        std::array<double, MaxAxes> point{};
+        blend_point(node.ctrl, u, point);
+        for(std::size_t i = 0; i < axes_.size(); ++i) {
+            axes_[i]->set_synchronized_position(point[i]);
+        }
+    }
+
+    // Composite arc length measured from the live piece at stop time: walks
+    // the remaining pieces (bounded by the window capacity, simple compares).
+    void sample_window_arclength(double arclength)
+    {
+        double remaining = arclength;
+        bool in_curve = window_in_curve_;
+        std::size_t index = window_index_;
+        while(index < window_.size()) {
+            const WindowSegment &seg = window_[index];
+            if(!in_curve) {
+                const double length = seg.line_length();
+                if(remaining <= length || index + 1 >= window_.size()) {
+                    double s = remaining < 0.0 ? 0.0 : (remaining > length ? length : remaining);
+                    for(std::size_t i = 0; i < axes_.size(); ++i) {
+                        axes_[i]->set_synchronized_position(seg.entry[i] + seg.dir[i] * s);
+                    }
+                    return;
+                }
+                remaining -= length;
+                if(seg.node.has_curve) {
+                    in_curve = true;
+                } else {
+                    ++index;
+                }
+            } else {
+                if(remaining <= seg.node.curve_length) {
+                    sample_window_curve(seg.node, remaining);
+                    return;
+                }
+                remaining -= seg.node.curve_length;
+                in_curve = false;
+                ++index;
+            }
+        }
+    }
+
+    void window_live_state(double &s_live, double &v_live, double &a_live) const
+    {
+        if(window_in_curve_) {
+            const WindowNode &node = window_[window_index_].node;
+            double s = node.curve_velocity * static_cast<double>(window_tick_);
+            if(s > node.curve_length) {
+                s = node.curve_length;
+            }
+            s_live = s;
+            v_live = node.curve_velocity;
+            a_live = 0.0;
+            return;
+        }
+        const otg::State1D raw = otg::sample(window_[window_index_].profile,
+                                             rt::CycleTick::from_cycles(window_tick_));
+        const double length = window_[window_index_].line_length();
+        s_live = raw.position < 0.0 ? 0.0 : (raw.position > length ? length : raw.position);
+        v_live = raw.velocity;
+        a_live = raw.acceleration;
+    }
+
+    void window_reset()
+    {
+        window_active_ = false;
+        window_stop_ = false;
+        window_in_curve_ = false;
+        window_index_ = 0;
+        window_tick_ = 0;
+        window_.clear();
+    }
+
+    void clear_axes_synchronized()
+    {
+        for(std::size_t i = 0; i < axes_.size(); ++i) {
+            axes_[i]->clear_synchronized();
+        }
     }
 
     rt::Result<std::uint32_t> degrade_blend(GroupCommand command)
@@ -947,48 +1410,6 @@ private:
         return std::sqrt(area) / (norm1 * std::sqrt(norm1));
     }
 
-    void sample_chain(double arclength)
-    {
-        const double s2_boundary = chain_s1_ + blend_length_;
-        if(arclength <= chain_s1_ || (!blend_has_curve_ && arclength <= chain_s1_)) {
-            for(std::size_t i = 0; i < axes_.size(); ++i) {
-                axes_[i]->set_synchronized_position(active_start_[i] +
-                                                    chain_u1_[i] * arclength);
-            }
-            return;
-        }
-        if(blend_has_curve_ && arclength <= s2_boundary) {
-            double target = arclength - chain_s1_;
-            if(target > blend_length_) {
-                target = blend_length_;
-            }
-            std::size_t low = 0;
-            for(std::size_t i = 1; i < BlendTableSize; ++i) {
-                if(blend_cumulative_[i] >= target) {
-                    low = i - 1;
-                    break;
-                }
-                low = i - 1;
-            }
-            const double segment = blend_cumulative_[low + 1] - blend_cumulative_[low];
-            const double fraction =
-                segment > 0.0 ? (target - blend_cumulative_[low]) / segment : 0.0;
-            const double u = (static_cast<double>(low) + fraction) /
-                             static_cast<double>(BlendTableSize - 1);
-            std::array<double, MaxAxes> point{};
-            blend_point(blend_ctrl_, u, point);
-            for(std::size_t i = 0; i < axes_.size(); ++i) {
-                axes_[i]->set_synchronized_position(point[i]);
-            }
-            return;
-        }
-        const double leg2 = arclength - s2_boundary;
-        for(std::size_t i = 0; i < axes_.size(); ++i) {
-            axes_[i]->set_synchronized_position(chain_leg2_start_[i] +
-                                                chain_u2_[i] * leg2);
-        }
-    }
-
     int domain_id_ = 0;
     GroupStatus status_ = GroupStatus::disabled;
     rt::StaticVector<AxisModel *, MaxAxes> axes_{};
@@ -998,15 +1419,15 @@ private:
     std::array<double, MaxAxes> active_finish_{};
     GroupPathKind active_kind_ = GroupPathKind::linear;
     geom::ArcSegment active_arc_{};
-    bool blend_chain_ = false;
-    bool blend_has_curve_ = false;
-    std::array<std::array<double, MaxAxes>, 6> blend_ctrl_{};
-    std::array<double, BlendTableSize> blend_cumulative_{};
-    double blend_length_ = 0.0;
-    double chain_s1_ = 0.0;
-    std::array<double, MaxAxes> chain_u1_{};
-    std::array<double, MaxAxes> chain_u2_{};
-    std::array<double, MaxAxes> chain_leg2_start_{};
+    rt::StaticVector<WindowSegment, WindowCapacity> window_{};
+    bool window_active_ = false;
+    bool window_in_curve_ = false;
+    bool window_stop_ = false;
+    std::size_t window_index_ = 0;
+    std::int64_t window_tick_ = 0;
+    otg::Profile1D window_stop_profile_{};
+    double window_stop_origin_ = 0.0;
+    otg::State1D window_seed_state_{};
     std::uint32_t last_blend_degraded_id_ = 0;
     otg::Profile1D active_profile_{};
     double active_path_length_ = 0.0;

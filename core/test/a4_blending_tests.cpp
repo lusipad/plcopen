@@ -447,18 +447,29 @@ int check_chain_boundaries()
         return fail("chain setup committed, not degraded");
     }
 
-    // A second blending command onto a committed chain is unsupported (v1).
-    rt::Result<std::uint32_t> rejected =
-        rig.group.submit_linear(make_blend_successor(5.0, 2.0, 0.05));
-    if(rejected || rejected.error() != rt::ErrorCode::unsupported) {
-        return fail("second blend on chain unsupported");
+    // A5 (KB-032): a second blending successor extends the window.
+    const rt::Result<std::uint32_t> second =
+        rig.group.submit_linear(make_blend_successor(5.46410161513775, 2.0, 0.05));
+    if(!second) {
+        return fail("second blend extends the window");
     }
-    // A buffered command onto a committed chain is unsupported (v1).
-    axis::GroupCommand buffered = make_leg(0.0, 2.0);
+    // A plain buffered command queues behind the window (terminal rest).
+    axis::GroupCommand buffered = make_leg(5.46410161513775, 3.0);
     buffered.buffer_mode = axis::BufferMode::buffered;
-    rejected = rig.group.submit_linear(buffered);
+    const rt::Result<std::uint32_t> queued = rig.group.submit_linear(buffered);
+    if(!queued) {
+        return fail("buffered queues behind the window");
+    }
+    // Blending after a plain queued command is not extendable (unlisted).
+    rt::Result<std::uint32_t> rejected =
+        rig.group.submit_linear(make_blend_successor(6.0, 4.0, 0.05));
     if(rejected || rejected.error() != rt::ErrorCode::unsupported) {
-        return fail("buffered on chain unsupported");
+        return fail("blend behind plain queue unsupported");
+    }
+    if(run_to_standstill(rig.group, 40000) < 0 ||
+       !near(rig.x.snapshot().command_position, 5.46410161513775, 1e-9) ||
+       !near(rig.y.snapshot().command_position, 3.0, 1e-9)) {
+        return fail("window then buffered chain finishes");
     }
     return 0;
 }
@@ -520,7 +531,7 @@ int check_group_stop_on_chain()
     if(!chain || rig.group.last_blend_degraded_command() == chain.value()) {
         return fail("stop chain setup");
     }
-    for(int i = 0; i < 200; ++i) {
+    for(int i = 0; i < 80; ++i) {
         rig.group.cycle();
     }
     if(rig.group.stop(0.002, 0.002) != rt::ErrorCode::ok) {

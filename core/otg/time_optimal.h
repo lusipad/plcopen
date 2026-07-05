@@ -341,50 +341,93 @@ inline rt::Result<Profile1D> build_refined_cruise(State1D from,
     }
     const double distance = to.position - reduced.position;
 
-    double cruise_velocity = cruise_hint;
-    std::int64_t cruise_cycles = 0;
-    bool converged = false;
-    for(int iteration = 0; iteration < 48; ++iteration) {
-        // Quantized ramp distances for the current cruise velocity.
+    // Quantized total distance at a given cruise velocity (exact-rounded
+    // ramps plus n integer cruise cycles).
+    const auto chained = [&](double velocity, std::int64_t cycles, double &total) {
         Profile1D scratch = reduction;
         State1D state = reduced;
         rt::ErrorCode built =
-            push_ramp_with_crossing(scratch, state, cruise_velocity, limits,
-                                    RampRounding::exact);
+            push_ramp_with_crossing(scratch, state, velocity, limits, RampRounding::exact);
         if(built != rt::ErrorCode::ok) {
-            return rt::Result<Profile1D>::failure(built);
+            return built;
         }
         built = push_ramp_with_crossing(scratch, state, to.velocity, limits,
                                         RampRounding::exact);
         if(built != rt::ErrorCode::ok) {
-            return rt::Result<Profile1D>::failure(built);
+            return built;
         }
+        total = (state.position - reduced.position) +
+                velocity * static_cast<double>(cycles);
+        return rt::ErrorCode::ok;
+    };
 
-        const double remaining = distance - (state.position - reduced.position);
-        if(!(remaining * cruise_velocity > 0.0)) {
-            // No forward cruise room at this velocity: not a cruise-regime
-            // case; the generic candidates handle it.
-            return rt::Result<Profile1D>::failure(rt::ErrorCode::infeasible);
-        }
-        std::int64_t cycles =
-            static_cast<std::int64_t>(std::floor(remaining / cruise_velocity + 0.5));
+    // Pick the integer cruise-cycle count at the hint velocity, then bisect
+    // the cruise velocity so the quantized chain lands exactly on the target
+    // (the fixed-point form contracts too slowly when the ramp time is
+    // comparable to the cruise time).
+    const double direction = cruise_hint > 0.0 ? 1.0 : -1.0;
+    const double vmax = limits.max_velocity;
+    double probe_total = 0.0;
+    if(chained(direction * vmax, 0, probe_total) != rt::ErrorCode::ok) {
+        return rt::Result<Profile1D>::failure(rt::ErrorCode::infeasible);
+    }
+    const double remaining_at_vmax = distance - probe_total;
+    if(!(remaining_at_vmax * direction > 0.0)) {
+        // No cruise room: not a cruise-regime case; the generic candidates
+        // handle it.
+        return rt::Result<Profile1D>::failure(rt::ErrorCode::infeasible);
+    }
+    const std::int64_t base_cycles =
+        static_cast<std::int64_t>(std::ceil(std::fabs(remaining_at_vmax) / vmax));
+
+    // The quantized chain distance is piecewise-smooth in the cruise velocity
+    // (ramp phase counts jump); if the root lands exactly on a jump the dust
+    // check below fails. Adding cruise cycles shifts the root into a smooth
+    // stretch, so a handful of attempts settles it.
+    double cruise_velocity = 0.0;
+    std::int64_t cruise_cycles = 0;
+    bool solved = false;
+    for(std::int64_t attempt = 0; attempt < 4 && !solved; ++attempt) {
+        std::int64_t cycles = base_cycles + attempt;
         if(cycles < 1) {
             cycles = 1;
         }
-        double next = remaining / static_cast<double>(cycles);
-        while(std::fabs(next) > limits.max_velocity) {
-            ++cycles;
-            next = remaining / static_cast<double>(cycles);
+        double low = direction * vmax * 1e-9;
+        double high = direction * vmax;
+        double low_total = 0.0;
+        double high_total = 0.0;
+        if(chained(low, cycles, low_total) != rt::ErrorCode::ok ||
+           chained(high, cycles, high_total) != rt::ErrorCode::ok) {
+            continue;
         }
-        cruise_cycles = cycles;
-        if(std::fabs(next - cruise_velocity) <= 1e-15) {
-            cruise_velocity = next;
-            converged = true;
-            break;
+        if(!((low_total - distance) * (high_total - distance) <= 0.0)) {
+            continue;
         }
-        cruise_velocity = next;
+        double candidate = high;
+        for(int iteration = 0; iteration < 96; ++iteration) {
+            const double middle = 0.5 * (low + high);
+            double total = 0.0;
+            if(chained(middle, cycles, total) != rt::ErrorCode::ok) {
+                break;
+            }
+            if((total - distance) * direction >= 0.0) {
+                high = middle;
+            } else {
+                low = middle;
+            }
+            candidate = 0.5 * (low + high);
+        }
+        double settled = 0.0;
+        if(chained(candidate, cycles, settled) != rt::ErrorCode::ok) {
+            continue;
+        }
+        if(std::fabs(settled - distance) <= 1e-9 * (1.0 + std::fabs(to.position))) {
+            cruise_velocity = candidate;
+            cruise_cycles = cycles;
+            solved = true;
+        }
     }
-    if(!converged) {
+    if(!solved) {
         return rt::Result<Profile1D>::failure(rt::ErrorCode::infeasible);
     }
 
