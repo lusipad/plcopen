@@ -9,7 +9,11 @@ R2 v1 scope:
 - cubic Bezier spline segments;
 - quadratic Bezier blend segments constrained by tolerance;
 - fixed-size arc-length tables for inverse mapping checks;
-- explicit errors for zero-length lines, collinear arc points, and zero-radius arcs.
+- explicit errors for zero-length lines, collinear arc points, and zero-radius arcs;
+- rigid frames (`frame.h`): the Z-rotation `RigidFrame`, the full RPY
+  `RigidTransform` (orientation batch), and `extract_rpy` — the single
+  matrix-to-RPY inversion entry with the declared gimbal convention
+  (readback batch, KB-043).
 
 The cubic Bezier length is a bounded chord approximation. It is deterministic and sufficient for
 the first R2 path execution chain; higher-fidelity spline policies can replace it behind the same

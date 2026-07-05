@@ -122,6 +122,11 @@ if(BUILD_TESTING AND PLCOPEN_BUILD_CORE_TESTS)
     plcopen_core_rt_compile_options(plcopen_core_pose_tests)
     add_test(NAME plcopen_core_pose_tests COMMAND plcopen_core_pose_tests)
 
+    add_executable(plcopen_core_readback_tests test/readback_tests.cpp)
+    target_link_libraries(plcopen_core_readback_tests PRIVATE plcopen::core)
+    plcopen_core_rt_compile_options(plcopen_core_readback_tests)
+    add_test(NAME plcopen_core_readback_tests COMMAND plcopen_core_readback_tests)
+
     add_executable(plcopen_core_adapters_tests test/adapters_tests.cpp)
     target_link_libraries(plcopen_core_adapters_tests PRIVATE plcopen::core)
     plcopen_core_rt_compile_options(plcopen_core_adapters_tests)

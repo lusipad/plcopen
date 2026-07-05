@@ -17,6 +17,11 @@ Responsibilities:
   the analytic inverse (seeded, KB-041 gates) lands ACS joint targets at
   submit; relative/circular/blending report explicit unsupported, ACS passes
   through.
+- Cartesian/pose readback (KB-043, approved readback matrix):
+  `read_cartesian(cs, source, out)` is a pure const query mirroring the
+  submit-side conversion slot for slot (pose groups report the TCP pose with
+  the declared gimbal convention; translational groups the TCP point);
+  configuration getters echo the original set values.
 - Group path commands: linear (shared scalar path referenced to the longest member travel)
   and circular v1 (BORDER three-point arcs, arc-length path parameter in the first-two-axes
   plane, higher axes follow linearly; KB-030, approved circular matrix).

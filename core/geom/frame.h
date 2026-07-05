@@ -126,6 +126,31 @@ inline RigidTransform compose(const RigidTransform &a, const RigidTransform &b)
     return out;
 }
 
+// Readback batch (approved matrix decision #4): the declared inverse of
+// make_rpy_transform. pitch = atan2(-r20, hypot(r00, r10)) in [-pi/2, pi/2],
+// roll/yaw from the cosine-pitch element pairs, all in (-pi, pi]. Inside the
+// gimbal band (hypot(r00, r10) < 1e-9) the rotational freedom folds into yaw
+// with roll = 0 by convention and the return value flags it; the rebuilt
+// matrix stays exact either way. This is the only place the matrix-to-RPY
+// direction exists — command inputs stay RPY-only (orientation matrix
+// decision #10).
+inline bool extract_rpy(const double rotation[3][3],
+                        double &roll,
+                        double &pitch,
+                        double &yaw)
+{
+    const double cos_pitch = std::hypot(rotation[0][0], rotation[1][0]);
+    pitch = std::atan2(-rotation[2][0], cos_pitch);
+    if(cos_pitch < 1e-9) {
+        roll = 0.0;
+        yaw = std::atan2(-rotation[0][1], rotation[1][1]);
+        return true;
+    }
+    roll = std::atan2(rotation[2][1], rotation[2][2]);
+    yaw = std::atan2(rotation[1][0], rotation[0][0]);
+    return false;
+}
+
 inline RigidTransform invert(const RigidTransform &transform)
 {
     RigidTransform out{};

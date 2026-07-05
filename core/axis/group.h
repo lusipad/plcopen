@@ -85,6 +85,15 @@ enum class CoordSystem
     tcs,
 };
 
+// Readback source (approved readback matrix, decision #1/#8): the command
+// setpoint domain or the servo feedback domain, through one conversion
+// chain.
+enum class PositionSource
+{
+    command,
+    actual,
+};
+
 struct GroupCommand
 {
     GroupPosition target{};
@@ -351,6 +360,10 @@ public:
             return rt::ErrorCode::invalid_argument;
         }
         workpiece_frame_ = geom::make_rpy_transform(x, y, z, roll, pitch, yaw);
+        const double echo[6] = {x, y, z, roll, pitch, yaw};
+        for(int i = 0; i < 6; ++i) {
+            workpiece_frame_rpy_[i] = echo[i];
+        }
         return rt::ErrorCode::ok;
     }
 
@@ -369,7 +382,12 @@ public:
            !std::isfinite(pitch) || !std::isfinite(yaw)) {
             return rt::ErrorCode::invalid_argument;
         }
-        pose_tool_inverse_ = geom::invert(geom::make_rpy_transform(x, y, z, roll, pitch, yaw));
+        pose_tool_ = geom::make_rpy_transform(x, y, z, roll, pitch, yaw);
+        pose_tool_inverse_ = geom::invert(pose_tool_);
+        const double echo[6] = {x, y, z, roll, pitch, yaw};
+        for(int i = 0; i < 6; ++i) {
+            tool_transform_rpy_[i] = echo[i];
+        }
         return rt::ErrorCode::ok;
     }
 
@@ -391,6 +409,116 @@ public:
         pose_kinematics_ = plugin;
         pose_min_margin_ = min_singularity_margin;
         pose_max_joint_step_ = max_joint_step;
+        return rt::ErrorCode::ok;
+    }
+
+    // Readback batch (approved matrix decision #7): configuration getters
+    // echo the original set values — never a matrix-to-RPY inversion of a
+    // configured frame.
+    void workpiece_frame_rpy(double out[6]) const
+    {
+        for(int i = 0; i < 6; ++i) {
+            out[i] = workpiece_frame_rpy_[i];
+        }
+    }
+
+    void tool_transform_rpy(double out[6]) const
+    {
+        for(int i = 0; i < 6; ++i) {
+            out[i] = tool_transform_rpy_[i];
+        }
+    }
+
+    geom::Vec3 tool_offset() const
+    {
+        return tool_offset_;
+    }
+
+    // Readback batch (approved matrix decisions #1-#3): per-frame Cartesian
+    // and pose readback, a pure const query mirroring the submit-side
+    // conversion slot for slot — a read-back value is a resubmittable
+    // target. Any motion state may read (readback is not configuration);
+    // only WCS/FCS/TCS and a memberless/disabled group reject. Pose groups
+    // report the TCP pose ([0..2] position, [3..5] RPY via extract_rpy with
+    // the declared gimbal convention); translational groups report the TCP
+    // point plus higher-axis ACS pass-through.
+    rt::ErrorCode read_cartesian(CoordSystem cs,
+                                 PositionSource source,
+                                 GroupPosition &out,
+                                 bool *gimbal_lock = nullptr) const
+    {
+        if(gimbal_lock != nullptr) {
+            *gimbal_lock = false;
+        }
+        switch(cs) {
+        case CoordSystem::acs:
+        case CoordSystem::mcs:
+        case CoordSystem::pcs:
+            break;
+        default:
+            return rt::ErrorCode::unsupported;
+        }
+        if(axes_.size() == 0 || status_ == GroupStatus::disabled) {
+            return rt::ErrorCode::invalid_argument;
+        }
+        out.size = axes_.size();
+        double joints[MaxAxes] = {};
+        for(std::size_t i = 0; i < axes_.size(); ++i) {
+            const AxisSnapshot &snapshot = axes_[i]->snapshot();
+            joints[i] = source == PositionSource::actual ? snapshot.actual_position
+                                                         : snapshot.command_position;
+            out.value[i] = joints[i];
+        }
+        if(cs == CoordSystem::acs) {
+            return rt::ErrorCode::ok;
+        }
+
+        if(pose_kinematics_ != nullptr) {
+            kin::Pose6 flange{};
+            pose_kinematics_->forward(joints, flange);
+            geom::RigidTransform pose{};
+            pose.translation = geom::Vec3{flange.position[0], flange.position[1],
+                                          flange.position[2]};
+            for(int i = 0; i < 3; ++i) {
+                for(int j = 0; j < 3; ++j) {
+                    pose.rotation[i][j] = flange.rotation[i][j];
+                }
+            }
+            pose = geom::compose(pose, pose_tool_);
+            if(cs == CoordSystem::pcs) {
+                pose = geom::compose(geom::invert(workpiece_frame_), pose);
+            }
+            out.value[0] = pose.translation.x;
+            out.value[1] = pose.translation.y;
+            out.value[2] = pose.translation.z;
+            double roll = 0.0;
+            double pitch = 0.0;
+            double yaw = 0.0;
+            const bool gimbal = geom::extract_rpy(pose.rotation, roll, pitch, yaw);
+            out.value[3] = roll;
+            out.value[4] = pitch;
+            out.value[5] = yaw;
+            if(gimbal_lock != nullptr) {
+                *gimbal_lock = gimbal;
+            }
+            return rt::ErrorCode::ok;
+        }
+
+        geom::Vec3 point{};
+        if(kinematics_ != nullptr) {
+            const rt::ErrorCode forwarded =
+                kinematics_->forward(joints, axes_.size(), point);
+            if(forwarded != rt::ErrorCode::ok) {
+                return forwarded;
+            }
+        } else {
+            point = cartesian_part(out);
+        }
+        point = point + tool_offset_;
+        if(cs == CoordSystem::pcs) {
+            point = geom::transform_point(geom::invert(workpiece_frame_), point);
+        }
+        store_cartesian_part(out, point);
         return rt::ErrorCode::ok;
     }
 
@@ -2072,7 +2200,10 @@ private:
     GroupStatus status_ = GroupStatus::disabled;
     geom::RigidTransform workpiece_frame_{};
     geom::Vec3 tool_offset_{};
+    geom::RigidTransform pose_tool_{};
     geom::RigidTransform pose_tool_inverse_{};
+    double workpiece_frame_rpy_[6] = {};
+    double tool_transform_rpy_[6] = {};
     const kin::PoseKinematics *pose_kinematics_ = nullptr;
     double pose_min_margin_ = 0.0;
     double pose_max_joint_step_ = 0.0;

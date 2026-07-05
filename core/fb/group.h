@@ -150,20 +150,26 @@ public:
     }
 };
 
-// Enable-based member position reads.
+// Enable-based member position reads. Readback batch (approved matrix
+// decision #6): the coord_system input routes MCS/PCS reads through
+// AxisGroup::read_cartesian; the ACS default stays the raw member-slot
+// read, byte-identical to the pre-batch behavior.
 class GroupPositionReadFb
 {
 public:
     axis::AxisGroup *group_ref = nullptr;
     bool enable = false;
+    axis::CoordSystem coord_system = axis::CoordSystem::acs;
     bool valid = false;
     bool error = false;
+    bool gimbal_lock = false;
     rt::ErrorCode error_id = rt::ErrorCode::ok;
     axis::GroupPosition position{};
 
 protected:
     void read(bool actual)
     {
+        gimbal_lock = false;
         if(!enable) {
             valid = false;
             error = false;
@@ -176,6 +182,25 @@ protected:
             error = true;
             error_id = rt::ErrorCode::invalid_argument;
             position = {};
+            return;
+        }
+        if(coord_system != axis::CoordSystem::acs) {
+            bool gimbal = false;
+            const rt::ErrorCode code = group_ref->read_cartesian(
+                coord_system,
+                actual ? axis::PositionSource::actual : axis::PositionSource::command,
+                position, &gimbal);
+            if(code != rt::ErrorCode::ok) {
+                valid = false;
+                error = true;
+                error_id = code;
+                position = {};
+                return;
+            }
+            gimbal_lock = gimbal;
+            valid = true;
+            error = false;
+            error_id = rt::ErrorCode::ok;
             return;
         }
         position.size = group_ref->member_count();

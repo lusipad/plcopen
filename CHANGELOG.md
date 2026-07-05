@@ -6,6 +6,15 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- 回读批次收口（KB-043，已批准矩阵 `doc/compliance/readback-semantics.md`）：
+  `AxisGroup::read_cartesian` 按帧（ACS/MCS/PCS）读组命令位/实际位——纯 const
+  查询，输出与提交侧逐槽位镜像（读回即可重提交）；位姿组输出 TCP 位姿
+  （位置 + RPY），平移组输出 TCP 点 + 高维直通。矩阵→RPY 反演唯一入口
+  `geom::extract_rpy`（万向节带 roll=0 折入 yaw + 标志位，不报错不静默；
+  跨周期连续性声明不承诺）；帧配置回读原值回显；组读 FB 增 `coord_system`
+  （缺省 ACS 逐字节兼容）与 `gimbal_lock`。验收 `plcopen_core_readback_tests`
+  （10 万例 RPY 反演重建 oracle + 万向节带定向采样 + 三类组往返 + FB 兼容
+  护栏）；周期路径零改动，既有回放逐位不变。
 - 姿态批次收口（KB-042，已批准矩阵 `doc/compliance/orientation-semantics.md`）：
   6 关节组（球腕 6R 类）经 `AxisGroup::set_pose_kinematics` 启用位姿管线——
   组命令以完整位姿（[0..2] 位置 + [3..5] RPY，外旋 X-Y-Z）表达 MCS/PCS 目标，

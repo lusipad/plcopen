@@ -14,6 +14,7 @@ sprint 记录）在 [doc/archive/roadmap-history.md](doc/archive/roadmap-history
 | 3 | 姿态批次收口 | 组接线（pose 管线）+ 验收测试，按[已批准矩阵](doc/compliance/orientation-semantics.md)（回放范围 = 既有护栏逐位不变） | ✅ 完成（KB-042） |
 | 4 | 文档体系重建 | 全仓文档重建落库（harness/重分层/归档/状态同步/构建/设计层 + 断链体检） | ✅ 完成（七批，2026-07-05） |
 | 5 | Part 4 原文核对 | 坐标矩阵标注的 3 项核对项线下核实，出入回写矩阵 | 待人工 |
+| 6 | 回读批次 | 组笛卡尔/位姿回读 + RPY 反演约定 + FB 面，按[已批准矩阵](doc/compliance/readback-semantics.md) | ✅ 完成（KB-043） |
 
 **明确不做**（本里程碑）：硬件相关（B5 真栈/B6 台架/B7 报告，触发条件见
 [拆解文档](doc/planning/phase-b-software-work-breakdown.md)硬件延后清单）、
@@ -22,7 +23,6 @@ sprint 记录）在 [doc/archive/roadmap-history.md](doc/archive/roadmap-history
 ## 下一里程碑候选（复盘时定）
 
 - **笛卡尔插补批次**：段内逐周期逆解 + 姿态测地插补（与 250µs 档一起评估预算）
-- **回读批次**：按帧位姿回读、`MC_ReadCartesianTransform` 面
 - **窗口深度运行期可配 + 摊销执行**（6.2 周期外层工程化）
 - 硬件阶段任一触发项到位则优先
 
