@@ -28,7 +28,7 @@ Apache 2.0 库的干净出处是可售卖资产。两条铁律 + 一个流程。
    `.claude/skills/LICENSE-mattpocock-skills.txt`）；
 3. 记录来源仓库 + 基准 commit SHA + vendor 日期；本地改动内联标注
    （如 `[plcopen local adaptation]`）；
-4. `PROVENANCE.md` 增条目——**T3：改动随 PR 起草，维护者批准后生效**；
+4. `PROVENANCE.md` 增条目——**人专属动作：AI 只起草，维护者批准后生效**；
 5. 提交信息声明引入物与许可证。
 
 ## AI 特别条款

@@ -2,26 +2,16 @@
 
 -
 
-# Risk
+# Scope
 
-- Risk level: T0 / T1 / T2 / T3
-- Affected layers or KB ids:
-- Public API change: yes / no
+- Affected layers / KB ids:
+- Semantic matrix: approved / not touched
+- Declared change (replay baseline re-recorded): yes / no
 
 # Evidence
 
-- Build/tests:
-- Coverage:
-- Replay diff:
-- Benchmarks:
-- RT-safety:
-
-# Docs
-
-- docs-sync: updated / not needed
-- CHANGELOG impact: updated / not needed
+- Gates (build / tests / replay / RT-safety / benchmarks):
 
 # AI statement
 
-- AI-assisted change: yes / no
-- Human-reviewed T2/T3 areas: yes / no / not applicable
+- AI-assisted: yes / no

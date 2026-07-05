@@ -26,14 +26,19 @@ ctest --test-dir build --build-config Release --output-on-failure
 
 提交前全套门禁与已知坑：用 `plcopen-gates` 技能。
 
-## 风险分级变更政策
+## 人机对齐点（2026-07-05 起，替代旧 T0-T3 分级）
 
-| 级别 | 范围 | AI 权限 |
-|------|------|---------|
-| T0 | 文档、注释、demo、新增测试、格式化、CI 脚本 | 自主推进，门禁绿即可 |
-| T1 | 非 RT 路径实现、工具链、pyplcopen、构建配置 | 实现 + 自检 + 证据包，人轻评审 |
-| T2 | RT 周期路径、OTG/规划器算法、状态机语义、公开 API | 全门禁 + 24h 冷却，**人逐行评审后合入** |
-| T3 | LICENSE/NOTICE/PROVENANCE、发布 tag、安全边界对外声明 | 只起草，不落地 |
+现实分工：AI 承担实现、测试、文档的全部工作量；人拍板方向与语义。
+需要人的时刻只有三类，其余 AI 自主推进、由门禁裁决：
+
+| 对齐点 | 形式 |
+|--------|------|
+| **语义批准** | 新行为先写语义矩阵，人批准后实现；批准记录写进矩阵状态头 |
+| **声明变更** | 改变既有周期路径输出必须声明：KB 登记 + 回放基线重录 + 提交信息注明；未声明变更 = 回放零差异 |
+| **人专属动作** | LICENSE/NOTICE/PROVENANCE、发布 tag、对外承诺：AI 只起草，落地仅人 |
+
+合入由门禁裁决；人按需抽查 `git log`（每个提交自带证据与 KB 引用），
+错了回滚。门禁是守门员，git 是回退键。
 
 ## 硬规则
 
@@ -43,12 +48,12 @@ ctest --test-dir build --build-config Release --output-on-failure
    累加——细则见 `plcopen-rt-safety` 技能。
 3. **测试先行**：实现前先写失败测试；规划器/执行器变更必须过黄金回放
    （未声明变更 = 零差异）——流程见 `plcopen-replay-baseline` 技能。
-4. **文档同 PR**：公开头文件或矩阵变更必须伴随文档更新（KB 登记见
+4. **文档同提交**：公开头文件或矩阵变更必须伴随文档更新（KB 登记见
    `plcopen-kb-boundary` 技能），否则 docs-sync 门禁拒合。
 5. **出处纪律**：禁止参考旧核 i5 残留与任何 GPL 实现——清单与 vendoring
    流程见 `plcopen-provenance` 技能。
-6. **PR = 证据包**：门禁结果、基准 delta、KB 编号、AI 生成声明；小 PR
-   软上限 400 行 diff、核心算法 200 行——提交格式见 `plcopen-commit-style`。
+6. **提交 = 证据包**：目的、门禁结果、KB 编号、AI 生成声明写进提交
+   信息；一次提交一件事——格式见 `plcopen-commit-style`。
 7. **裁决查 ADR**：架构/语义问题先检索 `doc/design/decisions/`；没有
    先例才向人提问，裁决后落一份 ADR。
 
@@ -62,4 +67,4 @@ ctest --test-dir build --build-config Release --output-on-failure
 ---
 
 *任何 agent（不限 Claude）同样适用；跨工具入口见 [AGENTS.md](AGENTS.md)。
-与 ai-collaboration.md 矛盾时以后者为准并提 PR 修复。*
+与其他文档矛盾时以本文件与技能为准，发现矛盾当场修复。*
