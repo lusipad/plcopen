@@ -1,8 +1,5 @@
 # doc/archive/ — 已完成执行文档归档
 
-> 📦 **已归档（2026-07-05）**：历史执行/规划文档，仅供追溯，不再维护；现行文档入口见 [doc/planning/README.md](../planning/README.md) 与根 [STATUS.md](../../STATUS.md)。
-
-
 本目录收纳**已执行完毕**的规划/执行/证据文档：内容冻结、只进不出、
 仅供追溯（每份文件头部有归档横幅）。与 `doc/vision/`（愿景期探索归档）
 互补。现行文档入口见 [doc/planning/README.md](../planning/README.md)
