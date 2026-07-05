@@ -1,6 +1,6 @@
-# Cam 曲线语义矩阵 v1（草案）
+# Cam 曲线语义矩阵 v1
 
-> 状态：**草案，待维护者批准**（2026-07-05 起草）。本文件是 Phase B4
+> 状态：**已批准（2026-07-05，维护者，按 v1 范围）**。本文件是 Phase B4
 > （cam 高阶化，BS5）的验收规格（normative 候选）。依据 long-term-plan
 > 6.3-#6（存储层兼容线性表、运行层重建换加速度连续）与 T6；任务拆解见
 > [phase-b-software-work-breakdown.md](../planning/phase-b-software-work-breakdown.md) BS5。
@@ -60,5 +60,18 @@ BS5 = 在**不改变线性表导入格式**的前提下，给 cam 从轴一个�
 
 ---
 
-*草案创建：2026-07-05；批准：待定。批准后实现验收落
-`plcopen_core_cam_tests` + 回放护栏。*
+## 实现记录（2026-07-05，BS5.2/BS5.3，KB-038）
+
+- `exec::CamSpline`（L4）：自然/周期 C2 三次样条，engage 时 Thomas /
+  Sherman-Morrison（循环 ≥3 未知）/ 2×2 直接解一次性求解，固定缓冲
+  （≤64 点）；`sample_derivative(order)` 供 C2 断言。
+- L5：`CamInCommand.interpolation`（默认 linear 逐字节兼容）、engage 时
+  重建失败先拒绝、采样按模式分派；`AxisModel::cam_switch(command, tol)`
+  ——engaged 态同主轴在线换表，切换点从轴位置连续门（超差拒绝），
+  速度/加速度受限跳变显式声明。
+- 验收：`plcopen_core_cam_tests` 6 场景——结点插值 ≤1e-12、结点两侧
+  一/二阶导连续、周期绕回 0/1/2 阶连续、>64 点与错位周期表拒绝、
+  同表同主轴 C0 vs 样条从轴二阶差分峰值对比（样条 < C0 的 1/3）、
+  在线切换（斜坡上拒绝/过零点接受/换主轴拒绝）。linear 回放逐位不变。
+
+*草案创建：2026-07-05；批准：2026-07-05。*

@@ -201,7 +201,7 @@ public:
         }
 
         // Periodic boundary: unknowns m[0..n-2] on a cyclic tridiagonal
-        // system (m[n-1] = m[0]); Sherman-Morrison over the Thomas solve
+        // equations (m[n-1] = m[0]); Sherman-Morrison over the Thomas solve
         // (needs >= 3 unknowns; the 1- and 2-unknown wraps solve directly).
         const std::size_t cyclic = n - 1;
         if(cyclic < 2) {
