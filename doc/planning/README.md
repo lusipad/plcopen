@@ -22,9 +22,14 @@
 | [r4-evidence-package.md](r4-evidence-package.md) | R4 切换收口证据包：新核消费入口、旧线隔离、v0.x EOL 草案和 v1.0.0-alpha 发布草案 | R4 证据包 |
 | [robot-integration.md](robot-integration.md) | 机器人集成蓝图：按形态可行性、两个参考架构、差距→计划映射 | 初稿，待评审 |
 | [ai-collaboration.md](ai-collaboration.md) | AI-First 工程体系：门禁代替信任、六工作流改造、风险分级政策、有效性度量（CLAUDE.md/AGENTS.md 已随之落地） | 初稿，已部分生效 |
+| [r3-migration-matrix.md](r3-migration-matrix.md) | R3 迁移批次矩阵：L5/L6 各批次的新核合同与验收证据 | 随迁移维护 |
+| [v0.11.0-release-draft.md](v0.11.0-release-draft.md) | v0.11.0 Release notes 草稿 + 人工检查单（tag 落点待拍板） | T3 草案 |
+| [v1.0.0-alpha-release-draft.md](v1.0.0-alpha-release-draft.md) | v1.0.0-alpha 发布草案：Release notes、rewrite-plan §5 DoD 对照与阻塞项、6 步人工检查单 | T3 草案 |
+
+相关：Servo 适配器接口形态提案见 [ADR-0004](../design/decisions/0004-servo-adapter-interface.md)（Proposed 待裁决，Phase B5/B7 前置）。
 
 评审通过后：按 rewrite-plan §3.7 在 M0 内执行全库文档整合。
 
 ---
 
-*本索引最后更新：2026-07-02*
+*本索引最后更新：2026-07-05*
