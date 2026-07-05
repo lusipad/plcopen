@@ -16,9 +16,12 @@
 // Ramps crossing zero split at v = 0 so the PLCopen acceleration bound applies
 // while |v| grows and the deceleration bound while |v| shrinks. The covered
 // distance D(vc) of the cruise-velocity candidate vc is continuous and
-// monotone in vc, so the planning-domain solver finds vc with one bounded
-// bisection over [-vmax, +vmax]; overshoot-and-return cases fall out of the
-// same formulation with a negative cruise velocity. Phase durations are then
+// monotone on [max(v0,vt), vmax] and on [-vmax, min(v0,vt)] — but NOT in
+// between: splitting the direct v0→vt ramp in two adds jerk phases and extra
+// distance, so the solver first selects the monotone branch by comparing the
+// distance against the direct-ramp distance, then bisects inside that branch;
+// overshoot-and-return cases fall out of the same formulation with a negative
+// cruise velocity. Phase durations are then
 // floored to the integer cycle domain (staying inside the envelope) and one
 // final quintic segment corrects the quantization residue to hit the target
 // state exactly — the same grow-until-feasible pattern the baseline planner
@@ -505,9 +508,14 @@ inline rt::Result<Profile1D> plan_time_optimal(State1D from, Target1D to, Limits
     const double v0 = state.velocity;
     const double vt = to.velocity;
 
-    // Cruise-velocity selection: D(vc) is continuous and monotone increasing,
-    // so one bounded bisection pins the no-cruise solution; the vmax branch
-    // adds a cruise segment for the remaining distance.
+    // Cruise-velocity selection. D(vc) is continuous but NOT monotone across
+    // the whole span: between the boundary velocities, splitting the direct
+    // ramp in two adds jerk phases and extra distance (a bump), so a global
+    // bisection can land on a spurious crossing — e.g. a negative cruise
+    // velocity for a short forward move (B9 finding). The direct-ramp
+    // distance selects the monotone branch; if the branch bracket does not
+    // enclose the distance (boundary velocities outside the envelope after a
+    // takeover), the full span is the fallback — no worse than before.
     double cruise_velocity = 0.0;
     double cruise_duration = 0.0;
     const double d_at_vmax = detail::ramp_chain_distance(v0, limits.max_velocity, vt, limits);
@@ -519,8 +527,22 @@ inline rt::Result<Profile1D> plan_time_optimal(State1D from, Target1D to, Limits
         cruise_velocity = -limits.max_velocity;
         cruise_duration = (distance - d_at_vmin) / (-limits.max_velocity);
     } else {
+        const double d_direct = detail::ramp_between(v0, vt, limits).distance;
         double low = -limits.max_velocity;
         double high = limits.max_velocity;
+        if(distance >= d_direct) {
+            const double branch_low = v0 > vt ? v0 : vt;
+            if(branch_low >= -limits.max_velocity && branch_low <= limits.max_velocity &&
+               detail::ramp_chain_distance(v0, branch_low, vt, limits) <= distance) {
+                low = branch_low;
+            }
+        } else {
+            const double branch_high = v0 < vt ? v0 : vt;
+            if(branch_high >= -limits.max_velocity && branch_high <= limits.max_velocity &&
+               detail::ramp_chain_distance(v0, branch_high, vt, limits) >= distance) {
+                high = branch_high;
+            }
+        }
         for(int iteration = 0; iteration < 128; ++iteration) {
             const double middle = 0.5 * (low + high);
             if(detail::ramp_chain_distance(v0, middle, vt, limits) < distance) {
@@ -573,6 +595,59 @@ inline rt::Result<Profile1D> plan_time_optimal(State1D from, Target1D to, Limits
             if(single.add_segment(make_quintic_segment(from, to, minimal.value())) ==
                rt::ErrorCode::ok) {
                 consider(rt::Result<Profile1D>::success(single));
+            }
+        }
+    }
+    // Estimate-anchored single quintic (B9 finding): the continuous-time
+    // chain duration (zeroing ramp + entry ramp + cruise + exit ramp) bounds
+    // the optimum from below, and a single quintic supports nonzero entry
+    // accelerations directly. In the bump zone the quantized multiphase
+    // chains leave a position residue whose correction burns dozens of
+    // cycles at the boundary velocity; a quintic near the continuous-time
+    // duration lands exactly with no correction. Feasibility is not monotone
+    // here, so this probes a bounded window upward from the estimate instead
+    // of bisecting.
+    {
+        double estimate = cruise_duration +
+                          detail::ramp_between(v0, cruise_velocity, limits).duration +
+                          detail::ramp_between(cruise_velocity, vt, limits).duration;
+        if(from.acceleration != 0.0) {
+            estimate += std::ceil(std::fabs(from.acceleration) / limits.max_jerk);
+        }
+        std::int64_t cycles = static_cast<std::int64_t>(std::ceil(estimate));
+        if(cycles < 1) {
+            cycles = 1;
+        }
+        // Shape guard: with one-directional boundary conditions a winning
+        // quintic must not wiggle backward (the forward-only quality
+        // contract); reversal-shaped candidates stay with the multiphase
+        // constructions.
+        const bool forward = from.velocity >= 0.0 && to.velocity >= 0.0 &&
+                             to.position >= from.position;
+        const bool backward = from.velocity <= 0.0 && to.velocity <= 0.0 &&
+                              to.position <= from.position;
+        for(int attempt = 0; attempt < 16; ++attempt, ++cycles) {
+            const Segment1D segment = make_quintic_segment(from, to, cycles);
+            if(!within_limits(segment, limits)) {
+                continue;
+            }
+            bool shape_ok = true;
+            if(forward || backward) {
+                for(int i = 0; i <= 96 && shape_ok; ++i) {
+                    const std::int64_t cycle =
+                        (segment.duration_cycles * static_cast<std::int64_t>(i)) / 96;
+                    const double velocity = sample_segment(segment, cycle).velocity;
+                    if((forward && velocity < -1e-9) || (backward && velocity > 1e-9)) {
+                        shape_ok = false;
+                    }
+                }
+            }
+            if(shape_ok) {
+                Profile1D single{};
+                if(single.add_segment(segment) == rt::ErrorCode::ok) {
+                    consider(rt::Result<Profile1D>::success(single));
+                }
+                break;
             }
         }
     }

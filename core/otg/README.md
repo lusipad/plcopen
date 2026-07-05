@@ -32,10 +32,19 @@ Implementation boundary:
   317 -> 101 cycles, transient reverse motion eliminated). The quality tier in
   `otg_time_optimal_tests` asserts near-optimal duration and forward-only motion for
   cruise-regime cases including targets at/near the velocity limit.
-- remaining limitation: *short-move* nonzero-target-velocity cases (no cruise room) still
-  fall back to the generic candidates, which are correct and envelope-safe but can be far
-  from time-optimal there; extend the refined construction if a consumer needs that
-  regime.
+- the bump zone (2026-07-05, B9 finding, KB-034): the chain distance D(vc) is NOT
+  monotone between the boundary velocities (splitting the direct ramp adds jerk phases
+  and extra distance), so the cruise-velocity bisection selects the monotone branch by
+  comparing the distance against the direct-ramp distance first — the old global
+  bisection could land on a spurious crossing (a negative cruise velocity for a short
+  forward move) and every fast candidate degenerated. In the same zone the quantized
+  multiphase chains leave a position residue whose correction burns dozens of cycles at
+  the boundary velocity; an estimate-anchored single quintic (probing a bounded window
+  upward from the continuous-time chain duration; supports nonzero entry accelerations;
+  forward-only shape-guarded) lands exactly with no correction — the B9 tracking case
+  improved 68 -> 19 cycles. `otg_time_optimal_tests` carries fixed bump-zone quality
+  cases and a randomized bump-zone tier (duration-sanity asserted; the solver's own
+  contract still allows overshoot-and-return, which the trackers exclude on their side).
 
 R1 deliberately does not add path buffering, arcs, PLCopen FB migration, or external OTG
 dependencies.

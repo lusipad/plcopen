@@ -287,6 +287,118 @@ int check_nonzero_target_velocity_quality()
     return 0;
 }
 
+// Quality gate for the ramp-splitting bump zone (found during B9): with both
+// boundary velocities same-signed and d_direct < distance < d_at_vmax, the
+// chain distance D(vc) is NOT monotone across [-vmax, vmax] — splitting the
+// direct ramp adds jerk phases and extra distance — so a global bisection can
+// land on a spurious crossing (e.g. a negative cruise velocity for a short
+// forward move) and every fast candidate degenerates. The optimum is a small
+// hump above the faster boundary velocity: bounded by ramping all the way to
+// vmax and back.
+// require_forward asserts the tracking-representative shape (no reversal);
+// the solver's own contract allows overshoot-and-return, so the randomized
+// tier only enforces the duration sanity that the B9 defect violated.
+int check_bump_zone_case(const char *name,
+                         otg::State1D from,
+                         otg::Target1D to,
+                         otg::Limits1D limits,
+                         bool require_forward)
+{
+    const rt::Result<otg::Profile1D> planned = otg::plan_time_optimal(from, to, limits);
+    if(!planned) {
+        std::printf("FAIL %s plan error=%d\n", name, static_cast<int>(planned.error()));
+        return 1;
+    }
+    if(verify_profile(name, planned.value(), from, to, limits) != 0) {
+        return 1;
+    }
+
+    const double direction = to.position >= from.position ? 1.0 : -1.0;
+    const double peak = direction * limits.max_velocity;
+    const double worst_ramps =
+        otg::detail::ramp_between(from.velocity, peak, limits).duration +
+        otg::detail::ramp_between(peak, to.velocity, limits).duration;
+    const double zeroing =
+        from.acceleration != 0.0
+            ? std::ceil(std::fabs(from.acceleration) / limits.max_jerk)
+            : 0.0;
+    const double bound = worst_ramps + zeroing + 12.0;
+    if(static_cast<double>(planned.value().duration_cycles()) > bound) {
+        std::printf("FAIL %s bump-zone duration (%lld > bound %.0f)\n", name,
+                    static_cast<long long>(planned.value().duration_cycles()), bound);
+        return 1;
+    }
+
+    // Same-signed forward boundaries with forward distance must never reverse.
+    if(require_forward && from.velocity >= 0.0 && to.velocity >= 0.0 &&
+       to.position >= from.position) {
+        for(std::int64_t cycle = 0; cycle <= planned.value().duration_cycles(); ++cycle) {
+            const otg::State1D state =
+                otg::sample(planned.value(), rt::CycleTick::from_cycles(cycle));
+            if(state.velocity < -1e-7) {
+                std::printf("FAIL %s bump-zone reverse at cycle %lld (v=%.9f)\n", name,
+                            static_cast<long long>(cycle), state.velocity);
+                return 1;
+            }
+        }
+    }
+    return 0;
+}
+
+int check_bump_zone_quality()
+{
+    // The B9 stream-tracking case: deceleration takeover, target slightly
+    // beyond the direct-ramp distance. The old global bisection selected a
+    // negative cruise velocity and the plan degenerated to a 68-cycle brake
+    // arc (optimum ~20).
+    if(check_bump_zone_case("stream-takeover-bump", {41.0495, 0.3794, -0.00944},
+                            {46.4, 0.2, 0.0}, {0.4, 0.02, 0.02, 0.005}, true) != 0) {
+        return 1;
+    }
+    // Same zone with a zero entry acceleration.
+    if(check_bump_zone_case("bump-zero-accel", {0.0, 0.37, 0.0}, {4.6, 0.2, 0.0},
+                            {0.4, 0.02, 0.02, 0.005}, true) != 0) {
+        return 1;
+    }
+    // Zero-target-velocity takeover in the bump zone (stopping distance just
+    // below the travel distance).
+    if(check_bump_zone_case("bump-to-rest", {0.0, 0.37, 0.0}, {4.5, 0.0, 0.0},
+                            {0.4, 0.02, 0.02, 0.005}, true) != 0) {
+        return 1;
+    }
+    return 0;
+}
+
+// Randomized tier for the bump zone: same-signed boundary velocities with the
+// distance sampled strictly between d_direct and d_at_vmax.
+int check_fuzz_bump_zone(int iterations)
+{
+    Lcg rng{0xB09B09B0u};
+    const otg::Limits1D limits{3.0, 2.0, 2.0, 2.5};
+    int exercised = 0;
+    for(int i = 0; i < iterations; ++i) {
+        const double v0 = rng.range(0.05, 2.5);
+        const double vt = rng.range(0.05, 2.5);
+        const otg::State1D from{rng.range(-10.0, 10.0), v0, 0.0};
+        const double d_direct = otg::detail::ramp_between(v0, vt, limits).distance;
+        const double d_at_vmax =
+            otg::detail::ramp_chain_distance(v0, limits.max_velocity, vt, limits);
+        if(d_at_vmax <= d_direct + 1e-9) {
+            continue;
+        }
+        const double fraction = rng.range(0.05, 0.95);
+        const otg::Target1D to{from.position + d_direct + fraction * (d_at_vmax - d_direct),
+                               vt, 0.0};
+        if(check_bump_zone_case("fuzz-bump-zone", from, to, limits, false) != 0) {
+            std::printf("FAIL bump-zone fuzz seed=0x%08X iteration=%d\n", rng.state, i);
+            return 1;
+        }
+        ++exercised;
+    }
+    std::printf("bump-zone fuzz: %d cases exercised\n", exercised);
+    return 0;
+}
+
 // Randomized quality tier for cruise-regime nonzero target velocities.
 int check_fuzz_nonzero_target(int iterations)
 {
@@ -330,7 +442,8 @@ int main(int argc, char **argv)
     const int iterations = parse_iterations(argc, argv);
     const int quality_iterations = iterations / 5 > 200 ? 200 : (iterations / 5 < 1 ? 1 : iterations / 5);
     if(check_fixed_cases() != 0 || check_validation() != 0 ||
-       check_nonzero_target_velocity_quality() != 0 ||
+       check_nonzero_target_velocity_quality() != 0 || check_bump_zone_quality() != 0 ||
+       check_fuzz_bump_zone(quality_iterations) != 0 ||
        check_fuzz_nonzero_target(quality_iterations) != 0 ||
        check_fuzz_against_baseline(iterations) != 0) {
         return 1;
