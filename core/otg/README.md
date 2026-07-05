@@ -25,14 +25,17 @@ Implementation boundary:
   and a strict never-slower-than-`plan()` guarantee (fuzz-asserted). Nonzero *entry*
   accelerations reduce through one exact zeroing ramp (KB-026); nonzero *target*
   accelerations report `unsupported` (declared follow-up).
-- known limitation (2026-07-05, found during A4): for nonzero *target velocities* near
-  the velocity limit, the quantization residue lands in a quintic correction whose
-  velocity headroom vanishes, so the selected candidate can be far from time-optimal and
-  non-monotone (transient reverse motion). The fuzz/oracle suites assert the
-  zero-target-velocity domain only; the A4 blend chain therefore plans exclusively
-  through zero-target-velocity profiles. Extending the verified domain to nonzero target
-  velocities (with oracle + fuzz assertions) is a declared follow-up before any consumer
-  relies on that domain.
+- nonzero target velocities in the cruise regime are served by the refined-cruise
+  candidate (2026-07-05, fixing the A4 finding): an integer cruise duration whose cruise
+  velocity is fixed-point refined until the quantized ramps plus cruise land on the
+  target within ~1e-9 dust — no residue-burning correction segment (the A4 case improved
+  317 -> 101 cycles, transient reverse motion eliminated). The quality tier in
+  `otg_time_optimal_tests` asserts near-optimal duration and forward-only motion for
+  cruise-regime cases including targets at/near the velocity limit.
+- remaining limitation: *short-move* nonzero-target-velocity cases (no cruise room) still
+  fall back to the generic candidates, which are correct and envelope-safe but can be far
+  from time-optimal there; extend the refined construction if a consumer needs that
+  regime.
 
 R1 deliberately does not add path buffering, arcs, PLCopen FB migration, or external OTG
 dependencies.

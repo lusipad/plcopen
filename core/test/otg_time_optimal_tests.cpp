@@ -209,6 +209,106 @@ int check_fuzz_against_baseline(int iterations)
     return 0;
 }
 
+// Quality gate for the nonzero-target-velocity cruise regime (found during
+// A4): the selected profile must be near time-optimal, not the pathological
+// residue-burning correction, and must not reverse when a forward-only
+// solution exists.
+int check_case_quality(const char *name,
+                       otg::State1D from,
+                       otg::Target1D to,
+                       otg::Limits1D limits)
+{
+    const rt::Result<otg::Profile1D> planned = otg::plan_time_optimal(from, to, limits);
+    if(!planned) {
+        std::printf("FAIL %s plan error=%d\n", name, static_cast<int>(planned.error()));
+        return 1;
+    }
+    if(verify_profile(name, planned.value(), from, to, limits) != 0) {
+        return 1;
+    }
+
+    // Duration sanity: cruise time plus a generous ramp allowance.
+    const double distance = std::fabs(to.position - from.position);
+    const double ramp_allowance =
+        2.0 * (limits.max_velocity / (limits.max_acceleration < limits.max_deceleration
+                                          ? limits.max_acceleration
+                                          : limits.max_deceleration) +
+               limits.max_acceleration / limits.max_jerk + 8.0);
+    const double bound = 1.25 * distance / limits.max_velocity + ramp_allowance;
+    if(static_cast<double>(planned.value().duration_cycles()) > bound) {
+        std::printf("FAIL %s near-optimal duration (%lld > bound %.0f)\n", name,
+                    static_cast<long long>(planned.value().duration_cycles()), bound);
+        return 1;
+    }
+
+    // Forward-only: with non-negative boundary velocities and enough distance
+    // the optimal profile never reverses.
+    if(from.velocity >= 0.0 && to.velocity >= 0.0 &&
+       to.position >= from.position +
+                          otg::detail::ramp_chain_distance(from.velocity, 0.0, to.velocity,
+                                                           limits)) {
+        for(std::int64_t cycle = 0; cycle <= planned.value().duration_cycles(); ++cycle) {
+            const otg::State1D state =
+                otg::sample(planned.value(), rt::CycleTick::from_cycles(cycle));
+            if(state.velocity < -1e-7) {
+                std::printf("FAIL %s reverse motion at cycle %lld (v=%.9f)\n", name,
+                            static_cast<long long>(cycle), state.velocity);
+                return 1;
+            }
+        }
+    }
+    return 0;
+}
+
+int check_nonzero_target_velocity_quality()
+{
+    // The A4-found pathological case: tiny limits, target velocity at 99% of
+    // the limit — previously planned 317 cycles with transient reverse motion
+    // (optimum is ~100).
+    if(check_case_quality("a4-blend-handover", {0.0152, 0.002, 0.0004},
+                          {1.597, 0.0198, 0.0},
+                          {0.02, 0.0004, 0.0004, 0.0004}) != 0) {
+        return 1;
+    }
+    const otg::Limits1D limits{3.0, 2.0, 2.0, 2.5};
+    // Target velocity exactly at the limit.
+    if(check_case_quality("exit-at-vmax", {0.0, 0.0, 0.0}, {50.0, 3.0, 0.0}, limits) != 0) {
+        return 1;
+    }
+    // Target velocity within 0.3% of the limit.
+    if(check_case_quality("exit-near-vmax", {0.0, 0.5, 0.0}, {60.0, 2.99, 0.0}, limits) != 0) {
+        return 1;
+    }
+    // Nonzero entry acceleration into a nonzero-velocity handover.
+    if(check_case_quality("takeover-into-handover", {0.0, 1.0, 1.5}, {40.0, 2.5, 0.0},
+                          limits) != 0) {
+        return 1;
+    }
+    return 0;
+}
+
+// Randomized quality tier for cruise-regime nonzero target velocities.
+int check_fuzz_nonzero_target(int iterations)
+{
+    Lcg rng{0x51D3B00Fu};
+    const otg::Limits1D limits{3.0, 2.0, 2.0, 2.5};
+    for(int i = 0; i < iterations; ++i) {
+        const double v0 = rng.range(0.0, 2.0);
+        const double vt = rng.range(0.2, 2.995);
+        const otg::State1D from{rng.range(-10.0, 10.0), v0, 0.0};
+        const double reach =
+            otg::detail::ramp_chain_distance(v0, limits.max_velocity, vt, limits);
+        const otg::Target1D to{from.position + reach + rng.range(5.0, 400.0), vt, 0.0};
+
+        if(check_case_quality("fuzz-nonzero-target", from, to, limits) != 0) {
+            std::printf("FAIL nonzero-target fuzz seed=0x%08X iteration=%d\n", rng.state, i);
+            return 1;
+        }
+    }
+    std::printf("nonzero-target fuzz: %d cruise-regime cases\n", iterations);
+    return 0;
+}
+
 int parse_iterations(int argc, char **argv)
 {
     int iterations = 5000;
@@ -227,8 +327,12 @@ int parse_iterations(int argc, char **argv)
 
 int main(int argc, char **argv)
 {
+    const int iterations = parse_iterations(argc, argv);
+    const int quality_iterations = iterations / 5 > 200 ? 200 : (iterations / 5 < 1 ? 1 : iterations / 5);
     if(check_fixed_cases() != 0 || check_validation() != 0 ||
-       check_fuzz_against_baseline(parse_iterations(argc, argv)) != 0) {
+       check_nonzero_target_velocity_quality() != 0 ||
+       check_fuzz_nonzero_target(quality_iterations) != 0 ||
+       check_fuzz_against_baseline(iterations) != 0) {
         return 1;
     }
     std::printf("PASS otg time-optimal tests\n");

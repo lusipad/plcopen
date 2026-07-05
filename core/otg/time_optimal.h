@@ -308,6 +308,118 @@ inline rt::Result<Profile1D> build_multiphase(State1D from,
     return rt::Result<Profile1D>::success(profile);
 }
 
+// Cruise-velocity refinement for nonzero target velocities. The generic
+// construction leaves a position residue to a correction quintic at the
+// boundary velocity; with integer durations that quintic must "burn"
+// |residue - vt*T| against the acceleration/jerk limits, which costs
+// hundreds of cycles when vt sits near the velocity limit (A4 finding).
+// Here the residue is absorbed upstream instead: an integer cruise duration
+// whose cruise velocity is refined by fixed-point iteration until the
+// quantized ramps plus the cruise land on the target within dust — no
+// correction segment at all.
+inline rt::Result<Profile1D> build_refined_cruise(State1D from,
+                                                  Target1D to,
+                                                  const Limits1D &limits,
+                                                  double cruise_hint)
+{
+    if(cruise_hint == 0.0) {
+        return rt::Result<Profile1D>::failure(rt::ErrorCode::infeasible);
+    }
+
+    // Entry-acceleration reduction (same construction as build_multiphase).
+    Profile1D reduction{};
+    State1D reduced = from;
+    if(from.acceleration != 0.0) {
+        const double zero_cycles = std::ceil(std::fabs(from.acceleration) / limits.max_jerk);
+        const double zero_jerk = -from.acceleration / zero_cycles;
+        const rt::ErrorCode pushed =
+            push_cubic_phase(reduction, reduced, zero_jerk, zero_cycles);
+        if(pushed != rt::ErrorCode::ok) {
+            return rt::Result<Profile1D>::failure(pushed);
+        }
+        reduced.acceleration = 0.0;
+    }
+    const double distance = to.position - reduced.position;
+
+    double cruise_velocity = cruise_hint;
+    std::int64_t cruise_cycles = 0;
+    bool converged = false;
+    for(int iteration = 0; iteration < 48; ++iteration) {
+        // Quantized ramp distances for the current cruise velocity.
+        Profile1D scratch = reduction;
+        State1D state = reduced;
+        rt::ErrorCode built =
+            push_ramp_with_crossing(scratch, state, cruise_velocity, limits,
+                                    RampRounding::exact);
+        if(built != rt::ErrorCode::ok) {
+            return rt::Result<Profile1D>::failure(built);
+        }
+        built = push_ramp_with_crossing(scratch, state, to.velocity, limits,
+                                        RampRounding::exact);
+        if(built != rt::ErrorCode::ok) {
+            return rt::Result<Profile1D>::failure(built);
+        }
+
+        const double remaining = distance - (state.position - reduced.position);
+        if(!(remaining * cruise_velocity > 0.0)) {
+            // No forward cruise room at this velocity: not a cruise-regime
+            // case; the generic candidates handle it.
+            return rt::Result<Profile1D>::failure(rt::ErrorCode::infeasible);
+        }
+        std::int64_t cycles =
+            static_cast<std::int64_t>(std::floor(remaining / cruise_velocity + 0.5));
+        if(cycles < 1) {
+            cycles = 1;
+        }
+        double next = remaining / static_cast<double>(cycles);
+        while(std::fabs(next) > limits.max_velocity) {
+            ++cycles;
+            next = remaining / static_cast<double>(cycles);
+        }
+        cruise_cycles = cycles;
+        if(std::fabs(next - cruise_velocity) <= 1e-15) {
+            cruise_velocity = next;
+            converged = true;
+            break;
+        }
+        cruise_velocity = next;
+    }
+    if(!converged) {
+        return rt::Result<Profile1D>::failure(rt::ErrorCode::infeasible);
+    }
+
+    // Final assembly with the refined cruise velocity.
+    Profile1D profile = reduction;
+    State1D state = reduced;
+    rt::ErrorCode built = push_ramp_with_crossing(profile, state, cruise_velocity, limits,
+                                                  RampRounding::exact);
+    if(built != rt::ErrorCode::ok) {
+        return rt::Result<Profile1D>::failure(built);
+    }
+    built = push_cubic_phase(profile, state, 0.0, static_cast<double>(cruise_cycles));
+    if(built != rt::ErrorCode::ok) {
+        return rt::Result<Profile1D>::failure(built);
+    }
+    built = push_ramp_with_crossing(profile, state, to.velocity, limits,
+                                    RampRounding::exact);
+    if(built != rt::ErrorCode::ok) {
+        return rt::Result<Profile1D>::failure(built);
+    }
+
+    // Endpoint dust must be negligible: the whole point of this candidate is
+    // that no residue-burning correction is needed.
+    const double dust_bound = 1e-9 * (1.0 + std::fabs(to.position));
+    if(std::fabs(state.position - to.position) > dust_bound ||
+       std::fabs(state.velocity - to.velocity) > 1e-12 ||
+       std::fabs(state.acceleration) > 1e-12) {
+        return rt::Result<Profile1D>::failure(rt::ErrorCode::infeasible);
+    }
+    if(profile.segment_count() == 0 || profile.duration_cycles() < 1) {
+        return rt::Result<Profile1D>::failure(rt::ErrorCode::infeasible);
+    }
+    return rt::Result<Profile1D>::success(profile);
+}
+
 } // namespace detail
 
 // Time-optimal jerk-limited plan. Nonzero initial accelerations reduce to the
@@ -404,6 +516,12 @@ inline rt::Result<Profile1D> plan_time_optimal(State1D from, Target1D to, Limits
                                       detail::RampRounding::floored));
     consider(detail::build_multiphase(from, to, limits, cruise_velocity, cruise_duration,
                                       detail::RampRounding::exact));
+    if(to.velocity != 0.0) {
+        // Nonzero-target-velocity cruise regime: the refined-cruise candidate
+        // avoids the residue-burning correction pathology (A4 finding). The
+        // zero-target domain is untouched by construction (replay-guarded).
+        consider(detail::build_refined_cruise(from, to, limits, cruise_velocity));
+    }
     if(from.acceleration == 0.0) {
         const rt::Result<std::int64_t> minimal =
             detail::min_feasible_quintic_cycles(from, to, limits);
