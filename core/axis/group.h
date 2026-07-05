@@ -7,6 +7,7 @@
 #include "axis/state.h"
 #include "geom/frame.h"
 #include "geom/geometry.h"
+#include "kin/kinematics.h"
 #include "otg/profile1d.h"
 #include "otg/time_optimal.h"
 #include "rt/cycle.h"
@@ -353,6 +354,29 @@ public:
         return rt::ErrorCode::ok;
     }
 
+    // Approved kinematics matrix (B2 v1): the plugin upgrades the declared
+    // identity ACS<->MCS mapping to a real mechanism. The caller owns the
+    // plugin lifetime; nullptr restores the identity. v1 requires the joint
+    // count to equal both the Cartesian coordinate count (2 or 3) and the
+    // group axis count; the 6R batch lifts this.
+    rt::ErrorCode set_kinematics(const kin::Kinematics *plugin,
+                                 double min_singularity_margin = 0.0)
+    {
+        if(status_ != GroupStatus::standby || !queue_.empty() ||
+           !std::isfinite(min_singularity_margin) || min_singularity_margin < 0.0) {
+            return rt::ErrorCode::invalid_argument;
+        }
+        if(plugin != nullptr &&
+           (plugin->joint_count() != axes_.size() ||
+            plugin->cartesian_count() != plugin->joint_count() ||
+            plugin->cartesian_count() < 2 || plugin->cartesian_count() > 3)) {
+            return rt::ErrorCode::invalid_argument;
+        }
+        kinematics_ = plugin;
+        kinematics_min_margin_ = min_singularity_margin;
+        return rt::ErrorCode::ok;
+    }
+
     rt::Result<std::uint32_t> submit_linear(GroupCommand command)
     {
         if((status_ != GroupStatus::standby && status_ != GroupStatus::moving) || axes_.size() < 2 ||
@@ -691,6 +715,35 @@ private:
 
         const bool pcs = command.coord_system == CoordSystem::pcs;
         const bool circular = command.path_kind == GroupPathKind::circular;
+
+        // Kinematics-configured pipeline (approved kinematics matrix): the
+        // Cartesian point goes through the workpiece frame and tool offset,
+        // then the inverse solution — seeded with the segment start joints —
+        // becomes the ACS joint target. v1 solves endpoints and aux points
+        // only; the in-segment interpolation stays joint-space (declared
+        // boundary: an MCS line is a joint-space line, not a Cartesian line,
+        // on nonlinear mechanisms).
+        if(kinematics_ != nullptr) {
+            double seed[MaxAxes] = {};
+            for(std::size_t i = 0; i < axes_.size(); ++i) {
+                seed[i] = queued_finish(i);
+            }
+            rt::ErrorCode solved =
+                solve_cartesian_target(command.target, command.relative, pcs, seed);
+            if(solved != rt::ErrorCode::ok) {
+                return solved;
+            }
+            if(circular) {
+                solved = solve_cartesian_target(command.aux, command.relative, pcs, seed);
+                if(solved != rt::ErrorCode::ok) {
+                    return solved;
+                }
+            }
+            command.relative = false;
+            command.coord_system = CoordSystem::acs;
+            return rt::ErrorCode::ok;
+        }
+
         if(command.relative) {
             geom::Vec3 direction = cartesian_part(command.target);
             if(pcs) {
@@ -720,6 +773,49 @@ private:
             }
         }
         command.coord_system = CoordSystem::acs;
+        return rt::ErrorCode::ok;
+    }
+
+    // One Cartesian target through frame, tool offset, and inverse solution.
+    // Relative displacements only rotate (translation and tool offset cancel
+    // between two TCP positions) and resolve against the flange position of
+    // the seed joints.
+    rt::ErrorCode solve_cartesian_target(GroupPosition &position,
+                                         bool relative,
+                                         bool pcs,
+                                         const double *seed) const
+    {
+        geom::Vec3 point = cartesian_part(position);
+        if(relative) {
+            if(pcs) {
+                point = geom::frame_rotate(workpiece_frame_, point);
+            }
+            geom::Vec3 start{};
+            const rt::ErrorCode forwarded =
+                kinematics_->forward(seed, axes_.size(), start);
+            if(forwarded != rt::ErrorCode::ok) {
+                return forwarded;
+            }
+            point = start + point;
+        } else {
+            if(pcs) {
+                point = geom::frame_to_base(workpiece_frame_, point);
+            }
+            point = point - tool_offset_;
+        }
+
+        double joints[MaxAxes] = {};
+        const rt::ErrorCode inverted =
+            kinematics_->inverse(point, seed, axes_.size(), joints);
+        if(inverted != rt::ErrorCode::ok) {
+            return inverted;
+        }
+        if(kinematics_->singularity_margin(joints, axes_.size()) < kinematics_min_margin_) {
+            return rt::ErrorCode::precondition_failed;
+        }
+        for(std::size_t i = 0; i < axes_.size(); ++i) {
+            position.value[i] = joints[i];
+        }
         return rt::ErrorCode::ok;
     }
 
@@ -1794,6 +1890,8 @@ private:
     GroupStatus status_ = GroupStatus::disabled;
     geom::RigidFrame workpiece_frame_{};
     geom::Vec3 tool_offset_{};
+    const kin::Kinematics *kinematics_ = nullptr;
+    double kinematics_min_margin_ = 0.0;
     rt::StaticVector<AxisModel *, MaxAxes> axes_{};
     rt::StaticVector<GroupCommand, QueueCapacity> queue_{};
     GroupCommand active_command_{};

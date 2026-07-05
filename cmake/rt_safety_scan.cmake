@@ -7,6 +7,7 @@ set(RT_DIRS
     core/otg
     core/geom
     core/exec
+    core/kin
     core/stream)
 
 set(CODE_GLOBS

@@ -1,6 +1,6 @@
-# Kinematics 插件 ABI 语义矩阵 v1（草案）
+# Kinematics 插件 ABI 语义矩阵 v1
 
-> 状态：**草案，待维护者批准**（2026-07-05 起草）。本文件是 Phase B2
+> 状态：**已批准（2026-07-05，维护者，按 v1 范围）**。本文件是 Phase B2
 > （kinematics 插件接口，BS3）的验收规格（normative 候选）。依据
 > long-term-plan T5（奇异区三选一、数值逆解硬上限）、6.3-#7（解析解
 > 优先）、6.4 层 3；任务拆解见
@@ -65,5 +65,21 @@ B2 v1 = 把 KB-036 的「ACS↔MCS 恒等声明」升级为**可配的 kinematic
 
 ---
 
-*草案创建：2026-07-05；批准：待定。批准后实现对应 BS3.2-BS3.4，验收
-证据落 `plcopen_core_kinematics_tests` + harness + 回放。*
+## 实现记录（2026-07-05，BS3.2-BS3.4，KB-037）
+
+- `core/kin/`：`Kinematics` 头文件 ABI + `verify.h` 合规 harness（往返
+  fuzz、seed 分支稳定游走、确定性 LCG）+ 参考实现 `CartesianGantry`
+  （逐轴线性映射，无奇异）与 `Scara`（平面 2R + 可选 Z，解析逆解，
+  肘部分支随 seed，θ1 向 seed 归一消 atan2 割线 2π 跳变，角距奇异
+  margin）。
+- L5 集成：`AxisGroup::set_kinematics(plugin, min_singularity_margin)`
+  （standby + 空队列守卫；v1 约束 joint==cartesian==组轴数）；MCS/PCS
+  管线级联：帧栈 → 工具偏置 → 逆解（seed = 段起点关节）→ ACS 关节
+  目标；margin 预检查违例 `precondition_failed`；ACS 命令直通不经插件。
+- 验收：`plcopen_core_kinematics_tests` 7 场景——两参考实现各 2 万例
+  往返 fuzz（≤1e-9）+ 分支游走、SCARA 工作空间/奇异语义、恒等龙门 ≡
+  KB-036 管线逐周期等价、缩放龙门手工逆解 oracle、SCARA 端点回代、
+  拒绝矩阵。既有回放基线逐位不变。
+- BS3.5（球腕 6R）与 BS3.6（双空间限速 time-scaling）为后续单列批次。
+
+*草案创建：2026-07-05；批准：2026-07-05。*

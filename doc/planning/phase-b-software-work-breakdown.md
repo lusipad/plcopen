@@ -88,7 +88,12 @@ BS1 不做：CST/CSV 驱动侧模式语义（属 B5）、扭矩前馈数值（�
 | BS2.4 | 工具/工件偏置 | T2 | BS2.3 | 工具坐标与工件坐标偏置的设置/切换语义；运动中切换显式拒绝或按矩阵语义排队 | 语义测试 |
 | BS2.5 | 文档与矩阵行 | T0 | BS2.3 | Part 4 矩阵、README 边界、KB 编号 | docs-sync |
 
-## BS3：B2 kinematics 插件接口
+## BS3：B2 kinematics 插件接口——**BS3.1-BS3.4 已完成（2026-07-05，KB-037）；BS3.5/BS3.6 待做**
+
+> 状态：矩阵已批准；ABI + harness + 龙门 + SCARA 落库，组集成过恒等等价与手工逆解
+> oracle。剩余：BS3.5 球腕 6R（解除 joint==cartesian 约束 + 姿态）、BS3.6 双空间限速。
+> 证据见 [kinematics-plugin-semantics.md](../compliance/kinematics-plugin-semantics.md) 实现记录。
+
 
 | ID | 任务 | 等级 | 前置 | DoD | 验证 |
 |----|------|------|------|-----|------|
