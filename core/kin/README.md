@@ -19,6 +19,20 @@ v1 scope (BS3.2-BS3.4):
   continuous walks, deterministic LCG — every plugin, reference or
   third-party, runs the same harness.
 
+BS3.5 (`wrist6r.h`): the spherical-wrist 6R analytic inverse ships in
+pre-integration form — full 6-DOF poses do not fit the v1 ABI (2/3
+translational coordinates), so `SphericalWrist6R` carries its own Pose6
+interface under the same contract discipline (eight-branch enumeration with
+seed-closest selection, a max-joint-step no-branch-flip gate, wrist/elbow/
+shoulder singularity margins, allocation- and exception-free). Group wiring
+arrives with the orientation (RPY) batch. Verified by 20k-case round-trip
+fuzz, perturbed-seed recovery, and branch-gate rejections.
+
+BS3.6: `AxisGroup::set_cartesian_velocity_limit` — conservative dual-space
+limiting: at submit the joint-space chord is sampled through the forward
+solution and the command velocity scales down so the worst sampled Cartesian
+speed stays under the limit (linear segments, kinematics-configured groups).
+
 v1 declared boundaries:
 
 - joint count == Cartesian count (2 or 3) == group axis count; the 6R batch

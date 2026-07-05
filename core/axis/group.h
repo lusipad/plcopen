@@ -355,6 +355,22 @@ public:
         return rt::ErrorCode::ok;
     }
 
+    // BS3.6 (approved kinematics matrix follow-up): conservative dual-space
+    // velocity limiting. With a kinematics plugin the segment interpolates
+    // in joint space, so the Cartesian speed along it varies; at submit the
+    // joint-space chord is sampled through the forward solution and the
+    // command velocity is scaled down so the worst sampled Cartesian speed
+    // stays under this limit (0 disables; linear segments only in v1).
+    rt::ErrorCode set_cartesian_velocity_limit(double limit)
+    {
+        if(status_ != GroupStatus::standby || !queue_.empty() || !std::isfinite(limit) ||
+           limit < 0.0) {
+            return rt::ErrorCode::invalid_argument;
+        }
+        cartesian_velocity_limit_ = limit;
+        return rt::ErrorCode::ok;
+    }
+
     // Approved kinematics matrix (B2 v1): the plugin upgrades the declared
     // identity ACS<->MCS mapping to a real mechanism. The caller owns the
     // plugin lifetime; nullptr restores the identity. v1 requires the joint
@@ -742,6 +758,56 @@ private:
             }
             command.relative = false;
             command.coord_system = CoordSystem::acs;
+
+            // Dual-space limiting (BS3.6): sample the joint-space chord
+            // through the forward solution; the worst Cartesian displacement
+            // per path-parameter step scales the command velocity down. The
+            // path parameter references the longest member travel (KB-027).
+            if(cartesian_velocity_limit_ > 0.0 && !circular) {
+                double longest = 0.0;
+                for(std::size_t i = 0; i < axes_.size(); ++i) {
+                    const double travel = std::fabs(command.target.value[i] - seed[i]);
+                    if(travel > longest) {
+                        longest = travel;
+                    }
+                }
+                if(longest > 0.0) {
+                    constexpr int Samples = 16;
+                    double joints[MaxAxes] = {};
+                    geom::Vec3 previous{};
+                    double worst_ratio = 0.0;
+                    for(int step = 0; step <= Samples; ++step) {
+                        const double fraction =
+                            static_cast<double>(step) / static_cast<double>(Samples);
+                        for(std::size_t i = 0; i < axes_.size(); ++i) {
+                            joints[i] =
+                                seed[i] + fraction * (command.target.value[i] - seed[i]);
+                        }
+                        geom::Vec3 cartesian{};
+                        const rt::ErrorCode forwarded =
+                            kinematics_->forward(joints, axes_.size(), cartesian);
+                        if(forwarded != rt::ErrorCode::ok) {
+                            return forwarded;
+                        }
+                        if(step > 0) {
+                            const double chord = geom::norm(cartesian - previous);
+                            const double parameter_step =
+                                longest / static_cast<double>(Samples);
+                            const double ratio = chord / parameter_step;
+                            if(ratio > worst_ratio) {
+                                worst_ratio = ratio;
+                            }
+                        }
+                        previous = cartesian;
+                    }
+                    if(worst_ratio > 0.0) {
+                        const double allowed = cartesian_velocity_limit_ / worst_ratio;
+                        if(allowed < command.velocity) {
+                            command.velocity = allowed;
+                        }
+                    }
+                }
+            }
             return rt::ErrorCode::ok;
         }
 
@@ -1897,6 +1963,7 @@ private:
     geom::Vec3 tool_offset_{};
     const kin::Kinematics *kinematics_ = nullptr;
     double kinematics_min_margin_ = 0.0;
+    double cartesian_velocity_limit_ = 0.0;
     rt::StaticVector<AxisModel *, MaxAxes> axes_{};
     rt::StaticVector<GroupCommand, QueueCapacity> queue_{};
     GroupCommand active_command_{};
