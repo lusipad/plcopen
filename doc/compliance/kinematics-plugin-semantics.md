@@ -1,0 +1,69 @@
+# Kinematics 插件 ABI 语义矩阵 v1（草案）
+
+> 状态：**草案，待维护者批准**（2026-07-05 起草）。本文件是 Phase B2
+> （kinematics 插件接口，BS3）的验收规格（normative 候选）。依据
+> long-term-plan T5（奇异区三选一、数值逆解硬上限）、6.3-#7（解析解
+> 优先）、6.4 层 3；任务拆解见
+> [phase-b-software-work-breakdown.md](../planning/phase-b-software-work-breakdown.md) BS3。
+
+## 定位与不变量
+
+B2 v1 = 把 KB-036 的「ACS↔MCS 恒等声明」升级为**可配的 kinematics 变换**：
+组配置一个 kinematics 插件后，MCS/PCS 命令的笛卡尔目标经逆解落到 ACS
+关节目标，正解用于回读与路径点校验。**不改变以下合同**：
+
+| 合同 | 保持 |
+|---|---|
+| KB-036 帧栈 | PCS 工件帧/工具偏置照旧作用于笛卡尔点，随后才进逆解；未配置插件 = 恒等（既有声明） |
+| 换算前置 | v1 逆解只发生在 submit（端点与 aux 点），**周期路径不做逐周期逆解**——路径参数化仍在 ACS 关节空间进行（见决策 #6 的诚实边界） |
+| RT 禁令 | 插件契约：无分配、无异常、无系统调用、有界迭代 |
+| 未定义显式报错 | 不可达位姿、奇异区、维数不匹配全部显式错误码 |
+
+## 决策点（v1 提案）
+
+| # | 决策点 | 提案 | 理由 |
+|---|--------|------|------|
+| 1 | 插件形态 | 纯虚接口 `kin::Kinematics`（头文件 ABI，静态注册；动态加载/跨 DSO ABI 留 Phase C）：`forward(joints[, size]) → cartesian`、`inverse(cartesian, seed_joints[, size]) → joints`、`joint_count()`、`cartesian_count()` | 可嵌入库形态：用户编译期链接自己的构型；跨 DSO 稳定 ABI 是发布期工程 |
+| 2 | RT-safe 契约 | 实现必须：无堆分配、无异常、无阻塞、数值迭代 ≤3 次牛顿 + 种子热启动、超限返回 `infeasible` 而非等收敛（T5）；契约由验证 harness 断言（定时/定界/确定性），不靠自觉 | 确定性 > 最后一微米（6.3-#7） |
+| 3 | 奇异区策略 | v1 仅实现**禁入区预检查**（T5 三选一的默认项）：插件提供 `singularity_margin(joints) → double`（到最近奇异构型的度量），submit 时对端点与 aux 点检查 margin > 配置阈值，违例 `precondition_failed`；DLS 降级与报错停机留 v2 | 预检查纯软件可验证且无在线数值风险 |
+| 4 | 解的多分支 | `inverse` 以 seed（当前关节位置）选支：返回与 seed 同支的解（构型分支不跳变）；无同支解 → `infeasible`。显式分支选择 API 留 v2 | 隐式跳支是机械事故来源；seed 连续性是最小安全语义 |
+| 5 | 组集成 | `AxisGroup::set_kinematics(kin::Kinematics *)`（standby + 空队列守卫，同帧栈）；配置后 MCS/PCS 命令：目标点 → 帧栈 → **逆解** → ACS 关节目标；ACS 命令照旧直通（诊断/维修模式） | 与 KB-036 管线自然级联 |
+| 6 | 路径语义（诚实边界） | v1 逆解仅作用于**端点与 aux 点**，段内插补仍是 ACS 关节空间参数化——即 MCS 直线在关节空间是直线、在笛卡尔空间一般**不是**直线（非线性构型下）。矩阵显式声明此边界；笛卡尔空间直线插补（逐周期逆解 + 双空间限速 time-scaling）是 BS3.6/BS4 的后续批次 | 不把逐周期逆解偷渡进周期路径；龙门（线性构型）下两者恰好一致，SCARA/Delta/6R 下边界必须显式 |
+| 7 | 参考实现 | ①笛卡尔龙门（线性映射 + 每轴比例/偏置，覆盖"恒等以上最简单构型"）②SCARA（RRPR 平面 2R 解析逆解 + 肘上/肘下分支）③球腕 6R 解析逆解（Pieper 条件，8 解枝举 + seed 选支）——①②本批，③单列子任务（工程量大） | 全解析解（6.3-#7），纯软件 oracle 可验证 |
+| 8 | 验证 | 每个插件过同一 harness：正逆解往返 fuzz（inverse∘forward ≡ id，百万级随机关节态）、seed 分支稳定性、奇异 margin 单调性抽查、定时上界；组集成过几何等价 oracle（配置恒等插件 ≡ KB-036 行为，回放逐位不变） | oracle + fuzz 是 case 枚举类代码唯一可靠交付方式（6.4） |
+| 9 | 维数 | 插件 cartesian_count ∈ {2,3}（v1 平移空间，姿态留 v2/RPY 批次）；joint_count ≤ 8 且 = 组轴数；不匹配 `invalid_argument` | 与 KB-036 前 3 维笛卡尔口径一致 |
+| 10 | 层位 | 插件接口与参考实现落 L2/L3（`core/kin/`，PLCopen-free 纯数学）；组集成在 L5 | 依赖只向内 |
+
+## 退化与拒绝规则（显式，进验收测试）
+
+| 形态 | 语义 |
+|---|---|
+| 逆解不可达（工作空间外） | `infeasible` |
+| 奇异 margin ≤ 阈值（端点或 aux） | `precondition_failed` |
+| 与 seed 同支无解 | `infeasible`（不跳支） |
+| joint_count ≠ 组轴数 / cartesian 维数不符 | `invalid_argument` |
+| 运动中 set_kinematics | `invalid_argument`（同帧栈守卫） |
+| 配置插件后的 ACS 命令 | 直通（关节域），不经插件——声明 |
+| 未配置插件的 MCS/PCS | KB-036 恒等（既有声明不变） |
+
+## 验收指标（全部纯软件可验证）
+
+| 指标 | 口径 | 门槛 |
+|------|------|------|
+| 往返一致性 | inverse(forward(q), seed=q) ≡ q，随机关节态 fuzz | ≤1e-9，≥10⁵ 例/插件（夜间 10⁶） |
+| 分支稳定 | 连续位姿序列逆解无分支跳变（关节步长有界） | 零跳变 |
+| 恒等等价 | 恒等插件下全部既有回放 | 逐位不变 |
+| 龙门等价 | 龙门（含比例/偏置）命令 ≡ 手工预变换 ACS 命令 | 逐周期 ≤1e-9 |
+| 定时上界 | harness 实测单次逆解 | ≤2µs（解析解） |
+
+## 不做（v1 显式范围外）
+
+- 逐周期笛卡尔插补与双空间限速 time-scaling（BS3.6 评估、与 BS4 耦合）；
+- 姿态（RPY/四元数）与工具旋转（与 RPY 批次同步）；
+- DLS 阻尼降级、跨 DSO 插件 ABI、URDF 导入（社区/Phase C）；
+- 6R 参考实现随 BS3.5 单列（本规格先约束其契约）。
+
+---
+
+*草案创建：2026-07-05；批准：待定。批准后实现对应 BS3.2-BS3.4，验收
+证据落 `plcopen_core_kinematics_tests` + harness + 回放。*
