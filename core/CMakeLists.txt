@@ -153,6 +153,13 @@ if(PLCOPEN_BUILD_DEMOS)
     endif()
 endif()
 
+# DoD §5.3 evidence tool: legacy-vs-core cycle cost on an equivalent workload.
+# Only meaningful (and only built) when the frozen v0.x line is enabled.
+if(PLCOPEN_BUILD_LEGACY)
+    add_executable(plcopen_core_legacy_compare bench/legacy_compare.cpp)
+    target_link_libraries(plcopen_core_legacy_compare PRIVATE plcopen::core plcopen)
+endif()
+
 install(TARGETS plcopen_core
     EXPORT plcopenTargets)
 
