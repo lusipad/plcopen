@@ -36,16 +36,22 @@ expanded there, update this file before starting the affected `core/` module.
 
 ## Module Provenance Ledger
 
-| Module | Status | Allowed semantic sources | Notes |
+Ledger refreshed 2026-07-05 (all listed modules are implemented; the
+clean-room rule was observed throughout — semantics were extracted from
+compliance matrices, the v0.x Catch2 tests read as executable specifications,
+and README KB entries; the section-0 hot-path files were never opened as
+implementation references).
+
+| Module | Status | Semantic sources actually used | Notes |
 |---|---|---|---|
-| `core/rt` | planned | rewrite-plan decisions D1-D7, RT-safety rules, future ADRs | Infrastructure only; no PLCopen semantics. |
-| `core/otg` | planned | public OTG literature, numeric oracle tests, future ADRs | Record each external reference before implementation. |
-| `core/geom` | planned | geometry design docs, tests, future ADRs | No Part 4 PLCopen behavior in this layer. |
-| `core/plan` | planned | compliance matrices, KB IDs, replay fixtures, future ADRs | Planner semantics must be replay-gated. |
-| `core/exec` | planned | RT rules, replay fixtures, future ADRs | Cycle path: zero allocation, no blocking, no exceptions. |
-| `core/axis` | planned | compliance matrices, KB IDs, tests | PLCopen command lifecycle starts here. |
-| `core/fb` | planned | compliance matrices, KB IDs, tests | Thin PLCopen facade only. |
-| `core/adapters` | planned | adapter-specific design docs and license review | Keep bus/OS details outside the core. |
+| `core/rt` | implemented | rewrite-plan decisions D1-D7, RT-safety rules | Infrastructure only; no PLCopen semantics. Error vocabulary extended during R3 (`precondition_failed`, `unsupported`). |
+| `core/otg` | implemented | public jerk-limited OTG formulations (closed-form ramp pairs, cruise bisection — textbook S-curve construction), independent numeric oracle, million-case fuzz; ADR-0003 keeps Ruckig out of the build | `plan()` baseline quintic; `plan_time_optimal()` (A9) documented in `doc/design/core/l0-l1-rt-otg.md`. No external code consulted. |
+| `core/geom` | implemented | `doc/design/core/l2-l4-motion-core.md`, R2 tests; A3/A4 approved spec matrices (three-point arc, quintic Bezier blend) | Closed-form constructions; no Part 4 semantics in this layer. |
+| `core/plan` | implemented | approved blending/look-ahead semantics matrices (`doc/compliance/part4-*.md`), replay fixtures | Planner outcomes are replay-gated (`core-*.jsonl` goldens). |
+| `core/exec` | implemented | RT rules, replay fixtures | Cycle path: zero allocation, no blocking, no exceptions (`plcopen_core_a2_alloc_guard`). |
+| `core/axis` | implemented | Part 1/2 + Part 4 compliance matrices, KB-001..KB-033, v0.x Catch2 tests as executable specs | PLCopen command lifecycle; declared deviations are KB-numbered (KB-019+). |
+| `core/fb` | implemented | compliance matrices, KB IDs, v0.x Catch2 tests | Thin facades, one header per family; acceptance suites `plcopen_core_r3_*`/`a3`/`a4`/`a5`. |
+| `core/adapters` | proposed | ADR-0004 (Servo interface shape, awaiting human adjudication) | Bus/OS details stay outside the core; `AxisModel` hooks are the stand-in. |
 
 ## Recording Rules
 
@@ -60,10 +66,16 @@ expanded there, update this file before starting the affected `core/` module.
 
 Before any v1 release candidate:
 
-- Confirm this ledger covers every shipped `core/` module.
-- Run the golden replay gate and record the result.
-- Run similarity/provenance review for rewritten hot paths.
-- Have a human reviewer approve license and provenance statements.
+- Confirm this ledger covers every shipped `core/` module. (2026-07-05: it
+  does; `core/adapters` is interface-proposal only, no shipped code.)
+- Run the golden replay gate and record the result. (Wired as the
+  `plcopen_core_replay_regression` CTest entry; latest run green.)
+- Run similarity/provenance review for rewritten hot paths. (**Open item**:
+  the R4 similarity spot-check against the section-0 files has not been
+  executed; schedule before the v1.0.0-alpha tag or record an explicit
+  deferral in the release notes.)
+- Have a human reviewer approve license and provenance statements. (**Open
+  item**: D-LIC decision, rewrite-plan §2.6.)
 
 Before the `v0.11.0` source-only release:
 
