@@ -719,6 +719,9 @@ public:
     double deceleration = 1.0;
     double jerk = 1.0;
     axis::BufferMode buffer_mode = axis::BufferMode::aborting;
+    // Approved coordinate matrix (B1 v1): ACS/MCS/PCS; WCS/FCS/TCS report
+    // explicit unsupported.
+    axis::CoordSystem coord_system = axis::CoordSystem::acs;
     // A4 geometric blending inputs (approved blending matrix): TransitionMode
     // MaxCornerDeviation with a positive tolerance and a blending buffer mode
     // requests a quintic corner blend; unlisted combinations are explicit
@@ -751,6 +754,7 @@ protected:
         command.buffer_mode = buffer_mode;
         command.transition_mode = transition_mode;
         command.transition_parameter = transition_parameter;
+        command.coord_system = coord_system;
         accept(group_ref->submit_linear(command));
     }
 };
@@ -782,6 +786,9 @@ public:
     double deceleration = 1.0;
     double jerk = 1.0;
     axis::BufferMode buffer_mode = axis::BufferMode::aborting;
+    // Approved coordinate matrix (B1 v1): ACS/MCS/PCS; WCS/FCS/TCS report
+    // explicit unsupported.
+    axis::CoordSystem coord_system = axis::CoordSystem::acs;
 
     void call()
     {
@@ -810,6 +817,7 @@ protected:
         command.deceleration = deceleration;
         command.jerk = jerk;
         command.buffer_mode = buffer_mode;
+        command.coord_system = coord_system;
         accept(group_ref->submit_circular(command));
     }
 };

@@ -415,11 +415,63 @@ void run_stream_session(Recording &recording)
     }
 }
 
+void run_group_pcs(Recording &recording)
+{
+    // B1 (approved coordinate matrix): a rotated+translated workpiece frame
+    // with an ACS first segment and a PCS blending successor sharing one
+    // look-ahead window — frames convert at submit, the window geometry is
+    // pure ACS.
+    recording.id = "core-group-pcs";
+    axis::AxisModel x;
+    axis::AxisModel y;
+    x.set_power(true);
+    y.set_power(true);
+    axis::AxisGroup group;
+    group.add_axis(x);
+    group.add_axis(y);
+    group.enable();
+    group.set_workpiece_frame(0.2, 0.1, 0.0, 0.3);
+    group.set_tool_offset(0.02, -0.01, 0.0);
+
+    axis::GroupCommand first{};
+    first.target.size = 2;
+    first.target.value[0] = 1.0;
+    first.velocity = 0.05;
+    first.acceleration = 0.004;
+    first.deceleration = 0.004;
+    first.jerk = 0.004;
+    group.submit_linear(first);
+    std::int64_t tick = 0;
+    for(; tick < 3; ++tick) {
+        group.cycle();
+        recording.emit(tick, 0, x.snapshot());
+        recording.emit(tick, 1, y.snapshot());
+    }
+
+    axis::GroupCommand blend = first;
+    blend.coord_system = axis::CoordSystem::pcs;
+    blend.target.value[0] = 2.0;
+    blend.target.value[1] = 1.0;
+    blend.buffer_mode = axis::BufferMode::blending_high;
+    blend.transition_mode = axis::TransitionMode::max_corner_deviation;
+    blend.transition_parameter = 0.04;
+    group.submit_linear(blend);
+    for(; tick < 4000; ++tick) {
+        group.cycle();
+        recording.emit(tick, 0, x.snapshot());
+        recording.emit(tick, 1, y.snapshot());
+        if(group.status() == axis::GroupStatus::standby) {
+            break;
+        }
+    }
+}
+
 using ScenarioRunner = void (*)(Recording &);
 constexpr ScenarioRunner kScenarios[] = {run_single_axis_move, run_velocity_stop,
                                          run_group_linear, run_group_circular,
                                          run_group_blend, run_group_window,
-                                         run_group_window_arc, run_stream_session};
+                                         run_group_window_arc, run_stream_session,
+                                         run_group_pcs};
 
 int write_recording(const Recording &recording, const std::string &directory)
 {

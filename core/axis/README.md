@@ -6,6 +6,9 @@ Responsibilities:
 
 - Own PLCopen-visible axis and group lifecycle state.
 - Accept already-validated motion commands and map them onto R1/R2 primitives.
+- Coordinate stack v1 (KB-036, approved coordinate matrix): MCS/PCS targets convert to ACS
+  at submit through the group workpiece frame (translation + rotation about Z) and tool
+  offset; ACS commands never see the frames; frames only change at standby.
 - Group path commands: linear (shared scalar path referenced to the longest member travel)
   and circular v1 (BORDER three-point arcs, arc-length path parameter in the first-two-axes
   plane, higher axes follow linearly; KB-030, approved circular matrix).

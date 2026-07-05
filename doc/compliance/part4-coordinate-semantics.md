@@ -1,6 +1,7 @@
-# Part 4 坐标系语义矩阵 v1（草案）
+# Part 4 坐标系语义矩阵 v1
 
-> 状态：**草案，待维护者批准**（2026-07-05 起草）。本文件是 Phase B1
+> 状态：**已批准（2026-07-05，维护者，按 v1 范围；原文核对项由维护者
+> 线下核实，有出入再修订矩阵）**。本文件是 Phase B1
 > （坐标系栈）第一片的验收规格（normative 候选）。任务拆解见
 > [phase-b-software-work-breakdown.md](../planning/phase-b-software-work-breakdown.md) BS2。
 > ⚠️ **原文核对项**（批准前需人工对照 PLCopen Part 4 文本）：
@@ -71,5 +72,19 @@ B1 v1 = 让组命令的目标点可以在 **MCS/PCS 笛卡尔帧**中表达，�
 
 ---
 
-*草案创建：2026-07-05；批准：待定。批准后实现对应 BS2.2-BS2.5，验收
-证据落 `plcopen_core_coordinate_tests` + 混帧回放场景。*
+## 实现记录（2026-07-05，BS2.2-BS2.5，KB-036）
+
+- L2 帧原语 `geom::RigidFrame`（`core/geom/frame.h`）：平移 + 绕 Z 旋转，
+  cos/sin 缓存，刚体性构造性成立（无任意矩阵输入需校验正交）。
+- L5 集成：`GroupCommand.coord_system`（默认 ACS 全兼容）、
+  `AxisGroup::set_workpiece_frame/set_tool_offset`（standby + 空队列守卫）、
+  `apply_coordinate_frame` 在 submit 入口把 MCS/PCS 目标/aux 换算为 ACS
+  （绝对点过帧减工具偏置；相对距离仅旋转——平移与工具偏置在两个 TCP
+  位置间相消）。FB 面 `FbMoveLinear*/FbMoveCircular*` 增 `coord_system`。
+- 验收：`plcopen_core_coordinate_tests` 7 场景——MCS 恒等、PCS 直线/
+  相对/圆弧几何等价 oracle（双组逐周期 1e-9）、混帧 blending 窗口、
+  拒绝矩阵（WCS/FCS/TCS、非有限、运动中换帧）、PCS 未设帧=恒等声明、
+  FB 面。回放黄金场景 `core-group-pcs`（ACS 首段 + PCS blending 后继
+  混帧窗口 + 工具偏置，166 样本）；既有全部 golden 逐位不变。
+
+*草案创建：2026-07-05；批准：2026-07-05。*

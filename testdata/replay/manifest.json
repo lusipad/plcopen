@@ -142,6 +142,15 @@
         "ramp tracking, dropout extrapolation into controlled stop",
         "resumed tracking, aborting MC_Stop takeover"
       ]
+    },
+    {
+      "id": "core-group-pcs",
+      "path": "core-group-pcs.jsonl",
+      "source": "plcopen_core_replay_regression --record",
+      "coverage": [
+        "B1 coordinate stack (approved coordinate matrix)",
+        "workpiece frame + tool offset, PCS blending successor in a mixed-frame window"
+      ]
     }
   ]
 }

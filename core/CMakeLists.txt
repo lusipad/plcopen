@@ -112,6 +112,11 @@ if(BUILD_TESTING AND PLCOPEN_BUILD_CORE_TESTS)
     plcopen_core_rt_compile_options(plcopen_core_stream_tests)
     add_test(NAME plcopen_core_stream_tests COMMAND plcopen_core_stream_tests)
 
+    add_executable(plcopen_core_coordinate_tests test/coordinate_tests.cpp)
+    target_link_libraries(plcopen_core_coordinate_tests PRIVATE plcopen::core)
+    plcopen_core_rt_compile_options(plcopen_core_coordinate_tests)
+    add_test(NAME plcopen_core_coordinate_tests COMMAND plcopen_core_coordinate_tests)
+
     add_executable(plcopen_core_stream_session_tests test/stream_session_tests.cpp)
     target_link_libraries(plcopen_core_stream_session_tests PRIVATE plcopen::core)
     plcopen_core_rt_compile_options(plcopen_core_stream_session_tests)

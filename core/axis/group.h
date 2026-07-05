@@ -5,6 +5,7 @@
 #include <cstdint>
 
 #include "axis/state.h"
+#include "geom/frame.h"
 #include "geom/geometry.h"
 #include "otg/profile1d.h"
 #include "otg/time_optimal.h"
@@ -67,6 +68,20 @@ enum class TransitionMode
     max_corner_deviation,
 };
 
+// MC_COORD_SYSTEM (approved coordinate matrix, B1 v1): ACS is the raw axis
+// domain (frames never applied); MCS/PCS carry Cartesian semantics on the
+// first three coordinates with the v1 identity ACS<->MCS mapping declared;
+// WCS/FCS/TCS report explicit unsupported.
+enum class CoordSystem
+{
+    acs,
+    mcs,
+    wcs,
+    pcs,
+    fcs,
+    tcs,
+};
+
 struct GroupCommand
 {
     GroupPosition target{};
@@ -82,6 +97,11 @@ struct GroupCommand
     double jerk = 1.0;
     BufferMode buffer_mode = BufferMode::aborting;
     std::uint32_t command_id = 0;
+
+    // Approved coordinate matrix (B1 v1): target/aux are interpreted in this
+    // frame and converted to ACS at submit time; the cycle path never sees a
+    // frame.
+    CoordSystem coord_system = CoordSystem::acs;
 
     // A4 transition inputs (linear-to-linear geometric blending v1, KB-031).
     TransitionMode transition_mode = TransitionMode::none;
@@ -304,6 +324,35 @@ public:
         return rt::ErrorCode::ok;
     }
 
+    // Approved coordinate matrix (B1 v1): the workpiece frame (PCS over MCS)
+    // and the tool offset are group configuration; they may only change at
+    // standby with an empty queue — changing frames mid-motion has no
+    // defined semantics.
+    rt::ErrorCode set_workpiece_frame(double x, double y, double z, double rot_z)
+    {
+        if(status_ != GroupStatus::standby || !queue_.empty()) {
+            return rt::ErrorCode::invalid_argument;
+        }
+        const rt::Result<geom::RigidFrame> frame = geom::make_frame(x, y, z, rot_z);
+        if(!frame) {
+            return frame.error();
+        }
+        workpiece_frame_ = frame.value();
+        return rt::ErrorCode::ok;
+    }
+
+    rt::ErrorCode set_tool_offset(double x, double y, double z)
+    {
+        if(status_ != GroupStatus::standby || !queue_.empty()) {
+            return rt::ErrorCode::invalid_argument;
+        }
+        if(!std::isfinite(x) || !std::isfinite(y) || !std::isfinite(z)) {
+            return rt::ErrorCode::invalid_argument;
+        }
+        tool_offset_ = geom::Vec3{x, y, z};
+        return rt::ErrorCode::ok;
+    }
+
     rt::Result<std::uint32_t> submit_linear(GroupCommand command)
     {
         if((status_ != GroupStatus::standby && status_ != GroupStatus::moving) || axes_.size() < 2 ||
@@ -318,6 +367,10 @@ public:
             if(!axes_[i]->powered() || axes_[i]->status() == AxisStatus::errorstop) {
                 return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
             }
+        }
+        const rt::ErrorCode framed = apply_coordinate_frame(command);
+        if(framed != rt::ErrorCode::ok) {
+            return rt::Result<std::uint32_t>::failure(framed);
         }
 
         // TransitionMode combination matrix (approved blending matrix):
@@ -406,6 +459,10 @@ public:
         if(command.circ_mode != CircMode::border) {
             // CENTER/RADIUS are declared unsupported in v1, not approximated.
             return rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported);
+        }
+        const rt::ErrorCode framed = apply_coordinate_frame(command);
+        if(framed != rt::ErrorCode::ok) {
+            return rt::Result<std::uint32_t>::failure(framed);
         }
         const bool arc_blending = command.buffer_mode == BufferMode::blending_low ||
                                   command.buffer_mode == BufferMode::blending_high;
@@ -593,6 +650,77 @@ private:
             }
         }
         return true;
+    }
+
+    static geom::Vec3 cartesian_part(const GroupPosition &position)
+    {
+        return geom::Vec3{position.value[0],
+                          position.size > 1 ? position.value[1] : 0.0,
+                          position.size > 2 ? position.value[2] : 0.0};
+    }
+
+    static void store_cartesian_part(GroupPosition &position, geom::Vec3 point)
+    {
+        position.value[0] = point.x;
+        if(position.size > 1) {
+            position.value[1] = point.y;
+        }
+        if(position.size > 2) {
+            position.value[2] = point.z;
+        }
+    }
+
+    // Approved coordinate matrix (B1 v1): MCS/PCS targets convert to ACS at
+    // submit time on the first three coordinates (higher axes pass through in
+    // ACS); ACS commands never see the frames. Absolute points go through the
+    // workpiece frame (PCS) and then subtract the tool offset (MCS and PCS);
+    // relative distances only rotate — translation and tool offset cancel
+    // between two TCP positions. The v1 ACS<->MCS mapping is the declared
+    // identity (Cartesian rig; kinematics plugins arrive with B2).
+    rt::ErrorCode apply_coordinate_frame(GroupCommand &command) const
+    {
+        switch(command.coord_system) {
+        case CoordSystem::acs:
+            return rt::ErrorCode::ok;
+        case CoordSystem::mcs:
+        case CoordSystem::pcs:
+            break;
+        default:
+            return rt::ErrorCode::unsupported;
+        }
+
+        const bool pcs = command.coord_system == CoordSystem::pcs;
+        const bool circular = command.path_kind == GroupPathKind::circular;
+        if(command.relative) {
+            geom::Vec3 direction = cartesian_part(command.target);
+            if(pcs) {
+                direction = geom::frame_rotate(workpiece_frame_, direction);
+            }
+            store_cartesian_part(command.target, direction);
+            if(circular) {
+                geom::Vec3 aux = cartesian_part(command.aux);
+                if(pcs) {
+                    aux = geom::frame_rotate(workpiece_frame_, aux);
+                }
+                store_cartesian_part(command.aux, aux);
+            }
+        } else {
+            geom::Vec3 point = cartesian_part(command.target);
+            if(pcs) {
+                point = geom::frame_to_base(workpiece_frame_, point);
+            }
+            store_cartesian_part(command.target,
+                                 point - tool_offset_);
+            if(circular) {
+                geom::Vec3 aux = cartesian_part(command.aux);
+                if(pcs) {
+                    aux = geom::frame_to_base(workpiece_frame_, aux);
+                }
+                store_cartesian_part(command.aux, aux - tool_offset_);
+            }
+        }
+        command.coord_system = CoordSystem::acs;
+        return rt::ErrorCode::ok;
     }
 
     double queued_finish(std::size_t axis_index) const
@@ -1664,6 +1792,8 @@ private:
 
     int domain_id_ = 0;
     GroupStatus status_ = GroupStatus::disabled;
+    geom::RigidFrame workpiece_frame_{};
+    geom::Vec3 tool_offset_{};
     rt::StaticVector<AxisModel *, MaxAxes> axes_{};
     rt::StaticVector<GroupCommand, QueueCapacity> queue_{};
     GroupCommand active_command_{};
