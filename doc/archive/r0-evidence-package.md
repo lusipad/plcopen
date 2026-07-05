@@ -5,7 +5,7 @@
 
 Date: 2026-07-04
 
-Scope: R0.1-R0.8 from `doc/planning/r0-r4-work-breakdown.md`. T3 actions are
+Scope: R0.1-R0.8 from `r0-r4-work-breakdown.md`（同目录，原 `doc/planning/`）. T3 actions are
 drafted only: no tag was pushed, no GitHub Release was published, and no license
 file was changed.
 

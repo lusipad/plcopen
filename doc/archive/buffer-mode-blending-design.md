@@ -3,7 +3,7 @@
 > 📦 **已归档（2026-07-05）**：历史执行/规划文档，仅供追溯，不再维护；现行文档入口见 [doc/planning/README.md](../planning/README.md) 与根 [STATUS.md](../../STATUS.md)。
 
 
-> 状态：v0.x 基线参考。当前 v0.9.0 旧线代码已吸收本设计中的 MoveNode `BLENDING_LOW` / `BLENDING_HIGH` / blending alias 行为，并把 Homing/Sync 的非 aborting 模式明确收口为 queued handoff。R4 切换后，默认架构入口是 [core/architecture.md](core/architecture.md)；后续完整几何轨迹拼接、连续速度过渡和更复杂 planner 合同应作为新核 runtime feature 立项。
+> 状态：v0.x 基线参考。当前 v0.9.0 旧线代码已吸收本设计中的 MoveNode `BLENDING_LOW` / `BLENDING_HIGH` / blending alias 行为，并把 Homing/Sync 的非 aborting 模式明确收口为 queued handoff。R4 切换后，默认架构入口是 [core/architecture.md](../design/core/architecture.md)；后续完整几何轨迹拼接、连续速度过渡和更复杂 planner 合同应作为新核 runtime feature 立项。
 
 ## 1. 概述
 

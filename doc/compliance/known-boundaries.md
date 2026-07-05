@@ -27,7 +27,7 @@
 - `KB-018`：`pyplcopen` 当前只暴露新核单轴 smoke facade，不是完整 Python PLCopen SDK。
 
 以下条目描述新核 `core/` 相对 v0.x 行为的**已声明边界**（迁移背景见
-[doc/migration-v0-to-v1.md](doc/migration-v0-to-v1.md)；对应旧口径条目在括号中注明）：
+[doc/migration-v0-to-v1.md](../migration-v0-to-v1.md)；对应旧口径条目在括号中注明）：
 
 - `KB-019`：新核中同步（gear/cam/combine）从轴只接受 aborting 命令接管，非 aborting 运动命令显式报 `invalid_argument`（同步无定义完成点，旧线为排队等待）；组级 `stop` 不中止成员级同步（组命令与成员同步分属两个写者），`disable`、从轴 aborting 命令或 `sync_out` 会解除；同步接入与 aborting 基础命令都会清除运行中的叠加偏移。
 - `KB-020`：新核 `MC_SetOverride` 承接 `KB-003` 的 active 重规划合同：velocity 命令逐周期响应 override；active 的离散/homing/连续剖面命令按重缩放的速度限从当前状态重规划（override 降到当前速度之下时按减速进入新包络处理），重规划失败时保留原 override 与原剖面并显式报错；连续保持段更新保持速度。同步节点仍按主轴值驱动，不作为 override 重规划对象（与 `KB-003` 一致）。

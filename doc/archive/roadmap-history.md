@@ -217,7 +217,7 @@
 
 **预估窗口**：2026-Q2 → 2026-Q3
 
-**2026-05-03 更新**：`v0.9.0` 已作为 Part 1/2 Completion 检查点收口。详细执行计划见 [v0.9.0 Part 1/2 Completion Plan](doc/compliance/part1-part2-completion-plan.md)。
+**2026-05-03 更新**：`v0.9.0` 已作为 Part 1/2 Completion 检查点收口。详细执行计划见 [v0.9.0 Part 1/2 Completion Plan](part1-part2-completion-plan.md)。
 
 **当前基线**：
 
@@ -287,9 +287,9 @@
 
 **当前进度（2026-07-02）**：启动门槛、共享组路径、Scheduler 推进、2/3/8 轴 Absolute/Relative、CommandID、Aborting/Buffered、成员共同限制、沿原路径受控减速且保持 GroupStopping 的 GroupStop、错误传播、demo 与 `find_package` / `FetchContent` consumer 均已形成本地自动化闭环。源码版本面已收口到 `0.11.0`；推送后的 GitHub Windows/Linux/coverage/docs 工作流是最终发布证据。
 
-**完成定义**：代码、自动化测试、Part 4 范围矩阵、README、CHANGELOG、安装导出和 CI 对支持范围给出一致结论；完整执行计划见 [v0.11.0 Part 4 Linear Motion Foundation Plan](doc/design/part4-linear-motion-plan.md)。
+**完成定义**：代码、自动化测试、Part 4 范围矩阵、README、CHANGELOG、安装导出和 CI 对支持范围给出一致结论；完整执行计划见 [v0.11.0 Part 4 Linear Motion Foundation Plan](part4-linear-motion-plan.md)。
 
-**R0 冻结决策（2026-07-04）**：`v0.11.0` 发布收口后，旧 `src/` v0.x 线进入 P0-only 维护窗口；不再把旧线作为新功能承载面。下一段主线工作是 [R0-R4 重写冲刺](doc/planning/r0-r4-work-breakdown.md)：旧线作为 golden replay 基线保留，新核在 `core/` 按 L0-L7 分层生长。
+**R0 冻结决策（2026-07-04）**：`v0.11.0` 发布收口后，旧 `src/` v0.x 线进入 P0-only 维护窗口；不再把旧线作为新功能承载面。下一段主线工作是 [R0-R4 重写冲刺](r0-r4-work-breakdown.md)：旧线作为 golden replay 基线保留，新核在 `core/` 按 L0-L7 分层生长。
 
 ---
 
@@ -328,7 +328,7 @@
 
 ## 贡献者如何参与
 
-- **要做当前路线图中的 issue-driven 修复或文档/测试补充**：先看 [ROADMAP.md](ROADMAP.md) 当前状态，再发 issue / PR 说明范围
+- **要做当前路线图中的 issue-driven 修复或文档/测试补充**：先看 [ROADMAP.md](../../ROADMAP.md) 当前状态，再发 issue / PR 说明范围
 - **要做下一阶段候选**：先开 issue 讨论，确认优先级后再动手
 - **要做"不在路线图"的能力**：先看 VISION.md 解锁条件，满足后开 issue 讨论
 - **文档改进 / 测试补充**：任何时候都欢迎，不需要预先讨论

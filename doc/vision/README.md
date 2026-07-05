@@ -107,4 +107,4 @@
 
 *归档日期：2026-04-17*
 *归档原因：Sprint 0 项目重新定位，从"5-8 人团队 24 个月计划"收缩到"单人可执行的运动控制库"*
-*详情见 [ADJUSTMENT_PLAN.md](../../ADJUSTMENT_PLAN.md)*
+*详情见 [ADJUSTMENT_PLAN.md](../archive/ADJUSTMENT_PLAN.md)*

@@ -19,7 +19,7 @@
 | R4.6 | 旧设计文档归档 | `doc/design/README.md` 标注当前/历史入口；旧设计文档加归档提示；docs target fallback 通过 | 已验证 |
 | R4.7 | 删除或隔离旧 `src/` | 默认不再 `add_subdirectory(src)`；显式 `PLCOPEN_BUILD_LEGACY=ON` 才构建旧线；默认 full CTest 只有新核/fixture/demo 门禁 | 已验证 |
 | R4.8 | v0.x EOL 公告 | 本文提供草案，需人工审签 | 草案 |
-| R4.9 | `v1.0.0-alpha` 证据包 | 完整发布草案见 [v1.0.0-alpha-release-draft.md](v1.0.0-alpha-release-draft.md)（含 Release notes 草稿、DoD 对照、人工检查单），需人工发布 | 草案 |
+| R4.9 | `v1.0.0-alpha` 证据包 | 完整发布草案见 [v1.0.0-alpha-release-draft.md](../planning/v1.0.0-alpha-release-draft.md)（含 Release notes 草稿、DoD 对照、人工检查单），需人工发布 | 草案 |
 
 ## 本地验证记录
 
