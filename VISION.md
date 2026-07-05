@@ -11,7 +11,7 @@
 | 对长期相信什么的声明 | 对短期能交付什么的承诺 |
 | 每年复盘一次 | 严格按时间表推进 |
 
-**若文档与 `ROADMAP.md` 冲突，以 `ROADMAP.md` 为准**。VISION 是方向，ROADMAP 才是承诺。
+**若文档与 `ROADMAP.md` 冲突，以 `ROADMAP.md` 为准**。VISION 是方向，ROADMAP 才是承诺；当下走到哪看 [STATUS.md](STATUS.md)。
 
 ---
 

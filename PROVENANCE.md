@@ -38,14 +38,16 @@ expanded there, update this file before starting the affected `core/` module.
 
 | Module | Status | Allowed semantic sources | Notes |
 |---|---|---|---|
-| `core/rt` | planned | rewrite-plan decisions D1-D7, RT-safety rules, future ADRs | Infrastructure only; no PLCopen semantics. |
-| `core/otg` | planned | public OTG literature, numeric oracle tests, future ADRs | Record each external reference before implementation. |
-| `core/geom` | planned | geometry design docs, tests, future ADRs | No Part 4 PLCopen behavior in this layer. |
-| `core/plan` | planned | compliance matrices, KB IDs, replay fixtures, future ADRs | Planner semantics must be replay-gated. |
-| `core/exec` | planned | RT rules, replay fixtures, future ADRs | Cycle path: zero allocation, no blocking, no exceptions. |
-| `core/axis` | planned | compliance matrices, KB IDs, tests | PLCopen command lifecycle starts here. |
-| `core/fb` | planned | compliance matrices, KB IDs, tests | Thin PLCopen facade only. |
-| `core/adapters` | planned | adapter-specific design docs and license review | Keep bus/OS details outside the core. |
+| `core/rt` | implemented | rewrite-plan decisions D1-D7, RT-safety rules | Infrastructure only; no PLCopen semantics. |
+| `core/otg` | implemented | public OTG literature (recorded), numeric oracle + million-case fuzz, ADR-0003 (Ruckig as oracle boundary only) | KB-026/034. |
+| `core/geom` | implemented | geometry design docs, tests | Includes rigid frames/transforms; no Part 4 semantics. |
+| `core/plan` | implemented | compliance matrices, KB IDs, replay fixtures | Replay-gated (KB-031/032/039). |
+| `core/exec` | implemented | RT rules, replay fixtures | Cycle path zero-allocation asserted (a2 guard); cam spline KB-038. |
+| `core/kin` | implemented | kinematics matrix, round-trip fuzz oracles, public IK literature (analytic forms) | KB-037/041; no GPL reference. |
+| `core/stream` | implemented | trajectory-stream matrix, per-cycle envelope tests | KB-035. |
+| `core/axis` | implemented | compliance matrices, KB IDs, tests, golden replay | Command lifecycle + groups + coordinate stack (KB-036). |
+| `core/fb` | implemented | compliance matrices, KB IDs, tests | Thin PLCopen facade only. |
+| `core/adapters` | implemented | ADR-0004, DS402 state machine spec knowledge, tests | Bus/OS details stay outside the core. |
 
 ## Vendored Content Ledger
 
