@@ -26,19 +26,13 @@
 #include <cmath>
 #include <cstddef>
 
+#include "kin/pose.h"
 #include "rt/error.h"
 
 namespace plcopen::core::kin
 {
 
-struct Pose6
-{
-    double position[3] = {0.0, 0.0, 0.0};
-    // Row-major rotation matrix (must be orthonormal; callers own that).
-    double rotation[3][3] = {{1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 0.0, 1.0}};
-};
-
-class SphericalWrist6R
+class SphericalWrist6R final : public PoseKinematics
 {
 public:
     SphericalWrist6R(double base_height, double upper_arm, double forearm, double tool)
@@ -51,7 +45,12 @@ public:
 
     static constexpr std::size_t JointCount = 6;
 
-    void forward(const double *q, Pose6 &pose) const
+    std::size_t joint_count() const override
+    {
+        return JointCount;
+    }
+
+    void forward(const double *q, Pose6 &pose) const override
     {
         double rotation[3][3];
         compose_rotation(q, rotation);
@@ -77,7 +76,7 @@ public:
     rt::ErrorCode inverse(const Pose6 &pose,
                           const double *seed,
                           double max_joint_step,
-                          double *joints_out) const
+                          double *joints_out) const override
     {
         // Wrist center from the tool pose.
         const double wc[3] = {pose.position[0] - d6_ * pose.rotation[0][2],
@@ -180,7 +179,7 @@ public:
     // Angular distance to the nearest singular configuration: wrist
     // (q5 = 0 or +-pi), elbow (q3 = 0 or +-pi), and shoulder (wrist center on
     // the base axis, measured as the planar reach angle).
-    double singularity_margin(const double *q) const
+    double singularity_margin(const double *q) const override
     {
         const double wrist = fold(q[4]);
         const double elbow = fold(q[2]);
