@@ -118,6 +118,13 @@ if(BUILD_TESTING AND PLCOPEN_BUILD_CORE_TESTS)
     add_test(NAME plcopen_core_replay_regression
              COMMAND plcopen_core_replay_regression ${CMAKE_CURRENT_SOURCE_DIR}/../testdata/replay)
 
+    add_executable(plcopen_core_jitter_harness bench/jitter_harness.cpp)
+    target_link_libraries(plcopen_core_jitter_harness PRIVATE plcopen::core)
+    plcopen_core_rt_compile_options(plcopen_core_jitter_harness)
+    add_test(NAME plcopen_core_jitter_harness_smoke
+             COMMAND plcopen_core_jitter_harness --seconds 2 --no-rt)
+    set_tests_properties(plcopen_core_jitter_harness_smoke PROPERTIES LABELS benchmark)
+
     add_executable(plcopen_core_benchmark bench/core_benchmark.cpp)
     target_link_libraries(plcopen_core_benchmark PRIVATE plcopen::core)
     plcopen_core_rt_compile_options(plcopen_core_benchmark)
