@@ -288,6 +288,24 @@
 
 **R0 冻结决策（2026-07-04）**：`v0.11.0` 发布收口后，旧 `src/` v0.x 线进入 P0-only 维护窗口；不再把旧线作为新功能承载面。下一段主线工作是 [R0-R4 重写冲刺](doc/planning/r0-r4-work-breakdown.md)：旧线作为 golden replay 基线保留，新核在 `core/` 按 L0-L7 分层生长。
 
+**冲刺状态更新（2026-07-05）**：R0-R4 重写冲刺的**软件面已全部收口**，且
+[long-term-plan](doc/planning/long-term-plan.md) Phase A 主线（A2 确定性、A3 圆弧、
+A4 公差带 blending、A5 look-ahead v1、A6 基准框架、A7 回放门禁、A9 时间最优 OTG）
+全部落地：v0.x 公开 FB 面与 pyplcopen 面由新核全量承接（KB-019..KB-033 边界成文），
+验证体系在位（26+ 项 CTest、百万级 fuzz、黄金回放、85% 行覆盖、RT-safety 扫描、
+分配断言、抖动 harness）。
+
+**当前里程碑：v1.0.0-alpha 发布收口 + Phase B 入口**。剩余项均带人工/硬件门槛：
+
+- 人工审签：`v0.11.0` tag（[草案](doc/planning/v0.11.0-release-draft.md)）、
+  `v1.0.0-alpha` 发布（[草案与 DoD 对照](doc/planning/v1.0.0-alpha-release-draft.md)）、
+  v0.x EOL 公告、D-LIC 拍板、PROVENANCE 审签、相似度抽查、
+  [ADR-0004 Servo 接口](doc/design/decisions/0004-servo-adapter-interface.md)裁决。
+- 真机：NUC 级 PREEMPT_RT 72h 抖动报告（harness 已备，long-term-plan 6.7 反证点）。
+- 已知技术债：OTG 规划成本对旧核 15×（见 r4-evidence-package 2026-07-05 补记，
+  缓解方向已验证待实现）。
+- Phase B 相对时间启动（真机闭环优先，见 long-term-plan §3.2）。
+
 ---
 
 ## 每季度复盘（每季度第 1 周）
