@@ -11,7 +11,7 @@ sprint 记录）在 [doc/archive/roadmap-history.md](doc/archive/roadmap-history
 |---|------|-----|------|
 | 1 | 核心提交抽查评审 | 按兴趣与风险抽查 2026-07-05 批次核心提交（证据链在各提交信息）；非合入门槛 | 可选（人） |
 | 2 | v1.0.0-alpha 发布 | 按 [发布草案](doc/planning/v1.0.0-alpha-release-draft.md) 6 步检查单执行 tag + Release | 待人工（草案就绪） |
-| 3 | 姿态批次收口 | 组接线（pose 管线）+ 验收测试 + 回放场景，按[已批准矩阵](doc/compliance/orientation-semantics.md) | 第一片已落库 |
+| 3 | 姿态批次收口 | 组接线（pose 管线）+ 验收测试，按[已批准矩阵](doc/compliance/orientation-semantics.md)（回放范围 = 既有护栏逐位不变） | ✅ 完成（KB-042） |
 | 4 | 文档体系重建 | 全仓文档重建落库（harness/重分层/归档/状态同步/构建/设计层 + 断链体检） | ✅ 完成（七批，2026-07-05） |
 | 5 | Part 4 原文核对 | 坐标矩阵标注的 3 项核对项线下核实，出入回写矩阵 | 待人工 |
 

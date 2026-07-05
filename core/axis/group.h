@@ -8,6 +8,7 @@
 #include "geom/frame.h"
 #include "geom/geometry.h"
 #include "kin/kinematics.h"
+#include "kin/pose.h"
 #include "otg/profile1d.h"
 #include "plan/path.h"
 #include "otg/time_optimal.h"
@@ -332,14 +333,64 @@ public:
     // defined semantics.
     rt::ErrorCode set_workpiece_frame(double x, double y, double z, double rot_z)
     {
-        if(status_ != GroupStatus::standby || !queue_.empty()) {
+        return set_workpiece_frame_rpy(x, y, z, 0.0, 0.0, rot_z);
+    }
+
+    // Orientation batch (approved matrix, decision #4): the full rigid
+    // workpiece frame; the Z-only setter above stays as its special case.
+    rt::ErrorCode set_workpiece_frame_rpy(double x,
+                                          double y,
+                                          double z,
+                                          double roll,
+                                          double pitch,
+                                          double yaw)
+    {
+        if(status_ != GroupStatus::standby || !queue_.empty() || !std::isfinite(x) ||
+           !std::isfinite(y) || !std::isfinite(z) || !std::isfinite(roll) ||
+           !std::isfinite(pitch) || !std::isfinite(yaw)) {
             return rt::ErrorCode::invalid_argument;
         }
-        const rt::Result<geom::RigidFrame> frame = geom::make_frame(x, y, z, rot_z);
-        if(!frame) {
-            return frame.error();
+        workpiece_frame_ = geom::make_rpy_transform(x, y, z, roll, pitch, yaw);
+        return rt::ErrorCode::ok;
+    }
+
+    // Orientation batch (approved matrix, decision #5): the flange-to-TCP
+    // rigid transform for the pose pipeline (the translational pipeline
+    // keeps its own set_tool_offset; the two never read each other).
+    rt::ErrorCode set_tool_transform_rpy(double x,
+                                         double y,
+                                         double z,
+                                         double roll,
+                                         double pitch,
+                                         double yaw)
+    {
+        if(status_ != GroupStatus::standby || !queue_.empty() || !std::isfinite(x) ||
+           !std::isfinite(y) || !std::isfinite(z) || !std::isfinite(roll) ||
+           !std::isfinite(pitch) || !std::isfinite(yaw)) {
+            return rt::ErrorCode::invalid_argument;
         }
-        workpiece_frame_ = frame.value();
+        pose_tool_inverse_ = geom::invert(geom::make_rpy_transform(x, y, z, roll, pitch, yaw));
+        return rt::ErrorCode::ok;
+    }
+
+    // Orientation batch (approved matrix, decisions #2/#3): the 6-DOF pose
+    // plugin, mutually exclusive with the translational plugin.
+    rt::ErrorCode set_pose_kinematics(const kin::PoseKinematics *plugin,
+                                      double min_singularity_margin,
+                                      double max_joint_step)
+    {
+        if(status_ != GroupStatus::standby || !queue_.empty() ||
+           !std::isfinite(min_singularity_margin) || min_singularity_margin < 0.0 ||
+           !std::isfinite(max_joint_step) || max_joint_step <= 0.0) {
+            return rt::ErrorCode::invalid_argument;
+        }
+        if(plugin != nullptr && (kinematics_ != nullptr || axes_.size() != 6 ||
+                                 plugin->joint_count() != 6)) {
+            return rt::ErrorCode::invalid_argument;
+        }
+        pose_kinematics_ = plugin;
+        pose_min_margin_ = min_singularity_margin;
+        pose_max_joint_step_ = max_joint_step;
         return rt::ErrorCode::ok;
     }
 
@@ -384,7 +435,7 @@ public:
             return rt::ErrorCode::invalid_argument;
         }
         if(plugin != nullptr &&
-           (plugin->joint_count() != axes_.size() ||
+           (pose_kinematics_ != nullptr || plugin->joint_count() != axes_.size() ||
             plugin->cartesian_count() != plugin->joint_count() ||
             plugin->cartesian_count() < 2 || plugin->cartesian_count() > 3)) {
             return rt::ErrorCode::invalid_argument;
@@ -499,6 +550,13 @@ public:
         }
         if(command.circ_mode != CircMode::border) {
             // CENTER/RADIUS are declared unsupported in v1, not approximated.
+            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported);
+        }
+        // Orientation batch (approved matrix, decision #6): the pose pipeline
+        // carries no circular semantics in v1; ACS joint-domain arcs stay
+        // available (decision #8 passthrough). Guarded here so the rejection
+        // never depends on the caller-set path_kind flag.
+        if(pose_kinematics_ != nullptr && command.coord_system != CoordSystem::acs) {
             return rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported);
         }
         const rt::ErrorCode framed = apply_coordinate_frame(command);
@@ -733,6 +791,59 @@ private:
         const bool pcs = command.coord_system == CoordSystem::pcs;
         const bool circular = command.path_kind == GroupPathKind::circular;
 
+        // Orientation batch (approved matrix, decision #6): the pose
+        // pipeline consumes [x,y,z,roll,pitch,yaw] targets on 6-joint
+        // groups. v1 is submit_linear + absolute only; relative, circular,
+        // and blending transitions report explicit unsupported. The frame
+        // and tool compose on the pose, the analytic inverse (seeded by the
+        // segment start joints, KB-041 gates) lands the 6 ACS joint targets,
+        // and the in-segment interpolation stays a joint-space line
+        // (declared boundary, orientation edition).
+        if(pose_kinematics_ != nullptr) {
+            if(circular || command.relative ||
+               command.buffer_mode == BufferMode::blending_low ||
+               command.buffer_mode == BufferMode::blending_high) {
+                return rt::ErrorCode::unsupported;
+            }
+            geom::RigidTransform target = geom::make_rpy_transform(
+                command.target.value[0], command.target.value[1],
+                command.target.value[2], command.target.value[3],
+                command.target.value[4], command.target.value[5]);
+            if(pcs) {
+                target = geom::compose(workpiece_frame_, target);
+            }
+            const geom::RigidTransform flange = geom::compose(target, pose_tool_inverse_);
+
+            kin::Pose6 pose{};
+            pose.position[0] = flange.translation.x;
+            pose.position[1] = flange.translation.y;
+            pose.position[2] = flange.translation.z;
+            for(int i = 0; i < 3; ++i) {
+                for(int j = 0; j < 3; ++j) {
+                    pose.rotation[i][j] = flange.rotation[i][j];
+                }
+            }
+
+            double seed[MaxAxes] = {};
+            for(std::size_t i = 0; i < axes_.size(); ++i) {
+                seed[i] = queued_finish(i);
+            }
+            double joints[MaxAxes] = {};
+            const rt::ErrorCode inverted =
+                pose_kinematics_->inverse(pose, seed, pose_max_joint_step_, joints);
+            if(inverted != rt::ErrorCode::ok) {
+                return inverted;
+            }
+            if(pose_kinematics_->singularity_margin(joints) < pose_min_margin_) {
+                return rt::ErrorCode::precondition_failed;
+            }
+            for(std::size_t i = 0; i < axes_.size(); ++i) {
+                command.target.value[i] = joints[i];
+            }
+            command.coord_system = CoordSystem::acs;
+            return rt::ErrorCode::ok;
+        }
+
         // Kinematics-configured pipeline (approved kinematics matrix): the
         // Cartesian point goes through the workpiece frame and tool offset,
         // then the inverse solution — seeded with the segment start joints —
@@ -814,27 +925,27 @@ private:
         if(command.relative) {
             geom::Vec3 direction = cartesian_part(command.target);
             if(pcs) {
-                direction = geom::frame_rotate(workpiece_frame_, direction);
+                direction = geom::transform_rotate(workpiece_frame_, direction);
             }
             store_cartesian_part(command.target, direction);
             if(circular) {
                 geom::Vec3 aux = cartesian_part(command.aux);
                 if(pcs) {
-                    aux = geom::frame_rotate(workpiece_frame_, aux);
+                    aux = geom::transform_rotate(workpiece_frame_, aux);
                 }
                 store_cartesian_part(command.aux, aux);
             }
         } else {
             geom::Vec3 point = cartesian_part(command.target);
             if(pcs) {
-                point = geom::frame_to_base(workpiece_frame_, point);
+                point = geom::transform_point(workpiece_frame_, point);
             }
             store_cartesian_part(command.target,
                                  point - tool_offset_);
             if(circular) {
                 geom::Vec3 aux = cartesian_part(command.aux);
                 if(pcs) {
-                    aux = geom::frame_to_base(workpiece_frame_, aux);
+                    aux = geom::transform_point(workpiece_frame_, aux);
                 }
                 store_cartesian_part(command.aux, aux - tool_offset_);
             }
@@ -855,7 +966,7 @@ private:
         geom::Vec3 point = cartesian_part(position);
         if(relative) {
             if(pcs) {
-                point = geom::frame_rotate(workpiece_frame_, point);
+                point = geom::transform_rotate(workpiece_frame_, point);
             }
             geom::Vec3 start{};
             const rt::ErrorCode forwarded =
@@ -866,7 +977,7 @@ private:
             point = start + point;
         } else {
             if(pcs) {
-                point = geom::frame_to_base(workpiece_frame_, point);
+                point = geom::transform_point(workpiece_frame_, point);
             }
             point = point - tool_offset_;
         }
@@ -1959,8 +2070,12 @@ private:
 
     int domain_id_ = 0;
     GroupStatus status_ = GroupStatus::disabled;
-    geom::RigidFrame workpiece_frame_{};
+    geom::RigidTransform workpiece_frame_{};
     geom::Vec3 tool_offset_{};
+    geom::RigidTransform pose_tool_inverse_{};
+    const kin::PoseKinematics *pose_kinematics_ = nullptr;
+    double pose_min_margin_ = 0.0;
+    double pose_max_joint_step_ = 0.0;
     const kin::Kinematics *kinematics_ = nullptr;
     double kinematics_min_margin_ = 0.0;
     double cartesian_velocity_limit_ = 0.0;

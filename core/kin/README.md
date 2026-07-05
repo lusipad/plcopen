@@ -24,9 +24,18 @@ pre-integration form — full 6-DOF poses do not fit the v1 ABI (2/3
 translational coordinates), so `SphericalWrist6R` carries its own Pose6
 interface under the same contract discipline (eight-branch enumeration with
 seed-closest selection, a max-joint-step no-branch-flip gate, wrist/elbow/
-shoulder singularity margins, allocation- and exception-free). Group wiring
-arrives with the orientation (RPY) batch. Verified by 20k-case round-trip
-fuzz, perturbed-seed recovery, and branch-gate rejections.
+shoulder singularity margins, allocation- and exception-free). Verified by
+20k-case round-trip fuzz, perturbed-seed recovery, and branch-gate
+rejections.
+
+Orientation batch (KB-042, approved matrix
+`doc/compliance/orientation-semantics.md`): `pose.h` carries the `Pose6`
+type and the `PoseKinematics` plugin contract (parallel to the v1
+translational ABI, mutually exclusive on a group); `SphericalWrist6R`
+implements it, and the L5 group wiring
+(`AxisGroup::set_pose_kinematics`) lands RPY pose targets through the
+workpiece frame and the flange-to-TCP tool transform onto 6 ACS joint
+targets at submit. In-segment interpolation stays joint-space (declared).
 
 BS3.6: `AxisGroup::set_cartesian_velocity_limit` — conservative dual-space
 limiting: at submit the joint-space chord is sampled through the forward

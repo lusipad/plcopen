@@ -91,7 +91,7 @@ BS1 不做：CST/CSV 驱动侧模式语义（属 B5）、扭矩前馈数值（�
 ## BS3：B2 kinematics 插件接口——**全部完成（2026-07-05，KB-037/KB-041）**
 
 > 状态：矩阵已批准；ABI + harness + 龙门 + SCARA + 球腕 6R（预集成 Pose6 形态）+
-> 双空间限速全部落库。6R 组接线与姿态支持随 RPY 批次（v2）。
+> 双空间限速全部落库。6R 组接线与姿态支持已随 RPY 批次收口（KB-042）。
 > 证据见 [kinematics-plugin-semantics.md](../compliance/kinematics-plugin-semantics.md) 实现记录。
 
 

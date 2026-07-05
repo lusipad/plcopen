@@ -66,6 +66,13 @@
 
 ---
 
-*草案创建：2026-07-05；批准：2026-07-05（v1 范围）。第一片
-（PoseKinematics 接口 + 刚体变换原语）已落库；组接线收口时验收落
-`plcopen_core_pose_tests` + 既有回放护栏。*
+*草案创建：2026-07-05；批准：2026-07-05（v1 范围）。*
+
+## 实现记录（2026-07-05，KB-042）
+
+第一片（`kin::PoseKinematics` 接口 + `geom::RigidTransform` 刚体原语）与
+组接线均已落库：`AxisGroup::set_pose_kinematics / set_workpiece_frame_rpy /
+set_tool_transform_rpy` + `apply_coordinate_frame` 位姿分支（submit 时
+一次解算，周期路径零新增）。验收 `plcopen_core_pose_tests` 全绿
+（管线等价 oracle 1e-9 / 端到端位姿 1e-8 / 拒绝矩阵全表），既有回放
+语料逐位不变（含工件帧 RigidFrame→RigidTransform 换型）。

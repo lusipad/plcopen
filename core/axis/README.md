@@ -9,6 +9,14 @@ Responsibilities:
 - Coordinate stack v1 (KB-036, approved coordinate matrix): MCS/PCS targets convert to ACS
   at submit through the group workpiece frame (translation + rotation about Z) and tool
   offset; ACS commands never see the frames; frames only change at standby.
+- Pose pipeline (KB-042, approved orientation matrix): a 6-joint group with
+  `set_pose_kinematics` accepts [x,y,z,roll,pitch,yaw] MCS/PCS targets on
+  `submit_linear` (absolute only); the full rigid workpiece frame
+  (`set_workpiece_frame_rpy`, the Z-only setter is its special case) and the
+  flange-to-TCP tool transform (`set_tool_transform_rpy`) compose on the pose,
+  the analytic inverse (seeded, KB-041 gates) lands ACS joint targets at
+  submit; relative/circular/blending report explicit unsupported, ACS passes
+  through.
 - Group path commands: linear (shared scalar path referenced to the longest member travel)
   and circular v1 (BORDER three-point arcs, arc-length path parameter in the first-two-axes
   plane, higher axes follow linearly; KB-030, approved circular matrix).
