@@ -6,6 +6,9 @@ Responsibilities:
 
 - Own PLCopen-visible axis and group lifecycle state.
 - Accept already-validated motion commands and map them onto R1/R2 primitives.
+- Group path commands: linear (shared scalar path referenced to the longest member travel)
+  and circular v1 (BORDER three-point arcs, arc-length path parameter in the first-two-axes
+  plane, higher axes follow linearly; KB-030, approved circular matrix).
 - Preserve one writer for each state object; group commands write member synchronized positions.
 - Own slave-side synchronization (gear/cam/combine): the slave axis samples master snapshots
   read-only in its own `cycle()` and drives itself through `set_synchronized_position`.

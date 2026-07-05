@@ -759,4 +759,63 @@ public:
     }
 };
 
+// MC_MoveCircularAbsolute (approved circular matrix, A3 v1): three-point
+// BORDER arcs in ACS, 2-8 axes, Aborting/Buffered. CENTER/RADIUS modes and
+// blending buffer modes report explicit errors instead of approximations.
+class FbMoveCircularAbsolute : public GroupExecuteFb
+{
+public:
+    axis::CircMode circ_mode = axis::CircMode::border;
+    axis::GroupPosition aux_point{};
+    axis::GroupPosition end_point{};
+    axis::CircPathChoice path_choice = axis::CircPathChoice::counter_clockwise;
+    double velocity = 1.0;
+    double acceleration = 1.0;
+    double deceleration = 1.0;
+    double jerk = 1.0;
+    axis::BufferMode buffer_mode = axis::BufferMode::aborting;
+
+    void call()
+    {
+        if(rising_edge()) {
+            submit(false);
+        }
+        observe_group();
+    }
+
+protected:
+    void submit(bool relative)
+    {
+        if(group_ref == nullptr) {
+            accept(rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument));
+            return;
+        }
+        axis::GroupCommand command{};
+        command.path_kind = axis::GroupPathKind::circular;
+        command.circ_mode = circ_mode;
+        command.aux = aux_point;
+        command.target = end_point;
+        command.path_choice = path_choice;
+        command.relative = relative;
+        command.velocity = velocity;
+        command.acceleration = acceleration;
+        command.deceleration = deceleration;
+        command.jerk = jerk;
+        command.buffer_mode = buffer_mode;
+        accept(group_ref->submit_circular(command));
+    }
+};
+
+class FbMoveCircularRelative : public FbMoveCircularAbsolute
+{
+public:
+    void call()
+    {
+        if(rising_edge()) {
+            submit(true);
+        }
+        observe_group();
+    }
+};
+
 } // namespace plcopen::core::fb

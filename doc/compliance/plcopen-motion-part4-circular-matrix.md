@@ -1,8 +1,9 @@
 # PLCopen Motion Control Part 4 圆弧运动矩阵
 
-> 状态：**已批准（2026-07-05，维护者）**。本文件是 Phase A3
+> 状态：**已批准（2026-07-05，维护者）；v1 已实现（KB-030）**。本文件是 Phase A3
 > （`MC_MoveCircularAbsolute` / `MC_MoveCircularRelative`）的验收规格
-> （normative），实现与验收测试以本矩阵为准。
+> （normative），实现与验收测试以本矩阵为准。验收证据：
+> `plcopen_core_a3_circular_tests` + 回放场景 `core-group-circular`。
 
 ## 规范来源
 
@@ -51,11 +52,11 @@
 | 端点 | 终点精确到达（与 linear 同容差口径） |
 | 组/轴状态、命令生命周期、错误传播 | 全部沿用 linear 矩阵已验收合同 |
 
-## 批准后的实现路径（信息性，非承诺）
+## 实现记录（2026-07-05）
 
-L2 `make_arc`/弧长表已存在（R2 交付）；主要工作在 `AxisGroup` 路径命令从
-"线性插值"泛化为"路径段采样"（L2 消费）+ FB 门面 + 上表全部验收测试 +
-回放黄金场景。预估 T2 风险级，实现 PR 按小步拆分。
+`AxisGroup::submit_circular` + `FbMoveCircularAbsolute/Relative`（`core/axis/group.h`、
+`core/fb/motion.h`）。组 cycle 路径按 path kind 采样：circular 以平面弧长为路径参数，
+linear 分支保持不变（既有回放语料字节级一致）。
 
 ---
 

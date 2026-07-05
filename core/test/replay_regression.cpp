@@ -140,9 +140,59 @@ void run_group_linear(Recording &recording)
     }
 }
 
+void run_group_circular(Recording &recording)
+{
+    // A3: BORDER quarter arc (radius 1) after a linear approach onto the
+    // circle; the arc-length path parameter drives both plane axes.
+    recording.id = "core-group-circular";
+    axis::AxisModel x;
+    axis::AxisModel y;
+    x.set_power(true);
+    y.set_power(true);
+    axis::AxisGroup group;
+    group.add_axis(x);
+    group.add_axis(y);
+    group.enable();
+
+    axis::GroupCommand approach{};
+    approach.target.size = 2;
+    approach.target.value[0] = 1.0;
+    approach.target.value[1] = 0.0;
+    approach.velocity = 0.25;
+    group.submit_linear(approach);
+    std::int64_t tick = 0;
+    for(; tick < 200; ++tick) {
+        group.cycle();
+        recording.emit(tick, 0, x.snapshot());
+        recording.emit(tick, 1, y.snapshot());
+        if(group.status() == axis::GroupStatus::standby) {
+            break;
+        }
+    }
+
+    axis::GroupCommand arc{};
+    arc.target.size = 2;
+    arc.aux.size = 2;
+    arc.aux.value[0] = 0.70710678118654752;
+    arc.aux.value[1] = 0.70710678118654752;
+    arc.target.value[0] = 0.0;
+    arc.target.value[1] = 1.0;
+    arc.velocity = 0.1;
+    arc.path_choice = axis::CircPathChoice::counter_clockwise;
+    group.submit_circular(arc);
+    for(; tick < 600; ++tick) {
+        group.cycle();
+        recording.emit(tick, 0, x.snapshot());
+        recording.emit(tick, 1, y.snapshot());
+        if(group.status() == axis::GroupStatus::standby) {
+            break;
+        }
+    }
+}
+
 using ScenarioRunner = void (*)(Recording &);
 constexpr ScenarioRunner kScenarios[] = {run_single_axis_move, run_velocity_stop,
-                                         run_group_linear};
+                                         run_group_linear, run_group_circular};
 
 int write_recording(const Recording &recording, const std::string &directory)
 {

@@ -5,6 +5,7 @@
 #include <cstdint>
 
 #include "axis/state.h"
+#include "geom/geometry.h"
 #include "otg/profile1d.h"
 #include "otg/time_optimal.h"
 #include "rt/cycle.h"
@@ -30,19 +31,54 @@ struct GroupPosition
     std::size_t size = 0;
 };
 
+// MC_CIRC_MODE: v1 supports only the three-point BORDER construction; CENTER
+// and RADIUS report rt::ErrorCode::unsupported (approved circular matrix).
+enum class CircMode
+{
+    border,
+    center,
+    radius,
+};
+
+// MC_CIRC_PATHCHOICE. In BORDER mode the three points already determine the
+// arc direction; a conflicting input is an explicit error, never a silent
+// reinterpretation (approved circular matrix).
+enum class CircPathChoice
+{
+    clockwise,
+    counter_clockwise,
+};
+
+enum class GroupPathKind
+{
+    linear,
+    circular,
+};
+
 struct GroupCommand
 {
     GroupPosition target{};
     bool relative = false;
-    // Shared-path dynamics: the scalar path parameter is planned as one
-    // jerk-limited 1D profile; velocity/limits apply to the member with the
-    // longest travel (the fastest-moving member).
+    // Shared-path dynamics. Linear: the scalar path parameter is planned as
+    // one jerk-limited 1D profile referenced to the member with the longest
+    // travel (the fastest-moving member). Circular: the path parameter is the
+    // arc length in the plane of the first two axes, so velocity/limits apply
+    // to the in-plane path speed (approved circular matrix).
     double velocity = 1.0;
     double acceleration = 1.0;
     double deceleration = 1.0;
     double jerk = 1.0;
     BufferMode buffer_mode = BufferMode::aborting;
     std::uint32_t command_id = 0;
+
+    // Circular-only inputs (ignored by submit_linear).
+    GroupPathKind path_kind = GroupPathKind::linear;
+    CircMode circ_mode = CircMode::border;
+    CircPathChoice path_choice = CircPathChoice::counter_clockwise;
+    GroupPosition aux{};
+    // Internal: the validated arc geometry, resolved by submit_circular from
+    // the command's deterministic start point. Not a user input.
+    geom::ArcSegment arc{};
 };
 
 class AxisGroup
@@ -222,6 +258,11 @@ public:
             command.command_id = next_command_id_++;
         }
 
+        // submit_linear always drives a linear path regardless of any stray
+        // circular fields on the command struct.
+        command.path_kind = GroupPathKind::linear;
+        command.arc = geom::ArcSegment{};
+
         if(command.buffer_mode == BufferMode::aborting) {
             abort_motion();
         }
@@ -235,6 +276,107 @@ public:
             return rt::Result<std::uint32_t>::success(command.command_id);
         }
 
+        const rt::ErrorCode queued = queue_.push_back(command);
+        if(queued != rt::ErrorCode::ok) {
+            return rt::Result<std::uint32_t>::failure(queued);
+        }
+        return rt::Result<std::uint32_t>::success(command.command_id);
+    }
+
+    // MC_MoveCircularAbsolute/Relative (approved circular matrix, A3 v1):
+    // three-point BORDER arcs in the plane of the first two axes, remaining
+    // axes follow the path parameter linearly. Degenerate geometry is an
+    // explicit error before any motion state is touched.
+    rt::Result<std::uint32_t> submit_circular(GroupCommand command)
+    {
+        if((status_ != GroupStatus::standby && status_ != GroupStatus::moving) ||
+           axes_.size() < 2 || command.target.size != axes_.size() ||
+           command.aux.size != axes_.size() || command.velocity <= 0.0 ||
+           !std::isfinite(command.velocity) || command.acceleration <= 0.0 ||
+           !std::isfinite(command.acceleration) || command.deceleration <= 0.0 ||
+           !std::isfinite(command.deceleration) || command.jerk <= 0.0 ||
+           !std::isfinite(command.jerk) || !finite(command.target) || !finite(command.aux)) {
+            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
+        }
+        for(std::size_t i = 0; i < axes_.size(); ++i) {
+            if(!axes_[i]->powered() || axes_[i]->status() == AxisStatus::errorstop) {
+                return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
+            }
+        }
+        if(command.circ_mode != CircMode::border) {
+            // CENTER/RADIUS are declared unsupported in v1, not approximated.
+            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported);
+        }
+        if(command.buffer_mode != BufferMode::aborting &&
+           command.buffer_mode != BufferMode::buffered) {
+            // Geometric blending onto arcs is Phase A4 scope; reject explicitly.
+            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported);
+        }
+
+        // Deterministic start point: the live commanded position for an
+        // aborting takeover, otherwise the committed finish of the queue tail.
+        // Geometry is validated before any abort so a rejected command never
+        // destroys the active motion.
+        const bool aborting = command.buffer_mode == BufferMode::aborting;
+        std::array<double, MaxAxes> start_point{};
+        for(std::size_t i = 0; i < axes_.size(); ++i) {
+            start_point[i] = aborting ? axes_[i]->snapshot().command_position
+                                      : queued_finish(i);
+        }
+        if(command.relative) {
+            for(std::size_t i = 0; i < axes_.size(); ++i) {
+                command.target.value[i] += start_point[i];
+                command.aux.value[i] += start_point[i];
+            }
+            command.relative = false;
+        }
+
+        const geom::Vec3 plane_start{start_point[0], start_point[1], 0.0};
+        const geom::Vec3 plane_aux{command.aux.value[0], command.aux.value[1], 0.0};
+        const geom::Vec3 plane_finish{command.target.value[0], command.target.value[1], 0.0};
+        // Coincident points (zero arc length / zero radius) and the closed
+        // start==finish circle are rejected in v1 (full circles are v2 scope).
+        constexpr double PointTolerance = 1e-12;
+        if(geom::norm(plane_aux - plane_start) <= PointTolerance ||
+           geom::norm(plane_finish - plane_aux) <= PointTolerance ||
+           geom::norm(plane_finish - plane_start) <= PointTolerance) {
+            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
+        }
+        const rt::Result<geom::ArcSegment> arc =
+            geom::make_arc(plane_start, plane_aux, plane_finish);
+        if(!arc) {
+            // Collinear three points do not degrade to a line (approved matrix).
+            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
+        }
+        // Nearly collinear pathological arcs: curvature radius beyond
+        // chord x 1e6 is rejected instead of sampled (T8 numeric boundary).
+        if(arc.value().radius > geom::norm(plane_finish - plane_start) * 1e6) {
+            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
+        }
+        // BORDER determines the direction; a conflicting PathChoice input is
+        // an explicit contract violation.
+        const CircPathChoice derived = arc.value().sweep >= 0.0
+                                           ? CircPathChoice::counter_clockwise
+                                           : CircPathChoice::clockwise;
+        if(derived != command.path_choice) {
+            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
+        }
+        command.path_kind = GroupPathKind::circular;
+        command.arc = arc.value();
+
+        if(command.command_id == 0) {
+            command.command_id = next_command_id_++;
+        }
+        if(aborting) {
+            abort_motion();
+        }
+        if(aborting || !active_) {
+            const rt::ErrorCode started = start(command);
+            if(started != rt::ErrorCode::ok) {
+                return rt::Result<std::uint32_t>::failure(started);
+            }
+            return rt::Result<std::uint32_t>::success(command.command_id);
+        }
         const rt::ErrorCode queued = queue_.push_back(command);
         if(queued != rt::ErrorCode::ok) {
             return rt::Result<std::uint32_t>::failure(queued);
@@ -270,10 +412,23 @@ public:
             ratio = state.position / active_path_length_;
             ratio = ratio < 0.0 ? 0.0 : (ratio > 1.0 ? 1.0 : ratio);
         }
-        for(std::size_t i = 0; i < axes_.size(); ++i) {
-            const double position =
-                active_start_[i] + (active_finish_[i] - active_start_[i]) * ratio;
-            axes_[i]->set_synchronized_position(position);
+        if(active_kind_ == GroupPathKind::circular) {
+            // Arc-length parameterized sampling: the first two axes trace the
+            // arc, remaining axes follow the path parameter linearly.
+            const geom::Vec3 point = geom::sample(active_arc_, ratio * active_path_length_);
+            axes_[0]->set_synchronized_position(point.x);
+            axes_[1]->set_synchronized_position(point.y);
+            for(std::size_t i = 2; i < axes_.size(); ++i) {
+                const double position =
+                    active_start_[i] + (active_finish_[i] - active_start_[i]) * ratio;
+                axes_[i]->set_synchronized_position(position);
+            }
+        } else {
+            for(std::size_t i = 0; i < axes_.size(); ++i) {
+                const double position =
+                    active_start_[i] + (active_finish_[i] - active_start_[i]) * ratio;
+                axes_[i]->set_synchronized_position(position);
+            }
         }
 
         if(active_tick_ >= active_duration_) {
@@ -358,8 +513,15 @@ private:
         }
 
         // Shared scalar path: one jerk-limited 1D profile drives the path
-        // parameter, so members are collinear by construction and the group
-        // honors the full command dynamics (KB-027).
+        // parameter, so members stay on the commanded geometry by construction
+        // and the group honors the full command dynamics (KB-027). Linear
+        // paths reference the longest member travel; circular paths use the
+        // in-plane arc length (approved circular matrix).
+        active_kind_ = command.path_kind;
+        active_arc_ = command.arc;
+        if(command.path_kind == GroupPathKind::circular) {
+            longest = command.arc.length;
+        }
         active_path_length_ = longest;
         if(longest > 0.0) {
             const rt::Result<otg::Profile1D> profile = otg::plan_time_optimal(
@@ -420,6 +582,8 @@ private:
     GroupCommand active_command_{};
     std::array<double, MaxAxes> active_start_{};
     std::array<double, MaxAxes> active_finish_{};
+    GroupPathKind active_kind_ = GroupPathKind::linear;
+    geom::ArcSegment active_arc_{};
     otg::Profile1D active_profile_{};
     double active_path_length_ = 0.0;
     std::int64_t active_tick_ = 0;

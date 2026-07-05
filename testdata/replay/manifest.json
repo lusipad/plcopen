@@ -7,55 +7,94 @@
       "id": "format-smoke-single-axis",
       "path": "format-smoke-single-axis.jsonl",
       "source": "manual format fixture",
-      "coverage": ["schema", "single-axis setpoint fields"]
+      "coverage": [
+        "schema",
+        "single-axis setpoint fields"
+      ]
     },
     {
       "id": "format-smoke-two-axis",
       "path": "format-smoke-two-axis.jsonl",
       "source": "manual format fixture",
-      "coverage": ["schema", "multi-axis ordering"]
+      "coverage": [
+        "schema",
+        "multi-axis ordering"
+      ]
     },
     {
       "id": "format-smoke-stop",
       "path": "format-smoke-stop.jsonl",
       "source": "manual format fixture",
-      "coverage": ["schema", "deceleration-to-zero shape"]
+      "coverage": [
+        "schema",
+        "deceleration-to-zero shape"
+      ]
     },
     {
       "id": "core-single-axis-move",
       "path": "core-single-axis-move.jsonl",
       "source": "plcopen_core_replay_regression --record (baseline quintic planner)",
-      "coverage": ["rewrite-core", "single-axis OTG profile setpoints", "superseded by core-single-axis-move-v2 (KB-026)"]
+      "coverage": [
+        "rewrite-core",
+        "single-axis OTG profile setpoints",
+        "superseded by core-single-axis-move-v2 (KB-026)"
+      ]
     },
     {
       "id": "core-single-axis-move-v2",
       "path": "core-single-axis-move-v2.jsonl",
       "source": "plcopen_core_replay_regression --record",
-      "coverage": ["rewrite-core", "single-axis time-optimal OTG profile setpoints (KB-026)"]
+      "coverage": [
+        "rewrite-core",
+        "single-axis time-optimal OTG profile setpoints (KB-026)"
+      ]
     },
     {
       "id": "core-velocity-stop",
       "path": "core-velocity-stop.jsonl",
       "source": "plcopen_core_replay_regression --record (immediate stop)",
-      "coverage": ["rewrite-core", "velocity hold and stop takeover", "superseded by core-velocity-stop-v2 (KB-028)"]
+      "coverage": [
+        "rewrite-core",
+        "velocity hold and stop takeover",
+        "superseded by core-velocity-stop-v2 (KB-028)"
+      ]
     },
     {
       "id": "core-velocity-stop-v2",
       "path": "core-velocity-stop-v2.jsonl",
       "source": "plcopen_core_replay_regression --record",
-      "coverage": ["rewrite-core", "velocity hold and controlled stop deceleration (KB-028)"]
+      "coverage": [
+        "rewrite-core",
+        "velocity hold and controlled stop deceleration (KB-028)"
+      ]
     },
     {
       "id": "core-group-linear",
       "path": "core-group-linear.jsonl",
       "source": "plcopen_core_replay_regression --record (constant-velocity path)",
-      "coverage": ["rewrite-core", "two-axis shared-path linear move", "superseded by core-group-linear-v2 (KB-027)"]
+      "coverage": [
+        "rewrite-core",
+        "two-axis shared-path linear move",
+        "superseded by core-group-linear-v2 (KB-027)"
+      ]
     },
     {
       "id": "core-group-linear-v2",
       "path": "core-group-linear-v2.jsonl",
       "source": "plcopen_core_replay_regression --record",
-      "coverage": ["rewrite-core", "two-axis shared-path linear move with jerk-limited path dynamics (KB-027)"]
+      "coverage": [
+        "rewrite-core",
+        "two-axis shared-path linear move with jerk-limited path dynamics (KB-027)"
+      ]
+    },
+    {
+      "id": "core-group-circular",
+      "path": "core-group-circular.jsonl",
+      "source": "plcopen_core_replay_regression --record",
+      "coverage": [
+        "rewrite-core",
+        "two-axis BORDER quarter arc after linear approach (A3, KB-030)"
+      ]
     }
   ]
 }

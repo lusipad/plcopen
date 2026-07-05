@@ -4,7 +4,9 @@
 
 The first migration keeps the code small: shared Execute/Enable lifecycle latches and basic IEC
 blocks live here, while the first single-axis and group motion facades bind to the `core/axis`
-command contract through `motion.h`.
+command contract through `motion.h`. `motion.h` also carries the A3 circular facades
+(`FbMoveCircularAbsolute/Relative`, BORDER-only, KB-030): CENTER/RADIUS circ modes and blending
+buffer modes surface explicit errors per the approved circular matrix.
 
 `sync.h` carries the multi-axis synchronization facades (`FbGearIn`, `FbGearInPos`, `FbGearOut`,
 `FbCamTableSelect`, `FbCamIn`, `FbCamOut`, `FbPhasingAbsolute/Relative`, `FbCombineAxes`).
