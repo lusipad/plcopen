@@ -351,11 +351,75 @@ void run_group_window_arc(Recording &recording)
     }
 }
 
+void run_stream_session(Recording &recording)
+{
+    // B9 (KB-035): axis-level stream session — ramp target stream, dropout
+    // (decaying extrapolation into a controlled stop), resumed tracking, and
+    // a standard aborting MC_Stop takeover ending the session.
+    recording.id = "core-stream-session";
+    axis::AxisModel axis;
+    axis.set_power(true);
+
+    stream::StreamFilterConfig config{};
+    config.limits = {0.05, 0.004, 0.004, 0.004};
+    config.timeout_cycles = 20;
+    config.extrapolation_cycles = 30;
+    axis.stream_engage(config);
+
+    std::int64_t tick = 0;
+    // Tracking phase: a 100 Hz ramp stream at 0.02 units/cycle.
+    for(; tick < 120; ++tick) {
+        if(tick % 10 == 0) {
+            stream::StreamTarget target{};
+            target.position = 0.02 * static_cast<double>(tick + 1);
+            target.velocity = 0.02;
+            target.has_velocity = true;
+            target.timestamp_cycles = tick + 1;
+            axis.stream_push(target);
+        }
+        axis.cycle();
+        recording.emit(tick, 0, axis.snapshot());
+    }
+    // Dropout: the stream stalls; extrapolation decays into a stop.
+    for(; tick < 400; ++tick) {
+        axis.cycle();
+        recording.emit(tick, 0, axis.snapshot());
+        if(axis.stream_filter().mode() == stream::StreamFilter1D::Mode::stopped) {
+            break;
+        }
+    }
+    // Recovery: a fresh target resumes tracking.
+    const double resume = axis.snapshot().command_position + 0.5;
+    for(std::int64_t end = tick + 80; tick < end; ++tick) {
+        if(tick % 10 == 0) {
+            stream::StreamTarget target{};
+            target.position = resume;
+            target.timestamp_cycles = axis.stream_filter().now_cycles() + 1;
+            axis.stream_push(target);
+        }
+        axis.cycle();
+        recording.emit(tick, 0, axis.snapshot());
+    }
+    // Standard aborting takeover ends the session with a controlled stop.
+    axis::AxisCommand stop{};
+    stop.kind = axis::CommandKind::stop;
+    stop.deceleration = 0.004;
+    stop.jerk = 0.004;
+    axis.submit(stop);
+    for(std::int64_t end = tick + 200; tick < end; ++tick) {
+        axis.cycle();
+        recording.emit(tick, 0, axis.snapshot());
+        if(axis.status() == axis::AxisStatus::standstill) {
+            break;
+        }
+    }
+}
+
 using ScenarioRunner = void (*)(Recording &);
 constexpr ScenarioRunner kScenarios[] = {run_single_axis_move, run_velocity_stop,
                                          run_group_linear, run_group_circular,
                                          run_group_blend, run_group_window,
-                                         run_group_window_arc};
+                                         run_group_window_arc, run_stream_session};
 
 int write_recording(const Recording &recording, const std::string &directory)
 {

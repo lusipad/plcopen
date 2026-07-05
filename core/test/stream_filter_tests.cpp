@@ -8,6 +8,7 @@
 #include <cstdio>
 
 #include "stream/filter.h"
+#include "stream/joint_group.h"
 
 namespace
 {
@@ -338,6 +339,74 @@ int check_dropout_and_recovery()
     return 0;
 }
 
+// Multi-joint aggregation (BS1.7, decision #10): shared configuration,
+// strictly independent per-joint filters, explicit bounds.
+int check_joint_group()
+{
+    stream::JointStreamGroup group;
+    if(group.configure(0, test_config(50, 40)) == rt::ErrorCode::ok ||
+       group.configure(stream::JointStreamGroup::MaxJoints + 1, test_config(50, 40)) ==
+           rt::ErrorCode::ok) {
+        return fail("joint group count validation");
+    }
+    if(group.configure(4, test_config(50, 40)) != rt::ErrorCode::ok ||
+       group.joint_count() != 4) {
+        return fail("joint group configure");
+    }
+    for(std::size_t j = 0; j < 4; ++j) {
+        if(group.reset(j, {static_cast<double>(j), 0.0, 0.0}) != rt::ErrorCode::ok) {
+            return fail("joint group reset");
+        }
+    }
+    if(group.reset(4, {0.0, 0.0, 0.0}) == rt::ErrorCode::ok ||
+       group.push_target(4, position_target(0.0, 1)) == rt::ErrorCode::ok) {
+        return fail("joint group bounds");
+    }
+
+    // Independent per-joint ramps at different speeds; each joint must ride
+    // its own line within the acceptance lag.
+    EnvelopeGuard guards[4];
+    std::int64_t now = 0;
+    for(int i = 0; i < 900; ++i) {
+        if(now % 10 == 0) {
+            for(std::size_t j = 0; j < 4; ++j) {
+                const double v = 0.05 * static_cast<double>(j + 1);
+                stream::StreamTarget target{};
+                target.position =
+                    static_cast<double>(j) + v * static_cast<double>(now + 1);
+                target.velocity = v;
+                target.has_velocity = true;
+                target.timestamp_cycles = now + 1;
+                if(group.push_target(j, target) != rt::ErrorCode::ok) {
+                    return fail("joint group push");
+                }
+            }
+        }
+        group.cycle();
+        ++now;
+        for(std::size_t j = 0; j < 4; ++j) {
+            if(!guards[j].admit(group.state(j))) {
+                return fail("joint group envelope");
+            }
+        }
+        if(now > 600) {
+            for(std::size_t j = 0; j < 4; ++j) {
+                const double v = 0.05 * static_cast<double>(j + 1);
+                const double line = static_cast<double>(j) + v * static_cast<double>(now);
+                if(std::fabs(group.state(j).position - line) > 2.0 * v + 1e-9) {
+                    return fail("joint group tracking lag");
+                }
+            }
+        }
+    }
+    for(std::size_t j = 0; j < 4; ++j) {
+        if(group.joint(j).dropout_count() != 0 || group.joint(j).filter_faults() != 0) {
+            return fail("joint group counters");
+        }
+    }
+    return 0;
+}
+
 } // namespace
 
 int main()
@@ -346,7 +415,8 @@ int main()
        check_ramp_phase_lag(true, "ramp lag explicit velocity") != 0 ||
        check_ramp_phase_lag(false, "ramp lag differencing") != 0 ||
        check_timestamp_rejection() != 0 || check_position_envelope() != 0 ||
-       check_overspeed_target_velocity() != 0 || check_dropout_and_recovery() != 0) {
+       check_overspeed_target_velocity() != 0 || check_dropout_and_recovery() != 0 ||
+       check_joint_group() != 0) {
         return 1;
     }
     std::printf("PASS stream filter tests\n");

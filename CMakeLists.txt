@@ -126,6 +126,28 @@ assert axis.status() == pyplcopen.AxisStatus.STANDSTILL
 axis.home_direct(0.25)
 assert abs(axis.home_position() - 0.25) < 1e-12
 assert abs(axis.actual_position() - 0.25) < 1e-12
+
+# B9 stream session demo (KB-035): a 100 Hz sine target stream upsampled to
+# the cycle rate; the stream stalls at the end and the filter comes to a
+# jerk-limited controlled stop; a standard exit follows at rest.
+import math
+axis.home_direct(0.0)
+axis.stream_engage(0.5, 0.05, 0.01, timeout_cycles=30, extrapolation_cycles=40)
+assert axis.status() == pyplcopen.AxisStatus.SYNCHRONIZED_MOTION
+target = 0.0
+for k in range(200):
+    target = 0.3 * math.sin(0.02 * k)
+    axis.stream_push(target, axis.stream_now() + 1)
+    axis.cycle(10)
+    assert abs(axis.command_velocity()) <= 0.5 + 1e-9
+assert axis.stream_mode() == "tracking"
+assert abs(axis.command_position() - target) < 0.01
+axis.cycle(400)
+assert axis.stream_mode() == "stopped"
+assert axis.stream_dropouts() == 1
+assert abs(axis.command_velocity()) < 1e-9
+axis.stream_disengage()
+assert axis.status() == pyplcopen.AxisStatus.STANDSTILL
 ]=])
     add_test(NAME pyplcopen_smoke COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/pyplcopen_smoke_$<CONFIG>.py)
   endif()

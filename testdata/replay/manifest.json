@@ -132,6 +132,16 @@
         "rewrite-core",
         "line-arc-line tangent-continuous look-ahead window (A5 v2, KB-033)"
       ]
+    },
+    {
+      "id": "core-stream-session",
+      "path": "core-stream-session.jsonl",
+      "source": "plcopen_core_replay_regression --record",
+      "coverage": [
+        "B9 stream session (KB-035)",
+        "ramp tracking, dropout extrapolation into controlled stop",
+        "resumed tracking, aborting MC_Stop takeover"
+      ]
     }
   ]
 }

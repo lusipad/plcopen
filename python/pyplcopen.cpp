@@ -1,9 +1,11 @@
 #include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
 
 #include "axis/state.h"
 
 #include <cmath>
 #include <cstdint>
+#include <optional>
 #include <stdexcept>
 #include <string>
 
@@ -145,6 +147,81 @@ public:
         return axis_.status();
     }
 
+    // B9 stream session (KB-035): a low-rate joint target stream upsampled
+    // to the cycle rate through the online OTG filter. Producers stamp
+    // targets in the session cycle domain (stream_now()).
+    void stream_engage(double velocity_limit,
+                       double acceleration_limit,
+                       double jerk_limit,
+                       std::int64_t timeout_cycles,
+                       std::int64_t extrapolation_cycles)
+    {
+        if(!axis_.powered()) {
+            power_on();
+        }
+        plcopen::core::stream::StreamFilterConfig config{};
+        config.limits = {velocity_limit, acceleration_limit, acceleration_limit, jerk_limit};
+        config.timeout_cycles = timeout_cycles;
+        config.extrapolation_cycles = extrapolation_cycles;
+        const plcopen::core::rt::Result<std::uint32_t> session = axis_.stream_engage(config);
+        if(!session) {
+            throw std::runtime_error(make_error_message("stream_engage", session.error()));
+        }
+    }
+
+    void stream_push(double position,
+                     std::int64_t timestamp_cycles,
+                     std::optional<double> velocity)
+    {
+        plcopen::core::stream::StreamTarget target{};
+        target.position = position;
+        target.timestamp_cycles = timestamp_cycles;
+        if(velocity.has_value()) {
+            target.velocity = *velocity;
+            target.has_velocity = true;
+        }
+        throw_on_error("stream_push", axis_.stream_push(target));
+    }
+
+    void stream_disengage()
+    {
+        throw_on_error("stream_disengage", axis_.stream_disengage());
+    }
+
+    std::int64_t stream_now() const
+    {
+        return axis_.stream_filter().now_cycles();
+    }
+
+    std::string stream_mode() const
+    {
+        switch(axis_.stream_filter().mode()) {
+        case plcopen::core::stream::StreamFilter1D::Mode::idle:
+            return "idle";
+        case plcopen::core::stream::StreamFilter1D::Mode::tracking:
+            return "tracking";
+        case plcopen::core::stream::StreamFilter1D::Mode::extrapolating:
+            return "extrapolating";
+        case plcopen::core::stream::StreamFilter1D::Mode::stopping:
+            return "stopping";
+        case plcopen::core::stream::StreamFilter1D::Mode::stopped:
+            return "stopped";
+        }
+        return "unknown";
+    }
+
+    std::uint32_t stream_dropouts() const
+    {
+        return axis_.stream_filter().dropout_count();
+    }
+
+    void cycle(int cycles)
+    {
+        for(int i = 0; i < cycles; ++i) {
+            axis_.cycle();
+        }
+    }
+
 private:
     void submit(plcopen::core::axis::AxisCommand command, const char *operation)
     {
@@ -210,5 +287,15 @@ PYBIND11_MODULE(pyplcopen, module)
         .def("command_velocity", &AxisSim::command_velocity)
         .def("actual_acceleration", &AxisSim::actual_acceleration)
         .def("command_acceleration", &AxisSim::command_acceleration)
-        .def("status", &AxisSim::status);
+        .def("status", &AxisSim::status)
+        .def("stream_engage", &AxisSim::stream_engage, py::arg("velocity_limit"),
+             py::arg("acceleration_limit"), py::arg("jerk_limit"),
+             py::arg("timeout_cycles") = 50, py::arg("extrapolation_cycles") = 40)
+        .def("stream_push", &AxisSim::stream_push, py::arg("position"),
+             py::arg("timestamp_cycles"), py::arg("velocity") = std::nullopt)
+        .def("stream_disengage", &AxisSim::stream_disengage)
+        .def("stream_now", &AxisSim::stream_now)
+        .def("stream_mode", &AxisSim::stream_mode)
+        .def("stream_dropouts", &AxisSim::stream_dropouts)
+        .def("cycle", &AxisSim::cycle, py::arg("cycles") = 1);
 }

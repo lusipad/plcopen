@@ -11,6 +11,7 @@
 #include "plan/path.h"
 #include "rt/spsc_queue.h"
 #include "rt/static_vector.h"
+#include "stream/joint_group.h"
 
 namespace
 {
@@ -199,11 +200,71 @@ int main()
     const geom::Vec3 overlaid = exec::apply_overlay({1.0, 1.0, 1.0}, {0.25, -0.25, 0.5});
     const double overlay_checksum = overlaid.x + overlaid.y + overlaid.z;
 
+    // B9 stream budget (KB-035, robot-integration section 5): 28 joints at a
+    // 1 ms cycle must stay under 30% of the cycle budget (300 us). The
+    // staggered tier is the 100 Hz steady state (~2.8 solves per cycle); the
+    // burst tier re-solves every joint every cycle (the 1 kHz-stream ceiling).
+    double stream_stagger_us = 0.0;
+    double stream_burst_us = 0.0;
+    {
+        stream::JointStreamGroup joints;
+        stream::StreamFilterConfig stream_config{};
+        stream_config.limits = {0.4, 0.02, 0.02, 0.005};
+        stream_config.timeout_cycles = 50;
+        stream_config.extrapolation_cycles = 40;
+        if(joints.configure(28, stream_config) != rt::ErrorCode::ok) {
+            std::printf("BENCH_FAIL stream configure\n");
+            return 1;
+        }
+        for(std::size_t j = 0; j < joints.joint_count(); ++j) {
+            joints.reset(j, {0.0, 0.0, 0.0});
+        }
+
+        constexpr int StaggerCycles = 20000;
+        std::int64_t now = 0;
+        start = std::clock();
+        for(int i = 0; i < StaggerCycles; ++i) {
+            for(std::size_t j = 0; j < joints.joint_count(); ++j) {
+                if((now + static_cast<std::int64_t>(j)) % 10 == 0) {
+                    stream::StreamTarget target{};
+                    target.position = 0.2 * static_cast<double>(now + 1);
+                    target.velocity = 0.2;
+                    target.has_velocity = true;
+                    target.timestamp_cycles = now + 1;
+                    joints.push_target(j, target);
+                }
+            }
+            joints.cycle();
+            ++now;
+        }
+        stream_stagger_us = 1000.0 * millis_since(start) / StaggerCycles;
+
+        constexpr int BurstCycles = 2000;
+        start = std::clock();
+        for(int i = 0; i < BurstCycles; ++i) {
+            for(std::size_t j = 0; j < joints.joint_count(); ++j) {
+                stream::StreamTarget target{};
+                target.position = 0.2 * static_cast<double>(now + 1);
+                target.velocity = 0.2;
+                target.has_velocity = true;
+                target.timestamp_cycles = now + 1;
+                joints.push_target(j, target);
+            }
+            joints.cycle();
+            ++now;
+        }
+        stream_burst_us = 1000.0 * millis_since(start) / BurstCycles;
+        position_sum += joints.state(0).position;
+    }
+
     std::printf("BENCH_BASELINE static_vector_ms=%.3f spsc_ms=%.3f sample_ms=%.3f "
                 "path_sample_ms=%.3f axis_cycle_pair_ms=%.3f group_circular_cycle_ms=%.3f "
                 "checksum=%.3f\n",
                 vector_ms, queue_ms, sample_ms, path_sample_ms, axis_cycle_ms,
                 group_circular_cycle_ms, position_sum + sink);
+    std::printf("STREAM_METRICS joints=28 stagger_us_per_cycle=%.2f burst_us_per_cycle=%.2f "
+                "budget_us=300\n",
+                stream_stagger_us, stream_burst_us);
     std::printf("PATH_METRICS speed_ripple=%.6f path_error=%.12f cycle_efficiency=%.6f "
                 "blend_deviation=%.12f cam_error=%.12f overlay_checksum=%.6f "
                 "otg_duration_vs_baseline=%.4f\n",

@@ -49,9 +49,14 @@ B1 语义矩阵（BS2.1）可与 BS1 实现并行起草——规格评审的人�
 | BS5 | quintic cam 段重建 + 线性表兼容模式；加速度连续性断言进测试 |
 | BS6 | ADR-0004 裁决落地；CiA402 状态机对 mock 从站全转换覆盖；模式 bumpless 切换纯软件验证 |
 
-## BS1：B9 轨迹流接口（机器人模式）
+## BS1：B9 轨迹流接口（机器人模式）——**已完成（2026-07-05）**
 
 目标：上层策略/规划器输出 50-500Hz 关节目标流，库内 OTG 在线滤波升频到周期级 + 安全包络 + 断流看门狗。接口命名向机器人惯例靠拢（stream / filter / envelope），PLCopen 语义作底层（robot-integration §6）。
+
+> 状态：BS1.1-BS1.9 全部落库（KB-034/KB-035），出口判据全部满足：相位滞后 ≤2 周期、
+> 断流受控停零超限、目标跳变 jerk-limited、RT 路径零分配、28 关节 @1kHz 预算 <30%
+> 有微基准、pyplcopen 100Hz demo、回放黄金场景 `core-stream-session`。
+> 证据见 [trajectory-stream-semantics.md](../compliance/trajectory-stream-semantics.md) 实现记录。
 
 | ID | 任务 | 等级 | 前置 | DoD | 验证 |
 |----|------|------|------|-----|------|

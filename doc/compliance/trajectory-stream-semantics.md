@@ -110,5 +110,21 @@ standstill、disengage 仅静止可用；跨界连续性逐周期断言）。口
 - 轴软件位置限位不自动并入流包络（v1 显式边界，由调用方经 config
   接线）；扭矩透传与流会话正交（不入会话生命周期）。
 
-*草案创建：2026-07-05；批准：2026-07-05（维护者，v1 范围）。剩余第二片
-（多关节聚合 + pyplcopen demo + 回放场景）对应 BS1.7-BS1.9。*
+## 实现记录（2026-07-05，BS1.7-BS1.9 批次收口）
+
+- **BS1.7**：`stream::JointStreamGroup`（`core/stream/joint_group.h`）——
+  ≤32 关节共享一次配置、逐关节独立滤波（决策 #10：不承诺关节间时间
+  同步）；验收并入 `plcopen_core_stream_tests`（独立斜坡跟踪 + 边界）。
+  预算微基准（`STREAM_METRICS`，Release）：28 关节 @1kHz 交错 100Hz
+  稳态 ~24µs/周期，全关节每周期重解上限 ~241µs/周期，均低于 300µs
+  （30% 周期预算）门槛。
+- **BS1.8**：pyplcopen 流接口（`stream_engage/push/disengage/now/mode/
+  dropouts` + 通用 `cycle(n)`），smoke 含 100Hz 正弦流 + 断流受控停 +
+  静止退出全链；README 增"十分钟上手"段落。
+- **BS1.9**：回放黄金场景 `core-stream-session`（跟踪 → 断流外推受控停
+  → 恢复 → Aborting MC_Stop 接管，244 样本），manifest 注册。
+
+**BS1 批次（B9 轨迹流）至此全部完成**；后续批次见
+[phase-b-software-work-breakdown.md](../planning/phase-b-software-work-breakdown.md)（BS2 起）。
+
+*草案创建：2026-07-05；批准：2026-07-05（维护者，v1 范围）。*

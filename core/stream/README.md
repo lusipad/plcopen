@@ -4,6 +4,14 @@
 `doc/compliance/trajectory-stream-semantics.md`). It has no PLCopen FB
 semantics; the axis-session integration lives in L5/L6 (second slice, BS1.6).
 
+Multi-joint aggregation (`joint_group.h`, BS1.7): `JointStreamGroup` banks up
+to 32 independent per-joint filters behind one shared configuration call — a
+configuration convenience with no cross-joint time-synchronization promise
+(whole-body consistency belongs to the producer). Budget evidence: 28 joints
+at 1 kHz cost ~24 us/cycle at the staggered 100 Hz steady state and ~241
+us/cycle with every joint re-solving every cycle (`STREAM_METRICS` in the
+core benchmark), inside the 300 us (30%) budget gate.
+
 First slice scope (BS1.2-BS1.5):
 
 - `StreamFilter1D`: one joint, keep-latest timestamped targets, event-driven

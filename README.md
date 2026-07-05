@@ -163,6 +163,37 @@ cmake --build build --config Release
 ctest --test-dir build --build-config Release -R pyplcopen_smoke --output-on-failure
 ```
 
+### 十分钟上手：Python 驱动一条关节目标流（B9，KB-035）
+
+机器人模式的最小闭环——上层以 100Hz 发目标，库内在线滤波升频到周期级，
+断流自动受控停，新目标自动恢复：
+
+```python
+import math
+import pyplcopen
+
+axis = pyplcopen.AxisSim()
+axis.power_on()
+
+# 进入流会话：速度/加速度/jerk 包络 + 断流看门狗（单位=每周期）
+axis.stream_engage(0.5, 0.05, 0.01, timeout_cycles=30, extrapolation_cycles=40)
+
+for k in range(200):                       # 100Hz 生产者 × 1kHz 周期
+    target = 0.3 * math.sin(0.02 * k)
+    axis.stream_push(target, axis.stream_now() + 1)   # 时间戳用会话周期域
+    axis.cycle(10)                          # 推进 10 个插补周期
+
+axis.cycle(400)                             # 停止推送 → 看门狗受控停
+assert axis.stream_mode() == "stopped"
+axis.stream_disengage()                     # 静止时优雅退出
+```
+
+要点：目标可带显式速度（`velocity=`），不带则由相邻目标差分估计；越界
+目标被包络钳位而非报错；运动中退出用标准 `stop()`/`halt()`（Aborting
+接管，运动学连续）。C++ 侧对应 `stream::StreamFilter1D`（单关节原语）、
+`stream::JointStreamGroup`（≤32 关节聚合）与 `AxisModel::stream_engage`
+（轴级会话），验收规格见 `doc/compliance/trajectory-stream-semantics.md`。
+
 ### 最简示例：让一个轴从 0 走到 5
 
 ```cpp
@@ -428,7 +459,7 @@ target_link_libraries(app PRIVATE plcopen::plcopen)
 - `KB-024`：新核轨迹表为调用方持有的定长段数组（≤8 段，替代 `mNext` 链表），段时长为周期计数且 `TimeScale` 作用于时长；`ContinuousUpdate` 仅支持单段剖面；速度/加速度剖面终段无限保持（修订 `KB-010`）。
 - `KB-025`：新核 `MC_MoveContinuous*` 与速度/加速度剖面的 `Done` 表示"保持终速中"的持续状态而非锁存完成态，被接管时报 `CommandAborted`；`MC_HaltSuperimposed` 当周期完成，不建模叠加偏移的减速段（补充 `KB-008`）。
 - `KB-026`：新核离散运动（含叠加偏移与连续运动的规划段）经近时间最优 7 段 jerk-limited S 曲线求解器规划（`otg::plan_time_optimal`）：同等约束下运动时长显著缩短（零初始加速度状态域总时长约为原保守 quintic 求解器的 65%），加速度形状由平滑多项式变为梯形/三角相位；包络与端点承诺不变，回放基线升级为 `core-single-axis-move-v2`。aborting 接管现承接当前命令加速度（接管处加速度连续）；若新命令的限位容不下当前状态（如更小的加速度限位），接管显式报 infeasible 而非假装加速度为零。
-- `KB-035`：新核 B9 轨迹流滤波第一片（`stream::StreamFilter1D`，L3）：单关节带时间戳目标流（keep-latest，时间戳严格递增，乱序拒绝并计数）经事件驱动 OTG 在线重解升频到插补周期，速度/加速度/jerk 包络构造性满足；可选位置包络钳位并置标志；两级断流看门狗（输出速度线性衰减外推 → jerk-limited 受控停，新目标自动恢复跟踪且接管连续）；运动目标跟踪律为"前方一个自适应视界的线点 + 并线下限"，锁定为精确线性骑行、稳态偏移 ≤2 插补周期（整周期量子平台边界）；输出流永不中断（求解失败钳位重试一次后保持上一剖面并计数）。验收规格 `doc/compliance/trajectory-stream-semantics.md`，测试 `plcopen_core_stream_tests`。轴级流会话已落地（`stream_engage/push/disengage`：Aborting 类接管进入、运动中 engage 走受控停梯子、标准 FB Aborting 接管退出且连续、非 aborting/同步/叠加命令显式拒绝、disengage 仅静止可用、会话状态呈现 `synchronized_motion`、轴软件位置限位不自动并入流包络；测试 `plcopen_core_stream_session_tests`）。多关节聚合/pyplcopen demo/回放场景为 BS1.7-BS1.9。
+- `KB-035`：新核 B9 轨迹流滤波第一片（`stream::StreamFilter1D`，L3）：单关节带时间戳目标流（keep-latest，时间戳严格递增，乱序拒绝并计数）经事件驱动 OTG 在线重解升频到插补周期，速度/加速度/jerk 包络构造性满足；可选位置包络钳位并置标志；两级断流看门狗（输出速度线性衰减外推 → jerk-limited 受控停，新目标自动恢复跟踪且接管连续）；运动目标跟踪律为"前方一个自适应视界的线点 + 并线下限"，锁定为精确线性骑行、稳态偏移 ≤2 插补周期（整周期量子平台边界）；输出流永不中断（求解失败钳位重试一次后保持上一剖面并计数）。验收规格 `doc/compliance/trajectory-stream-semantics.md`，测试 `plcopen_core_stream_tests`。轴级流会话已落地（`stream_engage/push/disengage`：Aborting 类接管进入、运动中 engage 走受控停梯子、标准 FB Aborting 接管退出且连续、非 aborting/同步/叠加命令显式拒绝、disengage 仅静止可用、会话状态呈现 `synchronized_motion`、轴软件位置限位不自动并入流包络；测试 `plcopen_core_stream_session_tests`）。多关节聚合 `stream::JointStreamGroup`（≤32 关节共享配置、逐关节独立滤波，不承诺关节间时间同步）；28 关节 @1kHz 预算微基准：交错 100Hz 稳态 ~24µs/周期、全关节每周期重解 ~241µs/周期（< 300µs 预算门槛，`STREAM_METRICS` 进基准趋势）；pyplcopen 流接口（`stream_engage/push/disengage/now/mode`）与 smoke demo；回放黄金场景 `core-stream-session`（跟踪-断流-恢复-Aborting 接管全链）。
 - `KB-034`：OTG 求解器鼓包区修复（**声明变更**）：巡航速度选择改为按直达 ramp 距离选单调分支再二分（链距离 D(vc) 在两边界速度之间因 ramp 拆分开销非单调，旧全域二分可收敛到伪交点——短前向运动选出负巡航速度、快候选全部退化）；新增估计锚定单段 quintic 候选（以连续时间链时长为下界向上探测，支持非零入口加速度，同向边界形态卫兵拒绝反向摆动），鼓包区（直达距离 < 目标距离 < vmax 链距离）不再落入残差燃烧修正（B9 跟踪 case 规划 68 → 19 周期）。回放基线 `core-group-window-arc` 升级：端点逐位不变，时长 90 → 88 tick；其余 fixture 逐位不变。求解器自身合同仍允许 overshoot-and-return（折返排除由跟踪器侧负责）。测试：`otg_time_optimal_tests` 鼓包区固定 case + 随机层。
 - `KB-033`：新核 look-ahead v2（A5 v2）：KB-030 BORDER 圆弧段可经 `BLENDING_LOW/HIGH` + `mcTMNone` 加入前瞻窗口——直通性由 N 维切向连续判定（对齐 > 0.999 直通不停车；不对齐显式降级为 BUFFERED 停止衔接，`last_blend_degraded_command()` 可查）；圆弧段整段限速 min(命令速度, √(a·R))（向心约束）；圆弧段不修剪，线弧公差带过渡曲线留 v3（`mcTMMaxCornerDeviation` + 圆弧显式 `unsupported`）；活动圆弧命令不做窗口种子（显式 `unsupported`，窗口只由活动线性命令转换生成）；螺旋高轴线性跟随与 GroupStop 复合弧长停车口径沿用。回放黄金场景 `core-group-window-arc`。
 - `KB-032`：新核 look-ahead v1（A5）：连续 blending 后继构成前瞻窗口（容量 64 段，满报 `capacity_exceeded`），结点速度 = min(两命令限速, 过渡曲线曲率限速, 梯形级双向扫描可达速度)，每段独立 jerk-limited 剖面按结点速度衔接（经 OTG vt≠0 巡航域精化候选）——**声明变更**：blending 链执行从 KB-031 整链单剖面（链上限速）升级为分段结点限速，直线段不再被拐角限速拖慢，回放基线升级 `core-group-blend-v2`；密集 16 段折线实测节拍 ≈ 完全停止基线的 69%。窗口提交时同步重算（周期路径零规划），几何上限冻结、已承诺件不回撤、未开始件全量重规划；`BUFFERED`+`mcTMNone` 仍完全停止、`Aborting` 仍即时接管；plain buffered 可排在窗口后（窗口以静止终结），buffered 队列非空时 blending 显式 `unsupported`；稠密极限（公差截断吃光段线长）与反折、过迟提交、不优于停车基线一样显式降级；GroupStop 沿已承诺窗口几何复合弧长受控停车。验收规格 `doc/compliance/part4-lookahead-semantics.md`。
