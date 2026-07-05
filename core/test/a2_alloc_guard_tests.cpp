@@ -195,10 +195,15 @@ int main(int argc, char **argv)
     }
 
     // Sanity: the guard itself works (an allocation while frozen is counted).
+    // The probe calls ::operator new directly: C++14 allocation elision only
+    // applies to new/delete *expressions*, and clang at -O2 really does elide
+    // a paired `new int`/`delete`, which silently disarmed this self-check on
+    // the Linux clang lane. A direct call is an ordinary function call and
+    // cannot be elided.
     g_frozen = true;
-    volatile int *probe = new int(42);
+    void *probe = ::operator new(sizeof(int));
     g_frozen = false;
-    delete probe;
+    ::operator delete(probe);
     if(g_frozen_allocations != 1) {
         return fail("allocation guard self-check");
     }
