@@ -82,14 +82,43 @@ int check_spline_and_blending()
         geom::make_line({1.0, 0.0, 0.0}, {1.0, 1.0, 0.0}).value();
     const plan::BlendDecision blend =
         plan::decide_blend(geom::as_path_segment(before), geom::as_path_segment(after), 0.1);
-    if(!blend.enabled || blend.curve.kind != geom::SegmentKind::quadratic_blend ||
-       blend.curve.blend.max_deviation > 0.1) {
-        return fail("quadratic blend curve");
+    if(!blend.enabled || blend.curve.kind != geom::SegmentKind::quintic_blend ||
+       blend.curve.quintic.max_deviation > 0.1 ||
+       blend.curve.quintic.max_deviation < 0.08) {
+        return fail("quintic blend curve deviation and utilization");
     }
     const geom::Vec3 start = blend.curve.start();
     const geom::Vec3 finish = blend.curve.finish();
     if(!near(start.y, 0.0, 1e-12) || !near(finish.x, 1.0, 1e-12)) {
         return fail("blend endpoints stay on source segments");
+    }
+    // C2 against the straight lines: tangent along the lines and near-zero
+    // curvature at both junctions.
+    const geom::Vec3 tangent_in = blend.curve.tangent(0.0);
+    const geom::Vec3 tangent_out = blend.curve.tangent(blend.curve.length());
+    if(!near(tangent_in.x, 1.0, 1e-9) || !near(tangent_out.y, 1.0, 1e-9)) {
+        return fail("blend junction tangents");
+    }
+    const geom::Vec3 d2_start = geom::quintic_second_derivative(blend.curve.quintic, 0.0);
+    const geom::Vec3 d2_finish = geom::quintic_second_derivative(blend.curve.quintic, 1.0);
+    if(geom::norm(d2_start) > 1e-9 || geom::norm(d2_finish) > 1e-9) {
+        return fail("blend junction curvature zero");
+    }
+
+    // Collinear pass-through and reflex degradation are explicit outcomes.
+    const geom::LineSegment straight_on =
+        geom::make_line({1.0, 0.0, 0.0}, {2.0, 0.0, 0.0}).value();
+    const plan::BlendDecision collinear = plan::decide_blend(
+        geom::as_path_segment(before), geom::as_path_segment(straight_on), 0.1);
+    if(collinear.enabled || !collinear.passthrough || collinear.degraded_to_buffered) {
+        return fail("collinear passthrough");
+    }
+    const geom::LineSegment reverse =
+        geom::make_line({1.0, 0.0, 0.0}, {0.0, 0.0, 0.0}).value();
+    const plan::BlendDecision reflex = plan::decide_blend(
+        geom::as_path_segment(before), geom::as_path_segment(reverse), 0.1);
+    if(reflex.enabled || reflex.passthrough || !reflex.degraded_to_buffered) {
+        return fail("reflex degrades to buffered");
     }
     return 0;
 }
@@ -124,7 +153,7 @@ int check_path_buffer_and_lookahead()
 
     const plan::BlendDecision blend =
         plan::decide_blend(geom::as_path_segment(a), geom::as_path_segment(b), 0.1);
-    if(!blend.enabled || blend.radius > 0.1 || blend.allowed_deviation != 0.1 ||
+    if(!blend.enabled || blend.radius > 0.5 || blend.allowed_deviation != 0.1 ||
        blend.curve.length() <= 0.0) {
         return fail("blend decision");
     }

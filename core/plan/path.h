@@ -140,16 +140,28 @@ rt::Result<LookAheadPlan<Capacity>> compute_lookahead(const PathBuffer<Capacity>
 struct BlendDecision
 {
     bool enabled = false;
+    // Collinear junction: no curve is needed and the pass-through join keeps
+    // a non-zero corner speed (approved blending matrix).
+    bool passthrough = false;
+    // Reflex corner (~180 degrees): geometric blending degrades to a BUFFERED
+    // full stop; the degradation is reported, never silent.
+    bool degraded_to_buffered = false;
+    // Blend distance from the corner along each adjacent segment.
     double radius = 0.0;
     double allowed_deviation = 0.0;
     geom::PathSegment curve{};
 };
 
+// A4 v1 (approved blending matrix): tolerance-band corner blending with a
+// symmetric quintic Bezier (C2). The blend distance is sized so the closed
+// form midpoint deviation (23/96)*d*|t1-t0| meets the tolerance exactly, then
+// truncated to half of the shorter adjacent segment (the actual deviation
+// only shrinks, never exceeds the tolerance).
 inline BlendDecision decide_blend(const geom::PathSegment &before,
                                   const geom::PathSegment &after,
                                   double tolerance)
 {
-    if(tolerance <= 0.0) {
+    if(tolerance <= 0.0 || !std::isfinite(tolerance)) {
         return {};
     }
 
@@ -157,24 +169,40 @@ inline BlendDecision decide_blend(const geom::PathSegment &before,
     const geom::Vec3 t1 = after.tangent(0.0);
     const double alignment = geom::dot(t0, t1);
     if(alignment > 0.999) {
-        return {};
+        BlendDecision decision{};
+        decision.passthrough = true;
+        return decision;
+    }
+    if(alignment < -0.999) {
+        BlendDecision decision{};
+        decision.degraded_to_buffered = true;
+        return decision;
     }
 
+    const double turn = geom::norm(t1 - t0);
+    if(turn <= 1e-12) {
+        BlendDecision decision{};
+        decision.passthrough = true;
+        return decision;
+    }
+    const double exact_distance = tolerance * 96.0 / (23.0 * turn);
     const double shortest = before.length() < after.length() ? before.length() : after.length();
-    const double radius = tolerance < shortest * 0.5 ? tolerance : shortest * 0.5;
+    const double distance = exact_distance < shortest * 0.5 ? exact_distance : shortest * 0.5;
     const geom::Vec3 corner = before.finish();
-    const geom::Vec3 start = corner - t0 * radius;
-    const geom::Vec3 finish = corner + t1 * radius;
-    const rt::Result<geom::QuadraticBlendSegment> curve =
-        geom::make_quadratic_blend(start, corner, finish, tolerance);
+    const geom::Vec3 start = corner - t0 * distance;
+    const geom::Vec3 finish = corner + t1 * distance;
+    const rt::Result<geom::QuinticBlendSegment> curve =
+        geom::make_quintic_blend(start, corner, finish, tolerance);
     if(!curve) {
-        return {};
+        BlendDecision decision{};
+        decision.degraded_to_buffered = true;
+        return decision;
     }
 
     BlendDecision decision{};
     decision.enabled = true;
     decision.allowed_deviation = tolerance;
-    decision.radius = radius;
+    decision.radius = distance;
     decision.curve = geom::as_path_segment(curve.value());
     return decision;
 }

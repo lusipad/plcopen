@@ -119,6 +119,26 @@ struct QuadraticBlendSegment
     double max_deviation = 0.0;
 };
 
+// A4 corner blend: symmetric quintic Bezier with collinear control triples
+// (P0,P1,P2 on the incoming line, P3,P4,P5 on the outgoing line), which makes
+// the curve C2 against straight lines: tangent along the lines and zero
+// curvature at both junctions. Sampling runs through an embedded arc-length
+// table so the spatial speed stays continuous across the junctions.
+struct QuinticBlendSegment
+{
+    static constexpr std::size_t TableSize = 33;
+    Vec3 p0{};
+    Vec3 p1{};
+    Vec3 p2{};
+    Vec3 p3{};
+    Vec3 p4{};
+    Vec3 p5{};
+    double length = 0.0;
+    double max_deviation = 0.0;
+    double max_curvature = 0.0;
+    double cumulative[TableSize] = {};
+};
+
 inline double angle_of(Vec3 point, Vec3 center)
 {
     return std::atan2(point.y - center.y, point.x - center.x);
@@ -303,12 +323,146 @@ inline Vec3 tangent(QuadraticBlendSegment blend, double arclength)
     return normalize(derivative);
 }
 
+inline Vec3 quintic_point(const QuinticBlendSegment &blend, double u)
+{
+    const double v = 1.0 - u;
+    const double v2 = v * v;
+    const double u2 = u * u;
+    return blend.p0 * (v2 * v2 * v) + blend.p1 * (5.0 * v2 * v2 * u) +
+           blend.p2 * (10.0 * v2 * v * u2) + blend.p3 * (10.0 * v2 * u2 * u) +
+           blend.p4 * (5.0 * v * u2 * u2) + blend.p5 * (u2 * u2 * u);
+}
+
+inline Vec3 quintic_derivative(const QuinticBlendSegment &blend, double u)
+{
+    const double v = 1.0 - u;
+    const double v2 = v * v;
+    const double u2 = u * u;
+    return (blend.p1 - blend.p0) * (5.0 * v2 * v2) +
+           (blend.p2 - blend.p1) * (20.0 * v2 * v * u) +
+           (blend.p3 - blend.p2) * (30.0 * v2 * u2) +
+           (blend.p4 - blend.p3) * (20.0 * v * u2 * u) +
+           (blend.p5 - blend.p4) * (5.0 * u2 * u2);
+}
+
+inline Vec3 quintic_second_derivative(const QuinticBlendSegment &blend, double u)
+{
+    const double v = 1.0 - u;
+    const Vec3 d0 = blend.p2 - blend.p1 * 2.0 + blend.p0;
+    const Vec3 d1 = blend.p3 - blend.p2 * 2.0 + blend.p1;
+    const Vec3 d2 = blend.p4 - blend.p3 * 2.0 + blend.p2;
+    const Vec3 d3 = blend.p5 - blend.p4 * 2.0 + blend.p3;
+    return d0 * (20.0 * v * v * v) + d1 * (60.0 * v * v * u) + d2 * (60.0 * v * u * u) +
+           d3 * (20.0 * u * u * u);
+}
+
+inline Vec3 cross(Vec3 lhs, Vec3 rhs)
+{
+    return {lhs.y * rhs.z - lhs.z * rhs.y,
+            lhs.z * rhs.x - lhs.x * rhs.z,
+            lhs.x * rhs.y - lhs.y * rhs.x};
+}
+
+// start/finish are the truncated junction points on the adjacent segments;
+// corner is the original path corner. The maximum deviation of the symmetric
+// uniform-thirds construction is closed-form: |B(1/2) - corner| =
+// (23/96)|(finish-corner) - (corner-start)|.
+inline rt::Result<QuinticBlendSegment> make_quintic_blend(Vec3 start,
+                                                          Vec3 corner,
+                                                          Vec3 finish,
+                                                          double tolerance)
+{
+    if(tolerance <= 0.0 || !std::isfinite(tolerance)) {
+        return rt::Result<QuinticBlendSegment>::failure(rt::ErrorCode::invalid_argument);
+    }
+    const Vec3 in = corner - start;
+    const Vec3 out = finish - corner;
+    if(norm(in) <= 1e-12 || norm(out) <= 1e-12) {
+        return rt::Result<QuinticBlendSegment>::failure(rt::ErrorCode::invalid_argument);
+    }
+
+    QuinticBlendSegment blend{};
+    blend.p0 = start;
+    blend.p1 = corner - in * (2.0 / 3.0);
+    blend.p2 = corner - in * (1.0 / 3.0);
+    blend.p3 = corner + out * (1.0 / 3.0);
+    blend.p4 = corner + out * (2.0 / 3.0);
+    blend.p5 = finish;
+
+    blend.max_deviation = norm(quintic_point(blend, 0.5) - corner);
+    if(blend.max_deviation > tolerance + 1e-12) {
+        return rt::Result<QuinticBlendSegment>::failure(rt::ErrorCode::out_of_range);
+    }
+
+    // Arc-length table (planning-phase work) for junction-continuous sampling.
+    double accumulated = 0.0;
+    Vec3 previous = quintic_point(blend, 0.0);
+    blend.cumulative[0] = 0.0;
+    for(std::size_t i = 1; i < QuinticBlendSegment::TableSize; ++i) {
+        const double u =
+            static_cast<double>(i) / static_cast<double>(QuinticBlendSegment::TableSize - 1);
+        const Vec3 current = quintic_point(blend, u);
+        accumulated += norm(current - previous);
+        blend.cumulative[i] = accumulated;
+        previous = current;
+    }
+    blend.length = accumulated;
+    if(!std::isfinite(blend.length) || blend.length <= 1e-12) {
+        return rt::Result<QuinticBlendSegment>::failure(rt::ErrorCode::invalid_argument);
+    }
+
+    double max_curvature = 0.0;
+    for(std::size_t i = 0; i <= 64; ++i) {
+        const double u = static_cast<double>(i) / 64.0;
+        const Vec3 d1 = quintic_derivative(blend, u);
+        const Vec3 d2 = quintic_second_derivative(blend, u);
+        const double speed = norm(d1);
+        if(speed <= 1e-12) {
+            continue;
+        }
+        const double curvature = norm(cross(d1, d2)) / (speed * speed * speed);
+        if(curvature > max_curvature) {
+            max_curvature = curvature;
+        }
+    }
+    blend.max_curvature = max_curvature;
+    return rt::Result<QuinticBlendSegment>::success(blend);
+}
+
+inline double quintic_parameter_at_length(const QuinticBlendSegment &blend, double arclength)
+{
+    const double target = clamp_arclength(arclength, blend.length);
+    constexpr std::size_t Last = QuinticBlendSegment::TableSize - 1;
+    std::size_t low = 0;
+    for(std::size_t i = 1; i <= Last; ++i) {
+        if(blend.cumulative[i] >= target) {
+            low = i - 1;
+            break;
+        }
+        low = i - 1;
+    }
+    const double segment = blend.cumulative[low + 1] - blend.cumulative[low];
+    const double fraction = segment > 0.0 ? (target - blend.cumulative[low]) / segment : 0.0;
+    return (static_cast<double>(low) + fraction) / static_cast<double>(Last);
+}
+
+inline Vec3 sample(const QuinticBlendSegment &blend, double arclength)
+{
+    return quintic_point(blend, quintic_parameter_at_length(blend, arclength));
+}
+
+inline Vec3 tangent(const QuinticBlendSegment &blend, double arclength)
+{
+    return normalize(quintic_derivative(blend, quintic_parameter_at_length(blend, arclength)));
+}
+
 enum class SegmentKind
 {
     line,
     arc,
     cubic_bezier,
     quadratic_blend,
+    quintic_blend,
 };
 
 struct PathSegment
@@ -318,6 +472,7 @@ struct PathSegment
     ArcSegment arc{};
     CubicBezierSegment cubic{};
     QuadraticBlendSegment blend{};
+    QuinticBlendSegment quintic{};
 
     double length() const
     {
@@ -326,6 +481,9 @@ struct PathSegment
         }
         if(kind == SegmentKind::arc) {
             return arc.length;
+        }
+        if(kind == SegmentKind::quintic_blend) {
+            return quintic.length;
         }
         return kind == SegmentKind::cubic_bezier ? cubic.length : blend.length;
     }
@@ -338,6 +496,9 @@ struct PathSegment
         if(kind == SegmentKind::arc) {
             return geom::sample(arc, arclength);
         }
+        if(kind == SegmentKind::quintic_blend) {
+            return geom::sample(quintic, arclength);
+        }
         return kind == SegmentKind::cubic_bezier ? geom::sample(cubic, arclength)
                                                  : geom::sample(blend, arclength);
     }
@@ -349,6 +510,9 @@ struct PathSegment
         }
         if(kind == SegmentKind::arc) {
             return geom::tangent(arc, arclength);
+        }
+        if(kind == SegmentKind::quintic_blend) {
+            return geom::tangent(quintic, arclength);
         }
         return kind == SegmentKind::cubic_bezier ? geom::tangent(cubic, arclength)
                                                  : geom::tangent(blend, arclength);
@@ -394,6 +558,14 @@ inline PathSegment as_path_segment(QuadraticBlendSegment blend)
     PathSegment segment{};
     segment.kind = SegmentKind::quadratic_blend;
     segment.blend = blend;
+    return segment;
+}
+
+inline PathSegment as_path_segment(const QuinticBlendSegment &blend)
+{
+    PathSegment segment{};
+    segment.kind = SegmentKind::quintic_blend;
+    segment.quintic = blend;
     return segment;
 }
 
