@@ -291,6 +291,11 @@ public:
         if(snapshot_.status == AxisStatus::errorstop && enabled) {
             return rt::ErrorCode::invalid_argument;
         }
+        // MC_Power is level-controlled and called every scan cycle; only a
+        // real power transition may abort motion and reset the state.
+        if(enabled == snapshot_.powered) {
+            return rt::ErrorCode::ok;
+        }
 
         abort_motion();
         snapshot_.powered = enabled;

@@ -35,6 +35,27 @@
 - `ctest --test-dir build-r4-python -R pyplcopen_smoke --output-on-failure`
 - `cmake --build build-r4-docs --target docs`：本机无 Doxygen，fallback target 通过
 
+补充（2026-07-05，DoD §5.3 复测——15× 根因更正，本节取代下一节的根因分析）：
+
+- **真根因不是规划成本**：`axis::AxisModel::set_power()` 对每次调用无条件
+  `abort_motion()`，而 MC_Power 是电平驱动、每扫描周期都会被调用。对照基准里
+  `power.call()` 每周期把在跑的运动 abort 掉，`observe_axis()` 的 standstill
+  回退分支再把 abort 误报成 Done，基准因此每 2 周期重新提交命令——20 万周期
+  实测 done_count=100000，`move.call()` 段占 639ms（≈10 万次重规划 × ~6µs）。
+- 佐证：`plan_time_optimal` 单次调用微基准仅 ~5-10µs（rest-to-rest 500 单位
+  = 9.9µs、takeover ≈ 7-9µs），200k 周期负载理论重规划仅 ~94 次。原"规划成本
+  毫秒级"的推断不成立。
+- **修复**：`set_power` 电平语义化——powered 状态无变化时 no-op，仅真实
+  上/下电迁移才 abort 并复位状态（`core/axis/state.h`；测试先行
+  `check_cyclic_power_keeps_motion`，修复前红、修复后绿）。
+- **复测结果**：`LEGACY_COMPARE cycles=200000 legacy_ms=43.0 core_ms=4.0
+  core_vs_legacy=0.093`——**DoD §5.3 门禁 PASS**（新核为旧线的 9.3%，
+  远低于 50% 要求）；done_count=94 与理论值 200000/2121 吻合。
+- 全量 26 项 CTest 通过（含黄金回放零差异）、RT-safety scan、replay fixture
+  校验通过。
+- 下节首测记录保留作历史；其"根因定位"与"缓解方向"段落按本节口径作废
+  （候选门控等 OTG 微优化不再是 §5.3 门禁的前置项，转为普通性能 backlog）。
+
 补充（2026-07-05，DoD §5.3 新旧核对照首测）：
 
 - 对照工具 `plcopen_core_legacy_compare`（`core/bench/legacy_compare.cpp`，仅

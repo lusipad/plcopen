@@ -31,6 +31,12 @@ Synchronization semantics carried from the v0.x tests:
   point); an aborting command or `sync_out` disengages.
 - `clear_synchronized` (used by group abort/disable) also disengages the axis's own sync.
 
+Power semantics:
+
+- `set_power` is level-controlled (MC_Power is called every scan cycle): calls that do not
+  change the powered state are no-ops. Only a real power transition aborts motion and resets
+  the axis state.
+
 Motion-family semantics carried from the v0.x tests:
 
 - `move_additive` resolves its target against the endpoint committed before an aborting takeover.

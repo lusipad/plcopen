@@ -475,13 +475,81 @@ int check_motion_facades()
     return 0;
 }
 
+// MC_Power is level-controlled: a PLC program calls it every scan cycle.
+// Holding Enable high on an already-powered axis must be a no-op — it must
+// not abort the active command, and the tracking move FB must not observe a
+// fabricated Done or CommandAborted.
+int check_cyclic_power_keeps_motion()
+{
+    using namespace plcopen::core;
+
+    axis::AxisModel axis;
+    if(axis.set_power(true) != rt::ErrorCode::ok || axis.set_power(true) != rt::ErrorCode::ok ||
+       axis.status() != axis::AxisStatus::standstill) {
+        return fail("cyclic power idempotent");
+    }
+
+    axis::AxisCommand move{};
+    move.kind = axis::CommandKind::move_absolute;
+    move.value = 4.0;
+    move.velocity = 0.2;
+    move.acceleration = 0.1;
+    move.deceleration = 0.1;
+    move.jerk = 0.1;
+    const rt::Result<std::uint32_t> accepted = axis.submit(move);
+    if(!accepted) {
+        return fail("cyclic power move accepted");
+    }
+    axis.cycle();
+    if(axis.set_power(true) != rt::ErrorCode::ok ||
+       axis.snapshot().active_command_id != accepted.value() ||
+       axis.status() != axis::AxisStatus::discrete_motion) {
+        return fail("cyclic power keeps active command");
+    }
+
+    // FB-facade form of the same contract: MC_Power and the move FB called
+    // together every cycle, the way a scan task drives them.
+    axis::AxisModel scanned;
+    fb::FbPower power;
+    power.axis_ref = &scanned;
+    power.enable = true;
+    power.call();
+
+    fb::FbMoveAbsolute fb_move;
+    fb_move.axis_ref = &scanned;
+    fb_move.position = 2.0;
+    fb_move.velocity = 0.1;
+    fb_move.acceleration = 0.05;
+    fb_move.deceleration = 0.05;
+    fb_move.jerk = 0.05;
+    fb_move.execute = true;
+    fb_move.call();
+    if(!fb_move.outputs.command_accepted) {
+        return fail("cyclic power fb move accepted");
+    }
+    for(int i = 0; i < 400 && !fb_move.outputs.done; ++i) {
+        scanned.cycle();
+        power.call();
+        fb_move.call();
+        if(fb_move.outputs.command_aborted) {
+            return fail("cyclic power fb move aborted");
+        }
+    }
+    if(!fb_move.outputs.done || !near(scanned.snapshot().command_position, 2.0, 1e-8)) {
+        return fail("cyclic power fb move done at target");
+    }
+
+    return 0;
+}
+
 } // namespace
 
 int main()
 {
     if(check_basic_fb_contracts() != 0 || check_base_latches() != 0 ||
        check_axis_state_and_motion() != 0 || check_axis_buffering_and_limits() != 0 ||
-       check_group_linear_contract() != 0 || check_motion_facades() != 0) {
+       check_group_linear_contract() != 0 || check_motion_facades() != 0 ||
+       check_cyclic_power_keeps_motion() != 0) {
         return 1;
     }
     std::printf("PASS r3 semantics tests\n");
