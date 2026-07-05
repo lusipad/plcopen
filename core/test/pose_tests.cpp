@@ -161,7 +161,7 @@ int check_mcs_pose_oracle()
 {
     const kin::SphericalWrist6R arm(0.3, 0.4, 0.35, 0.08);
 
-    PoseRig probe;
+    static PoseRig probe;
     if(probe.group.set_pose_kinematics(&arm, 0.0, 3.0) != rt::ErrorCode::ok) {
         return fail("mcs pose configure");
     }
@@ -174,7 +174,7 @@ int check_mcs_pose_oracle()
         return fail("mcs pose oracle inverse");
     }
 
-    PoseRig oracle;
+    static PoseRig oracle;
     if(!probe.group.submit_linear(pose_command(0.35, 0.15, 0.55, 0.3, -0.5, 1.2)) ||
        !oracle.group.submit_linear(joint_command(joints))) {
         return fail("mcs pose submit");
@@ -207,7 +207,7 @@ int check_pcs_workpiece_tool()
         return fail("pcs pose oracle inverse");
     }
 
-    PoseRig probe;
+    static PoseRig probe;
     if(probe.group.set_pose_kinematics(&arm, 0.0, 3.0) != rt::ErrorCode::ok ||
        probe.group.set_workpiece_frame_rpy(0.1, -0.05, 0.02, 0.1, 0.2, 0.3) !=
            rt::ErrorCode::ok ||
@@ -218,7 +218,7 @@ int check_pcs_workpiece_tool()
     axis::GroupCommand command = pose_command(0.3, 0.1, 0.5, -0.4, 0.25, 0.8);
     command.coord_system = axis::CoordSystem::pcs;
 
-    PoseRig oracle;
+    static PoseRig oracle;
     if(!probe.group.submit_linear(command) ||
        !oracle.group.submit_linear(joint_command(joints))) {
         return fail("pcs pose submit");
@@ -265,7 +265,7 @@ int check_pcs_workpiece_tool()
 int check_acs_passthrough()
 {
     const kin::SphericalWrist6R arm(0.3, 0.4, 0.35, 0.08);
-    PoseRig rig;
+    static PoseRig rig;
     if(rig.group.set_pose_kinematics(&arm, 0.0, 3.0) != rt::ErrorCode::ok) {
         return fail("acs passthrough configure");
     }
@@ -295,13 +295,13 @@ int check_rejections()
 
     // Group axis count != 6.
     {
-        axis::AxisModel a;
-        axis::AxisModel b;
-        axis::AxisModel c;
+        static axis::AxisModel a;
+        static axis::AxisModel b;
+        static axis::AxisModel c;
         a.set_power(true);
         b.set_power(true);
         c.set_power(true);
-        axis::AxisGroup three;
+        static axis::AxisGroup three;
         three.add_axis(a);
         three.add_axis(b);
         three.add_axis(c);
@@ -320,7 +320,7 @@ int check_rejections()
         }
     }
 
-    PoseRig rig;
+    static PoseRig rig;
     if(rig.group.set_pose_kinematics(&arm, 0.0, 3.0) != rt::ErrorCode::ok) {
         return fail("reject rig configure");
     }
@@ -380,7 +380,7 @@ int check_rejections()
 
     // No same-turn candidate inside a tiny step bound: infeasible.
     {
-        PoseRig gated;
+        static PoseRig gated;
         if(gated.group.set_pose_kinematics(&arm, 0.0, 1e-6) != rt::ErrorCode::ok) {
             return fail("reject gate configure");
         }
@@ -393,7 +393,7 @@ int check_rejections()
 
     // Singularity margin pre-check on the endpoint: precondition_failed.
     {
-        PoseRig margined;
+        static PoseRig margined;
         if(margined.group.set_pose_kinematics(&arm, 10.0, 3.0) != rt::ErrorCode::ok) {
             return fail("reject margin configure");
         }
@@ -434,7 +434,7 @@ int check_rejections()
     // Non-finite frame inputs are invalid.
     {
         const double nan = std::numeric_limits<double>::quiet_NaN();
-        PoseRig fresh;
+        static PoseRig fresh;
         if(fresh.group.set_workpiece_frame_rpy(0.0, 0.0, 0.0, nan, 0.0, 0.0) !=
                rt::ErrorCode::invalid_argument ||
            fresh.group.set_tool_transform_rpy(0.0, 0.0, 0.0, 0.0, nan, 0.0) !=
@@ -451,8 +451,8 @@ int check_rejections()
 // configuration cycle by cycle (translational pipeline regression guard).
 int check_legacy_frame_special_case()
 {
-    PoseRig probe;
-    PoseRig oracle;
+    static PoseRig probe;
+    static PoseRig oracle;
     if(probe.group.set_workpiece_frame(0.5, -0.25, 0.1, 0.7) != rt::ErrorCode::ok ||
        oracle.group.set_workpiece_frame_rpy(0.5, -0.25, 0.1, 0.0, 0.0, 0.7) !=
            rt::ErrorCode::ok) {
