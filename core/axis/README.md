@@ -9,6 +9,10 @@ Responsibilities:
 - Group path commands: linear (shared scalar path referenced to the longest member travel)
   and circular v1 (BORDER three-point arcs, arc-length path parameter in the first-two-axes
   plane, higher axes follow linearly; KB-030, approved circular matrix).
+- Geometric blending v1 (KB-031): a MaxCornerDeviation blending successor fuses the active
+  linear segment, the quintic corner curve, and the successor into one Euclidean arc-length
+  chain under one jerk-limited profile with a corner-safe velocity limit; commits only when
+  faster than the full-stop baseline, otherwise degrades to BUFFERED (reported, not silent).
 - Preserve one writer for each state object; group commands write member synchronized positions.
 - Own slave-side synchronization (gear/cam/combine): the slave axis samples master snapshots
   read-only in its own `cycle()` and drives itself through `set_synchronized_position`.

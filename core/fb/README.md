@@ -6,7 +6,10 @@ The first migration keeps the code small: shared Execute/Enable lifecycle latche
 blocks live here, while the first single-axis and group motion facades bind to the `core/axis`
 command contract through `motion.h`. `motion.h` also carries the A3 circular facades
 (`FbMoveCircularAbsolute/Relative`, BORDER-only, KB-030): CENTER/RADIUS circ modes and blending
-buffer modes surface explicit errors per the approved circular matrix.
+buffer modes surface explicit errors per the approved circular matrix. The linear facades carry
+the A4 transition inputs (`transition_mode`, `transition_parameter`, KB-031): MaxCornerDeviation
+with a blending buffer mode requests the quintic corner blend, and unlisted TransitionMode
+combinations surface explicit errors per the approved blending matrix.
 
 `sync.h` carries the multi-axis synchronization facades (`FbGearIn`, `FbGearInPos`, `FbGearOut`,
 `FbCamTableSelect`, `FbCamIn`, `FbCamOut`, `FbPhasingAbsolute/Relative`, `FbCombineAxes`).

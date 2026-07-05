@@ -190,9 +190,58 @@ void run_group_circular(Recording &recording)
     }
 }
 
+void run_group_blend(Recording &recording)
+{
+    // A4: shallow-corner quintic blend chain (KB-031) — the successor with
+    // MaxCornerDeviation fuses the two linear legs into one Euclidean chain
+    // profile that passes the corner without stopping.
+    recording.id = "core-group-blend";
+    axis::AxisModel x;
+    axis::AxisModel y;
+    x.set_power(true);
+    y.set_power(true);
+    axis::AxisGroup group;
+    group.add_axis(x);
+    group.add_axis(y);
+    group.enable();
+
+    axis::GroupCommand first{};
+    first.target.size = 2;
+    first.target.value[0] = 2.0;
+    first.target.value[1] = 0.0;
+    first.velocity = 0.05;
+    first.acceleration = 0.002;
+    first.deceleration = 0.002;
+    first.jerk = 0.002;
+    group.submit_linear(first);
+    std::int64_t tick = 0;
+    for(; tick < 5; ++tick) {
+        group.cycle();
+        recording.emit(tick, 0, x.snapshot());
+        recording.emit(tick, 1, y.snapshot());
+    }
+
+    axis::GroupCommand blend = first;
+    blend.target.value[0] = 3.73205080756888;
+    blend.target.value[1] = 1.0;
+    blend.buffer_mode = axis::BufferMode::blending_high;
+    blend.transition_mode = axis::TransitionMode::max_corner_deviation;
+    blend.transition_parameter = 0.05;
+    group.submit_linear(blend);
+    for(; tick < 1500; ++tick) {
+        group.cycle();
+        recording.emit(tick, 0, x.snapshot());
+        recording.emit(tick, 1, y.snapshot());
+        if(group.status() == axis::GroupStatus::standby) {
+            break;
+        }
+    }
+}
+
 using ScenarioRunner = void (*)(Recording &);
 constexpr ScenarioRunner kScenarios[] = {run_single_axis_move, run_velocity_stop,
-                                         run_group_linear, run_group_circular};
+                                         run_group_linear, run_group_circular,
+                                         run_group_blend};
 
 int write_recording(const Recording &recording, const std::string &directory)
 {

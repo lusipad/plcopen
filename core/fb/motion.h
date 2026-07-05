@@ -719,6 +719,12 @@ public:
     double deceleration = 1.0;
     double jerk = 1.0;
     axis::BufferMode buffer_mode = axis::BufferMode::aborting;
+    // A4 geometric blending inputs (approved blending matrix): TransitionMode
+    // MaxCornerDeviation with a positive tolerance and a blending buffer mode
+    // requests a quintic corner blend; unlisted combinations are explicit
+    // errors.
+    axis::TransitionMode transition_mode = axis::TransitionMode::none;
+    double transition_parameter = 0.0;
 
     void call()
     {
@@ -743,6 +749,8 @@ protected:
         command.deceleration = deceleration;
         command.jerk = jerk;
         command.buffer_mode = buffer_mode;
+        command.transition_mode = transition_mode;
+        command.transition_parameter = transition_parameter;
         accept(group_ref->submit_linear(command));
     }
 };

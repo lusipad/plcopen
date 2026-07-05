@@ -95,6 +95,15 @@
         "rewrite-core",
         "two-axis BORDER quarter arc after linear approach (A3, KB-030)"
       ]
+    },
+    {
+      "id": "core-group-blend",
+      "path": "core-group-blend.jsonl",
+      "source": "plcopen_core_replay_regression --record",
+      "coverage": [
+        "rewrite-core",
+        "shallow-corner quintic blend chain, MaxCornerDeviation (A4, KB-031)"
+      ]
     }
   ]
 }

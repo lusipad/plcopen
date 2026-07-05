@@ -55,6 +55,18 @@ enum class GroupPathKind
     circular,
 };
 
+// MC_TRANSITION_MODE (approved blending matrix): v1 implements None and
+// MaxCornerDeviation; StartVelocity/ConstantVelocity/CornerDistance are
+// explicit unsupported.
+enum class TransitionMode
+{
+    none,
+    start_velocity,
+    constant_velocity,
+    corner_distance,
+    max_corner_deviation,
+};
+
 struct GroupCommand
 {
     GroupPosition target{};
@@ -70,6 +82,10 @@ struct GroupCommand
     double jerk = 1.0;
     BufferMode buffer_mode = BufferMode::aborting;
     std::uint32_t command_id = 0;
+
+    // A4 transition inputs (linear-to-linear geometric blending v1, KB-031).
+    TransitionMode transition_mode = TransitionMode::none;
+    double transition_parameter = 0.0;
 
     // Circular-only inputs (ignored by submit_linear).
     GroupPathKind path_kind = GroupPathKind::linear;
@@ -254,6 +270,34 @@ public:
             }
         }
 
+        // TransitionMode combination matrix (approved blending matrix):
+        // unlisted combinations are explicit errors, never silent downgrades.
+        const bool blending_buffer = command.buffer_mode == BufferMode::blending_low ||
+                                     command.buffer_mode == BufferMode::blending_high;
+        if(command.transition_mode == TransitionMode::none) {
+            if(command.transition_parameter != 0.0) {
+                return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
+            }
+            if(blending_buffer) {
+                return rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported);
+            }
+        } else if(command.transition_mode == TransitionMode::max_corner_deviation) {
+            if(!std::isfinite(command.transition_parameter) ||
+               command.transition_parameter <= 0.0) {
+                return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
+            }
+            if(command.buffer_mode == BufferMode::aborting) {
+                // Aborting semantics and pre-blended queues are mutually
+                // exclusive (approved matrix).
+                return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
+            }
+            if(!blending_buffer) {
+                return rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported);
+            }
+        } else {
+            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported);
+        }
+
         if(command.command_id == 0) {
             command.command_id = next_command_id_++;
         }
@@ -268,6 +312,10 @@ public:
         }
         command = normalize(command);
 
+        if(blending_buffer) {
+            return submit_blend(command);
+        }
+
         if(command.buffer_mode == BufferMode::aborting || !active_) {
             const rt::ErrorCode started = start(command);
             if(started != rt::ErrorCode::ok) {
@@ -276,6 +324,11 @@ public:
             return rt::Result<std::uint32_t>::success(command.command_id);
         }
 
+        if(blend_chain_) {
+            // v1 boundary (KB-031): a committed blend chain cannot be
+            // extended with further buffered commands.
+            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported);
+        }
         const rt::ErrorCode queued = queue_.push_back(command);
         if(queued != rt::ErrorCode::ok) {
             return rt::Result<std::uint32_t>::failure(queued);
@@ -309,7 +362,12 @@ public:
         }
         if(command.buffer_mode != BufferMode::aborting &&
            command.buffer_mode != BufferMode::buffered) {
-            // Geometric blending onto arcs is Phase A4 scope; reject explicitly.
+            // Geometric blending onto arcs awaits the linear-circular spec
+            // extension; reject explicitly.
+            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported);
+        }
+        if(command.transition_mode != TransitionMode::none ||
+           command.transition_parameter != 0.0) {
             return rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported);
         }
 
@@ -377,11 +435,22 @@ public:
             }
             return rt::Result<std::uint32_t>::success(command.command_id);
         }
+        if(blend_chain_) {
+            // v1 boundary (KB-031): a committed blend chain cannot be extended.
+            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported);
+        }
         const rt::ErrorCode queued = queue_.push_back(command);
         if(queued != rt::ErrorCode::ok) {
             return rt::Result<std::uint32_t>::failure(queued);
         }
         return rt::Result<std::uint32_t>::success(command.command_id);
+    }
+
+    // Degradation of a blending request to a plain BUFFERED join is reported
+    // through this query, never silently (approved blending matrix).
+    std::uint32_t last_blend_degraded_command() const
+    {
+        return last_blend_degraded_id_;
     }
 
     void cycle()
@@ -412,7 +481,9 @@ public:
             ratio = state.position / active_path_length_;
             ratio = ratio < 0.0 ? 0.0 : (ratio > 1.0 ? 1.0 : ratio);
         }
-        if(active_kind_ == GroupPathKind::circular) {
+        if(blend_chain_) {
+            sample_chain(ratio * active_path_length_);
+        } else if(active_kind_ == GroupPathKind::circular) {
             // Arc-length parameterized sampling: the first two axes trace the
             // arc, remaining axes follow the path parameter linearly.
             const geom::Vec3 point = geom::sample(active_arc_, ratio * active_path_length_);
@@ -500,6 +571,7 @@ private:
 
     rt::ErrorCode start(GroupCommand command)
     {
+        blend_chain_ = false;
         active_command_ = command;
         active_tick_ = 0;
         double longest = 0.0;
@@ -545,6 +617,7 @@ private:
     void finish_active()
     {
         active_ = false;
+        blend_chain_ = false;
         for(std::size_t i = 0; i < axes_.size(); ++i) {
             axes_[i]->clear_synchronized();
         }
@@ -568,10 +641,351 @@ private:
     void abort_motion()
     {
         active_ = false;
+        blend_chain_ = false;
         queue_.clear();
         active_tick_ = 0;
         for(std::size_t i = 0; i < axes_.size(); ++i) {
             axes_[i]->clear_synchronized();
+        }
+    }
+
+    // A4 v1 geometric blending (KB-031): the accepted chain fuses the rest of
+    // the active linear segment, the quintic corner curve, and the successor
+    // segment into ONE Euclidean arc-length path driven by ONE jerk-limited
+    // profile whose velocity limit is corner-safe (min of both commands and
+    // the curvature bound). Planning happens synchronously at submit; the
+    // cycle path only samples precomputed data. The chain commits only when
+    // it beats the full-stop baseline, otherwise the request degrades to
+    // BUFFERED and the degradation is reported.
+    static constexpr std::size_t BlendTableSize = 33;
+
+    rt::Result<std::uint32_t> submit_blend(GroupCommand command)
+    {
+        // v1 declared boundary (KB-031): blending applies onto the active
+        // linear command with an empty queue; other configurations are
+        // explicit errors.
+        if(!active_ || active_kind_ != GroupPathKind::linear || !queue_.empty() ||
+           blend_chain_ || status_ != GroupStatus::moving || active_path_length_ <= 0.0) {
+            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported);
+        }
+
+        // Euclidean geometry of the predecessor and successor segments.
+        double length1 = 0.0;
+        double length2 = 0.0;
+        std::array<double, MaxAxes> u1{};
+        std::array<double, MaxAxes> u2{};
+        double longest2 = 0.0;
+        for(std::size_t i = 0; i < axes_.size(); ++i) {
+            const double d1 = active_finish_[i] - active_start_[i];
+            const double d2 = command.target.value[i] - active_finish_[i];
+            length1 += d1 * d1;
+            length2 += d2 * d2;
+            u1[i] = d1;
+            u2[i] = d2;
+            const double travel2 = std::fabs(d2);
+            if(travel2 > longest2) {
+                longest2 = travel2;
+            }
+        }
+        length1 = std::sqrt(length1);
+        length2 = std::sqrt(length2);
+        if(length1 <= 1e-12 || length2 <= 1e-12) {
+            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
+        }
+        double alignment = 0.0;
+        for(std::size_t i = 0; i < axes_.size(); ++i) {
+            u1[i] /= length1;
+            u2[i] /= length2;
+            alignment += u1[i] * u2[i];
+        }
+
+        // Euclidean conversions: KB-027 states dynamics in the longest-member
+        // metric; the chain runs in Euclidean arc length.
+        const double scale1 = length1 / active_path_length_;
+        const double scale2 = longest2 > 0.0 ? length2 / longest2 : 1.0;
+        const otg::State1D raw =
+            otg::sample(active_profile_, rt::CycleTick::from_cycles(active_tick_));
+        const otg::State1D now{raw.position * scale1, raw.velocity * scale1,
+                               raw.acceleration * scale1};
+        const otg::Limits1D limits1{active_command_.velocity * scale1,
+                                    active_command_.acceleration * scale1,
+                                    active_command_.deceleration * scale1,
+                                    active_command_.jerk * scale1};
+        const otg::Limits1D limits2{command.velocity * scale2,
+                                    command.acceleration * scale2,
+                                    command.deceleration * scale2,
+                                    command.jerk * scale2};
+
+        if(alignment < -0.999) {
+            // Reflex corner: degrade to a BUFFERED full stop, reported.
+            return degrade_blend(command);
+        }
+
+        double distance = 0.0;
+        double blend_length = 0.0;
+        double corner_velocity =
+            limits1.max_velocity < limits2.max_velocity ? limits1.max_velocity
+                                                        : limits2.max_velocity;
+        bool has_curve = false;
+        std::array<std::array<double, MaxAxes>, 6> control{};
+        std::array<double, BlendTableSize> cumulative{};
+
+        if(alignment <= 0.999) {
+            double turn = 0.0;
+            for(std::size_t i = 0; i < axes_.size(); ++i) {
+                const double diff = u2[i] - u1[i];
+                turn += diff * diff;
+            }
+            turn = std::sqrt(turn);
+            distance = command.transition_parameter * 96.0 / (23.0 * turn);
+            if(distance > length1 * 0.5) {
+                distance = length1 * 0.5;
+            }
+            if(distance > length2 * 0.5) {
+                distance = length2 * 0.5;
+            }
+            if(now.position >= length1 - distance) {
+                // Already inside (or past) the would-be transition region.
+                return degrade_blend(command);
+            }
+
+            for(std::size_t i = 0; i < axes_.size(); ++i) {
+                const double corner = active_finish_[i];
+                control[0][i] = corner - u1[i] * distance;
+                control[1][i] = corner - u1[i] * (distance * 2.0 / 3.0);
+                control[2][i] = corner - u1[i] * (distance / 3.0);
+                control[3][i] = corner + u2[i] * (distance / 3.0);
+                control[4][i] = corner + u2[i] * (distance * 2.0 / 3.0);
+                control[5][i] = corner + u2[i] * distance;
+            }
+
+            // Arc-length table and peak curvature (planning-phase work).
+            double accumulated = 0.0;
+            std::array<double, MaxAxes> previous{};
+            blend_point(control, 0.0, previous);
+            cumulative[0] = 0.0;
+            for(std::size_t step = 1; step < BlendTableSize; ++step) {
+                const double u =
+                    static_cast<double>(step) / static_cast<double>(BlendTableSize - 1);
+                std::array<double, MaxAxes> point{};
+                blend_point(control, u, point);
+                double chord = 0.0;
+                for(std::size_t i = 0; i < axes_.size(); ++i) {
+                    const double diff = point[i] - previous[i];
+                    chord += diff * diff;
+                }
+                accumulated += std::sqrt(chord);
+                cumulative[step] = accumulated;
+                previous = point;
+            }
+            blend_length = accumulated;
+            if(!std::isfinite(blend_length) || blend_length <= 0.0) {
+                return degrade_blend(command);
+            }
+            double max_curvature = 0.0;
+            for(std::size_t step = 0; step <= 64; ++step) {
+                const double u = static_cast<double>(step) / 64.0;
+                const double curvature = blend_curvature(control, u);
+                if(curvature > max_curvature) {
+                    max_curvature = curvature;
+                }
+            }
+            if(max_curvature > 0.0) {
+                double junction_acceleration =
+                    limits1.max_acceleration < limits1.max_deceleration
+                        ? limits1.max_acceleration
+                        : limits1.max_deceleration;
+                if(limits2.max_acceleration < junction_acceleration) {
+                    junction_acceleration = limits2.max_acceleration;
+                }
+                if(limits2.max_deceleration < junction_acceleration) {
+                    junction_acceleration = limits2.max_deceleration;
+                }
+                const double geometric = std::sqrt(junction_acceleration / max_curvature);
+                if(geometric < corner_velocity) {
+                    corner_velocity = geometric;
+                }
+            }
+            has_curve = true;
+        }
+        // Collinear pass-through keeps has_curve false: the segments join
+        // directly at the corner and the chain cruises through it.
+
+        // One profile over the composite chain, with the corner-safe velocity
+        // limit and the conservative envelope of both commands (KB-031).
+        const otg::Limits1D chain_limits{
+            corner_velocity,
+            limits1.max_acceleration < limits2.max_acceleration ? limits1.max_acceleration
+                                                                : limits2.max_acceleration,
+            limits1.max_deceleration < limits2.max_deceleration ? limits1.max_deceleration
+                                                                : limits2.max_deceleration,
+            limits1.max_jerk < limits2.max_jerk ? limits1.max_jerk : limits2.max_jerk,
+        };
+        const double chain_total = (length1 - distance) + blend_length + (length2 - distance);
+        const rt::Result<otg::Profile1D> chain = otg::plan_time_optimal(
+            now, {chain_total, 0.0, 0.0}, chain_limits);
+        if(!chain) {
+            return degrade_blend(command);
+        }
+
+        // Constructive cycle-time gate: commit only when the chain beats the
+        // full-stop baseline, otherwise degrade (reported).
+        const rt::Result<otg::Profile1D> stop_leg = otg::plan_time_optimal(
+            now, {length1, 0.0, 0.0}, limits1);
+        const rt::Result<otg::Profile1D> next_leg = otg::plan_time_optimal(
+            {0.0, 0.0, 0.0}, {length2, 0.0, 0.0}, limits2);
+        if(stop_leg && next_leg &&
+           chain.value().duration_cycles() >=
+               stop_leg.value().duration_cycles() + next_leg.value().duration_cycles()) {
+            return degrade_blend(command);
+        }
+
+        // Commit. The active profile and dynamics switch to the chain.
+        blend_chain_ = true;
+        blend_has_curve_ = has_curve;
+        blend_ctrl_ = control;
+        blend_cumulative_ = cumulative;
+        blend_length_ = blend_length;
+        chain_s1_ = length1 - distance;
+        for(std::size_t i = 0; i < axes_.size(); ++i) {
+            chain_u1_[i] = u1[i];
+            chain_u2_[i] = u2[i];
+            chain_leg2_start_[i] =
+                has_curve ? control[5][i] : active_finish_[i];
+        }
+        active_profile_ = chain.value();
+        active_tick_ = 0;
+        active_duration_ = active_profile_.duration_cycles();
+        active_path_length_ = chain_total;
+        active_command_ = command;
+        active_command_.velocity = chain_limits.max_velocity;
+        active_command_.acceleration = chain_limits.max_acceleration;
+        active_command_.deceleration = chain_limits.max_deceleration;
+        active_command_.jerk = chain_limits.max_jerk;
+        for(std::size_t i = 0; i < axes_.size(); ++i) {
+            // active_start_ keeps the leg1 origin: chain arc length zero is
+            // the original segment start. active_finish_ is the chain target.
+            active_finish_[i] = command.target.value[i];
+        }
+        active_kind_ = GroupPathKind::linear;
+        return rt::Result<std::uint32_t>::success(command.command_id);
+    }
+
+    rt::Result<std::uint32_t> degrade_blend(GroupCommand command)
+    {
+        last_blend_degraded_id_ = command.command_id;
+        command.buffer_mode = BufferMode::buffered;
+        command.transition_mode = TransitionMode::none;
+        command.transition_parameter = 0.0;
+        const rt::ErrorCode queued = queue_.push_back(command);
+        if(queued != rt::ErrorCode::ok) {
+            return rt::Result<std::uint32_t>::failure(queued);
+        }
+        return rt::Result<std::uint32_t>::success(command.command_id);
+    }
+
+    void blend_point(const std::array<std::array<double, MaxAxes>, 6> &control,
+                     double u,
+                     std::array<double, MaxAxes> &out) const
+    {
+        const double v = 1.0 - u;
+        const double v2 = v * v;
+        const double u2 = u * u;
+        const double w0 = v2 * v2 * v;
+        const double w1 = 5.0 * v2 * v2 * u;
+        const double w2 = 10.0 * v2 * v * u2;
+        const double w3 = 10.0 * v2 * u2 * u;
+        const double w4 = 5.0 * v * u2 * u2;
+        const double w5 = u2 * u2 * u;
+        for(std::size_t i = 0; i < axes_.size(); ++i) {
+            out[i] = control[0][i] * w0 + control[1][i] * w1 + control[2][i] * w2 +
+                     control[3][i] * w3 + control[4][i] * w4 + control[5][i] * w5;
+        }
+    }
+
+    double blend_curvature(const std::array<std::array<double, MaxAxes>, 6> &control,
+                           double u) const
+    {
+        const double v = 1.0 - u;
+        const double v2 = v * v;
+        const double u2 = u * u;
+        const double d1w0 = 5.0 * v2 * v2;
+        const double d1w1 = 20.0 * v2 * v * u;
+        const double d1w2 = 30.0 * v2 * u2;
+        const double d1w3 = 20.0 * v * u2 * u;
+        const double d1w4 = 5.0 * u2 * u2;
+        const double d2w0 = 20.0 * v * v * v;
+        const double d2w1 = 60.0 * v * v * u;
+        const double d2w2 = 60.0 * v * u * u;
+        const double d2w3 = 20.0 * u * u * u;
+        double norm1 = 0.0;
+        double norm2 = 0.0;
+        double dot12 = 0.0;
+        for(std::size_t i = 0; i < axes_.size(); ++i) {
+            const double e0 = control[1][i] - control[0][i];
+            const double e1 = control[2][i] - control[1][i];
+            const double e2 = control[3][i] - control[2][i];
+            const double e3 = control[4][i] - control[3][i];
+            const double e4 = control[5][i] - control[4][i];
+            const double first = e0 * d1w0 + e1 * d1w1 + e2 * d1w2 + e3 * d1w3 + e4 * d1w4;
+            const double f0 = e1 - e0;
+            const double f1 = e2 - e1;
+            const double f2 = e3 - e2;
+            const double f3 = e4 - e3;
+            const double second = f0 * d2w0 + f1 * d2w1 + f2 * d2w2 + f3 * d2w3;
+            norm1 += first * first;
+            norm2 += second * second;
+            dot12 += first * second;
+        }
+        if(norm1 <= 1e-24) {
+            return 0.0;
+        }
+        const double area = norm1 * norm2 - dot12 * dot12;
+        if(area <= 0.0) {
+            return 0.0;
+        }
+        return std::sqrt(area) / (norm1 * std::sqrt(norm1));
+    }
+
+    void sample_chain(double arclength)
+    {
+        const double s2_boundary = chain_s1_ + blend_length_;
+        if(arclength <= chain_s1_ || (!blend_has_curve_ && arclength <= chain_s1_)) {
+            for(std::size_t i = 0; i < axes_.size(); ++i) {
+                axes_[i]->set_synchronized_position(active_start_[i] +
+                                                    chain_u1_[i] * arclength);
+            }
+            return;
+        }
+        if(blend_has_curve_ && arclength <= s2_boundary) {
+            double target = arclength - chain_s1_;
+            if(target > blend_length_) {
+                target = blend_length_;
+            }
+            std::size_t low = 0;
+            for(std::size_t i = 1; i < BlendTableSize; ++i) {
+                if(blend_cumulative_[i] >= target) {
+                    low = i - 1;
+                    break;
+                }
+                low = i - 1;
+            }
+            const double segment = blend_cumulative_[low + 1] - blend_cumulative_[low];
+            const double fraction =
+                segment > 0.0 ? (target - blend_cumulative_[low]) / segment : 0.0;
+            const double u = (static_cast<double>(low) + fraction) /
+                             static_cast<double>(BlendTableSize - 1);
+            std::array<double, MaxAxes> point{};
+            blend_point(blend_ctrl_, u, point);
+            for(std::size_t i = 0; i < axes_.size(); ++i) {
+                axes_[i]->set_synchronized_position(point[i]);
+            }
+            return;
+        }
+        const double leg2 = arclength - s2_boundary;
+        for(std::size_t i = 0; i < axes_.size(); ++i) {
+            axes_[i]->set_synchronized_position(chain_leg2_start_[i] +
+                                                chain_u2_[i] * leg2);
         }
     }
 
@@ -584,6 +998,16 @@ private:
     std::array<double, MaxAxes> active_finish_{};
     GroupPathKind active_kind_ = GroupPathKind::linear;
     geom::ArcSegment active_arc_{};
+    bool blend_chain_ = false;
+    bool blend_has_curve_ = false;
+    std::array<std::array<double, MaxAxes>, 6> blend_ctrl_{};
+    std::array<double, BlendTableSize> blend_cumulative_{};
+    double blend_length_ = 0.0;
+    double chain_s1_ = 0.0;
+    std::array<double, MaxAxes> chain_u1_{};
+    std::array<double, MaxAxes> chain_u2_{};
+    std::array<double, MaxAxes> chain_leg2_start_{};
+    std::uint32_t last_blend_degraded_id_ = 0;
     otg::Profile1D active_profile_{};
     double active_path_length_ = 0.0;
     std::int64_t active_tick_ = 0;

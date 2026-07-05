@@ -1,8 +1,12 @@
 # Part 4 几何 Blending 语义矩阵
 
-> 状态：**已批准（2026-07-05，维护者）**。本文件是 Phase A4（公差带几何
-> blending v1）的验收规格（normative），实现与验收测试以本矩阵为准。
-> 曲线选型依据 long-term-plan 6.3-#4（五次 Bézier，C2 加速度连续）。
+> 状态：**已批准（2026-07-05，维护者）；v1 已实现（KB-031）**。本文件是
+> Phase A4（公差带几何 blending v1）的验收规格（normative），实现与验收
+> 测试以本矩阵为准。曲线选型依据 long-term-plan 6.3-#4（五次 Bézier，C2
+> 加速度连续）。验收证据：`plcopen_core_a4_blending_tests` + 回放场景
+> `core-group-blend`。实现形态（KB-031）：接受的 blending 链融合为单一
+> 欧氏弧长路径 + 单一 jerk-limited 剖面（链上限速 = 拐角安全速度），并以
+> "链时长优于完全停止基线"为构造性提交门槛，不达则显式降级 BUFFERED。
 
 ## 提案范围（v1）
 
