@@ -68,4 +68,36 @@
 
 `v0.11.0` 是旧 `src/` 线的最后一个功能性检查点。R4 切换后，默认 CMake 包目标、FetchContent、demo 和 Python smoke 均指向新核 `core/`。旧 `src/` 线进入 P0-only 维护窗口：只接收构建失败、数据损坏、错误安全边界和已发布行为的高优先级缺陷修复，不再新增功能块、规划器能力或旧 API 扩面。
 
-建议窗口：从 `v1.0.0-alpha` 发布日起保留 9
+建议窗口：从 `v1.0.0-alpha` 发布日起保留 90 天 P0-only 维护。窗口结束后，旧线仅通过 `v0.11.0` tag 和 release source tarball 作为 golden replay 与迁移基线保留。
+
+迁移路径：
+
+1. 新项目直接链接 `plcopen::plcopen` 并 include `core/` 头文件。
+2. 需要旧线回放或对照时，源码树构建显式启用 `-DPLCOPEN_BUILD_LEGACY=ON`。
+3. 旧 API 的长期兼容层不在 R4 默认范围内；真实下游迁移阻塞应拆成独立 issue。
+
+## `v1.0.0-alpha` 发布草案
+
+发布定位：`v1.0.0-alpha` 是新核消费入口检查点，不是商用级 PLC runtime 或完整 PLCopen 认证版本。
+
+Release notes 应包含：
+
+- 默认 `plcopen::plcopen` 目标切换为新核 `core/`。
+- 安装后 `find_package` 与源码树 `FetchContent` 均消费新核。
+- 默认 demo 和 Python smoke 已迁移到新核最小公开面。
+- 旧 `src/` 默认隔离，只在 `PLCOPEN_BUILD_LEGACY=ON` 时构建。
+- 当前已知限制：无 kinematics、无工业总线、无完整 PLC runtime、无 PLCopen 认证承诺、无 v1 ABI 稳定承诺。
+
+发布前必须附上：
+
+- `git diff --check`
+- full CTest
+- replay fixture format
+- RT-safety scan
+- fuzz smoke
+- installed `find_package` consumer
+- `FetchContent` consumer
+- pyplcopen smoke
+- docs target
+- Windows/Linux CI 链接
+- [迁移指南](../migration-v0-to-v1.md)（rewrite-plan §5 DoD 第 5 条）
