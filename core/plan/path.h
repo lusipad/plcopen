@@ -4,11 +4,44 @@
 #include <cstddef>
 
 #include "geom/geometry.h"
+#include "otg/time_optimal.h"
 #include "rt/error.h"
 #include "rt/static_vector.h"
 
 namespace plcopen::core::plan
 {
+
+// Approved look-ahead v2 (jerk correction): the largest exit speed whose
+// jerk-limited ramp from `entry` fits inside `distance`. The trapezoid value
+// sqrt(entry^2 + 2*bound*distance) bounds the bisection from above — jerk
+// phases only add ramp distance per delta-v — so the v2 scan is never more
+// optimistic than the v1 trapezoid scan (monotone tightening by
+// construction). Planning-domain only: the scans run at submit time.
+inline double jerk_reachable_speed(double entry,
+                                   double distance,
+                                   double bound,
+                                   double jerk)
+{
+    if(distance <= 0.0 || bound <= 0.0 || jerk <= 0.0) {
+        return entry;
+    }
+    const double trapezoid = std::sqrt(entry * entry + 2.0 * bound * distance);
+    const otg::Limits1D limits{trapezoid + 1.0, bound, bound, jerk};
+    if(otg::detail::ramp_between(entry, trapezoid, limits).distance <= distance) {
+        return trapezoid;
+    }
+    double low = entry;
+    double high = trapezoid;
+    for(int iteration = 0; iteration < 48; ++iteration) {
+        const double middle = 0.5 * (low + high);
+        if(otg::detail::ramp_between(entry, middle, limits).distance <= distance) {
+            low = middle;
+        } else {
+            high = middle;
+        }
+    }
+    return low;
+}
 
 template <std::size_t Capacity> class PathBuffer
 {

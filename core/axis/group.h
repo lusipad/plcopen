@@ -9,6 +9,7 @@
 #include "geom/geometry.h"
 #include "kin/kinematics.h"
 #include "otg/profile1d.h"
+#include "plan/path.h"
 #include "otg/time_optimal.h"
 #include "rt/cycle.h"
 #include "rt/error.h"
@@ -1535,8 +1536,11 @@ private:
                                       ? window_[i].line_length() - s_live
                                       : window_[i].line_length();
             const double usable = length > 0.0 ? length : 0.0;
-            double reachable = std::sqrt(
-                forward * forward + 2.0 * window_[i].limits.max_acceleration * usable);
+            // Approved look-ahead v2: exact jerk-limited reachability
+            // replaces the trapezoid estimate (declared change, KB-039).
+            double reachable = plan::jerk_reachable_speed(
+                forward, usable, window_[i].limits.max_acceleration,
+                window_[i].limits.max_jerk);
             if(i + 1 < count) {
                 const double cap = window_[i].node.corner_cap;
                 if(reachable > cap) {
@@ -1558,8 +1562,9 @@ private:
             if(i + 1 < count && backward < node_v[i]) {
                 node_v[i] = backward;
             }
-            backward = std::sqrt(node_v[i] * node_v[i] +
-                                 2.0 * window_[i].limits.max_deceleration * usable);
+            backward = plan::jerk_reachable_speed(node_v[i], usable,
+                                                  window_[i].limits.max_deceleration,
+                                                  window_[i].limits.max_jerk);
             if(i + 1 < count) {
                 backward = backward; // entry allowance of segment i
             }

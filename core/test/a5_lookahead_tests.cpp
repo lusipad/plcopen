@@ -7,6 +7,7 @@
 // reflex-corner degradation inside a window, and GroupStop on the window.
 
 #include <cmath>
+#include <cstdint>
 #include <cstdio>
 
 #include "axis/group.h"
@@ -531,6 +532,47 @@ int check_arc_window_boundaries()
     return 0;
 }
 
+// Look-ahead v2 jerk correction (approved v2 spec, KB-039): the reachable
+// speed is never above the trapezoid value, the jerk-limited ramp to it fits
+// the distance, and the correction bites in jerk-dominated regimes.
+int check_jerk_reachable_speed()
+{
+    struct Lcg
+    {
+        std::uint32_t state = 0x9E3779B9u;
+        double range(double minimum, double maximum)
+        {
+            state = state * 1664525u + 1013904223u;
+            return minimum + (static_cast<double>(state >> 8) / 16777216.0) *
+                                 (maximum - minimum);
+        }
+    } rng;
+
+    for(int i = 0; i < 5000; ++i) {
+        const double entry = rng.range(0.0, 0.3);
+        const double distance = rng.range(0.0, 5.0);
+        const double bound = rng.range(0.001, 0.05);
+        const double jerk = rng.range(0.0001, 0.05);
+        const double reachable = plan::jerk_reachable_speed(entry, distance, bound, jerk);
+        const double trapezoid = std::sqrt(entry * entry + 2.0 * bound * distance);
+        if(reachable < entry - 1e-12 || reachable > trapezoid + 1e-9) {
+            return fail("jerk reachability bounds");
+        }
+        const otg::Limits1D limits{trapezoid + 1.0, bound, bound, jerk};
+        if(otg::detail::ramp_between(entry, reachable, limits).distance >
+           distance + 1e-9) {
+            return fail("jerk reachability fits distance");
+        }
+    }
+
+    const double corrected = plan::jerk_reachable_speed(0.0, 1.0, 0.05, 0.0005);
+    const double trapezoid = std::sqrt(2.0 * 0.05 * 1.0);
+    if(!(corrected < trapezoid * 0.95)) {
+        return fail("jerk correction bites");
+    }
+    return 0;
+}
+
 } // namespace
 
 int main()
@@ -538,7 +580,7 @@ int main()
     if(check_dense_window() != 0 || check_window_capacity() != 0 ||
        check_reflex_inside_window() != 0 || check_stop_on_window() != 0 ||
        check_line_arc_line_window() != 0 || check_arc_centripetal_clamp() != 0 ||
-       check_arc_window_boundaries() != 0) {
+       check_arc_window_boundaries() != 0 || check_jerk_reachable_speed() != 0) {
         return 1;
     }
     std::printf("PASS a5 lookahead tests\n");
