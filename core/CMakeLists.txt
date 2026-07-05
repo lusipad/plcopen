@@ -107,6 +107,11 @@ if(BUILD_TESTING AND PLCOPEN_BUILD_CORE_TESTS)
     plcopen_core_rt_compile_options(plcopen_core_a5_lookahead_tests)
     add_test(NAME plcopen_core_a5_lookahead_tests COMMAND plcopen_core_a5_lookahead_tests)
 
+    add_executable(plcopen_core_stream_tests test/stream_filter_tests.cpp)
+    target_link_libraries(plcopen_core_stream_tests PRIVATE plcopen::core)
+    plcopen_core_rt_compile_options(plcopen_core_stream_tests)
+    add_test(NAME plcopen_core_stream_tests COMMAND plcopen_core_stream_tests)
+
     add_executable(plcopen_core_a2_alloc_guard test/a2_alloc_guard_tests.cpp)
     target_link_libraries(plcopen_core_a2_alloc_guard PRIVATE plcopen::core)
     plcopen_core_rt_compile_options(plcopen_core_a2_alloc_guard)
@@ -163,6 +168,6 @@ endif()
 install(TARGETS plcopen_core
     EXPORT plcopenTargets)
 
-install(DIRECTORY axis exec fb geom otg plan rt
+install(DIRECTORY axis exec fb geom otg plan rt stream
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/plcopen
     FILES_MATCHING PATTERN "*.h")

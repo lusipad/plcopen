@@ -6,7 +6,8 @@ set(RT_DIRS
     core/rt
     core/otg
     core/geom
-    core/exec)
+    core/exec
+    core/stream)
 
 set(CODE_GLOBS
     "*.h"
