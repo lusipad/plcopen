@@ -34,6 +34,16 @@ git diff --check                                   # 只允许 CRLF warning
   `std::int64_t *_cycles`）
 - `<chrono>`/`<thread>`/`<iostream>`/`<fstream>` include
 
+## 测试可执行体的已知坑
+
+- **门禁必须按上面用 Debug 跑 ctest，不要图快换 Release**：Windows CI
+  覆盖率步骤会用 Debug 重跑全部测试 exe，Release-only 自检会漏掉
+  Debug-only 崩溃（2026-07-05 实例：pose_tests 栈溢出漏到 CI）。
+- **≥6 轴的组测试台不要放栈上**：MSVC 默认 1MB 栈，Debug 帧膨胀下
+  单函数两个 6 轴 rig（6×AxisModel + AxisGroup）即 `0xC00000FD`
+  栈溢出且**无任何输出**（Git Bash 报 exit 127）——测试台局部量一律
+  `static`（3 轴 rig 恰好没超线，别以此类推）。
+
 ## 回放红了怎么办
 
 先判断是不是声明变更（见 `plcopen-replay-baseline`）；不是 → 你改坏了
