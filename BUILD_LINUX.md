@@ -69,9 +69,10 @@ ctest --test-dir build-clang --output-on-failure
 ./build.sh --clean --install
 ```
 
-The install step writes headers and library artifacts into `out/`.
+The install step writes the header-only `core/` tree and the CMake package config into `out/` (no library binary; `plcopen::plcopen` is an INTERFACE target).
 
 ## Notes
 
-- `Catch2` is fetched by CMake during configure, so the first configure step needs network access.
+- The default build (new core only) has no third-party fetches; enabling `-DPLCOPEN_BUILD_LEGACY=ON` (Catch2) or `-DPLCOPEN_BUILD_PYTHON_BINDINGS=ON` (pybind11) makes the first configure need network access.
+- Build options table: see [BUILD_README.md](BUILD_README.md).
 - The Linux CI lanes use the plain CMake flow with both `gcc` and `clang`.

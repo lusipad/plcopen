@@ -1,173 +1,90 @@
-# plcopen 构建脚本使用说明
+# 构建指南（Windows / 跨平台）
 
-## 概述
+新核 `plcopen::plcopen` 是 **header-only INTERFACE 目标**（`core/` 头文件
+树），构建产物是测试/demo/绑定，不产出库二进制。Linux 细节见
+[BUILD_LINUX.md](BUILD_LINUX.md)；提交前门禁见 `.claude/skills/plcopen-gates`。
 
-本项目提供了一个 PowerShell 构建脚本，用于一键编译和测试 plcopen 项目：
+## 环境要求
 
-**`build.ps1`** - 完整功能构建脚本
+- **Windows**：Windows 10/11、Visual Studio 2022+（VS 2026 已验证）、
+  CMake 3.21+、PowerShell 5.1+
+- **Linux**：GCC 9+ / Clang 10+、CMake 3.21+
+- C++17；核心测试目标以 `-fno-exceptions -fno-rtti`（MSVC `/EHs-c- /GR-`）编译
 
-## 系统要求
-
-- Windows 10/11
-- PowerShell 5.1 或更高版本
-- Visual Studio 2022 或更高版本
-- CMake 3.21 或更高版本
-
-## 使用方法
-
-### 基本构建
+## 一键构建（Windows）
 
 ```powershell
-# 默认Release配置构建
-.\build.ps1
-
-# 指定Debug配置构建
-.\build.ps1 -Configuration Debug
+.\build.ps1              # Release 构建
+.\build.ps1 -Test        # 构建 + 全量 CTest
+.\build.ps1 -Clean       # 清理重建
+.\build.ps1 -Install     # 安装到 out/
 ```
 
-### 清理构建
+## CMake 直接构建（跨平台）
+
+```bash
+cmake -S . -B build -DPLCOPEN_BUILD_TESTS=ON
+cmake --build build --config Release
+ctest --test-dir build --build-config Release --output-on-failure
+```
+
+### 构建选项
+
+| 选项 | 默认 | 说明 |
+|------|------|------|
+| `PLCOPEN_BUILD_TESTS` | ON | 全部测试（含 `PLCOPEN_BUILD_CORE_TESTS` 新核套件） |
+| `PLCOPEN_BUILD_DEMOS` | ON | `core/demo/`（单轴 FB、组直线、轨迹流、组路径） |
+| `PLCOPEN_BUILD_PYTHON_BINDINGS` | OFF | pyplcopen（pybind11 FetchContent；smoke：`ctest -R pyplcopen_smoke`） |
+| `PLCOPEN_BUILD_DOCS` | OFF | Doxygen `docs` target（未装 Doxygen 时优雅降级） |
+| `PLCOPEN_BUILD_LEGACY` | OFF | 冻结的 v0.x `src/` 线（回放/迁移基线；DoD §5.3 对照工具需要） |
+
+## 覆盖率（Windows）
 
 ```powershell
-# 清理后重新构建
-.\build.ps1 -Clean
+.\coverage.ps1                                   # 默认目录
+.\coverage.ps1 -BuildDir build-sync -Configuration Debug
 ```
 
-### 执行测试
+## 下游消费
 
-```powershell
-# 构建并执行测试
-.\build.ps1 -Test
+**安装后 `find_package`：**
 
-# 清理、构建、测试
-.\build.ps1 -Clean -Test
+```bash
+cmake --install build --prefix <prefix>
 ```
 
-### 安装到输出目录
-
-```powershell
-# 构建并安装
-.\build.ps1 -Install
-
-# 完整流程：清理、构建、测试、安装
-.\build.ps1 -Clean -Test -Install
+```cmake
+find_package(plcopen CONFIG REQUIRED)
+target_link_libraries(app PRIVATE plcopen::plcopen)
 ```
 
-## 脚本功能
+**源码树 `FetchContent`：**
 
-### build.ps1
-
-- ✅ 环境检查（PowerShell 版本、CMake、操作系统）
-- ✅ 多配置构建（Debug/Release）
-- ✅ 自动 CMake 配置和构建
-- ✅ CTest 全量测试执行
-- ✅ 自动安装到输出目录
-- ✅ 彩色输出和进度显示
-- ✅ 错误处理和报告
-
-## 输出目录
-
-- **构建目录**: `build/`
-- **输出目录**: `out/`
-- **可执行文件**: 取决于生成器，常见为 `build/src/Release/`、`build/src/Debug/`、`build/Release/` 或 `build/Debug/`
-
-## 生成的文件
-
-构建完成后，会生成以下文件：
-
-- `plcopen.dll` - 主库文件
-- `plcopen.lib` - 导入库
-- `test_basic.exe` - CTest 使用的 Catch2 测试程序
-- `axis_move.exe` - 轴运动演示程序
-- `axis_homing.exe` - 轴回零演示程序
-- `axis_move_oscilloscope.exe` - 轴振荡运动演示程序
-
-## 故障排除
-
-### 常见问题
-
-1. **PowerShell 执行策略错误**
-   ```powershell
-   Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
-   ```
-
-2. **CMake 未找到**
-   - 确保 CMake 已安装并添加到 PATH
-   - 或使用完整路径：`C:\Program Files\CMake\bin\cmake.exe`
-
-3. **Visual Studio 未找到**
-   - 确保已安装 Visual Studio 2022
-   - 确保安装了 C++ 开发工具
-
-4. **构建失败**
-   - 检查是否有编译错误
-   - 查看 CMake 输出日志
-   - 尝试清理后重新构建：`.\build.ps1 -Clean`
-
-5. **Visual Studio / MSBuild 构建长时间卡住**
-   - `build.ps1` 会通过 `/p:TrackFileAccess=false` 禁用 MSBuild file tracking，以避免部分 Windows 环境中 `cl.exe` 长时间无输出挂起；同时通过 `/nodeReuse:false` 避免构建完成后保留后台 MSBuild 节点。
-   - 手动构建时可追加同样参数：
-     ```powershell
-     cmake --build build --config Release -- /p:TrackFileAccess=false /nodeReuse:false
-     ```
-
-### 手动构建步骤
-
-如果脚本有问题，可以手动执行以下步骤：
-
-```powershell
-# 1. 创建构建目录
-mkdir build
-cd build
-
-# 2. 配置CMake
-cmake -DCMAKE_BUILD_TYPE=Release ..
-
-# 3. 构建项目
-cmake --build . --config Release --parallel
-
-# 4. 运行 CTest 全量测试
-ctest --test-dir . --build-config Release --output-on-failure
+```cmake
+include(FetchContent)
+FetchContent_Declare(plcopen GIT_REPOSITORY https://github.com/lusipad/plcopen.git)
+FetchContent_MakeAvailable(plcopen)
+target_link_libraries(app PRIVATE plcopen::plcopen)
 ```
 
-## 开发说明
-
-### 添加新的构建配置
-
-在`build.ps1`中，可以修改`$BuildConfigs`哈希表来添加新的构建配置：
-
-```powershell
-$BuildConfigs = @{
-    "Debug" = @{
-        CMAKE_BUILD_TYPE = "Debug"
-        PLCOPEN_ENABLE_ASSERTS = "ON"
-        PLCOPEN_ENABLE_LOGGING = "ON"
-    }
-    "Release" = @{
-        CMAKE_BUILD_TYPE = "Release"
-        PLCOPEN_ENABLE_ASSERTS = "OFF"
-        PLCOPEN_ENABLE_LOGGING = "OFF"
-    }
-    # 添加新配置...
-}
+```cpp
+#include "axis/state.h"
+#include "fb/motion.h"   // 头文件按 core/ 相对路径引用
 ```
 
-### 自定义 CMake 选项
+两种消费方式均有 CI 级 smoke（`test_package/`）。
 
-在`Invoke-CMakeConfigure`函数中，可以添加更多 CMake 选项：
+## 常用验证入口
 
-```powershell
-$CMakeVars = @(
-    "-DCMAKE_BUILD_TYPE=$Configuration",
-    "-DPLCOPEN_ENABLE_TESTS=ON",
-    "-DPLCOPEN_ENABLE_BENCHMARKS=ON",
-    # 添加更多选项...
-)
+```bash
+cmake -P cmake/rt_safety_scan.cmake          # RT 路径静态扫描
+cmake -P cmake/verify_replay_fixtures.cmake  # 回放语料格式校验
+ctest --test-dir build -R replay             # 黄金回放回归
+ctest --test-dir build -L benchmark          # 基准层（含 STREAM_METRICS）
 ```
 
-## 许可证
+## 输出位置
 
-本项目遵循项目主许可证。
-
-## 贡献
-
-欢迎提交 Issue 和 Pull Request 来改进构建脚本。
+- 构建产物：`build/core/{Debug,Release}/`（测试/demo 可执行文件）
+- 安装树：`<prefix>/include/plcopen/`（头文件）+ CMake package config
+- 旧线（仅 `PLCOPEN_BUILD_LEGACY=ON`）：`build/src/…/plcopen.dll|.so`
