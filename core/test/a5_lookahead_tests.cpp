@@ -323,12 +323,222 @@ int check_stop_on_window()
     return 0;
 }
 
+// ---- A5 v2 (KB-033): arcs as window members ----------------------------
+
+axis::GroupCommand make_arc_blend(double sx, double sy, double cx, double cy,
+                                  double radius, bool ccw_quarter_up)
+{
+    // Quarter arc from (sx,sy) around center (cx,cy), tangent-continuous with
+    // a +x approach when the center sits straight above the start point.
+    (void)ccw_quarter_up;
+    axis::GroupCommand command{};
+    command.target.size = 2;
+    command.aux.size = 2;
+    command.aux.value[0] = cx + radius * std::cos(-Pi / 4.0);
+    command.aux.value[1] = cy + radius * std::sin(-Pi / 4.0);
+    command.target.value[0] = cx + radius;
+    command.target.value[1] = cy;
+    command.velocity = 0.02;
+    command.acceleration = 0.001;
+    command.deceleration = 0.001;
+    command.jerk = 0.001;
+    command.buffer_mode = axis::BufferMode::blending_high;
+    command.path_choice = axis::CircPathChoice::counter_clockwise;
+    (void)sx;
+    (void)sy;
+    return command;
+}
+
+int check_line_arc_line_window()
+{
+    // Baseline: same three legs with full stops.
+    Rig baseline;
+    int baseline_cycles = 0;
+    {
+        baseline.group.submit_linear(make_move(1.0, 0.0));
+        baseline_cycles += run_to_standstill(baseline.group);
+        axis::GroupCommand arc = make_arc_blend(1.0, 0.0, 1.0, 1.0, 1.0, true);
+        arc.buffer_mode = axis::BufferMode::aborting;
+        if(!baseline.group.submit_circular(arc)) {
+            return fail("baseline arc accepted");
+        }
+        baseline_cycles += run_to_standstill(baseline.group);
+        baseline.group.submit_linear(make_move(2.0, 2.5));
+        baseline_cycles += run_to_standstill(baseline.group);
+    }
+
+    Rig rig;
+    rig.group.submit_linear(make_move(1.0, 0.0));
+    for(int i = 0; i < 5; ++i) {
+        rig.group.cycle();
+    }
+    // Arc joins the window: entry tangent +x matches the approach.
+    const rt::Result<std::uint32_t> arc_accepted =
+        rig.group.submit_circular(make_arc_blend(1.0, 0.0, 1.0, 1.0, 1.0, true));
+    if(!arc_accepted) {
+        return fail("window arc accepted");
+    }
+    if(rig.group.last_blend_degraded_command() == arc_accepted.value()) {
+        return fail("window arc not degraded");
+    }
+    // Line joins after the arc: exit tangent (0,1) matches +y move.
+    const rt::Result<std::uint32_t> line_accepted =
+        rig.group.submit_linear(make_blend(2.0, 2.5));
+    if(!line_accepted) {
+        return fail("line after arc accepted");
+    }
+    if(rig.group.last_blend_degraded_command() == line_accepted.value()) {
+        return fail("line after arc not degraded");
+    }
+
+    double px = rig.x.snapshot().command_position;
+    double py = rig.y.snapshot().command_position;
+    double pv = 0.0;
+    double min_speed_mid = 1e9;
+    int cycles = 5;
+    for(int i = 0; i < 100000; ++i) {
+        rig.group.cycle();
+        ++cycles;
+        const double cx = rig.x.snapshot().command_position;
+        const double cy = rig.y.snapshot().command_position;
+        const double speed = std::sqrt((cx - px) * (cx - px) + (cy - py) * (cy - py));
+        // On-arc invariant: while inside the arc quadrant, the sample stays
+        // on the circle around (1,1) within 1e-9 (KB-030 carried into the
+        // window).
+        if(cx > 1.0 + 1e-9 && cy < 1.0 - 1e-9) {
+            const double radius =
+                std::sqrt((cx - 1.0) * (cx - 1.0) + (cy - 1.0) * (cy - 1.0));
+            if(!near(radius, 1.0, 1e-9)) {
+                return fail("window arc per-cycle radius");
+            }
+        }
+        // Junction zones: no stopping near (1,0) and (2,1).
+        const double d1 = std::sqrt((cx - 1.0) * (cx - 1.0) + cy * cy);
+        const double d2 = std::sqrt((cx - 2.0) * (cx - 2.0) + (cy - 1.0) * (cy - 1.0));
+        if((d1 < 0.1 || d2 < 0.1) && i >= 2 && speed < min_speed_mid) {
+            min_speed_mid = speed;
+        }
+        px = cx;
+        py = cy;
+        pv = speed;
+        if(rig.group.status() == axis::GroupStatus::standby) {
+            break;
+        }
+    }
+    (void)pv;
+    if(rig.group.status() != axis::GroupStatus::standby ||
+       !near(rig.x.snapshot().command_position, 2.0, 1e-9) ||
+       !near(rig.y.snapshot().command_position, 2.5, 1e-9)) {
+        return fail("line-arc-line window finishes at endpoint");
+    }
+    if(min_speed_mid <= 1e-6) {
+        return fail("tangent junctions passed without stopping");
+    }
+    if(cycles >= baseline_cycles) {
+        return fail("line-arc-line faster than full-stop baseline");
+    }
+    std::printf("line-arc-line window: %d cycles vs %d baseline\n", cycles, baseline_cycles);
+    return 0;
+}
+
+int check_arc_centripetal_clamp()
+{
+    // Small radius: the whole arc segment is clamped to sqrt(a*R).
+    Rig rig;
+    rig.group.submit_linear(make_move(1.0, 0.0));
+    for(int i = 0; i < 5; ++i) {
+        rig.group.cycle();
+    }
+    const rt::Result<std::uint32_t> accepted =
+        rig.group.submit_circular(make_arc_blend(1.0, 0.0, 1.0, 0.25, 0.25, true));
+    if(!accepted || rig.group.last_blend_degraded_command() == accepted.value()) {
+        return fail("clamped arc accepted");
+    }
+    const double clamp = std::sqrt(0.001 * 0.25);
+    double px = rig.x.snapshot().command_position;
+    double py = rig.y.snapshot().command_position;
+    for(int i = 0; i < 100000; ++i) {
+        rig.group.cycle();
+        const double cx = rig.x.snapshot().command_position;
+        const double cy = rig.y.snapshot().command_position;
+        const double speed = std::sqrt((cx - px) * (cx - px) + (cy - py) * (cy - py));
+        if(cx > 1.0 + 1e-9 && cy < 0.25 - 1e-9 && speed > clamp * 1.02) {
+            return fail("arc speed clamped to sqrt(a*R)");
+        }
+        px = cx;
+        py = cy;
+        if(rig.group.status() == axis::GroupStatus::standby) {
+            break;
+        }
+    }
+    return rig.group.status() == axis::GroupStatus::standby
+               ? 0
+               : fail("clamped arc finishes");
+}
+
+int check_arc_window_boundaries()
+{
+    // Non-tangent arc: degrades to a buffered full-stop join, reported.
+    Rig rig;
+    rig.group.submit_linear(make_move(1.0, 0.0));
+    for(int i = 0; i < 5; ++i) {
+        rig.group.cycle();
+    }
+    axis::GroupCommand skewed = make_arc_blend(1.0, 0.0, 0.6, 1.0, 1.077, true);
+    // Center not straight above the start: entry tangent leaves +x.
+    skewed.aux.value[0] = 0.6 + 1.077 * std::cos(-Pi / 3.0);
+    skewed.aux.value[1] = 1.0 + 1.077 * std::sin(-Pi / 3.0);
+    skewed.target.value[0] = 0.6 + 1.077;
+    skewed.target.value[1] = 1.0;
+    const rt::Result<std::uint32_t> degraded = rig.group.submit_circular(skewed);
+    if(!degraded) {
+        return fail("non-tangent arc accepted as buffered");
+    }
+    if(rig.group.last_blend_degraded_command() != degraded.value()) {
+        return fail("non-tangent arc degradation reported");
+    }
+    if(run_to_standstill(rig.group) < 0) {
+        return fail("degraded arc chain finishes");
+    }
+
+    // Tolerance-band transition on an arc is v3 scope: unsupported.
+    Rig rig2;
+    rig2.group.submit_linear(make_move(1.0, 0.0));
+    for(int i = 0; i < 3; ++i) {
+        rig2.group.cycle();
+    }
+    axis::GroupCommand with_tolerance = make_arc_blend(1.0, 0.0, 1.0, 1.0, 1.0, true);
+    with_tolerance.transition_mode = axis::TransitionMode::max_corner_deviation;
+    with_tolerance.transition_parameter = 0.05;
+    rt::Result<std::uint32_t> rejected = rig2.group.submit_circular(with_tolerance);
+    if(rejected || rejected.error() != rt::ErrorCode::unsupported) {
+        return fail("arc tolerance transition unsupported");
+    }
+
+    // Seeding a window from an active circular command is a v2 boundary.
+    axis::GroupCommand plain_arc = make_arc_blend(1.0, 0.0, 1.0, 1.0, 1.0, true);
+    plain_arc.buffer_mode = axis::BufferMode::aborting;
+    if(!rig2.group.submit_circular(plain_arc)) {
+        return fail("active arc setup");
+    }
+    for(int i = 0; i < 5; ++i) {
+        rig2.group.cycle();
+    }
+    rejected = rig2.group.submit_linear(make_blend(3.0, 1.0));
+    if(rejected || rejected.error() != rt::ErrorCode::unsupported) {
+        return fail("blend onto active circular unsupported");
+    }
+    return 0;
+}
+
 } // namespace
 
 int main()
 {
     if(check_dense_window() != 0 || check_window_capacity() != 0 ||
-       check_reflex_inside_window() != 0 || check_stop_on_window() != 0) {
+       check_reflex_inside_window() != 0 || check_stop_on_window() != 0 ||
+       check_line_arc_line_window() != 0 || check_arc_centripetal_clamp() != 0 ||
+       check_arc_window_boundaries() != 0) {
         return 1;
     }
     std::printf("PASS a5 lookahead tests\n");

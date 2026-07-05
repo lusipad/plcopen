@@ -123,6 +123,15 @@
         "rewrite-core",
         "four-segment zigzag look-ahead window, scanned node velocities (A5, KB-032)"
       ]
+    },
+    {
+      "id": "core-group-window-arc",
+      "path": "core-group-window-arc.jsonl",
+      "source": "plcopen_core_replay_regression --record",
+      "coverage": [
+        "rewrite-core",
+        "line-arc-line tangent-continuous look-ahead window (A5 v2, KB-033)"
+      ]
     }
   ]
 }

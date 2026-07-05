@@ -14,7 +14,10 @@ Responsibilities:
   node velocities come from a trapezoid bidirectional scan capped by curvature, each
   segment runs its own jerk-limited profile between node velocities, and extensions that
   do not beat the full-stop baseline degrade to BUFFERED (reported, not silent). All
-  planning happens at submit; the cycle path only samples precomputed data.
+  planning happens at submit; the cycle path only samples precomputed data. Arcs join
+  the window through tangent continuity (KB-033): aligned junctions pass at the scanned
+  node velocity, the arc segment is clamped to sqrt(a*R), and non-tangent junctions
+  degrade to a reported full stop.
 - Preserve one writer for each state object; group commands write member synchronized positions.
 - Own slave-side synchronization (gear/cam/combine): the slave axis samples master snapshots
   read-only in its own `cycle()` and drives itself through `set_synchronized_position`.

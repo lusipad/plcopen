@@ -293,10 +293,69 @@ void run_group_window(Recording &recording)
     }
 }
 
+void run_group_window_arc(Recording &recording)
+{
+    // A5 v2 (KB-033): line-arc-line tangent-continuous window — the arc
+    // enters the window via blending + tangent continuity and the follow-up
+    // line rides its exit tangent.
+    recording.id = "core-group-window-arc";
+    axis::AxisModel x;
+    axis::AxisModel y;
+    x.set_power(true);
+    y.set_power(true);
+    axis::AxisGroup group;
+    group.add_axis(x);
+    group.add_axis(y);
+    group.enable();
+
+    axis::GroupCommand first{};
+    first.target.size = 2;
+    first.target.value[0] = 1.0;
+    first.velocity = 0.05;
+    first.acceleration = 0.004;
+    first.deceleration = 0.004;
+    first.jerk = 0.004;
+    group.submit_linear(first);
+    std::int64_t tick = 0;
+    for(; tick < 3; ++tick) {
+        group.cycle();
+        recording.emit(tick, 0, x.snapshot());
+        recording.emit(tick, 1, y.snapshot());
+    }
+
+    axis::GroupCommand arc = first;
+    arc.aux.size = 2;
+    arc.aux.value[0] = 1.70710678118654752;
+    arc.aux.value[1] = 0.29289321881345248;
+    arc.target.value[0] = 2.0;
+    arc.target.value[1] = 1.0;
+    arc.buffer_mode = axis::BufferMode::blending_high;
+    arc.path_choice = axis::CircPathChoice::counter_clockwise;
+    group.submit_circular(arc);
+
+    axis::GroupCommand out = first;
+    out.target.value[0] = 2.0;
+    out.target.value[1] = 2.0;
+    out.buffer_mode = axis::BufferMode::blending_high;
+    out.transition_mode = axis::TransitionMode::max_corner_deviation;
+    out.transition_parameter = 0.02;
+    group.submit_linear(out);
+
+    for(; tick < 4000; ++tick) {
+        group.cycle();
+        recording.emit(tick, 0, x.snapshot());
+        recording.emit(tick, 1, y.snapshot());
+        if(group.status() == axis::GroupStatus::standby) {
+            break;
+        }
+    }
+}
+
 using ScenarioRunner = void (*)(Recording &);
 constexpr ScenarioRunner kScenarios[] = {run_single_axis_move, run_velocity_stop,
                                          run_group_linear, run_group_circular,
-                                         run_group_blend, run_group_window};
+                                         run_group_blend, run_group_window,
+                                         run_group_window_arc};
 
 int write_recording(const Recording &recording, const std::string &directory)
 {

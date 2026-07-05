@@ -407,14 +407,12 @@ public:
             // CENTER/RADIUS are declared unsupported in v1, not approximated.
             return rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported);
         }
-        if(command.buffer_mode != BufferMode::aborting &&
-           command.buffer_mode != BufferMode::buffered) {
-            // Geometric blending onto arcs awaits the linear-circular spec
-            // extension; reject explicitly.
-            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported);
-        }
+        const bool arc_blending = command.buffer_mode == BufferMode::blending_low ||
+                                  command.buffer_mode == BufferMode::blending_high;
         if(command.transition_mode != TransitionMode::none ||
            command.transition_parameter != 0.0) {
+            // Tolerance-band line-arc transition curves are v3 scope; arc
+            // window entry rides on tangent continuity alone (approved A5 v2).
             return rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported);
         }
 
@@ -471,6 +469,12 @@ public:
 
         if(command.command_id == 0) {
             command.command_id = next_command_id_++;
+        }
+        if(arc_blending) {
+            // A5 v2 (KB-033): the arc joins the look-ahead window when the
+            // junction is tangent-continuous, otherwise the request degrades
+            // to a BUFFERED full-stop join (reported).
+            return submit_blend_arc(command, start_point);
         }
         if(aborting) {
             abort_motion();
@@ -717,19 +721,28 @@ private:
         std::int64_t curve_cycles = 0;
     };
 
+    enum class WindowKind
+    {
+        line,
+        arc,
+    };
+
     struct WindowSegment
     {
+        WindowKind kind = WindowKind::line;
         std::array<double, MaxAxes> entry{}; // line start (after entry trim)
-        std::array<double, MaxAxes> dir{};   // unit direction
+        std::array<double, MaxAxes> dir{};   // unit direction (line only)
         std::array<double, MaxAxes> target{};
-        double full_length = 0.0;            // corner-to-corner euclidean
-        double trim_in = 0.0;
+        double full_length = 0.0;            // line: corner-to-corner; arc: arc length
+        double trim_in = 0.0;                // arcs are never trimmed (v2)
         double trim_out = 0.0;
-        otg::Limits1D limits{};              // euclidean dynamics
+        geom::ArcSegment arc_geom{};         // arc only (KB-030 plane arc)
+        otg::Limits1D limits{};              // euclidean dynamics (arc: velocity
+                                             // already clamped to sqrt(a*R))
         std::uint32_t command_id = 0;
         double entry_velocity = 0.0;
         double exit_velocity = 0.0;
-        otg::Profile1D profile{};            // line profile entry_v -> exit_v
+        otg::Profile1D profile{};            // path profile entry_v -> exit_v
         WindowNode node{};                   // corner to the NEXT segment
 
         double line_length() const
@@ -738,6 +751,33 @@ private:
             return length > 0.0 ? length : 0.0;
         }
     };
+
+    // N-dimensional unit tangent at a segment boundary: lines use dir; arcs
+    // combine the plane tangent with the linear following of higher axes.
+    void window_tangent(const WindowSegment &seg, bool at_exit,
+                        std::array<double, MaxAxes> &out) const
+    {
+        if(seg.kind == WindowKind::line) {
+            out = seg.dir;
+            return;
+        }
+        const geom::Vec3 plane =
+            geom::tangent(seg.arc_geom, at_exit ? seg.arc_geom.length : 0.0);
+        out[0] = plane.x;
+        out[1] = plane.y;
+        double norm = plane.x * plane.x + plane.y * plane.y;
+        for(std::size_t i = 2; i < axes_.size(); ++i) {
+            const double slope = (seg.target[i] - seg.entry[i]) / seg.full_length;
+            out[i] = slope;
+            norm += slope * slope;
+        }
+        norm = std::sqrt(norm);
+        if(norm > 0.0) {
+            for(std::size_t i = 0; i < axes_.size(); ++i) {
+                out[i] /= norm;
+            }
+        }
+    }
 
     rt::Result<std::uint32_t> submit_blend(GroupCommand command)
     {
@@ -763,13 +803,15 @@ private:
         std::array<double, MaxAxes> pred_dir{};
         double pred_full = 0.0;
         double pred_trim_out_room = 0.0; // half-length truncation budget
+        bool pred_is_line = true;
         otg::Limits1D pred_limits{};
         if(window_active_) {
             const WindowSegment &tail = window_[window_.size() - 1];
             pred_target = tail.target;
-            pred_dir = tail.dir;
+            window_tangent(tail, true, pred_dir);
             pred_full = tail.full_length;
             pred_limits = tail.limits;
+            pred_is_line = tail.kind == WindowKind::line;
         } else {
             double length1 = 0.0;
             for(std::size_t i = 0; i < axes_.size(); ++i) {
@@ -792,7 +834,7 @@ private:
                                         active_command_.deceleration * scale1,
                                         active_command_.jerk * scale1};
         }
-        pred_trim_out_room = pred_full * 0.5;
+        pred_trim_out_room = pred_is_line ? pred_full * 0.5 : 0.0;
 
         // Successor geometry.
         double length2 = 0.0;
@@ -832,6 +874,11 @@ private:
         double corner_cap =
             pred_limits.max_velocity < limits2.max_velocity ? pred_limits.max_velocity
                                                             : limits2.max_velocity;
+        if(alignment <= 0.999 && !pred_is_line) {
+            // No tolerance-band curve exists between an arc and a line (v3
+            // scope); a non-tangent junction degrades to a full-stop join.
+            return degrade_blend(command);
+        }
         if(alignment <= 0.999) {
             double turn = 0.0;
             for(std::size_t i = 0; i < axes_.size(); ++i) {
@@ -911,28 +958,9 @@ private:
         // Convert the active linear command into window segment zero.
         bool converted = false;
         if(!window_active_) {
-            WindowSegment seg0{};
-            for(std::size_t i = 0; i < axes_.size(); ++i) {
-                seg0.entry[i] = active_start_[i];
-                seg0.dir[i] = pred_dir[i];
-                seg0.target[i] = pred_target[i];
+            if(!convert_active_linear_to_window()) {
+                return rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported);
             }
-            seg0.full_length = pred_full;
-            seg0.limits = pred_limits;
-            seg0.command_id = active_command_.command_id;
-            // Live state in euclidean units for the rebuild below.
-            const double scale1 = pred_full / active_path_length_;
-            const otg::State1D raw =
-                otg::sample(active_profile_, rt::CycleTick::from_cycles(active_tick_));
-            seg0.entry_velocity = raw.velocity * scale1; // updated by rebuild
-            seg0.profile = active_profile_;              // replaced by rebuild
-            window_.clear();
-            window_.push_back(seg0);
-            window_seed_state_ = otg::State1D{raw.position * scale1, raw.velocity * scale1,
-                                              raw.acceleration * scale1};
-            window_index_ = 0;
-            window_in_curve_ = false;
-            window_tick_ = 0;
             converted = true;
         }
 
@@ -992,6 +1020,208 @@ private:
                 window_.pop_back();
                 WindowSegment &restore = window_[window_.size() - 1];
                 restore.trim_out = saved_trim_out;
+                restore.node = saved_node;
+                if(!window_rebuild(late)) {
+                    window_reset();
+                    clear_axes_synchronized();
+                    status_ = GroupStatus::standby;
+                    abort_motion();
+                }
+                return degrade_blend(command);
+            }
+        }
+
+        if(converted) {
+            active_ = false;
+            window_active_ = true;
+        }
+        status_ = GroupStatus::moving;
+        return rt::Result<std::uint32_t>::success(command.command_id);
+    }
+
+    // Seed the window from the active linear command: segment zero carries
+    // the euclidean geometry and the live state (captured for the rebuild).
+    bool convert_active_linear_to_window()
+    {
+        double length1 = 0.0;
+        std::array<double, MaxAxes> direction{};
+        for(std::size_t i = 0; i < axes_.size(); ++i) {
+            const double d = active_finish_[i] - active_start_[i];
+            direction[i] = d;
+            length1 += d * d;
+        }
+        length1 = std::sqrt(length1);
+        if(length1 <= 1e-12 || active_path_length_ <= 0.0) {
+            return false;
+        }
+        for(std::size_t i = 0; i < axes_.size(); ++i) {
+            direction[i] /= length1;
+        }
+        const double scale1 = length1 / active_path_length_;
+
+        WindowSegment seg0{};
+        for(std::size_t i = 0; i < axes_.size(); ++i) {
+            seg0.entry[i] = active_start_[i];
+            seg0.dir[i] = direction[i];
+            seg0.target[i] = active_finish_[i];
+        }
+        seg0.full_length = length1;
+        seg0.limits = otg::Limits1D{active_command_.velocity * scale1,
+                                    active_command_.acceleration * scale1,
+                                    active_command_.deceleration * scale1,
+                                    active_command_.jerk * scale1};
+        seg0.command_id = active_command_.command_id;
+        const otg::State1D raw =
+            otg::sample(active_profile_, rt::CycleTick::from_cycles(active_tick_));
+        seg0.entry_velocity = raw.velocity * scale1; // updated by rebuild
+        seg0.profile = active_profile_;              // replaced by rebuild
+        window_.clear();
+        window_.push_back(seg0);
+        window_seed_state_ = otg::State1D{raw.position * scale1, raw.velocity * scale1,
+                                          raw.acceleration * scale1};
+        window_index_ = 0;
+        window_in_curve_ = false;
+        window_tick_ = 0;
+        return true;
+    }
+
+    // A5 v2 (KB-033): append a KB-030 BORDER arc to the look-ahead window.
+    // The junction must be tangent-continuous (no tolerance-band curve exists
+    // between lines and arcs until v3); anything else degrades to a BUFFERED
+    // full-stop join, reported. The arc segment's velocity limit is clamped
+    // to the centripetal bound sqrt(a*R) for the whole segment.
+    rt::Result<std::uint32_t> submit_blend_arc(GroupCommand command,
+                                               const std::array<double, MaxAxes> &start_point)
+    {
+        if(window_stop_ || !queue_.empty()) {
+            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported);
+        }
+        if(!window_active_) {
+            if(!active_ || active_kind_ != GroupPathKind::linear ||
+               status_ != GroupStatus::moving || active_path_length_ <= 0.0) {
+                // Converting an active circular command is a declared v2
+                // boundary: only linear actives seed a window.
+                return rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported);
+            }
+        }
+        if(window_active_ && window_.full()) {
+            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::capacity_exceeded);
+        }
+
+        // Arc segment descriptor. KB-030 dynamics are already stated in the
+        // plane arc-length domain, so no metric conversion applies; the
+        // centripetal bound clamps the whole segment.
+        WindowSegment fresh{};
+        fresh.kind = WindowKind::arc;
+        fresh.arc_geom = command.arc;
+        fresh.full_length = command.arc.length;
+        for(std::size_t i = 0; i < axes_.size(); ++i) {
+            fresh.entry[i] = start_point[i];
+            fresh.target[i] = command.target.value[i];
+        }
+        fresh.entry[0] = command.arc.start.x;
+        fresh.entry[1] = command.arc.start.y;
+        fresh.limits = otg::Limits1D{command.velocity, command.acceleration,
+                                     command.deceleration, command.jerk};
+        double junction = fresh.limits.max_acceleration;
+        if(fresh.limits.max_deceleration < junction) {
+            junction = fresh.limits.max_deceleration;
+        }
+        const double centripetal = std::sqrt(junction * command.arc.radius);
+        if(centripetal < fresh.limits.max_velocity) {
+            fresh.limits.max_velocity = centripetal;
+        }
+        fresh.command_id = command.command_id;
+
+        // Predecessor exit tangent vs the arc entry tangent (N-dimensional).
+        std::array<double, MaxAxes> pred_tangent{};
+        otg::Limits1D pred_limits{};
+        if(window_active_) {
+            const WindowSegment &tail = window_[window_.size() - 1];
+            window_tangent(tail, true, pred_tangent);
+            pred_limits = tail.limits;
+        } else {
+            double length1 = 0.0;
+            for(std::size_t i = 0; i < axes_.size(); ++i) {
+                const double d = active_finish_[i] - active_start_[i];
+                pred_tangent[i] = d;
+                length1 += d * d;
+            }
+            length1 = std::sqrt(length1);
+            if(length1 <= 1e-12) {
+                return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
+            }
+            for(std::size_t i = 0; i < axes_.size(); ++i) {
+                pred_tangent[i] /= length1;
+            }
+            const double scale1 = length1 / active_path_length_;
+            pred_limits = otg::Limits1D{active_command_.velocity * scale1,
+                                        active_command_.acceleration * scale1,
+                                        active_command_.deceleration * scale1,
+                                        active_command_.jerk * scale1};
+        }
+        std::array<double, MaxAxes> arc_tangent{};
+        window_tangent(fresh, false, arc_tangent);
+        double alignment = 0.0;
+        for(std::size_t i = 0; i < axes_.size(); ++i) {
+            alignment += pred_tangent[i] * arc_tangent[i];
+        }
+        if(alignment <= 0.999) {
+            // Non-tangent junction: full-stop join, reported (approved v2).
+            return degrade_blend(command);
+        }
+
+        // Pass-through node (no curve, no trims).
+        WindowNode node{};
+        node.corner_cap = pred_limits.max_velocity < fresh.limits.max_velocity
+                              ? pred_limits.max_velocity
+                              : fresh.limits.max_velocity;
+
+        const std::int64_t old_remaining = window_active_ ? window_remaining_cycles() : -1;
+
+        bool converted = false;
+        if(!window_active_) {
+            if(!convert_active_linear_to_window()) {
+                return rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported);
+            }
+            converted = true;
+        }
+
+        WindowSegment &tail = window_[window_.size() - 1];
+        const WindowNode saved_node = tail.node;
+        tail.node = node;
+        if(window_.push_back(fresh) != rt::ErrorCode::ok) {
+            tail.node = saved_node;
+            if(converted) {
+                window_.clear();
+            }
+            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::capacity_exceeded);
+        }
+
+        bool late = false;
+        if(!window_rebuild(late)) {
+            window_.pop_back();
+            WindowSegment &restore = window_[window_.size() - 1];
+            restore.node = saved_node;
+            if(converted) {
+                window_.clear();
+            } else if(!window_rebuild(late)) {
+                window_reset();
+                clear_axes_synchronized();
+                status_ = GroupStatus::standby;
+                abort_motion();
+            }
+            return degrade_blend(command);
+        }
+
+        if(old_remaining >= 0) {
+            const rt::Result<otg::Profile1D> standalone = otg::plan_time_optimal(
+                {0.0, 0.0, 0.0}, {fresh.full_length, 0.0, 0.0}, fresh.limits);
+            if(standalone &&
+               window_remaining_cycles() >=
+                   old_remaining + standalone.value().duration_cycles()) {
+                window_.pop_back();
+                WindowSegment &restore = window_[window_.size() - 1];
                 restore.node = saved_node;
                 if(!window_rebuild(late)) {
                     window_reset();
@@ -1210,9 +1440,7 @@ private:
         // into a hard stop (acceleration step). The final sample lands on the
         // exact segment end by the profile's endpoint contract.
         const double s = st.position;
-        for(std::size_t i = 0; i < axes_.size(); ++i) {
-            axes_[i]->set_synchronized_position(seg.entry[i] + seg.dir[i] * s);
-        }
+        sample_window_segment(seg, s);
         if(window_tick_ >= seg.profile.duration_cycles()) {
             if(window_index_ + 1 < window_.size()) {
                 if(seg.node.has_curve) {
@@ -1228,6 +1456,31 @@ private:
                 status_ = GroupStatus::standby;
                 start_next_queued();
             }
+        }
+    }
+
+    void sample_window_segment(const WindowSegment &seg, double arclength)
+    {
+        if(seg.kind == WindowKind::arc) {
+            double s = arclength;
+            if(s < 0.0) {
+                s = 0.0;
+            }
+            if(s > seg.full_length) {
+                s = seg.full_length;
+            }
+            const geom::Vec3 point = geom::sample(seg.arc_geom, s);
+            axes_[0]->set_synchronized_position(point.x);
+            axes_[1]->set_synchronized_position(point.y);
+            const double ratio = seg.full_length > 0.0 ? s / seg.full_length : 1.0;
+            for(std::size_t i = 2; i < axes_.size(); ++i) {
+                axes_[i]->set_synchronized_position(
+                    seg.entry[i] + (seg.target[i] - seg.entry[i]) * ratio);
+            }
+            return;
+        }
+        for(std::size_t i = 0; i < axes_.size(); ++i) {
+            axes_[i]->set_synchronized_position(seg.entry[i] + seg.dir[i] * arclength);
         }
     }
 
@@ -1272,10 +1525,9 @@ private:
             if(!in_curve) {
                 const double length = seg.line_length();
                 if(remaining <= length || index + 1 >= window_.size()) {
-                    double s = remaining < 0.0 ? 0.0 : (remaining > length ? length : remaining);
-                    for(std::size_t i = 0; i < axes_.size(); ++i) {
-                        axes_[i]->set_synchronized_position(seg.entry[i] + seg.dir[i] * s);
-                    }
+                    const double s =
+                        remaining < 0.0 ? 0.0 : (remaining > length ? length : remaining);
+                    sample_window_segment(seg, s);
                     return;
                 }
                 remaining -= length;
