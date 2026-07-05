@@ -88,3 +88,41 @@ errorstop 兜底）、`last_cartesian_error()`。验收
    本就如此，笛卡尔段单独做速度映射会造成不对称语义；
 2. 决策 #6 的速度预算作用于位姿组（step 门是其载体）；平移 v1 ABI
    无步门参数，由 margin 禁入区约束（预验证仍全量执行）。
+
+---
+
+## v2 增补（草案，待批准，2026-07-06）：腕奇异通过 / 笛卡尔圆弧 / 笛卡尔 blending
+
+三项均构建在 KB-044 机制（预验证/预算/errorstop 兜底/opt-in 默认不变）之上。
+
+### v2-A 腕奇异通过（DLS-lite，修订 KB-041 腕部合同）
+
+| # | 提案 |
+|---|------|
+| A1 | `SphericalWrist6R::inverse`：腕奇异带 **|q5| < 1e-6 rad（v1 固定）** 内 ZYZ 分解不定，按约定 **q4 = seed 同圈锁定、q6 承接剩余旋转**——带内解由约定唯一，不再依赖病态 atan2 分支（跨 q5=0 的 q4 跳变消失） |
+| A2 | 带外解析解逐位不变（回归护栏：KB-041 往返 fuzz 原样绿）；肘/肩奇异维持禁入（margin 预检查语义不变） |
+| A3 | margin 报告不变——用户设 min_margin 高于带阈即可维持旧禁入行为；默认 margin=0 时笛卡尔段可穿越腕奇异 |
+
+验收：笛卡尔段姿态扫过 q5=0 全程无 errorstop、TCP 线性度 ≤1e-8、逐周期关节步 ≤ 门；带外 fuzz 逐位回归。
+
+### v2-B 笛卡尔圆弧（`submit_circular` + `interpolation_space = cartesian`）
+
+| # | 提案 |
+|---|------|
+| B1 | 三点 BORDER 弧改在**笛卡尔(TCP)空间**成弧：起点 = 当前/队尾 TCP，aux/target 经帧栈换算；剖面直接驱动笛卡尔弧长；逐周期 `geom::sample(arc)` → 逆解（seed 链） |
+| B2 | 位姿组：位置走弧，姿态沿弧长分数在起终姿态间**测地**；aux 槽位 [3..5] 忽略（声明——aux 只定弧平面） |
+| B3 | 预验证 33 采样沿弧；速度预算/errorstop/GroupStop 沿用 KB-044 机制；CENTER/RADIUS、blending、relative 照旧 `unsupported` |
+
+验收：SCARA/6R 弧上逐周期半径误差 ≤1e-8、姿态测地 oracle ≤1e-8、拒绝表、既有回放逐位不变。
+
+### v2-C 笛卡尔 blending（KB-031 风格单后继融合，不进窗口）
+
+| # | 提案 |
+|---|------|
+| C1 | 活动笛卡尔直线段 + `blending_low/high` + `mcTMMaxCornerDeviation` 笛卡尔直线后继 → **笛卡尔空间**五次 Bezier 拐角（复用 A4 原语于 TCP 点域）融合为单弧长链、单剖面；链速度限含拐角曲率限速 √(a/κ) |
+| C2 | 姿态：全链起终姿态**单条测地**按链弧长参数化（拐角处姿态无折点——声明，两段各自姿态目标中间值不承诺） |
+| C3 | 构造性门槛/反折拐角/过迟提交降级 BUFFERED（`last_blend_degraded_command` 口径沿用）；链不可扩展（再后继 `unsupported`）；joint↔cartesian 混模 blending `unsupported`；不进 look-ahead 窗口 |
+
+验收：拐角不停车且偏差 ≤ 公差、全链 TCP 在几何上（线-拐角-线）逐周期 ≤1e-8、测地连续、降级表、既有回放逐位不变。
+
+不做（v2 增补范围外）：笛卡尔窗口/多段链、弧-线笛卡尔 blending、姿态分段测地。

@@ -84,3 +84,11 @@ KB-031 的整链单剖面（链上限速）改为分段结点限速执行，回�
 
 *草案创建：2026-07-05；批准：2026-07-05。与
 [part4-blending-semantics.md](part4-blending-semantics.md)（KB-031/KB-032）叠加生效。*
+
+---
+
+## v2 增补：窗口深度运行期可配（草案，待批准，2026-07-06）
+
+`AxisGroup::set_window_depth(n)`，n ∈ [2, 64]，standby + 空队列守卫（同帧/插件 setter 口径）；窗口段数达到配置值即按既有 `capacity_exceeded` 语义拒绝扩展。默认 64 不变（全部既有回放/验收逐位不变）。摊销执行（周期内分摊重规划）属 executor 阶段（B7），本增补不涉及。
+
+验收：n=4 时第 5 段扩展报 `capacity_exceeded`；默认路径逐位回归。
