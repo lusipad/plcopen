@@ -91,7 +91,7 @@ errorstop 兜底）、`last_cartesian_error()`。验收
 
 ---
 
-## v2 增补（草案，待批准，2026-07-06）：腕奇异通过 / 笛卡尔圆弧 / 笛卡尔 blending
+## v2 增补（已批准，2026-07-06）：腕奇异通过 / 笛卡尔圆弧 / 笛卡尔 blending
 
 三项均构建在 KB-044 机制（预验证/预算/errorstop 兜底/opt-in 默认不变）之上。
 
