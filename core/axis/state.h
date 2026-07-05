@@ -174,6 +174,9 @@ struct CamInCommand
 {
     const AxisModel *master = nullptr;
     exec::CamTableView table{};
+    // Approved cam matrix (decision #2): linear is the byte-identical C0
+    // compatibility default; spline reconstructs a C2 cubic at engage.
+    exec::CamInterpolation interpolation = exec::CamInterpolation::linear;
     double master_offset = 0.0;
     double master_scaling = 1.0;
     double slave_offset = 0.0;
@@ -605,6 +608,16 @@ public:
             return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
         }
 
+        // Approved cam matrix: the spline reconstruction happens at engage
+        // in the planning domain; a failed build rejects before any state
+        // changes.
+        if(command.interpolation == exec::CamInterpolation::spline) {
+            const rt::ErrorCode built = cam_spline_.build(command.table);
+            if(built != rt::ErrorCode::ok) {
+                return rt::Result<std::uint32_t>::failure(built);
+            }
+        }
+
         const rt::Result<std::uint32_t> begun = begin_sync(SyncKind::cam, command.buffer_mode);
         if(!begun) {
             return begun;
@@ -638,6 +651,62 @@ public:
             sync_phase_ = sync_entry_phase_;
         }
         return begun;
+    }
+
+    // Approved cam matrix (decision #5): online table switch on an engaged
+    // cam. The new geometry must agree with the current slave position at
+    // the current master input (within tolerance); velocity/acceleration may
+    // jump within the declared boundary — the slave rides the new table from
+    // the next cycle. The engagement phase, sync id, and master stay.
+    rt::ErrorCode cam_switch(const CamInCommand &command, double tolerance)
+    {
+        if(sync_kind_ != SyncKind::cam || sync_phase_ != SyncPhase::engaged ||
+           command.master != sync_cam_.master || !command.table.valid() ||
+           !std::isfinite(tolerance) || tolerance < 0.0 ||
+           command.master_start_distance != 0.0 || !std::isfinite(command.master_offset) ||
+           !std::isfinite(command.master_scaling) || command.master_scaling == 0.0 ||
+           !std::isfinite(command.slave_offset) || !std::isfinite(command.slave_scaling)) {
+            return rt::ErrorCode::invalid_argument;
+        }
+
+        exec::CamSpline replacement{};
+        if(command.interpolation == exec::CamInterpolation::spline) {
+            const rt::ErrorCode built = replacement.build(command.table);
+            if(built != rt::ErrorCode::ok) {
+                return built;
+            }
+        }
+
+        const double master_position = master_value(*sync_cam_.master, sync_cam_.source);
+        const double table_input =
+            (master_position - command.master_offset) / command.master_scaling;
+        const rt::Result<double> sampled =
+            command.interpolation == exec::CamInterpolation::spline
+                ? replacement.sample(table_input)
+                : command.table.sample(table_input);
+        if(!sampled) {
+            return sampled.error();
+        }
+        const double replacement_slave =
+            command.slave_offset + command.slave_scaling * sampled.value();
+        const rt::Result<double> current = cam_slave_value(master_position);
+        if(!current) {
+            return current.error();
+        }
+        if(std::fabs(replacement_slave - current.value()) > tolerance) {
+            return rt::ErrorCode::invalid_argument;
+        }
+
+        sync_cam_.table = command.table;
+        sync_cam_.interpolation = command.interpolation;
+        sync_cam_.master_offset = command.master_offset;
+        sync_cam_.master_scaling = command.master_scaling;
+        sync_cam_.slave_offset = command.slave_offset;
+        sync_cam_.slave_scaling = command.slave_scaling;
+        if(command.interpolation == exec::CamInterpolation::spline) {
+            cam_spline_ = replacement;
+        }
+        return rt::ErrorCode::ok;
     }
 
     rt::ErrorCode gear_update(double ratio_numerator, double ratio_denominator)
@@ -1207,7 +1276,10 @@ private:
     {
         const double table_input =
             (master_position - sync_cam_.master_offset) / sync_cam_.master_scaling;
-        const rt::Result<double> sampled = sync_cam_.table.sample(table_input);
+        const rt::Result<double> sampled =
+            sync_cam_.interpolation == exec::CamInterpolation::spline
+                ? cam_spline_.sample(table_input)
+                : sync_cam_.table.sample(table_input);
         if(!sampled) {
             return sampled;
         }
@@ -1778,6 +1850,8 @@ private:
     stream::StreamFilter1D stream_filter_{};
     bool stream_active_ = false;
     std::uint32_t stream_id_ = 0;
+
+    exec::CamSpline cam_spline_{};
 };
 
 } // namespace plcopen::core::axis
