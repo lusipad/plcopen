@@ -10,6 +10,7 @@
 #include "otg/time_optimal.h"
 #include "rt/error.h"
 #include "rt/static_vector.h"
+#include "stream/filter.h"
 
 namespace plcopen::core::axis
 {
@@ -510,9 +511,11 @@ public:
             return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
         }
 
-        // Queueing a motion command behind an engaged synchronization has no
-        // defined completion point; only aborting commands may take over.
-        if(sync_kind_ != SyncKind::none && command.buffer_mode != BufferMode::aborting) {
+        // Queueing a motion command behind an engaged synchronization or a
+        // stream session has no defined completion point; only aborting
+        // commands may take over.
+        if((sync_kind_ != SyncKind::none || stream_active_) &&
+           command.buffer_mode != BufferMode::aborting) {
             return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
         }
         if(is_continuous_kind(command.kind) && command.end_velocity <= 0.0) {
@@ -698,6 +701,87 @@ public:
         snapshot_.command_velocity = 0.0;
         snapshot_.actual_velocity = 0.0;
         return rt::ErrorCode::ok;
+    }
+
+    // B9 stream session (approved trajectory-stream matrix, decisions #9/#10).
+    // Engaging is an aborting-class takeover: the filter starts from the
+    // current kinematic state (no jump; a moving entry arms the filter's
+    // controlled-stop ladder until the first target). Undefined combinations
+    // are explicit errors: no engage while unpowered, in errorstop, gear/cam/
+    // combine-synchronized, group-owned, or already streaming; axis software
+    // position limits are not auto-applied — wire them through the filter
+    // envelope in the config.
+    rt::Result<std::uint32_t> stream_engage(const stream::StreamFilterConfig &config)
+    {
+        if(!snapshot_.powered || snapshot_.status == AxisStatus::errorstop ||
+           sync_kind_ != SyncKind::none || stream_active_ || group_owner_ != nullptr) {
+            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
+        }
+        const rt::ErrorCode configured = stream_filter_.configure(config);
+        if(configured != rt::ErrorCode::ok) {
+            return rt::Result<std::uint32_t>::failure(configured);
+        }
+
+        // Aborting takeovers keep kinematic continuity (KB-026 pattern):
+        // abort_motion() zeroes the command velocity/acceleration, but the
+        // filter must start from the state the axis was actually in.
+        const double takeover_velocity = snapshot_.command_velocity;
+        const double takeover_acceleration = snapshot_.command_acceleration;
+        abort_motion();
+        snapshot_.command_velocity = takeover_velocity;
+        snapshot_.actual_velocity = takeover_velocity;
+        snapshot_.command_acceleration = takeover_acceleration;
+        snapshot_.actual_acceleration = takeover_acceleration;
+
+        const rt::ErrorCode reset = stream_filter_.reset(
+            {snapshot_.command_position, takeover_velocity, takeover_acceleration});
+        if(reset != rt::ErrorCode::ok) {
+            snapshot_.command_velocity = 0.0;
+            snapshot_.actual_velocity = 0.0;
+            snapshot_.command_acceleration = 0.0;
+            snapshot_.actual_acceleration = 0.0;
+            return rt::Result<std::uint32_t>::failure(reset);
+        }
+        stream_active_ = true;
+        stream_id_ = next_command_id_++;
+        snapshot_.status = AxisStatus::synchronized_motion;
+        return rt::Result<std::uint32_t>::success(stream_id_);
+    }
+
+    rt::ErrorCode stream_push(const stream::StreamTarget &target)
+    {
+        if(!stream_active_) {
+            return rt::ErrorCode::invalid_argument;
+        }
+        return stream_filter_.push_target(target);
+    }
+
+    // Graceful exit is only defined at rest; a moving session exits through
+    // a standard aborting command (MC_Halt/MC_Stop/motion takeover).
+    rt::ErrorCode stream_disengage()
+    {
+        if(!stream_active_) {
+            return rt::ErrorCode::invalid_argument;
+        }
+        if(snapshot_.command_velocity != 0.0 || snapshot_.command_acceleration != 0.0) {
+            return rt::ErrorCode::precondition_failed;
+        }
+        stream_active_ = false;
+        stream_id_ = 0;
+        snapshot_.status = snapshot_.powered ? AxisStatus::standstill : AxisStatus::disabled;
+        return rt::ErrorCode::ok;
+    }
+
+    std::uint32_t stream_session_id() const
+    {
+        return stream_id_;
+    }
+
+    // Read-only session introspection (mode, counters, clamped flag); only
+    // meaningful while the session is engaged.
+    const stream::StreamFilter1D &stream_filter() const
+    {
+        return stream_filter_;
     }
 
     SyncPhase sync_phase() const
@@ -889,6 +973,10 @@ public:
         if(snapshot_.status == AxisStatus::errorstop) {
             return;
         }
+        if(stream_cycle()) {
+            cycle_probes();
+            return;
+        }
         if(sync_cycle()) {
             cycle_probes();
             return;
@@ -906,10 +994,10 @@ public:
                                                   double jerk)
     {
         if(!snapshot_.powered || snapshot_.status == AxisStatus::errorstop ||
-           sync_kind_ != SyncKind::none || !std::isfinite(distance) || !std::isfinite(velocity) ||
-           velocity <= 0.0 || !std::isfinite(acceleration) || acceleration <= 0.0 ||
-           !std::isfinite(deceleration) || deceleration <= 0.0 || !std::isfinite(jerk) ||
-           jerk <= 0.0) {
+           sync_kind_ != SyncKind::none || stream_active_ || !std::isfinite(distance) ||
+           !std::isfinite(velocity) || velocity <= 0.0 || !std::isfinite(acceleration) ||
+           acceleration <= 0.0 || !std::isfinite(deceleration) || deceleration <= 0.0 ||
+           !std::isfinite(jerk) || jerk <= 0.0) {
             return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
         }
 
@@ -1051,7 +1139,9 @@ public:
 private:
     rt::Result<std::uint32_t> begin_sync(SyncKind kind, BufferMode buffer_mode)
     {
-        if(!snapshot_.powered || snapshot_.status == AxisStatus::errorstop) {
+        // Synchronizing a streaming axis is undefined (approved stream
+        // matrix, decision #10): explicit error, not a takeover.
+        if(!snapshot_.powered || snapshot_.status == AxisStatus::errorstop || stream_active_) {
             return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
         }
         if(buffer_mode == BufferMode::aborting) {
@@ -1168,6 +1258,24 @@ private:
                 sync_gear_.slave_sync_position - sync_gear_.master_sync_position * ratio;
         }
         sync_phase_ = SyncPhase::engaged;
+    }
+
+    // Returns true when a stream session owns this cycle: the filter output
+    // is the axis setpoint (the filter starts from the takeover state, so
+    // the position domain is continuous with the pre-engage motion).
+    bool stream_cycle()
+    {
+        if(!stream_active_) {
+            return false;
+        }
+        const otg::State1D state = stream_filter_.cycle();
+        snapshot_.command_position = state.position;
+        snapshot_.actual_position = state.position;
+        snapshot_.command_velocity = state.velocity;
+        snapshot_.actual_velocity = state.velocity;
+        snapshot_.command_acceleration = state.acceleration;
+        snapshot_.actual_acceleration = state.acceleration;
+        return true;
     }
 
     // Returns true when synchronization owns this cycle (idle motion excluded).
@@ -1568,6 +1676,8 @@ private:
         queue_.clear();
         reset_sync();
         reset_superimposed();
+        stream_active_ = false;
+        stream_id_ = 0;
         if(snapshot_.status == AxisStatus::synchronized_motion) {
             snapshot_.status = snapshot_.powered ? AxisStatus::standstill : AxisStatus::disabled;
         }
@@ -1664,6 +1774,10 @@ private:
     bool phasing_active_ = false;
     double approach_window_begin_ = 0.0;
     double approach_start_slave_ = 0.0;
+
+    stream::StreamFilter1D stream_filter_{};
+    bool stream_active_ = false;
+    std::uint32_t stream_id_ = 0;
 };
 
 } // namespace plcopen::core::axis

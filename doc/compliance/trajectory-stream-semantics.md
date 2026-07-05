@@ -94,5 +94,21 @@ B9 = 上层智能（RL 策略 / MPC / 遥操作，50-500Hz）输出关节目标�
   quintic 候选，B9 跟踪 case 规划 68 → 19 周期；回放基线
   `core-group-window-arc` 声明升级（端点不变，时长 90 → 88 tick）。
 
-*草案创建：2026-07-05；批准：2026-07-05（维护者，v1 范围）。第二片
-（轴级会话 + 多关节聚合 + pyplcopen demo + 回放场景）对应 BS1.6-BS1.9。*
+## 实现记录（2026-07-05，BS1.6 轴级流会话）
+
+`AxisModel::stream_engage/stream_push/stream_disengage`（L5）；验收证据
+`plcopen_core_stream_session_tests`（7 场景：engage 前置条件全拒绝矩阵、
+静止 engage 跟踪、运动中 engage 无跳变接管 + 受控停 + 恢复、非 aborting/
+同步/叠加显式拒绝、标准 FB Aborting 接管连续且会话清除、MC_Halt 退出到
+standstill、disengage 仅静止可用；跨界连续性逐周期断言）。口径澄清：
+
+- 会话状态呈现为 `synchronized_motion`（轴由外部目标源驱动）；
+- 运动中 engage 触发滤波器受控停梯子（决策 #7 的断流等价形态），
+  首个目标到达即恢复——`StreamFilter1D::reset` 对运动入口的行为随之
+  固化（配置未就绪时 reset 显式拒绝）；
+- 生产者以会话周期域打时间戳（`now_cycles()` 访问器新增）；
+- 轴软件位置限位不自动并入流包络（v1 显式边界，由调用方经 config
+  接线）；扭矩透传与流会话正交（不入会话生命周期）。
+
+*草案创建：2026-07-05；批准：2026-07-05（维护者，v1 范围）。剩余第二片
+（多关节聚合 + pyplcopen demo + 回放场景）对应 BS1.7-BS1.9。*

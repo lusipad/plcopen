@@ -85,10 +85,14 @@ public:
         return rt::ErrorCode::ok;
     }
 
-    // Engages the filter at a known output state (planning-domain call).
+    // Engages the filter at a known output state (planning-domain call;
+    // configure() must have succeeded first). Engaging from a moving state
+    // arms the controlled-stop ladder immediately — until the first target
+    // arrives the situation is dropout-equivalent, and holding a nonzero
+    // velocity without moving would be kinematically inconsistent.
     rt::ErrorCode reset(otg::State1D state)
     {
-        if(!otg::is_finite(state)) {
+        if(!otg::is_finite(state) || config_.limits.max_velocity <= 0.0) {
             return rt::ErrorCode::invalid_argument;
         }
         state_ = state;
@@ -103,6 +107,9 @@ public:
         rejected_targets_ = 0;
         dropout_count_ = 0;
         filter_faults_ = 0;
+        if(state.velocity != 0.0 || state.acceleration != 0.0) {
+            enter_stopping();
+        }
         return rt::ErrorCode::ok;
     }
 
@@ -253,6 +260,13 @@ public:
     Mode mode() const
     {
         return mode_;
+    }
+
+    // Current cycle count of the filter's time domain (increments once per
+    // cycle() since reset). Producers stamp targets relative to this.
+    std::int64_t now_cycles() const
+    {
+        return now_;
     }
 
     // True while the latest accepted target required a position clamp.

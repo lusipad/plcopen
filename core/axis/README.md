@@ -31,6 +31,21 @@ Synchronization semantics carried from the v0.x tests:
   point); an aborting command or `sync_out` disengages.
 - `clear_synchronized` (used by group abort/disable) also disengages the axis's own sync.
 
+B9 stream session (approved trajectory-stream matrix, decisions #9/#10):
+
+- `stream_engage` is an aborting-class takeover: the L3 `StreamFilter1D` starts from the
+  current kinematic state (a moving entry runs the filter's controlled-stop ladder until
+  the first target); the session drives the axis as `synchronized_motion`.
+- One command lifecycle with the standard FBs: an aborting command (move/halt/stop) takes
+  the axis back continuously and clears the session; non-aborting commands, gear/cam/
+  combine sync, and superimposed offsets report explicit errors during a session, as does
+  engaging while unpowered, in errorstop, synchronized, group-owned, or already streaming.
+- `stream_disengage` is only defined at rest (`precondition_failed` otherwise — exit a
+  moving session through MC_Halt/MC_Stop).
+- Producers stamp targets in the session's cycle domain (`stream_filter().now_cycles()`);
+  axis software position limits are not auto-applied to stream targets — wire them through
+  the filter envelope in the config.
+
 Power semantics:
 
 - `set_power` is level-controlled (MC_Power is called every scan cycle): calls that do not
