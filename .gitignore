@@ -38,3 +38,6 @@ out
 .cache
 .playwright-cli/
 .omx/
+
+# Local AI session configuration
+.claude/
