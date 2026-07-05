@@ -1,8 +1,8 @@
-# PLCopen Motion Control Part 4 圆弧运动矩阵（草案）
+# PLCopen Motion Control Part 4 圆弧运动矩阵
 
-> 状态：**草案，未批准**。按硬规则"语义矩阵先行"，本文件是 Phase A3
-> （`MC_MoveCircularAbsolute` / `MC_MoveCircularRelative`）的规格提案，
-> **人工批准前不得实现**。批准后本文去掉 `-draft` 后缀并成为验收规格。
+> 状态：**已批准（2026-07-05，维护者）**。本文件是 Phase A3
+> （`MC_MoveCircularAbsolute` / `MC_MoveCircularRelative`）的验收规格
+> （normative），实现与验收测试以本矩阵为准。
 
 ## 规范来源
 
@@ -59,4 +59,4 @@ L2 `make_arc`/弧长表已存在（R2 交付）；主要工作在 `AxisGroup` �
 
 ---
 
-*草案创建：2026-07-05。待人工批准；批准前实现不得开始。*
+*草案创建：2026-07-05；批准：2026-07-05。*

@@ -1,9 +1,8 @@
-# Part 4 几何 Blending 语义矩阵（草案）
+# Part 4 几何 Blending 语义矩阵
 
-> 状态：**草案，未批准**。按硬规则"语义矩阵先行"与 T3 策略（"先写 blending
-> 语义矩阵，再写几何"），本文件是 Phase A4（公差带几何 blending v1）的规格
-> 提案，**人工批准前不得实现**。曲线选型依据 long-term-plan 6.3-#4
-> （五次 Bézier，C2 加速度连续）。
+> 状态：**已批准（2026-07-05，维护者）**。本文件是 Phase A4（公差带几何
+> blending v1）的验收规格（normative），实现与验收测试以本矩阵为准。
+> 曲线选型依据 long-term-plan 6.3-#4（五次 Bézier，C2 加速度连续）。
 
 ## 提案范围（v1）
 
@@ -45,6 +44,5 @@
 
 ---
 
-*草案创建：2026-07-05。待人工批准；批准前实现不得开始。与圆弧草案
-（[plcopen-motion-part4-circular-matrix-draft.md](plcopen-motion-part4-circular-matrix-draft.md)）
-可独立批准。*
+*草案创建：2026-07-05；批准：2026-07-05。圆弧规格见
+[plcopen-motion-part4-circular-matrix.md](plcopen-motion-part4-circular-matrix.md)。*
