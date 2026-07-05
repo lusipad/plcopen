@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.21)
 get_filename_component(PLCOPEN_ROOT "${CMAKE_CURRENT_LIST_DIR}/.." ABSOLUTE)
 
 set(RT_DIRS
+    core/adapters
     core/rt
     core/otg
     core/geom

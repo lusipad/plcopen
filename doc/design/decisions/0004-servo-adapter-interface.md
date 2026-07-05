@@ -1,7 +1,10 @@
-# ADR-0004: Servo 适配器接口的形态（Proposed，待人裁决）
+# ADR-0004: Servo 适配器接口的形态（Accepted）
 
-> 状态：**Proposed**。本 ADR 是 Phase B5/B7 前置决策的提案稿（T3：AI 起草，
-> 人裁决后转 Accepted 并落实现）。裁决前不实现。
+> 状态：**Accepted（2026-07-05，维护者裁决）**。实现见 `core/adapters/`
+> （servo.h：接口 + 桥接 + ServoSim；cia402.h：DS402 状态机；
+> mode_manager.h：CSP/CSV/CST bumpless 骨架），验收 `plcopen_core_adapters_tests`
+> ——桥接双胞胎命令域逐周期等价（回放语义不变的证明形态）、CiA402 全梯形
+> 转换覆盖、模式切换主通道连续性。CSP/CST 真驱动语境扩展留 B5。
 
 ## Context
 
