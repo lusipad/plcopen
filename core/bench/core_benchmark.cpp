@@ -1,6 +1,7 @@
 #include <cstdio>
 #include <ctime>
 
+#include "axis/group.h"
 #include "axis/state.h"
 #include "exec/sampler.h"
 #include "exec/sync.h"
@@ -123,6 +124,46 @@ int main()
     const double axis_cycle_ms = millis_since(start);
     position_sum += bench_slave.snapshot().command_position;
 
+    // A3 group circular cycle path: per-cycle cost of the arc-length sampling
+    // branch (KB-030).
+    axis::AxisModel gx;
+    axis::AxisModel gy;
+    gx.set_power(true);
+    gy.set_power(true);
+    axis::AxisGroup bench_group;
+    bench_group.add_axis(gx);
+    bench_group.add_axis(gy);
+    bench_group.enable();
+    {
+        axis::GroupCommand approach{};
+        approach.target.size = 2;
+        approach.target.value[0] = 1.0;
+        approach.velocity = 0.5;
+        bench_group.submit_linear(approach);
+        for(int i = 0; i < 100 && bench_group.status() != axis::GroupStatus::standby; ++i) {
+            bench_group.cycle();
+        }
+        axis::GroupCommand arc{};
+        arc.target.size = 2;
+        arc.aux.size = 2;
+        arc.aux.value[0] = 0.70710678118654752;
+        arc.aux.value[1] = 0.70710678118654752;
+        arc.target.value[0] = 0.0;
+        arc.target.value[1] = 1.0;
+        arc.velocity = 1.0e-9; // hold inside the arc for the whole loop
+        arc.path_choice = axis::CircPathChoice::counter_clockwise;
+        if(!bench_group.submit_circular(arc)) {
+            std::printf("BENCH_FAIL group circular submit\n");
+            return 1;
+        }
+    }
+    start = std::clock();
+    for(int i = 0; i < Iterations; ++i) {
+        bench_group.cycle();
+    }
+    const double group_circular_cycle_ms = millis_since(start);
+    position_sum += gx.snapshot().command_position + gy.snapshot().command_position;
+
     // Cycle-time efficiency trend (long-term-plan 6.5): total duration of the
     // time-optimal planner over the baseline planner on a fixed case set.
     long long optimal_cycles = 0;
@@ -159,14 +200,15 @@ int main()
     const double overlay_checksum = overlaid.x + overlaid.y + overlaid.z;
 
     std::printf("BENCH_BASELINE static_vector_ms=%.3f spsc_ms=%.3f sample_ms=%.3f "
-                "path_sample_ms=%.3f axis_cycle_pair_ms=%.3f checksum=%.3f\n",
+                "path_sample_ms=%.3f axis_cycle_pair_ms=%.3f group_circular_cycle_ms=%.3f "
+                "checksum=%.3f\n",
                 vector_ms, queue_ms, sample_ms, path_sample_ms, axis_cycle_ms,
-                position_sum + sink);
+                group_circular_cycle_ms, position_sum + sink);
     std::printf("PATH_METRICS speed_ripple=%.6f path_error=%.12f cycle_efficiency=%.6f "
                 "blend_deviation=%.12f cam_error=%.12f overlay_checksum=%.6f "
                 "otg_duration_vs_baseline=%.4f\n",
                 speed_ripple, path_error, committed.total_length() / path_buffer.total_length(),
-                blend.curve.blend.max_deviation, cam_error, overlay_checksum,
+                blend.curve.quintic.max_deviation, cam_error, overlay_checksum,
                 cycle_time_efficiency);
     return 0;
 }

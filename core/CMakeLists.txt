@@ -125,10 +125,14 @@ if(PLCOPEN_BUILD_DEMOS)
     add_executable(plcopen_core_trajectory_stream demo/trajectory_stream.cpp)
     target_link_libraries(plcopen_core_trajectory_stream PRIVATE plcopen::plcopen)
 
+    add_executable(plcopen_core_group_path_motion demo/group_path_motion.cpp)
+    target_link_libraries(plcopen_core_group_path_motion PRIVATE plcopen::plcopen)
+
     if(BUILD_TESTING)
         add_test(NAME plcopen_core_basic_fb_cycle_smoke COMMAND plcopen_core_basic_fb_cycle)
         add_test(NAME plcopen_core_group_linear_move_smoke COMMAND plcopen_core_group_linear_move)
         add_test(NAME plcopen_core_trajectory_stream_smoke COMMAND plcopen_core_trajectory_stream)
+        add_test(NAME plcopen_core_group_path_motion_smoke COMMAND plcopen_core_group_path_motion)
     endif()
 endif()
 
