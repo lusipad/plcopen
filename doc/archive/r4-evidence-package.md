@@ -1,5 +1,8 @@
 # R4 切换收口证据包
 
+> 📦 **已归档（2026-07-05）**：历史执行/规划文档，仅供追溯，不再维护；现行文档入口见 [doc/planning/README.md](../planning/README.md) 与根 [STATUS.md](../../STATUS.md)。
+
+
 ## 范围
 
 本证据包对应 [R0-R4 工作拆解](r0-r4-work-breakdown.md) 的 R4：让新核能被用户实际消费，并把旧 `src/` 有秩序地退到维护状态。

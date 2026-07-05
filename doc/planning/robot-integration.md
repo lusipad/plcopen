@@ -107,4 +107,4 @@
 ---
 
 *本文档最后更新：2026-07-02（初稿，待评审）*
-*关联：[long-term-plan.md](long-term-plan.md)（1.4 定位、B9/B2/B5 条目）、[rewrite-plan.md](rewrite-plan.md)（§2.7 嵌入式分级、L3 轨迹流生产者位置）*
+*关联：[long-term-plan.md](long-term-plan.md)（1.4 定位、B9/B2/B5 条目）、[rewrite-plan.md](../archive/rewrite-plan.md)（§2.7 嵌入式分级、L3 轨迹流生产者位置）*

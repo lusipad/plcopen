@@ -6,7 +6,7 @@ Status: proposed for human D-LIC review.
 
 R0 needs a license decision record before the core rewrite moves beyond
 baseline capture. The current repository license is Apache 2.0, and
-`doc/planning/rewrite-plan.md` records that the inherited i5 code was also
+`doc/archive/rewrite-plan.md` records that the inherited i5 code was also
 Apache 2.0. The same plan considers Apache 2.0, MIT, and dual-license options
 for the rewritten core.
 

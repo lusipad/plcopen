@@ -1,5 +1,8 @@
 # R0 Evidence Package
 
+> 📦 **已归档（2026-07-05）**：历史执行/规划文档，仅供追溯，不再维护；现行文档入口见 [doc/planning/README.md](../planning/README.md) 与根 [STATUS.md](../../STATUS.md)。
+
+
 Date: 2026-07-04
 
 Scope: R0.1-R0.8 from `doc/planning/r0-r4-work-breakdown.md`. T3 actions are

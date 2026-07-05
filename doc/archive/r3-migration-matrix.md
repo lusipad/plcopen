@@ -1,5 +1,8 @@
 # R3 Migration Matrix
 
+> 📦 **已归档（2026-07-05）**：历史执行/规划文档，仅供追溯，不再维护；现行文档入口见 [doc/planning/README.md](../planning/README.md) 与根 [STATUS.md](../../STATUS.md)。
+
+
 This is the executable R3 batch map for `core/axis` (L5) and `core/fb` (L6).
 It does not add new PLCopen scope; it maps the existing compliance matrix onto the rewrite core.
 

@@ -1,5 +1,8 @@
 # 项目调整计划（v0.1 → v0.2）
 
+> 📦 **已归档（2026-07-05）**：历史执行/规划文档，仅供追溯，不再维护；现行文档入口见 [doc/planning/README.md](../planning/README.md) 与根 [STATUS.md](../../STATUS.md)。
+
+
 **日期**: 2026-04-17
 **评审来源**: CEO plan review
 **评审模式**: SCOPE REDUCTION（范围削减）

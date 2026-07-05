@@ -134,4 +134,4 @@ sequenceDiagram
 ---
 
 *本文档最后更新：2026-07-04（初稿：随架构图先行建立 doc/design/core/ 树）*
-*关联：[rewrite-plan.md](../../planning/rewrite-plan.md) §2、[long-term-plan.md](../../planning/long-term-plan.md) §6.2、[robot-integration.md](../../planning/robot-integration.md) §2*
+*关联：[rewrite-plan.md](../../archive/rewrite-plan.md) §2、[long-term-plan.md](../../planning/long-term-plan.md) §6.2、[robot-integration.md](../../planning/robot-integration.md) §2*

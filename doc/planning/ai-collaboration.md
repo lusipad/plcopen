@@ -124,4 +124,4 @@ AI 产出不靠「相信它写对了」进主干，靠**机器可判定的门禁
 ---
 
 *本文档最后更新：2026-07-02（初稿，CLAUDE.md/AGENTS.md 已随本方案落地）*
-*关联：[long-term-plan.md](long-term-plan.md) 4.4、[rewrite-plan.md](rewrite-plan.md) 3.1b/3.6*
+*关联：[long-term-plan.md](long-term-plan.md) 4.4、[rewrite-plan.md](../archive/rewrite-plan.md) 3.1b/3.6*

@@ -1,13 +1,13 @@
 # v0.x → v1.0 迁移指南（旧 `src/` 线 → 新核 `core/`）
 
-状态：随 `v1.0.0-alpha` 草案发布，对应 [rewrite-plan](planning/rewrite-plan.md) §5 DoD 第 5 条。
+状态：随 `v1.0.0-alpha` 草案发布，对应 [rewrite-plan](archive/rewrite-plan.md) §5 DoD 第 5 条。
 语义仲裁以 [doc/compliance/](compliance/) 矩阵与黄金回放 diff 为准；本文只描述消费面变化，不新增语义承诺。
 
 ## 版本与维护口径
 
 | 线 | 最后功能版本 | 维护政策 |
 |----|--------------|----------|
-| 旧 `src/`（v0.x） | `v0.11.0` | P0-only 维护窗口（见 [EOL 公告草案](planning/r4-evidence-package.md)），窗口结束后仅保留 tag 作回放基线 |
+| 旧 `src/`（v0.x） | `v0.11.0` | P0-only 维护窗口（见 [EOL 公告草案](archive/r4-evidence-package.md)），窗口结束后仅保留 tag 作回放基线 |
 | 新核 `core/`（v1.x） | `v1.0.0-alpha`（草案） | 活跃开发线，默认消费面 |
 
 ## 构建与 CMake 消费

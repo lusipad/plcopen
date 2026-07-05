@@ -1,36 +1,31 @@
 # doc/planning/ 索引
 
-本目录是项目的**战略与执行规划层**（2026-07 建立）。与其他文档层的分工：
+本目录只放**现行**规划文档。与其他文档层的分工：
 
 | 层 | 位置 | 回答的问题 | 复盘节奏 |
 |----|------|------------|----------|
+| 现状 | `STATUS.md`（根） | 现在能干什么、进行到哪 | 每批收口 |
 | 战略 | `VISION.md`（根） | 为什么、去哪里 | 年度 |
 | 规划 | 本目录 | 怎么去、多少代价 | 季度 |
 | 承诺 | `ROADMAP.md`（根） | 当下在做什么 | 随里程碑 |
-| 规格 | `doc/compliance/` | 「做到」的定义（**新核验收规格，normative**） | 随实现 |
+| 规格 | `doc/compliance/` | 「做到」的定义（normative） | 随实现 |
 | 设计 | `doc/design/` | 具体怎么实现的 | 随码 |
-| 归档 | `doc/vision/` | 历史决策与教训 | 只进不出 |
+| 归档 | `doc/archive/`、`doc/vision/` | 历史决策与教训 | 只进不出 |
 
-## 本目录文档（建议按序阅读）
+## 现行文档
 
 | 文档 | 内容 | 状态 |
 |------|------|------|
-| [long-term-plan.md](long-term-plan.md) | 5 年战略：商用级定义、差距分析、Phase A-D、团队/资源与单人+AI 模式（4.4）、技术难点 T1-T12、性能与效果权衡（6.4 加减速算法栈、6.7 可达性论证与反证点） | 第 6 稿，待评审 |
-| [rewrite-plan.md](rewrite-plan.md) | 核心重写：i5 审计与许可证决策、目标架构 L0-L7、嵌入式分级（2.7）、迁移 R0-R4 与 12 个月冲刺排期（3.1b）、文档整合（3.7） | 第 3 稿，待评审 |
-| [r0-r4-work-breakdown.md](r0-r4-work-breakdown.md) | 第 1 年重写冲刺的 issue / PR 级拆解：R0-R4 任务、DoD、前置条件、验证入口和首批建议 issue | 初稿，执行拆解 |
-| [phase-b-software-work-breakdown.md](phase-b-software-work-breakdown.md) | Phase B 纯软件子集的 issue / PR 级拆解：BS1 轨迹流 → BS6 总线抽象批次、语义矩阵先行门、硬件延后清单 | 初稿，执行拆解 |
-| [r0-evidence-package.md](r0-evidence-package.md) | R0 完成证据包：v0.11.0 发布状态、Release 草案、旧线维护边界、replay / PROVENANCE / 许可证人工项 | R0 证据包 |
-| [r4-evidence-package.md](r4-evidence-package.md) | R4 切换收口证据包：新核消费入口、旧线隔离、v0.x EOL 草案和 v1.0.0-alpha 发布草案 | R4 证据包 |
-| [robot-integration.md](robot-integration.md) | 机器人集成蓝图：按形态可行性、两个参考架构、差距→计划映射 | 初稿，待评审 |
-| [ai-collaboration.md](ai-collaboration.md) | AI-First 工程体系：门禁代替信任、六工作流改造、风险分级政策、有效性度量（CLAUDE.md/AGENTS.md 已随之落地） | 初稿，已部分生效 |
-| [r3-migration-matrix.md](r3-migration-matrix.md) | R3 迁移批次矩阵：L5/L6 各批次的新核合同与验收证据 | 随迁移维护 |
-| [v0.11.0-release-draft.md](v0.11.0-release-draft.md) | v0.11.0 Release notes 草稿 + 人工检查单（tag 落点待拍板） | T3 草案 |
-| [v1.0.0-alpha-release-draft.md](v1.0.0-alpha-release-draft.md) | v1.0.0-alpha 发布草案：Release notes、rewrite-plan §5 DoD 对照与阻塞项、6 步人工检查单 | T3 草案 |
+| [long-term-plan.md](long-term-plan.md) | 5 年战略：商用级定义、差距分析、Phase A-D、单人+AI 模式、技术难点 T1-T12、性能与效果权衡 | 第 6 稿，年度复盘 |
+| [phase-b-software-work-breakdown.md](phase-b-software-work-breakdown.md) | Phase B 纯软件拆解（BS1-BS6 已全部完成）+ 硬件延后清单与触发条件 | 已收口，留触发清单 |
+| [robot-integration.md](robot-integration.md) | 机器人集成蓝图：形态可行性、参考架构、差距→计划映射 | 现行 |
+| [ai-collaboration.md](ai-collaboration.md) | AI-First 工程体系（战略部分；操作流程已迁入 `.claude/skills/`） | 现行 |
+| [v1.0.0-alpha-release-draft.md](v1.0.0-alpha-release-draft.md) | v1.0.0-alpha 发布草案与人工检查单 | T3 草案，待人工发布 |
+| [r1-rt-report-template.md](r1-rt-report-template.md) | 72h PREEMPT_RT 报告模板（B7 硬件阶段使用） | 模板，待真机 |
 
-相关：Servo 适配器接口形态提案见 [ADR-0004](../design/decisions/0004-servo-adapter-interface.md)（Proposed 待裁决，Phase B5/B7 前置）。
-
-评审通过后：按 rewrite-plan §3.7 在 M0 内执行全库文档整合。
+已完成的执行文档（R0-R4 拆解、证据包、rewrite-plan、v0.11 草案等）在
+[doc/archive/](../archive/)。
 
 ---
 
-*本索引最后更新：2026-07-05（增补 Phase B 纯软件拆解）*
+*本索引最后更新：2026-07-05（文档体系重建批③）*

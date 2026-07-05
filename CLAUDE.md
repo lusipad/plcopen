@@ -4,7 +4,7 @@
 
 ## 项目速览
 
-plcopen：现代 C++ 的 PLCopen 运动控制库（Apache 2.0）。**当前处于核心重写期**（12 个月冲刺，见 [rewrite-plan.md](doc/planning/rewrite-plan.md) §3.1b）：
+plcopen：现代 C++ 的 PLCopen 运动控制库（Apache 2.0）。**当前处于核心重写期**（12 个月冲刺，见 [rewrite-plan.md](doc/archive/rewrite-plan.md) §3.1b）：
 
 - 旧核 `src/`：冻结，仅修 P0 缺陷，不加功能，不做格式化/重构
 - 新核 `core/`：按 L0-L7 分层生长（rt → otg → geom → plan → exec → axis → fb → adapters），依赖只向内，L0-L4 不得引用 PLCopen 语义
