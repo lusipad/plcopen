@@ -30,7 +30,7 @@ v1.0.0-alpha 人工发布项与硬件阶段触发。
 | L5 axis | 单轴全命令生命周期、组共享路径（2-8 轴）、前瞻窗口执行、坐标系栈（ACS/MCS/PCS + 工件帧/工具偏置）、kinematics 级联（龙门/SCARA）、位姿管线（RPY + 6R，TCP 工具变换）、笛卡尔/位姿回读（含 RPY 反演万向节约定）、段内笛卡尔插补（逐周期逆解 + 测地姿态，opt-in）、双空间限速、B9 流会话 | KB-035/036/037/041~044 |
 | L6 fb | Part 1/2 全量 FB 面 + Part 4 线性/圆弧/blending 门面（CoordSystem 输入） | 矩阵 45/45 |
 | L7 adapters | Servo 窄接口 + ServoSim + 桥接（ADR-0004）、CiA402 状态机、CSP/CSV/CST bumpless 骨架 | KB-040 |
-| 工具面 | pyplcopen（单轴 + 流接口 demo）、16 份回放黄金语料、28 关节 @1kHz 预算基准 | — |
+| 工具面 | pyplcopen（单轴 + 流接口 demo）、17 份回放黄金语料、28 关节 @1kHz 预算基准 + 笛卡尔 IK 预算门 | — |
 
 ## 质量门禁现状
 
