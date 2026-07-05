@@ -39,5 +39,7 @@ out
 .playwright-cli/
 .omx/
 
-# Local AI session configuration
-.claude/
+# Local AI session state stays ignored, but the versioned harness
+# (.claude/skills/) is part of the repository.
+.claude/*
+!.claude/skills/

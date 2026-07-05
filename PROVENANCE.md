@@ -47,6 +47,20 @@ expanded there, update this file before starting the affected `core/` module.
 | `core/fb` | planned | compliance matrices, KB IDs, tests | Thin PLCopen facade only. |
 | `core/adapters` | planned | adapter-specific design docs and license review | Keep bus/OS details outside the core. |
 
+## Vendored Content Ledger
+
+Non-shipping engineering content vendored into the repository (not part of
+any library release artifact):
+
+| Content | Source | License | Basis commit | Local changes |
+|---|---|---|---|---|
+| `.claude/skills/` agent skills (18 dirs, see `.claude/skills/README.md`) | [mattpocock/skills](https://github.com/mattpocock/skills) | MIT (copy at `.claude/skills/LICENSE-mattpocock-skills.txt`) | `272f99b2` (2026-07-05) | issue-tracker pointers only, inline-marked `[plcopen local adaptation]` |
+
+Vendoring rule: license compatibility check first (MIT/BSD/Apache-2.0 only;
+GPL-family never statically), license copy kept beside the content, basis
+commit recorded, local changes inline-marked, ledger row added here in the
+same PR (maintainer approval covers the ledger update).
+
 ## Recording Rules
 
 - Add an ADR for each architecture or semantic decision that is not already
