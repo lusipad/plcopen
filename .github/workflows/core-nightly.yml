@@ -22,5 +22,10 @@ jobs:
       - name: Run deterministic OTG fuzz
         run: ./build/core/plcopen_core_otg_fuzz --iterations 1000000
 
+      - name: Run allocation-guard soak (A2)
+        run: |
+          cmake --build build --target plcopen_core_a2_alloc_guard --parallel
+          ./build/core/plcopen_core_a2_alloc_guard --cycles 50000000
+
       - name: Run time-optimal OTG fuzz
         run: ./build/core/plcopen_core_otg_time_optimal_tests --iterations 1000000
