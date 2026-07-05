@@ -22,6 +22,12 @@ Responsibilities:
   submit-side conversion slot for slot (pose groups report the TCP pose with
   the declared gimbal convention; translational groups the TCP point);
   configuration getters echo the original set values.
+- Cartesian in-segment interpolation (KB-044, approved matrix): opt-in
+  `interpolation_space = cartesian` on MCS/PCS linear segments of
+  plugin/pose groups — per-cycle analytic inverse on a precomputed
+  line/geodesic, 33-sample submit pre-validation with the step gate doubling
+  as the joint velocity budget, and mid-segment solver failure as an
+  explicit group errorstop (`last_cartesian_error()`).
 - Group path commands: linear (shared scalar path referenced to the longest member travel)
   and circular v1 (BORDER three-point arcs, arc-length path parameter in the first-two-axes
   plane, higher axes follow linearly; KB-030, approved circular matrix).

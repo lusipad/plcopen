@@ -6,6 +6,18 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- 笛卡尔插补批次收口（KB-044，已批准矩阵
+  `doc/compliance/cartesian-interpolation-semantics.md`）：kinematics/位姿组的
+  MCS/PCS 直线段可 opt-in `interpolation_space = cartesian`——段内逐周期解析
+  逆解让 TCP 走真笛卡尔直线、姿态走测地旋转（submit 预计算轴角 + 周期
+  Rodrigues），1D 剖面直接驱动笛卡尔弧长（速度语义变精确）。submit 33 采样
+  seed 链预验证前置全部拒绝，step 门兼作关节速度预算（0.5 安全因子自动缩放
+  命令速度）；采样间周期内失败 = 组 errorstop（保持上周期 setpoint）。默认
+  joint 逐字节兼容；relative/circular/blending/恒等组显式 unsupported。验收
+  `plcopen_core_cartesian_tests`（线性度/测地 oracle 1e-8、失败注入、接管
+  连续、拒绝全表）+ 新黄金场景 `core-group-cartesian`；预算基准
+  `cartesian_ik_cycle_us` 实测 2.4µs（Debug）≪ 50µs 硬门，250µs@4kHz 档
+  占比约 1%。
 - 回读批次收口（KB-043，已批准矩阵 `doc/compliance/readback-semantics.md`）：
   `AxisGroup::read_cartesian` 按帧（ACS/MCS/PCS）读组命令位/实际位——纯 const
   查询，输出与提交侧逐槽位镜像（读回即可重提交）；位姿组输出 TCP 位姿

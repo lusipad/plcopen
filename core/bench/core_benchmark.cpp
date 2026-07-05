@@ -11,6 +11,7 @@
 #include "plan/path.h"
 #include "rt/spsc_queue.h"
 #include "rt/static_vector.h"
+#include "kin/wrist6r.h"
 #include "stream/joint_group.h"
 
 namespace
@@ -257,6 +258,81 @@ int main()
         position_sum += joints.state(0).position;
     }
 
+    // Cartesian-interpolation budget gate (approved matrix decision #11):
+    // a 6R pose group rides Cartesian segments through the per-cycle
+    // analytic inverse; the measured per-cycle cost carries the hard 50 us
+    // gate, and the 250 us @4kHz tier conclusion goes to the matrix
+    // implementation record.
+    double cartesian_ik_us = 0.0;
+    {
+        static const kin::SphericalWrist6R arm(0.3, 0.4, 0.35, 0.08);
+        static axis::AxisModel pose_axes[6];
+        static axis::AxisGroup pose_group;
+        for(auto &axis_model : pose_axes) {
+            axis_model.set_power(true);
+            pose_group.add_axis(axis_model);
+        }
+        pose_group.enable();
+        if(pose_group.set_pose_kinematics(&arm, 0.0, 3.0) != rt::ErrorCode::ok) {
+            std::printf("BENCH_FAIL pose configure\n");
+            return 1;
+        }
+        axis::GroupCommand approach{};
+        approach.target.size = 6;
+        const double q0[6] = {0.3, 0.6, 1.0, -0.4, 0.9, 0.2};
+        for(int i = 0; i < 6; ++i) {
+            approach.target.value[i] = q0[i];
+        }
+        approach.velocity = 0.05;
+        approach.acceleration = 0.004;
+        approach.deceleration = 0.004;
+        approach.jerk = 0.004;
+        pose_group.submit_linear(approach);
+        for(int i = 0; i < 20000 && pose_group.status() != axis::GroupStatus::standby;
+            ++i) {
+            pose_group.cycle();
+        }
+
+        const double poses[2][6] = {{0.32, 0.18, 0.5, 0.5, -0.3, 0.9},
+                                    {0.4, -0.1, 0.55, 0.1, 0.2, -0.6}};
+        long cartesian_cycles = 0;
+        start = std::clock();
+        for(int leg = 0; leg < 8; ++leg) {
+            axis::GroupCommand segment{};
+            segment.target.size = 6;
+            for(int i = 0; i < 6; ++i) {
+                segment.target.value[i] = poses[leg % 2][i];
+            }
+            segment.velocity = 0.002;
+            segment.acceleration = 0.0005;
+            segment.deceleration = 0.0005;
+            segment.jerk = 0.0005;
+            segment.coord_system = axis::CoordSystem::mcs;
+            segment.interpolation_space = axis::InterpolationSpace::cartesian;
+            if(!pose_group.submit_linear(segment)) {
+                std::printf("BENCH_FAIL cartesian submit\n");
+                return 1;
+            }
+            for(int i = 0; i < 60000; ++i) {
+                pose_group.cycle();
+                ++cartesian_cycles;
+                if(pose_group.status() == axis::GroupStatus::standby) {
+                    break;
+                }
+            }
+        }
+        cartesian_ik_us = 1000.0 * millis_since(start) /
+                          static_cast<double>(cartesian_cycles);
+        position_sum += pose_axes[0].snapshot().command_position;
+        if(cartesian_ik_us > 50.0) {
+            std::printf("BENCH_FAIL cartesian_ik_cycle_us=%.2f exceeds 50us gate\n",
+                        cartesian_ik_us);
+            return 1;
+        }
+    }
+
+    std::printf("CARTESIAN_METRICS cartesian_ik_cycle_us=%.3f budget_us=50\n",
+                cartesian_ik_us);
     std::printf("BENCH_BASELINE static_vector_ms=%.3f spsc_ms=%.3f sample_ms=%.3f "
                 "path_sample_ms=%.3f axis_cycle_pair_ms=%.3f group_circular_cycle_ms=%.3f "
                 "checksum=%.3f\n",

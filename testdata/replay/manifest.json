@@ -151,6 +151,15 @@
         "B1 coordinate stack (approved coordinate matrix)",
         "workpiece frame + tool offset, PCS blending successor in a mixed-frame window"
       ]
+    },
+    {
+      "id": "core-group-cartesian",
+      "path": "core-group-cartesian.jsonl",
+      "source": "plcopen_core_replay_regression --record",
+      "coverage": [
+        "Cartesian-interpolation batch (approved matrix, KB-044)",
+        "SCARA joint-mode approach, then a per-cycle-IK Cartesian line segment"
+      ]
     }
   ]
 }

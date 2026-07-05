@@ -12,6 +12,7 @@
 #include <string>
 
 #include "axis/group.h"
+#include "kin/scara.h"
 #include "axis/state.h"
 
 namespace
@@ -466,12 +467,72 @@ void run_group_pcs(Recording &recording)
     }
 }
 
+void run_group_cartesian(Recording &recording)
+{
+    // Cartesian-interpolation batch (approved matrix, KB-044): a SCARA
+    // group rides a true Cartesian line through the per-cycle inverse —
+    // the golden guard for the new cycle-path execution branch.
+    recording.id = "core-group-cartesian";
+    static const kin::Scara scara(0.4, 0.3, true);
+    axis::AxisModel j1;
+    axis::AxisModel j2;
+    axis::AxisModel j3;
+    j1.set_power(true);
+    j2.set_power(true);
+    j3.set_power(true);
+    axis::AxisGroup group;
+    group.add_axis(j1);
+    group.add_axis(j2);
+    group.add_axis(j3);
+    group.enable();
+    group.set_kinematics(&scara);
+
+    axis::GroupCommand approach{};
+    approach.target.size = 3;
+    approach.target.value[0] = 0.35;
+    approach.target.value[1] = 0.25;
+    approach.target.value[2] = 0.1;
+    approach.velocity = 0.05;
+    approach.acceleration = 0.004;
+    approach.deceleration = 0.004;
+    approach.jerk = 0.004;
+    approach.coord_system = axis::CoordSystem::mcs;
+    group.submit_linear(approach);
+    std::int64_t tick = 0;
+    for(; tick < 4000; ++tick) {
+        group.cycle();
+        recording.emit(tick, 0, j1.snapshot());
+        recording.emit(tick, 1, j2.snapshot());
+        recording.emit(tick, 2, j3.snapshot());
+        if(group.status() == axis::GroupStatus::standby) {
+            break;
+        }
+    }
+
+    axis::GroupCommand segment = approach;
+    segment.target.value[0] = 0.15;
+    segment.target.value[1] = 0.45;
+    segment.target.value[2] = 0.3;
+    segment.velocity = 0.01;
+    segment.interpolation_space = axis::InterpolationSpace::cartesian;
+    group.submit_linear(segment);
+    for(; tick < 8000; ++tick) {
+        group.cycle();
+        recording.emit(tick, 0, j1.snapshot());
+        recording.emit(tick, 1, j2.snapshot());
+        recording.emit(tick, 2, j3.snapshot());
+        if(group.status() == axis::GroupStatus::standby) {
+            break;
+        }
+    }
+}
+
 using ScenarioRunner = void (*)(Recording &);
 constexpr ScenarioRunner kScenarios[] = {run_single_axis_move, run_velocity_stop,
                                          run_group_linear, run_group_circular,
                                          run_group_blend, run_group_window,
                                          run_group_window_arc, run_stream_session,
-                                         run_group_pcs};
+                                         run_group_pcs, run_group_cartesian};
 
 int write_recording(const Recording &recording, const std::string &directory)
 {

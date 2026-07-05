@@ -46,9 +46,10 @@ v1 declared boundaries:
 
 - joint count == Cartesian count (2 or 3) == group axis count; the 6R batch
   (BS3.5) lifts this together with orientation support;
-- the inverse solves endpoints and aux points at submit only; in-segment
-  interpolation stays joint-space — an MCS line is a joint-space line, not
-  a Cartesian line, on nonlinear mechanisms (per-cycle Cartesian
-  interpolation with dual-space time-scaling is BS3.6/BS4 scope);
+- by default the inverse solves endpoints and aux points at submit only
+  and in-segment interpolation stays joint-space; the Cartesian-interpolation
+  batch (KB-044) lifts this per command via
+  `interpolation_space = cartesian` (per-cycle inverse in the cycle path,
+  measured ~2.4 us for the 6R);
 - singularity handling is the entry-ban pre-check only (margin threshold at
   submit); DLS degradation is v2.

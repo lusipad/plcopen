@@ -126,6 +126,90 @@ inline RigidTransform compose(const RigidTransform &a, const RigidTransform &b)
     return out;
 }
 
+// Cartesian-interpolation batch (approved matrix decision #4): rotation
+// primitives for the per-cycle geodesic. relative_axis_angle extracts the
+// axis-angle of b relative to a (a-transpose times b); angles at or beyond
+// pi are rejected by the caller (the geodesic is not unique there), and
+// close to pi the axis comes from the symmetric form with skew-part signs
+// for stability.
+inline void rotation_multiply(const double a[3][3],
+                              const double b[3][3],
+                              double out[3][3])
+{
+    for(int i = 0; i < 3; ++i) {
+        for(int j = 0; j < 3; ++j) {
+            out[i][j] = a[i][0] * b[0][j] + a[i][1] * b[1][j] + a[i][2] * b[2][j];
+        }
+    }
+}
+
+inline void relative_axis_angle(const double a[3][3],
+                                const double b[3][3],
+                                double axis[3],
+                                double &angle)
+{
+    double rel[3][3];
+    for(int i = 0; i < 3; ++i) {
+        for(int j = 0; j < 3; ++j) {
+            rel[i][j] = a[0][i] * b[0][j] + a[1][i] * b[1][j] + a[2][i] * b[2][j];
+        }
+    }
+    const double trace = rel[0][0] + rel[1][1] + rel[2][2];
+    double cosine = (trace - 1.0) * 0.5;
+    cosine = cosine > 1.0 ? 1.0 : (cosine < -1.0 ? -1.0 : cosine);
+    angle = std::acos(cosine);
+    axis[0] = 0.0;
+    axis[1] = 0.0;
+    axis[2] = 1.0;
+    if(angle < 1e-12) {
+        angle = 0.0;
+        return;
+    }
+    const double skew[3] = {rel[2][1] - rel[1][2], rel[0][2] - rel[2][0],
+                            rel[1][0] - rel[0][1]};
+    if(angle < 3.0) {
+        const double scale = 1.0 / (2.0 * std::sin(angle));
+        axis[0] = skew[0] * scale;
+        axis[1] = skew[1] * scale;
+        axis[2] = skew[2] * scale;
+    } else {
+        for(int i = 0; i < 3; ++i) {
+            double squared = (rel[i][i] - cosine) / (1.0 - cosine);
+            squared = squared < 0.0 ? 0.0 : squared;
+            axis[i] = std::sqrt(squared);
+            if(skew[i] < 0.0) {
+                axis[i] = -axis[i];
+            }
+        }
+    }
+    const double norm =
+        std::sqrt(axis[0] * axis[0] + axis[1] * axis[1] + axis[2] * axis[2]);
+    if(norm > 0.0) {
+        axis[0] /= norm;
+        axis[1] /= norm;
+        axis[2] /= norm;
+    }
+}
+
+inline void rodrigues(const double axis[3], double angle, double out[3][3])
+{
+    const double c = std::cos(angle);
+    const double s = std::sin(angle);
+    const double t = 1.0 - c;
+    const double x = axis[0];
+    const double y = axis[1];
+    const double z = axis[2];
+    out[0][0] = t * x * x + c;
+    out[0][1] = t * x * y - s * z;
+    out[0][2] = t * x * z + s * y;
+    out[1][0] = t * x * y + s * z;
+    out[1][1] = t * y * y + c;
+    out[1][2] = t * y * z - s * x;
+    out[2][0] = t * x * z - s * y;
+    out[2][1] = t * y * z + s * x;
+    out[2][2] = t * z * z + c;
+}
+
 // Readback batch (approved matrix decision #4): the declared inverse of
 // make_rpy_transform. pitch = atan2(-r20, hypot(r00, r10)) in [-pi/2, pi/2],
 // roll/yaw from the cosine-pitch element pairs, all in (-pi, pi]. Inside the

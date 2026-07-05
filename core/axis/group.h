@@ -57,6 +57,7 @@ enum class GroupPathKind
 {
     linear,
     circular,
+    cartesian_linear,
 };
 
 // MC_TRANSITION_MODE (approved blending matrix): v1 implements None and
@@ -94,6 +95,29 @@ enum class PositionSource
     actual,
 };
 
+// Cartesian-interpolation batch (approved matrix): opt-in in-segment
+// per-cycle inverse kinematics. joint keeps the declared KB-037/KB-042
+// joint-space interpolation byte-identical.
+enum class InterpolationSpace
+{
+    joint,
+    cartesian,
+};
+
+// Internal: precomputed Cartesian segment geometry, resolved by the
+// submit_linear pre-validation. Not a user input.
+struct CartesianSegment
+{
+    bool pose = false;
+    bool angle_driven = false;
+    geom::Vec3 start{};
+    geom::Vec3 delta{};
+    double rotation_start[3][3] = {{1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 0.0, 1.0}};
+    double axis[3] = {0.0, 0.0, 1.0};
+    double angle = 0.0;
+    double length = 0.0;
+};
+
 struct GroupCommand
 {
     GroupPosition target{};
@@ -115,6 +139,11 @@ struct GroupCommand
     // frame.
     CoordSystem coord_system = CoordSystem::acs;
 
+    // Cartesian-interpolation batch: joint (default, byte-identical) or
+    // cartesian (per-cycle inverse kinematics on the precomputed
+    // line/geodesic).
+    InterpolationSpace interpolation_space = InterpolationSpace::joint;
+
     // A4 transition inputs (linear-to-linear geometric blending v1, KB-031).
     TransitionMode transition_mode = TransitionMode::none;
     double transition_parameter = 0.0;
@@ -127,6 +156,7 @@ struct GroupCommand
     // Internal: the validated arc geometry, resolved by submit_circular from
     // the command's deterministic start point. Not a user input.
     geom::ArcSegment arc{};
+    CartesianSegment cart{};
 };
 
 class AxisGroup
@@ -588,6 +618,17 @@ public:
                 return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
             }
         }
+        // Cartesian-interpolation batch (approved matrix): resolve the
+        // opt-in segment before the frame collapse — pre-validation either
+        // rejects here or leaves the ACS endpoint joints plus the cycle
+        // geometry in command.cart.
+        if(command.interpolation_space == InterpolationSpace::cartesian) {
+            const rt::ErrorCode prepared = prepare_cartesian_linear(command);
+            if(prepared != rt::ErrorCode::ok) {
+                return rt::Result<std::uint32_t>::failure(prepared);
+            }
+        }
+
         const rt::ErrorCode framed = apply_coordinate_frame(command);
         if(framed != rt::ErrorCode::ok) {
             return rt::Result<std::uint32_t>::failure(framed);
@@ -626,8 +667,11 @@ public:
         }
 
         // submit_linear always drives a linear path regardless of any stray
-        // circular fields on the command struct.
-        command.path_kind = GroupPathKind::linear;
+        // circular fields on the command struct (the cartesian marker set by
+        // the pre-validation above is the one exception).
+        if(command.interpolation_space != InterpolationSpace::cartesian) {
+            command.path_kind = GroupPathKind::linear;
+        }
         command.arc = geom::ArcSegment{};
 
         if(command.buffer_mode == BufferMode::aborting) {
@@ -685,6 +729,10 @@ public:
         // available (decision #8 passthrough). Guarded here so the rejection
         // never depends on the caller-set path_kind flag.
         if(pose_kinematics_ != nullptr && command.coord_system != CoordSystem::acs) {
+            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported);
+        }
+        if(command.interpolation_space == InterpolationSpace::cartesian) {
+            // Cartesian arcs are a follow-up batch (approved matrix).
             return rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported);
         }
         const rt::ErrorCode framed = apply_coordinate_frame(command);
@@ -779,6 +827,13 @@ public:
 
     // Degradation of a blending request to a plain BUFFERED join is reported
     // through this query, never silently (approved blending matrix).
+    // Cartesian-interpolation batch (approved matrix decision #7): the
+    // error that tripped the cycle-path errorstop, ok when none did.
+    rt::ErrorCode last_cartesian_error() const
+    {
+        return last_cartesian_error_;
+    }
+
     std::uint32_t last_blend_degraded_command() const
     {
         return last_blend_degraded_id_;
@@ -827,6 +882,10 @@ public:
                 const double position =
                     active_start_[i] + (active_finish_[i] - active_start_[i]) * ratio;
                 axes_[i]->set_synchronized_position(position);
+            }
+        } else if(active_kind_ == GroupPathKind::cartesian_linear) {
+            if(!cartesian_cycle(ratio)) {
+                return;
             }
         } else {
             for(std::size_t i = 0; i < axes_.size(); ++i) {
@@ -1125,6 +1184,246 @@ private:
         return rt::ErrorCode::ok;
     }
 
+    // Cartesian-interpolation batch (approved matrix decisions #1-#6): the
+    // submit-side resolution of an opt-in segment. Rejects every undefined
+    // combination, pre-validates 33 chord samples through the seed-chained
+    // inverse (the step gate lives inside the inverse; margin checked per
+    // sample), scales the command velocity so the worst per-cycle joint
+    // step stays inside half the step gate (pose pipeline; translational
+    // groups are bounded by the margin entry ban), and leaves the ACS
+    // endpoint joints plus the cycle geometry behind.
+    rt::ErrorCode prepare_cartesian_linear(GroupCommand &command)
+    {
+        if(command.coord_system != CoordSystem::mcs &&
+           command.coord_system != CoordSystem::pcs) {
+            return rt::ErrorCode::unsupported;
+        }
+        if(command.relative || command.buffer_mode == BufferMode::blending_low ||
+           command.buffer_mode == BufferMode::blending_high ||
+           command.transition_mode != TransitionMode::none ||
+           command.transition_parameter != 0.0) {
+            return rt::ErrorCode::unsupported;
+        }
+        if(kinematics_ == nullptr && pose_kinematics_ == nullptr) {
+            return rt::ErrorCode::unsupported;
+        }
+
+        const bool aborting = command.buffer_mode == BufferMode::aborting;
+        double chain[MaxAxes] = {};
+        for(std::size_t i = 0; i < axes_.size(); ++i) {
+            chain[i] = aborting ? axes_[i]->snapshot().command_position
+                                : queued_finish(i);
+        }
+
+        CartesianSegment segment{};
+        constexpr int Samples = 32;
+        double q[MaxAxes] = {};
+        double worst_step = 0.0;
+
+        if(pose_kinematics_ != nullptr) {
+            segment.pose = true;
+            geom::RigidTransform target = geom::make_rpy_transform(
+                command.target.value[0], command.target.value[1],
+                command.target.value[2], command.target.value[3],
+                command.target.value[4], command.target.value[5]);
+            if(command.coord_system == CoordSystem::pcs) {
+                target = geom::compose(workpiece_frame_, target);
+            }
+            kin::Pose6 flange{};
+            pose_kinematics_->forward(chain, flange);
+            geom::RigidTransform start{};
+            start.translation = geom::Vec3{flange.position[0], flange.position[1],
+                                           flange.position[2]};
+            for(int i = 0; i < 3; ++i) {
+                for(int j = 0; j < 3; ++j) {
+                    start.rotation[i][j] = flange.rotation[i][j];
+                }
+            }
+            start = geom::compose(start, pose_tool_);
+
+            segment.start = start.translation;
+            segment.delta = target.translation - start.translation;
+            for(int i = 0; i < 3; ++i) {
+                for(int j = 0; j < 3; ++j) {
+                    segment.rotation_start[i][j] = start.rotation[i][j];
+                }
+            }
+            geom::relative_axis_angle(start.rotation, target.rotation, segment.axis,
+                                      segment.angle);
+            if(segment.angle >= 3.14159265358979323846 - 1e-6) {
+                return rt::ErrorCode::invalid_argument;
+            }
+            segment.length = geom::norm(segment.delta);
+            if(segment.length < 1e-12 && segment.angle > 0.0) {
+                segment.angle_driven = true;
+                segment.length = segment.angle;
+            }
+
+            for(int k = 0; k <= Samples; ++k) {
+                const double fraction =
+                    static_cast<double>(k) / static_cast<double>(Samples);
+                geom::RigidTransform tcp{};
+                cartesian_pose_at(segment, fraction, tcp);
+                const geom::RigidTransform flange_target =
+                    geom::compose(tcp, pose_tool_inverse_);
+                kin::Pose6 pose{};
+                pose.position[0] = flange_target.translation.x;
+                pose.position[1] = flange_target.translation.y;
+                pose.position[2] = flange_target.translation.z;
+                for(int i = 0; i < 3; ++i) {
+                    for(int j = 0; j < 3; ++j) {
+                        pose.rotation[i][j] = flange_target.rotation[i][j];
+                    }
+                }
+                const rt::ErrorCode solved = pose_kinematics_->inverse(
+                    pose, chain, pose_max_joint_step_, q);
+                if(solved != rt::ErrorCode::ok) {
+                    return solved;
+                }
+                if(pose_kinematics_->singularity_margin(q) < pose_min_margin_) {
+                    return rt::ErrorCode::precondition_failed;
+                }
+                if(k > 0) {
+                    for(std::size_t i = 0; i < axes_.size(); ++i) {
+                        const double step = std::fabs(q[i] - chain[i]);
+                        if(step > worst_step) {
+                            worst_step = step;
+                        }
+                    }
+                }
+                for(std::size_t i = 0; i < axes_.size(); ++i) {
+                    chain[i] = q[i];
+                }
+            }
+            // Velocity budget (decision #6): the step gate doubles as the
+            // joint velocity budget with a safety factor of two.
+            if(worst_step > 0.0 && segment.length > 0.0) {
+                const double per_unit =
+                    worst_step / (segment.length / static_cast<double>(Samples));
+                const double allowed = 0.5 * pose_max_joint_step_ / per_unit;
+                if(allowed < command.velocity) {
+                    command.velocity = allowed;
+                }
+            }
+        } else {
+            geom::Vec3 point = cartesian_part(command.target);
+            if(command.coord_system == CoordSystem::pcs) {
+                point = geom::transform_point(workpiece_frame_, point);
+            }
+            point = point - tool_offset_;
+            geom::Vec3 start{};
+            const rt::ErrorCode forwarded =
+                kinematics_->forward(chain, axes_.size(), start);
+            if(forwarded != rt::ErrorCode::ok) {
+                return forwarded;
+            }
+            segment.start = start;
+            segment.delta = point - start;
+            segment.length = geom::norm(segment.delta);
+
+            for(int k = 0; k <= Samples; ++k) {
+                const double fraction =
+                    static_cast<double>(k) / static_cast<double>(Samples);
+                const geom::Vec3 sample{segment.start.x + segment.delta.x * fraction,
+                                        segment.start.y + segment.delta.y * fraction,
+                                        segment.start.z + segment.delta.z * fraction};
+                const rt::ErrorCode solved =
+                    kinematics_->inverse(sample, chain, axes_.size(), q);
+                if(solved != rt::ErrorCode::ok) {
+                    return solved;
+                }
+                if(kinematics_->singularity_margin(q, axes_.size()) <
+                   kinematics_min_margin_) {
+                    return rt::ErrorCode::precondition_failed;
+                }
+                for(std::size_t i = 0; i < axes_.size(); ++i) {
+                    chain[i] = q[i];
+                }
+            }
+        }
+
+        for(std::size_t i = 0; i < axes_.size(); ++i) {
+            command.target.value[i] = q[i];
+        }
+        // The Cartesian velocity limit applies directly: the profile drives
+        // Cartesian arc length (decision #2, supersedes the BS3.6
+        // conservative scaling on these segments).
+        if(cartesian_velocity_limit_ > 0.0 &&
+           cartesian_velocity_limit_ < command.velocity) {
+            command.velocity = cartesian_velocity_limit_;
+        }
+        command.coord_system = CoordSystem::acs;
+        command.path_kind = GroupPathKind::cartesian_linear;
+        command.cart = segment;
+        return rt::ErrorCode::ok;
+    }
+
+    void cartesian_pose_at(const CartesianSegment &segment,
+                           double fraction,
+                           geom::RigidTransform &tcp) const
+    {
+        tcp.translation = geom::Vec3{segment.start.x + segment.delta.x * fraction,
+                                     segment.start.y + segment.delta.y * fraction,
+                                     segment.start.z + segment.delta.z * fraction};
+        double relative[3][3];
+        geom::rodrigues(segment.axis, segment.angle * fraction, relative);
+        geom::rotation_multiply(segment.rotation_start, relative, tcp.rotation);
+    }
+
+    // Cycle-path Cartesian sampling (approved matrix decisions #3/#4/#7):
+    // one analytic inverse per cycle, seeded by the previous cycle's
+    // joints. A failure between the pre-validation samples is the declared
+    // group errorstop — members keep the last good setpoint, nothing
+    // extrapolates, nothing flips branches.
+    bool cartesian_cycle(double ratio)
+    {
+        double q[MaxAxes] = {};
+        rt::ErrorCode solved = rt::ErrorCode::ok;
+        if(active_cart_.pose) {
+            geom::RigidTransform tcp{};
+            cartesian_pose_at(active_cart_, ratio, tcp);
+            const geom::RigidTransform flange_target =
+                geom::compose(tcp, pose_tool_inverse_);
+            kin::Pose6 pose{};
+            pose.position[0] = flange_target.translation.x;
+            pose.position[1] = flange_target.translation.y;
+            pose.position[2] = flange_target.translation.z;
+            for(int i = 0; i < 3; ++i) {
+                for(int j = 0; j < 3; ++j) {
+                    pose.rotation[i][j] = flange_target.rotation[i][j];
+                }
+            }
+            solved = pose_kinematics_->inverse(pose, cart_joints_,
+                                               pose_max_joint_step_, q);
+            if(solved == rt::ErrorCode::ok &&
+               pose_kinematics_->singularity_margin(q) < pose_min_margin_) {
+                solved = rt::ErrorCode::precondition_failed;
+            }
+        } else {
+            const geom::Vec3 point{
+                active_cart_.start.x + active_cart_.delta.x * ratio,
+                active_cart_.start.y + active_cart_.delta.y * ratio,
+                active_cart_.start.z + active_cart_.delta.z * ratio};
+            solved = kinematics_->inverse(point, cart_joints_, axes_.size(), q);
+            if(solved == rt::ErrorCode::ok &&
+               kinematics_->singularity_margin(q, axes_.size()) <
+                   kinematics_min_margin_) {
+                solved = rt::ErrorCode::precondition_failed;
+            }
+        }
+        if(solved != rt::ErrorCode::ok) {
+            last_cartesian_error_ = solved;
+            abort_motion();
+            status_ = GroupStatus::errorstop;
+            return false;
+        }
+        for(std::size_t i = 0; i < axes_.size(); ++i) {
+            axes_[i]->set_synchronized_position(q[i]);
+            cart_joints_[i] = q[i];
+        }
+        return true;
+    }
+
     double queued_finish(std::size_t axis_index) const
     {
         double finish = window_active_
@@ -1174,6 +1473,13 @@ private:
         active_arc_ = command.arc;
         if(command.path_kind == GroupPathKind::circular) {
             longest = command.arc.length;
+        }
+        active_cart_ = command.cart;
+        if(command.path_kind == GroupPathKind::cartesian_linear) {
+            longest = command.cart.length;
+            for(std::size_t i = 0; i < axes_.size(); ++i) {
+                cart_joints_[i] = active_start_[i];
+            }
         }
         active_path_length_ = longest;
         if(longest > 0.0) {
@@ -2216,6 +2522,9 @@ private:
     std::array<double, MaxAxes> active_start_{};
     std::array<double, MaxAxes> active_finish_{};
     GroupPathKind active_kind_ = GroupPathKind::linear;
+    CartesianSegment active_cart_{};
+    double cart_joints_[MaxAxes] = {};
+    rt::ErrorCode last_cartesian_error_ = rt::ErrorCode::ok;
     geom::ArcSegment active_arc_{};
     rt::StaticVector<WindowSegment, WindowCapacity> window_{};
     bool window_active_ = false;
