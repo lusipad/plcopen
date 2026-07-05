@@ -42,12 +42,12 @@ flowchart TB
 
 ```mermaid
 flowchart TB
-    L7["L7 adapters<br/>servo-sim · fieldbus · rt-executor · python · trace"]
+    L7["L7 adapters<br/>Servo/ServoSim · CiA402 · 模式管理 · python（fieldbus/executor 外部仓库）"]
     L6["L6 fb · PLCopen FB 门面<br/>Execute / Done / Busy / CommandAborted 契约"]
     L5["L5 axis · 轴与组状态机<br/>命令生命周期 · BufferMode"]
-    L3["L3 plan · 前瞻规划<br/>路径缓冲 · 双向扫描 · blending"]
+    L3["L3 plan/stream/kin · 规划域<br/>前瞻扫描（jerk 精确可达）· blending · 轨迹流滤波 · 逆解"]
     L4["L4 exec · 周期执行<br/>插补采样 · gear/cam 同步 · 叠加"]
-    L2["L2 geom · 段几何<br/>line / arc / spline · 弧长参数化"]
+    L2["L2 geom · 段几何<br/>line / arc / spline · 刚体帧 · 弧长参数化"]
     L1["L1 otg · 单自由度求解器<br/>时间最优 jerk-limited · 纯函数"]
     L0["L0 rt · 基础设施<br/>周期时间域 · 静态容器 · SPSC · 错误码"]
 
@@ -124,6 +124,25 @@ sequenceDiagram
 
 ---
 
+## 实现现状（2026-07-05，Phase B 纯软件收口）
+
+图 1-4 的蓝图已全部落为实现；层 → 目录 → 边界编号对照：
+
+| 层 | 目录 | 已落地 | KB |
+|----|------|--------|-----|
+| L0 | `core/rt` | 周期时间域、定长容器、SPSC、错误码 | — |
+| L1 | `core/otg` | 时间最优 jerk-limited 求解器（任意初速/非零初始加速度、鼓包域分支修复、估计锚定候选） | KB-026/034 |
+| L2 | `core/geom` | 直线/三点圆弧/Bezier、刚体帧（绕 Z + 完整 RPY 原语）、弧长表 | KB-030/036 |
+| L3 | `core/plan` `core/stream` `core/kin` | 路径缓冲、前瞻窗口（jerk 精确可达扫描）、blending 决策；轨迹流滤波（B9）；kinematics ABI + 龙门/SCARA/6R（预集成） | KB-031/032/033/035/037/039/041 |
+| L4 | `core/exec` | 周期采样、gear/cam（C0 + C2 样条重建、在线换表）、叠加 | KB-038 |
+| L5 | `core/axis` | 单轴/组状态机、共享路径、坐标系栈、kinematics 级联、双空间限速、流会话 | KB-035/036/037/041 |
+| L6 | `core/fb` | Part 1/2 全量 + Part 4 线性/圆弧/blending 门面 | 矩阵 45/45 |
+| L7 | `core/adapters` | Servo 接口/桥接/ServoSim（ADR-0004）、CiA402、CSP/CSV/CST 骨架 | KB-040 |
+
+图 3 的 seqlock 快照与图 4 的规划域低优先级唤醒属参考 executor 形态（B7，
+待硬件阶段）；库内以显式 `cycle()` 与快照读取承载同一合同。各模块详细
+设计随码维护在 `core/*/README.md`（设计文档「随码写」原则）。
+
 ## 维护规则
 
 1. 本文件是架构图唯一事实源；架构变更必须同 PR 更新本文件（docs-sync 门禁）。
@@ -133,5 +152,5 @@ sequenceDiagram
 
 ---
 
-*本文档最后更新：2026-07-04（初稿：随架构图先行建立 doc/design/core/ 树）*
+*本文档最后更新：2026-07-05（实现现状对齐：Phase B 纯软件收口）*
 *关联：[rewrite-plan.md](../../archive/rewrite-plan.md) §2、[long-term-plan.md](../../planning/long-term-plan.md) §6.2、[robot-integration.md](../../planning/robot-integration.md) §2*

@@ -1,5 +1,8 @@
 # v0.9.0 Part 1/2 Completion Plan
 
+> 📦 **已归档（2026-07-05）**：历史执行/规划文档，仅供追溯，不再维护；现行文档入口见 [doc/planning/README.md](../planning/README.md) 与根 [STATUS.md](../../STATUS.md)。
+
+
 This plan turns the current PLCopen Motion Control Part 1 v2.0 matrix into the v0.9.0 execution backlog. PLCopen Part 2 extensions are treated as part of the Part 1 v2.0 baseline, matching the compliance matrix.
 
 Status: the tracked Part 1/2 FB rows are now implemented; keep this document as the audit trail for how v0.9.0 was closed, not as a live backlog.

@@ -1,5 +1,8 @@
 # Buffer Mode Blending 实现计划
 
+> 📦 **已归档（2026-07-05）**：历史执行/规划文档，仅供追溯，不再维护；现行文档入口见 [doc/planning/README.md](../planning/README.md) 与根 [STATUS.md](../../STATUS.md)。
+
+
 > 状态：v0.x 基线参考。当前 v0.9.0 旧线已完成本计划中与现有 MoveNode queue/blending 合同对应的代码、测试和矩阵同步；本文保留为设计审计记录，不再表示 live backlog。R4 切换后，完整几何 blending 或连续速度过渡应进入新核 planner/runtime 设计，而不是继续追加本计划。
 
 基于 [buffer-mode-blending-design.md](buffer-mode-blending-design.md)。

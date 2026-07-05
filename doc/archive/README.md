@@ -1,5 +1,8 @@
 # doc/archive/ — 已完成执行文档归档
 
+> 📦 **已归档（2026-07-05）**：历史执行/规划文档，仅供追溯，不再维护；现行文档入口见 [doc/planning/README.md](../planning/README.md) 与根 [STATUS.md](../../STATUS.md)。
+
+
 本目录收纳**已执行完毕**的规划/执行/证据文档：内容冻结、只进不出、
 仅供追溯（每份文件头部有归档横幅）。与 `doc/vision/`（愿景期探索归档）
 互补。现行文档入口见 [doc/planning/README.md](../planning/README.md)
@@ -14,3 +17,6 @@
 | [v0.11.0-release-draft.md](v0.11.0-release-draft.md) | v0.11.0 发布草案（旧线最后功能检查点） |
 | [roadmap-history.md](roadmap-history.md) | v0.2 → v0.11 各里程碑的完整 sprint 记录 |
 | [ADJUSTMENT_PLAN.md](ADJUSTMENT_PLAN.md) | 2026-04 的 v0.1→v0.2 范围削减计划（项目自我纠偏的起点） |
+| [design_doc.md](design_doc.md) / [buffer-mode-blending-design.md](buffer-mode-blending-design.md) / [buffer-mode-blending-plan.md](buffer-mode-blending-plan.md) | v0.x 旧线架构与 MoveNode blending 设计记录 |
+| [part4-linear-motion-plan.md](part4-linear-motion-plan.md) | v0.11.0 Part 4 linear foundation 执行计划 |
+| [part1-part2-completion-plan.md](part1-part2-completion-plan.md) | v0.9.0 Part 1/2 completion 审计记录 |

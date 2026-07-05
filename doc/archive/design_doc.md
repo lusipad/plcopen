@@ -1,5 +1,8 @@
 # PLCOpen 库设计文档
 
+> 📦 **已归档（2026-07-05）**：历史执行/规划文档，仅供追溯，不再维护；现行文档入口见 [doc/planning/README.md](../planning/README.md) 与根 [STATUS.md](../../STATUS.md)。
+
+
 > 状态：v0.x 基线参考。R4 切换后，默认架构入口是 [core/architecture.md](core/architecture.md)；本文只保留旧 `src/` 线的历史设计语境。
 
 ## 1. 概述

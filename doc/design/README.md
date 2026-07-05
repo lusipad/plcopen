@@ -1,16 +1,17 @@
 # doc/design/ 索引
 
-本目录按 R4 切换口径分为两类：
+本目录只放**现行**设计文档；v0.x 时代的设计记录已迁入
+[doc/archive/](../archive/)。设计文档「随码写」：模块级设计意图维护在
+`core/*/README.md`，语义合同在 `doc/compliance/` 矩阵，架构裁决在
+[decisions/](decisions/)（ADR）。
 
-| 文档 | 状态 | 说明 |
-|------|------|------|
-| [core/architecture.md](core/architecture.md) | 当前 | 新核 L0-L7 架构入口；默认消费面以 `core/` 为准 |
-| [core/l0-l1-rt-otg.md](core/l0-l1-rt-otg.md) | 当前 | 新核实时地基与 OTG 求解器设计 |
-| [core/l2-l4-motion-core.md](core/l2-l4-motion-core.md) | 当前 | 新核几何、路径、执行层设计 |
-| [core/l5-l6-semantic-layer.md](core/l5-l6-semantic-layer.md) | 当前 | 新核轴/组语义层与 FB 门面设计（R3） |
-| [part4-linear-motion-plan.md](part4-linear-motion-plan.md) | 历史完成计划 | v0.11.0 Part 4 linear foundation 执行记录 |
-| [design_doc.md](design_doc.md) | v0.x 基线参考 | 旧 `src/` 架构记录，不代表 R4 当前架构 |
-| [buffer-mode-blending-design.md](buffer-mode-blending-design.md) | v0.x 基线参考 | 旧线 MoveNode buffer/blending 设计记录 |
-| [buffer-mode-blending-plan.md](buffer-mode-blending-plan.md) | v0.x 基线参考 | 旧线 MoveNode buffer/blending 执行计划记录 |
+| 文档 | 说明 |
+|------|------|
+| [core/architecture.md](core/architecture.md) | 新核 L0-L7 架构图集（单一事实源，含实现现状对照） |
+| [core/l0-l1-rt-otg.md](core/l0-l1-rt-otg.md) | 实时地基与 OTG 求解器设计 |
+| [core/l2-l4-motion-core.md](core/l2-l4-motion-core.md) | 几何、路径、执行层设计 |
+| [core/l5-l6-semantic-layer.md](core/l5-l6-semantic-layer.md) | 轴/组语义层与 FB 门面设计 |
+| [decisions/](decisions/) | ADR：0001 许可证策略 · 0002 C++17 · 0003 Ruckig oracle 边界 · 0004 Servo 适配器（Accepted） |
 
-R4 之后，默认 install/export、demo、consumer 和 Python smoke 均以新核 `core/` 为当前入口；旧 `src/` 文档只用于迁移审计和 golden replay 对照。
+已归档（v0.x 基线参考）：`design_doc.md`、`buffer-mode-blending-{design,plan}.md`、
+`part4-linear-motion-plan.md` → [doc/archive/](../archive/)。

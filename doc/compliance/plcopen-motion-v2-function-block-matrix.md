@@ -3,7 +3,7 @@
 This matrix tracks the project against PLCopen Motion Control "Function blocks for motion control" Version 2.0.
 PLCopen states that Part 2 Extensions were merged into Part 1 in release 2.0, so this is the Part 1 + Part 2 completion baseline.
 
-v0.9.0 completion planning is tracked in [v0.9.0 Part 1/2 Completion Plan](part1-part2-completion-plan.md).
+v0.9.0 completion planning is tracked in [v0.9.0 Part 1/2 Completion Plan](../archive/part1-part2-completion-plan.md).
 
 **Rewrite-core carry-over status (R3/R4)**: the implementation and test references in the
 rows below describe the frozen v0.x `src/` line, which remains the recorded completion
