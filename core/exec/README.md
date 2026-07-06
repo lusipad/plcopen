@@ -15,3 +15,8 @@ command lifecycle stay out of L4 until R3.
 `CamTableView` is the non-owning cam table handle used by L5/L6: full table validation
 (`valid()`) is an engage-time concern; the cycle-path `sample()` only guards emptiness and
 finiteness and supports optional periodic wrap over the master span.
+
+Cam v2 (KB-046): `cam_law_value` / `generate_cam_law` produce classical
+rest-to-rise tables (cycloidal, modified sine with run-time-derived
+constants, 3-4-5 polynomial) in the offline/submit domain — the cycle path
+only ever consumes the resulting table.

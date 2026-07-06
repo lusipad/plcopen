@@ -266,6 +266,47 @@ int check_window_capacity()
     return 0;
 }
 
+// Approved look-ahead v2 addendum: the runtime depth cap fires the same
+// declared capacity semantics at the configured value.
+int check_window_depth_config()
+{
+    Rig rig;
+    if(rig.group.set_window_depth(1) != rt::ErrorCode::invalid_argument ||
+       rig.group.set_window_depth(4) != rt::ErrorCode::ok) {
+        return fail("depth setter");
+    }
+    rig.group.submit_linear(make_move(1.0, 0.0));
+    if(rig.group.set_window_depth(8) != rt::ErrorCode::invalid_argument) {
+        return fail("depth setter mid-motion");
+    }
+    for(int i = 0; i < 3; ++i) {
+        rig.group.cycle();
+    }
+    double heading = 0.0;
+    double px = 1.0;
+    double py = 0.0;
+    int accepted_count = 1;
+    rt::Result<std::uint32_t> last = rt::Result<std::uint32_t>::success(0);
+    for(int i = 0; i < 10; ++i) {
+        heading += (i % 2 == 0 ? 1.0 : -1.0) * (20.0 * Pi / 180.0);
+        px += std::cos(heading);
+        py += std::sin(heading);
+        last = rig.group.submit_linear(make_blend(px, py));
+        if(!last) {
+            break;
+        }
+        ++accepted_count;
+    }
+    if(last || last.error() != rt::ErrorCode::capacity_exceeded ||
+       accepted_count != 4) {
+        return fail("depth cap");
+    }
+    if(run_to_standstill(rig.group) < 0) {
+        return fail("depth-capped window finishes");
+    }
+    return 0;
+}
+
 int check_reflex_inside_window()
 {
     Rig rig;
@@ -578,6 +619,7 @@ int check_jerk_reachable_speed()
 int main()
 {
     if(check_dense_window() != 0 || check_window_capacity() != 0 ||
+       check_window_depth_config() != 0 ||
        check_reflex_inside_window() != 0 || check_stop_on_window() != 0 ||
        check_line_arc_line_window() != 0 || check_arc_centripetal_clamp() != 0 ||
        check_arc_window_boundaries() != 0 || check_jerk_reachable_speed() != 0) {

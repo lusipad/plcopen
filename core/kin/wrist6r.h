@@ -128,7 +128,14 @@ public:
                     const double sin_q5 =
                         std::sqrt(r36[0][2] * r36[0][2] + r36[1][2] * r36[1][2]);
                     q5 = std::atan2(wrist == 0 ? sin_q5 : -sin_q5, r36[2][2]);
-                    if(sin_q5 > 1e-12) {
+                    // Wrist-singularity band (approved cartesian v2-A,
+                    // KB-045): widened from the exact-zero 1e-12 so a
+                    // Cartesian sweep lands on the seed-locked convention
+                    // instead of an ill-conditioned split. 1e-8 keeps the
+                    // convention orientation error (~d6*pi*band) below the
+                    // 1e-8 linearity gates (tightened from the approved
+                    // 1e-6, recorded).
+                    if(sin_q5 > 1e-8) {
                         const double sign = wrist == 0 ? 1.0 : -1.0;
                         q4 = std::atan2(sign * r36[1][2], sign * r36[0][2]);
                         q6 = std::atan2(sign * r36[2][1], -sign * r36[2][0]);

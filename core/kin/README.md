@@ -50,6 +50,8 @@ v1 declared boundaries:
   and in-segment interpolation stays joint-space; the Cartesian-interpolation
   batch (KB-044) lifts this per command via
   `interpolation_space = cartesian` (per-cycle inverse in the cycle path,
-  measured ~2.4 us for the 6R);
+  measured ~2.4 us for the 6R); the wrist-singularity band (KB-045) resolves
+  the ZYZ indeterminacy by seed-locking q4 inside |sin q5| < 1e-8, so
+  Cartesian sweeps cross the wrist singularity without errorstop;
 - singularity handling is the entry-ban pre-check only (margin threshold at
   submit); DLS degradation is v2.

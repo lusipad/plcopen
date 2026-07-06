@@ -6,6 +6,14 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- 软件收尾批第一片（KB-045~048，已批准增补）：① 腕奇异通过——6R 腕奇异带
+  （|sin q5|<1e-8，较批准案收紧并声明）内 q4 锁 seed，笛卡尔段穿越腕奇异不再
+  errorstop（重定向拍以 step 门为界，声明）；② cam 运动规律生成器——摆线/
+  修正正弦/3-4-5 离线生成 ≤64 点表，修正正弦常数运行期推导，峰值比 ±1% 命中
+  经典常数；③ 笛卡尔圆弧——submit_circular 可 opt-in 笛卡尔(TCP)空间三点弧
+  （XY 平面、z 线性，位姿组姿态沿弧测地），预验证/预算/errorstop 沿用 KB-044
+  机制；④ 窗口深度运行期可配 set_window_depth（2..64，默认逐位兼容）。
+  验收并入 cartesian/cam/a5 三套件；既有回放 17 语料逐位不变。
 - 笛卡尔插补批次收口（KB-044，已批准矩阵
   `doc/compliance/cartesian-interpolation-semantics.md`）：kinematics/位姿组的
   MCS/PCS 直线段可 opt-in `interpolation_space = cartesian`——段内逐周期解析

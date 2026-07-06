@@ -110,6 +110,8 @@ struct CartesianSegment
 {
     bool pose = false;
     bool angle_driven = false;
+    bool arc_path = false;
+    geom::ArcSegment arc{};
     geom::Vec3 start{};
     geom::Vec3 delta{};
     double rotation_start[3][3] = {{1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 0.0, 1.0}};
@@ -603,6 +605,19 @@ public:
         return rt::ErrorCode::ok;
     }
 
+    // Look-ahead v2 addendum (approved 2026-07-06): runtime cap on the
+    // window depth; the declared capacity_exceeded semantics fire at the
+    // configured value. Default stays the full 64 (replay guard).
+    rt::ErrorCode set_window_depth(std::size_t depth)
+    {
+        if(status_ != GroupStatus::standby || !queue_.empty() || window_active_ ||
+           depth < 2 || depth > WindowCapacity) {
+            return rt::ErrorCode::invalid_argument;
+        }
+        window_depth_ = depth;
+        return rt::ErrorCode::ok;
+    }
+
     rt::Result<std::uint32_t> submit_linear(GroupCommand command)
     {
         if((status_ != GroupStatus::standby && status_ != GroupStatus::moving) || axes_.size() < 2 ||
@@ -724,15 +739,38 @@ public:
             // CENTER/RADIUS are declared unsupported in v1, not approximated.
             return rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported);
         }
-        // Orientation batch (approved matrix, decision #6): the pose pipeline
-        // carries no circular semantics in v1; ACS joint-domain arcs stay
-        // available (decision #8 passthrough). Guarded here so the rejection
-        // never depends on the caller-set path_kind flag.
-        if(pose_kinematics_ != nullptr && command.coord_system != CoordSystem::acs) {
-            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported);
-        }
+        // Cartesian v2-B (approved addendum): opt-in Cartesian-domain arcs
+        // resolve here and commit directly — the joint-domain construction
+        // below never sees them.
         if(command.interpolation_space == InterpolationSpace::cartesian) {
-            // Cartesian arcs are a follow-up batch (approved matrix).
+            const rt::ErrorCode prepared = prepare_cartesian_circular(command);
+            if(prepared != rt::ErrorCode::ok) {
+                return rt::Result<std::uint32_t>::failure(prepared);
+            }
+            if(command.command_id == 0) {
+                command.command_id = next_command_id_++;
+            }
+            if(command.buffer_mode == BufferMode::aborting) {
+                abort_motion();
+            }
+            if(command.buffer_mode == BufferMode::aborting ||
+               (!active_ && !window_active_)) {
+                const rt::ErrorCode started = start(command);
+                if(started != rt::ErrorCode::ok) {
+                    return rt::Result<std::uint32_t>::failure(started);
+                }
+                return rt::Result<std::uint32_t>::success(command.command_id);
+            }
+            const rt::ErrorCode queued = queue_.push_back(command);
+            if(queued != rt::ErrorCode::ok) {
+                return rt::Result<std::uint32_t>::failure(queued);
+            }
+            return rt::Result<std::uint32_t>::success(command.command_id);
+        }
+        // Orientation batch (approved matrix, decision #6): the pose pipeline
+        // carries no joint-domain circular semantics; ACS arcs stay available
+        // (decision #8 passthrough).
+        if(pose_kinematics_ != nullptr && command.coord_system != CoordSystem::acs) {
             return rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported);
         }
         const rt::ErrorCode framed = apply_coordinate_frame(command);
@@ -1184,42 +1222,24 @@ private:
         return rt::ErrorCode::ok;
     }
 
-    // Cartesian-interpolation batch (approved matrix decisions #1-#6): the
-    // submit-side resolution of an opt-in segment. Rejects every undefined
-    // combination, pre-validates 33 chord samples through the seed-chained
+    // Cartesian-interpolation batch (approved matrix decisions #1-#6 and
+    // the approved v2 addendum): submit-side resolution of opt-in segments.
+    // Undefined combinations reject, 33 chord samples run the seed-chained
     // inverse (the step gate lives inside the inverse; margin checked per
-    // sample), scales the command velocity so the worst per-cycle joint
+    // sample), the command velocity scales so the worst per-cycle joint
     // step stays inside half the step gate (pose pipeline; translational
-    // groups are bounded by the margin entry ban), and leaves the ACS
-    // endpoint joints plus the cycle geometry behind.
+    // groups are bounded by the margin entry ban), and the ACS endpoint
+    // joints plus the cycle geometry stay behind.
     rt::ErrorCode prepare_cartesian_linear(GroupCommand &command)
     {
-        if(command.coord_system != CoordSystem::mcs &&
-           command.coord_system != CoordSystem::pcs) {
-            return rt::ErrorCode::unsupported;
+        const rt::ErrorCode guarded = cartesian_guards(command);
+        if(guarded != rt::ErrorCode::ok) {
+            return guarded;
         }
-        if(command.relative || command.buffer_mode == BufferMode::blending_low ||
-           command.buffer_mode == BufferMode::blending_high ||
-           command.transition_mode != TransitionMode::none ||
-           command.transition_parameter != 0.0) {
-            return rt::ErrorCode::unsupported;
-        }
-        if(kinematics_ == nullptr && pose_kinematics_ == nullptr) {
-            return rt::ErrorCode::unsupported;
-        }
-
-        const bool aborting = command.buffer_mode == BufferMode::aborting;
         double chain[MaxAxes] = {};
-        for(std::size_t i = 0; i < axes_.size(); ++i) {
-            chain[i] = aborting ? axes_[i]->snapshot().command_position
-                                : queued_finish(i);
-        }
+        segment_start_joints(command, chain);
 
         CartesianSegment segment{};
-        constexpr int Samples = 32;
-        double q[MaxAxes] = {};
-        double worst_step = 0.0;
-
         if(pose_kinematics_ != nullptr) {
             segment.pose = true;
             geom::RigidTransform target = geom::make_rpy_transform(
@@ -1229,18 +1249,7 @@ private:
             if(command.coord_system == CoordSystem::pcs) {
                 target = geom::compose(workpiece_frame_, target);
             }
-            kin::Pose6 flange{};
-            pose_kinematics_->forward(chain, flange);
-            geom::RigidTransform start{};
-            start.translation = geom::Vec3{flange.position[0], flange.position[1],
-                                           flange.position[2]};
-            for(int i = 0; i < 3; ++i) {
-                for(int j = 0; j < 3; ++j) {
-                    start.rotation[i][j] = flange.rotation[i][j];
-                }
-            }
-            start = geom::compose(start, pose_tool_);
-
+            const geom::RigidTransform start = pose_start_tcp(chain);
             segment.start = start.translation;
             segment.delta = target.translation - start.translation;
             for(int i = 0; i < 3; ++i) {
@@ -1258,53 +1267,6 @@ private:
                 segment.angle_driven = true;
                 segment.length = segment.angle;
             }
-
-            for(int k = 0; k <= Samples; ++k) {
-                const double fraction =
-                    static_cast<double>(k) / static_cast<double>(Samples);
-                geom::RigidTransform tcp{};
-                cartesian_pose_at(segment, fraction, tcp);
-                const geom::RigidTransform flange_target =
-                    geom::compose(tcp, pose_tool_inverse_);
-                kin::Pose6 pose{};
-                pose.position[0] = flange_target.translation.x;
-                pose.position[1] = flange_target.translation.y;
-                pose.position[2] = flange_target.translation.z;
-                for(int i = 0; i < 3; ++i) {
-                    for(int j = 0; j < 3; ++j) {
-                        pose.rotation[i][j] = flange_target.rotation[i][j];
-                    }
-                }
-                const rt::ErrorCode solved = pose_kinematics_->inverse(
-                    pose, chain, pose_max_joint_step_, q);
-                if(solved != rt::ErrorCode::ok) {
-                    return solved;
-                }
-                if(pose_kinematics_->singularity_margin(q) < pose_min_margin_) {
-                    return rt::ErrorCode::precondition_failed;
-                }
-                if(k > 0) {
-                    for(std::size_t i = 0; i < axes_.size(); ++i) {
-                        const double step = std::fabs(q[i] - chain[i]);
-                        if(step > worst_step) {
-                            worst_step = step;
-                        }
-                    }
-                }
-                for(std::size_t i = 0; i < axes_.size(); ++i) {
-                    chain[i] = q[i];
-                }
-            }
-            // Velocity budget (decision #6): the step gate doubles as the
-            // joint velocity budget with a safety factor of two.
-            if(worst_step > 0.0 && segment.length > 0.0) {
-                const double per_unit =
-                    worst_step / (segment.length / static_cast<double>(Samples));
-                const double allowed = 0.5 * pose_max_joint_step_ / per_unit;
-                if(allowed < command.velocity) {
-                    command.velocity = allowed;
-                }
-            }
         } else {
             geom::Vec3 point = cartesian_part(command.target);
             if(command.coord_system == CoordSystem::pcs) {
@@ -1320,34 +1282,213 @@ private:
             segment.start = start;
             segment.delta = point - start;
             segment.length = geom::norm(segment.delta);
+        }
+        return prevalidate_cartesian(command, segment, chain);
+    }
 
-            for(int k = 0; k <= Samples; ++k) {
-                const double fraction =
-                    static_cast<double>(k) / static_cast<double>(Samples);
-                const geom::Vec3 sample{segment.start.x + segment.delta.x * fraction,
-                                        segment.start.y + segment.delta.y * fraction,
-                                        segment.start.z + segment.delta.z * fraction};
-                const rt::ErrorCode solved =
-                    kinematics_->inverse(sample, chain, axes_.size(), q);
-                if(solved != rt::ErrorCode::ok) {
-                    return solved;
-                }
-                if(kinematics_->singularity_margin(q, axes_.size()) <
-                   kinematics_min_margin_) {
-                    return rt::ErrorCode::precondition_failed;
-                }
-                for(std::size_t i = 0; i < axes_.size(); ++i) {
-                    chain[i] = q[i];
+    // Cartesian v2-B (approved addendum): three-point BORDER arcs in the
+    // Cartesian XY plane, z following the path parameter linearly — the
+    // KB-030 plane convention transplanted to the TCP domain (arbitrary
+    // spatial arc planes stay a follow-up, recorded). Pose groups ride the
+    // start-to-target geodesic along the arc fraction; aux orientation
+    // slots are ignored (declared).
+    rt::ErrorCode prepare_cartesian_circular(GroupCommand &command)
+    {
+        const rt::ErrorCode guarded = cartesian_guards(command);
+        if(guarded != rt::ErrorCode::ok) {
+            return guarded;
+        }
+        const bool pcs = command.coord_system == CoordSystem::pcs;
+        double chain[MaxAxes] = {};
+        segment_start_joints(command, chain);
+
+        CartesianSegment segment{};
+        geom::Vec3 start_point{};
+        geom::Vec3 aux_point = cartesian_part(command.aux);
+        geom::Vec3 target_point = cartesian_part(command.target);
+        if(pose_kinematics_ != nullptr) {
+            segment.pose = true;
+            geom::RigidTransform target = geom::make_rpy_transform(
+                command.target.value[0], command.target.value[1],
+                command.target.value[2], command.target.value[3],
+                command.target.value[4], command.target.value[5]);
+            if(pcs) {
+                target = geom::compose(workpiece_frame_, target);
+                aux_point = geom::transform_point(workpiece_frame_, aux_point);
+            }
+            const geom::RigidTransform start = pose_start_tcp(chain);
+            start_point = start.translation;
+            target_point = target.translation;
+            for(int i = 0; i < 3; ++i) {
+                for(int j = 0; j < 3; ++j) {
+                    segment.rotation_start[i][j] = start.rotation[i][j];
                 }
             }
+            geom::relative_axis_angle(start.rotation, target.rotation, segment.axis,
+                                      segment.angle);
+            if(segment.angle >= 3.14159265358979323846 - 1e-6) {
+                return rt::ErrorCode::invalid_argument;
+            }
+        } else {
+            if(pcs) {
+                aux_point = geom::transform_point(workpiece_frame_, aux_point);
+                target_point = geom::transform_point(workpiece_frame_, target_point);
+            }
+            aux_point = aux_point - tool_offset_;
+            target_point = target_point - tool_offset_;
+            geom::Vec3 start{};
+            const rt::ErrorCode forwarded =
+                kinematics_->forward(chain, axes_.size(), start);
+            if(forwarded != rt::ErrorCode::ok) {
+                return forwarded;
+            }
+            start_point = start;
         }
 
+        const geom::Vec3 plane_start{start_point.x, start_point.y, 0.0};
+        const geom::Vec3 plane_aux{aux_point.x, aux_point.y, 0.0};
+        const geom::Vec3 plane_finish{target_point.x, target_point.y, 0.0};
+        constexpr double PointTolerance = 1e-12;
+        if(geom::norm(plane_aux - plane_start) <= PointTolerance ||
+           geom::norm(plane_finish - plane_aux) <= PointTolerance ||
+           geom::norm(plane_finish - plane_start) <= PointTolerance) {
+            return rt::ErrorCode::invalid_argument;
+        }
+        const rt::Result<geom::ArcSegment> arc =
+            geom::make_arc(plane_start, plane_aux, plane_finish);
+        if(!arc) {
+            return rt::ErrorCode::invalid_argument;
+        }
+        if(arc.value().radius > geom::norm(plane_finish - plane_start) * 1e6) {
+            return rt::ErrorCode::invalid_argument;
+        }
+        const CircPathChoice derived = arc.value().sweep >= 0.0
+                                           ? CircPathChoice::counter_clockwise
+                                           : CircPathChoice::clockwise;
+        if(derived != command.path_choice) {
+            return rt::ErrorCode::invalid_argument;
+        }
+        segment.arc_path = true;
+        segment.arc = arc.value();
+        segment.start = start_point;
+        segment.delta = target_point - start_point;
+        segment.length = arc.value().length;
+        return prevalidate_cartesian(command, segment, chain);
+    }
+
+    rt::ErrorCode cartesian_guards(const GroupCommand &command) const
+    {
+        if(command.coord_system != CoordSystem::mcs &&
+           command.coord_system != CoordSystem::pcs) {
+            return rt::ErrorCode::unsupported;
+        }
+        if(command.relative || command.buffer_mode == BufferMode::blending_low ||
+           command.buffer_mode == BufferMode::blending_high ||
+           command.transition_mode != TransitionMode::none ||
+           command.transition_parameter != 0.0) {
+            return rt::ErrorCode::unsupported;
+        }
+        if(kinematics_ == nullptr && pose_kinematics_ == nullptr) {
+            return rt::ErrorCode::unsupported;
+        }
+        return rt::ErrorCode::ok;
+    }
+
+    void segment_start_joints(const GroupCommand &command, double *chain) const
+    {
+        const bool aborting = command.buffer_mode == BufferMode::aborting;
+        for(std::size_t i = 0; i < axes_.size(); ++i) {
+            chain[i] = aborting ? axes_[i]->snapshot().command_position
+                                : queued_finish(i);
+        }
+    }
+
+    geom::RigidTransform pose_start_tcp(const double *chain) const
+    {
+        kin::Pose6 flange{};
+        pose_kinematics_->forward(chain, flange);
+        geom::RigidTransform start{};
+        start.translation = geom::Vec3{flange.position[0], flange.position[1],
+                                       flange.position[2]};
+        for(int i = 0; i < 3; ++i) {
+            for(int j = 0; j < 3; ++j) {
+                start.rotation[i][j] = flange.rotation[i][j];
+            }
+        }
+        return geom::compose(start, pose_tool_);
+    }
+
+    // Shared 33-sample pre-validation and command commit for every
+    // Cartesian segment shape.
+    rt::ErrorCode prevalidate_cartesian(GroupCommand &command,
+                                        CartesianSegment &segment,
+                                        double *chain)
+    {
+        constexpr int Samples = 32;
+        double q[MaxAxes] = {};
+        double worst_step = 0.0;
+
+        for(int k = 0; k <= Samples; ++k) {
+            const double fraction =
+                static_cast<double>(k) / static_cast<double>(Samples);
+            rt::ErrorCode solved = rt::ErrorCode::ok;
+            if(segment.pose) {
+                geom::RigidTransform tcp{};
+                cartesian_pose_at(segment, fraction, tcp);
+                const geom::RigidTransform flange_target =
+                    geom::compose(tcp, pose_tool_inverse_);
+                kin::Pose6 pose{};
+                pose.position[0] = flange_target.translation.x;
+                pose.position[1] = flange_target.translation.y;
+                pose.position[2] = flange_target.translation.z;
+                for(int i = 0; i < 3; ++i) {
+                    for(int j = 0; j < 3; ++j) {
+                        pose.rotation[i][j] = flange_target.rotation[i][j];
+                    }
+                }
+                solved = pose_kinematics_->inverse(pose, chain,
+                                                   pose_max_joint_step_, q);
+                if(solved == rt::ErrorCode::ok &&
+                   pose_kinematics_->singularity_margin(q) < pose_min_margin_) {
+                    return rt::ErrorCode::precondition_failed;
+                }
+            } else {
+                const geom::Vec3 sample = cartesian_point_at(segment, fraction);
+                solved = kinematics_->inverse(sample, chain, axes_.size(), q);
+                if(solved == rt::ErrorCode::ok &&
+                   kinematics_->singularity_margin(q, axes_.size()) <
+                       kinematics_min_margin_) {
+                    return rt::ErrorCode::precondition_failed;
+                }
+            }
+            if(solved != rt::ErrorCode::ok) {
+                return solved;
+            }
+            if(k > 0) {
+                for(std::size_t i = 0; i < axes_.size(); ++i) {
+                    const double step = std::fabs(q[i] - chain[i]);
+                    if(step > worst_step) {
+                        worst_step = step;
+                    }
+                }
+            }
+            for(std::size_t i = 0; i < axes_.size(); ++i) {
+                chain[i] = q[i];
+            }
+        }
+        // Velocity budget (decision #6): the step gate doubles as the joint
+        // velocity budget with a safety factor of two (pose pipeline).
+        if(segment.pose && worst_step > 0.0 && segment.length > 0.0) {
+            const double per_unit =
+                worst_step / (segment.length / static_cast<double>(Samples));
+            const double allowed = 0.5 * pose_max_joint_step_ / per_unit;
+            if(allowed < command.velocity) {
+                command.velocity = allowed;
+            }
+        }
         for(std::size_t i = 0; i < axes_.size(); ++i) {
             command.target.value[i] = q[i];
         }
-        // The Cartesian velocity limit applies directly: the profile drives
-        // Cartesian arc length (decision #2, supersedes the BS3.6
-        // conservative scaling on these segments).
         if(cartesian_velocity_limit_ > 0.0 &&
            cartesian_velocity_limit_ < command.velocity) {
             command.velocity = cartesian_velocity_limit_;
@@ -1358,13 +1499,25 @@ private:
         return rt::ErrorCode::ok;
     }
 
+    geom::Vec3 cartesian_point_at(const CartesianSegment &segment,
+                                  double fraction) const
+    {
+        if(segment.arc_path) {
+            geom::Vec3 point =
+                geom::sample(segment.arc, fraction * segment.arc.length);
+            point.z = segment.start.z + segment.delta.z * fraction;
+            return point;
+        }
+        return geom::Vec3{segment.start.x + segment.delta.x * fraction,
+                          segment.start.y + segment.delta.y * fraction,
+                          segment.start.z + segment.delta.z * fraction};
+    }
+
     void cartesian_pose_at(const CartesianSegment &segment,
                            double fraction,
                            geom::RigidTransform &tcp) const
     {
-        tcp.translation = geom::Vec3{segment.start.x + segment.delta.x * fraction,
-                                     segment.start.y + segment.delta.y * fraction,
-                                     segment.start.z + segment.delta.z * fraction};
+        tcp.translation = cartesian_point_at(segment, fraction);
         double relative[3][3];
         geom::rodrigues(segment.axis, segment.angle * fraction, relative);
         geom::rotation_multiply(segment.rotation_start, relative, tcp.rotation);
@@ -1400,10 +1553,7 @@ private:
                 solved = rt::ErrorCode::precondition_failed;
             }
         } else {
-            const geom::Vec3 point{
-                active_cart_.start.x + active_cart_.delta.x * ratio,
-                active_cart_.start.y + active_cart_.delta.y * ratio,
-                active_cart_.start.z + active_cart_.delta.z * ratio};
+            const geom::Vec3 point = cartesian_point_at(active_cart_, ratio);
             solved = kinematics_->inverse(point, cart_joints_, axes_.size(), q);
             if(solved == rt::ErrorCode::ok &&
                kinematics_->singularity_margin(q, axes_.size()) <
@@ -1629,7 +1779,7 @@ private:
                 return rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported);
             }
         }
-        if(window_active_ && window_.full()) {
+        if(window_active_ && window_.size() >= window_depth_) {
             // Window capacity is a declared limit, never a silent drop.
             return rt::Result<std::uint32_t>::failure(rt::ErrorCode::capacity_exceeded);
         }
@@ -1817,7 +1967,8 @@ private:
         fresh.trim_in = trim;
         fresh.limits = limits2;
         fresh.command_id = command.command_id;
-        if(window_.push_back(fresh) != rt::ErrorCode::ok) {
+        if(window_.size() >= window_depth_ ||
+           window_.push_back(fresh) != rt::ErrorCode::ok) {
             tail.trim_out = saved_trim_out;
             tail.node = saved_node;
             if(converted) {
@@ -1940,7 +2091,7 @@ private:
                 return rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported);
             }
         }
-        if(window_active_ && window_.full()) {
+        if(window_active_ && window_.size() >= window_depth_) {
             return rt::Result<std::uint32_t>::failure(rt::ErrorCode::capacity_exceeded);
         }
 
@@ -2026,7 +2177,8 @@ private:
         WindowSegment &tail = window_[window_.size() - 1];
         const WindowNode saved_node = tail.node;
         tail.node = node;
-        if(window_.push_back(fresh) != rt::ErrorCode::ok) {
+        if(window_.size() >= window_depth_ ||
+           window_.push_back(fresh) != rt::ErrorCode::ok) {
             tail.node = saved_node;
             if(converted) {
                 window_.clear();
@@ -2527,6 +2679,7 @@ private:
     rt::ErrorCode last_cartesian_error_ = rt::ErrorCode::ok;
     geom::ArcSegment active_arc_{};
     rt::StaticVector<WindowSegment, WindowCapacity> window_{};
+    std::size_t window_depth_ = WindowCapacity;
     bool window_active_ = false;
     bool window_in_curve_ = false;
     bool window_stop_ = false;

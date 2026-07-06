@@ -419,6 +419,350 @@ int check_pose_geodesic()
     return fail("pose cart settle");
 }
 
+// Circumcenter of three XY points (test-side oracle).
+bool circumcenter_xy(geom::Vec3 a, geom::Vec3 b, geom::Vec3 c, double &cx,
+                     double &cy, double &radius)
+{
+    const double d = 2.0 * (a.x * (b.y - c.y) + b.x * (c.y - a.y) +
+                            c.x * (a.y - b.y));
+    if(std::fabs(d) < 1e-12) {
+        return false;
+    }
+    const double a2 = a.x * a.x + a.y * a.y;
+    const double b2 = b.x * b.x + b.y * b.y;
+    const double c2 = c.x * c.x + c.y * c.y;
+    cx = (a2 * (b.y - c.y) + b2 * (c.y - a.y) + c2 * (a.y - b.y)) / d;
+    cy = (a2 * (c.x - b.x) + b2 * (a.x - c.x) + c2 * (b.x - a.x)) / d;
+    radius = std::sqrt((a.x - cx) * (a.x - cx) + (a.y - cy) * (a.y - cy));
+    return true;
+}
+
+axis::CircPathChoice derived_choice(geom::Vec3 a, geom::Vec3 b, geom::Vec3 c)
+{
+    const double orientation =
+        (b.x - a.x) * (c.y - b.y) - (b.y - a.y) * (c.x - b.x);
+    return orientation >= 0.0 ? axis::CircPathChoice::counter_clockwise
+                              : axis::CircPathChoice::clockwise;
+}
+
+// Cartesian v2-B: a SCARA arc rides the Cartesian circle through the
+// per-cycle inverse — per-cycle radius error <= 1e-8, endpoint exact.
+int check_scara_cartesian_arc()
+{
+    static const kin::Scara scara(0.4, 0.3, true);
+    static TriRig rig;
+    if(rig.group.set_kinematics(&scara) != rt::ErrorCode::ok) {
+        return fail("cart arc setup");
+    }
+    const geom::Vec3 p0{0.35, 0.25, 0.1};
+    const geom::Vec3 aux{0.28, 0.36, 0.2};
+    const geom::Vec3 p1{0.15, 0.45, 0.3};
+    const double approach[3] = {p0.x, p0.y, p0.z};
+    axis::GroupCommand first = command_for(3, approach);
+    first.coord_system = axis::CoordSystem::mcs;
+    if(!rig.group.submit_linear(first) || settle(rig.group) != 0) {
+        return fail("cart arc approach");
+    }
+    double cx = 0.0;
+    double cy = 0.0;
+    double radius = 0.0;
+    if(!circumcenter_xy(p0, aux, p1, cx, cy, radius)) {
+        return fail("cart arc oracle degenerate");
+    }
+
+    axis::GroupCommand arc{};
+    arc.target.size = 3;
+    arc.aux.size = 3;
+    arc.target.value[0] = p1.x;
+    arc.target.value[1] = p1.y;
+    arc.target.value[2] = p1.z;
+    arc.aux.value[0] = aux.x;
+    arc.aux.value[1] = aux.y;
+    arc.aux.value[2] = aux.z;
+    arc.velocity = 0.01;
+    arc.acceleration = 0.002;
+    arc.deceleration = 0.002;
+    arc.jerk = 0.002;
+    arc.coord_system = axis::CoordSystem::mcs;
+    arc.interpolation_space = axis::InterpolationSpace::cartesian;
+    arc.path_choice = derived_choice(p0, aux, p1);
+    if(!rig.group.submit_circular(arc)) {
+        return fail("cart arc submit");
+    }
+    for(int tick = 0; tick < 60000; ++tick) {
+        rig.group.cycle();
+        if(rig.group.status() == axis::GroupStatus::errorstop) {
+            return fail("cart arc errorstop");
+        }
+        double joints[3] = {rig.position(0), rig.position(1), rig.position(2)};
+        geom::Vec3 point{};
+        if(scara.forward(joints, 3, point) != rt::ErrorCode::ok) {
+            return fail("cart arc forward");
+        }
+        const double r = std::sqrt((point.x - cx) * (point.x - cx) +
+                                   (point.y - cy) * (point.y - cy));
+        if(std::fabs(r - radius) > 1e-8) {
+            std::printf("radius error %.3e at tick %d\n", r - radius, tick);
+            return fail("cart arc radius");
+        }
+        if(rig.group.status() == axis::GroupStatus::standby) {
+            if(!near(point.x, p1.x, 1e-8) || !near(point.y, p1.y, 1e-8) ||
+               !near(point.z, p1.z, 1e-8)) {
+                return fail("cart arc endpoint");
+            }
+            return 0;
+        }
+    }
+    return fail("cart arc settle");
+}
+
+// Cartesian v2-B on the pose pipeline: position rides the circle, the
+// orientation rides the start-to-target geodesic in the sweep fraction
+// (independent quaternion slerp oracle).
+int check_pose_cartesian_arc()
+{
+    static const kin::SphericalWrist6R arm(0.3, 0.4, 0.35, 0.08);
+    static PoseRig rig;
+    if(rig.group.set_pose_kinematics(&arm, 0.0, 3.0) != rt::ErrorCode::ok) {
+        return fail("pose arc setup");
+    }
+    const double q0[6] = {0.3, 0.6, 1.0, -0.4, 0.9, 0.2};
+    if(!rig.group.submit_linear(command_for(6, q0)) || settle(rig.group) != 0) {
+        return fail("pose arc approach");
+    }
+    kin::Pose6 start_pose{};
+    {
+        double joints[6];
+        for(std::size_t i = 0; i < 6; ++i) {
+            joints[i] = rig.position(i);
+        }
+        arm.forward(joints, start_pose);
+    }
+    const geom::Vec3 p0{start_pose.position[0], start_pose.position[1],
+                        start_pose.position[2]};
+    const geom::Vec3 aux{p0.x - 0.05, p0.y + 0.06, p0.z + 0.02};
+    const geom::Vec3 p1{p0.x - 0.11, p0.y + 0.08, p0.z + 0.05};
+    const geom::RigidTransform target_tcp =
+        geom::make_rpy_transform(p1.x, p1.y, p1.z, 0.5, -0.3, 0.9);
+
+    axis::GroupCommand arc{};
+    arc.target.size = 6;
+    arc.aux.size = 6;
+    arc.target.value[0] = p1.x;
+    arc.target.value[1] = p1.y;
+    arc.target.value[2] = p1.z;
+    arc.target.value[3] = 0.5;
+    arc.target.value[4] = -0.3;
+    arc.target.value[5] = 0.9;
+    arc.aux.value[0] = aux.x;
+    arc.aux.value[1] = aux.y;
+    arc.aux.value[2] = aux.z;
+    arc.velocity = 0.005;
+    arc.acceleration = 0.001;
+    arc.deceleration = 0.001;
+    arc.jerk = 0.001;
+    arc.coord_system = axis::CoordSystem::mcs;
+    arc.interpolation_space = axis::InterpolationSpace::cartesian;
+    arc.path_choice = derived_choice(p0, aux, p1);
+    if(!rig.group.submit_circular(arc)) {
+        return fail("pose arc submit");
+    }
+
+    double cx = 0.0;
+    double cy = 0.0;
+    double radius = 0.0;
+    if(!circumcenter_xy(p0, aux, p1, cx, cy, radius)) {
+        return fail("pose arc oracle degenerate");
+    }
+    const Quat qa = quat_from(start_pose.rotation);
+    const Quat qb = quat_from(target_tcp.rotation);
+    const double sweep_start = std::atan2(p0.y - cy, p0.x - cx);
+    double sweep_total = std::atan2(p1.y - cy, p1.x - cx) - sweep_start;
+    const double sign = derived_choice(p0, aux, p1) ==
+                                axis::CircPathChoice::counter_clockwise
+                            ? 1.0
+                            : -1.0;
+    const double two_pi = 2.0 * 3.14159265358979323846;
+    while(sweep_total * sign < 0.0) {
+        sweep_total += sign * two_pi;
+    }
+
+    for(int tick = 0; tick < 120000; ++tick) {
+        rig.group.cycle();
+        if(rig.group.status() == axis::GroupStatus::errorstop) {
+            return fail("pose arc errorstop");
+        }
+        double joints[6];
+        for(std::size_t i = 0; i < 6; ++i) {
+            joints[i] = rig.position(i);
+        }
+        kin::Pose6 reached{};
+        arm.forward(joints, reached);
+        const double r = std::sqrt((reached.position[0] - cx) *
+                                       (reached.position[0] - cx) +
+                                   (reached.position[1] - cy) *
+                                       (reached.position[1] - cy));
+        if(std::fabs(r - radius) > 1e-8) {
+            return fail("pose arc radius");
+        }
+        double swept = std::atan2(reached.position[1] - cy,
+                                  reached.position[0] - cx) -
+                       sweep_start;
+        while(swept * sign < -1e-9) {
+            swept += sign * two_pi;
+        }
+        double t = sweep_total != 0.0 ? swept / sweep_total : 1.0;
+        t = t < 0.0 ? 0.0 : (t > 1.0 ? 1.0 : t);
+        double oracle[3][3];
+        slerp(qa, qb, t, oracle);
+        for(int i = 0; i < 3; ++i) {
+            for(int j = 0; j < 3; ++j) {
+                if(!near(reached.rotation[i][j], oracle[i][j], 1e-8)) {
+                    return fail("pose arc geodesic");
+                }
+            }
+        }
+        if(rig.group.status() == axis::GroupStatus::standby) {
+            return 0;
+        }
+    }
+    return fail("pose arc settle");
+}
+
+// Cartesian arc rejection rows.
+int check_cartesian_arc_rejections()
+{
+    static const kin::Scara scara(0.4, 0.3, true);
+    static TriRig rig;
+    if(rig.group.set_kinematics(&scara) != rt::ErrorCode::ok) {
+        return fail("arc reject setup");
+    }
+    axis::GroupCommand arc{};
+    arc.target.size = 3;
+    arc.aux.size = 3;
+    arc.target.value[0] = 0.15;
+    arc.target.value[1] = 0.45;
+    arc.aux.value[0] = 0.28;
+    arc.aux.value[1] = 0.36;
+    arc.velocity = 0.01;
+    arc.acceleration = 0.002;
+    arc.deceleration = 0.002;
+    arc.jerk = 0.002;
+    arc.coord_system = axis::CoordSystem::mcs;
+    arc.interpolation_space = axis::InterpolationSpace::cartesian;
+
+    axis::GroupCommand relative = arc;
+    relative.relative = true;
+    rt::Result<std::uint32_t> rejected = rig.group.submit_circular(relative);
+    if(rejected || rejected.error() != rt::ErrorCode::unsupported) {
+        return fail("arc reject relative");
+    }
+    axis::GroupCommand blending = arc;
+    blending.buffer_mode = axis::BufferMode::blending_low;
+    rejected = rig.group.submit_circular(blending);
+    if(rejected || rejected.error() != rt::ErrorCode::unsupported) {
+        return fail("arc reject blending");
+    }
+    static TriRig identity;
+    rejected = identity.group.submit_circular(arc);
+    if(rejected || rejected.error() != rt::ErrorCode::unsupported) {
+        return fail("arc reject identity");
+    }
+    axis::GroupCommand wrong = arc;
+    wrong.path_choice = axis::CircPathChoice::clockwise;
+    axis::GroupCommand right = arc;
+    right.path_choice = axis::CircPathChoice::counter_clockwise;
+    const rt::Result<std::uint32_t> wrong_result = rig.group.submit_circular(wrong);
+    const rt::Result<std::uint32_t> right_result = rig.group.submit_circular(right);
+    if(bool(wrong_result) == bool(right_result)) {
+        return fail("arc reject path choice");
+    }
+    if(settle(rig.group) != 0) {
+        return fail("arc reject settle");
+    }
+    return 0;
+}
+
+// Wrist-singularity pass-through (approved cartesian v2-A): a Cartesian
+// segment whose geodesic sweeps q5 through zero completes without
+// errorstop, stays on the line, and keeps joint steps inside the gate.
+int check_wrist_singularity_pass()
+{
+    static const kin::SphericalWrist6R arm(0.3, 0.4, 0.35, 0.08);
+    static PoseRig rig;
+    const double gate = 1.0;
+    if(rig.group.set_pose_kinematics(&arm, 0.0, gate) != rt::ErrorCode::ok) {
+        return fail("wrist pass setup");
+    }
+    const double q0[6] = {0.3, 0.6, 1.0, -0.4, 0.4, 0.2};
+    if(!rig.group.submit_linear(command_for(6, q0)) || settle(rig.group) != 0) {
+        return fail("wrist pass approach");
+    }
+    // Target = same arm, wrist pitch mirrored: the geodesic crosses q5 = 0.
+    double qt[6] = {0.3, 0.6, 1.0, -0.4, -0.4, 0.2};
+    kin::Pose6 target_pose{};
+    arm.forward(qt, target_pose);
+    double roll = 0.0;
+    double pitch = 0.0;
+    double yaw = 0.0;
+    geom::extract_rpy(target_pose.rotation, roll, pitch, yaw);
+    const double target[6] = {target_pose.position[0], target_pose.position[1],
+                              target_pose.position[2], roll, pitch, yaw};
+    axis::GroupCommand segment = command_for(6, target);
+    segment.coord_system = axis::CoordSystem::mcs;
+    segment.interpolation_space = axis::InterpolationSpace::cartesian;
+    if(!rig.group.submit_linear(segment)) {
+        return fail("wrist pass submit");
+    }
+    kin::Pose6 start_pose{};
+    arm.forward(q0, start_pose);
+    const geom::Vec3 a{start_pose.position[0], start_pose.position[1],
+                       start_pose.position[2]};
+    const geom::Vec3 b{target_pose.position[0], target_pose.position[1],
+                       target_pose.position[2]};
+    double previous[6];
+    for(std::size_t i = 0; i < 6; ++i) {
+        previous[i] = rig.position(i);
+    }
+    bool crossed = false;
+    for(int tick = 0; tick < 120000; ++tick) {
+        rig.group.cycle();
+        if(rig.group.status() == axis::GroupStatus::errorstop) {
+            return fail("wrist pass errorstop");
+        }
+        double joints[6];
+        for(std::size_t i = 0; i < 6; ++i) {
+            joints[i] = rig.position(i);
+            // The singular reorientation concentrates in a measure-zero
+            // parameter interval, so the 0.5 budget cannot cover it; the
+            // step gate itself is the declared bound there (v2-A record).
+            if(std::fabs(joints[i] - previous[i]) > gate) {
+                std::printf("step joint %zu tick %d: %.6f -> %.6f (q5=%.6f)\n", i,
+                            tick, previous[i], joints[i], rig.position(4));
+                return fail("wrist pass joint step");
+            }
+            previous[i] = joints[i];
+        }
+        if(joints[4] < 0.0) {
+            crossed = true;
+        }
+        kin::Pose6 reached{};
+        arm.forward(joints, reached);
+        const geom::Vec3 point{reached.position[0], reached.position[1],
+                               reached.position[2]};
+        if(cross_track(point, a, b) > 1e-8) {
+            return fail("wrist pass linearity");
+        }
+        if(rig.group.status() == axis::GroupStatus::standby) {
+            if(!crossed) {
+                return fail("wrist pass never crossed");
+            }
+            return 0;
+        }
+    }
+    return fail("wrist pass settle");
+}
+
 // Mock pose plugin whose inverse fails in a band strictly between the 33
 // pre-validation samples: submit passes, the cycle path hits the band and
 // the group reports the declared errorstop semantics.
@@ -721,6 +1065,10 @@ int main()
     int failures = 0;
     failures += check_scara_linearity();
     failures += check_pose_geodesic();
+    failures += check_scara_cartesian_arc();
+    failures += check_pose_cartesian_arc();
+    failures += check_cartesian_arc_rejections();
+    failures += check_wrist_singularity_pass();
     failures += check_mid_segment_fault();
     failures += check_takeover_continuity();
     failures += check_rejections();

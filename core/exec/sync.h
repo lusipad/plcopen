@@ -27,6 +27,70 @@ struct CamPoint
     double slave = 0.0;
 };
 
+// Cam v2 addendum (approved 2026-07-06, KB-046): classical rest-to-rest
+// motion-law generation, offline/submit domain. cam_law_value evaluates the
+// unit-domain law (x in [0,1] maps to s in [0,1]); the modified-sine
+// constants come from the exact piecewise antiderivatives at run time, not
+// copied from handbooks. generate_cam_law discretizes into a caller-owned
+// point array consumable by the existing linear/spline reconstruction
+// (strictly increasing master by construction).
+enum class CamLaw
+{
+    cycloidal,
+    modified_sine,
+    poly345,
+};
+
+inline double cam_law_value(CamLaw law, double x)
+{
+    constexpr double Pi = 3.14159265358979323846;
+    x = x < 0.0 ? 0.0 : (x > 1.0 ? 1.0 : x);
+    if(law == CamLaw::cycloidal) {
+        return x - std::sin(2.0 * Pi * x) / (2.0 * Pi);
+    }
+    if(law == CamLaw::poly345) {
+        return x * x * x * (10.0 + x * (-15.0 + 6.0 * x));
+    }
+    // Modified sine: acceleration sin(w1*x) on [0,1/8] and [7/8,1],
+    // cos(w2*(x-1/8)) between; velocity/position from the exact
+    // antiderivatives with continuity constants, normalized by the total.
+    const double w1 = 4.0 * Pi;
+    const double w2 = 4.0 * Pi / 3.0;
+    const double v18 = 1.0 / w1;
+    const double s18 = (0.125 - 1.0 / w1) / w1;
+    const double s78 = s18 + v18 * 0.75 + 2.0 / (w2 * w2);
+    const double total = s78 + v18 * 0.125 - 1.0 / (w1 * w1);
+    double s = 0.0;
+    if(x < 0.125) {
+        s = (x - std::sin(w1 * x) / w1) / w1;
+    } else if(x <= 0.875) {
+        const double u = x - 0.125;
+        s = s18 + v18 * u + (1.0 - std::cos(w2 * u)) / (w2 * w2);
+    } else {
+        s = s78 + v18 * (x - 0.875) - (std::sin(w1 * x) + 1.0) / (w1 * w1);
+    }
+    return s / total;
+}
+
+inline rt::ErrorCode generate_cam_law(CamLaw law,
+                                      double master_span,
+                                      double rise,
+                                      CamPoint *points,
+                                      std::size_t point_count)
+{
+    if(points == nullptr || point_count < 8 || point_count > 64 ||
+       !std::isfinite(master_span) || master_span <= 0.0 || !std::isfinite(rise)) {
+        return rt::ErrorCode::invalid_argument;
+    }
+    for(std::size_t i = 0; i < point_count; ++i) {
+        const double x =
+            static_cast<double>(i) / static_cast<double>(point_count - 1);
+        points[i].master = master_span * x;
+        points[i].slave = rise * cam_law_value(law, x);
+    }
+    return rt::ErrorCode::ok;
+}
+
 // Non-owning cam table handle: L5/L6 consumers keep the point storage alive.
 struct CamTableView
 {

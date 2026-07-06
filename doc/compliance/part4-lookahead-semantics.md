@@ -92,3 +92,6 @@ KB-031 的整链单剖面（链上限速）改为分段结点限速执行，回�
 `AxisGroup::set_window_depth(n)`，n ∈ [2, 64]，standby + 空队列守卫（同帧/插件 setter 口径）；窗口段数达到配置值即按既有 `capacity_exceeded` 语义拒绝扩展。默认 64 不变（全部既有回放/验收逐位不变）。摊销执行（周期内分摊重规划）属 executor 阶段（B7），本增补不涉及。
 
 验收：n=4 时第 5 段扩展报 `capacity_exceeded`；默认路径逐位回归。
+
+**实现记录（2026-07-06，KB-048）**：`set_window_depth` 已落库，验收进
+`plcopen_core_a5_lookahead_tests`。

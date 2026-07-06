@@ -93,3 +93,7 @@ B4 残余两项，全部离线/提交域（非 RT）：
 验收：每规律边界 oracle（s(0)=0、s(1)=rise、v/a 端点为 0）；数值 C2 扫描；单调升程；峰值比对经典常数 ±1%（摆线 Cv=2.000/Ca=6.283、修正正弦 Cv≈1.760/Ca≈5.528、3-4-5 Cv=1.875/Ca≈5.774）；生成表过 `CamTableSelect` 校验并驱动 spline engage。
 
 不做：停留-升程组合段拼接器（调用方拼表）、VDI 全系（先三个最常用）、二进制交换格式。
+
+**v2 实现记录（2026-07-06，KB-046）**：`exec::cam_law_value/generate_cam_law`
+已落库，验收进 `plcopen_core_cam_tests`（峰值比全部 ±1% 命中经典常数）；
+CSV helper 随 pyplcopen 批交付。

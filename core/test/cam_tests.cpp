@@ -169,6 +169,98 @@ double slave_acceleration_peak(exec::CamInterpolation interpolation)
     return peak;
 }
 
+// Cam v2 addendum: the classical law oracle — boundary conditions, C2
+// continuity, monotonic rise, and the classical peak ratios within 1%.
+int check_cam_law_oracle()
+{
+    struct LawCase
+    {
+        exec::CamLaw law;
+        double cv;
+        double ca;
+    };
+    const LawCase cases[3] = {{exec::CamLaw::cycloidal, 2.0, 6.2832},
+                              {exec::CamLaw::modified_sine, 1.7596, 5.5280},
+                              {exec::CamLaw::poly345, 1.875, 5.7735}};
+    const int n = 20000;
+    const double h = 1.0 / n;
+    for(const LawCase &law_case : cases) {
+        if(exec::cam_law_value(law_case.law, 0.0) != 0.0 ||
+           std::fabs(exec::cam_law_value(law_case.law, 1.0) - 1.0) > 1e-12) {
+            return fail("law endpoints");
+        }
+        double peak_v = 0.0;
+        double peak_a = 0.0;
+        double previous_a = 0.0;
+        double previous_s = 0.0;
+        for(int i = 1; i < n; ++i) {
+            const double x = static_cast<double>(i) * h;
+            const double s0 = exec::cam_law_value(law_case.law, x - h);
+            const double s1 = exec::cam_law_value(law_case.law, x);
+            const double s2 = exec::cam_law_value(law_case.law, x + h);
+            if(s1 < previous_s - 1e-12) {
+                return fail("law monotonic");
+            }
+            previous_s = s1;
+            const double v = (s2 - s0) / (2.0 * h);
+            const double a = (s2 - 2.0 * s1 + s0) / (h * h);
+            if(std::fabs(v) > peak_v) {
+                peak_v = std::fabs(v);
+            }
+            if(std::fabs(a) > peak_a) {
+                peak_a = std::fabs(a);
+            }
+            // C2: acceleration moves smoothly (a C1 break would jump by the
+            // full peak scale in one h step).
+            if(i > 1 && std::fabs(a - previous_a) > 0.05 * law_case.ca) {
+                return fail("law accel continuity");
+            }
+            previous_a = a;
+        }
+        // Boundary velocity/acceleration vanish.
+        const double v_edge = (exec::cam_law_value(law_case.law, h) -
+                               exec::cam_law_value(law_case.law, 0.0)) /
+                              h;
+        if(std::fabs(v_edge) > 2e-3) {
+            return fail("law boundary velocity");
+        }
+        if(std::fabs(peak_v - law_case.cv) > 0.01 * law_case.cv ||
+           std::fabs(peak_a - law_case.ca) > 0.01 * law_case.ca) {
+            std::printf("law peaks cv=%.5f ca=%.5f expected %.5f %.5f\n", peak_v,
+                        peak_a, law_case.cv, law_case.ca);
+            return fail("law peak ratios");
+        }
+    }
+    return 0;
+}
+
+// Generated tables pass the engage-time validation and build a spline.
+int check_cam_law_generation()
+{
+    exec::CamPoint points[64];
+    if(exec::generate_cam_law(exec::CamLaw::modified_sine, 6.2832, 0.5, points,
+                              64) != rt::ErrorCode::ok) {
+        return fail("law generate");
+    }
+    exec::CamTableView view{points, 64, false};
+    if(!view.valid()) {
+        return fail("law table validation");
+    }
+    exec::CamSpline spline;
+    if(spline.build(view) != rt::ErrorCode::ok) {
+        return fail("law spline engage");
+    }
+    if(exec::generate_cam_law(exec::CamLaw::cycloidal, 1.0, 1.0, points, 7) !=
+           rt::ErrorCode::invalid_argument ||
+       exec::generate_cam_law(exec::CamLaw::cycloidal, -1.0, 1.0, points, 16) !=
+           rt::ErrorCode::invalid_argument ||
+       exec::generate_cam_law(exec::CamLaw::cycloidal, 1.0, 1.0, nullptr, 16) !=
+           rt::ErrorCode::invalid_argument) {
+        return fail("law rejections");
+    }
+    return 0;
+}
+
 int check_acceleration_impact()
 {
     const double linear_peak = slave_acceleration_peak(exec::CamInterpolation::linear);
@@ -267,7 +359,8 @@ int main()
 {
     if(check_spline_interpolates_nodes() != 0 || check_c2_continuity() != 0 ||
        check_periodic_wrap() != 0 || check_capacity_rejection() != 0 ||
-       check_acceleration_impact() != 0 || check_online_switch() != 0) {
+       check_acceleration_impact() != 0 || check_online_switch() != 0 ||
+       check_cam_law_oracle() != 0 || check_cam_law_generation() != 0) {
         return 1;
     }
     std::printf("PASS cam tests\n");
