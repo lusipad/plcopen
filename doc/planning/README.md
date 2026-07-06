@@ -22,6 +22,7 @@
 | [ai-collaboration.md](ai-collaboration.md) | AI-First 工程体系（战略部分；操作流程已迁入 `.claude/skills/`） | 现行 |
 | [v1.0.0-alpha-release-draft.md](v1.0.0-alpha-release-draft.md) | v1.0.0-alpha 发布草案与人工检查单 | T3 草案，待人工发布 |
 | [r1-rt-report-template.md](r1-rt-report-template.md) | 72h PREEMPT_RT 报告模板（B7 硬件阶段使用） | 模板，待真机 |
+| [software-excellence-plan.md](software-excellence-plan.md) | 软件极致候选清单（Y 算法/P 标准面/Z 采纳/E 证据四线） | 候选，复盘定序 |
 
 已完成的执行文档（R0-R4 拆解、证据包、rewrite-plan、v0.11 草案等）在
 [doc/archive/](../archive/)。

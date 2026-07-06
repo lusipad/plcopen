@@ -23,9 +23,12 @@ sprint 记录）在 [doc/archive/roadmap-history.md](doc/archive/roadmap-history
 
 ## 下一里程碑候选（复盘时定）
 
-- **250µs 档启用**：预算证据已备（KB-044：6R IK ~1% 占比），随硬件阶段评估
-- **窗口深度运行期可配 + 摊销执行**（6.2 周期外层工程化）
-- 硬件阶段任一触发项到位则优先
+候选清单已立案为[软件极致计划](doc/planning/software-excellence-plan.md)
+（Y 算法 / P 标准面 / Z 采纳 / E 证据四线，推荐起手 Z1 pip wheel →
+Y0 最优性 oracle）。此外：
+
+- **250µs 档启用**：预算证据已备（KB-044：占比 ~1-2%），随硬件阶段评估
+- 硬件阶段任一触发项到位则优先于软件线
 
 ## 复盘节奏
 
