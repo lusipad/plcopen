@@ -16,8 +16,8 @@ sprint 记录）在 [doc/archive/roadmap-history.md](doc/archive/roadmap-history
 | 1 | Y7 组接管修复（**linear 范围已批，可开工**） | 公差管语义 v2.1：标量承接 + 横向衰减 + β 分割；circular/笛卡尔待曲率项另批 | 矩阵 linear 范围已批 |
 | 2 | **对抗性探测轮**（拷问后提位：新 FB 不建在可能有暗伤的地基上） | 组/FB 语义面系统扫描，发现即 KB/修复 | 方法已验证（KB-051） |
 | 3 | Y0 最优性 oracle（评审定序提前：先立标尺再修算法） | 切换结构枚举表（第一交付物）+ 双 oracle + Ruckig 黑盒对照，excess_cycles 分域基线入趋势 | 设计已备 |
-| 4 | Y2 完整 OTG（评审三关键） | state-to-state 任意目标状态（非零 at）+ 钉边界 + 整周期量化；Ruckig 黑盒对照 | 合同已批（algorithm-contracts §1） |
-| 4c | Y4 定时同步（评审三关键） | solve_fixed_time：duration==T_sync、终态 ≤1e-9、全程在限（T43） | 合同已批（§2） |
+| 4 | Y2 完整 OTG（评审三关键） | state-to-state 任意目标状态（非零 at）+ 钉边界 + epsilon 政策声明化；Ruckig 黑盒对照 | 合同已批（§1 + 附注） |
+| 4c | Y4 solve_fixed_time 一等原语（评审三关键，紧跟 Y2） | 同步 + cycle-exact 量化（删 KB-050 尾段补丁）+ 流追赶汇合同一求解；终态 ≤1e-9（T43） | 合同已批（§2 + 附注） |
 | 5a | P-Part4 剩余 FB | 管理组矩阵 + 路径表/变换第二批矩阵均已起草待批 | 两份矩阵待批 |
 | 5b | P-Part5 回零规程 | MC_Step* 标准回零步 FB 面（数字输入通道模拟验收） | 矩阵已起草待批 |
 | 4b | **信号通道并行项**（拷问后拉入：学习不等建造） | T1 pip wheel + 最小文档站起步——细案见 [signal-channel-plan](doc/planning/signal-channel-plan.md) | 方案已备，可并行 |

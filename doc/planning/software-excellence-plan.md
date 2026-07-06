@@ -76,9 +76,9 @@
 |---|------|------|------------|
 | Y0 | **最优控制 oracle** | Pontryagin bang-bang 数值参照解算器进测试层，量化每个 OTG 解与理论最优的差距（趋势线指标） | 测试层，零运行时成本；**一切 Y 批的标尺，先做** |
 | Y1 | 传送带/转台跟踪 | `MC_TrackConveyorBelt/RotaryTable`——机器人拾取闭环的最后一块标准板 | 周期路径新增有界跟踪项，随批预算门 |
-| Y2 | OTG 补完整任意状态 | **补完整 state-to-state 形态**（评审定界）：非零目标加速度 at≠0、v0=vt=vmax 钉边界量化深潜（撤销 KB-050 匀速骑行/退避梯子两处声明妥协）、整数周期量化口径成文；Ruckig 黑盒对照（ADR-0003）| 规划域；声明变更走回放全流程；STREAM_METRICS 门看住单解耗时 |
-| Y3 | reachability TOPP（两层，评审定界） | **第一层加速度级 TOPP-RA**：沿路径离散点递推可达/可控速度集（每点小 LP），速度/加速度/曲率/关节/笛卡尔限速统一进路径参数化（arXiv:1707.07239）；**第二层 jerk-aware 扩展**：状态 v → (v,a)；替换局部双向扫描；笛卡尔管线关节约束从采样启发式 → 精确投影。**不做 clothoid/min-snap/MPC**；五次 Bezier blending 保留 | 规划域（允许 ms 级，周期路径只采样）；`window_replan_us` 基准指标，矩阵先声明预算 |
-| Y4 | **定时同步 solve_fixed_time**（评审三关键之一）+ 拐角剖面化 | `T_sync = max(T_min[i])` 后逐轴 `solve_fixed_time(axis, T_sync)`——最优结构插入合法巡航/等待段或直接固定时长可行剖面；验收 duration==T_sync、终态 p/v/a ≤1e-9、全程在限（难点 T43）。相位同步变体、拐角内曲率约束变速穿越随批 | 周期路径零新增（仍是采样）；无此能力"全身同时到达"不成立 |
+| Y2 | OTG 补完整任意状态 | **补完整 state-to-state 形态**（评审定界）：非零目标加速度 at≠0、v0=vt=vmax 钉边界量化深潜、t_i≥0 epsilon 政策成声明项（钳零阈值+复验，附注 #2）；Ruckig 黑盒对照（ADR-0003）。整周期量化与 KB-050 两处妥协的撤销移交 Y4 cycle-exact| 规划域；声明变更走回放全流程；STREAM_METRICS 门看住单解耗时 |
+| Y3 | reachability TOPP（两层，评审定界） | **第一层加速度级 TOPP-RA**：沿路径离散点递推可达/可控速度集（每点小 LP），速度/加速度/曲率/关节/笛卡尔限速统一进路径参数化（arXiv:1707.07239）；**第二层 jerk-aware 扩展**：状态 v → (v,a)。**先影子后换主**（附注 #3）：首次落地 = 窗口版 oracle 量化 excess_cycles，数字定去留；前置工程 = geom 路径导数合同（q_s/q_ss/q_sss 逐段解析）。**不做 clothoid/min-snap/MPC**；五次 Bezier blending 保留 | 规划域（允许 ms 级，周期路径只采样）；`window_replan_us` 基准指标，矩阵先声明预算 |
+| Y4 | **solve_fixed_time 一等原语**（评审三关键之一；拱顶石——同步/cycle-exact 量化/流追赶/接管汇入同一求解，附注 #1）+ 拐角剖面化 | `T_sync = max(T_min[i])` 后逐轴 `solve_fixed_time(axis, T_sync)`——最优结构插入合法巡航/等待段或直接固定时长可行剖面；验收 duration==T_sync、终态 p/v/a ≤1e-9、全程在限（难点 T43）。相位同步变体、拐角内曲率约束变速穿越随批 | 周期路径零新增（仍是采样）；无此能力"全身同时到达"不成立 |
 | Y5 | 笛卡尔管线对称收官 | 位姿组窗口化、任意空间弧平面、全圆/CENTER/RADIUS、twist 回读 | 沿用 KB-044 机制与门 |
 | **Y7** | **组接管连续性修复**（KB-051，正确性级，插队最前；**linear 范围已批**） | 公差管语义 v2.1（ṡ₀/a_s0 标量承接 + 横向 OTG 衰减 + β 限值分割 + R_tube）；circular/笛卡尔扩展待曲率链式项另批；验收 = 逐周期全向量 v/a/j ≤ 全额限值 | 规划域 |
 | Y6 | 刚体动力学前馈 | 重力/惯量模型前馈扭矩（RNEA），对刚体仿真 oracle 验证 | 周期路径新增 ~1-3µs/6R，矩阵定硬门（≤10µs 提案） |
