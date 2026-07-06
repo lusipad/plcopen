@@ -100,6 +100,8 @@
 
 ## Z 系列：采纳（门廊，不装修想象中的房间）
 
+> Z1/Z3 起步细案见 [signal-channel-plan](signal-channel-plan.md)——拷问后拉进当前里程碑并行项 4b。
+
 | # | 批次 | 内容 |
 |---|------|------|
 | Z1 | **pip wheel** | pyplcopen 上 PyPI（cibuildwheel 三平台）+ "5 分钟数字孪生" notebook——第一个外部用户信号的最短路径 |
@@ -163,6 +165,8 @@ LD/FBD/SFC 图形画布、HMI、TC6-XML 工程交换、cam 表图形编辑器。
 | Y7 组接管修复 | [group-takeover-semantics.md](../compliance/group-takeover-semantics.md) | 草案待批 |
 | P-Part5 回零 | [part5-homing-semantics.md](../compliance/part5-homing-semantics.md) | 草案待批 |
 | P-Part4 管理组 | [part4-management-semantics.md](../compliance/part4-management-semantics.md) | 草案待批 |
+| P-Part4 路径表/变换（第二批） | [part4-pathtable-semantics.md](../compliance/part4-pathtable-semantics.md) | 草案待批 |
+| Z1/Z3 信号通道细案 | [signal-channel-plan.md](signal-channel-plan.md) | 已拉进当前里程碑并行项 4b |
 | 对抗性探测轮 | `.claude/skills/plcopen-adversarial-probe` | 已固化为技能 |
 | Y0 oracle | [otg-oracle-design.md](../design/core/otg-oracle-design.md) | 设计已备（测试层免批） |
 | ST 运行时（预研） | [st-runtime-design.md](../design/core/st-runtime-design.md) | 设计已备；解锁排位待维护者裁决（选项 A：扎实化收口后的下一里程碑主项 / 选项 B：维持用户信号门） |
