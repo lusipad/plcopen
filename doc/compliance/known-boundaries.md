@@ -61,5 +61,6 @@
 - `KB-046`：cam 运动规律生成器（已批准 cam v2 增补）：`exec::cam_law_value/generate_cam_law`——摆线/修正正弦/3-4-5 静止-静止升程离散为 ≤64 点表（调用方存储，离线/提交域），修正正弦常数由分段原函数运行期推导（不抄手册）。验收进 `plcopen_core_cam_tests`（边界 oracle、数值 C2、单调、峰值比 ±1%：Cv 2.000/1.760/1.875、Ca 6.283/5.528/5.774，生成表过 engage 校验）。CSV 表导入为 pyplcopen 侧 helper（核不做文件 IO）。
 - `KB-047`：笛卡尔圆弧（已批准笛卡尔 v2-B 增补）：`submit_circular` + `interpolation_space = cartesian`——三点 BORDER 弧在笛卡尔(TCP)空间 XY 平面成弧、z 沿参数线性（KB-030 平面约定移植；任意空间弧平面留后续——声明）；位姿组姿态沿弧扫角分数走起终测地，aux 姿态槽位忽略（声明）；预验证/预算/errorstop/GroupStop 沿用 KB-044 机制；退化几何/PathChoice 冲突口径与 KB-030 相同。验收进 `plcopen_core_cartesian_tests`（SCARA/6R 弧半径逐周期 ≤1e-8、姿态测地 oracle ≤1e-8、拒绝表）。
 - `KB-048`：窗口深度运行期可配（已批准 lookahead v2 增补）：`set_window_depth(n∈[2,64])`（standby + 空队列 + 窗口未激活守卫）；达到配置值按既有 `capacity_exceeded` 拒绝扩展；默认 64 逐位兼容。验收进 `plcopen_core_a5_lookahead_tests`。
+- `KB-049`：笛卡尔 blending（已批准笛卡尔 v2-C 增补）：活动笛卡尔直线段 + `blending_low/high` + `mcTMMaxCornerDeviation` 笛卡尔直线后继 → 笛卡尔(TCP)空间五次 Bezier 拐角融合为单弧长链、单剖面（从活动段实时路径状态接续规划）；链包络取两命令最小值，拐角曲率限速 √(a/κ) 作用于整链（KB-031 v1 口径——结点级限速属笛卡尔窗口批次）；姿态为全链起终单条测地（拐角处无姿态折点——声明）。构造性门槛（不优于停车基线）、反折拐角、过迟提交、公差吃尽全部降级 BUFFERED（`last_blend_degraded_command` 口径）；链不可扩展、joint↔cartesian 混模 blending、弧/纯旋转活动段全部显式 `unsupported`；不进 look-ahead 窗口。**急拐角在整链限速下常输给停车基线而正确降级**（构造性门槛的本意，声明）。验收进 `plcopen_core_cartesian_tests`（缓拐角融合不停车且全程在公差带、反折降级并完成、混模拒绝、链不可扩展、6R 全链测地轴一致性 + 终点姿态 1e-8）。
 
 ---

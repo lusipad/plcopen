@@ -419,6 +419,306 @@ int check_pose_geodesic()
     return fail("pose cart settle");
 }
 
+double point_to_segment(geom::Vec3 p, geom::Vec3 a, geom::Vec3 b)
+{
+    const geom::Vec3 d = b - a;
+    const double len2 = d.x * d.x + d.y * d.y + d.z * d.z;
+    if(len2 <= 0.0) {
+        return geom::norm(p - a);
+    }
+    double t = ((p.x - a.x) * d.x + (p.y - a.y) * d.y + (p.z - a.z) * d.z) / len2;
+    t = t < 0.0 ? 0.0 : (t > 1.0 ? 1.0 : t);
+    const geom::Vec3 foot{a.x + d.x * t, a.y + d.y * t, a.z + d.z * t};
+    return geom::norm(p - foot);
+}
+
+// Cartesian v2-C: the fused chain rides line-corner-line inside the
+// tolerance band without stopping at the corner; reflex successors degrade
+// to BUFFERED (reported); committed chains are not extensible; joint-mode
+// actives reject cartesian blending successors.
+int check_cartesian_blend()
+{
+    static const kin::Scara scara(0.4, 0.3, true);
+    const geom::Vec3 p0{0.35, 0.25, 0.1};
+    const geom::Vec3 corner{0.15, 0.45, 0.3};
+    const geom::Vec3 p2{0.0497, 0.6382, 0.4305}; // gentle ~15 degree turn
+    const double tolerance = 0.02;
+
+    static TriRig rig;
+    if(rig.group.set_kinematics(&scara) != rt::ErrorCode::ok) {
+        return fail("blend setup");
+    }
+    const double approach[3] = {p0.x, p0.y, p0.z};
+    axis::GroupCommand first = command_for(3, approach);
+    first.coord_system = axis::CoordSystem::mcs;
+    if(!rig.group.submit_linear(first) || settle(rig.group) != 0) {
+        return fail("blend approach");
+    }
+    const double leg[3] = {corner.x, corner.y, corner.z};
+    axis::GroupCommand a = command_for(3, leg);
+    a.coord_system = axis::CoordSystem::mcs;
+    a.interpolation_space = axis::InterpolationSpace::cartesian;
+    if(!rig.group.submit_linear(a)) {
+        return fail("blend leg a");
+    }
+    for(int tick = 0; tick < 10; ++tick) {
+        rig.group.cycle();
+    }
+    if(rig.group.status() != axis::GroupStatus::moving) {
+        return fail("blend still moving");
+    }
+
+    const double succ[3] = {p2.x, p2.y, p2.z};
+    axis::GroupCommand b = command_for(3, succ);
+    b.coord_system = axis::CoordSystem::mcs;
+    b.interpolation_space = axis::InterpolationSpace::cartesian;
+    b.buffer_mode = axis::BufferMode::blending_low;
+    b.transition_mode = axis::TransitionMode::max_corner_deviation;
+    b.transition_parameter = tolerance;
+    const rt::Result<std::uint32_t> fused = rig.group.submit_linear(b);
+    if(!fused) {
+        return fail("blend submit");
+    }
+    if(rig.group.last_blend_degraded_command() == fused.value()) {
+        return fail("blend unexpectedly degraded");
+    }
+
+    // A committed chain is not extensible.
+    axis::GroupCommand extend = b;
+    const rt::Result<std::uint32_t> extended = rig.group.submit_linear(extend);
+    if(extended || extended.error() != rt::ErrorCode::unsupported) {
+        return fail("blend chain extend");
+    }
+
+    double min_speed_near_corner = 1e9;
+    geom::Vec3 previous_point{};
+    bool have_previous = false;
+    for(int tick = 0; tick < 60000; ++tick) {
+        rig.group.cycle();
+        if(rig.group.status() == axis::GroupStatus::errorstop) {
+            return fail("blend errorstop");
+        }
+        double joints[3] = {rig.position(0), rig.position(1), rig.position(2)};
+        geom::Vec3 point{};
+        if(scara.forward(joints, 3, point) != rt::ErrorCode::ok) {
+            return fail("blend forward");
+        }
+        const double off1 = point_to_segment(point, p0, corner);
+        const double off2 = point_to_segment(point, corner, p2);
+        const double off = off1 < off2 ? off1 : off2;
+        if(off > tolerance + 1e-9) {
+            std::printf("blend off-path %.3e at tick %d\n", off, tick);
+            return fail("blend tolerance band");
+        }
+        if(have_previous && geom::norm(point - corner) < 0.05) {
+            const double speed = geom::norm(point - previous_point);
+            if(speed < min_speed_near_corner) {
+                min_speed_near_corner = speed;
+            }
+        }
+        previous_point = point;
+        have_previous = true;
+        if(rig.group.status() == axis::GroupStatus::standby) {
+            if(geom::norm(point - p2) > 1e-8) {
+                return fail("blend endpoint");
+            }
+            break;
+        }
+    }
+    if(min_speed_near_corner < 1e-4) {
+        std::printf("corner speed %.3e\n", min_speed_near_corner);
+        return fail("blend corner stopped");
+    }
+
+    // Reflex successor degrades to BUFFERED and still completes.
+    {
+        static TriRig reflex_rig;
+        if(reflex_rig.group.set_kinematics(&scara) != rt::ErrorCode::ok) {
+            return fail("reflex setup");
+        }
+        axis::GroupCommand start = command_for(3, approach);
+        start.coord_system = axis::CoordSystem::mcs;
+        if(!reflex_rig.group.submit_linear(start) ||
+           settle(reflex_rig.group) != 0) {
+            return fail("reflex approach");
+        }
+        axis::GroupCommand leg_a = command_for(3, leg);
+        leg_a.coord_system = axis::CoordSystem::mcs;
+        leg_a.interpolation_space = axis::InterpolationSpace::cartesian;
+        if(!reflex_rig.group.submit_linear(leg_a)) {
+            return fail("reflex leg");
+        }
+        for(int tick = 0; tick < 10; ++tick) {
+            reflex_rig.group.cycle();
+        }
+        axis::GroupCommand back = command_for(3, approach);
+        back.coord_system = axis::CoordSystem::mcs;
+        back.interpolation_space = axis::InterpolationSpace::cartesian;
+        back.buffer_mode = axis::BufferMode::blending_low;
+        back.transition_mode = axis::TransitionMode::max_corner_deviation;
+        back.transition_parameter = tolerance;
+        const rt::Result<std::uint32_t> degraded =
+            reflex_rig.group.submit_linear(back);
+        if(!degraded ||
+           reflex_rig.group.last_blend_degraded_command() != degraded.value()) {
+            return fail("reflex not degraded");
+        }
+        if(settle(reflex_rig.group) != 0) {
+            return fail("reflex settle");
+        }
+        double joints[3] = {reflex_rig.position(0), reflex_rig.position(1),
+                            reflex_rig.position(2)};
+        geom::Vec3 point{};
+        if(scara.forward(joints, 3, point) != rt::ErrorCode::ok ||
+           geom::norm(point - p0) > 1e-8) {
+            return fail("reflex endpoint");
+        }
+    }
+
+    // Mixed-mode: a joint-space active rejects a cartesian blending successor.
+    {
+        static TriRig mixed;
+        if(mixed.group.set_kinematics(&scara) != rt::ErrorCode::ok) {
+            return fail("mixed setup");
+        }
+        axis::GroupCommand start = command_for(3, approach);
+        start.coord_system = axis::CoordSystem::mcs;
+        if(!mixed.group.submit_linear(start) || settle(mixed.group) != 0) {
+            return fail("mixed approach");
+        }
+        axis::GroupCommand joint_leg = command_for(3, leg);
+        joint_leg.coord_system = axis::CoordSystem::mcs;
+        if(!mixed.group.submit_linear(joint_leg)) {
+            return fail("mixed leg");
+        }
+        for(int tick = 0; tick < 10; ++tick) {
+            mixed.group.cycle();
+        }
+        axis::GroupCommand cart_blend = command_for(3, succ);
+        cart_blend.coord_system = axis::CoordSystem::mcs;
+        cart_blend.interpolation_space = axis::InterpolationSpace::cartesian;
+        cart_blend.buffer_mode = axis::BufferMode::blending_low;
+        cart_blend.transition_mode = axis::TransitionMode::max_corner_deviation;
+        cart_blend.transition_parameter = tolerance;
+        const rt::Result<std::uint32_t> rejected =
+            mixed.group.submit_linear(cart_blend);
+        if(rejected || rejected.error() != rt::ErrorCode::unsupported) {
+            return fail("mixed rejection");
+        }
+        if(settle(mixed.group) != 0) {
+            return fail("mixed settle");
+        }
+    }
+    return 0;
+}
+
+// Cartesian v2-C on the pose pipeline: the whole chain rides one geodesic —
+// every mid-chain orientation shares the fixed relative rotation axis.
+int check_pose_cartesian_blend()
+{
+    static const kin::SphericalWrist6R arm(0.3, 0.4, 0.35, 0.08);
+    static PoseRig rig;
+    if(rig.group.set_pose_kinematics(&arm, 0.0, 3.0) != rt::ErrorCode::ok) {
+        return fail("pose blend setup");
+    }
+    const double q0[6] = {0.3, 0.6, 1.0, -0.4, 0.9, 0.2};
+    if(!rig.group.submit_linear(command_for(6, q0)) || settle(rig.group) != 0) {
+        return fail("pose blend approach");
+    }
+    kin::Pose6 start_pose{};
+    {
+        double joints[6];
+        for(std::size_t i = 0; i < 6; ++i) {
+            joints[i] = rig.position(i);
+        }
+        arm.forward(joints, start_pose);
+    }
+    const geom::Vec3 p0{start_pose.position[0], start_pose.position[1],
+                        start_pose.position[2]};
+    const geom::Vec3 corner{p0.x - 0.1, p0.y + 0.06, p0.z + 0.04};
+    const geom::Vec3 p2{p0.x - 0.05, p0.y + 0.16, p0.z + 0.02};
+
+    double c_roll = 0.0;
+    double c_pitch = 0.0;
+    double c_yaw = 0.0;
+    geom::extract_rpy(start_pose.rotation, c_roll, c_pitch, c_yaw);
+    const double leg_target[6] = {corner.x, corner.y, corner.z,
+                                  c_roll, c_pitch, c_yaw};
+    axis::GroupCommand a = command_for(6, leg_target);
+    a.coord_system = axis::CoordSystem::mcs;
+    a.interpolation_space = axis::InterpolationSpace::cartesian;
+    if(!rig.group.submit_linear(a)) {
+        return fail("pose blend leg");
+    }
+    for(int tick = 0; tick < 10; ++tick) {
+        rig.group.cycle();
+    }
+    const double succ_target[6] = {p2.x, p2.y, p2.z, 0.5, -0.3, 0.9};
+    const geom::RigidTransform final_tcp =
+        geom::make_rpy_transform(p2.x, p2.y, p2.z, 0.5, -0.3, 0.9);
+    axis::GroupCommand b = command_for(6, succ_target);
+    b.coord_system = axis::CoordSystem::mcs;
+    b.interpolation_space = axis::InterpolationSpace::cartesian;
+    b.buffer_mode = axis::BufferMode::blending_high;
+    b.transition_mode = axis::TransitionMode::max_corner_deviation;
+    b.transition_parameter = 0.015;
+    const rt::Result<std::uint32_t> fused = rig.group.submit_linear(b);
+    if(!fused || rig.group.last_blend_degraded_command() == fused.value()) {
+        return fail("pose blend submit");
+    }
+
+    // The chain geodesic axis: relative rotation from the live start.
+    kin::Pose6 live_pose{};
+    {
+        double joints[6];
+        for(std::size_t i = 0; i < 6; ++i) {
+            joints[i] = rig.position(i);
+        }
+        arm.forward(joints, live_pose);
+    }
+    double chain_axis[3];
+    double chain_angle = 0.0;
+    geom::relative_axis_angle(live_pose.rotation, final_tcp.rotation, chain_axis,
+                              chain_angle);
+
+    for(int tick = 0; tick < 120000; ++tick) {
+        rig.group.cycle();
+        if(rig.group.status() == axis::GroupStatus::errorstop) {
+            return fail("pose blend errorstop");
+        }
+        double joints[6];
+        for(std::size_t i = 0; i < 6; ++i) {
+            joints[i] = rig.position(i);
+        }
+        kin::Pose6 reached{};
+        arm.forward(joints, reached);
+        double axis_now[3];
+        double angle_now = 0.0;
+        geom::relative_axis_angle(live_pose.rotation, reached.rotation, axis_now,
+                                  angle_now);
+        if(angle_now > 1e-4) {
+            const double align = axis_now[0] * chain_axis[0] +
+                                 axis_now[1] * chain_axis[1] +
+                                 axis_now[2] * chain_axis[2];
+            if(align < 1.0 - 1e-6) {
+                return fail("pose blend geodesic axis");
+            }
+        }
+        if(rig.group.status() == axis::GroupStatus::standby) {
+            for(int i = 0; i < 3; ++i) {
+                for(int j = 0; j < 3; ++j) {
+                    if(!near(reached.rotation[i][j], final_tcp.rotation[i][j],
+                             1e-8)) {
+                        return fail("pose blend final orientation");
+                    }
+                }
+            }
+            return 0;
+        }
+    }
+    return fail("pose blend settle");
+}
+
 // Circumcenter of three XY points (test-side oracle).
 bool circumcenter_xy(geom::Vec3 a, geom::Vec3 b, geom::Vec3 c, double &cx,
                      double &cy, double &radius)
@@ -1065,6 +1365,8 @@ int main()
     int failures = 0;
     failures += check_scara_linearity();
     failures += check_pose_geodesic();
+    failures += check_cartesian_blend();
+    failures += check_pose_cartesian_blend();
     failures += check_scara_cartesian_arc();
     failures += check_pose_cartesian_arc();
     failures += check_cartesian_arc_rejections();

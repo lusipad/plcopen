@@ -112,6 +112,13 @@ struct CartesianSegment
     bool angle_driven = false;
     bool arc_path = false;
     geom::ArcSegment arc{};
+    bool chain = false;
+    double line1 = 0.0;
+    double line2 = 0.0;
+    geom::Vec3 dir1{};
+    geom::Vec3 dir2{};
+    geom::Vec3 exit_point{};
+    geom::QuinticBlendSegment corner{};
     geom::Vec3 start{};
     geom::Vec3 delta{};
     double rotation_start[3][3] = {{1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 0.0, 1.0}};
@@ -638,6 +645,16 @@ public:
         // rejects here or leaves the ACS endpoint joints plus the cycle
         // geometry in command.cart.
         if(command.interpolation_space == InterpolationSpace::cartesian) {
+            // Cartesian v2-C (approved addendum): a blending successor with a
+            // corner tolerance fuses with the active Cartesian line here;
+            // every other blending shape stays unsupported via the guards.
+            if((command.buffer_mode == BufferMode::blending_low ||
+                command.buffer_mode == BufferMode::blending_high) &&
+               command.transition_mode == TransitionMode::max_corner_deviation &&
+               std::isfinite(command.transition_parameter) &&
+               command.transition_parameter > 0.0) {
+                return submit_cartesian_blend(command);
+            }
             const rt::ErrorCode prepared = prepare_cartesian_linear(command);
             if(prepared != rt::ErrorCode::ok) {
                 return rt::Result<std::uint32_t>::failure(prepared);
@@ -1230,6 +1247,248 @@ private:
     // step stays inside half the step gate (pose pipeline; translational
     // groups are bounded by the margin entry ban), and the ACS endpoint
     // joints plus the cycle geometry stay behind.
+    // Cartesian v2-C (approved addendum): fuse the active Cartesian line,
+    // a Cartesian-space quintic corner inside the tolerance band, and the
+    // successor line into one chain driven by one profile planned from the
+    // live path state. The chain velocity carries the corner curvature cap;
+    // orientation rides a single geodesic over the whole chain (declared).
+    // Reflex corners, too-late submissions, and chains that do not beat the
+    // full-stop baseline degrade to BUFFERED and are reported.
+    rt::Result<std::uint32_t> submit_cartesian_blend(GroupCommand command)
+    {
+        if(command.command_id == 0) {
+            command.command_id = next_command_id_++;
+        }
+        if(command.coord_system != CoordSystem::mcs &&
+           command.coord_system != CoordSystem::pcs) {
+            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported);
+        }
+        if(command.relative ||
+           (kinematics_ == nullptr && pose_kinematics_ == nullptr)) {
+            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported);
+        }
+        // Mixed-mode blending, arc/rotation-driven actives, committed
+        // chains, windows, and non-empty queues are all outside the v1
+        // fusion shape.
+        if(!active_ || status_ != GroupStatus::moving ||
+           active_kind_ != GroupPathKind::cartesian_linear ||
+           active_cart_.arc_path || active_cart_.angle_driven ||
+           active_cart_.chain || window_active_ || !queue_.empty() ||
+           active_path_length_ <= 0.0) {
+            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported);
+        }
+
+        // Successor target in the Cartesian (TCP) domain.
+        geom::Vec3 target_point = cartesian_part(command.target);
+        geom::RigidTransform target_pose{};
+        if(pose_kinematics_ != nullptr) {
+            target_pose = geom::make_rpy_transform(
+                command.target.value[0], command.target.value[1],
+                command.target.value[2], command.target.value[3],
+                command.target.value[4], command.target.value[5]);
+            if(command.coord_system == CoordSystem::pcs) {
+                target_pose = geom::compose(workpiece_frame_, target_pose);
+            }
+            target_point = target_pose.translation;
+        } else {
+            if(command.coord_system == CoordSystem::pcs) {
+                target_point = geom::transform_point(workpiece_frame_, target_point);
+            }
+            target_point = target_point - tool_offset_;
+        }
+
+        // Live path state and geometry.
+        const otg::State1D live =
+            otg::sample(active_profile_, rt::CycleTick::from_cycles(active_tick_));
+        const double s_live = live.position < 0.0
+                                  ? 0.0
+                                  : (live.position > active_path_length_
+                                         ? active_path_length_
+                                         : live.position);
+        const double remaining = active_path_length_ - s_live;
+        const geom::Vec3 live_point =
+            cartesian_point_at(active_cart_, s_live / active_path_length_);
+        const geom::Vec3 corner_point = geom::Vec3{
+            active_cart_.start.x + active_cart_.delta.x,
+            active_cart_.start.y + active_cart_.delta.y,
+            active_cart_.start.z + active_cart_.delta.z};
+        const double active_len = geom::norm(active_cart_.delta);
+        if(active_len <= 1e-12) {
+            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported);
+        }
+        const geom::Vec3 t0{active_cart_.delta.x / active_len,
+                            active_cart_.delta.y / active_len,
+                            active_cart_.delta.z / active_len};
+        const geom::Vec3 out_vec = target_point - corner_point;
+        const double len_b = geom::norm(out_vec);
+        const double dot = len_b > 1e-12
+                               ? (t0.x * out_vec.x + t0.y * out_vec.y +
+                                  t0.z * out_vec.z) /
+                                     len_b
+                               : -1.0;
+
+        bool degrade = false;
+        double trim = 0.0;
+        bool passthrough = false;
+        if(len_b <= 1e-12 || dot <= -0.999) {
+            degrade = true;
+        } else if(dot >= 1.0 - 1e-9) {
+            passthrough = true;
+        } else {
+            const geom::Vec3 t1{out_vec.x / len_b, out_vec.y / len_b,
+                                out_vec.z / len_b};
+            const double turn = geom::norm(t1 - t0);
+            trim = command.transition_parameter * 96.0 / (23.0 * turn);
+            const double room = remaining < len_b ? remaining : len_b;
+            if(trim > 0.5 * room) {
+                trim = 0.5 * room;
+            }
+            if(trim <= 1e-9 || remaining <= trim) {
+                degrade = true;
+            }
+        }
+
+        CartesianSegment segment{};
+        rt::Result<otg::Profile1D> chain_profile =
+            rt::Result<otg::Profile1D>::failure(rt::ErrorCode::invalid_argument);
+        if(!degrade) {
+            const geom::Vec3 t1{out_vec.x / len_b, out_vec.y / len_b,
+                                out_vec.z / len_b};
+            segment.pose = active_cart_.pose;
+            segment.chain = true;
+            segment.start = live_point;
+            segment.dir1 = t0;
+            if(passthrough) {
+                segment.line1 = remaining;
+                segment.exit_point = corner_point;
+            } else {
+                const geom::Vec3 entry{corner_point.x - t0.x * trim,
+                                       corner_point.y - t0.y * trim,
+                                       corner_point.z - t0.z * trim};
+                const geom::Vec3 exit{corner_point.x + t1.x * trim,
+                                      corner_point.y + t1.y * trim,
+                                      corner_point.z + t1.z * trim};
+                const rt::Result<geom::QuinticBlendSegment> blend =
+                    geom::make_quintic_blend(entry, corner_point, exit,
+                                             command.transition_parameter);
+                if(!blend) {
+                    degrade = true;
+                } else {
+                    segment.corner = blend.value();
+                    segment.line1 = remaining - trim;
+                    segment.exit_point = exit;
+                }
+            }
+            segment.dir2 = t1;
+            segment.line2 = len_b - trim;
+            segment.delta = target_point - live_point;
+            segment.length = segment.line1 + segment.corner.length + segment.line2;
+
+            if(!degrade && segment.pose) {
+                const geom::RigidTransform live_tcp = pose_start_tcp(cart_joints_);
+                for(int i = 0; i < 3; ++i) {
+                    for(int j = 0; j < 3; ++j) {
+                        segment.rotation_start[i][j] = live_tcp.rotation[i][j];
+                    }
+                }
+                geom::relative_axis_angle(live_tcp.rotation, target_pose.rotation,
+                                          segment.axis, segment.angle);
+                if(segment.angle >= 3.14159265358979323846 - 1e-6) {
+                    return rt::Result<std::uint32_t>::failure(
+                        rt::ErrorCode::invalid_argument);
+                }
+            }
+        }
+
+        if(!degrade) {
+            // Chain envelope: both commands and the corner curvature cap.
+            GroupCommand fused = command;
+            fused.velocity = fused.velocity < active_command_.velocity
+                                 ? fused.velocity
+                                 : active_command_.velocity;
+            fused.acceleration = fused.acceleration < active_command_.acceleration
+                                     ? fused.acceleration
+                                     : active_command_.acceleration;
+            fused.deceleration = fused.deceleration < active_command_.deceleration
+                                     ? fused.deceleration
+                                     : active_command_.deceleration;
+            fused.jerk =
+                fused.jerk < active_command_.jerk ? fused.jerk : active_command_.jerk;
+            if(segment.corner.max_curvature > 1e-12) {
+                const double axis_accel =
+                    fused.acceleration < fused.deceleration ? fused.acceleration
+                                                            : fused.deceleration;
+                const double cap = std::sqrt(axis_accel / segment.corner.max_curvature);
+                if(cap < fused.velocity) {
+                    fused.velocity = cap;
+                }
+            }
+            double chain_seed[MaxAxes] = {};
+            for(std::size_t i = 0; i < axes_.size(); ++i) {
+                chain_seed[i] = cart_joints_[i];
+            }
+            const rt::ErrorCode validated =
+                prevalidate_cartesian(fused, segment, chain_seed);
+            if(validated != rt::ErrorCode::ok) {
+                return rt::Result<std::uint32_t>::failure(validated);
+            }
+            chain_profile = otg::plan_time_optimal(
+                {0.0, live.velocity, live.acceleration},
+                {fused.cart.length, 0.0, 0.0},
+                {fused.velocity, fused.acceleration, fused.deceleration, fused.jerk});
+            if(!chain_profile) {
+                degrade = true;
+            } else {
+                // Constructive gate: the fused chain must beat the full-stop
+                // baseline (finish the active segment, then run the successor
+                // from rest).
+                const rt::Result<otg::Profile1D> tail = otg::plan_time_optimal(
+                    {0.0, 0.0, 0.0}, {len_b, 0.0, 0.0},
+                    {command.velocity, command.acceleration, command.deceleration,
+                     command.jerk});
+                if(tail) {
+                    const std::int64_t baseline = (active_duration_ - active_tick_) +
+                                                  tail.value().duration_cycles();
+                    if(chain_profile.value().duration_cycles() >= baseline) {
+                        degrade = true;
+                    }
+                } else {
+                    degrade = true;
+                }
+            }
+            if(!degrade) {
+                active_command_ = fused;
+                active_cart_ = fused.cart;
+                active_kind_ = GroupPathKind::cartesian_linear;
+                active_arc_ = geom::ArcSegment{};
+                active_path_length_ = fused.cart.length;
+                active_profile_ = chain_profile.value();
+                active_tick_ = 0;
+                active_duration_ = active_profile_.duration_cycles();
+                for(std::size_t i = 0; i < axes_.size(); ++i) {
+                    active_start_[i] = axes_[i]->snapshot().command_position;
+                    active_finish_[i] = fused.target.value[i];
+                }
+                return rt::Result<std::uint32_t>::success(command.command_id);
+            }
+        }
+
+        // Reported degradation to a plain buffered Cartesian segment.
+        last_blend_degraded_id_ = command.command_id;
+        command.buffer_mode = BufferMode::buffered;
+        command.transition_mode = TransitionMode::none;
+        command.transition_parameter = 0.0;
+        const rt::ErrorCode prepared = prepare_cartesian_linear(command);
+        if(prepared != rt::ErrorCode::ok) {
+            return rt::Result<std::uint32_t>::failure(prepared);
+        }
+        const rt::ErrorCode queued = queue_.push_back(command);
+        if(queued != rt::ErrorCode::ok) {
+            return rt::Result<std::uint32_t>::failure(queued);
+        }
+        return rt::Result<std::uint32_t>::success(command.command_id);
+    }
+
     rt::ErrorCode prepare_cartesian_linear(GroupCommand &command)
     {
         const rt::ErrorCode guarded = cartesian_guards(command);
@@ -1502,6 +1761,24 @@ private:
     geom::Vec3 cartesian_point_at(const CartesianSegment &segment,
                                   double fraction) const
     {
+        if(segment.chain) {
+            const double s = fraction * segment.length;
+            if(s <= segment.line1) {
+                return geom::Vec3{segment.start.x + segment.dir1.x * s,
+                                  segment.start.y + segment.dir1.y * s,
+                                  segment.start.z + segment.dir1.z * s};
+            }
+            const double in_corner = s - segment.line1;
+            if(in_corner <= segment.corner.length) {
+                const double u =
+                    geom::quintic_parameter_at_length(segment.corner, in_corner);
+                return geom::quintic_point(segment.corner, u);
+            }
+            const double tail = s - segment.line1 - segment.corner.length;
+            return geom::Vec3{segment.exit_point.x + segment.dir2.x * tail,
+                              segment.exit_point.y + segment.dir2.y * tail,
+                              segment.exit_point.z + segment.dir2.z * tail};
+        }
         if(segment.arc_path) {
             geom::Vec3 point =
                 geom::sample(segment.arc, fraction * segment.arc.length);

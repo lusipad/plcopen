@@ -6,6 +6,12 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- 笛卡尔 blending v1（KB-049，已批准 v2-C 增补）：活动笛卡尔直线段与公差带
+  后继在笛卡尔(TCP)空间以五次 Bezier 拐角融合为单链单剖面（从实时路径状态
+  接续），拐角曲率限速作用全链（KB-031 口径）；姿态全链单测地；不优于停车
+  基线/反折/过迟全部降级 BUFFERED 并报告；链不可扩展、混模 blending 显式
+  unsupported。验收：缓拐角不停车全程在公差带、反折降级仍完成、6R 全链
+  测地轴一致性。
 - 软件收尾批第一片（KB-045~048，已批准增补）：① 腕奇异通过——6R 腕奇异带
   （|sin q5|<1e-8，较批准案收紧并声明）内 q4 锁 seed，笛卡尔段穿越腕奇异不再
   errorstop（重定向拍以 step 门为界，声明）；② cam 运动规律生成器——摆线/
