@@ -16,7 +16,7 @@
 
 | 文档 | 内容 | 状态 |
 |------|------|------|
-| [long-term-plan.md](long-term-plan.md) | 5 年战略：商用级定义、差距分析、Phase A-D、单人+AI 模式、技术难点 T1-T12、性能与效果权衡 | 第 6 稿，年度复盘 |
+| [long-term-plan.md](long-term-plan.md) | 商业化战略：第 0 章 S0-S3 关键路径（现行）、商用级定义、收入模型、风险与 KPI、技术难点 T1-T12、算法权衡 | **第 7 稿（2026-07-06 重基线）**，季度复盘 KPI |
 | [phase-b-software-work-breakdown.md](phase-b-software-work-breakdown.md) | Phase B 纯软件拆解（BS1-BS6 已全部完成）+ 硬件延后清单与触发条件 | 已收口，留触发清单 |
 | [robot-integration.md](robot-integration.md) | 机器人集成蓝图：形态可行性、参考架构、差距→计划映射 | 现行 |
 | [ai-collaboration.md](ai-collaboration.md) | AI-First 工程体系（战略部分；操作流程已迁入 `.claude/skills/`） | 现行 |

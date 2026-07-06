@@ -51,5 +51,6 @@
 
 ## 近期计划
 
-见 [ROADMAP.md](ROADMAP.md)（当前里程碑）与
-[doc/planning/phase-b-software-work-breakdown.md](doc/planning/phase-b-software-work-breakdown.md)。
+见 [ROADMAP.md](ROADMAP.md)（当前里程碑）、
+[软件极致计划](doc/planning/software-excellence-plan.md)（Y/P/Z/E 候选）与
+[长期规划第 7 稿](doc/planning/long-term-plan.md)（S0-S3 商业化关键路径）。
