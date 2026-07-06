@@ -6,6 +6,13 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- 参考 executor 软件形态 + 周期级 trace 工具（X3/X4）：`rt_executor_demo`
+  落成 architecture.md 图 3/4——周期线程（Linux SCHED_FIFO 尝试 + 绝对
+  截止期睡眠，无特权优雅降级；Windows 冒烟节拍）驱动组 + ServoSim 桥接，
+  seqlock 快照发布给低优先级规划线程（实测零撕裂读）；每周期落 trace 环
+  （复用 rt SPSC），版本化二进制落盘。`tools/plcopen_trace.py` 解析统计 +
+  CSV 导出。CTest 冒烟 `plcopen_core_rt_executor_smoke`（37 测试目标）。
+  硬件阶段自此为"插上真机测量"。
 - 关闭 alpha 豁免项（X2）：`legacy_compare` 扩展为老-新**语义等价 harness**
   ——同工况驱动冻结旧线与新核，终点合同（绝对/相对目标）逐位相等、速度+
   停车合同完成到静止（停车点差异为 KB-026 声明变更的正确后果，如实框定）；
