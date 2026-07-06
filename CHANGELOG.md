@@ -6,6 +6,11 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- 关闭 alpha 豁免项（X2）：`legacy_compare` 扩展为老-新**语义等价 harness**
+  ——同工况驱动冻结旧线与新核，终点合同（绝对/相对目标）逐位相等、速度+
+  停车合同完成到静止（停车点差异为 KB-026 声明变更的正确后果，如实框定）；
+  DoD 5.3 复跑 core = 旧线 9.3%。72h 冻结窗口分配断言 soak 已启动（分离
+  进程，2026-07-09 出结果）。
 - 笛卡尔前瞻窗口 v1（KB-050，已批准 v3 增补）：平移插件组的连续笛卡尔
   blending 后继构成 TCP 空间前瞻窗口——结点速度双向 jerk 精确扫描 ∩ 拐角
   曲率限速，直线不再被最急拐角拖慢；6 段折线实测优于 0.8× 停车基线门槛，
