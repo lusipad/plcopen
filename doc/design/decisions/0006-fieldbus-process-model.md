@@ -1,4 +1,4 @@
-# ADR-0006：plcopen-fieldbus 进程模型与许可证边界（草案，待维护者裁决）
+# ADR-0006：plcopen-fieldbus 进程模型与许可证边界（Accepted）
 
 - 状态：**Accepted**（2026-07-06 维护者定调"按最优做、宇树级商业
   水准"裁决：双形态，同进程直连为性能默认，IPC 为分发合规形态）
