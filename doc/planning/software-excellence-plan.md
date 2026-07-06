@@ -47,7 +47,7 @@
 | # | 批次 | 内容 |
 |---|------|------|
 | T1 | pip wheel（原 Z1） | pyplcopen 上 PyPI，cibuildwheel 三平台 |
-| T2 | rerun 可视化 | 基于 rerun-sdk（Apache-2.0，用户侧依赖不 vendor）的 3D 孪生 demo：6R 位姿闭环 + 多关节流场景，notebook 五分钟跑通 |
+| T2 | **MuJoCo 闭环孪生**（2026-07-06 升级） | 策略 → pyplcopen 流滤波 → MuJoCo 执行器（物理域，Menagerie 厂商参数模型用户侧下载不 vendor）→ 反馈回灌 → rerun 可视化；命令域由内核保真、物理域由 MuJoCo 承担、标定域声明真机专属。**独有主张：碰真机前把真实执行层放进仿真回路验证策略**（sim2real 鸿沟的执行层部分由此关闭） |
 | T3 | 单位与配置层（原 Z2） | SI ↔ 每周期换算 + 机构参数配置结构 |
 | Z0 | **冷用户测试（流程）** | 每次 T/Z 批收口后，干净环境模拟新用户从 README 走到跑通，失败即缺陷登记 |
 

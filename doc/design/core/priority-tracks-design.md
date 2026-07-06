@@ -28,7 +28,7 @@
  executor（参考形态已备：seqlock + 周期线程）
     │  ServoSetpoints / ServoFeedback（窄接口即协议）
     ▼
- ┌─ 仿真：ServoSim ──────→ 数字孪生（pyplcopen + rerun 可视化）
+ ┌─ 仿真：ServoSim / MuJoCo 物理闭环 ─→ 数字孪生（pyplcopen + rerun）
  └─ 真机：共享内存环 ⇄ plcopen-fieldbus 进程（SOEM/CiA402/DC）⇄ 驱动
 ```
 
