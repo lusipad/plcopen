@@ -44,6 +44,13 @@ git diff --check                                   # 只允许 CRLF warning
   栈溢出且**无任何输出**（Git Bash 报 exit 127）——测试台局部量一律
   `static`（3 轴 rig 恰好没超线，别以此类推）。
 
+## ctest 退出码纪律
+
+`ctest ... | tail` 之类的管道会让门禁看到 **tail 的退出码（0）**而漏掉
+测试失败（2026-07-06 实例：两个 SEGFAULT 差点被放行）。门禁判定必须
+直查 ctest 退出码：输出重定向到文件（`ctest ... > log 2>&1; echo $?`），
+再从文件取摘要。
+
 ## 回放红了怎么办
 
 先判断是不是声明变更（见 `plcopen-replay-baseline`）；不是 → 你改坏了
