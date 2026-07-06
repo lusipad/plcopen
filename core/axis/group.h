@@ -266,6 +266,9 @@ public:
     // line while stopping (KB-027).
     rt::ErrorCode stop(double deceleration = 1.0, double jerk = 1.0)
     {
+        if(cart_window_active_ && !cart_window_stopping_) {
+            return cart_window_stop(deceleration, jerk);
+        }
         if(status_ == GroupStatus::disabled || status_ == GroupStatus::errorstop ||
            !std::isfinite(deceleration) || deceleration <= 0.0 || !std::isfinite(jerk) ||
            jerk <= 0.0) {
@@ -653,6 +656,11 @@ public:
                command.transition_mode == TransitionMode::max_corner_deviation &&
                std::isfinite(command.transition_parameter) &&
                command.transition_parameter > 0.0) {
+                // v3 window (approved addendum): translational plugin groups;
+                // pose groups keep the KB-049 single-successor chain.
+                if(kinematics_ != nullptr) {
+                    return submit_cartesian_window(command);
+                }
                 return submit_cartesian_blend(command);
             }
             const rt::ErrorCode prepared = prepare_cartesian_linear(command);
@@ -907,6 +915,10 @@ public:
             }
         }
 
+        if(cart_window_active_) {
+            cart_window_cycle();
+            return;
+        }
         if(window_active_) {
             window_cycle();
             return;
@@ -1247,6 +1259,614 @@ private:
     // step stays inside half the step gate (pose pipeline; translational
     // groups are bounded by the margin entry ban), and the ACS endpoint
     // joints plus the cycle geometry stay behind.
+    // Cartesian v3 window (approved addendum, KB-050): consecutive
+    // Cartesian blending successors on translational plugin groups form a
+    // look-ahead window in the plugin Cartesian space — lines joined by
+    // quintic corners, node velocities from the bidirectional jerk-exact
+    // scan capped by corner curvature, one jerk-limited profile per line,
+    // corners ridden at constant node velocity (terminal sub-cycle
+    // quantization declared). The cycle path samples the window geometry
+    // and runs one analytic inverse (KB-044 machinery); failures are the
+    // declared group errorstop.
+    struct CartPiece
+    {
+        bool corner = false;
+        bool constant_ride = false;
+        geom::Vec3 start{};
+        geom::Vec3 dir{};
+        double length = 0.0;
+        geom::QuinticBlendSegment blend{};
+        double v_in = 0.0;
+        double v_out = 0.0;
+        double cap = 0.0;
+        otg::Profile1D profile{};
+        std::int64_t duration = 0;
+    };
+    static constexpr std::size_t CartWindowPieces = 32; // <= 16 segments
+
+    rt::Result<std::uint32_t> submit_cartesian_window(GroupCommand command)
+    {
+        if(command.command_id == 0) {
+            command.command_id = next_command_id_++;
+        }
+        if(command.coord_system != CoordSystem::mcs &&
+           command.coord_system != CoordSystem::pcs) {
+            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported);
+        }
+        if(command.relative || !queue_.empty() || window_active_) {
+            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported);
+        }
+        const bool extend = cart_window_active_;
+        if(!extend) {
+            // Conversion seed: an active, non-chain, non-arc Cartesian line.
+            if(!active_ || status_ != GroupStatus::moving ||
+               active_kind_ != GroupPathKind::cartesian_linear ||
+               active_cart_.arc_path || active_cart_.chain ||
+               active_cart_.pose || active_path_length_ <= 0.0) {
+                return rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported);
+            }
+        } else if(cart_window_stopping_) {
+            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported);
+        }
+
+        // Successor target in the plugin Cartesian domain.
+        geom::Vec3 target_point = cartesian_part(command.target);
+        if(command.coord_system == CoordSystem::pcs) {
+            target_point = geom::transform_point(workpiece_frame_, target_point);
+        }
+        target_point = target_point - tool_offset_;
+
+        // Tail geometry: the line the corner attaches to.
+        geom::Vec3 tail_end{};
+        geom::Vec3 tail_dir{};
+        double tail_room = 0.0; // trimmable room on the tail line
+        std::size_t tail_index = 0;
+        if(!extend) {
+            const otg::State1D live = otg::sample(
+                active_profile_, rt::CycleTick::from_cycles(active_tick_));
+            double s_live = live.position < 0.0 ? 0.0 : live.position;
+            s_live = s_live > active_path_length_ ? active_path_length_ : s_live;
+            tail_end = geom::Vec3{active_cart_.start.x + active_cart_.delta.x,
+                                  active_cart_.start.y + active_cart_.delta.y,
+                                  active_cart_.start.z + active_cart_.delta.z};
+            const double len = geom::norm(active_cart_.delta);
+            tail_dir = geom::Vec3{active_cart_.delta.x / len,
+                                  active_cart_.delta.y / len,
+                                  active_cart_.delta.z / len};
+            tail_room = active_path_length_ - s_live;
+        } else {
+            tail_index = cart_window_.size() - 1;
+            const CartPiece &tail = cart_window_[tail_index];
+            tail_end = geom::Vec3{tail.start.x + tail.dir.x * tail.length,
+                                  tail.start.y + tail.dir.y * tail.length,
+                                  tail.start.z + tail.dir.z * tail.length};
+            tail_dir = tail.dir;
+            if(tail_index == cart_piece_index_) {
+                const otg::State1D live = otg::sample(
+                    cart_window_[tail_index].profile,
+                    rt::CycleTick::from_cycles(cart_piece_tick_));
+                tail_room = tail.length - live.position;
+            } else if(tail_index > cart_piece_index_) {
+                tail_room = tail.length;
+            } else {
+                return rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported);
+            }
+        }
+
+        const geom::Vec3 out_vec = target_point - tail_end;
+        const double len_b = geom::norm(out_vec);
+        bool degrade = false;
+        double trim = 0.0;
+        double corner_cap = 0.0;
+        geom::QuinticBlendSegment corner{};
+        bool passthrough = false;
+        if(len_b <= 1e-12) {
+            degrade = true;
+        } else {
+            const geom::Vec3 t1{out_vec.x / len_b, out_vec.y / len_b,
+                                out_vec.z / len_b};
+            const double dot =
+                tail_dir.x * t1.x + tail_dir.y * t1.y + tail_dir.z * t1.z;
+            if(dot <= -0.999) {
+                degrade = true;
+            } else if(dot >= 1.0 - 1e-9) {
+                passthrough = true;
+            } else {
+                const geom::Vec3 diff{t1.x - tail_dir.x, t1.y - tail_dir.y,
+                                      t1.z - tail_dir.z};
+                const double turn = geom::norm(diff);
+                trim = command.transition_parameter * 96.0 / (23.0 * turn);
+                const double room = tail_room < len_b ? tail_room : len_b;
+                if(trim > 0.5 * room) {
+                    trim = 0.5 * room;
+                }
+                if(trim <= 1e-9 || tail_room <= trim) {
+                    degrade = true;
+                } else {
+                    const geom::Vec3 entry{tail_end.x - tail_dir.x * trim,
+                                           tail_end.y - tail_dir.y * trim,
+                                           tail_end.z - tail_dir.z * trim};
+                    const geom::Vec3 exit{tail_end.x + t1.x * trim,
+                                          tail_end.y + t1.y * trim,
+                                          tail_end.z + t1.z * trim};
+                    const rt::Result<geom::QuinticBlendSegment> blend =
+                        geom::make_quintic_blend(entry, tail_end, exit,
+                                                 command.transition_parameter);
+                    if(!blend) {
+                        degrade = true;
+                    } else {
+                        corner = blend.value();
+                        const double axis_accel =
+                            command.acceleration < command.deceleration
+                                ? command.acceleration
+                                : command.deceleration;
+                        corner_cap = corner.max_curvature > 1e-12
+                                         ? std::sqrt(axis_accel /
+                                                     corner.max_curvature)
+                                         : command.velocity;
+                    }
+                }
+            }
+        }
+
+        if(!degrade &&
+           cart_window_.size() + (passthrough ? 1 : 2) > CartWindowPieces) {
+            return rt::Result<std::uint32_t>::failure(
+                rt::ErrorCode::capacity_exceeded);
+        }
+
+        if(!degrade) {
+            // Pre-validation: seed-chain the inverse along the new line (the
+            // corner stays inside the tolerance ball of the lines,
+            // declared); update the window tail joints.
+            double chain[MaxAxes] = {};
+            if(!extend) {
+                for(std::size_t i = 0; i < axes_.size(); ++i) {
+                    chain[i] = active_finish_[i];
+                }
+            } else {
+                for(std::size_t i = 0; i < axes_.size(); ++i) {
+                    chain[i] = cart_tail_joints_[i];
+                }
+            }
+            double q[MaxAxes] = {};
+            constexpr int Samples = 32;
+            bool valid = true;
+            rt::ErrorCode failure = rt::ErrorCode::ok;
+            for(int k = 0; k <= Samples && valid; ++k) {
+                const double fraction =
+                    static_cast<double>(k) / static_cast<double>(Samples);
+                const geom::Vec3 sample{
+                    tail_end.x + (target_point.x - tail_end.x) * fraction,
+                    tail_end.y + (target_point.y - tail_end.y) * fraction,
+                    tail_end.z + (target_point.z - tail_end.z) * fraction};
+                const rt::ErrorCode solved =
+                    kinematics_->inverse(sample, chain, axes_.size(), q);
+                if(solved != rt::ErrorCode::ok) {
+                    valid = false;
+                    failure = solved;
+                    break;
+                }
+                if(kinematics_->singularity_margin(q, axes_.size()) <
+                   kinematics_min_margin_) {
+                    valid = false;
+                    failure = rt::ErrorCode::precondition_failed;
+                    break;
+                }
+                for(std::size_t i = 0; i < axes_.size(); ++i) {
+                    chain[i] = q[i];
+                }
+            }
+            if(!valid) {
+                return rt::Result<std::uint32_t>::failure(failure);
+            }
+
+            // Commit geometry. Extending while riding a corner piece is a
+            // declared too-late degrade (transient, one corner long).
+            if(extend && cart_window_[cart_piece_index_].corner) {
+                degrade = true;
+            }
+            if(!degrade && !extend) {
+                cart_window_convert(command, trim, passthrough);
+            } else if(!degrade) {
+                // Re-anchor the currently executing line piece to its live
+                // state so the rebuild replans from reality.
+                CartPiece &current = cart_window_[cart_piece_index_];
+                const otg::State1D live = otg::sample(
+                    current.profile, rt::CycleTick::from_cycles(cart_piece_tick_));
+                double s_live = live.position < 0.0 ? 0.0 : live.position;
+                s_live = s_live > current.length ? current.length : s_live;
+                current.start = geom::Vec3{current.start.x + current.dir.x * s_live,
+                                           current.start.y + current.dir.y * s_live,
+                                           current.start.z + current.dir.z * s_live};
+                current.length -= s_live;
+                cart_piece_tick_ = 0;
+                cart_window_entry_v_ = live.velocity < 0.0 ? 0.0 : live.velocity;
+                cart_window_entry_a_ = live.acceleration;
+                cart_window_[tail_index].length -= passthrough ? 0.0 : trim;
+            }
+            if(!degrade) {
+            if(!passthrough) {
+                CartPiece piece{};
+                piece.corner = true;
+                piece.blend = corner;
+                piece.length = corner.length;
+                piece.cap = corner_cap;
+                cart_window_.push_back(piece);
+            }
+            CartPiece line{};
+            const geom::Vec3 t1{out_vec.x / len_b, out_vec.y / len_b,
+                                out_vec.z / len_b};
+            line.start = passthrough
+                             ? tail_end
+                             : geom::Vec3{tail_end.x + t1.x * trim,
+                                          tail_end.y + t1.y * trim,
+                                          tail_end.z + t1.z * trim};
+            line.dir = t1;
+            line.length = passthrough ? len_b : len_b - trim;
+            line.cap = command.velocity;
+            cart_window_.push_back(line);
+            for(std::size_t i = 0; i < axes_.size(); ++i) {
+                cart_tail_joints_[i] = chain[i];
+            }
+            cart_window_acc_ = cart_window_acc_ < command.acceleration
+                                   ? cart_window_acc_
+                                   : command.acceleration;
+            cart_window_dec_ = cart_window_dec_ < command.deceleration
+                                   ? cart_window_dec_
+                                   : command.deceleration;
+            cart_window_jerk_ = cart_window_jerk_ < command.jerk
+                                    ? cart_window_jerk_
+                                    : command.jerk;
+            if(!cart_window_rebuild()) {
+                // The rebuild failing after commit would strand geometry;
+                // fall back to an immediate errorstop-free degrade: brake.
+                cart_window_reset();
+                status_ = GroupStatus::standby;
+                return rt::Result<std::uint32_t>::failure(
+                    rt::ErrorCode::infeasible);
+            }
+            cart_window_last_id_ = command.command_id;
+            return rt::Result<std::uint32_t>::success(command.command_id);
+            }
+        }
+
+        // Reported degradation: plain buffered Cartesian segment behind the
+        // window (or behind the active segment).
+        last_blend_degraded_id_ = command.command_id;
+        command.buffer_mode = BufferMode::buffered;
+        command.transition_mode = TransitionMode::none;
+        command.transition_parameter = 0.0;
+        const rt::ErrorCode prepared = prepare_cartesian_linear(command);
+        if(prepared != rt::ErrorCode::ok) {
+            return rt::Result<std::uint32_t>::failure(prepared);
+        }
+        const rt::ErrorCode queued = queue_.push_back(command);
+        if(queued != rt::ErrorCode::ok) {
+            return rt::Result<std::uint32_t>::failure(queued);
+        }
+        return rt::Result<std::uint32_t>::success(command.command_id);
+    }
+
+    void cart_window_convert(const GroupCommand &command, double trim,
+                             bool passthrough)
+    {
+        const otg::State1D live =
+            otg::sample(active_profile_, rt::CycleTick::from_cycles(active_tick_));
+        double s_live = live.position < 0.0 ? 0.0 : live.position;
+        s_live = s_live > active_path_length_ ? active_path_length_ : s_live;
+        const double len = geom::norm(active_cart_.delta);
+        const geom::Vec3 dir{active_cart_.delta.x / len,
+                             active_cart_.delta.y / len,
+                             active_cart_.delta.z / len};
+        CartPiece first{};
+        first.start = geom::Vec3{active_cart_.start.x + dir.x * s_live,
+                                 active_cart_.start.y + dir.y * s_live,
+                                 active_cart_.start.z + dir.z * s_live};
+        first.dir = dir;
+        first.length = (active_path_length_ - s_live) -
+                       (passthrough ? 0.0 : trim);
+        first.cap = active_command_.velocity;
+        cart_window_.clear();
+        cart_window_.push_back(first);
+        cart_window_entry_v_ = live.velocity < 0.0 ? 0.0 : live.velocity;
+        cart_window_entry_a_ = live.acceleration;
+        cart_window_acc_ = active_command_.acceleration;
+        cart_window_dec_ = active_command_.deceleration;
+        cart_window_jerk_ = active_command_.jerk;
+        for(std::size_t i = 0; i < axes_.size(); ++i) {
+            cart_window_joints_[i] = cart_joints_[i];
+        }
+        (void)command;
+        active_ = false;
+        cart_window_active_ = true;
+        cart_piece_index_ = 0;
+        cart_piece_tick_ = 0;
+        status_ = GroupStatus::moving;
+    }
+
+    // Bidirectional node scan and per-line profile planning over every
+    // piece from the current one onward. Committed pieces before the
+    // current index are never touched.
+    bool cart_window_rebuild()
+    {
+        const double acc = cart_window_acc_;
+        const double dec = cart_window_dec_;
+        const double jerk = cart_window_jerk_;
+        const std::size_t count = cart_window_.size();
+
+        // Forward pass: reachable node velocities.
+        double v = cart_window_entry_v_;
+        for(std::size_t i = cart_piece_index_; i < count; ++i) {
+            CartPiece &piece = cart_window_[i];
+            if(piece.corner) {
+                v = v < piece.cap ? v : piece.cap;
+                piece.v_in = v;
+                piece.v_out = v;
+                continue;
+            }
+            piece.v_in = v;
+            double reach = plan::jerk_reachable_speed(v, piece.length, acc, jerk);
+            reach = reach < piece.cap ? reach : piece.cap;
+            if(cartesian_velocity_limit_ > 0.0 &&
+               reach > cartesian_velocity_limit_) {
+                reach = cartesian_velocity_limit_;
+            }
+            piece.v_out = reach;
+            v = reach;
+        }
+        // Backward pass: terminal rest.
+        v = 0.0;
+        for(std::size_t r = count; r > cart_piece_index_; --r) {
+            CartPiece &piece = cart_window_[r - 1];
+            if(piece.corner) {
+                v = v < piece.cap ? v : piece.cap;
+                piece.v_out = piece.v_out < v ? piece.v_out : v;
+                piece.v_in = piece.v_out;
+                v = piece.v_in;
+                continue;
+            }
+            piece.v_out = piece.v_out < v ? piece.v_out : v;
+            double reach =
+                plan::jerk_reachable_speed(piece.v_out, piece.length, dec, jerk);
+            piece.v_in = piece.v_in < reach ? piece.v_in : reach;
+            v = piece.v_in;
+        }
+        // Profiles. Steady interior lines (v_in == v_out > 0) ride constant
+        // node velocity exactly like corners — a node pinned at the command
+        // limit leaves the OTG no cruise-refinement interval and the
+        // quantization residue can fall into a deep dive-and-return burn;
+        // the constant ride absorbs the residue in the declared <=1-cycle
+        // terminal clamp instead. Only the live entry piece and the
+        // terminal to-rest piece carry real profiles.
+        for(std::size_t i = cart_piece_index_; i < count; ++i) {
+            CartPiece &piece = cart_window_[i];
+            piece.constant_ride = false;
+            if(piece.corner) {
+                piece.constant_ride = true;
+                const double speed = piece.v_in > 1e-12 ? piece.v_in : 1e-12;
+                piece.duration = static_cast<std::int64_t>(piece.length / speed) + 1;
+                continue;
+            }
+            const bool live_entry = i == cart_piece_index_;
+            const bool steady = !live_entry && piece.v_out > 1e-12 &&
+                                std::fabs(piece.v_in - piece.v_out) < 1e-12;
+            if(steady) {
+                piece.constant_ride = true;
+                piece.duration =
+                    static_cast<std::int64_t>(piece.length / piece.v_out) + 1;
+                continue;
+            }
+            const double entry_v = live_entry ? cart_window_entry_v_ : piece.v_in;
+            const double entry_a = live_entry ? cart_window_entry_a_ : 0.0;
+            double cap = piece.cap;
+            if(cartesian_velocity_limit_ > 0.0 && cap > cartesian_velocity_limit_) {
+                cap = cartesian_velocity_limit_;
+            }
+            // Exit-velocity retreat ladder: a target pinned at the limit can
+            // strand the solver in the residue burn; each retreat is a
+            // declared sub-envelope velocity step at the junction.
+            const double ladder[4] = {1.0, 0.99, 0.97, 0.94};
+            const std::int64_t sane =
+                piece.v_out > 1e-12
+                    ? static_cast<std::int64_t>(piece.length / piece.v_out) + 24
+                    : 0;
+            bool planned = false;
+            for(int attempt = 0; attempt < 4; ++attempt) {
+                const double vt = piece.v_out * ladder[attempt];
+                const rt::Result<otg::Profile1D> profile = otg::plan_time_optimal(
+                    {0.0, entry_v, entry_a}, {piece.length, vt, 0.0},
+                    {cap, acc, dec, jerk});
+                if(!profile) {
+                    continue;
+                }
+                piece.profile = profile.value();
+                piece.duration = piece.profile.duration_cycles();
+                planned = true;
+                if(piece.v_out <= 1e-12 || piece.duration <= sane) {
+                    break;
+                }
+            }
+            if(!planned) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    geom::Vec3 cart_piece_point(const CartPiece &piece, double s) const
+    {
+        if(piece.corner) {
+            const double u = geom::quintic_parameter_at_length(piece.blend, s);
+            return geom::quintic_point(piece.blend, u);
+        }
+        const double clamped = s < 0.0 ? 0.0 : (s > piece.length ? piece.length : s);
+        return geom::Vec3{piece.start.x + piece.dir.x * clamped,
+                          piece.start.y + piece.dir.y * clamped,
+                          piece.start.z + piece.dir.z * clamped};
+    }
+
+    bool cart_window_emit(geom::Vec3 point)
+    {
+        double q[MaxAxes] = {};
+        rt::ErrorCode solved =
+            kinematics_->inverse(point, cart_window_joints_, axes_.size(), q);
+        if(solved == rt::ErrorCode::ok &&
+           kinematics_->singularity_margin(q, axes_.size()) <
+               kinematics_min_margin_) {
+            solved = rt::ErrorCode::precondition_failed;
+        }
+        if(solved != rt::ErrorCode::ok) {
+            last_cartesian_error_ = solved;
+            abort_motion();
+            status_ = GroupStatus::errorstop;
+            return false;
+        }
+        for(std::size_t i = 0; i < axes_.size(); ++i) {
+            axes_[i]->set_synchronized_position(q[i]);
+            cart_window_joints_[i] = q[i];
+        }
+        return true;
+    }
+
+    void cart_window_cycle()
+    {
+        if(cart_window_stopping_) {
+            ++cart_halt_tick_;
+            const otg::State1D state = otg::sample(
+                cart_halt_profile_, rt::CycleTick::from_cycles(cart_halt_tick_));
+            const geom::Vec3 point =
+                cart_window_point_at(cart_halt_origin_ + state.position);
+            if(!cart_window_emit(point)) {
+                return;
+            }
+            if(cart_halt_tick_ >= cart_halt_duration_) {
+                cart_window_reset();
+                status_ = GroupStatus::standby;
+                start_next_queued();
+            }
+            return;
+        }
+
+        ++cart_piece_tick_;
+        CartPiece &piece = cart_window_[cart_piece_index_];
+        double s = 0.0;
+        if(piece.constant_ride) {
+            s = piece.v_in * static_cast<double>(cart_piece_tick_);
+            s = s > piece.length ? piece.length : s;
+        } else {
+            const otg::State1D state = otg::sample(
+                piece.profile, rt::CycleTick::from_cycles(cart_piece_tick_));
+            s = state.position;
+        }
+        if(!cart_window_emit(cart_piece_point(piece, s))) {
+            return;
+        }
+        if(cart_piece_tick_ >= piece.duration) {
+            if(cart_piece_index_ + 1 < cart_window_.size()) {
+                ++cart_piece_index_;
+                cart_piece_tick_ = 0;
+                // Entry state for the freshly entered piece.
+                const CartPiece &next = cart_window_[cart_piece_index_];
+                cart_window_entry_v_ = next.v_in;
+                cart_window_entry_a_ = 0.0;
+            } else {
+                cart_window_reset();
+                status_ = GroupStatus::standby;
+                start_next_queued();
+            }
+        }
+    }
+
+    // Composite arc-length lookup from the live point onward (halt walker).
+    geom::Vec3 cart_window_point_at(double composite) const
+    {
+        double remaining = composite;
+        for(std::size_t i = cart_piece_index_; i < cart_window_.size(); ++i) {
+            const CartPiece &piece = cart_window_[i];
+            double offset = 0.0;
+            if(i == cart_piece_index_) {
+                offset = cart_halt_piece_offset_;
+            }
+            const double available = piece.length - offset;
+            if(remaining <= available) {
+                return cart_piece_point(piece, offset + remaining);
+            }
+            remaining -= available;
+        }
+        const CartPiece &last = cart_window_[cart_window_.size() - 1];
+        return cart_piece_point(last, last.length);
+    }
+
+    rt::ErrorCode cart_window_stop(double deceleration, double jerk)
+    {
+        if(!std::isfinite(deceleration) || deceleration <= 0.0 ||
+           !std::isfinite(jerk) || jerk <= 0.0) {
+            return rt::ErrorCode::invalid_argument;
+        }
+        CartPiece &piece = cart_window_[cart_piece_index_];
+        otg::State1D state{};
+        if(piece.constant_ride) {
+            double s = piece.v_in * static_cast<double>(cart_piece_tick_);
+            s = s > piece.length ? piece.length : s;
+            state = {s, piece.v_in, 0.0};
+        } else {
+            state = otg::sample(piece.profile,
+                                rt::CycleTick::from_cycles(cart_piece_tick_));
+        }
+        double remaining = piece.length - state.position;
+        for(std::size_t i = cart_piece_index_ + 1; i < cart_window_.size(); ++i) {
+            remaining += cart_window_[i].length;
+        }
+        const otg::Limits1D halt_limits{state.velocity > 1e-12 ? state.velocity
+                                                               : 1e-12,
+                                        deceleration, deceleration, jerk};
+        double target = state.velocity * state.velocity / (2.0 * deceleration) +
+                        state.velocity * (deceleration / jerk);
+        if(target > remaining) {
+            target = remaining;
+        }
+        rt::Result<otg::Profile1D> halt =
+            rt::Result<otg::Profile1D>::failure(rt::ErrorCode::infeasible);
+        for(int attempt = 0; attempt < 8; ++attempt) {
+            halt = otg::plan_time_optimal({0.0, state.velocity, state.acceleration},
+                                          {target, 0.0, 0.0}, halt_limits);
+            if(halt || target >= remaining) {
+                break;
+            }
+            target = target * 1.5 < remaining ? target * 1.5 : remaining;
+        }
+        if(!halt) {
+            // Immediate stop fallback (same as the group linear path).
+            cart_window_reset();
+            queue_.clear();
+            status_ = GroupStatus::standby;
+            return rt::ErrorCode::ok;
+        }
+        cart_halt_profile_ = halt.value();
+        cart_halt_duration_ = cart_halt_profile_.duration_cycles();
+        cart_halt_tick_ = 0;
+        cart_halt_origin_ = 0.0;
+        cart_halt_piece_offset_ = state.position;
+        cart_window_stopping_ = true;
+        queue_.clear();
+        status_ = GroupStatus::stopping;
+        return rt::ErrorCode::ok;
+    }
+
+    void cart_window_reset()
+    {
+        cart_window_.clear();
+        cart_window_active_ = false;
+        cart_window_stopping_ = false;
+        cart_piece_index_ = 0;
+        cart_piece_tick_ = 0;
+        cart_halt_tick_ = 0;
+        cart_halt_duration_ = 0;
+        cart_halt_origin_ = 0.0;
+        cart_halt_piece_offset_ = 0.0;
+    }
+
     // Cartesian v2-C (approved addendum): fuse the active Cartesian line,
     // a Cartesian-space quintic corner inside the tolerance band, and the
     // successor line into one chain driven by one profile planned from the
@@ -1853,10 +2473,13 @@ private:
 
     double queued_finish(std::size_t axis_index) const
     {
-        double finish = window_active_
-                            ? window_[window_.size() - 1].target[axis_index]
-                            : (active_ ? active_finish_[axis_index]
-                                       : axes_[axis_index]->snapshot().command_position);
+        double finish =
+            window_active_
+                ? window_[window_.size() - 1].target[axis_index]
+                : (cart_window_active_
+                       ? cart_tail_joints_[axis_index]
+                       : (active_ ? active_finish_[axis_index]
+                                  : axes_[axis_index]->snapshot().command_position));
         for(std::size_t i = 0; i < queue_.size(); ++i) {
             const GroupCommand &queued = queue_[i];
             finish = queued.relative ? finish + queued.target.value[axis_index]
@@ -1955,6 +2578,7 @@ private:
     {
         active_ = false;
         window_reset();
+        cart_window_reset();
         queue_.clear();
         active_tick_ = 0;
         for(std::size_t i = 0; i < axes_.size(); ++i) {
@@ -2954,6 +3578,24 @@ private:
     CartesianSegment active_cart_{};
     double cart_joints_[MaxAxes] = {};
     rt::ErrorCode last_cartesian_error_ = rt::ErrorCode::ok;
+    rt::StaticVector<CartPiece, CartWindowPieces> cart_window_{};
+    bool cart_window_active_ = false;
+    bool cart_window_stopping_ = false;
+    std::size_t cart_piece_index_ = 0;
+    std::int64_t cart_piece_tick_ = 0;
+    std::int64_t cart_halt_tick_ = 0;
+    std::int64_t cart_halt_duration_ = 0;
+    otg::Profile1D cart_halt_profile_{};
+    double cart_halt_origin_ = 0.0;
+    double cart_halt_piece_offset_ = 0.0;
+    double cart_window_entry_v_ = 0.0;
+    double cart_window_entry_a_ = 0.0;
+    double cart_window_acc_ = 0.0;
+    double cart_window_dec_ = 0.0;
+    double cart_window_jerk_ = 0.0;
+    double cart_tail_joints_[MaxAxes] = {};
+    double cart_window_joints_[MaxAxes] = {};
+    std::uint32_t cart_window_last_id_ = 0;
     geom::ArcSegment active_arc_{};
     rt::StaticVector<WindowSegment, WindowCapacity> window_{};
     std::size_t window_depth_ = WindowCapacity;

@@ -160,6 +160,15 @@
         "Cartesian-interpolation batch (approved matrix, KB-044)",
         "SCARA joint-mode approach, then a per-cycle-IK Cartesian line segment"
       ]
+    },
+    {
+      "id": "core-group-cartesian-window",
+      "path": "core-group-cartesian-window.jsonl",
+      "source": "plcopen_core_replay_regression --record",
+      "coverage": [
+        "Cartesian v3 look-ahead window (KB-050)",
+        "SCARA zigzag: conversion, three window extensions, node-speed corners"
+      ]
     }
   ]
 }

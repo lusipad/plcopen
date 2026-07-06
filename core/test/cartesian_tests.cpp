@@ -483,11 +483,17 @@ int check_cartesian_blend()
         return fail("blend unexpectedly degraded");
     }
 
-    // A committed chain is not extensible.
+    // v3 window: the committed geometry IS extensible now — append a third
+    // gentle segment and expect acceptance (not degraded).
+    const geom::Vec3 p3{-0.0123, 0.6932, 0.4865};
     axis::GroupCommand extend = b;
+    extend.target.value[0] = p3.x;
+    extend.target.value[1] = p3.y;
+    extend.target.value[2] = p3.z;
     const rt::Result<std::uint32_t> extended = rig.group.submit_linear(extend);
-    if(extended || extended.error() != rt::ErrorCode::unsupported) {
-        return fail("blend chain extend");
+    if(!extended ||
+       rig.group.last_blend_degraded_command() == extended.value()) {
+        return fail("window extend");
     }
 
     double min_speed_near_corner = 1e9;
@@ -505,7 +511,9 @@ int check_cartesian_blend()
         }
         const double off1 = point_to_segment(point, p0, corner);
         const double off2 = point_to_segment(point, corner, p2);
-        const double off = off1 < off2 ? off1 : off2;
+        const double off3 = point_to_segment(point, p2, p3);
+        double off = off1 < off2 ? off1 : off2;
+        off = off < off3 ? off : off3;
         if(off > tolerance + 1e-9) {
             std::printf("blend off-path %.3e at tick %d\n", off, tick);
             return fail("blend tolerance band");
@@ -519,7 +527,7 @@ int check_cartesian_blend()
         previous_point = point;
         have_previous = true;
         if(rig.group.status() == axis::GroupStatus::standby) {
-            if(geom::norm(point - p2) > 1e-8) {
+            if(geom::norm(point - p3) > 1e-8) {
                 return fail("blend endpoint");
             }
             break;
@@ -610,6 +618,257 @@ int check_cartesian_blend()
         }
     }
     return 0;
+}
+
+// Cartesian v3 window: a zigzag polyline of gentle corners beats the
+// full-stop baseline by the spec margin; a 90-degree corner is accepted
+// (slowed at the node, not degraded); GroupStop brakes on the geometry;
+// an unreachable extension rejects without disturbing the window.
+int check_cartesian_window()
+{
+    static const kin::Scara scara(0.4, 0.3, true);
+    const double tolerance = 0.02;
+    constexpr int Points = 7;
+    geom::Vec3 pts[Points];
+    for(int k = 0; k < Points; ++k) {
+        const double theta = 0.6 + 0.35 * static_cast<double>(k);
+        pts[k] = geom::Vec3{0.45 * std::cos(theta), 0.45 * std::sin(theta),
+                            0.1 + 0.03 * static_cast<double>(k)};
+    }
+
+    // Baseline: sequential buffered Cartesian segments (full stop at each).
+    long baseline_cycles = 0;
+    {
+        static TriRig rig;
+        if(rig.group.set_kinematics(&scara) != rt::ErrorCode::ok) {
+            return fail("window baseline setup");
+        }
+        const double first[3] = {pts[0].x, pts[0].y, pts[0].z};
+        axis::GroupCommand approach = command_for(3, first);
+        approach.coord_system = axis::CoordSystem::mcs;
+        if(!rig.group.submit_linear(approach) || settle(rig.group) != 0) {
+            return fail("window baseline approach");
+        }
+        for(int k = 1; k < Points; ++k) {
+            const double target[3] = {pts[k].x, pts[k].y, pts[k].z};
+            axis::GroupCommand seg = command_for(3, target);
+            seg.coord_system = axis::CoordSystem::mcs;
+            seg.interpolation_space = axis::InterpolationSpace::cartesian;
+            seg.buffer_mode = axis::BufferMode::buffered;
+            if(!rig.group.submit_linear(seg)) {
+                return fail("window baseline segment");
+            }
+        }
+        for(long tick = 0; tick < 200000; ++tick) {
+            rig.group.cycle();
+            ++baseline_cycles;
+            if(rig.group.status() == axis::GroupStatus::standby) {
+                break;
+            }
+        }
+    }
+
+    // Probe: the same polyline as one look-ahead window.
+    long window_cycles = 0;
+    {
+        static TriRig rig;
+        if(rig.group.set_kinematics(&scara) != rt::ErrorCode::ok) {
+            return fail("window setup");
+        }
+        const double first[3] = {pts[0].x, pts[0].y, pts[0].z};
+        axis::GroupCommand approach = command_for(3, first);
+        approach.coord_system = axis::CoordSystem::mcs;
+        if(!rig.group.submit_linear(approach) || settle(rig.group) != 0) {
+            return fail("window approach");
+        }
+        const double leg1[3] = {pts[1].x, pts[1].y, pts[1].z};
+        axis::GroupCommand seg = command_for(3, leg1);
+        seg.coord_system = axis::CoordSystem::mcs;
+        seg.interpolation_space = axis::InterpolationSpace::cartesian;
+        if(!rig.group.submit_linear(seg)) {
+            return fail("window first leg");
+        }
+        for(int tick = 0; tick < 5; ++tick) {
+            rig.group.cycle();
+            ++window_cycles;
+        }
+        for(int k = 2; k < Points; ++k) {
+            const double target[3] = {pts[k].x, pts[k].y, pts[k].z};
+            axis::GroupCommand blend = command_for(3, target);
+            blend.coord_system = axis::CoordSystem::mcs;
+            blend.interpolation_space = axis::InterpolationSpace::cartesian;
+            blend.buffer_mode = axis::BufferMode::blending_low;
+            blend.transition_mode = axis::TransitionMode::max_corner_deviation;
+            blend.transition_parameter = tolerance;
+            const rt::Result<std::uint32_t> accepted =
+                rig.group.submit_linear(blend);
+            if(!accepted ||
+               rig.group.last_blend_degraded_command() == accepted.value()) {
+                std::printf("window segment %d degraded\n", k);
+                return fail("window extension degraded");
+            }
+        }
+        // Unreachable extension rejects and leaves the window running.
+        {
+            const double far[3] = {0.9, 0.0, 0.0};
+            axis::GroupCommand bad = command_for(3, far);
+            bad.coord_system = axis::CoordSystem::mcs;
+            bad.interpolation_space = axis::InterpolationSpace::cartesian;
+            bad.buffer_mode = axis::BufferMode::blending_low;
+            bad.transition_mode = axis::TransitionMode::max_corner_deviation;
+            bad.transition_parameter = tolerance;
+            const rt::Result<std::uint32_t> rejected = rig.group.submit_linear(bad);
+            if(rejected || rejected.error() != rt::ErrorCode::infeasible) {
+                return fail("window unreachable extension");
+            }
+        }
+        for(long tick = 0; tick < 200000; ++tick) {
+            rig.group.cycle();
+            ++window_cycles;
+            if(rig.group.status() == axis::GroupStatus::errorstop) {
+                return fail("window errorstop");
+            }
+            double joints[3] = {rig.position(0), rig.position(1), rig.position(2)};
+            geom::Vec3 point{};
+            if(scara.forward(joints, 3, point) != rt::ErrorCode::ok) {
+                return fail("window forward");
+            }
+            double off = 1e9;
+            for(int k = 0; k + 1 < Points; ++k) {
+                const double d = point_to_segment(point, pts[k], pts[k + 1]);
+                off = d < off ? d : off;
+            }
+            if(off > tolerance + 1e-9) {
+                std::printf("window off-path %.3e\n", off);
+                return fail("window tolerance band");
+            }
+            if(rig.group.status() == axis::GroupStatus::standby) {
+                if(geom::norm(point - pts[Points - 1]) > 1e-8) {
+                    return fail("window endpoint");
+                }
+                break;
+            }
+        }
+    }
+    if(static_cast<double>(window_cycles) >
+       0.8 * static_cast<double>(baseline_cycles)) {
+        std::printf("window %ld vs baseline %ld cycles\n", window_cycles,
+                    baseline_cycles);
+        return fail("window beats baseline");
+    }
+
+    // A 90-degree corner joins the window (slowed, not degraded).
+    {
+        static TriRig rig;
+        if(rig.group.set_kinematics(&scara) != rt::ErrorCode::ok) {
+            return fail("sharp setup");
+        }
+        const geom::Vec3 a{0.45, 0.15, 0.1};
+        const geom::Vec3 b{0.45, 0.45, 0.1};
+        const geom::Vec3 c{0.15, 0.45, 0.1};
+        const double first[3] = {a.x, a.y, a.z};
+        axis::GroupCommand approach = command_for(3, first);
+        approach.coord_system = axis::CoordSystem::mcs;
+        if(!rig.group.submit_linear(approach) || settle(rig.group) != 0) {
+            return fail("sharp approach");
+        }
+        const double leg[3] = {b.x, b.y, b.z};
+        axis::GroupCommand seg = command_for(3, leg);
+        seg.coord_system = axis::CoordSystem::mcs;
+        seg.interpolation_space = axis::InterpolationSpace::cartesian;
+        if(!rig.group.submit_linear(seg)) {
+            return fail("sharp leg");
+        }
+        for(int tick = 0; tick < 5; ++tick) {
+            rig.group.cycle();
+        }
+        const double succ[3] = {c.x, c.y, c.z};
+        axis::GroupCommand blend = command_for(3, succ);
+        blend.coord_system = axis::CoordSystem::mcs;
+        blend.interpolation_space = axis::InterpolationSpace::cartesian;
+        blend.buffer_mode = axis::BufferMode::blending_high;
+        blend.transition_mode = axis::TransitionMode::max_corner_deviation;
+        blend.transition_parameter = 0.01;
+        const rt::Result<std::uint32_t> accepted = rig.group.submit_linear(blend);
+        if(!accepted ||
+           rig.group.last_blend_degraded_command() == accepted.value()) {
+            return fail("sharp corner degraded");
+        }
+        if(settle(rig.group) != 0) {
+            return fail("sharp settle");
+        }
+        double joints[3] = {rig.position(0), rig.position(1), rig.position(2)};
+        geom::Vec3 point{};
+        if(scara.forward(joints, 3, point) != rt::ErrorCode::ok ||
+           geom::norm(point - c) > 1e-8) {
+            return fail("sharp endpoint");
+        }
+    }
+
+    // GroupStop mid-window: controlled stop on the geometry.
+    {
+        static TriRig rig;
+        if(rig.group.set_kinematics(&scara) != rt::ErrorCode::ok) {
+            return fail("stop setup");
+        }
+        const double first[3] = {pts[0].x, pts[0].y, pts[0].z};
+        axis::GroupCommand approach = command_for(3, first);
+        approach.coord_system = axis::CoordSystem::mcs;
+        if(!rig.group.submit_linear(approach) || settle(rig.group) != 0) {
+            return fail("stop approach");
+        }
+        const double leg1[3] = {pts[1].x, pts[1].y, pts[1].z};
+        axis::GroupCommand seg = command_for(3, leg1);
+        seg.coord_system = axis::CoordSystem::mcs;
+        seg.interpolation_space = axis::InterpolationSpace::cartesian;
+        if(!rig.group.submit_linear(seg)) {
+            return fail("stop leg");
+        }
+        for(int tick = 0; tick < 5; ++tick) {
+            rig.group.cycle();
+        }
+        for(int k = 2; k < 5; ++k) {
+            const double target[3] = {pts[k].x, pts[k].y, pts[k].z};
+            axis::GroupCommand blend = command_for(3, target);
+            blend.coord_system = axis::CoordSystem::mcs;
+            blend.interpolation_space = axis::InterpolationSpace::cartesian;
+            blend.buffer_mode = axis::BufferMode::blending_low;
+            blend.transition_mode = axis::TransitionMode::max_corner_deviation;
+            blend.transition_parameter = tolerance;
+            if(!rig.group.submit_linear(blend)) {
+                return fail("stop extension");
+            }
+        }
+        for(int tick = 0; tick < 40; ++tick) {
+            rig.group.cycle();
+        }
+        if(rig.group.stop(0.002, 0.002) != rt::ErrorCode::ok) {
+            return fail("stop request");
+        }
+        for(long tick = 0; tick < 200000; ++tick) {
+            rig.group.cycle();
+            if(rig.group.status() == axis::GroupStatus::errorstop) {
+                return fail("stop errorstop");
+            }
+            double joints[3] = {rig.position(0), rig.position(1), rig.position(2)};
+            geom::Vec3 point{};
+            if(scara.forward(joints, 3, point) != rt::ErrorCode::ok) {
+                return fail("stop forward");
+            }
+            double off = 1e9;
+            for(int k = 0; k + 1 < Points; ++k) {
+                const double d = point_to_segment(point, pts[k], pts[k + 1]);
+                off = d < off ? d : off;
+            }
+            if(off > tolerance + 1e-9) {
+                return fail("stop off geometry");
+            }
+            if(rig.group.status() == axis::GroupStatus::standby) {
+                return 0;
+            }
+        }
+        return fail("stop never settled");
+    }
 }
 
 // Cartesian v2-C on the pose pipeline: the whole chain rides one geodesic —
@@ -1366,6 +1625,7 @@ int main()
     failures += check_scara_linearity();
     failures += check_pose_geodesic();
     failures += check_cartesian_blend();
+    failures += check_cartesian_window();
     failures += check_pose_cartesian_blend();
     failures += check_scara_cartesian_arc();
     failures += check_pose_cartesian_arc();

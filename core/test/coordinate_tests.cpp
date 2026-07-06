@@ -96,8 +96,8 @@ geom::Vec3 pcs_to_acs(const geom::RigidFrame &frame, geom::Vec3 tool, geom::Vec3
 
 int check_mcs_identity()
 {
-    GroupRig probe;
-    GroupRig oracle;
+    static GroupRig probe;
+    static GroupRig oracle;
 
     axis::GroupCommand mcs = linear_command(1.0, 2.0, 0.5);
     mcs.coord_system = axis::CoordSystem::mcs;
@@ -114,7 +114,7 @@ int check_pcs_linear_oracle()
     const geom::RigidFrame frame = geom::make_frame(0.5, -0.25, 0.1, rot).value();
     const geom::Vec3 tool{0.02, -0.03, 0.05};
 
-    GroupRig probe;
+    static GroupRig probe;
     if(probe.group.set_workpiece_frame(0.5, -0.25, 0.1, rot) != rt::ErrorCode::ok ||
        probe.group.set_tool_offset(0.02, -0.03, 0.05) != rt::ErrorCode::ok) {
         return fail("pcs frame setup");
@@ -125,7 +125,7 @@ int check_pcs_linear_oracle()
         return fail("pcs submit");
     }
 
-    GroupRig oracle;
+    static GroupRig oracle;
     const geom::Vec3 acs_target = pcs_to_acs(frame, tool, {1.0, 0.5, 0.25});
     if(!oracle.group.submit_linear(
            linear_command(acs_target.x, acs_target.y, acs_target.z))) {
@@ -137,7 +137,7 @@ int check_pcs_linear_oracle()
 int check_pcs_relative_rotates_only()
 {
     const double rot = 1.1;
-    GroupRig probe;
+    static GroupRig probe;
     if(probe.group.set_workpiece_frame(3.0, 4.0, 5.0, rot) != rt::ErrorCode::ok ||
        probe.group.set_tool_offset(0.1, 0.2, 0.3) != rt::ErrorCode::ok) {
         return fail("pcs relative setup");
@@ -151,7 +151,7 @@ int check_pcs_relative_rotates_only()
 
     // Translation and tool offset must cancel for relative moves: only the
     // rotation applies to the distance vector.
-    GroupRig oracle;
+    static GroupRig oracle;
     axis::GroupCommand acs = linear_command(std::cos(rot), std::sin(rot), 0.0);
     acs.relative = true;
     if(!oracle.group.submit_linear(acs)) {
@@ -166,7 +166,7 @@ int check_pcs_circular_oracle()
     const geom::RigidFrame frame = geom::make_frame(1.0, 2.0, 0.0, rot).value();
     const geom::Vec3 tool{0.0, 0.0, 0.0};
 
-    GroupRig probe;
+    static GroupRig probe;
     if(probe.group.set_workpiece_frame(1.0, 2.0, 0.0, rot) != rt::ErrorCode::ok) {
         return fail("pcs circular setup");
     }
@@ -178,7 +178,7 @@ int check_pcs_circular_oracle()
         return fail("pcs circular approach");
     }
 
-    GroupRig oracle;
+    static GroupRig oracle;
     const geom::Vec3 acs_start = pcs_to_acs(frame, tool, {1.0, 0.0, 0.0});
     if(!oracle.group.submit_linear(
            linear_command(acs_start.x, acs_start.y, acs_start.z))) {
@@ -222,7 +222,7 @@ int check_mixed_frame_window()
     const double rot = 0.3;
     const geom::RigidFrame frame = geom::make_frame(0.2, 0.1, 0.0, rot).value();
 
-    GroupRig probe;
+    static GroupRig probe;
     if(probe.group.set_workpiece_frame(0.2, 0.1, 0.0, rot) != rt::ErrorCode::ok) {
         return fail("mixed window setup");
     }
@@ -242,7 +242,7 @@ int check_mixed_frame_window()
         return fail("mixed window blend accepted");
     }
 
-    GroupRig oracle;
+    static GroupRig oracle;
     if(!oracle.group.submit_linear(first)) {
         return fail("mixed window oracle first");
     }
@@ -262,7 +262,7 @@ int check_mixed_frame_window()
 
 int check_rejection_matrix()
 {
-    GroupRig rig;
+    static GroupRig rig;
 
     axis::GroupCommand wcs = linear_command(1.0, 0.0, 0.0);
     wcs.coord_system = axis::CoordSystem::wcs;
@@ -293,8 +293,8 @@ int check_rejection_matrix()
     }
 
     // PCS without a configured frame is the declared identity (= MCS).
-    GroupRig identity_probe;
-    GroupRig identity_oracle;
+    static GroupRig identity_probe;
+    static GroupRig identity_oracle;
     axis::GroupCommand pcs = linear_command(0.5, 0.25, 0.75);
     pcs.coord_system = axis::CoordSystem::pcs;
     if(!identity_probe.group.submit_linear(pcs) ||
@@ -306,7 +306,7 @@ int check_rejection_matrix()
 
 int check_fb_face()
 {
-    GroupRig rig;
+    static GroupRig rig;
     fb::FbMoveLinearAbsolute move;
     move.group_ref = &rig.group;
     move.position.size = 3;

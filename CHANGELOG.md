@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- 笛卡尔前瞻窗口 v1（KB-050，已批准 v3 增补）：平移插件组的连续笛卡尔
+  blending 后继构成 TCP 空间前瞻窗口——结点速度双向 jerk 精确扫描 ∩ 拐角
+  曲率限速，直线不再被最急拐角拖慢；6 段折线实测优于 0.8× 停车基线门槛，
+  90° 拐角结点限速通过不再降级。匀速内段/拐角匀速骑行与入口退避梯子为
+  声明的量化口径（结点钉限速时 OTG 巡航精化无区间的深潜燃烧由此构造性
+  消除）。逐周期单次逆解执行，失败 = 组 errorstop；GroupStop 沿复合几何
+  停车；位姿组维持 KB-049 链。新黄金场景 core-group-cartesian-window
+  （18 语料）；组对象增肥暴露的两处测试栈溢出以 static 台修复。
+
 ## [1.0.0-alpha] - 2026-07-06
 
 ### Added

@@ -527,12 +527,98 @@ void run_group_cartesian(Recording &recording)
     }
 }
 
+void run_group_cartesian_window(Recording &recording)
+{
+    // Cartesian v3 window (KB-050): a SCARA zigzag polyline as one
+    // look-ahead window — the golden guard for the windowed per-cycle-IK
+    // execution branch.
+    recording.id = "core-group-cartesian-window";
+    static const kin::Scara scara(0.4, 0.3, true);
+    axis::AxisModel j1;
+    axis::AxisModel j2;
+    axis::AxisModel j3;
+    j1.set_power(true);
+    j2.set_power(true);
+    j3.set_power(true);
+    axis::AxisGroup group;
+    group.add_axis(j1);
+    group.add_axis(j2);
+    group.add_axis(j3);
+    group.enable();
+    group.set_kinematics(&scara);
+
+    const double pts[5][3] = {{0.45 * std::cos(0.6), 0.45 * std::sin(0.6), 0.10},
+                              {0.45 * std::cos(0.95), 0.45 * std::sin(0.95), 0.13},
+                              {0.45 * std::cos(1.3), 0.45 * std::sin(1.3), 0.16},
+                              {0.45 * std::cos(1.65), 0.45 * std::sin(1.65), 0.19},
+                              {0.45 * std::cos(2.0), 0.45 * std::sin(2.0), 0.22}};
+
+    axis::GroupCommand approach{};
+    approach.target.size = 3;
+    approach.target.value[0] = pts[0][0];
+    approach.target.value[1] = pts[0][1];
+    approach.target.value[2] = pts[0][2];
+    approach.velocity = 0.05;
+    approach.acceleration = 0.004;
+    approach.deceleration = 0.004;
+    approach.jerk = 0.004;
+    approach.coord_system = axis::CoordSystem::mcs;
+    group.submit_linear(approach);
+    std::int64_t tick = 0;
+    for(; tick < 4000; ++tick) {
+        group.cycle();
+        recording.emit(tick, 0, j1.snapshot());
+        recording.emit(tick, 1, j2.snapshot());
+        recording.emit(tick, 2, j3.snapshot());
+        if(group.status() == axis::GroupStatus::standby) {
+            break;
+        }
+    }
+
+    axis::GroupCommand leg = approach;
+    leg.velocity = 0.01;
+    leg.acceleration = 0.002;
+    leg.deceleration = 0.002;
+    leg.jerk = 0.002;
+    leg.interpolation_space = axis::InterpolationSpace::cartesian;
+    leg.target.value[0] = pts[1][0];
+    leg.target.value[1] = pts[1][1];
+    leg.target.value[2] = pts[1][2];
+    group.submit_linear(leg);
+    for(int warm = 0; warm < 5; ++warm, ++tick) {
+        group.cycle();
+        recording.emit(tick, 0, j1.snapshot());
+        recording.emit(tick, 1, j2.snapshot());
+        recording.emit(tick, 2, j3.snapshot());
+    }
+    for(int k = 2; k < 5; ++k) {
+        axis::GroupCommand blend = leg;
+        blend.target.value[0] = pts[k][0];
+        blend.target.value[1] = pts[k][1];
+        blend.target.value[2] = pts[k][2];
+        blend.buffer_mode = axis::BufferMode::blending_low;
+        blend.transition_mode = axis::TransitionMode::max_corner_deviation;
+        blend.transition_parameter = 0.02;
+        group.submit_linear(blend);
+    }
+    for(; tick < 12000; ++tick) {
+        group.cycle();
+        recording.emit(tick, 0, j1.snapshot());
+        recording.emit(tick, 1, j2.snapshot());
+        recording.emit(tick, 2, j3.snapshot());
+        if(group.status() == axis::GroupStatus::standby) {
+            break;
+        }
+    }
+}
+
 using ScenarioRunner = void (*)(Recording &);
 constexpr ScenarioRunner kScenarios[] = {run_single_axis_move, run_velocity_stop,
                                          run_group_linear, run_group_circular,
                                          run_group_blend, run_group_window,
                                          run_group_window_arc, run_stream_session,
-                                         run_group_pcs, run_group_cartesian};
+                                         run_group_pcs, run_group_cartesian,
+                                         run_group_cartesian_window};
 
 int write_recording(const Recording &recording, const std::string &directory)
 {

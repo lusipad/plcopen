@@ -117,7 +117,7 @@ int check_cam_table_view()
 
 int check_gear_follow_and_out()
 {
-    SyncPair pair;
+    static SyncPair pair;
     if(pair.setup() != rt::ErrorCode::ok) {
         return fail("gear setup");
     }
@@ -198,7 +198,7 @@ int check_gear_follow_and_out()
 
 int check_gear_sources_and_update()
 {
-    SyncPair pair;
+    static SyncPair pair;
     if(pair.setup() != rt::ErrorCode::ok || pair.master.set_position(2.0) != rt::ErrorCode::ok) {
         return fail("gear source setup");
     }
@@ -393,7 +393,7 @@ int check_gear_preconditions()
         return fail("gear rejects disabled group");
     }
 
-    SyncPair pair;
+    static SyncPair pair;
     if(pair.setup() != rt::ErrorCode::ok) {
         return fail("gear validation setup");
     }
@@ -423,7 +423,7 @@ int check_gear_preconditions()
 
 int check_gear_in_pos()
 {
-    SyncPair pair;
+    static SyncPair pair;
     if(pair.setup() != rt::ErrorCode::ok) {
         return fail("gear-in-pos setup");
     }
@@ -493,7 +493,7 @@ int check_gear_in_pos()
 
 int check_phasing()
 {
-    SyncPair pair;
+    static SyncPair pair;
     if(pair.setup() != rt::ErrorCode::ok) {
         return fail("phasing setup");
     }
@@ -590,7 +590,7 @@ int check_phasing()
 
 int check_cam_follow()
 {
-    SyncPair pair;
+    static SyncPair pair;
     if(pair.setup() != rt::ErrorCode::ok) {
         return fail("cam setup");
     }
@@ -728,7 +728,7 @@ int check_cam_scaling_and_periodic()
 
 int check_cam_start_distance()
 {
-    SyncPair pair;
+    static SyncPair pair;
     if(pair.setup() != rt::ErrorCode::ok) {
         return fail("cam start-distance setup");
     }
@@ -845,7 +845,7 @@ int check_combine_axes()
 
 int check_sync_command_interactions()
 {
-    SyncPair pair;
+    static SyncPair pair;
     if(pair.setup() != rt::ErrorCode::ok) {
         return fail("interaction setup");
     }
