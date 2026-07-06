@@ -128,3 +128,21 @@ standstill、disengage 仅静止可用；跨界连续性逐周期断言）。口
 [phase-b-software-work-breakdown.md](../planning/phase-b-software-work-breakdown.md)（BS2 起）。
 
 *草案创建：2026-07-05；批准：2026-07-05（维护者，v1 范围）。*
+
+---
+
+## v2 增补：同步关节流组（草案，待批准，2026-07-06，H1）
+
+解除 v1 的"不承诺关节间时间同步"声明——人形步态/全身控制需要同组
+关节的目标同拍生效。
+
+| # | 决策点 | 提案 |
+|---|--------|------|
+| 1 | 批量目标 | `JointStreamGroup::push_frame(positions[], timestamp)`：一帧 = 全组关节共享一个时间戳，原子提交（部分失败即整帧拒绝并计数）；既有逐关节 push 保留（兼容，仍无同步承诺） |
+| 2 | 同拍生效 | 同帧目标在同一插补周期进入各关节滤波器事件队列——**承诺**：同帧关节的目标切换发生在同一 cycle（相位一致性可验收：阶跃帧下各关节响应起始拍相同） |
+| 3 | 断流组策略 | `GroupDropoutPolicy ∈ {independent(默认，兼容 v1), coordinated_stop}`：coordinated_stop 下任一关节触发二级看门狗 → 全组同拍进入受控停（人形安全语义） |
+| 4 | 容量与预算 | 组容量 32 → 48；@1kHz 预算基准重测（交错与全爆发两口径），维持 <300µs 门 |
+
+拒绝规则：帧长 ≠ 组关节数 / 时间戳非递增 → 整帧 `invalid_argument`；
+运行中改 policy → 守卫拒绝。验收：阶跃帧同拍断言、coordinated_stop
+同拍停、48 关节预算数、既有逐关节口径回放/测试逐位不变。
