@@ -126,6 +126,7 @@
 | P-Part4 管理组 | [part4-management-semantics.md](../compliance/part4-management-semantics.md) | 草案待批 |
 | 对抗性探测轮 | `.claude/skills/plcopen-adversarial-probe` | 已固化为技能 |
 | Y0 oracle | [otg-oracle-design.md](../design/core/otg-oracle-design.md) | 设计已备（测试层免批） |
+| ST 运行时（预研） | [st-runtime-design.md](../design/core/st-runtime-design.md) | 设计已备；解锁排位待维护者裁决（选项 A：扎实化收口后的下一里程碑主项 / 选项 B：维持用户信号门） |
 
 ## 推荐起手（待复盘拍板）
 
