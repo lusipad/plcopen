@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.0.0-alpha] - 2026-07-06
+
 ### Added
 
 - 笛卡尔 blending v1（KB-049，已批准 v2-C 增补）：活动笛卡尔直线段与公差带
