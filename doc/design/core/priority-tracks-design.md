@@ -8,7 +8,7 @@
 
 | 模块 | 层 | 轨 | 内容 | 语义矩阵 |
 |------|----|----|------|---------|
-| `core/stream`（扩展） | L3 | H1 | `push_frame`（整帧原子 + 同拍生效）、`DropoutPolicy::coordinated_stop`、容量 48；filter 加 `has_target/latest_timestamp_cycles/request_controlled_stop` 三个最小钩子 | ✅ 已批准（stream v2 增补） |
+| `core/stream`（扩展） | L3 | H1 | `push_frame`（混合指令帧原子 + 同拍生效）、`DropoutPolicy::coordinated_stop`、容量 48、**直通/升频双模式（T25）**、**流式快路径（T24 卡点）**、τ_ff/增益衰减与斜坡（T23） | ⚠️ 已批矩阵**待修订**（T23/T24/T25 三项 2026-07-06 深挖后新增，实现前须补入矩阵再请批） |
 | `core/kin/serial_chain.h`（新） | L3 | H2 | DH 参数驱动通用串联链：正解、数值雅可比、Sugihara 型自适应阻尼 DLS、限位投影、7DOF 零空间姿态目标；实现 `PoseKinematics`（与解析层并列插件） | ✅ 已批准（kinematics v2 增补） |
 | `core/dyn/`（新目录） | L2 级纯数学 | H3 | RNEA 逆动力学（固定基座链）、参数结构体（质量/质心/惯量）、独立 ABA oracle（仅测试层）；无 PLCopen 语义，进 RT 扫描 | ⏳ 待起草（T15 定界后） |
 | 扭矩流通道 | L3/L5 | H3+T18 | CST 流模式 + 三层安全监督（扭矩限幅/速度监督/位置围栏） | ⏳ 待起草（安全语义域，单独矩阵） |
@@ -51,7 +51,8 @@
 ## 3. 依赖与建造顺序
 
 ```
-H1 流帧 ──────────────┐
+T24 快路径设计 → H1 矩阵修订请批 ─┐
+H1 流帧（修订后）─────┐          │
 H2 serial_chain ──────┼─→ T2 rerun 孪生 demo（用 H1+H2 讲人形故事）
 T1 pip wheel ─────────┘
 F1 fieldbus 骨架 → F2 虚拟从站 CI →（S1 台架验证）
