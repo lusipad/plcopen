@@ -13,9 +13,9 @@ sprint 记录）在 [doc/archive/roadmap-history.md](doc/archive/roadmap-history
 
 | # | 任务 | DoD | 状态 |
 |---|------|-----|------|
-| 1 | Y7 组接管连续性修复 | KB-051 按矩阵修复，组接管成员速度步进 ≤ 包络 | **下一步**（矩阵待起草） |
-| 2 | P-Part4 剩余 FB | GroupHome/MoveDirect/GroupSetOverride/Interrupt-Continue/路径表/KinTransform FB 形态，逐块过矩阵，对照表零留白 | 待矩阵 |
-| 3 | P-Part5 回零规程 | MC_Step* 标准回零步 FB 面（数字输入通道模拟验收） | 待矩阵 |
+| 1 | Y7 组接管连续性修复 | KB-051 按矩阵修复，组接管成员速度步进 ≤ 包络 | 矩阵已起草待批 |
+| 2 | P-Part4 剩余 FB | 管理组（GroupHome/MoveDirect/Override/Interrupt-Continue）矩阵已起草待批；路径表/KinTransform 第二批 | 矩阵已起草待批 |
+| 3 | P-Part5 回零规程 | MC_Step* 标准回零步 FB 面（数字输入通道模拟验收） | 矩阵已起草待批 |
 | 4 | 对抗性探测轮 | 组/FB 语义面系统扫描（跨域对照：单轴 vs 组、声明 vs 实测），发现即 KB/修复 | 方法已验证（KB-051） |
 | 5 | E 系列证据 | ARM64 CI + clang-tidy 零 P0 + 变异分数门 | 快批可穿插 |
 | 6 | Y0 最优性 oracle | 双 oracle 落地，excess_cycles 分域基线入趋势 | 设计已备 |

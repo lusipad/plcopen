@@ -108,9 +108,24 @@
 真实用户反馈（与 VISION 解锁纪律同源）。G-code/ST 仍属 Phase D 门控，
 不进本计划。
 
-## E 系列：工程证据（快批，可随时插队）
+## E 系列：工程证据（快批，可随时插队；2026-07-07 细案）
 
-ARM64 交叉编译 CI、clang-tidy 零 P0 门、变异分数门、覆盖率 90%。
+| # | 项 | 方案 | 门 |
+|---|-----|------|-----|
+| E1 | ARM64 CI | ubuntu runner + aarch64-linux-gnu 交叉编译全量目标 + qemu-user 跑非基准测试子集（基准数字无意义不跑） | 编译零错 + 子集全绿 |
+| E2 | clang-tidy | 配置 `.clang-tidy`（bugprone-*/clang-analyzer-*/performance-* 为错误级；readability 类仅警告）；CI 对 core/ 增量执行 | 错误级零违例 |
+| E3 | 变异分数门 | 既有周任务管线加阈值：抽查模块变异分数 ≥70%（ai-collaboration §5 既定健康线）失败即红 | ≥70% |
+| E4 | 覆盖率 90% | 现状 ≥85%；按模块补盲区（探测轮发现的格子优先），门槛升至 90% | ≥90% |
+
+## 里程碑方案索引（2026-07-07 全部起草）
+
+| 项 | 方案文档 | 状态 |
+|----|---------|------|
+| Y7 组接管修复 | [group-takeover-semantics.md](../compliance/group-takeover-semantics.md) | 草案待批 |
+| P-Part5 回零 | [part5-homing-semantics.md](../compliance/part5-homing-semantics.md) | 草案待批 |
+| P-Part4 管理组 | [part4-management-semantics.md](../compliance/part4-management-semantics.md) | 草案待批 |
+| 对抗性探测轮 | `.claude/skills/plcopen-adversarial-probe` | 已固化为技能 |
+| Y0 oracle | [otg-oracle-design.md](../design/core/otg-oracle-design.md) | 设计已备（测试层免批） |
 
 ## 推荐起手（待复盘拍板）
 
