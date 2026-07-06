@@ -13,19 +13,22 @@ sprint 记录）在 [doc/archive/roadmap-history.md](doc/archive/roadmap-history
 
 | # | 任务 | DoD | 状态 |
 |---|------|-----|------|
-| 1 | Y7 组接管连续性修复 | KB-051 按矩阵修复，组接管成员速度步进 ≤ 包络 | 矩阵已起草待批 |
+| 1 | Y7 组接管修复（**linear 范围已批，可开工**） | 公差管语义 v2.1：标量承接 + 横向衰减 + β 分割；circular/笛卡尔待曲率项另批 | 矩阵 linear 范围已批 |
 | 2 | **对抗性探测轮**（拷问后提位：新 FB 不建在可能有暗伤的地基上） | 组/FB 语义面系统扫描，发现即 KB/修复 | 方法已验证（KB-051） |
 | 3 | Y0 最优性 oracle（评审定序提前：先立标尺再修算法） | 切换结构枚举表（第一交付物）+ 双 oracle + Ruckig 黑盒对照，excess_cycles 分域基线入趋势 | 设计已备 |
-| 4 | P-Part4 剩余 FB | 管理组矩阵 + 路径表/变换第二批矩阵均已起草待批 | 两份矩阵待批 |
-| 5 | P-Part5 回零规程 | MC_Step* 标准回零步 FB 面（数字输入通道模拟验收） | 矩阵已起草待批 |
+| 4 | Y2 完整 OTG（评审三关键） | state-to-state 任意目标状态（非零 at）+ 钉边界 + 整周期量化；Ruckig 黑盒对照 | 合同已批（algorithm-contracts §1） |
+| 4c | Y4 定时同步（评审三关键） | solve_fixed_time：duration==T_sync、终态 ≤1e-9、全程在限（T43） | 合同已批（§2） |
+| 5a | P-Part4 剩余 FB | 管理组矩阵 + 路径表/变换第二批矩阵均已起草待批 | 两份矩阵待批 |
+| 5b | P-Part5 回零规程 | MC_Step* 标准回零步 FB 面（数字输入通道模拟验收） | 矩阵已起草待批 |
 | 4b | **信号通道并行项**（拷问后拉入：学习不等建造） | T1 pip wheel + 最小文档站起步——细案见 [signal-channel-plan](doc/planning/signal-channel-plan.md) | 方案已备，可并行 |
 | 6 | E 系列证据 | ARM64 CI + clang-tidy 零 P0 + 变异分数门 | 快批可穿插 |
 | 7 | 台架采购决策 | 下单或共建协议（S1 之门，与本里程碑并行） | **人工** |
 | 8 | 72h soak 回写 | 2026-07-09 结果回写 DoD 表 | 定时 |
 | 9 | Part 4 原文核对 | 坐标矩阵 3 项线下核实 | 人工 |
 
-**收口后算法主线接续（2026-07-07 评审定序）**：Y2 补完整任意状态
-OTG → Y3 reachability TOPP——与 L 系列的相对排序收口复盘时定。
+**收口后算法主线接续**：Y3 reachability TOPP（Y2/Y4 已提入本里程
+碑）；T24 解析快路径随 H1 解冻；权威口径
+[algorithm-contracts](doc/design/core/algorithm-contracts.md)。
 
 **明确不做**（本里程碑）：H/F/T 三轨实现（设计已备待命）、扭矩通道、
 G-code、硬件验证（S1）。

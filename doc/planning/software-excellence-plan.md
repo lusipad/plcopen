@@ -22,8 +22,9 @@
 
 > 当前主轴 = **PLCopen 域扎实化**：Y7 正确性修复 → P 系列标准面清零
 > （Part 4 剩余 + Part 5 回零）→ 对抗性探测轮（组/FB 语义面系统扫描，
-> KB-051 同族猎杀）→ **Y0 oracle（评审定序提前：先立标尺）** → P 系列
-> → E 系列 → 收口 → 算法线接续 Y2 → Y3（评审最优序）。
+> KB-051 同族猎杀）→ **Y0 oracle（先立标尺）→ Y2 完整 OTG →
+> Y4 定时同步（评审三关键，提入本里程碑）** → P 系列 → E 系列 →
+> 收口 → Y3 TOPP。权威合同：algorithm-contracts.md。
 > H/F/T 三轨的**设计资产已全部完成**（难点 T13-T29、ADR-0005/0006、
 > H1 十二决策修订稿、快路径/oracle 设计）——设计不过期，实现在
 > PLCopen 扎实化里程碑收口后自然接续。
@@ -77,9 +78,9 @@
 | Y1 | 传送带/转台跟踪 | `MC_TrackConveyorBelt/RotaryTable`——机器人拾取闭环的最后一块标准板 | 周期路径新增有界跟踪项，随批预算门 |
 | Y2 | OTG 补完整任意状态 | **补完整 state-to-state 形态**（评审定界）：非零目标加速度 at≠0、v0=vt=vmax 钉边界量化深潜（撤销 KB-050 匀速骑行/退避梯子两处声明妥协）、整数周期量化口径成文；Ruckig 黑盒对照（ADR-0003）| 规划域；声明变更走回放全流程；STREAM_METRICS 门看住单解耗时 |
 | Y3 | reachability TOPP（两层，评审定界） | **第一层加速度级 TOPP-RA**：沿路径离散点递推可达/可控速度集（每点小 LP），速度/加速度/曲率/关节/笛卡尔限速统一进路径参数化（arXiv:1707.07239）；**第二层 jerk-aware 扩展**：状态 v → (v,a)；替换局部双向扫描；笛卡尔管线关节约束从采样启发式 → 精确投影。**不做 clothoid/min-snap/MPC**；五次 Bezier blending 保留 | 规划域（允许 ms 级，周期路径只采样）；`window_replan_us` 基准指标，矩阵先声明预算 |
-| Y4 | 拐角剖面化 + 同步模式族 | 拐角内曲率约束变速穿越；时间同步/相位同步多轴剖面变体 | 周期路径零新增（仍是采样） |
+| Y4 | **定时同步 solve_fixed_time**（评审三关键之一）+ 拐角剖面化 | `T_sync = max(T_min[i])` 后逐轴 `solve_fixed_time(axis, T_sync)`——最优结构插入合法巡航/等待段或直接固定时长可行剖面；验收 duration==T_sync、终态 p/v/a ≤1e-9、全程在限（难点 T43）。相位同步变体、拐角内曲率约束变速穿越随批 | 周期路径零新增（仍是采样）；无此能力"全身同时到达"不成立 |
 | Y5 | 笛卡尔管线对称收官 | 位姿组窗口化、任意空间弧平面、全圆/CENTER/RADIUS、twist 回读 | 沿用 KB-044 机制与门 |
-| **Y7** | **组接管连续性修复**（KB-051，正确性级，插队最前） | 普通 aborting 接管从实时路径状态接续：入口速度 = 成员速度在新路径方向的投影，横向分量受控衰减语义（需矩阵定义）；声明变更走回放全流程；验收 = 组接管成员速度步进 ≤ 包络（对抗性探测转固定测试） | 规划域 |
+| **Y7** | **组接管连续性修复**（KB-051，正确性级，插队最前；**linear 范围已批**） | 公差管语义 v2.1（ṡ₀/a_s0 标量承接 + 横向 OTG 衰减 + β 限值分割 + R_tube）；circular/笛卡尔扩展待曲率链式项另批；验收 = 逐周期全向量 v/a/j ≤ 全额限值 | 规划域 |
 | Y6 | 刚体动力学前馈 | 重力/惯量模型前馈扭矩（RNEA），对刚体仿真 oracle 验证 | 周期路径新增 ~1-3µs/6R，矩阵定硬门（≤10µs 提案） |
 
 **性能纪律（写进每份 Y 矩阵验收表）**：平滑与最优性花规划域的钱；
@@ -173,15 +174,17 @@ LD/FBD/SFC 图形画布、HMI、TC6-XML 工程交换、cam 表图形编辑器。
 | P-Part4 路径表/变换（第二批） | [part4-pathtable-semantics.md](../compliance/part4-pathtable-semantics.md) | 草案待批 |
 | Z1/Z3 信号通道细案 | [signal-channel-plan.md](signal-channel-plan.md) | 已拉进当前里程碑并行项 4b |
 | 对抗性探测轮 | `.claude/skills/plcopen-adversarial-probe` | 已固化为技能 |
+| **算法合同集（权威）** | [algorithm-contracts.md](../design/core/algorithm-contracts.md) | **已批准**（2026-07-07 维护者裁决，六合同 + 落地顺序） |
 | Y0 oracle | [otg-oracle-design.md](../design/core/otg-oracle-design.md) | 设计已备（测试层免批） |
 | ST 运行时 | [st-runtime-design.md](../design/core/st-runtime-design.md) | 已裁决选项 A：L 系列为扎实化收口后的下一里程碑主项 |
 
 ## 推荐起手（待复盘拍板）
 
 **（2026-07-07 重排）Y7 → P 系列（Part 4 剩余 + Part 5）→ 对抗性
-探测轮 → **Y0（先立标尺）** → P 系列 → E 系列 → 【PLCopen 扎实化
-收口】→ 算法主线 Y2 → Y3（评审定序：Y7→Y0→Y2→Y3→T24→H2/H3，
-最少发散）；与 L 系列的相对排序收口复盘时由维护者定**。
+探测轮 → **Y0（先立标尺）→ Y2 完整 OTG → Y4 定时同步** → P 系列 →
+E 系列 → 【PLCopen 扎实化收口】→ Y3 TOPP（落地顺序 = 合同文档终节：
+Y7→Y0→Y2→Y4→T24→Y3→H2；最关键三件 = Y2/Y4/T24 解析校验）；
+与 L 系列的相对排序收口复盘时由维护者定**。
 
 ---
 

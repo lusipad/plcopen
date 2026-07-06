@@ -1,4 +1,4 @@
-# 组接管连续性语义矩阵（Y7，v2 草案，待批准）
+# 组接管连续性语义矩阵（Y7，v2.1——linear 范围已批准）
 
 > 状态：**linear 组范围已批准**（2026-07-07 维护者算法合同裁决，
 > 见 [algorithm-contracts](../design/core/algorithm-contracts.md) §5）；
