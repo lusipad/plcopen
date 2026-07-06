@@ -68,12 +68,22 @@
 周期路径每次花钱都过硬门（KB-044 先例）；6.6 反模式有效——不为
 "先进"做无热点优化（现状：周期路径对 250µs 档占比 ~1-2%）。
 
-## P 系列：Part 4 标准面清零
+## P 系列：PLCopen 标准面清零（2026-07-07 扩充为全 Part 对账）
 
-MC_GroupHome、MC_MoveDirectAbsolute/Relative、MC_GroupInterrupt/
-Continue、MC_GroupSetOverride、MC_PathSelect/MC_MovePath（路径表）、
-MC_SetKinTransform/MC_ReadCartesianTransform 标准 FB 形态——逐块过
-矩阵；做不做都要显式（承接或声明），终点是对照表零空格。
+- **Part 4 剩余 FB**：MC_GroupHome、MC_MoveDirectAbsolute/Relative、
+  MC_GroupInterrupt/Continue、MC_GroupSetOverride、MC_PathSelect/
+  MC_MovePath（路径表）、MC_SetKinTransform/MC_ReadCartesianTransform
+  标准形态——逐块过矩阵；
+- **Part 5 回零规程**（2026-07-07 维护者对账补入）：MC_StepAbsSwitch/
+  MC_StepLimitSwitch/MC_StepRefPulse/MC_StepBlock 等标准回零步 FB
+  ——现状仅 v0.x 承接的 home_direct 口径，标准规程面缺失；纯软件可
+  验收（开关/脉冲信号经数字输入通道模拟）；
+- **Part 3 用户指南**：非 FB 面——作为 Z3 文档站教程的场景组织参照；
+- **显式门控**（进 VISION 解锁表）：Part 6 液压扩展（等行业信号）、
+  PLCopen Safety FB 族（无认证的安全 FB 实现价值存疑，边界同商用级
+  #8）、PLCopen XML/TC6（随层 4 编辑器）、SFC（随 ST/层 2）。
+
+做不做都要显式（承接或声明/门控），终点是全 Part 对照零留白。
 
 ## Z 系列：采纳（门廊，不装修想象中的房间）
 
