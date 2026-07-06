@@ -36,7 +36,7 @@
 > **规划先行（2026-07-06 维护者定调"先规划设计，不急写代码"）**：
 > 难点分析 long-term-plan T13-T22、设计总图
 > [priority-tracks-design](../design/core/priority-tracks-design.md)、
-> 架构裁决 ADR-0005/0006（草案待裁）。实现在设计与裁决收口后启动。
+> 架构裁决 ADR-0005/0006 均 Accepted（0006 的 GPL 分发口径待人核验）。实现在里程碑接续时启动。
 
 ### H 轨：人形机器人（确定性关节执行层的补全）
 
@@ -169,7 +169,7 @@ LD/FBD/SFC 图形画布、HMI、TC6-XML 工程交换、cam 表图形编辑器。
 | Z1/Z3 信号通道细案 | [signal-channel-plan.md](signal-channel-plan.md) | 已拉进当前里程碑并行项 4b |
 | 对抗性探测轮 | `.claude/skills/plcopen-adversarial-probe` | 已固化为技能 |
 | Y0 oracle | [otg-oracle-design.md](../design/core/otg-oracle-design.md) | 设计已备（测试层免批） |
-| ST 运行时（预研） | [st-runtime-design.md](../design/core/st-runtime-design.md) | 设计已备；解锁排位待维护者裁决（选项 A：扎实化收口后的下一里程碑主项 / 选项 B：维持用户信号门） |
+| ST 运行时 | [st-runtime-design.md](../design/core/st-runtime-design.md) | 已裁决选项 A：L 系列为扎实化收口后的下一里程碑主项 |
 
 ## 推荐起手（待复盘拍板）
 

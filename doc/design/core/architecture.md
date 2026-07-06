@@ -124,7 +124,7 @@ sequenceDiagram
 
 ---
 
-## 实现现状（2026-07-05，Phase B 纯软件收口）
+## 实现现状（2026-07-07，X 系列收口；本表随批次收口更新，漂移即缺陷）
 
 图 1-4 的蓝图已全部落为实现；层 → 目录 → 边界编号对照：
 
@@ -133,14 +133,18 @@ sequenceDiagram
 | L0 | `core/rt` | 周期时间域、定长容器、SPSC、错误码 | — |
 | L1 | `core/otg` | 时间最优 jerk-limited 求解器（任意初速/非零初始加速度、鼓包域分支修复、估计锚定候选） | KB-026/034 |
 | L2 | `core/geom` | 直线/三点圆弧/Bezier、刚体帧（绕 Z + 完整 RPY 原语）、弧长表 | KB-030/036 |
-| L3 | `core/plan` `core/stream` `core/kin` | 路径缓冲、前瞻窗口（jerk 精确可达扫描）、blending 决策；轨迹流滤波（B9）；kinematics ABI + 龙门/SCARA/6R（预集成） | KB-031/032/033/035/037/039/041 |
-| L4 | `core/exec` | 周期采样、gear/cam（C0 + C2 样条重建、在线换表）、叠加 | KB-038 |
-| L5 | `core/axis` | 单轴/组状态机、共享路径、坐标系栈、kinematics 级联、双空间限速、流会话 | KB-035/036/037/041 |
-| L6 | `core/fb` | Part 1/2 全量 + Part 4 线性/圆弧/blending 门面 | 矩阵 45/45 |
+| L3 | `core/plan` `core/stream` `core/kin` | 路径缓冲、前瞻窗口（jerk 精确可达扫描）、blending 决策；轨迹流滤波（B9）；kinematics ABI + 龙门/SCARA/6R + 腕奇异带通过 | KB-031/032/033/035/037/039/041/045 |
+| L4 | `core/exec` | 周期采样、gear/cam（C0 + C2 样条重建、在线换表）、cam 运动规律生成器、叠加 | KB-038/046 |
+| L5 | `core/axis` | 单轴/组状态机、共享路径、坐标系栈、kinematics 级联、双空间限速、流会话、姿态编程面、笛卡尔管线（直线/圆弧/blending/前瞻窗口，插值空间选入）、回读面、窗口深度可配 | KB-035~037/041~044/047~050 |
+| L6 | `core/fb` | Part 1/2 全量 + Part 4 线性/圆弧/blending 门面 + 回读 FB 承接 | 矩阵 45/45 |
 | L7 | `core/adapters` | Servo 接口/桥接/ServoSim（ADR-0004）、CiA402、CSP/CSV/CST 骨架 | KB-040 |
 
-图 3 的 seqlock 快照与图 4 的规划域低优先级唤醒属参考 executor 形态（B7，
-待硬件阶段）；库内以显式 `cycle()` 与快照读取承载同一合同。各模块详细
+**已知开放缺陷**：KB-051 组 aborting 接管速度断崖（修复矩阵
+[group-takeover-semantics](../../compliance/group-takeover-semantics.md) 待批，Y7 队列第一位）。
+
+图 3 的 seqlock 快照与图 4 的规划域低优先级唤醒已有参考 executor 软件
+形态（X3，`core/demo/rt_executor_demo.cpp`，ServoSim 闭环）；硬件对接
+待 B7。库内以显式 `cycle()` 与快照读取承载同一合同。各模块详细
 设计随码维护在 `core/*/README.md`（设计文档「随码写」原则）。
 
 ## 维护规则
