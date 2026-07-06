@@ -148,6 +148,31 @@ assert axis.stream_dropouts() == 1
 assert abs(axis.command_velocity()) < 1e-9
 axis.stream_disengage()
 assert axis.status() == pyplcopen.AxisStatus.STANDSTILL
+
+# Pose surface (KB-042/043/044): TCP pose command over a Cartesian line,
+# then read back in the same frame.
+arm = pyplcopen.PoseArmSim()
+arm.move_joints([0.3, 0.6, 1.0, -0.4, 0.9, 0.2], 0.05, 0.004, 0.004, 0.004)
+arm.move_pose(0.35, 0.15, 0.55, 0.3, -0.5, 1.2, 0.01, 0.002, 0.002, 0.002,
+              cartesian=True)
+pose, gimbal = arm.read_pose()
+assert not gimbal
+for got, want in zip(pose, [0.35, 0.15, 0.55, 0.3, -0.5, 1.2]):
+    assert abs(got - want) < 1e-6
+
+# Cam law generator (KB-046) and the CSV convention round trip.
+table = pyplcopen.generate_cam_law("modified_sine", 6.2832, 0.5, 33)
+assert len(table) == 33
+assert abs(table[-1][1] - 0.5) < 1e-9
+import os, tempfile
+cam_path = os.path.join(tempfile.gettempdir(), "pyplcopen_cam_smoke.csv")
+with open(cam_path, "w") as handle:
+    handle.write("# master,slave" + chr(10))
+    for master, slave in table:
+        handle.write(repr(master) + "," + repr(slave) + chr(10))
+loaded = pyplcopen.load_cam_table_csv(cam_path)
+assert len(loaded) == 33
+assert abs(loaded[-1][1] - 0.5) < 1e-9
 ]=])
     add_test(NAME pyplcopen_smoke COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/pyplcopen_smoke_$<CONFIG>.py)
   endif()
