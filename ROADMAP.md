@@ -15,9 +15,9 @@ sprint 记录）在 [doc/archive/roadmap-history.md](doc/archive/roadmap-history
 |---|------|-----|------|
 | 1 | Y7 组接管连续性修复 | KB-051 按矩阵修复，组接管成员速度步进 ≤ 包络 | 矩阵已起草待批 |
 | 2 | **对抗性探测轮**（拷问后提位：新 FB 不建在可能有暗伤的地基上） | 组/FB 语义面系统扫描，发现即 KB/修复 | 方法已验证（KB-051） |
-| 3 | P-Part4 剩余 FB | 管理组矩阵已起草待批；路径表/KinTransform 第二批 | 矩阵已起草待批 |
+| 3 | P-Part4 剩余 FB | 管理组矩阵 + 路径表/变换第二批矩阵均已起草待批 | 两份矩阵待批 |
 | 4 | P-Part5 回零规程 | MC_Step* 标准回零步 FB 面（数字输入通道模拟验收） | 矩阵已起草待批 |
-| 4b | **信号通道并行项**（拷问后拉入：学习不等建造） | T1 pip wheel + 最小文档站起步——最大未知数（有没有人用）的首个实验 | 可并行 |
+| 4b | **信号通道并行项**（拷问后拉入：学习不等建造） | T1 pip wheel + 最小文档站起步——细案见 [signal-channel-plan](doc/planning/signal-channel-plan.md) | 方案已备，可并行 |
 | 5 | E 系列证据 | ARM64 CI + clang-tidy 零 P0 + 变异分数门 | 快批可穿插 |
 | 6 | Y0 最优性 oracle | 双 oracle 落地，excess_cycles 分域基线入趋势 | 设计已备 |
 | 7 | 台架采购决策 | 下单或共建协议（S1 之门，与本里程碑并行） | **人工** |
