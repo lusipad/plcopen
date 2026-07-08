@@ -107,6 +107,11 @@ if(BUILD_TESTING AND PLCOPEN_BUILD_CORE_TESTS)
     plcopen_core_rt_compile_options(plcopen_core_a5_lookahead_tests)
     add_test(NAME plcopen_core_a5_lookahead_tests COMMAND plcopen_core_a5_lookahead_tests)
 
+    add_executable(plcopen_core_y7_group_takeover_tests test/y7_group_takeover_tests.cpp)
+    target_link_libraries(plcopen_core_y7_group_takeover_tests PRIVATE plcopen::core)
+    plcopen_core_rt_compile_options(plcopen_core_y7_group_takeover_tests)
+    add_test(NAME plcopen_core_y7_group_takeover_tests COMMAND plcopen_core_y7_group_takeover_tests)
+
     add_executable(plcopen_core_stream_tests test/stream_filter_tests.cpp)
     target_link_libraries(plcopen_core_stream_tests PRIVATE plcopen::core)
     plcopen_core_rt_compile_options(plcopen_core_stream_tests)
