@@ -4226,37 +4226,16 @@ private:
         return std::sqrt(area) / (norm1 * std::sqrt(norm1));
     }
 
-    int domain_id_ = 0;
-    GroupStatus status_ = GroupStatus::disabled;
-    geom::RigidTransform workpiece_frame_{};
-    geom::Vec3 tool_offset_{};
-    geom::RigidTransform pose_tool_{};
-    geom::RigidTransform pose_tool_inverse_{};
-    double workpiece_frame_rpy_[6] = {};
-    double tool_transform_rpy_[6] = {};
     const kin::PoseKinematics *pose_kinematics_ = nullptr;
     double pose_min_margin_ = 0.0;
     double pose_max_joint_step_ = 0.0;
     const kin::Kinematics *kinematics_ = nullptr;
     double kinematics_min_margin_ = 0.0;
     double cartesian_velocity_limit_ = 0.0;
-    rt::StaticVector<AxisModel *, MaxAxes> axes_{};
-    rt::StaticVector<GroupCommand, QueueCapacity> queue_{};
-    GroupCommand active_command_{};
-    std::array<double, MaxAxes> active_start_{};
-    std::array<double, MaxAxes> active_finish_{};
-    GroupPathKind active_kind_ = GroupPathKind::linear;
-    CartesianSegment active_cart_{};
-    double cart_joints_[MaxAxes] = {};
-    rt::ErrorCode last_cartesian_error_ = rt::ErrorCode::ok;
-    rt::StaticVector<CartPiece, CartWindowPieces> cart_window_{};
-    bool cart_window_active_ = false;
-    bool cart_window_stopping_ = false;
     std::size_t cart_piece_index_ = 0;
     std::int64_t cart_piece_tick_ = 0;
     std::int64_t cart_halt_tick_ = 0;
     std::int64_t cart_halt_duration_ = 0;
-    otg::Profile1D cart_halt_profile_{};
     double cart_halt_origin_ = 0.0;
     double cart_halt_piece_offset_ = 0.0;
     double cart_window_entry_v_ = 0.0;
@@ -4264,50 +4243,64 @@ private:
     double cart_window_acc_ = 0.0;
     double cart_window_dec_ = 0.0;
     double cart_window_jerk_ = 0.0;
-    double cart_tail_joints_[MaxAxes] = {};
-    double cart_window_joints_[MaxAxes] = {};
-    std::uint32_t cart_window_last_id_ = 0;
-    geom::ArcSegment active_arc_{};
-    rt::StaticVector<WindowSegment, WindowCapacity> window_{};
     std::size_t window_depth_ = WindowCapacity;
-    bool window_active_ = false;
-    bool window_in_curve_ = false;
-    bool window_stop_ = false;
     std::size_t window_index_ = 0;
     std::int64_t window_tick_ = 0;
-    otg::Profile1D window_stop_profile_{};
     double window_stop_origin_ = 0.0;
-    otg::State1D window_seed_state_{};
-    std::uint32_t last_blend_degraded_id_ = 0;
-    otg::Profile1D active_profile_{};
     double active_path_length_ = 0.0;
     std::int64_t active_tick_ = 0;
     std::int64_t active_duration_ = 1;
-    std::uint32_t next_command_id_ = 1;
-    bool active_ = false;
-
-    // Y7 takeover connector (KB-051 fix): velocity-continuous group aborting
-    // takeover via tolerance-tube decomposition. The lateral residual velocity
-    // decays to zero via an independent profile; the along-path profile uses
-    // beta-split limits during the connector.
-    bool connector_active_ = false;
-    otg::Profile1D connector_lateral_profile_{};
-    std::array<double, MaxAxes> connector_lateral_dir_{};
     std::int64_t connector_duration_ = 0;
     double connector_r_tube_ = 0.0;
+    double group_override_ = 1.0;
+    double interrupt_ratio_ = 0.0;
+    geom::Vec3 tool_offset_{};
+    otg::State1D window_seed_state_{};
+    double workpiece_frame_rpy_[6] = {};
+    double tool_transform_rpy_[6] = {};
+    std::array<double, MaxAxes> active_start_{};
+    std::array<double, MaxAxes> active_finish_{};
+    double cart_joints_[MaxAxes] = {};
+    double cart_tail_joints_[MaxAxes] = {};
+    double cart_window_joints_[MaxAxes] = {};
+    std::array<double, MaxAxes> connector_lateral_dir_{};
     std::array<double, MaxAxes> takeover_velocity_{};
     std::array<double, MaxAxes> takeover_acceleration_{};
+    rt::StaticVector<AxisModel *, MaxAxes> axes_{};
+    geom::RigidTransform workpiece_frame_{};
+    geom::RigidTransform pose_tool_{};
+    geom::RigidTransform pose_tool_inverse_{};
+    geom::ArcSegment active_arc_{};
+    CartesianSegment active_cart_{};
+    GroupCommand active_command_{};
+    otg::Profile1D cart_halt_profile_{};
+    otg::Profile1D window_stop_profile_{};
+    otg::Profile1D active_profile_{};
+    otg::Profile1D connector_lateral_profile_{};
+    rt::StaticVector<GroupCommand, QueueCapacity> queue_{};
+    rt::StaticVector<CartPiece, CartWindowPieces> cart_window_{};
+    rt::StaticVector<WindowSegment, WindowCapacity> window_{};
+    int domain_id_ = 0;
+    GroupStatus status_ = GroupStatus::disabled;
+    GroupPathKind active_kind_ = GroupPathKind::linear;
+    rt::ErrorCode last_cartesian_error_ = rt::ErrorCode::ok;
+    std::uint32_t cart_window_last_id_ = 0;
+    std::uint32_t last_blend_degraded_id_ = 0;
+    std::uint32_t next_command_id_ = 1;
+    std::uint32_t direct_command_id_ = 0;
+    bool cart_window_active_ = false;
+    bool cart_window_stopping_ = false;
+    bool window_active_ = false;
+    bool window_in_curve_ = false;
+    bool window_stop_ = false;
+    bool active_ = false;
+    bool connector_active_ = false;
     bool has_takeover_velocity_ = false;
-
-    // Part 4 management extensions.
-    double group_override_ = 1.0;
     bool override_paused_ = false;
     bool interrupting_ = false;
     bool interrupted_plain_ = false;
     bool interrupted_window_ = false;
-    double interrupt_ratio_ = 0.0;
     bool direct_active_ = false;
-    std::uint32_t direct_command_id_ = 0;
 };
 
 } // namespace plcopen::core::axis
