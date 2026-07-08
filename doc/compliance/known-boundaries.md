@@ -89,4 +89,8 @@
 
 - `KB-065`：Y3 TOPP-RA executor 集成——规划域到执行域桥接（算法合同 §3）：实现 `topp_executor.h` 将 TOPP 规划域求解器（返回 optimal_time）桥接到 RT 执行域（需要整数周期 Profile1D）。管线：(1) TOPP solver → ToppVelocityProfile（sdot² 网格 + 最优时间）；(2) effective_scalar_limits（中点切矢投影，per-axis → 标量 1D 限值）；(3) max(ceil(T_topp), T_scalar_min) 量化（保证 solve_fixed_time 可行——TOPP L1 不含 jerk，标量 OTG 含 jerk，T_topp 可能 < T_scalar_min）；(4) solve_fixed_time → Profile1D；(5) verify_joint_limits 后验采样检查。两条管线：plan_topp_profiled（L1 加速度限幅）和 plan_topp_profiled_jerk（L2 jerk 感知）。关键设计决策：(a) 标量 Profile1D 按路径弧长均匀分配时间（曲率不感知），TOPP 的价值是全局最优时长；(b) jerk 缺省用 a²/(v·0.01) 启发式（纯加速度 TOPP 无 jerk 信息时的保守估计）；(c) T_scalar_min 下界保证 solve_fixed_time 不会因 jerk 约束被判 infeasible。验收：7 项测试——直线端点精度、弧线向心力减速（高 v_max 使向心力约束主导）、量化上界、执行域采样正确性、jerk 感知管线、速度剖面存储完整性、弧曲率后验检查。43/43 全套通过。声明：标量 Profile1D 分配时间均匀——高曲率段的实际轴速可能低于 TOPP 最优，安全但非最优；曲率感知的分段 Profile1D 为未来优化方向。
 
+- `KB-066`：`check_cubic_phase_limits` 非对称加减速限值修复：`solve_fixed_time` 的 3-cubic/4-cubic 候选路径使用 `check_cubic_phase_limits` 做加速度限幅校验，但该函数将 `max_acceleration` 与 `max_deceleration` 取 `fmax` 合并为对称界——当两者不等时（如 accel=8, decel=4），允许减速段加速度 −7 通过校验（7 < 8），实际超出 decel 限值 4。修复：正加速查 `max_acceleration`、负加速查 `max_deceleration`，与 `within_limits` 函数一致。影响范围：`solve_fixed_time` 的短时段候选（total_cycles ≤ 20 的 3-cubic 与含预斜坡的 4-cubic）在非对称限值下可能输出超出减速限值的 Profile1D。修复后 43/43 测试通过（含 optimality oracle 随机非对称 fuzz）。
+
+- `KB-067`：`set_group_override` 窗口零 override 恢复 NaN 修复：窗口运行时 `set_group_override(0.0)` 将所有后续段 `max_velocity` 乘零；再调 `set_group_override(f>0)` 时 `f/0 = inf`，`0 × inf = NaN`，窗口速度限值全部损坏。修复：`previous == 0` 时不做比例缩放，改用 `active_command_.velocity × factor` 重建速度限值；arc 段同步重算向心力速度上界 `min(v_cmd×factor, sqrt(min(accel,decel)×R))`，由后续 `window_rebuild` 双向扫描保证动力学可行。
+
 ---

@@ -346,8 +346,10 @@ inline bool check_cubic_phase_limits(double a0, double v0, double jerk,
                                      double dur, const Limits1D &limits)
 {
     const double a_end = a0 + jerk * dur;
-    const double a_bound = std::fmax(limits.max_acceleration, limits.max_deceleration);
-    if(std::fabs(a0) > a_bound + 1e-12 || std::fabs(a_end) > a_bound + 1e-12) {
+    if(a0 > limits.max_acceleration + 1e-12 ||
+       a0 < -limits.max_deceleration - 1e-12 ||
+       a_end > limits.max_acceleration + 1e-12 ||
+       a_end < -limits.max_deceleration - 1e-12) {
         return false;
     }
     const double v_end = v0 + a0 * dur + jerk * dur * dur * 0.5;

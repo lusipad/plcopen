@@ -610,9 +610,26 @@ public:
             return rt::ErrorCode::ok;
         }
         if(window_active_ && !window_stop_) {
-            for(std::size_t s = window_index_ + 1; s < window_.size(); ++s) {
-                window_[s].limits.max_velocity =
-                    window_[s].limits.max_velocity * (factor / previous);
+            if(previous > 0.0) {
+                for(std::size_t s = window_index_ + 1; s < window_.size(); ++s) {
+                    window_[s].limits.max_velocity =
+                        window_[s].limits.max_velocity * (factor / previous);
+                }
+            } else {
+                for(std::size_t s = window_index_ + 1; s < window_.size(); ++s) {
+                    double v = active_command_.velocity * factor;
+                    if(window_[s].kind == WindowKind::arc) {
+                        const double junction = std::fmin(
+                            window_[s].limits.max_acceleration,
+                            window_[s].limits.max_deceleration);
+                        const double centripetal =
+                            std::sqrt(junction * window_[s].arc_geom.radius);
+                        if(centripetal < v) {
+                            v = centripetal;
+                        }
+                    }
+                    window_[s].limits.max_velocity = v;
+                }
             }
             if(window_index_ + 1 < window_.size()) {
                 bool late = false;
