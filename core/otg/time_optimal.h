@@ -1165,7 +1165,6 @@ inline rt::Result<Profile1D> solve_fixed_time(State1D from, Target1D to,
     }
 
     const double distance = eff.position - reduced.position;
-    const double v0 = reduced.velocity;
     const double vt = eff.velocity;
 
     // For a given cruise velocity vc, compute the total distance covered in

@@ -478,35 +478,30 @@ private:
         }
     }
 
-    StreamFilterConfig config_{};
-    otg::State1D state_{};
-    Mode mode_ = Mode::idle;
     std::int64_t now_ = 0;
-
-    bool have_target_ = false;
     double latest_position_ = 0.0;
     double latest_velocity_ = 0.0;
     std::int64_t latest_timestamp_ = 0;
-
-    bool pending_dirty_ = false;
     double pending_position_ = 0.0;
     double pending_velocity_ = 0.0;
-
-    otg::Profile1D profile_{};
-    QuinticProfile quintic_profile_{};
-    bool quintic_active_ = false;
     std::int64_t profile_tick_ = 0;
-    bool have_profile_ = false;
-
     std::int64_t extrapolation_tick_ = 0;
     double extrapolation_start_velocity_ = 0.0;
     double synthetic_position_ = 0.0;
     std::int64_t stream_interval_ = 1;
-
-    bool clamped_ = false;
+    otg::State1D state_{};
+    QuinticProfile quintic_profile_{};
+    StreamFilterConfig config_{};
+    otg::Profile1D profile_{};
+    Mode mode_ = Mode::idle;
     std::uint32_t rejected_targets_ = 0;
     std::uint32_t dropout_count_ = 0;
     std::uint32_t filter_faults_ = 0;
+    bool have_target_ = false;
+    bool pending_dirty_ = false;
+    bool quintic_active_ = false;
+    bool have_profile_ = false;
+    bool clamped_ = false;
 };
 
 } // namespace plcopen::core::stream

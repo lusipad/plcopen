@@ -182,9 +182,6 @@ int check_forward_succession()
     // After one cycle, the velocity should reflect the projected pre-takeover
     // velocity, not start from zero.
     rig.group.cycle();
-    const double post_vx = rig.x.snapshot().command_position -
-                           (rig.x.snapshot().command_position -
-                            (rig.x.snapshot().command_position - prev_x - pre_vx));
 
     // The motion should have nonzero velocity at the first cycle (not starting
     // from rest). We check that the first-cycle position step is substantial
@@ -513,7 +510,6 @@ int check_negative_projection()
     }
 
     // Reverse direction: target is behind the current position.
-    const double cur_x = rig.x.snapshot().command_position;
     if(!rig.group.submit_linear(make_abort(0.0, 0.0))) {
         return fail("negative_projection: takeover rejected");
     }
