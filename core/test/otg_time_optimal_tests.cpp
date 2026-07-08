@@ -512,6 +512,203 @@ int check_fuzz_nonzero_target(int iterations)
     return 0;
 }
 
+// --- solve_fixed_time tests ---
+
+int check_fixed_time_basic()
+{
+    const otg::Limits1D limits{3.0, 2.0, 2.0, 2.5};
+
+    // Helper: verify a fixed-time profile.
+    const auto verify_ft = [&](const char *name, otg::State1D from,
+                               otg::Target1D to, const otg::Limits1D &lim,
+                               std::int64_t target_cycles) -> int {
+        const rt::Result<otg::Profile1D> result =
+            otg::solve_fixed_time(from, to, lim, target_cycles);
+        if(!result) {
+            std::printf("FAIL %s: solve_fixed_time error=%d\n", name,
+                        static_cast<int>(result.error()));
+            return 1;
+        }
+        const otg::Profile1D &p = result.value();
+        if(p.duration_cycles() != target_cycles) {
+            std::printf("FAIL %s: duration %lld != target %lld\n", name,
+                        static_cast<long long>(p.duration_cycles()),
+                        static_cast<long long>(target_cycles));
+            return 1;
+        }
+        return verify_profile(name, p, from, to, lim);
+    };
+
+    // T = T_min: should return the optimal profile.
+    {
+        const otg::State1D from{0.0, 0.0, 0.0};
+        const otg::Target1D to{10.0, 0.0, 0.0};
+        const rt::Result<otg::Profile1D> opt =
+            otg::plan_time_optimal(from, to, limits);
+        if(!opt) return fail("opt plan failed");
+        if(verify_ft("ft-at-tmin", from, to, limits,
+                     opt.value().duration_cycles()) != 0)
+            return 1;
+    }
+
+    // T = T_min + 1: one extra cycle.
+    {
+        const otg::State1D from{0.0, 0.0, 0.0};
+        const otg::Target1D to{10.0, 0.0, 0.0};
+        const rt::Result<otg::Profile1D> opt =
+            otg::plan_time_optimal(from, to, limits);
+        if(!opt) return fail("opt plan failed");
+        if(verify_ft("ft-tmin-plus-1", from, to, limits,
+                     opt.value().duration_cycles() + 1) != 0)
+            return 1;
+    }
+
+    // T = 2 * T_min: double the optimal time (single quintic likely works).
+    {
+        const otg::State1D from{0.0, 0.0, 0.0};
+        const otg::Target1D to{10.0, 0.0, 0.0};
+        const rt::Result<otg::Profile1D> opt =
+            otg::plan_time_optimal(from, to, limits);
+        if(!opt) return fail("opt plan failed");
+        if(verify_ft("ft-double-tmin", from, to, limits,
+                     2 * opt.value().duration_cycles()) != 0)
+            return 1;
+    }
+
+    // Nonzero target velocity.
+    {
+        const otg::State1D from{0.0, 0.0, 0.0};
+        const otg::Target1D to{20.0, 2.0, 0.0};
+        const rt::Result<otg::Profile1D> opt =
+            otg::plan_time_optimal(from, to, limits);
+        if(!opt) return fail("opt plan failed");
+        if(verify_ft("ft-nonzero-vt", from, to, limits,
+                     opt.value().duration_cycles() + 5) != 0)
+            return 1;
+    }
+
+    // Nonzero entry acceleration.
+    {
+        const otg::State1D from{0.0, 1.0, 1.5};
+        const otg::Target1D to{15.0, 0.0, 0.0};
+        const rt::Result<otg::Profile1D> opt =
+            otg::plan_time_optimal(from, to, limits);
+        if(!opt) return fail("opt plan failed");
+        if(verify_ft("ft-nonzero-a0", from, to, limits,
+                     opt.value().duration_cycles() + 3) != 0)
+            return 1;
+    }
+
+    // Nonzero target acceleration.
+    {
+        const otg::State1D from{0.0, 0.0, 0.0};
+        const otg::Target1D to{10.0, 1.0, 1.0};
+        const rt::Result<otg::Profile1D> opt =
+            otg::plan_time_optimal(from, to, limits);
+        if(!opt) return fail("opt plan failed");
+        if(verify_ft("ft-nonzero-at", from, to, limits,
+                     opt.value().duration_cycles() + 4) != 0)
+            return 1;
+    }
+
+    // Reverse direction.
+    {
+        const otg::State1D from{10.0, 0.0, 0.0};
+        const otg::Target1D to{0.0, 0.0, 0.0};
+        const rt::Result<otg::Profile1D> opt =
+            otg::plan_time_optimal(from, to, limits);
+        if(!opt) return fail("opt plan failed");
+        if(verify_ft("ft-reverse", from, to, limits,
+                     opt.value().duration_cycles() + 10) != 0)
+            return 1;
+    }
+
+    // T < T_min: should return infeasible.
+    {
+        const otg::State1D from{0.0, 0.0, 0.0};
+        const otg::Target1D to{10.0, 0.0, 0.0};
+        const rt::Result<otg::Profile1D> opt =
+            otg::plan_time_optimal(from, to, limits);
+        if(!opt) return fail("opt plan failed");
+        const rt::Result<otg::Profile1D> result =
+            otg::solve_fixed_time(from, to, limits,
+                                  opt.value().duration_cycles() - 1);
+        if(result) {
+            return fail("ft-too-short should be infeasible");
+        }
+    }
+
+    // Large T (10x optimal): single quintic path.
+    {
+        const otg::State1D from{0.0, 1.0, 0.0};
+        const otg::Target1D to{5.0, -1.0, 0.0};
+        const rt::Result<otg::Profile1D> opt =
+            otg::plan_time_optimal(from, to, limits);
+        if(!opt) return fail("opt plan failed");
+        if(verify_ft("ft-large-T", from, to, limits,
+                     10 * opt.value().duration_cycles()) != 0)
+            return 1;
+    }
+
+    std::printf("solve_fixed_time basic: OK\n");
+    return 0;
+}
+
+int check_fixed_time_fuzz(int iterations)
+{
+    Lcg rng{0xF1AED};
+    const otg::Limits1D limits{3.0, 2.0, 2.0, 2.5};
+
+    for(int i = 0; i < iterations; ++i) {
+        const otg::State1D from{rng.range(-10.0, 10.0), rng.range(-2.0, 2.0),
+                                rng.range(-1.8, 1.8)};
+        const double at_sign = rng.range(0.0, 1.0) > 0.5 ? 1.0 : -1.0;
+        const double at_bound =
+            at_sign > 0 ? limits.max_acceleration : limits.max_deceleration;
+        const double at = at_sign * rng.range(0.0, 0.9) * at_bound;
+        const otg::Target1D to{rng.range(-10.0, 10.0), rng.range(-2.0, 2.0),
+                                at};
+
+        const rt::Result<otg::Profile1D> opt =
+            otg::plan_time_optimal(from, to, limits);
+        if(!opt) continue;
+
+        const std::int64_t t_min = opt.value().duration_cycles();
+        const std::int64_t extra =
+            static_cast<std::int64_t>(rng.range(1.0, 30.0));
+        const std::int64_t target = t_min + extra;
+
+        const rt::Result<otg::Profile1D> result =
+            otg::solve_fixed_time(from, to, limits, target);
+        if(!result) {
+            std::printf("FAIL fuzz-ft i=%d error=%d t_min=%lld target=%lld\n",
+                        i, static_cast<int>(result.error()),
+                        static_cast<long long>(t_min),
+                        static_cast<long long>(target));
+            std::printf("  from=(%.6f,%.6f,%.6f) to=(%.6f,%.6f,%.6f)\n",
+                        from.position, from.velocity, from.acceleration,
+                        to.position, to.velocity, to.acceleration);
+            return 1;
+        }
+        if(result.value().duration_cycles() != target) {
+            std::printf("FAIL fuzz-ft i=%d duration %lld != target %lld\n", i,
+                        static_cast<long long>(result.value().duration_cycles()),
+                        static_cast<long long>(target));
+            return 1;
+        }
+        if(verify_profile("fuzz-ft", result.value(), from, to, limits) != 0) {
+            std::printf("  i=%d from=(%.6f,%.6f,%.6f) to=(%.6f,%.6f,%.6f) "
+                        "target=%lld\n",
+                        i, from.position, from.velocity, from.acceleration,
+                        to.position, to.velocity, to.acceleration,
+                        static_cast<long long>(target));
+            return 1;
+        }
+    }
+    std::printf("solve_fixed_time fuzz: %d cases\n", iterations);
+    return 0;
+}
+
 int parse_iterations(int argc, char **argv)
 {
     int iterations = 5000;
@@ -534,10 +731,12 @@ int main(int argc, char **argv)
     const int quality_iterations = iterations / 5 > 200 ? 200 : (iterations / 5 < 1 ? 1 : iterations / 5);
     if(check_fixed_cases() != 0 || check_validation() != 0 ||
        check_nonzero_target_accel_cases() != 0 || check_pin_boundary_cases() != 0 ||
+       check_fixed_time_basic() != 0 ||
        check_nonzero_target_velocity_quality() != 0 || check_bump_zone_quality() != 0 ||
        check_fuzz_bump_zone(quality_iterations) != 0 ||
        check_fuzz_nonzero_target(quality_iterations) != 0 ||
        check_fuzz_nonzero_target_accel(quality_iterations) != 0 ||
+       check_fixed_time_fuzz(quality_iterations) != 0 ||
        check_fuzz_against_baseline(iterations) != 0) {
         return 1;
     }

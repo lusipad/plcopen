@@ -53,6 +53,20 @@ Implemented:
   and the baseline `plan()` (which makes the "never slower than the baseline
   planner" promise hold by construction). Million-case fuzz: total duration
   ~73% of baseline. Planning-domain only, not the RT sample path.
+- `solve_fixed_time(from, to, limits, total_cycles)` (`time_optimal.h`, Y4 §2):
+  fixed-duration jerk-limited planning. Given total_cycles ≥ T_min, returns
+  a Profile1D of exactly that length. Three candidates compete: (1) a single
+  quintic spanning the full duration (works when T is large enough that the
+  motion stays within limits); (2) a multiphase chain reusing the zeroing
+  ramp (a₀ reduction) and targeting ramp (aₜ) from plan_time_optimal, with
+  the cruise velocity vc bisected (96 iterations, exact-rounded ramps) so
+  that entry ramp + integer cruise + exit ramp + quintic correction covers
+  the target distance in the prescribed time; (3) reverse-direction cruise
+  (overshoot-and-return, 64 bisection iterations) for cases where the
+  distance is too short for a same-direction cruise at the required duration.
+  Returns the time-optimal profile when total_cycles == T_min; returns
+  infeasible when total_cycles < T_min or when no candidate satisfies the
+  limit envelope.
 - numeric-integration oracle and randomized fuzz smoke as separate CTest
   entries (the oracle is implemented independently of the solver); the
   time-optimal suite asserts envelope, exact endpoint, per-cycle continuity,
