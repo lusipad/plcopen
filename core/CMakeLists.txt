@@ -193,6 +193,11 @@ if(BUILD_TESTING AND PLCOPEN_BUILD_CORE_TESTS)
     plcopen_core_rt_compile_options(plcopen_core_stream_session_tests)
     add_test(NAME plcopen_core_stream_session_tests COMMAND plcopen_core_stream_session_tests)
 
+    add_executable(plcopen_core_stream_fastpath_oracle test/stream_fastpath_oracle.cpp)
+    target_link_libraries(plcopen_core_stream_fastpath_oracle PRIVATE plcopen::core)
+    plcopen_core_rt_compile_options(plcopen_core_stream_fastpath_oracle)
+    add_test(NAME plcopen_core_stream_fastpath_oracle COMMAND plcopen_core_stream_fastpath_oracle)
+
     add_executable(plcopen_core_a2_alloc_guard test/a2_alloc_guard_tests.cpp)
     target_link_libraries(plcopen_core_a2_alloc_guard PRIVATE plcopen::core)
     plcopen_core_rt_compile_options(plcopen_core_a2_alloc_guard)
