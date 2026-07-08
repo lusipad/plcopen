@@ -83,4 +83,6 @@
 
 - `KB-062`：TOPP-RA Layer 2 jerk-aware 路径参数化（Y3 §3 第二层）：实现 `solve_topp_ra_jerk(path, limits[3], grid_size)` jerk 限幅路径律求解器。约束：|q_sss_i·ṡ³ + 3·q_ss_i·ṡ·s̈ + q_s_i·s⃛| ≤ j_max_i（jerk 对 s⃛ 线性）。算法架构：(1) MVC 计算（复用 Layer 1 辅助）；(2) 正向 S-curve——从起点加速，ṡ=0 奇异用时域 S-curve 公式 t=(6·ds/j_eff)^{1/3} 启动，正常步用 jerk_interval.hi 最大加速，夹紧到 MVC；(3) 减速包络——在时间反转路径（q_s'=-q_s, q_ss'=q_ss, q_sss'=-q_sss）上从终点运行同构正向 S-curve，夹紧到 MVC；(4) 逐点取 min(x_fwd, x_dec) 做梯形时间积分。关键设计决策：放弃 2D (x,a) 后向可达性 + bisection 方案（MVC 过渡处 jerk 尖峰导致后向传播崩溃），改用对称正向 S-curve 取逐点极小值——速度连续、物理上等价于经典七段 S-curve 梯形律。验收：7 项 oracle 测试——T_jerk ≥ T_layer1（jerk 只能减速）、高 jerk 收敛到 Layer 1（j=1e6 差异 < 5%）、低 jerk 更慢（j=5 vs j=50）、圆弧 jerk ≥ Layer 1、网格收敛（N=50 vs N=400 差异 < 5%）、cubic Bezier jerk ≥ Layer 1、边界条件（grid_size=1 拒绝）。声明：Layer 2 为规划域影子求解器——离散周期执行器量化待后续批次集成。
 
+- `KB-063`：TOPP-RA 影子 oracle——扫描基线对标（算法合同 §附注3 "先影子后换主"）：实现 `topp_shadow_oracle` 对 9 种场景（3 直线、3 圆弧、2 cubic Bezier、1 非对称限值直线）量化现行梯形扫描基线与 TOPP-RA L1/L2 的时间差距。基线 = 方向感知但曲率不感知的梯形律（中点切矢有效限值 v_eff/a_eff → 解析梯形时间）。scan_gap = (T_L1−T_trap)/T_L1：正值 = 扫描过于乐观（承诺不可达速度，安全隐患）；负值 = 扫描过于保守（浪费时间，TOPP 可优化）。关键发现：① 直线 gap≈0%（两者等价，验证正确性）；② 大弧/中弧 gap≈−10%（TOPP 利用 MVC 方向变化更快——扫描浪费 10% 时间）；③ 紧弧 R=0.5 gap=+9.8%（离心加速度限速，扫描忽略 → 承诺不可达速度）；④ S 形 cubic jerk_cost=+36.7%/紧弧 jerk_cost=+67%（高曲率变化段 jerk 开销显著）。结论：TOPP-RA 在大/中弧上比扫描更快，在紧弧上比扫描更安全——数据支持替换。门禁：直线 |gap|<3%、T_L2≥T_L1−ε、全解算器成功。
+
 ---
