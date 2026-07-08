@@ -921,6 +921,17 @@ public:
         return rt::ErrorCode::ok;
     }
 
+    // Part 5 homed lifecycle: Step FBs clear on start, FinishHoming sets.
+    void clear_homed()
+    {
+        snapshot_.homed = false;
+    }
+
+    void set_homed()
+    {
+        snapshot_.homed = true;
+    }
+
     // Digital IO banks. Adapters feed input levels through set_digital_input
     // and consume outputs written by the IO function blocks. The touch-probe
     // trigger channels are these digital inputs (v0.x Servo extension channel
