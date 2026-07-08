@@ -218,13 +218,15 @@ int main(int argc, char **argv)
                 period_us, total_cycles, with_load ? "8+32-axes" : "none", overruns);
     std::printf("WAKE_LATENCY_US min=%.1f avg=%.1f p99=%" PRId64 " p99.9=%" PRId64
                 " p99.99=%" PRId64 " p99.999=%" PRId64 " max=%.1f overflow=%" PRIu64 "\n",
-                wake.minimum / 1000.0, wake.count ? wake.sum / wake.count / 1000.0 : 0.0,
+                static_cast<double>(wake.minimum) / 1000.0,
+                wake.count ? static_cast<double>(wake.sum) / static_cast<double>(wake.count) / 1000.0 : 0.0,
                 wake.percentile_us(0.99), wake.percentile_us(0.999),
                 wake.percentile_us(0.9999), wake.percentile_us(0.99999),
-                wake.maximum / 1000.0, wake.overflow);
+                static_cast<double>(wake.maximum) / 1000.0, wake.overflow);
     std::printf("CYCLE_WORK_US min=%.1f avg=%.1f p99=%" PRId64 " max=%.1f\n",
-                work.minimum / 1000.0, work.count ? work.sum / work.count / 1000.0 : 0.0,
-                work.percentile_us(0.99), work.maximum / 1000.0);
+                static_cast<double>(work.minimum) / 1000.0,
+                work.count ? static_cast<double>(work.sum) / static_cast<double>(work.count) / 1000.0 : 0.0,
+                work.percentile_us(0.99), static_cast<double>(work.maximum) / 1000.0);
     // The DoD gate: p99.999 wake latency < 50 us over 72h on tuned hardware.
     delete load;
     return 0;

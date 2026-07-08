@@ -46,6 +46,7 @@ jobs:
           -DCMAKE_BUILD_TYPE=Release
           -DCMAKE_C_COMPILER=${{ matrix.cc }}
           -DCMAKE_CXX_COMPILER=${{ matrix.cxx }}
+          -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 
       - name: Build
         run: cmake --build build --parallel
@@ -55,6 +56,10 @@ jobs:
 
       - name: Print core benchmark baseline
         run: ctest --test-dir build --output-on-failure -R plcopen_core_benchmark -V
+
+      - name: clang-tidy gate (E2)
+        if: matrix.compiler == 'clang'
+        run: cmake -P cmake/clang_tidy_gate.cmake
 
       - name: Core cross-compile smoke
         if: matrix.compiler == 'gcc'
