@@ -276,11 +276,7 @@ int check_group_override_rejects_invalid()
     axis::AxisModel axes[2];
     axis::AxisGroup group = make_group(axes, 2);
 
-    rt::ErrorCode result = group.set_group_override(0.0);
-    if(result != rt::ErrorCode::invalid_argument) {
-        return fail("group_override rejects 0");
-    }
-    result = group.set_group_override(1.5);
+    rt::ErrorCode result = group.set_group_override(1.5);
     if(result != rt::ErrorCode::invalid_argument) {
         return fail("group_override rejects >1");
     }
@@ -347,9 +343,62 @@ int check_group_override_factor_zero_equivalent()
     axis::AxisModel axes[2];
     axis::AxisGroup group = make_group(axes, 2);
 
+    axis::GroupPosition target{};
+    target.size = 2;
+    target.value[0] = 200.0;
+    target.value[1] = 100.0;
+    axis::GroupCommand cmd{};
+    cmd.target = target;
+    cmd.velocity = 1.0;
+    cmd.acceleration = 0.5;
+    cmd.deceleration = 0.5;
+    cmd.jerk = 0.5;
+    group.submit_linear(cmd);
+
+    for(int i = 0; i < 20; ++i) {
+        group.cycle();
+        for(auto &ax : axes) { ax.cycle(); }
+    }
+    if(group.status() != axis::GroupStatus::moving) {
+        return fail("factor0 precondition moving");
+    }
+
     const rt::ErrorCode result = group.set_group_override(0.0);
-    if(result != rt::ErrorCode::invalid_argument) {
-        return fail("group_override factor=0 rejected");
+    if(result != rt::ErrorCode::ok) {
+        return fail("factor0 accepted");
+    }
+
+    for(int i = 0; i < 500; ++i) {
+        group.cycle();
+        for(auto &ax : axes) { ax.cycle(); }
+    }
+    if(group.status() != axis::GroupStatus::moving) {
+        return fail("factor0 stays moving");
+    }
+    const double paused_pos = axes[0].snapshot().command_position;
+
+    for(int i = 0; i < 200; ++i) {
+        group.cycle();
+        for(auto &ax : axes) { ax.cycle(); }
+    }
+    if(!near(axes[0].snapshot().command_position, paused_pos, 1e-12)) {
+        return fail("factor0 position frozen");
+    }
+
+    const rt::ErrorCode resume = group.set_group_override(1.0);
+    if(resume != rt::ErrorCode::ok) {
+        return fail("factor0 resume ok");
+    }
+    for(int i = 0; i < 50000; ++i) {
+        if(group.status() == axis::GroupStatus::standby) { break; }
+        group.cycle();
+        for(auto &ax : axes) { ax.cycle(); }
+    }
+    if(group.status() != axis::GroupStatus::standby) {
+        return fail("factor0 resume completes");
+    }
+    if(!near(axes[0].snapshot().command_position, 200.0, 1e-9)) {
+        return fail("factor0 resume final position");
     }
 
     std::printf("  PASS group_override_factor_zero_equivalent\n");

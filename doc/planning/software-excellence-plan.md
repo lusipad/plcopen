@@ -168,10 +168,10 @@ LD/FBD/SFC 图形画布、HMI、TC6-XML 工程交换、cam 表图形编辑器。
 
 | 项 | 方案文档 | 状态 |
 |----|---------|------|
-| Y7 组接管修复 | [group-takeover-semantics.md](../compliance/group-takeover-semantics.md) | 草案待批 |
-| P-Part5 回零 | [part5-homing-semantics.md](../compliance/part5-homing-semantics.md) | 草案待批 |
-| P-Part4 管理组 | [part4-management-semantics.md](../compliance/part4-management-semantics.md) | 草案待批 |
-| P-Part4 路径表/变换（第二批） | [part4-pathtable-semantics.md](../compliance/part4-pathtable-semantics.md) | 草案待批 |
+| Y7 组接管修复 | [group-takeover-semantics.md](../compliance/group-takeover-semantics.md) | **已批准并交付**（KB-051） |
+| P-Part5 回零 | [part5-homing-semantics.md](../compliance/part5-homing-semantics.md) | **已批准并交付**（25 测试） |
+| P-Part4 管理组 | [part4-management-semantics.md](../compliance/part4-management-semantics.md) | **已批准并交付**（27 测试） |
+| P-Part4 路径表/变换（第二批） | [part4-pathtable-semantics.md](../compliance/part4-pathtable-semantics.md) | **已批准并交付**（24 测试） |
 | Z1/Z3 信号通道细案 | [signal-channel-plan.md](signal-channel-plan.md) | 已拉进当前里程碑并行项 4b |
 | 对抗性探测轮 | `.claude/skills/plcopen-adversarial-probe` | 已固化为技能 |
 | **算法合同集（权威）** | [algorithm-contracts.md](../design/core/algorithm-contracts.md) | **已批准**（2026-07-07 维护者裁决，六合同 + 落地顺序） |

@@ -588,12 +588,11 @@ public:
         return rt::ErrorCode::ok;
     }
 
-    // MC_GroupSetOverride: group-level velocity factor ∈ (0,1]. Active plain
-    // segments replan from live state with scaled velocity limit; window
-    // segments apply to not-yet-started pieces only.
+    // MC_GroupSetOverride: group-level velocity factor ∈ [0,1]. factor=0
+    // freezes position (velocity target zero, group stays moving).
     rt::ErrorCode set_group_override(double factor)
     {
-        if(!std::isfinite(factor) || factor <= 0.0 || factor > 1.0) {
+        if(!std::isfinite(factor) || factor < 0.0 || factor > 1.0) {
             return rt::ErrorCode::invalid_argument;
         }
         if(status_ == GroupStatus::disabled || status_ == GroupStatus::errorstop) {
@@ -629,6 +628,39 @@ public:
         const double remaining = active_path_length_ - state.position;
         if(remaining <= 0.0) {
             return rt::ErrorCode::ok;
+        }
+        if(factor == 0.0) {
+            const double deceleration = active_command_.deceleration;
+            const double jerk = active_command_.jerk;
+            const otg::Limits1D halt_limits{active_command_.velocity,
+                                            active_command_.acceleration,
+                                            deceleration, jerk};
+            double brake_velocity = state.velocity;
+            double brake_shift = 0.0;
+            if(state.acceleration != 0.0) {
+                const double zero_cycles =
+                    std::ceil(std::fabs(state.acceleration) / jerk);
+                brake_velocity += 0.5 * state.acceleration * zero_cycles;
+                brake_shift += state.velocity * zero_cycles +
+                               state.acceleration * zero_cycles * zero_cycles / 3.0;
+            }
+            if(brake_velocity < 0.0) { brake_velocity = 0.0; }
+            const double stop_position = state.position + brake_shift +
+                otg::detail::ramp_between(brake_velocity, 0.0, halt_limits).distance;
+            const rt::Result<otg::Profile1D> profile = otg::plan_time_optimal(
+                state, {stop_position, 0.0, 0.0}, halt_limits);
+            if(!profile) {
+                group_override_ = previous;
+                return profile.error();
+            }
+            active_profile_ = profile.value();
+            active_tick_ = 0;
+            active_duration_ = active_profile_.duration_cycles();
+            override_paused_ = true;
+            return rt::ErrorCode::ok;
+        }
+        if(override_paused_) {
+            override_paused_ = false;
         }
         const otg::Limits1D limits{active_command_.velocity * factor,
                                    active_command_.acceleration,
@@ -3099,6 +3131,9 @@ private:
 
     void finish_active()
     {
+        if(override_paused_) {
+            return;
+        }
         if(interrupting_) {
             const otg::State1D state =
                 otg::sample(active_profile_, rt::CycleTick::from_cycles(active_tick_));
@@ -3134,6 +3169,7 @@ private:
         active_ = false;
         connector_active_ = false;
         direct_active_ = false;
+        override_paused_ = false;
         interrupting_ = false;
         interrupted_plain_ = false;
         interrupted_window_ = false;
@@ -4222,6 +4258,7 @@ private:
 
     // Part 4 management extensions.
     double group_override_ = 1.0;
+    bool override_paused_ = false;
     bool interrupting_ = false;
     bool interrupted_plain_ = false;
     bool interrupted_window_ = false;
