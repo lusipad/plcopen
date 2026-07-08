@@ -281,13 +281,102 @@ int check_emergency_stop()
     return 0;
 }
 
+int check_probe_error_paths()
+{
+    // FbTouchProbe: null axis
+    {
+        fb::FbTouchProbe probe;
+        probe.execute = true;
+        probe.call();
+        if(!probe.outputs.error || probe.outputs.error_id != rt::ErrorCode::invalid_argument) {
+            return fail("touch probe null axis");
+        }
+    }
+
+    // FbTouchProbe: execute=false clears
+    {
+        fb::FbTouchProbe probe;
+        probe.execute = false;
+        probe.call();
+        if(probe.outputs.busy || probe.outputs.error || probe.recorded_position != 0.0) {
+            return fail("touch probe execute=false");
+        }
+    }
+
+    // FbAbortTrigger: null axis
+    {
+        fb::FbAbortTrigger abort;
+        abort.execute = true;
+        abort.call();
+        if(!abort.outputs.error || abort.outputs.error_id != rt::ErrorCode::invalid_argument) {
+            return fail("abort trigger null axis");
+        }
+    }
+
+    // FbAbortTrigger: execute=false, non-rising hold
+    {
+        axis::AxisModel axis;
+        axis.set_power(true);
+        fb::FbAbortTrigger abort;
+        abort.axis_ref = &axis;
+        abort.execute = false;
+        abort.call();
+        if(abort.outputs.done || abort.outputs.error) {
+            return fail("abort trigger execute=false");
+        }
+        abort.execute = true;
+        abort.call();
+        if(!abort.outputs.done) {
+            return fail("abort trigger rising");
+        }
+        abort.call();
+        if(!abort.outputs.done) {
+            return fail("abort trigger non-rising keeps outputs");
+        }
+        abort.execute = false;
+        abort.call();
+        if(abort.outputs.done || abort.outputs.error) {
+            return fail("abort trigger execute=false clears");
+        }
+    }
+
+    // FbEmergencyStop: execute=false, non-rising hold
+    {
+        axis::AxisModel axis;
+        axis.set_power(true);
+        fb::FbEmergencyStop stop;
+        stop.axis_ref = &axis;
+        stop.execute = false;
+        stop.call();
+        if(stop.outputs.done || stop.outputs.error) {
+            return fail("estop execute=false");
+        }
+        stop.execute = true;
+        stop.call();
+        if(!stop.outputs.done) {
+            return fail("estop rising");
+        }
+        stop.call();
+        if(!stop.outputs.done) {
+            return fail("estop non-rising keeps outputs");
+        }
+        stop.execute = false;
+        stop.call();
+        if(stop.outputs.done || stop.outputs.error) {
+            return fail("estop execute=false clears");
+        }
+    }
+
+    return 0;
+}
+
 } // namespace
 
 int main()
 {
     if(check_touch_probe_capture() != 0 || check_abort_trigger() != 0 ||
        check_independent_probes() != 0 || check_window_only() != 0 ||
-       check_emergency_stop() != 0) {
+       check_emergency_stop() != 0 || check_probe_error_paths() != 0) {
         return 1;
     }
     std::printf("PASS r3 probe tests\n");

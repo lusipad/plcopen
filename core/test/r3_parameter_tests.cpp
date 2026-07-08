@@ -337,12 +337,152 @@ int check_set_position()
     return 0;
 }
 
+int check_fb_error_paths()
+{
+    axis::AxisModel axis;
+    axis::MotionLimits limits{};
+    limits.max_velocity = 10.0;
+    limits.max_acceleration = 10.0;
+    limits.max_deceleration = 10.0;
+    limits.max_jerk = 10.0;
+    axis.configure_limits(limits);
+    axis.set_power(true);
+
+    // FbReadBoolParameter: enable=false clears outputs
+    {
+        fb::FbReadBoolParameter rb;
+        rb.axis_ref = &axis;
+        rb.parameter_number = axis::AxisParameter::enable_limit_pos;
+        rb.enable = false;
+        rb.call();
+        if(rb.valid || rb.error || rb.value) {
+            return fail("read bool enable=false");
+        }
+    }
+    // FbReadBoolParameter: null axis
+    {
+        fb::FbReadBoolParameter rb;
+        rb.enable = true;
+        rb.call();
+        if(!rb.error || rb.error_id != rt::ErrorCode::invalid_argument) {
+            return fail("read bool null axis");
+        }
+    }
+
+    // FbWriteBoolParameter: execute=false clears, non-rising hold
+    {
+        fb::FbWriteBoolParameter wb;
+        wb.axis_ref = &axis;
+        wb.parameter_number = axis::AxisParameter::enable_limit_pos;
+        wb.value = true;
+        wb.execute = false;
+        wb.call();
+        if(wb.done || wb.error) {
+            return fail("write bool execute=false");
+        }
+        wb.execute = true;
+        wb.call();
+        if(!wb.done) {
+            return fail("write bool rising edge");
+        }
+        wb.call();
+        if(!wb.done) {
+            return fail("write bool non-rising hold keeps outputs");
+        }
+        wb.execute = false;
+        wb.call();
+        if(wb.done || wb.error) {
+            return fail("write bool execute=false clears");
+        }
+    }
+    // FbWriteBoolParameter: null axis
+    {
+        fb::FbWriteBoolParameter wb;
+        wb.value = true;
+        wb.execute = true;
+        wb.call();
+        if(!wb.error || wb.error_id != rt::ErrorCode::invalid_argument) {
+            return fail("write bool null axis");
+        }
+    }
+
+    // FbWriteParameter: null axis
+    {
+        fb::FbWriteParameter wp;
+        wp.value = 1.0;
+        wp.execute = true;
+        wp.call();
+        if(!wp.error || wp.error_id != rt::ErrorCode::invalid_argument) {
+            return fail("write param null axis");
+        }
+    }
+
+    // SnapshotValueReadFb (via FbReadActualPosition): enable=false
+    {
+        fb::FbReadActualPosition ap;
+        ap.axis_ref = &axis;
+        ap.enable = false;
+        ap.call();
+        if(ap.valid || ap.error) {
+            return fail("actual pos enable=false");
+        }
+    }
+    // SnapshotValueReadFb: null axis
+    {
+        fb::FbReadActualPosition ap;
+        ap.enable = true;
+        ap.call();
+        if(!ap.error || ap.error_id != rt::ErrorCode::invalid_argument) {
+            return fail("actual pos null axis");
+        }
+    }
+
+    // FbReadStatus: enable=false, null axis
+    {
+        fb::FbReadStatus st;
+        st.enable = false;
+        st.call();
+        if(st.valid || st.error) {
+            return fail("status enable=false");
+        }
+        st.enable = true;
+        st.call();
+        if(!st.error || st.error_id != rt::ErrorCode::invalid_argument) {
+            return fail("status null axis");
+        }
+    }
+
+    // FbReadAxisError: enable=false
+    {
+        fb::FbReadAxisError ae;
+        ae.enable = false;
+        ae.call();
+        if(ae.valid || ae.error || ae.axis_error) {
+            return fail("axis error enable=false");
+        }
+    }
+
+    // FbSetPosition: null axis
+    {
+        fb::FbSetPosition sp;
+        sp.position = 0.0;
+        sp.execute = true;
+        sp.call();
+        if(!sp.outputs.error) {
+            return fail("set position null axis");
+        }
+    }
+
+    return 0;
+}
+
 } // namespace
 
 int main()
 {
     if(check_parameter_registry() != 0 || check_parameter_facades() != 0 ||
-       check_state_read_facades() != 0 || check_set_position() != 0) {
+       check_state_read_facades() != 0 || check_set_position() != 0 ||
+       check_fb_error_paths() != 0) {
         return 1;
     }
     std::printf("PASS r3 parameter tests\n");

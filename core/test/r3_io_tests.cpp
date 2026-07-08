@@ -330,12 +330,123 @@ int check_read_motion_state()
     return 0;
 }
 
+int check_io_error_paths()
+{
+    axis::AxisModel axis;
+    axis.set_power(true);
+
+    // FbReadDigitalInput: null axis
+    {
+        fb::FbReadDigitalInput di;
+        di.enable = true;
+        di.call();
+        if(!di.error || di.error_id != rt::ErrorCode::invalid_argument) {
+            return fail("read digital input null axis");
+        }
+    }
+
+    // FbReadDigitalOutput: enable=false, null axis, unsupported channel
+    {
+        fb::FbReadDigitalOutput ro;
+        ro.axis_ref = &axis;
+        ro.enable = false;
+        ro.call();
+        if(ro.valid || ro.error || ro.value) {
+            return fail("read digital output enable=false");
+        }
+        ro.enable = true;
+        ro.axis_ref = nullptr;
+        ro.call();
+        if(!ro.error || ro.error_id != rt::ErrorCode::invalid_argument) {
+            return fail("read digital output null axis");
+        }
+        ro.axis_ref = &axis;
+        ro.output_number = 99;
+        ro.call();
+        if(!ro.error || ro.error_id != rt::ErrorCode::unsupported) {
+            return fail("read digital output unsupported");
+        }
+    }
+
+    // FbWriteDigitalOutput: null axis, non-rising hold
+    {
+        fb::FbWriteDigitalOutput wo;
+        wo.execute = true;
+        wo.call();
+        if(!wo.error || wo.error_id != rt::ErrorCode::invalid_argument) {
+            return fail("write digital output null axis");
+        }
+        wo.axis_ref = &axis;
+        wo.execute = false;
+        wo.call();
+        wo.execute = true;
+        wo.call();
+        if(!wo.done) {
+            return fail("write digital output rising");
+        }
+        wo.call();
+        if(!wo.done) {
+            return fail("write digital output non-rising hold");
+        }
+    }
+
+    // FbDigitalCamSwitch: null axis
+    {
+        fb::FbDigitalCamSwitch cs;
+        cs.enable = true;
+        cs.call();
+        if(!cs.error || cs.error_id != rt::ErrorCode::invalid_argument) {
+            return fail("cam switch null axis");
+        }
+    }
+
+    // FbDigitalCamSwitch: periodic window with negative position wrapping
+    {
+        fb::FbDigitalCamSwitch cs;
+        cs.axis_ref = &axis;
+        cs.output_number = 0;
+        cs.on_position = 1.0;
+        cs.off_position = 3.0;
+        cs.period = 4.0;
+        cs.enable = true;
+        axis.set_position(-2.5);
+        cs.call();
+        if(!cs.valid || !cs.value) {
+            return fail("cam switch negative position wraps into window");
+        }
+    }
+
+    // FbReadAxisInfo: null axis
+    {
+        fb::FbReadAxisInfo info;
+        info.enable = true;
+        info.call();
+        if(!info.error || info.error_id != rt::ErrorCode::invalid_argument) {
+            return fail("read axis info null axis");
+        }
+    }
+
+    // FbReadMotionState: enable=false
+    {
+        fb::FbReadMotionState ms;
+        ms.axis_ref = &axis;
+        ms.enable = false;
+        ms.call();
+        if(ms.valid || ms.error) {
+            return fail("motion state enable=false");
+        }
+    }
+
+    return 0;
+}
+
 } // namespace
 
 int main()
 {
     if(check_digital_io() != 0 || check_digital_cam_switch() != 0 ||
-       check_read_axis_info() != 0 || check_read_motion_state() != 0) {
+       check_read_axis_info() != 0 || check_read_motion_state() != 0 ||
+       check_io_error_paths() != 0) {
         return 1;
     }
     std::printf("PASS r3 io tests\n");

@@ -21,7 +21,7 @@ sprint 记录）在 [doc/archive/roadmap-history.md](doc/archive/roadmap-history
 | 5a | P-Part4 剩余 FB | 管理组矩阵 + 路径表/变换第二批矩阵均已起草待批 | 两份矩阵待批 |
 | 5b | P-Part5 回零规程 | MC_Step* 标准回零步 FB 面（数字输入通道模拟验收） | 矩阵已起草待批 |
 | 4b | **信号通道并行项**（拷问后拉入：学习不等建造） | T1 pip wheel + 最小文档站起步——细案见 [signal-channel-plan](doc/planning/signal-channel-plan.md) | 方案已备，可并行 |
-| 6 | E 系列证据 | ARM64 CI + clang-tidy 零 P0 + 变异分数门 | **E1 ARM64 CI + E2 clang-tidy + E3 变异分数门已交付**（aarch64 交叉编译 + QEMU 测试 job、.clang-tidy 38 文件零 P0、18 突变 100% 击杀 ≥70% 门）；E4 覆盖率 90% 待后续 |
+| 6 | E 系列证据 | ARM64 CI + clang-tidy 零 P0 + 变异分数门 | **E1-E4 全部交付**（aarch64 交叉编译 + QEMU 测试 job、.clang-tidy 38 文件零 P0、18 突变 100% 击杀 ≥70% 门、90.1% 行覆盖率 ≥90% 门） |
 | 7 | 台架采购决策 | 下单或共建协议（S1 之门，与本里程碑并行） | **人工** |
 | 8 | 72h soak 回写 | 2026-07-09 结果回写 DoD 表 | 定时 |
 | 9 | Part 4 原文核对 | 坐标矩阵 3 项线下核实 | 人工 |

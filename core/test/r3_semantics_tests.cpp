@@ -542,6 +542,107 @@ int check_cyclic_power_keeps_motion()
     return 0;
 }
 
+int check_basic_fb_edge_cases()
+{
+    using namespace plcopen::core;
+
+    // TimerBase::set_cycle_time rejects zero and negative
+    {
+        fb::TON ton;
+        if(ton.set_cycle_time(0) || ton.set_cycle_time(-1)) {
+            return fail("timer set_cycle_time rejects non-positive");
+        }
+    }
+
+    // TON with pt==0: immediate output
+    {
+        fb::TON ton;
+        ton.pt = 0;
+        ton.in = true;
+        ton.cycle();
+        if(!ton.q || ton.et != 0) {
+            return fail("ton pt=0 immediate");
+        }
+    }
+
+    // TOF with pt==0: immediate clear
+    {
+        fb::TOF tof;
+        tof.in = true;
+        tof.cycle();
+        tof.in = false;
+        tof.pt = 0;
+        tof.cycle();
+        if(tof.q || tof.et != 0) {
+            return fail("tof pt=0 immediate clear");
+        }
+    }
+
+    // CTUD: reset, load, down count
+    {
+        fb::CTUD ctud;
+        ctud.pv = 5;
+        ctud.cycle();
+        ctud.cu = true;
+        ctud.cycle();
+        if(ctud.cv != 1) {
+            return fail("ctud initial up");
+        }
+        ctud.cu = false;
+        ctud.cycle();
+        ctud.cu = true;
+        ctud.cycle();
+        if(ctud.cv != 2) {
+            return fail("ctud second up");
+        }
+
+        // Load
+        ctud.cu = false;
+        ctud.load = true;
+        ctud.cycle();
+        if(ctud.cv != 5) {
+            return fail("ctud load");
+        }
+        ctud.load = false;
+
+        // Down count
+        ctud.cd = true;
+        ctud.cycle();
+        if(ctud.cv != 4) {
+            return fail("ctud down");
+        }
+
+        // Reset
+        ctud.cd = false;
+        ctud.reset = true;
+        ctud.cycle();
+        if(ctud.cv != 0) {
+            return fail("ctud reset");
+        }
+    }
+
+    // RTC: overflow clamping
+    {
+        fb::RTC rtc;
+        rtc.enable = true;
+        rtc.pdt = std::numeric_limits<std::int64_t>::max() - 1;
+        rtc.cycle();
+        if(!rtc.q || rtc.dt != std::numeric_limits<std::int64_t>::max() - 1) {
+            return fail("rtc initial dt");
+        }
+        rtc.cycle();
+        if(rtc.dt != std::numeric_limits<std::int64_t>::max()) {
+            return fail("rtc overflow clamp");
+        }
+        rtc.cycle();
+        if(rtc.dt != std::numeric_limits<std::int64_t>::max()) {
+            return fail("rtc stays at max");
+        }
+    }
+
+    return 0;
+}
+
 } // namespace
 
 int main()
@@ -549,7 +650,7 @@ int main()
     if(check_basic_fb_contracts() != 0 || check_base_latches() != 0 ||
        check_axis_state_and_motion() != 0 || check_axis_buffering_and_limits() != 0 ||
        check_group_linear_contract() != 0 || check_motion_facades() != 0 ||
-       check_cyclic_power_keeps_motion() != 0) {
+       check_cyclic_power_keeps_motion() != 0 || check_basic_fb_edge_cases() != 0) {
         return 1;
     }
     std::printf("PASS r3 semantics tests\n");

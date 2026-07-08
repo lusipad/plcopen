@@ -236,13 +236,118 @@ int check_group_status_reflects_member_sync()
     return 0;
 }
 
+int check_group_fb_error_paths()
+{
+    axis::AxisGroup group;
+
+    // FbAddAxisToGroup: null refs
+    {
+        fb::FbAddAxisToGroup add;
+        add.execute = true;
+        add.call();
+        if(!add.outputs.error || add.outputs.error_id != rt::ErrorCode::invalid_argument) {
+            return fail("add null refs");
+        }
+    }
+    // FbAddAxisToGroup: non-rising hold
+    {
+        axis::AxisModel x;
+        x.set_power(true);
+        fb::FbAddAxisToGroup add;
+        add.group_ref = &group;
+        add.axis_ref = &x;
+        add.execute = true;
+        add.call();
+        if(!add.outputs.done) {
+            return fail("add rising");
+        }
+        add.call();
+        if(!add.outputs.done) {
+            return fail("add non-rising keeps outputs");
+        }
+        add.execute = false;
+        add.call();
+        if(add.outputs.done || add.outputs.error) {
+            return fail("add execute=false clears");
+        }
+    }
+
+    // FbRemoveAxisFromGroup: null refs
+    {
+        fb::FbRemoveAxisFromGroup rem;
+        rem.execute = true;
+        rem.call();
+        if(!rem.outputs.error) {
+            return fail("remove null refs");
+        }
+    }
+
+    // FbGroupReset: null group
+    {
+        fb::FbGroupReset rst;
+        rst.execute = true;
+        rst.call();
+        if(!rst.outputs.error) {
+            return fail("reset null group");
+        }
+    }
+
+    // FbGroupReadStatus: enable=false, null group
+    {
+        fb::FbGroupReadStatus st;
+        st.enable = false;
+        st.call();
+        if(st.valid || st.error) {
+            return fail("status enable=false");
+        }
+        st.enable = true;
+        st.call();
+        if(!st.error || st.error_id != rt::ErrorCode::invalid_argument) {
+            return fail("status null group");
+        }
+    }
+
+    // FbGroupReadActualPosition: enable=false, null group
+    {
+        fb::FbGroupReadActualPosition pos;
+        pos.enable = false;
+        pos.call();
+        if(pos.valid || pos.error) {
+            return fail("actual pos enable=false");
+        }
+        pos.enable = true;
+        pos.call();
+        if(!pos.error || pos.error_id != rt::ErrorCode::invalid_argument) {
+            return fail("actual pos null group");
+        }
+    }
+
+    // FbGroupReadCommandPosition: enable=false, null group
+    {
+        fb::FbGroupReadCommandPosition pos;
+        pos.enable = false;
+        pos.call();
+        if(pos.valid || pos.error) {
+            return fail("cmd pos enable=false");
+        }
+        pos.enable = true;
+        pos.call();
+        if(!pos.error) {
+            return fail("cmd pos null group");
+        }
+    }
+
+    return 0;
+}
+
 } // namespace
 
 int main()
 {
     if(check_add_remove() != 0 || check_group_reset() != 0 ||
        check_group_read_status_and_positions() != 0 ||
-       check_group_status_reflects_member_sync() != 0) {
+       check_group_status_reflects_member_sync() != 0 ||
+       check_group_fb_error_paths() != 0) {
         return 1;
     }
     std::printf("PASS r3 group fb tests\n");

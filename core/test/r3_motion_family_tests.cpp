@@ -1,6 +1,7 @@
 #include <cmath>
 #include <cstdio>
 
+#include "axis/group.h"
 #include "axis/state.h"
 #include "fb/motion.h"
 
@@ -593,6 +594,253 @@ int check_buffered_chain_done_observation()
     return 0;
 }
 
+int check_motion_fb_error_paths()
+{
+    axis::AxisModel axis;
+    axis.set_power(true);
+
+    // FbPower: null axis
+    {
+        fb::FbPower power;
+        power.enable = true;
+        power.call();
+        if(!power.error || power.error_id != rt::ErrorCode::invalid_argument) {
+            return fail("power null axis");
+        }
+    }
+
+    // FbReset: null axis
+    {
+        fb::FbReset reset;
+        reset.execute = true;
+        reset.call();
+        if(!reset.outputs.error || reset.outputs.error_id != rt::ErrorCode::invalid_argument) {
+            return fail("reset null axis");
+        }
+    }
+
+    // FbReset: success path (axis in errorstop → reset → standstill)
+    {
+        axis::AxisModel err_axis;
+        err_axis.set_power(true);
+        err_axis.trigger_error();
+        fb::FbReset reset;
+        reset.axis_ref = &err_axis;
+        reset.execute = true;
+        reset.call();
+        if(!reset.outputs.done || reset.outputs.error) {
+            return fail("reset success");
+        }
+        if(err_axis.status() != axis::AxisStatus::standstill) {
+            return fail("reset restores standstill");
+        }
+        reset.call();
+        if(!reset.outputs.done) {
+            return fail("reset non-rising holds done");
+        }
+    }
+
+    // FbReset: reset when not in errorstop (returns error)
+    {
+        fb::FbReset reset;
+        reset.axis_ref = &axis;
+        reset.execute = true;
+        reset.call();
+        if(!reset.outputs.error) {
+            return fail("reset not-errorstop returns error");
+        }
+    }
+
+    // FbSetOverride: null axis
+    {
+        fb::FbSetOverride ovr;
+        ovr.execute = true;
+        ovr.call();
+        if(!ovr.outputs.error || ovr.outputs.error_id != rt::ErrorCode::invalid_argument) {
+            return fail("set override null axis");
+        }
+    }
+
+    // FbSetOverride: success path
+    {
+        fb::FbSetOverride ovr;
+        ovr.axis_ref = &axis;
+        ovr.percent = 50.0;
+        ovr.execute = true;
+        ovr.call();
+        if(!ovr.outputs.done || ovr.outputs.error) {
+            return fail("set override success");
+        }
+        ovr.call();
+        if(!ovr.outputs.done) {
+            return fail("set override non-rising holds done");
+        }
+    }
+
+    // FbSetOverride: invalid percent
+    {
+        fb::FbSetOverride ovr;
+        ovr.axis_ref = &axis;
+        ovr.percent = -10.0;
+        ovr.execute = true;
+        ovr.call();
+        if(!ovr.outputs.error) {
+            return fail("set override invalid percent");
+        }
+    }
+
+    // FbMoveAbsolute: null axis
+    {
+        fb::FbMoveAbsolute move;
+        move.execute = true;
+        move.call();
+        if(!move.outputs.error || move.outputs.error_id != rt::ErrorCode::invalid_argument) {
+            return fail("move absolute null axis");
+        }
+    }
+
+    // FbMoveSuperimposed: null axis, execute=false
+    {
+        fb::FbMoveSuperimposed si;
+        si.execute = false;
+        si.call();
+        if(si.outputs.busy || si.outputs.error) {
+            return fail("superimposed execute=false");
+        }
+        si.execute = true;
+        si.call();
+        if(!si.outputs.error || si.outputs.error_id != rt::ErrorCode::invalid_argument) {
+            return fail("superimposed null axis");
+        }
+    }
+
+    // FbHaltSuperimposed: null axis, execute=false
+    {
+        fb::FbHaltSuperimposed halt;
+        halt.execute = false;
+        halt.call();
+        if(halt.outputs.done || halt.outputs.error) {
+            return fail("halt superimposed execute=false");
+        }
+        halt.execute = true;
+        halt.call();
+        if(!halt.outputs.error || halt.outputs.error_id != rt::ErrorCode::invalid_argument) {
+            return fail("halt superimposed null axis");
+        }
+    }
+
+    // FbTorqueControl: null axis
+    {
+        fb::FbTorqueControl torque;
+        torque.execute = true;
+        torque.call();
+        if(!torque.outputs.error || torque.outputs.error_id != rt::ErrorCode::invalid_argument) {
+            return fail("torque null axis");
+        }
+    }
+
+    // FbMoveContinuousAbsolute: null axis
+    {
+        fb::FbMoveContinuousAbsolute mc;
+        mc.execute = true;
+        mc.call();
+        if(!mc.outputs.error || mc.outputs.error_id != rt::ErrorCode::invalid_argument) {
+            return fail("move continuous absolute null axis");
+        }
+    }
+
+    // FbGroupEnable: null group
+    {
+        fb::FbGroupEnable ge;
+        ge.execute = true;
+        ge.call();
+        if(!ge.outputs.error || ge.outputs.error_id != rt::ErrorCode::invalid_argument) {
+            return fail("group enable null group");
+        }
+    }
+
+    // FbGroupEnable: success path
+    {
+        axis::AxisModel ga;
+        ga.set_power(true);
+        axis::AxisGroup grp;
+        grp.add_axis(ga);
+        fb::FbGroupEnable ge;
+        ge.group_ref = &grp;
+        ge.execute = true;
+        ge.call();
+        if(!ge.outputs.done || ge.outputs.error) {
+            return fail("group enable success");
+        }
+        ge.call();
+        if(!ge.outputs.done) {
+            return fail("group enable non-rising");
+        }
+    }
+
+    // FbGroupDisable: null group
+    {
+        fb::FbGroupDisable gd;
+        gd.execute = true;
+        gd.call();
+        if(!gd.outputs.error || gd.outputs.error_id != rt::ErrorCode::invalid_argument) {
+            return fail("group disable null group");
+        }
+    }
+
+    // FbGroupDisable: success path
+    {
+        axis::AxisModel ga;
+        ga.set_power(true);
+        axis::AxisGroup grp;
+        grp.add_axis(ga);
+        grp.enable();
+        fb::FbGroupDisable gd;
+        gd.group_ref = &grp;
+        gd.execute = true;
+        gd.call();
+        if(!gd.outputs.done || gd.outputs.error) {
+            return fail("group disable success");
+        }
+        gd.call();
+        if(!gd.outputs.done) {
+            return fail("group disable non-rising");
+        }
+    }
+
+    // FbGroupStop: null group
+    {
+        fb::FbGroupStop gs;
+        gs.execute = true;
+        gs.call();
+        if(!gs.outputs.error || gs.outputs.error_id != rt::ErrorCode::invalid_argument) {
+            return fail("group stop null group");
+        }
+    }
+
+    // FbMoveLinearAbsolute: null group
+    {
+        fb::FbMoveLinearAbsolute ml;
+        ml.execute = true;
+        ml.call();
+        if(!ml.outputs.error || ml.outputs.error_id != rt::ErrorCode::invalid_argument) {
+            return fail("move linear null group");
+        }
+    }
+
+    // FbMoveCircularAbsolute: null group
+    {
+        fb::FbMoveCircularAbsolute mc;
+        mc.execute = true;
+        mc.call();
+        if(!mc.outputs.error || mc.outputs.error_id != rt::ErrorCode::invalid_argument) {
+            return fail("move circular null group");
+        }
+    }
+
+    return 0;
+}
+
 } // namespace
 
 int main()
@@ -603,7 +851,8 @@ int main()
        check_superimposed_boundaries() != 0 || check_override_replanning() != 0 ||
        check_move_velocity_continuous_update() != 0 ||
        check_velocity_threshold_blending() != 0 ||
-       check_buffered_chain_done_observation() != 0) {
+       check_buffered_chain_done_observation() != 0 ||
+       check_motion_fb_error_paths() != 0) {
         return 1;
     }
     std::printf("PASS r3 motion family tests\n");
