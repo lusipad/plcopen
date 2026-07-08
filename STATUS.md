@@ -3,7 +3,7 @@
 > 本页是"现在在哪"的唯一入口，每个批次收口时更新。术语见
 > [CONTEXT.md](CONTEXT.md)；边界细节见
 > [已知边界注册表](doc/compliance/known-boundaries.md)。
-> 最后更新：**2026-07-06**。
+> 最后更新：**2026-07-08**。
 
 ## 一句话
 
@@ -18,7 +18,7 @@
 | v0.x 旧线（fork 自 i5cnc） | 2026-04 → 07 | Part 1/2 FB 面 45/45 收口于 v0.11.0，冻结为回放/迁移基线 |
 | R0-R4 新核重写 | 2026-07 | `core/` L0-L7 全层落地，与旧线 DoD 对照 PASS |
 | Phase B 纯软件 | 2026-07 | 坐标系/kinematics/轨迹流/cam/前瞻 v2/adapters（KB-034~041） |
-| **← 现在** | 2026-07-07 | v1.0.0-alpha 已发布（KB-001~051）；规划体系收口；当前里程碑 = **PLCopen 扎实化**（Y7/P 系列/探测轮/证据），三轨设计资产待命 |
+| **← 现在** | 2026-07-08 | v1.0.0-alpha 已发布（KB-001~056）；当前里程碑 = **PLCopen 扎实化**——AI 可执行项全部交付（Y7/探测轮/oracle/OTG/solve_fixed_time/E1-E4/pip wheel/文档站），剩余项人工门控 |
 
 ## 能力面（新核，默认消费面 `plcopen::plcopen`）
 
@@ -30,14 +30,14 @@
 | L5 axis | 单轴全命令生命周期、组共享路径（2-8 轴）、前瞻窗口执行、坐标系栈（ACS/MCS/PCS + 工件帧/工具偏置）、kinematics 级联（龙门/SCARA）、位姿管线（RPY + 6R，TCP 工具变换）、笛卡尔/位姿回读（含 RPY 反演万向节约定）、段内笛卡尔插补（直线/圆弧/blending + 前瞻窗口，逐周期逆解 + 测地姿态，opt-in；腕奇异可穿越）、窗口深度可配、双空间限速、B9 流会话 | KB-035/036/037/041~050 |
 | L6 fb | Part 1/2 全量 FB 面 + Part 4 线性/圆弧/blending 门面（CoordSystem 输入） | 矩阵 45/45 |
 | L7 adapters | Servo 窄接口 + ServoSim + 桥接（ADR-0004）、CiA402 状态机、CSP/CSV/CST bumpless 骨架 | KB-040 |
-| 工具面 | pyplcopen（单轴/流/PoseArmSim）、18 份回放黄金语料、28 关节 @1kHz 预算基准 + 笛卡尔 IK 预算门、参考 executor demo（seqlock 双线程 + ServoSim）、周期级 trace 工具 | — |
+| 工具面 | pyplcopen（单轴/流/PoseArmSim，pip 可装 1.0.0a1）、18 份回放黄金语料、28 关节 @1kHz 预算基准 + 笛卡尔 IK 预算门、参考 executor demo（seqlock 双线程 + ServoSim）、周期级 trace 工具、mkdocs 文档站（3 条旅程） | — |
 
 ## 质量门禁现状
 
 - 测试：38 目标全绿（oracle/fuzz/回放/分配卫兵/基准分层）；core 行覆盖 90.1%（≥90% 门禁）
 - 回放：18 语料逐周期比对；声明变更零例外流程运行中
 - RT：静态扫描 21 文件 + 冻结窗口分配断言；DoD §5.3 对照 **PASS**（新核 = 旧线 9.3% 耗时）
-- CI：Windows + Linux（gcc/clang）双绿 + ARM64 交叉编译 + clang-tidy 零 P0 + 变异分数 100% + 覆盖率 ≥90%
+- CI：Windows + Linux（gcc/clang）双绿 + ARM64 交叉编译 + clang-tidy 零 P0 + 变异分数 100% + 覆盖率 ≥90% + cibuildwheel 三平台 + 文档站自动部署
 
 ## 进行中 / 待办
 
