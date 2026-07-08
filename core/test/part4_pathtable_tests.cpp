@@ -22,15 +22,13 @@ int fail(const char *name)
     return 1;
 }
 
-axis::AxisGroup make_group(axis::AxisModel *axes, std::size_t count)
+void init_group(axis::AxisGroup &group, axis::AxisModel *axes, std::size_t count)
 {
-    axis::AxisGroup group;
     for(std::size_t i = 0; i < count; ++i) {
         axes[i].set_power(true);
         group.add_axis(axes[i]);
     }
     group.enable();
-    return group;
 }
 
 void run_group(axis::AxisGroup &group, axis::AxisModel *axes,
@@ -72,7 +70,8 @@ fb::PathWaypoint make_wp(double x, double y, double vel = 1.0,
 int check_path_select_basic()
 {
     axis::AxisModel axes[2];
-    axis::AxisGroup group = make_group(axes, 2);
+    axis::AxisGroup group;
+    init_group(group, axes, 2);
 
     fb::PathTable table;
     table.waypoints[0] = make_wp(5.0, 3.0);
@@ -102,7 +101,8 @@ int check_path_select_basic()
 int check_path_select_handle_increments()
 {
     axis::AxisModel axes[2];
-    axis::AxisGroup group = make_group(axes, 2);
+    axis::AxisGroup group;
+    init_group(group, axes, 2);
 
     fb::PathTable t1;
     t1.waypoints[0] = make_wp(1.0, 1.0);
@@ -139,7 +139,8 @@ int check_path_select_handle_increments()
 int check_path_select_no_retrigger()
 {
     axis::AxisModel axes[2];
-    axis::AxisGroup group = make_group(axes, 2);
+    axis::AxisGroup group;
+    init_group(group, axes, 2);
 
     fb::PathTable table;
     table.waypoints[0] = make_wp(1.0, 1.0);
@@ -167,7 +168,8 @@ int check_path_select_no_retrigger()
 int check_path_select_rejects_count_1()
 {
     axis::AxisModel axes[2];
-    axis::AxisGroup group = make_group(axes, 2);
+    axis::AxisGroup group;
+    init_group(group, axes, 2);
 
     fb::PathTable table;
     table.waypoints[0] = make_wp(1.0, 1.0);
@@ -190,7 +192,8 @@ int check_path_select_rejects_count_1()
 int check_path_select_rejects_count_0()
 {
     axis::AxisModel axes[2];
-    axis::AxisGroup group = make_group(axes, 2);
+    axis::AxisGroup group;
+    init_group(group, axes, 2);
 
     fb::PathTable table;
     table.count = 0;
@@ -212,7 +215,8 @@ int check_path_select_rejects_count_0()
 int check_path_select_rejects_axis_mismatch()
 {
     axis::AxisModel axes[2];
-    axis::AxisGroup group = make_group(axes, 2);
+    axis::AxisGroup group;
+    init_group(group, axes, 2);
 
     fb::PathTable table;
     fb::PathWaypoint wp;
@@ -241,7 +245,8 @@ int check_path_select_rejects_axis_mismatch()
 int check_path_select_rejects_nan_target()
 {
     axis::AxisModel axes[2];
-    axis::AxisGroup group = make_group(axes, 2);
+    axis::AxisGroup group;
+    init_group(group, axes, 2);
 
     fb::PathTable table;
     fb::PathWaypoint wp = make_wp(1.0, 1.0);
@@ -267,7 +272,8 @@ int check_path_select_rejects_nan_target()
 int check_path_select_rejects_zero_velocity()
 {
     axis::AxisModel axes[2];
-    axis::AxisGroup group = make_group(axes, 2);
+    axis::AxisGroup group;
+    init_group(group, axes, 2);
 
     fb::PathTable table;
     table.waypoints[0] = make_wp(1.0, 1.0, 0.0);
@@ -291,7 +297,8 @@ int check_path_select_rejects_zero_velocity()
 int check_path_select_rejects_negative_accel()
 {
     axis::AxisModel axes[2];
-    axis::AxisGroup group = make_group(axes, 2);
+    axis::AxisGroup group;
+    init_group(group, axes, 2);
 
     fb::PathTable table;
     table.waypoints[0] = make_wp(1.0, 1.0, 1.0, -0.5);
@@ -315,7 +322,8 @@ int check_path_select_rejects_negative_accel()
 int check_path_select_rejects_inf_transition()
 {
     axis::AxisModel axes[2];
-    axis::AxisGroup group = make_group(axes, 2);
+    axis::AxisGroup group;
+    init_group(group, axes, 2);
 
     fb::PathTable table;
     fb::PathWaypoint wp = make_wp(1.0, 1.0);
@@ -362,7 +370,8 @@ int check_path_select_rejects_null_group()
 int check_path_select_rejects_null_table()
 {
     axis::AxisModel axes[2];
-    axis::AxisGroup group = make_group(axes, 2);
+    axis::AxisGroup group;
+    init_group(group, axes, 2);
 
     fb::FbPathSelect sel;
     sel.group_ref = &group;
@@ -383,7 +392,8 @@ int check_path_select_rejects_null_table()
 int check_move_path_basic()
 {
     axis::AxisModel axes[2];
-    axis::AxisGroup group = make_group(axes, 2);
+    axis::AxisGroup group;
+    init_group(group, axes, 2);
 
     fb::PathTable table;
     table.waypoints[0] = make_wp(5.0, 3.0);
@@ -434,10 +444,12 @@ int check_move_path_basic()
 int check_move_path_matches_manual()
 {
     axis::AxisModel axes_path[2];
-    axis::AxisGroup group_path = make_group(axes_path, 2);
+    axis::AxisGroup group_path;
+    init_group(group_path, axes_path, 2);
 
     axis::AxisModel axes_manual[2];
-    axis::AxisGroup group_manual = make_group(axes_manual, 2);
+    axis::AxisGroup group_manual;
+    init_group(group_manual, axes_manual, 2);
 
     const double vel = 0.5;
     const double acc = 0.3;
@@ -532,10 +544,12 @@ int check_move_path_matches_manual()
 int check_move_path_blending()
 {
     axis::AxisModel axes_path[2];
-    axis::AxisGroup group_path = make_group(axes_path, 2);
+    axis::AxisGroup group_path;
+    init_group(group_path, axes_path, 2);
 
     axis::AxisModel axes_manual[2];
-    axis::AxisGroup group_manual = make_group(axes_manual, 2);
+    axis::AxisGroup group_manual;
+    init_group(group_manual, axes_manual, 2);
 
     const double vel = 0.5;
     const double acc = 0.3;
@@ -637,7 +651,8 @@ int check_move_path_blending()
 int check_move_path_rejects_zero_handle()
 {
     axis::AxisModel axes[2];
-    axis::AxisGroup group = make_group(axes, 2);
+    axis::AxisGroup group;
+    init_group(group, axes, 2);
 
     fb::PathTable table;
     table.waypoints[0] = make_wp(1.0, 1.0);
@@ -663,7 +678,8 @@ int check_move_path_rejects_zero_handle()
 int check_move_path_rejects_axis_mismatch()
 {
     axis::AxisModel axes[2];
-    axis::AxisGroup group = make_group(axes, 2);
+    axis::AxisGroup group;
+    init_group(group, axes, 2);
 
     fb::PathTable table;
     table.waypoints[0] = make_wp(1.0, 1.0);
@@ -689,7 +705,8 @@ int check_move_path_rejects_axis_mismatch()
 int check_move_path_rejects_null_table()
 {
     axis::AxisModel axes[2];
-    axis::AxisGroup group = make_group(axes, 2);
+    axis::AxisGroup group;
+    init_group(group, axes, 2);
 
     fb::FbMovePath mp;
     mp.group_ref = &group;
@@ -710,7 +727,8 @@ int check_move_path_rejects_null_table()
 int check_set_kin_transform_kinematics()
 {
     axis::AxisModel axes[2];
-    axis::AxisGroup group = make_group(axes, 2);
+    axis::AxisGroup group;
+    init_group(group, axes, 2);
 
     const double scale[2] = {1.0, 1.0};
     const double offset[2] = {0.0, 0.0};
@@ -749,7 +767,8 @@ int check_set_kin_transform_rejects_null_group()
 int check_set_kin_transform_both_null_plugins()
 {
     axis::AxisModel axes[2];
-    axis::AxisGroup group = make_group(axes, 2);
+    axis::AxisGroup group;
+    init_group(group, axes, 2);
 
     fb::FbSetKinTransform skf;
     skf.group_ref = &group;
@@ -771,7 +790,8 @@ int check_set_kin_transform_both_null_plugins()
 int check_read_cartesian_transform_basic()
 {
     axis::AxisModel axes[2];
-    axis::AxisGroup group = make_group(axes, 2);
+    axis::AxisGroup group;
+    init_group(group, axes, 2);
 
     group.set_workpiece_frame_rpy(1.0, 2.0, 3.0, 0.1, 0.2, 0.3);
     group.set_tool_transform_rpy(4.0, 5.0, 6.0, 0.4, 0.5, 0.6);
@@ -806,7 +826,8 @@ int check_read_cartesian_transform_basic()
 int check_read_cartesian_transform_disable_clears()
 {
     axis::AxisModel axes[2];
-    axis::AxisGroup group = make_group(axes, 2);
+    axis::AxisGroup group;
+    init_group(group, axes, 2);
 
     group.set_workpiece_frame_rpy(1.0, 2.0, 3.0, 0.1, 0.2, 0.3);
 

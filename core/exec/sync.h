@@ -409,10 +409,13 @@ private:
                 position += span;
             }
             position += begin;
-        } else if(position <= points_[0].master) {
-            return rt::Result<double>::success(order == 0 ? points_[0].slave : 0.0);
-        } else if(position >= points_[size_ - 1].master) {
-            return rt::Result<double>::success(order == 0 ? points_[size_ - 1].slave : 0.0);
+        } else if(position <= points_[0].master || position >= points_[size_ - 1].master) {
+            if(order != 0) {
+                return rt::Result<double>::success(0.0);
+            }
+            const double endpoint =
+                position <= points_[0].master ? points_[0].slave : points_[size_ - 1].slave;
+            return rt::Result<double>::success(endpoint);
         }
 
         std::size_t index = 1;

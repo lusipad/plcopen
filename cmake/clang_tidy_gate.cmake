@@ -14,13 +14,25 @@ file(GLOB_RECURSE SOURCES "${CMAKE_CURRENT_LIST_DIR}/../core/test/*.cpp"
                           "${CMAKE_CURRENT_LIST_DIR}/../core/bench/*.cpp"
                           "${CMAKE_CURRENT_LIST_DIR}/../core/demo/*.cpp")
 
+set(COMPILE_COMMANDS_PATH "${CMAKE_CURRENT_LIST_DIR}/../build/compile_commands.json")
+if(NOT EXISTS "${COMPILE_COMMANDS_PATH}")
+    message(FATAL_ERROR "compile_commands.json not found at ${COMPILE_COMMANDS_PATH}")
+endif()
+file(READ "${COMPILE_COMMANDS_PATH}" COMPILE_COMMANDS_JSON)
+
 set(FAILED 0)
 set(CHECKED 0)
 
 foreach(SRC IN LISTS SOURCES)
+    get_filename_component(SRC_REAL "${SRC}" REALPATH)
+    string(FIND "${COMPILE_COMMANDS_JSON}" "${SRC_REAL}" IN_COMPILE_DB)
+    if(IN_COMPILE_DB EQUAL -1)
+        continue()
+    endif()
+
     math(EXPR CHECKED "${CHECKED} + 1")
     execute_process(
-        COMMAND ${CLANG_TIDY} -p "${CMAKE_CURRENT_LIST_DIR}/../build" "${SRC}"
+        COMMAND ${CLANG_TIDY} -p "${CMAKE_CURRENT_LIST_DIR}/../build" "${SRC_REAL}"
         RESULT_VARIABLE RC
         OUTPUT_VARIABLE OUT
         ERROR_VARIABLE ERR

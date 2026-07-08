@@ -23,15 +23,13 @@ int fail(const char *name)
     return 1;
 }
 
-axis::AxisGroup make_group(axis::AxisModel *axes, std::size_t count)
+void init_group(axis::AxisGroup &group, axis::AxisModel *axes, std::size_t count)
 {
-    axis::AxisGroup group;
     for(std::size_t i = 0; i < count; ++i) {
         axes[i].set_power(true);
         group.add_axis(axes[i]);
     }
     group.enable();
-    return group;
 }
 
 void run_group(axis::AxisGroup &group, axis::AxisModel *axes, std::size_t count, int max_cycles)
@@ -54,7 +52,8 @@ void run_group(axis::AxisGroup &group, axis::AxisModel *axes, std::size_t count,
 int check_group_home_basic()
 {
     axis::AxisModel axes[3];
-    axis::AxisGroup group = make_group(axes, 3);
+    axis::AxisGroup group;
+    init_group(group, axes, 3);
 
     fb::FbGroupHome home;
     home.group_ref = &group;
@@ -77,7 +76,8 @@ int check_group_home_basic()
 int check_group_home_rejects_moving()
 {
     axis::AxisModel axes[2];
-    axis::AxisGroup group = make_group(axes, 2);
+    axis::AxisGroup group;
+    init_group(group, axes, 2);
 
     axis::GroupPosition target{};
     target.size = 2;
@@ -105,7 +105,8 @@ int check_group_home_rejects_moving()
 int check_move_direct_absolute()
 {
     axis::AxisModel axes[2];
-    axis::AxisGroup group = make_group(axes, 2);
+    axis::AxisGroup group;
+    init_group(group, axes, 2);
 
     axis::GroupPosition target{};
     target.size = 2;
@@ -155,7 +156,8 @@ int check_move_direct_absolute()
 int check_move_direct_relative()
 {
     axis::AxisModel axes[2];
-    axis::AxisGroup group = make_group(axes, 2);
+    axis::AxisGroup group;
+    init_group(group, axes, 2);
 
     axis::GroupPosition dist{};
     dist.size = 2;
@@ -202,7 +204,8 @@ int check_move_direct_relative()
 int check_move_direct_non_coordinated()
 {
     axis::AxisModel axes[2];
-    axis::AxisGroup group = make_group(axes, 2);
+    axis::AxisGroup group;
+    init_group(group, axes, 2);
 
     axis::GroupPosition target{};
     target.size = 2;
@@ -214,7 +217,6 @@ int check_move_direct_non_coordinated()
         return fail("move_direct_nc submit");
     }
 
-    bool ax0_done_first = false;
     bool ax1_done_first = false;
     bool ax0_done = false;
     bool ax1_done = false;
@@ -227,7 +229,6 @@ int check_move_direct_non_coordinated()
         if(!ax0_done && axes[0].status() == axis::AxisStatus::standstill &&
            near(axes[0].snapshot().command_position, 10.0, 1e-6)) {
             ax0_done = true;
-            if(!ax1_done) { ax0_done_first = false; }
         }
         if(!ax1_done && axes[1].status() == axis::AxisStatus::standstill &&
            near(axes[1].snapshot().command_position, 1.0, 1e-6)) {
@@ -252,7 +253,8 @@ int check_move_direct_non_coordinated()
 int check_group_set_override_basic()
 {
     axis::AxisModel axes[2];
-    axis::AxisGroup group = make_group(axes, 2);
+    axis::AxisGroup group;
+    init_group(group, axes, 2);
 
     fb::FbGroupSetOverride ovr;
     ovr.group_ref = &group;
@@ -274,7 +276,8 @@ int check_group_set_override_basic()
 int check_group_override_rejects_invalid()
 {
     axis::AxisModel axes[2];
-    axis::AxisGroup group = make_group(axes, 2);
+    axis::AxisGroup group;
+    init_group(group, axes, 2);
 
     rt::ErrorCode result = group.set_group_override(1.5);
     if(result != rt::ErrorCode::invalid_argument) {
@@ -292,7 +295,8 @@ int check_group_override_rejects_invalid()
 int check_group_override_realtime_replan()
 {
     axis::AxisModel axes[2];
-    axis::AxisGroup group = make_group(axes, 2);
+    axis::AxisGroup group;
+    init_group(group, axes, 2);
 
     axis::GroupPosition target{};
     target.size = 2;
@@ -311,7 +315,6 @@ int check_group_override_realtime_replan()
         for(auto &ax : axes) { ax.cycle(); }
     }
 
-    const double pos_before = axes[0].snapshot().command_position;
     const rt::ErrorCode result = group.set_group_override(0.5);
     if(result != rt::ErrorCode::ok) {
         return fail("group_override replan ok");
@@ -341,7 +344,8 @@ int check_group_override_realtime_replan()
 int check_group_override_factor_zero_equivalent()
 {
     axis::AxisModel axes[2];
-    axis::AxisGroup group = make_group(axes, 2);
+    axis::AxisGroup group;
+    init_group(group, axes, 2);
 
     axis::GroupPosition target{};
     target.size = 2;
@@ -410,7 +414,8 @@ int check_group_override_factor_zero_equivalent()
 int check_interrupt_continue_basic()
 {
     axis::AxisModel axes[2];
-    axis::AxisGroup group = make_group(axes, 2);
+    axis::AxisGroup group;
+    init_group(group, axes, 2);
 
     axis::GroupPosition target{};
     target.size = 2;
@@ -497,7 +502,8 @@ int check_interrupt_continue_basic()
 int check_interrupt_rejects_non_moving()
 {
     axis::AxisModel axes[2];
-    axis::AxisGroup group = make_group(axes, 2);
+    axis::AxisGroup group;
+    init_group(group, axes, 2);
 
     const rt::ErrorCode result = group.interrupt(0.5, 0.5);
     if(result != rt::ErrorCode::invalid_argument) {
@@ -511,7 +517,8 @@ int check_interrupt_rejects_non_moving()
 int check_continue_rejects_non_interrupted()
 {
     axis::AxisModel axes[2];
-    axis::AxisGroup group = make_group(axes, 2);
+    axis::AxisGroup group;
+    init_group(group, axes, 2);
 
     const rt::ErrorCode result = group.continue_motion();
     if(result != rt::ErrorCode::invalid_argument) {
@@ -525,7 +532,8 @@ int check_continue_rejects_non_interrupted()
 int check_interrupted_accepts_aborting()
 {
     axis::AxisModel axes[2];
-    axis::AxisGroup group = make_group(axes, 2);
+    axis::AxisGroup group;
+    init_group(group, axes, 2);
 
     axis::GroupPosition target{};
     target.size = 2;
@@ -589,7 +597,8 @@ int check_interrupted_accepts_aborting()
 int check_interrupted_rejects_buffered()
 {
     axis::AxisModel axes[2];
-    axis::AxisGroup group = make_group(axes, 2);
+    axis::AxisGroup group;
+    init_group(group, axes, 2);
 
     axis::GroupPosition target{};
     target.size = 2;
@@ -642,7 +651,8 @@ int check_interrupted_rejects_buffered()
 int check_read_status_interrupted()
 {
     axis::AxisModel axes[2];
-    axis::AxisGroup group = make_group(axes, 2);
+    axis::AxisGroup group;
+    init_group(group, axes, 2);
 
     axis::GroupPosition target{};
     target.size = 2;

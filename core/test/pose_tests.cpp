@@ -159,7 +159,7 @@ int check_settled_pose(const char *name,
 // matches the commanded TCP pose (no tool: flange == TCP).
 int check_mcs_pose_oracle()
 {
-    const kin::SphericalWrist6R arm(0.3, 0.4, 0.35, 0.08);
+    static const kin::SphericalWrist6R arm(0.3, 0.4, 0.35, 0.08);
 
     static PoseRig probe;
     if(probe.group.set_pose_kinematics(&arm, 0.0, 3.0) != rt::ErrorCode::ok) {
@@ -190,7 +190,7 @@ int check_mcs_pose_oracle()
 // the settled forward pose composed with the tool reproduces the TCP pose.
 int check_pcs_workpiece_tool()
 {
-    const kin::SphericalWrist6R arm(0.3, 0.4, 0.35, 0.08);
+    static const kin::SphericalWrist6R arm(0.3, 0.4, 0.35, 0.08);
 
     const geom::RigidTransform workpiece =
         geom::make_rpy_transform(0.1, -0.05, 0.02, 0.1, 0.2, 0.3);
@@ -264,7 +264,7 @@ int check_pcs_workpiece_tool()
 // Decision #8: ACS commands bypass the pose pipeline on a configured group.
 int check_acs_passthrough()
 {
-    const kin::SphericalWrist6R arm(0.3, 0.4, 0.35, 0.08);
+    static const kin::SphericalWrist6R arm(0.3, 0.4, 0.35, 0.08);
     static PoseRig rig;
     if(rig.group.set_pose_kinematics(&arm, 0.0, 3.0) != rt::ErrorCode::ok) {
         return fail("acs passthrough configure");
@@ -291,7 +291,7 @@ int check_acs_passthrough()
 // zero silent downgrades.
 int check_rejections()
 {
-    const kin::SphericalWrist6R arm(0.3, 0.4, 0.35, 0.08);
+    static const kin::SphericalWrist6R arm(0.3, 0.4, 0.35, 0.08);
 
     // Group axis count != 6.
     {
