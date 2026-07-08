@@ -1,0 +1,54 @@
+[build-system]
+requires = ["scikit-build-core>=0.10", "pybind11>=2.13"]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "pyplcopen"
+version = "1.0.0a1"
+description = "PLCopen motion control kernel — Python simulation facade"
+requires-python = ">=3.10"
+license = "Apache-2.0"
+readme = "README.md"
+authors = [
+    { name = "lusipad" },
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Manufacturing",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: MacOS",
+    "Programming Language :: C++",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering",
+    "Topic :: System :: Hardware",
+]
+
+[project.urls]
+Homepage = "https://github.com/lusipad/plcopen"
+Repository = "https://github.com/lusipad/plcopen"
+
+[tool.scikit-build]
+cmake.args = [
+    "-DPLCOPEN_BUILD_PYTHON_BINDINGS=ON",
+    "-DPLCOPEN_BUILD_CORE=ON",
+    "-DPLCOPEN_BUILD_LEGACY=OFF",
+    "-DPLCOPEN_BUILD_DEMOS=OFF",
+    "-DPLCOPEN_BUILD_DOCS=OFF",
+    "-DBUILD_TESTING=OFF",
+]
+wheel.packages = []
+wheel.exclude = ["include/**", "lib/**"]
+
+[tool.cibuildwheel]
+build = "cp310-* cp311-* cp312-* cp313-*"
+skip = "*-musllinux_*"
+test-command = "python {project}/ci/smoke_test.py"
+
+[tool.cibuildwheel.macos]
+archs = ["x86_64", "arm64"]

@@ -1,9 +1,10 @@
-# Part 4 管理组语义矩阵（P 系列，草案，待批准）
+# Part 4 管理组语义矩阵（P 系列，已批准）
 
-> 状态：**草案，待批准**（2026-07-07 起草）。Part 4 剩余 FB 的第一批
-> （管理类）：GroupHome / MoveDirect / GroupSetOverride / GroupInterrupt-
-> Continue。第二批（路径表 MC_PathSelect/MovePath、KinTransform FB
-> 形态）另立矩阵。
+> 状态：**已批准**（2026-07-07 起草，2026-07-08 维护者批准并实现）。
+> Part 4 剩余 FB 的第一批（管理类）：GroupHome / MoveDirect /
+> GroupSetOverride / GroupInterrupt-Continue。第二批（路径表
+> MC_PathSelect/MovePath、KinTransform FB 形态）另立矩阵。
+> 实现：`core/fb/part4_management.h`，验收 27 测试。
 
 ## 决策点（v1 提案）
 

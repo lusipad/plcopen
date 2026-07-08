@@ -26,6 +26,7 @@ enum class GroupStatus
     moving,
     stopping,
     errorstop,
+    interrupted,
 };
 
 struct GroupPosition
@@ -187,6 +188,16 @@ public:
     std::size_t member_count() const
     {
         return axes_.size();
+    }
+
+    bool connector_active() const
+    {
+        return connector_active_;
+    }
+
+    double connector_tube_radius() const
+    {
+        return connector_active_ ? connector_r_tube_ : 0.0;
     }
 
     const AxisModel *member(std::size_t index) const
@@ -374,8 +385,404 @@ public:
         active_profile_ = halt.value();
         active_tick_ = 0;
         active_duration_ = active_profile_.duration_cycles();
+        connector_active_ = false;
         status_ = GroupStatus::stopping;
         return rt::ErrorCode::ok;
+    }
+
+    // MC_GroupInterrupt: controlled deceleration preserving active/queue/window
+    // state and the pause point. Transitions moving→stopping→interrupted.
+    rt::ErrorCode interrupt(double deceleration = 1.0, double jerk = 1.0)
+    {
+        if(status_ != GroupStatus::moving || !std::isfinite(deceleration) ||
+           deceleration <= 0.0 || !std::isfinite(jerk) || jerk <= 0.0) {
+            return rt::ErrorCode::invalid_argument;
+        }
+        if(cart_window_active_ || cart_window_stopping_) {
+            return rt::ErrorCode::unsupported;
+        }
+        if(window_active_) {
+            if(window_stop_) {
+                return rt::ErrorCode::ok;
+            }
+            double s_live = 0.0;
+            double v_live = 0.0;
+            double a_live = 0.0;
+            window_live_state(s_live, v_live, a_live);
+            if(v_live <= 0.0) {
+                interrupted_window_ = true;
+                interrupted_plain_ = false;
+                status_ = GroupStatus::interrupted;
+                return rt::ErrorCode::ok;
+            }
+            const WindowSegment &seg = window_[window_index_];
+            const otg::Limits1D halt_limits{seg.limits.max_velocity,
+                                            seg.limits.max_acceleration, deceleration, jerk};
+            double brake_velocity = v_live;
+            double brake_shift = 0.0;
+            if(a_live != 0.0) {
+                const double zero_cycles = std::ceil(std::fabs(a_live) / jerk);
+                brake_velocity += 0.5 * a_live * zero_cycles;
+                brake_shift += v_live * zero_cycles + a_live * zero_cycles * zero_cycles / 3.0;
+            }
+            if(brake_velocity < 0.0) {
+                brake_velocity = 0.0;
+            }
+            const double stop_position =
+                brake_shift +
+                otg::detail::ramp_between(brake_velocity, 0.0, halt_limits).distance;
+            const rt::Result<otg::Profile1D> halt = otg::plan_time_optimal(
+                {0.0, v_live, a_live}, {stop_position, 0.0, 0.0}, halt_limits);
+            if(!halt) {
+                interrupted_window_ = true;
+                interrupted_plain_ = false;
+                status_ = GroupStatus::interrupted;
+                return rt::ErrorCode::ok;
+            }
+            window_stop_ = true;
+            window_stop_profile_ = halt.value();
+            window_stop_origin_ = s_live;
+            window_tick_ = 0;
+            interrupting_ = true;
+            interrupted_window_ = true;
+            interrupted_plain_ = false;
+            status_ = GroupStatus::stopping;
+            return rt::ErrorCode::ok;
+        }
+        if(!active_ || active_path_length_ <= 0.0) {
+            interrupted_plain_ = false;
+            interrupted_window_ = false;
+            status_ = GroupStatus::interrupted;
+            return rt::ErrorCode::ok;
+        }
+        const otg::State1D state =
+            otg::sample(active_profile_, rt::CycleTick::from_cycles(active_tick_));
+        if(state.velocity <= 0.0) {
+            interrupted_plain_ = true;
+            interrupted_window_ = false;
+            interrupt_ratio_ = state.position / active_path_length_;
+            if(interrupt_ratio_ > 1.0) { interrupt_ratio_ = 1.0; }
+            active_ = false;
+            status_ = GroupStatus::interrupted;
+            return rt::ErrorCode::ok;
+        }
+        const otg::Limits1D halt_limits{active_command_.velocity,
+                                        active_command_.acceleration, deceleration, jerk};
+        double brake_velocity = state.velocity;
+        double brake_shift = 0.0;
+        if(state.acceleration != 0.0) {
+            const double zero_cycles = std::ceil(std::fabs(state.acceleration) / jerk);
+            brake_velocity += 0.5 * state.acceleration * zero_cycles;
+            brake_shift += state.velocity * zero_cycles +
+                           state.acceleration * zero_cycles * zero_cycles / 3.0;
+        }
+        if(brake_velocity < 0.0) {
+            brake_velocity = 0.0;
+        }
+        const double stop_position = state.position + brake_shift +
+                                     otg::detail::ramp_between(brake_velocity, 0.0, halt_limits)
+                                         .distance;
+        const rt::Result<otg::Profile1D> halt = otg::plan_time_optimal(
+            state, {stop_position, 0.0, 0.0}, halt_limits);
+        if(!halt) {
+            interrupted_plain_ = true;
+            interrupted_window_ = false;
+            interrupt_ratio_ = state.position / active_path_length_;
+            if(interrupt_ratio_ > 1.0) { interrupt_ratio_ = 1.0; }
+            active_ = false;
+            status_ = GroupStatus::interrupted;
+            return rt::ErrorCode::ok;
+        }
+        active_profile_ = halt.value();
+        active_tick_ = 0;
+        active_duration_ = active_profile_.duration_cycles();
+        connector_active_ = false;
+        interrupting_ = true;
+        interrupted_plain_ = true;
+        interrupted_window_ = false;
+        status_ = GroupStatus::stopping;
+        return rt::ErrorCode::ok;
+    }
+
+    // MC_GroupContinue: resume from interrupted state, replanning remaining
+    // path geometry from rest at the pause position.
+    rt::ErrorCode continue_motion()
+    {
+        if(status_ != GroupStatus::interrupted) {
+            return rt::ErrorCode::invalid_argument;
+        }
+        if(interrupted_plain_) {
+            for(std::size_t i = 0; i < axes_.size(); ++i) {
+                active_start_[i] = axes_[i]->snapshot().command_position;
+            }
+            const double remaining = active_path_length_ * (1.0 - interrupt_ratio_);
+            if(remaining <= 0.0) {
+                interrupted_plain_ = false;
+                interrupted_window_ = false;
+                status_ = GroupStatus::standby;
+                clear_axes_synchronized();
+                start_next_queued();
+                return rt::ErrorCode::ok;
+            }
+            active_path_length_ = remaining;
+            const double factor = group_override_;
+            const otg::Limits1D limits{active_command_.velocity * factor,
+                                       active_command_.acceleration,
+                                       active_command_.deceleration,
+                                       active_command_.jerk};
+            const rt::Result<otg::Profile1D> profile = otg::plan_time_optimal(
+                {0.0, 0.0, 0.0}, {remaining, 0.0, 0.0}, limits);
+            if(!profile) {
+                return profile.error();
+            }
+            active_profile_ = profile.value();
+            active_tick_ = 0;
+            active_duration_ = active_profile_.duration_cycles();
+            active_ = true;
+            interrupted_plain_ = false;
+            interrupted_window_ = false;
+            interrupting_ = false;
+            status_ = GroupStatus::moving;
+            return rt::ErrorCode::ok;
+        }
+        if(interrupted_window_) {
+            if(!window_active_ || window_.empty()) {
+                interrupted_window_ = false;
+                interrupted_plain_ = false;
+                status_ = GroupStatus::standby;
+                clear_axes_synchronized();
+                start_next_queued();
+                return rt::ErrorCode::ok;
+            }
+            window_stop_ = false;
+            window_in_curve_ = false;
+            window_tick_ = 0;
+            for(std::size_t i = 0; i < axes_.size(); ++i) {
+                window_[window_index_].entry[i] = axes_[i]->snapshot().command_position;
+            }
+            const double factor = group_override_;
+            for(std::size_t s = window_index_; s < window_.size(); ++s) {
+                window_[s].limits.max_velocity *= factor;
+            }
+            bool late = false;
+            if(!window_rebuild(late)) {
+                window_reset();
+                clear_axes_synchronized();
+                interrupted_window_ = false;
+                interrupted_plain_ = false;
+                status_ = GroupStatus::standby;
+                start_next_queued();
+                return rt::ErrorCode::ok;
+            }
+            interrupted_window_ = false;
+            interrupted_plain_ = false;
+            interrupting_ = false;
+            status_ = GroupStatus::moving;
+            return rt::ErrorCode::ok;
+        }
+        interrupted_plain_ = false;
+        interrupted_window_ = false;
+        status_ = GroupStatus::standby;
+        clear_axes_synchronized();
+        start_next_queued();
+        return rt::ErrorCode::ok;
+    }
+
+    // MC_GroupSetOverride: group-level velocity factor ∈ [0,1]. factor=0
+    // freezes position (velocity target zero, group stays moving).
+    rt::ErrorCode set_group_override(double factor)
+    {
+        if(!std::isfinite(factor) || factor < 0.0 || factor > 1.0) {
+            return rt::ErrorCode::invalid_argument;
+        }
+        if(status_ == GroupStatus::disabled || status_ == GroupStatus::errorstop) {
+            return rt::ErrorCode::invalid_argument;
+        }
+        const double previous = group_override_;
+        group_override_ = factor;
+        if(previous == factor) {
+            return rt::ErrorCode::ok;
+        }
+        if(status_ != GroupStatus::moving) {
+            return rt::ErrorCode::ok;
+        }
+        if(cart_window_active_) {
+            return rt::ErrorCode::ok;
+        }
+        if(window_active_ && !window_stop_) {
+            if(previous > 0.0) {
+                for(std::size_t s = window_index_ + 1; s < window_.size(); ++s) {
+                    window_[s].limits.max_velocity =
+                        window_[s].limits.max_velocity * (factor / previous);
+                }
+            } else {
+                for(std::size_t s = window_index_ + 1; s < window_.size(); ++s) {
+                    double v = active_command_.velocity * factor;
+                    if(window_[s].kind == WindowKind::arc) {
+                        const double junction = std::fmin(
+                            window_[s].limits.max_acceleration,
+                            window_[s].limits.max_deceleration);
+                        const double centripetal =
+                            std::sqrt(junction * window_[s].arc_geom.radius);
+                        if(centripetal < v) {
+                            v = centripetal;
+                        }
+                    }
+                    window_[s].limits.max_velocity = v;
+                }
+            }
+            if(window_index_ + 1 < window_.size()) {
+                bool late = false;
+                window_rebuild(late);
+            }
+            return rt::ErrorCode::ok;
+        }
+        if(!active_ || active_path_length_ <= 0.0) {
+            return rt::ErrorCode::ok;
+        }
+        const otg::State1D state =
+            otg::sample(active_profile_, rt::CycleTick::from_cycles(active_tick_));
+        const double remaining = active_path_length_ - state.position;
+        if(remaining <= 0.0) {
+            return rt::ErrorCode::ok;
+        }
+        if(factor == 0.0) {
+            const double deceleration = active_command_.deceleration;
+            const double jerk = active_command_.jerk;
+            const otg::Limits1D halt_limits{active_command_.velocity,
+                                            active_command_.acceleration,
+                                            deceleration, jerk};
+            double brake_velocity = state.velocity;
+            double brake_shift = 0.0;
+            if(state.acceleration != 0.0) {
+                const double zero_cycles =
+                    std::ceil(std::fabs(state.acceleration) / jerk);
+                brake_velocity += 0.5 * state.acceleration * zero_cycles;
+                brake_shift += state.velocity * zero_cycles +
+                               state.acceleration * zero_cycles * zero_cycles / 3.0;
+            }
+            if(brake_velocity < 0.0) { brake_velocity = 0.0; }
+            const double stop_position = state.position + brake_shift +
+                otg::detail::ramp_between(brake_velocity, 0.0, halt_limits).distance;
+            const rt::Result<otg::Profile1D> profile = otg::plan_time_optimal(
+                state, {stop_position, 0.0, 0.0}, halt_limits);
+            if(!profile) {
+                group_override_ = previous;
+                return profile.error();
+            }
+            active_profile_ = profile.value();
+            active_tick_ = 0;
+            active_duration_ = active_profile_.duration_cycles();
+            override_paused_ = true;
+            return rt::ErrorCode::ok;
+        }
+        if(override_paused_) {
+            override_paused_ = false;
+        }
+        const otg::Limits1D limits{active_command_.velocity * factor,
+                                   active_command_.acceleration,
+                                   active_command_.deceleration,
+                                   active_command_.jerk};
+        const rt::Result<otg::Profile1D> profile = otg::plan_time_optimal(
+            state, {active_path_length_, 0.0, 0.0}, limits);
+        if(!profile) {
+            group_override_ = previous;
+            return profile.error();
+        }
+        active_profile_ = profile.value();
+        active_tick_ = 0;
+        active_duration_ = active_profile_.duration_cycles();
+        return rt::ErrorCode::ok;
+    }
+
+    double group_override() const
+    {
+        return group_override_;
+    }
+
+    // MC_MoveDirectAbsolute/Relative: non-coordinated PTP. Each member gets
+    // an independent jerk-limited profile with the shared dynamics; members
+    // arrive at different times. Done when all members reach standstill.
+    rt::Result<std::uint32_t> submit_direct(GroupPosition target,
+                                            bool relative,
+                                            double velocity,
+                                            double acceleration,
+                                            double deceleration,
+                                            double jrk)
+    {
+        if(status_ != GroupStatus::standby && status_ != GroupStatus::moving) {
+            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
+        }
+        if(target.size != axes_.size() || !std::isfinite(velocity) || velocity <= 0.0 ||
+           !std::isfinite(acceleration) || acceleration <= 0.0 ||
+           !std::isfinite(deceleration) || deceleration <= 0.0 ||
+           !std::isfinite(jrk) || jrk <= 0.0) {
+            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
+        }
+        for(std::size_t i = 0; i < axes_.size(); ++i) {
+            if(!std::isfinite(target.value[i])) {
+                return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
+            }
+        }
+        abort_motion();
+        const std::uint32_t cmd_id = next_command_id_++;
+        for(std::size_t i = 0; i < axes_.size(); ++i) {
+            AxisCommand cmd{};
+            cmd.kind = relative ? CommandKind::move_relative : CommandKind::move_absolute;
+            cmd.value = target.value[i];
+            cmd.velocity = velocity;
+            cmd.acceleration = acceleration;
+            cmd.deceleration = deceleration;
+            cmd.jerk = jrk;
+            cmd.command_id = cmd_id;
+            const rt::Result<std::uint32_t> result = axes_[i]->submit(cmd);
+            if(!result) {
+                for(std::size_t j = 0; j < i; ++j) {
+                    AxisCommand halt{};
+                    halt.kind = CommandKind::halt;
+                    halt.velocity = velocity;
+                    halt.acceleration = acceleration;
+                    halt.deceleration = deceleration;
+                    halt.jerk = jrk;
+                    axes_[j]->submit(halt);
+                }
+                return rt::Result<std::uint32_t>::failure(result.error());
+            }
+        }
+        direct_active_ = true;
+        direct_command_id_ = cmd_id;
+        status_ = GroupStatus::moving;
+        return rt::Result<std::uint32_t>::success(cmd_id);
+    }
+
+    // MC_GroupHome: parallel homing of all members. Group must be standby
+    // with empty queue. Each member calls home_direct(0.0). All must
+    // succeed; any failure triggers group errorstop.
+    rt::ErrorCode group_home()
+    {
+        if(status_ != GroupStatus::standby || !queue_.empty()) {
+            return rt::ErrorCode::invalid_argument;
+        }
+        for(std::size_t i = 0; i < axes_.size(); ++i) {
+            if(!axes_[i]->powered() ||
+               axes_[i]->status() == AxisStatus::errorstop) {
+                return rt::ErrorCode::invalid_argument;
+            }
+        }
+        for(std::size_t i = 0; i < axes_.size(); ++i) {
+            const rt::ErrorCode homed = axes_[i]->home_direct(0.0);
+            if(homed != rt::ErrorCode::ok) {
+                abort_motion();
+                status_ = GroupStatus::errorstop;
+                return homed;
+            }
+        }
+        return rt::ErrorCode::ok;
+    }
+
+    bool direct_motion_active() const
+    {
+        return direct_active_;
     }
 
     // Approved coordinate matrix (B1 v1): the workpiece frame (PCS over MCS)
@@ -630,7 +1037,17 @@ public:
 
     rt::Result<std::uint32_t> submit_linear(GroupCommand command)
     {
-        if((status_ != GroupStatus::standby && status_ != GroupStatus::moving) || axes_.size() < 2 ||
+        if(status_ == GroupStatus::interrupted) {
+            if(command.buffer_mode != BufferMode::aborting) {
+                return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
+            }
+            interrupted_plain_ = false;
+            interrupted_window_ = false;
+            interrupting_ = false;
+        }
+        if((status_ != GroupStatus::standby && status_ != GroupStatus::moving &&
+            status_ != GroupStatus::interrupted) ||
+           axes_.size() < 2 ||
            command.target.size != axes_.size() || command.velocity <= 0.0 ||
            !std::isfinite(command.velocity) || command.acceleration <= 0.0 ||
            !std::isfinite(command.acceleration) || command.deceleration <= 0.0 ||
@@ -715,6 +1132,12 @@ public:
         command.arc = geom::ArcSegment{};
 
         if(command.buffer_mode == BufferMode::aborting) {
+            // Y7 (KB-051): capture the pre-takeover velocity vector before
+            // abort_motion() destroys it. Only plain linear motions qualify
+            // for the connector (approved v2.1 scope = linear group only).
+            if(active_ && !window_active_ && !cart_window_active_) {
+                capture_takeover_velocity();
+            }
             abort_motion();
         }
         command = normalize(command);
@@ -746,7 +1169,16 @@ public:
     // explicit error before any motion state is touched.
     rt::Result<std::uint32_t> submit_circular(GroupCommand command)
     {
-        if((status_ != GroupStatus::standby && status_ != GroupStatus::moving) ||
+        if(status_ == GroupStatus::interrupted) {
+            if(command.buffer_mode != BufferMode::aborting) {
+                return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
+            }
+            interrupted_plain_ = false;
+            interrupted_window_ = false;
+            interrupting_ = false;
+        }
+        if((status_ != GroupStatus::standby && status_ != GroupStatus::moving &&
+            status_ != GroupStatus::interrupted) ||
            axes_.size() < 2 || command.target.size != axes_.size() ||
            command.aux.size != axes_.size() || command.velocity <= 0.0 ||
            !std::isfinite(command.velocity) || command.acceleration <= 0.0 ||
@@ -904,15 +1336,33 @@ public:
 
     void cycle()
     {
-        if(status_ == GroupStatus::errorstop || status_ == GroupStatus::disabled) {
+        if(status_ == GroupStatus::errorstop || status_ == GroupStatus::disabled ||
+           status_ == GroupStatus::interrupted) {
             return;
         }
         for(std::size_t i = 0; i < axes_.size(); ++i) {
             if(axes_[i]->status() == AxisStatus::errorstop) {
                 abort_motion();
+                direct_active_ = false;
+                interrupting_ = false;
                 status_ = GroupStatus::errorstop;
                 return;
             }
+        }
+
+        if(direct_active_) {
+            bool all_done = true;
+            for(std::size_t i = 0; i < axes_.size(); ++i) {
+                if(axes_[i]->status() != AxisStatus::standstill) {
+                    all_done = false;
+                    break;
+                }
+            }
+            if(all_done) {
+                direct_active_ = false;
+                status_ = GroupStatus::standby;
+            }
+            return;
         }
 
         if(cart_window_active_) {
@@ -926,7 +1376,12 @@ public:
 
         if(!active_) {
             if(status_ == GroupStatus::stopping) {
-                status_ = GroupStatus::standby;
+                if(interrupting_) {
+                    interrupting_ = false;
+                    status_ = GroupStatus::interrupted;
+                } else {
+                    status_ = GroupStatus::standby;
+                }
             }
             return;
         }
@@ -937,7 +1392,10 @@ public:
             const otg::State1D state =
                 otg::sample(active_profile_, rt::CycleTick::from_cycles(active_tick_));
             ratio = state.position / active_path_length_;
-            ratio = ratio < 0.0 ? 0.0 : (ratio > 1.0 ? 1.0 : ratio);
+            if(active_kind_ != GroupPathKind::linear) {
+                ratio = ratio < 0.0 ? 0.0 : ratio;
+            }
+            ratio = ratio > 1.0 ? 1.0 : ratio;
         }
         if(active_kind_ == GroupPathKind::circular) {
             // Arc-length parameterized sampling: the first two axes trace the
@@ -955,9 +1413,26 @@ public:
                 return;
             }
         } else {
+            // Y7 (KB-051): during the connector, the output is the
+            // along-path position plus the lateral decay offset. After
+            // the lateral profile completes, its position is zero and
+            // the motion continues as pure along-path interpolation.
+            double lat_offset = 0.0;
+            if(connector_active_) {
+                const otg::State1D lat = otg::sample(
+                    connector_lateral_profile_,
+                    rt::CycleTick::from_cycles(active_tick_));
+                lat_offset = lat.position;
+                if(active_tick_ >= connector_duration_) {
+                    connector_active_ = false;
+                }
+            }
             for(std::size_t i = 0; i < axes_.size(); ++i) {
-                const double position =
+                double position =
                     active_start_[i] + (active_finish_[i] - active_start_[i]) * ratio;
+                if(lat_offset != 0.0) {
+                    position += connector_lateral_dir_[i] * lat_offset;
+                }
                 axes_[i]->set_synchronized_position(position);
             }
         }
@@ -1271,7 +1746,6 @@ private:
     struct CartPiece
     {
         bool corner = false;
-        bool constant_ride = false;
         geom::Vec3 start{};
         geom::Vec3 dir{};
         double length = 0.0;
@@ -1632,63 +2106,48 @@ private:
             piece.v_in = piece.v_in < reach ? piece.v_in : reach;
             v = piece.v_in;
         }
-        // Profiles. Steady interior lines (v_in == v_out > 0) ride constant
-        // node velocity exactly like corners — a node pinned at the command
-        // limit leaves the OTG no cruise-refinement interval and the
-        // quantization residue can fall into a deep dive-and-return burn;
-        // the constant ride absorbs the residue in the declared <=1-cycle
-        // terminal clamp instead. Only the live entry piece and the
-        // terminal to-rest piece carry real profiles.
         for(std::size_t i = cart_piece_index_; i < count; ++i) {
             CartPiece &piece = cart_window_[i];
-            piece.constant_ride = false;
             if(piece.corner) {
-                piece.constant_ride = true;
                 const double speed = piece.v_in > 1e-12 ? piece.v_in : 1e-12;
-                piece.duration = static_cast<std::int64_t>(piece.length / speed) + 1;
+                piece.duration =
+                    static_cast<std::int64_t>(piece.length / speed) + 1;
                 continue;
             }
             const bool live_entry = i == cart_piece_index_;
-            const bool steady = !live_entry && piece.v_out > 1e-12 &&
-                                std::fabs(piece.v_in - piece.v_out) < 1e-12;
-            if(steady) {
-                piece.constant_ride = true;
-                piece.duration =
-                    static_cast<std::int64_t>(piece.length / piece.v_out) + 1;
-                continue;
-            }
             const double entry_v = live_entry ? cart_window_entry_v_ : piece.v_in;
             const double entry_a = live_entry ? cart_window_entry_a_ : 0.0;
             double cap = piece.cap;
             if(cartesian_velocity_limit_ > 0.0 && cap > cartesian_velocity_limit_) {
                 cap = cartesian_velocity_limit_;
             }
-            // Exit-velocity retreat ladder: a target pinned at the limit can
-            // strand the solver in the residue burn; each retreat is a
-            // declared sub-envelope velocity step at the junction.
-            const double ladder[4] = {1.0, 0.99, 0.97, 0.94};
-            const std::int64_t sane =
-                piece.v_out > 1e-12
-                    ? static_cast<std::int64_t>(piece.length / piece.v_out) + 24
-                    : 0;
-            bool planned = false;
-            for(int attempt = 0; attempt < 4; ++attempt) {
-                const double vt = piece.v_out * ladder[attempt];
-                const rt::Result<otg::Profile1D> profile = otg::plan_time_optimal(
-                    {0.0, entry_v, entry_a}, {piece.length, vt, 0.0},
-                    {cap, acc, dec, jerk});
-                if(!profile) {
-                    continue;
-                }
-                piece.profile = profile.value();
-                piece.duration = piece.profile.duration_cycles();
-                planned = true;
-                if(piece.v_out <= 1e-12 || piece.duration <= sane) {
-                    break;
-                }
-            }
-            if(!planned) {
+            const otg::Limits1D lim{cap, acc, dec, jerk};
+            const rt::Result<otg::Profile1D> profile = otg::plan_time_optimal(
+                {0.0, entry_v, entry_a}, {piece.length, piece.v_out, 0.0},
+                lim);
+            if(!profile) {
                 return false;
+            }
+            piece.profile = profile.value();
+            piece.duration = piece.profile.duration_cycles();
+            const double avg_v = entry_v > piece.v_out
+                ? entry_v : (piece.v_out > 1e-12 ? piece.v_out : entry_v);
+            if(avg_v > 1e-12) {
+                const std::int64_t ideal = static_cast<std::int64_t>(
+                    std::ceil(piece.length / avg_v));
+                if(piece.duration > ideal + 4) {
+                    for(std::int64_t t = ideal; t <= ideal + 4; ++t) {
+                        const rt::Result<otg::Profile1D> ft =
+                            otg::solve_fixed_time(
+                                {0.0, entry_v, entry_a},
+                                {piece.length, piece.v_out, 0.0}, lim, t);
+                        if(ft) {
+                            piece.profile = ft.value();
+                            piece.duration = ft.value().duration_cycles();
+                            break;
+                        }
+                    }
+                }
             }
         }
         return true;
@@ -1751,7 +2210,7 @@ private:
         ++cart_piece_tick_;
         CartPiece &piece = cart_window_[cart_piece_index_];
         double s = 0.0;
-        if(piece.constant_ride) {
+        if(piece.corner) {
             s = piece.v_in * static_cast<double>(cart_piece_tick_);
             s = s > piece.length ? piece.length : s;
         } else {
@@ -1806,7 +2265,7 @@ private:
         }
         CartPiece &piece = cart_window_[cart_piece_index_];
         otg::State1D state{};
-        if(piece.constant_ride) {
+        if(piece.corner) {
             double s = piece.v_in * static_cast<double>(cart_piece_tick_);
             s = s > piece.length ? piece.length : s;
             state = {s, piece.v_in, 0.0};
@@ -2504,6 +2963,7 @@ private:
     {
         active_command_ = command;
         active_tick_ = 0;
+        connector_active_ = false;
         double longest = 0.0;
         for(std::size_t i = 0; i < axes_.size(); ++i) {
             active_start_[i] = axes_[i]->snapshot().command_position;
@@ -2532,6 +2992,27 @@ private:
             }
         }
         active_path_length_ = longest;
+
+        // Y7 (KB-051 fix): velocity-continuous aborting takeover via
+        // tolerance-tube connector. The pre-takeover velocity is decomposed
+        // into an along-path scalar (projected onto the new path tangent)
+        // and a lateral residual that decays to zero via an independent
+        // jerk-limited profile (approved v2.1 matrix, linear scope).
+        const bool try_connector =
+            has_takeover_velocity_ && command.path_kind == GroupPathKind::linear;
+        has_takeover_velocity_ = false;
+
+        if(try_connector) {
+            const rt::ErrorCode planned = plan_connector(command, longest);
+            if(planned == rt::ErrorCode::ok) {
+                active_ = true;
+                status_ = GroupStatus::moving;
+                return rt::ErrorCode::ok;
+            }
+            // Connector planning failed; fall through to the rest-start path.
+            connector_active_ = false;
+        }
+
         if(longest > 0.0) {
             const rt::Result<otg::Profile1D> profile = otg::plan_time_optimal(
                 {0.0, 0.0, 0.0},
@@ -2551,14 +3032,160 @@ private:
         return rt::ErrorCode::ok;
     }
 
+    // Y7 connector planner: decomposes the takeover velocity into along-path
+    // and lateral components, plans both profiles with beta-split limits.
+    // KB-052: projects acceleration onto new tangent for a_s0 continuity.
+    // KB-053: rejects connector when stopping distance exceeds path length.
+    rt::ErrorCode plan_connector(const GroupCommand &command, double longest)
+    {
+        constexpr double kBeta = 0.5;
+        constexpr double kAlignedThreshold = 1e-9;
+
+        // New path tangent (unit direction). For zero-distance moves the
+        // tangent is undefined; all velocity is lateral.
+        std::array<double, MaxAxes> t_hat{};
+        if(longest > 0.0) {
+            for(std::size_t i = 0; i < axes_.size(); ++i) {
+                t_hat[i] = (active_finish_[i] - active_start_[i]) / longest;
+            }
+        }
+
+        // Project takeover velocity and acceleration onto new path tangent.
+        double s_dot_0 = 0.0;
+        double a_s0 = 0.0;
+        for(std::size_t i = 0; i < axes_.size(); ++i) {
+            s_dot_0 += takeover_velocity_[i] * t_hat[i];
+            a_s0 += takeover_acceleration_[i] * t_hat[i];
+        }
+
+        // Lateral residual velocity.
+        double lat_speed_sq = 0.0;
+        std::array<double, MaxAxes> lat_vel{};
+        for(std::size_t i = 0; i < axes_.size(); ++i) {
+            lat_vel[i] = takeover_velocity_[i] - s_dot_0 * t_hat[i];
+            lat_speed_sq += lat_vel[i] * lat_vel[i];
+        }
+        const double lat_speed = std::sqrt(lat_speed_sq);
+
+        if(lat_speed <= kAlignedThreshold) {
+            // Aligned takeover: no lateral residual, plan along-path with
+            // full limits from the projected velocity+acceleration (zero
+            // connector). KB-052: a_s0 included.
+            if(longest > 0.0) {
+                const rt::Result<otg::Profile1D> along = otg::plan_time_optimal(
+                    {0.0, s_dot_0, a_s0},
+                    {longest, 0.0, 0.0},
+                    {command.velocity, command.acceleration, command.deceleration,
+                     command.jerk});
+                if(!along) {
+                    return along.error();
+                }
+                active_profile_ = along.value();
+                active_duration_ = active_profile_.duration_cycles();
+            } else {
+                active_profile_ = otg::Profile1D{};
+                active_duration_ = 1;
+            }
+            return rt::ErrorCode::ok;
+        }
+
+        // Non-aligned takeover: plan both profiles with beta-split limits.
+        for(std::size_t i = 0; i < axes_.size(); ++i) {
+            connector_lateral_dir_[i] = lat_vel[i] / lat_speed;
+        }
+
+        // Lateral decay: from (pos=0, vel=lat_speed) to (pos=0, vel=0).
+        // The profile overshoots, peaks at R_tube, then returns to zero.
+        const otg::Limits1D lat_limits{
+            (1.0 - kBeta) * command.velocity,
+            (1.0 - kBeta) * command.acceleration,
+            (1.0 - kBeta) * command.deceleration,
+            (1.0 - kBeta) * command.jerk,
+        };
+        const rt::Result<otg::Profile1D> lat =
+            otg::plan_time_optimal({0.0, lat_speed, 0.0}, {0.0, 0.0, 0.0}, lat_limits);
+        if(!lat) {
+            return lat.error();
+        }
+        connector_lateral_profile_ = lat.value();
+        connector_duration_ = connector_lateral_profile_.duration_cycles();
+
+        // R_tube = peak lateral displacement during the decay profile.
+        double max_disp = 0.0;
+        for(std::int64_t t = 1; t <= connector_duration_; ++t) {
+            const otg::State1D s =
+                otg::sample(connector_lateral_profile_, rt::CycleTick::from_cycles(t));
+            const double d = std::fabs(s.position);
+            if(d > max_disp) {
+                max_disp = d;
+            }
+        }
+        connector_r_tube_ = max_disp;
+
+        // Along-path: from (pos=0, vel=s_dot_0, acc=a_s0) to
+        // (pos=longest, vel=0, acc=0) with beta-split limits.
+        // KB-052: a_s0 included for acceleration continuity.
+        const otg::Limits1D along_limits{
+            kBeta * command.velocity,
+            kBeta * command.acceleration,
+            kBeta * command.deceleration,
+            kBeta * command.jerk,
+        };
+
+        // Clamp a_s0 to the beta-split acceleration limits so the OTG
+        // entry state is admissible under the split budget.
+        if(a_s0 > along_limits.max_acceleration) {
+            a_s0 = along_limits.max_acceleration;
+        } else if(a_s0 < -along_limits.max_deceleration) {
+            a_s0 = -along_limits.max_deceleration;
+        }
+
+        // KB-053: reject the connector when the along-path stopping
+        // distance far exceeds the path length. The rest-start fallback
+        // is safe (starts from zero velocity, no cliff).
+        if(longest > 0.0) {
+            const double stop_dist =
+                otg::detail::ramp_between(s_dot_0, 0.0, along_limits).distance;
+            if(stop_dist > longest * 1.5) {
+                return rt::ErrorCode::infeasible;
+            }
+            const rt::Result<otg::Profile1D> along = otg::plan_time_optimal(
+                {0.0, s_dot_0, a_s0}, {longest, 0.0, 0.0}, along_limits);
+            if(!along) {
+                return along.error();
+            }
+            active_profile_ = along.value();
+            active_duration_ = std::max(active_profile_.duration_cycles(),
+                                        connector_duration_);
+        } else {
+            // Zero-distance: all velocity is lateral, along-path is trivial.
+            active_profile_ = otg::Profile1D{};
+            active_duration_ = connector_duration_;
+        }
+        connector_active_ = true;
+        return rt::ErrorCode::ok;
+    }
+
     void finish_active()
     {
-        active_ = false;
-        for(std::size_t i = 0; i < axes_.size(); ++i) {
-            axes_[i]->clear_synchronized();
+        if(override_paused_) {
+            return;
         }
-        status_ = GroupStatus::standby;
-        start_next_queued();
+        if(interrupting_) {
+            const otg::State1D state =
+                otg::sample(active_profile_, rt::CycleTick::from_cycles(active_tick_));
+            interrupt_ratio_ = state.position / active_path_length_;
+            if(interrupt_ratio_ > 1.0) { interrupt_ratio_ = 1.0; }
+        }
+        active_ = false;
+        connector_active_ = false;
+        if(!interrupting_) {
+            for(std::size_t i = 0; i < axes_.size(); ++i) {
+                axes_[i]->clear_synchronized();
+            }
+            status_ = GroupStatus::standby;
+            start_next_queued();
+        }
     }
 
     void start_next_queued()
@@ -2577,6 +3204,12 @@ private:
     void abort_motion()
     {
         active_ = false;
+        connector_active_ = false;
+        direct_active_ = false;
+        override_paused_ = false;
+        interrupting_ = false;
+        interrupted_plain_ = false;
+        interrupted_window_ = false;
         window_reset();
         cart_window_reset();
         queue_.clear();
@@ -2584,6 +3217,38 @@ private:
         for(std::size_t i = 0; i < axes_.size(); ++i) {
             axes_[i]->clear_synchronized();
         }
+    }
+
+    // Y7 (KB-051/052 fix): capture the per-axis velocity AND acceleration
+    // vectors of the current plain linear motion before abort_motion()
+    // destroys it. KB-052: acceleration capture ensures a_s0 = ⟨q̈, t̂⟩
+    // continuity (v2.1 decision #1). During a connector, the composite
+    // state (along-path + lateral) is returned so re-entrant aborting
+    // decomposes correctly.
+    void capture_takeover_velocity()
+    {
+        has_takeover_velocity_ = false;
+        if(!active_ || active_kind_ != GroupPathKind::linear ||
+           active_path_length_ <= 0.0) {
+            return;
+        }
+        const otg::State1D along =
+            otg::sample(active_profile_, rt::CycleTick::from_cycles(active_tick_));
+        for(std::size_t i = 0; i < axes_.size(); ++i) {
+            const double dir_i =
+                (active_finish_[i] - active_start_[i]) / active_path_length_;
+            takeover_velocity_[i] = along.velocity * dir_i;
+            takeover_acceleration_[i] = along.acceleration * dir_i;
+        }
+        if(connector_active_) {
+            const otg::State1D lat = otg::sample(
+                connector_lateral_profile_, rt::CycleTick::from_cycles(active_tick_));
+            for(std::size_t i = 0; i < axes_.size(); ++i) {
+                takeover_velocity_[i] += lat.velocity * connector_lateral_dir_[i];
+                takeover_acceleration_[i] += lat.acceleration * connector_lateral_dir_[i];
+            }
+        }
+        has_takeover_velocity_ = true;
     }
 
     // A5 look-ahead window (KB-032, approved A5 matrix): consecutive blending
@@ -3303,10 +3968,16 @@ private:
                                                 rt::CycleTick::from_cycles(window_tick_));
             sample_window_arclength(window_stop_origin_ + st.position);
             if(window_tick_ >= window_stop_profile_.duration_cycles()) {
-                window_reset();
-                clear_axes_synchronized();
-                status_ = GroupStatus::standby;
-                start_next_queued();
+                if(interrupting_) {
+                    interrupting_ = false;
+                    window_stop_ = false;
+                    status_ = GroupStatus::interrupted;
+                } else {
+                    window_reset();
+                    clear_axes_synchronized();
+                    status_ = GroupStatus::standby;
+                    start_next_queued();
+                }
             }
             return;
         }
@@ -3555,37 +4226,16 @@ private:
         return std::sqrt(area) / (norm1 * std::sqrt(norm1));
     }
 
-    int domain_id_ = 0;
-    GroupStatus status_ = GroupStatus::disabled;
-    geom::RigidTransform workpiece_frame_{};
-    geom::Vec3 tool_offset_{};
-    geom::RigidTransform pose_tool_{};
-    geom::RigidTransform pose_tool_inverse_{};
-    double workpiece_frame_rpy_[6] = {};
-    double tool_transform_rpy_[6] = {};
     const kin::PoseKinematics *pose_kinematics_ = nullptr;
     double pose_min_margin_ = 0.0;
     double pose_max_joint_step_ = 0.0;
     const kin::Kinematics *kinematics_ = nullptr;
     double kinematics_min_margin_ = 0.0;
     double cartesian_velocity_limit_ = 0.0;
-    rt::StaticVector<AxisModel *, MaxAxes> axes_{};
-    rt::StaticVector<GroupCommand, QueueCapacity> queue_{};
-    GroupCommand active_command_{};
-    std::array<double, MaxAxes> active_start_{};
-    std::array<double, MaxAxes> active_finish_{};
-    GroupPathKind active_kind_ = GroupPathKind::linear;
-    CartesianSegment active_cart_{};
-    double cart_joints_[MaxAxes] = {};
-    rt::ErrorCode last_cartesian_error_ = rt::ErrorCode::ok;
-    rt::StaticVector<CartPiece, CartWindowPieces> cart_window_{};
-    bool cart_window_active_ = false;
-    bool cart_window_stopping_ = false;
     std::size_t cart_piece_index_ = 0;
     std::int64_t cart_piece_tick_ = 0;
     std::int64_t cart_halt_tick_ = 0;
     std::int64_t cart_halt_duration_ = 0;
-    otg::Profile1D cart_halt_profile_{};
     double cart_halt_origin_ = 0.0;
     double cart_halt_piece_offset_ = 0.0;
     double cart_window_entry_v_ = 0.0;
@@ -3593,27 +4243,64 @@ private:
     double cart_window_acc_ = 0.0;
     double cart_window_dec_ = 0.0;
     double cart_window_jerk_ = 0.0;
-    double cart_tail_joints_[MaxAxes] = {};
-    double cart_window_joints_[MaxAxes] = {};
-    std::uint32_t cart_window_last_id_ = 0;
-    geom::ArcSegment active_arc_{};
-    rt::StaticVector<WindowSegment, WindowCapacity> window_{};
     std::size_t window_depth_ = WindowCapacity;
-    bool window_active_ = false;
-    bool window_in_curve_ = false;
-    bool window_stop_ = false;
     std::size_t window_index_ = 0;
     std::int64_t window_tick_ = 0;
-    otg::Profile1D window_stop_profile_{};
     double window_stop_origin_ = 0.0;
-    otg::State1D window_seed_state_{};
-    std::uint32_t last_blend_degraded_id_ = 0;
-    otg::Profile1D active_profile_{};
     double active_path_length_ = 0.0;
     std::int64_t active_tick_ = 0;
     std::int64_t active_duration_ = 1;
+    std::int64_t connector_duration_ = 0;
+    double connector_r_tube_ = 0.0;
+    double group_override_ = 1.0;
+    double interrupt_ratio_ = 0.0;
+    geom::Vec3 tool_offset_{};
+    otg::State1D window_seed_state_{};
+    double workpiece_frame_rpy_[6] = {};
+    double tool_transform_rpy_[6] = {};
+    std::array<double, MaxAxes> active_start_{};
+    std::array<double, MaxAxes> active_finish_{};
+    double cart_joints_[MaxAxes] = {};
+    double cart_tail_joints_[MaxAxes] = {};
+    double cart_window_joints_[MaxAxes] = {};
+    std::array<double, MaxAxes> connector_lateral_dir_{};
+    std::array<double, MaxAxes> takeover_velocity_{};
+    std::array<double, MaxAxes> takeover_acceleration_{};
+    rt::StaticVector<AxisModel *, MaxAxes> axes_{};
+    geom::RigidTransform workpiece_frame_{};
+    geom::RigidTransform pose_tool_{};
+    geom::RigidTransform pose_tool_inverse_{};
+    geom::ArcSegment active_arc_{};
+    CartesianSegment active_cart_{};
+    GroupCommand active_command_{};
+    otg::Profile1D cart_halt_profile_{};
+    otg::Profile1D window_stop_profile_{};
+    otg::Profile1D active_profile_{};
+    otg::Profile1D connector_lateral_profile_{};
+    rt::StaticVector<GroupCommand, QueueCapacity> queue_{};
+    rt::StaticVector<CartPiece, CartWindowPieces> cart_window_{};
+    rt::StaticVector<WindowSegment, WindowCapacity> window_{};
+    int domain_id_ = 0;
+    GroupStatus status_ = GroupStatus::disabled;
+    GroupPathKind active_kind_ = GroupPathKind::linear;
+    rt::ErrorCode last_cartesian_error_ = rt::ErrorCode::ok;
+    std::uint32_t cart_window_last_id_ = 0;
+    std::uint32_t last_blend_degraded_id_ = 0;
     std::uint32_t next_command_id_ = 1;
+    std::uint32_t direct_command_id_ = 0;
+    bool cart_window_active_ = false;
+    bool cart_window_stopping_ = false;
+    bool window_active_ = false;
+    bool window_in_curve_ = false;
+    bool window_stop_ = false;
     bool active_ = false;
+    bool connector_active_ = false;
+    bool has_takeover_velocity_ = false;
+    bool override_paused_ = false;
+    bool interrupting_ = false;
+    bool interrupted_plain_ = false;
+    bool interrupted_window_ = false;
+    bool direct_active_ = false;
 };
 
 } // namespace plcopen::core::axis

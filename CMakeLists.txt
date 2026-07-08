@@ -73,32 +73,36 @@ if(PLCOPEN_BUILD_DOCS)
 endif()
 
 if(PLCOPEN_BUILD_PYTHON_BINDINGS)
-  include(FetchContent)
   find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
 
   set(PYBIND11_FINDPYTHON ON CACHE BOOL "" FORCE)
-  FetchContent_Declare(
-    pybind11
-    GIT_REPOSITORY https://github.com/pybind/pybind11.git
-    GIT_TAG v2.13.6)
-  if(DEFINED CMAKE_WARN_DEPRECATED)
-    set(_PLCOPEN_WARN_DEPRECATED_DEFINED TRUE)
-    set(_PLCOPEN_WARN_DEPRECATED_VALUE "${CMAKE_WARN_DEPRECATED}")
-  else()
-    set(_PLCOPEN_WARN_DEPRECATED_DEFINED FALSE)
+  find_package(pybind11 CONFIG QUIET)
+  if(NOT pybind11_FOUND)
+    include(FetchContent)
+    FetchContent_Declare(
+      pybind11
+      GIT_REPOSITORY https://github.com/pybind/pybind11.git
+      GIT_TAG v2.13.6)
+    if(DEFINED CMAKE_WARN_DEPRECATED)
+      set(_PLCOPEN_WARN_DEPRECATED_DEFINED TRUE)
+      set(_PLCOPEN_WARN_DEPRECATED_VALUE "${CMAKE_WARN_DEPRECATED}")
+    else()
+      set(_PLCOPEN_WARN_DEPRECATED_DEFINED FALSE)
+    endif()
+    set(CMAKE_WARN_DEPRECATED OFF CACHE BOOL "" FORCE)
+    FetchContent_MakeAvailable(pybind11)
+    if(_PLCOPEN_WARN_DEPRECATED_DEFINED)
+      set(CMAKE_WARN_DEPRECATED "${_PLCOPEN_WARN_DEPRECATED_VALUE}" CACHE BOOL "" FORCE)
+    else()
+      unset(CMAKE_WARN_DEPRECATED CACHE)
+    endif()
+    unset(_PLCOPEN_WARN_DEPRECATED_DEFINED)
+    unset(_PLCOPEN_WARN_DEPRECATED_VALUE)
   endif()
-  set(CMAKE_WARN_DEPRECATED OFF CACHE BOOL "" FORCE)
-  FetchContent_MakeAvailable(pybind11)
-  if(_PLCOPEN_WARN_DEPRECATED_DEFINED)
-    set(CMAKE_WARN_DEPRECATED "${_PLCOPEN_WARN_DEPRECATED_VALUE}" CACHE BOOL "" FORCE)
-  else()
-    unset(CMAKE_WARN_DEPRECATED CACHE)
-  endif()
-  unset(_PLCOPEN_WARN_DEPRECATED_DEFINED)
-  unset(_PLCOPEN_WARN_DEPRECATED_VALUE)
 
   pybind11_add_module(pyplcopen python/pyplcopen.cpp)
   target_link_libraries(pyplcopen PRIVATE plcopen::plcopen)
+  install(TARGETS pyplcopen LIBRARY DESTINATION .)
 
   if(BUILD_TESTING)
     file(GENERATE

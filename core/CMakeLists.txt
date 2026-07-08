@@ -41,6 +41,12 @@ if(BUILD_TESTING AND PLCOPEN_BUILD_CORE_TESTS)
     plcopen_core_rt_compile_options(plcopen_core_otg_oracle)
     add_test(NAME plcopen_core_otg_oracle COMMAND plcopen_core_otg_oracle)
 
+    add_executable(plcopen_core_otg_optimality_oracle test/otg_optimality_oracle.cpp)
+    target_link_libraries(plcopen_core_otg_optimality_oracle PRIVATE plcopen::core)
+    plcopen_core_rt_compile_options(plcopen_core_otg_optimality_oracle)
+    add_test(NAME plcopen_core_otg_optimality_oracle
+             COMMAND plcopen_core_otg_optimality_oracle --iterations 500)
+
     add_executable(plcopen_core_otg_time_optimal_tests test/otg_time_optimal_tests.cpp)
     target_link_libraries(plcopen_core_otg_time_optimal_tests PRIVATE plcopen::core)
     plcopen_core_rt_compile_options(plcopen_core_otg_time_optimal_tests)
@@ -92,6 +98,36 @@ if(BUILD_TESTING AND PLCOPEN_BUILD_CORE_TESTS)
     plcopen_core_rt_compile_options(plcopen_core_r3_io_tests)
     add_test(NAME plcopen_core_r3_io_tests COMMAND plcopen_core_r3_io_tests)
 
+    add_executable(plcopen_core_geom_derivative_tests test/geom_derivative_tests.cpp)
+    target_link_libraries(plcopen_core_geom_derivative_tests PRIVATE plcopen::core)
+    plcopen_core_rt_compile_options(plcopen_core_geom_derivative_tests)
+    add_test(NAME plcopen_core_geom_derivative_tests COMMAND plcopen_core_geom_derivative_tests)
+
+    add_executable(plcopen_core_geom_third_derivative_tests test/geom_third_derivative_tests.cpp)
+    target_link_libraries(plcopen_core_geom_third_derivative_tests PRIVATE plcopen::core)
+    plcopen_core_rt_compile_options(plcopen_core_geom_third_derivative_tests)
+    add_test(NAME plcopen_core_geom_third_derivative_tests COMMAND plcopen_core_geom_third_derivative_tests)
+
+    add_executable(plcopen_core_topp_oracle test/topp_oracle.cpp)
+    target_link_libraries(plcopen_core_topp_oracle PRIVATE plcopen::core)
+    plcopen_core_rt_compile_options(plcopen_core_topp_oracle)
+    add_test(NAME plcopen_core_topp_oracle COMMAND plcopen_core_topp_oracle)
+
+    add_executable(plcopen_core_topp_jerk_oracle test/topp_jerk_oracle.cpp)
+    target_link_libraries(plcopen_core_topp_jerk_oracle PRIVATE plcopen::core)
+    plcopen_core_rt_compile_options(plcopen_core_topp_jerk_oracle)
+    add_test(NAME plcopen_core_topp_jerk_oracle COMMAND plcopen_core_topp_jerk_oracle)
+
+    add_executable(plcopen_core_topp_shadow_oracle test/topp_shadow_oracle.cpp)
+    target_link_libraries(plcopen_core_topp_shadow_oracle PRIVATE plcopen::core)
+    plcopen_core_rt_compile_options(plcopen_core_topp_shadow_oracle)
+    add_test(NAME plcopen_core_topp_shadow_oracle COMMAND plcopen_core_topp_shadow_oracle)
+
+    add_executable(plcopen_core_topp_executor_tests test/topp_executor_tests.cpp)
+    target_link_libraries(plcopen_core_topp_executor_tests PRIVATE plcopen::core)
+    plcopen_core_rt_compile_options(plcopen_core_topp_executor_tests)
+    add_test(NAME plcopen_core_topp_executor_tests COMMAND plcopen_core_topp_executor_tests)
+
     add_executable(plcopen_core_a3_circular_tests test/a3_circular_tests.cpp)
     target_link_libraries(plcopen_core_a3_circular_tests PRIVATE plcopen::core)
     plcopen_core_rt_compile_options(plcopen_core_a3_circular_tests)
@@ -106,6 +142,11 @@ if(BUILD_TESTING AND PLCOPEN_BUILD_CORE_TESTS)
     target_link_libraries(plcopen_core_a5_lookahead_tests PRIVATE plcopen::core)
     plcopen_core_rt_compile_options(plcopen_core_a5_lookahead_tests)
     add_test(NAME plcopen_core_a5_lookahead_tests COMMAND plcopen_core_a5_lookahead_tests)
+
+    add_executable(plcopen_core_y7_group_takeover_tests test/y7_group_takeover_tests.cpp)
+    target_link_libraries(plcopen_core_y7_group_takeover_tests PRIVATE plcopen::core)
+    plcopen_core_rt_compile_options(plcopen_core_y7_group_takeover_tests)
+    add_test(NAME plcopen_core_y7_group_takeover_tests COMMAND plcopen_core_y7_group_takeover_tests)
 
     add_executable(plcopen_core_stream_tests test/stream_filter_tests.cpp)
     target_link_libraries(plcopen_core_stream_tests PRIVATE plcopen::core)
@@ -157,10 +198,30 @@ if(BUILD_TESTING AND PLCOPEN_BUILD_CORE_TESTS)
     plcopen_core_rt_compile_options(plcopen_core_stream_session_tests)
     add_test(NAME plcopen_core_stream_session_tests COMMAND plcopen_core_stream_session_tests)
 
+    add_executable(plcopen_core_stream_fastpath_oracle test/stream_fastpath_oracle.cpp)
+    target_link_libraries(plcopen_core_stream_fastpath_oracle PRIVATE plcopen::core)
+    plcopen_core_rt_compile_options(plcopen_core_stream_fastpath_oracle)
+    add_test(NAME plcopen_core_stream_fastpath_oracle COMMAND plcopen_core_stream_fastpath_oracle)
+
     add_executable(plcopen_core_a2_alloc_guard test/a2_alloc_guard_tests.cpp)
     target_link_libraries(plcopen_core_a2_alloc_guard PRIVATE plcopen::core)
     plcopen_core_rt_compile_options(plcopen_core_a2_alloc_guard)
     add_test(NAME plcopen_core_a2_alloc_guard COMMAND plcopen_core_a2_alloc_guard)
+
+    add_executable(plcopen_core_part4_management_tests test/part4_management_tests.cpp)
+    target_link_libraries(plcopen_core_part4_management_tests PRIVATE plcopen::core)
+    plcopen_core_rt_compile_options(plcopen_core_part4_management_tests)
+    add_test(NAME plcopen_core_part4_management_tests COMMAND plcopen_core_part4_management_tests)
+
+    add_executable(plcopen_core_part4_pathtable_tests test/part4_pathtable_tests.cpp)
+    target_link_libraries(plcopen_core_part4_pathtable_tests PRIVATE plcopen::core)
+    plcopen_core_rt_compile_options(plcopen_core_part4_pathtable_tests)
+    add_test(NAME plcopen_core_part4_pathtable_tests COMMAND plcopen_core_part4_pathtable_tests)
+
+    add_executable(plcopen_core_part5_homing_tests test/part5_homing_tests.cpp)
+    target_link_libraries(plcopen_core_part5_homing_tests PRIVATE plcopen::core)
+    plcopen_core_rt_compile_options(plcopen_core_part5_homing_tests)
+    add_test(NAME plcopen_core_part5_homing_tests COMMAND plcopen_core_part5_homing_tests)
 
     add_executable(plcopen_core_replay_regression test/replay_regression.cpp)
     target_link_libraries(plcopen_core_replay_regression PRIVATE plcopen::core)

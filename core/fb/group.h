@@ -109,6 +109,7 @@ public:
     bool moving = false;
     bool stopping = false;
     bool error_stop = false;
+    bool interrupted = false;
 
     void call()
     {
@@ -117,6 +118,7 @@ public:
         moving = false;
         stopping = false;
         error_stop = false;
+        interrupted = false;
         if(!enable) {
             valid = false;
             error = false;
@@ -144,6 +146,7 @@ public:
                  (status == axis::GroupStatus::standby && member_synchronized);
         stopping = status == axis::GroupStatus::stopping;
         error_stop = status == axis::GroupStatus::errorstop;
+        interrupted = status == axis::GroupStatus::interrupted;
         valid = true;
         error = false;
         error_id = rt::ErrorCode::ok;

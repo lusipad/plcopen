@@ -1,0 +1,22 @@
+Checks: >
+  -*,
+  bugprone-*,
+  clang-analyzer-*,
+  performance-*,
+  readability-*,
+  -bugprone-easily-swappable-parameters,
+  -performance-enum-size,
+  -readability-magic-numbers,
+  -readability-identifier-length,
+  -readability-function-cognitive-complexity,
+  -readability-braces-around-statements
+
+WarningsAsErrors: >
+  bugprone-*,
+  clang-analyzer-*,
+  performance-*,
+  -bugprone-easily-swappable-parameters,
+  -performance-enum-size
+
+HeaderFilterRegex: 'core/.*\.h$'
+FormatStyle: none

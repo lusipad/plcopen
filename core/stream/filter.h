@@ -25,6 +25,7 @@
 #include "otg/time_optimal.h"
 #include "rt/cycle.h"
 #include "rt/error.h"
+#include "stream/quintic_fast_path.h"
 
 namespace plcopen::core::stream
 {
@@ -54,6 +55,10 @@ struct StreamFilterConfig
     // stop (decision #7).
     std::int64_t timeout_cycles = 1;
     std::int64_t extrapolation_cycles = 0;
+    // T24 quintic fast path (algorithm contract §4, KB-064): when enabled,
+    // replan() tries a closed-form quintic Hermite before falling back to
+    // the full OTG solve. Default off — pending semantic matrix approval.
+    bool quintic_fast_path = false;
 };
 
 class StreamFilter1D
@@ -100,6 +105,7 @@ public:
         now_ = 0;
         have_target_ = false;
         have_profile_ = false;
+        quintic_active_ = false;
         profile_tick_ = 0;
         pending_dirty_ = false;
         clamped_ = false;
@@ -238,8 +244,10 @@ public:
 
         // Coast-drift guard: once the profile is exhausted, the coast should
         // ride the target line exactly; measurable drift re-arms one solve.
+        const std::int64_t profile_duration =
+            quintic_active_ ? quintic_profile_.h : profile_.duration_cycles();
         if(mode_ == Mode::tracking && !pending_dirty_ && have_profile_ &&
-           profile_tick_ > profile_.duration_cycles() &&
+           profile_tick_ > profile_duration &&
            std::fabs(state_.position - pending_position_) >
                1e-9 * (1.0 + std::fabs(pending_position_))) {
             pending_dirty_ = true;
@@ -350,6 +358,7 @@ private:
         // backward or brakes toward rest while the line escapes.
         double through_velocity = pending_velocity_;
         double aim = pending_position_;
+        std::int64_t rendezvous_cycles = 0;
         if(through_velocity != 0.0) {
             // The horizon must be deep enough that a one-quantum (one cycle
             // of line displacement) recovery bump fits the jerk and
@@ -368,7 +377,9 @@ private:
             if(accel_depth > horizon) {
                 horizon = accel_depth;
             }
-            aim += through_velocity * std::ceil(horizon);
+            const double horizon_ceil = std::ceil(horizon);
+            aim += through_velocity * horizon_ceil;
+            rendezvous_cycles = static_cast<std::int64_t>(horizon_ceil);
             const double reach =
                 otg::detail::ramp_between(from.velocity, through_velocity, config_.limits)
                     .distance;
@@ -377,19 +388,39 @@ private:
                 const double merge_cycles =
                     std::ceil((needed - pending_position_) / through_velocity);
                 aim = pending_position_ + through_velocity * merge_cycles;
+                rendezvous_cycles = static_cast<std::int64_t>(merge_cycles);
             }
             if((aim - from.position) * through_velocity < 0.0) {
-                // Pathological entry state (moving against the stream):
-                // approach the current line point at rest; the line opens
-                // the gap and the velocity-matched law takes over.
                 through_velocity = 0.0;
                 aim = pending_position_;
+                rendezvous_cycles = 0;
             }
         }
 
         otg::Target1D to{clamp_to_envelope(aim), through_velocity, 0.0};
+
+        // T24 quintic fast path (KB-064): attempt closed-form quintic first
+        // when the config enables it and there's a valid rendezvous horizon.
+        quintic_active_ = false;
+        if(config_.quintic_fast_path && rendezvous_cycles > 0) {
+            QuinticProfile qp;
+            if(solve_quintic(from, to.position, to.velocity, rendezvous_cycles, qp) &&
+               check_quintic_limits(qp, config_.limits)) {
+                quintic_profile_ = qp;
+                quintic_active_ = true;
+                profile_tick_ = 0;
+                have_profile_ = true;
+                return;
+            }
+        }
+
         rt::Result<otg::Profile1D> planned =
-            otg::plan_time_optimal(from, to, config_.limits);
+            rendezvous_cycles > 0
+                ? otg::solve_fixed_time(from, to, config_.limits, rendezvous_cycles)
+                : rt::Result<otg::Profile1D>::failure(rt::ErrorCode::infeasible);
+        if(!planned) {
+            planned = otg::plan_time_optimal(from, to, config_.limits);
+        }
 
         if(!planned) {
             // Decision #5: clamp the target harder (rest target) and retry
@@ -412,6 +443,24 @@ private:
             return;
         }
         ++profile_tick_;
+
+        if(quintic_active_) {
+            if(profile_tick_ <= quintic_profile_.h) {
+                state_ = sample_quintic(quintic_profile_, profile_tick_);
+                return;
+            }
+            const otg::State1D finish =
+                sample_quintic(quintic_profile_, quintic_profile_.h);
+            if(finish.velocity != 0.0) {
+                state_.position += finish.velocity;
+                state_.velocity = finish.velocity;
+                state_.acceleration = 0.0;
+            } else {
+                state_ = finish;
+            }
+            return;
+        }
+
         if(profile_tick_ <= profile_.duration_cycles()) {
             state_ = otg::sample(profile_, rt::CycleTick::from_cycles(profile_tick_));
             return;
@@ -429,33 +478,30 @@ private:
         }
     }
 
-    StreamFilterConfig config_{};
-    otg::State1D state_{};
-    Mode mode_ = Mode::idle;
     std::int64_t now_ = 0;
-
-    bool have_target_ = false;
     double latest_position_ = 0.0;
     double latest_velocity_ = 0.0;
     std::int64_t latest_timestamp_ = 0;
-
-    bool pending_dirty_ = false;
     double pending_position_ = 0.0;
     double pending_velocity_ = 0.0;
-
-    otg::Profile1D profile_{};
     std::int64_t profile_tick_ = 0;
-    bool have_profile_ = false;
-
     std::int64_t extrapolation_tick_ = 0;
     double extrapolation_start_velocity_ = 0.0;
     double synthetic_position_ = 0.0;
     std::int64_t stream_interval_ = 1;
-
-    bool clamped_ = false;
+    otg::State1D state_{};
+    QuinticProfile quintic_profile_{};
+    StreamFilterConfig config_{};
+    otg::Profile1D profile_{};
+    Mode mode_ = Mode::idle;
     std::uint32_t rejected_targets_ = 0;
     std::uint32_t dropout_count_ = 0;
     std::uint32_t filter_faults_ = 0;
+    bool have_target_ = false;
+    bool pending_dirty_ = false;
+    bool quintic_active_ = false;
+    bool have_profile_ = false;
+    bool clamped_ = false;
 };
 
 } // namespace plcopen::core::stream

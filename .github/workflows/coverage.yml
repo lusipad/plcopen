@@ -1,0 +1,21 @@
+name: Coverage Gate
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '47 3 * * 1'
+
+jobs:
+  coverage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Install gcovr
+        run: pip install gcovr
+
+      - name: Run coverage gate (E4)
+        run: cmake -P cmake/coverage_gate.cmake

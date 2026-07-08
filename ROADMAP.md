@@ -13,15 +13,15 @@ sprint 记录）在 [doc/archive/roadmap-history.md](doc/archive/roadmap-history
 
 | # | 任务 | DoD | 状态 |
 |---|------|-----|------|
-| 1 | Y7 组接管修复（**linear 范围已批，可开工**） | 公差管语义 v2.1：标量承接 + 横向衰减 + β 分割；circular/笛卡尔待曲率项另批 | 矩阵 linear 范围已批 |
-| 2 | **对抗性探测轮**（拷问后提位：新 FB 不建在可能有暗伤的地基上） | 组/FB 语义面系统扫描，发现即 KB/修复 | 方法已验证（KB-051） |
-| 3 | Y0 最优性 oracle（评审定序提前：先立标尺再修算法） | 切换结构枚举表（第一交付物）+ 双 oracle + Ruckig 黑盒对照，excess_cycles 分域基线入趋势 | 设计已备 |
-| 4 | Y2 完整 OTG（评审三关键） | state-to-state 任意目标状态（非零 at）+ 钉边界 + epsilon 政策声明化；Ruckig 黑盒对照 | 合同已批（§1 + 附注） |
-| 4c | Y4 solve_fixed_time 一等原语（评审三关键，紧跟 Y2） | 同步 + cycle-exact 量化（删 KB-050 尾段补丁）+ 流追赶汇合同一求解；终态 ≤1e-9（T43） | 合同已批（§2 + 附注） |
-| 5a | P-Part4 剩余 FB | 管理组矩阵 + 路径表/变换第二批矩阵均已起草待批 | 两份矩阵待批 |
-| 5b | P-Part5 回零规程 | MC_Step* 标准回零步 FB 面（数字输入通道模拟验收） | 矩阵已起草待批 |
-| 4b | **信号通道并行项**（拷问后拉入：学习不等建造） | T1 pip wheel + 最小文档站起步——细案见 [signal-channel-plan](doc/planning/signal-channel-plan.md) | 方案已备，可并行 |
-| 6 | E 系列证据 | ARM64 CI + clang-tidy 零 P0 + 变异分数门 | 快批可穿插 |
+| 1 | Y7 组接管修复 | 公差管语义 v2.1：标量承接 + 横向衰减 + β 分割；circular/笛卡尔待曲率项另批 | **已交付**（KB-051） |
+| 2 | 对抗性探测轮 | 组/FB 语义面系统扫描，发现即 KB/修复 | **已交付**（KB-052/053/054） |
+| 3 | Y0 最优性 oracle（评审定序提前：先立标尺再修算法） | 切换结构枚举表（第一交付物）+ 双 oracle + Ruckig 黑盒对照，excess_cycles 分域基线入趋势 | **主 oracle 已交付**：678 结构表 + Newton 打靶 + 4 域基线；副 oracle / Ruckig 对照随 Y2 |
+| 4 | Y2 完整 OTG（评审三关键） | state-to-state 任意目标状态（非零 at）+ 钉边界 + epsilon 政策声明化；Ruckig 黑盒对照 | **软件全交付**（KB-055 非零 at + 12 固定 + 50k fuzz；KB-057 epsilon 政策声明化；Y0 oracle 678 结构表 + 4 域基线）；Ruckig 对照待 ADR-0003 人工审批 |
+| 4c | Y4 solve_fixed_time 一等原语（评审三关键，紧跟 Y2） | 同步 + cycle-exact 量化（删 KB-050 尾段补丁）+ 流追赶汇合同一求解；终态 ≤1e-9（T43） | **求解器 + KB-050 集成 + 流 rendezvous 已交付**（KB-056：8 候选族 + below_tmin multi-cubic；KB-050：匀速骑行/退避梯子删除；KB-035：流跟踪律 solve_fixed_time rendezvous 优先——38/38 pass）；组同步切换待下批 |
+| 5a | P-Part4 剩余 FB | 管理组矩阵 + 路径表/变换第二批矩阵均已批准实现 | **已交付**（管理 FB 27 测试 + 路径表/变换 FB 24 测试） |
+| 5b | P-Part5 回零规程 | MC_Step* 标准回零步 FB 面（数字输入通道模拟验收） | **已交付**（5 FB + 25 测试） |
+| 4b | **信号通道并行项 + Z 系列全量**（拷问后拉入） | T1 pip wheel + Z3 文档站 + Z2 单位层 + Z4 包管理 + Z5 诊断 | **Z 全清**（pip wheel + mkdocs 4 页 + CycleConfig SI 换算 + vcpkg/Conan + ErrorCode 文本诊断） |
+| 6 | E 系列证据 | ARM64 CI + clang-tidy 零 P0 + 变异分数门 | **E1-E4 全部交付**（aarch64 交叉编译 + QEMU 测试 job、.clang-tidy 38 文件零 P0、18 突变 100% 击杀 ≥70% 门、90.1% 行覆盖率 ≥90% 门） |
 | 7 | 台架采购决策 | 下单或共建协议（S1 之门，与本里程碑并行） | **人工** |
 | 8 | 72h soak 回写 | 2026-07-09 结果回写 DoD 表 | 定时 |
 | 9 | Part 4 原文核对 | 坐标矩阵 3 项线下核实 | 人工 |
@@ -56,4 +56,4 @@ Web HMI、SIL/冗余、云原生——何时启动见
 
 ---
 
-*最后更新：2026-07-05（文档体系重建批③：历史迁入 archive，本页重置为当前里程碑）*
+*最后更新：2026-07-08（Part 4/5 FB 交付 + Y2 epsilon 声明化 + KB-057）*

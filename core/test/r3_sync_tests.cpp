@@ -898,6 +898,156 @@ int check_sync_command_interactions()
     return 0;
 }
 
+int check_sync_fb_error_paths()
+{
+    // FbGearIn: null refs
+    {
+        fb::FbGearIn gear;
+        gear.execute = true;
+        gear.call();
+        if(!gear.outputs.error || gear.outputs.error_id != rt::ErrorCode::invalid_argument) {
+            return fail("gear in null refs");
+        }
+    }
+
+    // FbGearIn: execute=false clears
+    {
+        fb::FbGearIn gear;
+        gear.execute = false;
+        gear.call();
+        if(gear.outputs.busy || gear.outputs.error || gear.in_sync) {
+            return fail("gear in execute=false");
+        }
+    }
+
+    // FbGearOut: null axis
+    {
+        fb::FbGearOut gout;
+        gout.execute = true;
+        gout.call();
+        if(!gout.error || !gout.outputs.error) {
+            return fail("gear out null axis");
+        }
+    }
+
+    // FbGearOut: execute=false clears
+    {
+        fb::FbGearOut gout;
+        gout.execute = false;
+        gout.call();
+        if(gout.done || gout.error || gout.outputs.done || gout.outputs.error) {
+            return fail("gear out execute=false");
+        }
+    }
+
+    // FbCamTableSelect: invalid table
+    {
+        fb::FbCamTableSelect sel;
+        sel.execute = true;
+        sel.call();
+        if(!sel.error || sel.error_id != rt::ErrorCode::invalid_argument) {
+            return fail("cam table select invalid");
+        }
+    }
+
+    // FbCamTableSelect: execute=false, non-rising
+    {
+        fb::FbCamTableSelect sel;
+        sel.execute = false;
+        sel.call();
+        if(sel.done || sel.error) {
+            return fail("cam table select execute=false");
+        }
+        const exec::CamPoint pts[] = {{0.0, 0.0}, {1.0, 1.0}};
+        sel.cam_table = exec::CamTableView{pts, 2, false};
+        sel.execute = true;
+        sel.call();
+        if(!sel.done) {
+            return fail("cam table select done");
+        }
+        sel.call();
+        if(!sel.done) {
+            return fail("cam table select non-rising keeps done");
+        }
+    }
+
+    // FbCamIn: null refs
+    {
+        fb::FbCamIn cam;
+        cam.execute = true;
+        cam.call();
+        if(!cam.outputs.error || cam.outputs.error_id != rt::ErrorCode::invalid_argument) {
+            return fail("cam in null refs");
+        }
+    }
+
+    // FbCombineAxes: null refs
+    {
+        fb::FbCombineAxes combine;
+        combine.execute = true;
+        combine.call();
+        if(!combine.outputs.error || combine.outputs.error_id != rt::ErrorCode::invalid_argument) {
+            return fail("combine axes null refs");
+        }
+    }
+
+    // FbPhasingAbsolute: null axis
+    {
+        fb::FbPhasingAbsolute phase;
+        phase.execute = true;
+        phase.call();
+        if(!phase.outputs.error || phase.outputs.error_id != rt::ErrorCode::invalid_argument) {
+            return fail("phasing absolute null axis");
+        }
+    }
+
+    // FbPhasingRelative: null axis
+    {
+        fb::FbPhasingRelative phase;
+        phase.execute = true;
+        phase.call();
+        if(!phase.outputs.error || phase.outputs.error_id != rt::ErrorCode::invalid_argument) {
+            return fail("phasing relative null axis");
+        }
+    }
+
+    // FbGearIn: not in same group (precondition_failed)
+    {
+        axis::AxisModel master;
+        axis::AxisModel slave;
+        master.set_power(true);
+        slave.set_power(true);
+        fb::FbGearIn gear;
+        gear.master_ref = &master;
+        gear.slave_ref = &slave;
+        gear.execute = true;
+        gear.call();
+        if(!gear.outputs.error || gear.outputs.error_id != rt::ErrorCode::precondition_failed) {
+            return fail("gear in no group");
+        }
+    }
+
+    // FbCamIn: not in same group
+    {
+        axis::AxisModel master;
+        axis::AxisModel slave;
+        master.set_power(true);
+        slave.set_power(true);
+        const exec::CamPoint pts[] = {{0.0, 0.0}, {1.0, 1.0}};
+        fb::FbCamIn cam;
+        cam.master_ref = &master;
+        cam.slave_ref = &slave;
+        cam.cam_table = exec::CamTableView{pts, 2, false};
+        cam.execute = true;
+        cam.call();
+        if(!cam.outputs.error || cam.outputs.error_id != rt::ErrorCode::precondition_failed) {
+            return fail("cam in no group");
+        }
+    }
+
+    return 0;
+}
+
 } // namespace
 
 int main()
@@ -907,7 +1057,7 @@ int main()
        check_gear_preconditions() != 0 || check_gear_in_pos() != 0 || check_phasing() != 0 ||
        check_cam_follow() != 0 || check_cam_scaling_and_periodic() != 0 ||
        check_cam_start_distance() != 0 || check_combine_axes() != 0 ||
-       check_sync_command_interactions() != 0) {
+       check_sync_command_interactions() != 0 || check_sync_fb_error_paths() != 0) {
         return 1;
     }
     std::printf("PASS r3 sync tests\n");

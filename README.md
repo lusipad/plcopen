@@ -71,8 +71,15 @@ assert axis.stream_mode() == "stopped"
 axis.stream_disengage()
 ```
 
-构建 Python 绑定：`-DPLCOPEN_BUILD_PYTHON_BINDINGS=ON`；细节与更多
-要点见 [STATUS.md](STATUS.md) 与 `doc/compliance/trajectory-stream-semantics.md`。
+安装 Python 绑定（需要 C++17 编译器 + CMake ≥ 3.21）：
+
+```bash
+pip install .          # 从仓库源码构建安装
+```
+
+或手动 CMake：`-DPLCOPEN_BUILD_PYTHON_BINDINGS=ON`。更多用法（单轴/流/
+位姿/凸轮/SI 单位转换）见 [Python 上手指南](docs/getting-started/python.md)
+与 `doc/compliance/trajectory-stream-semantics.md`。
 
 ---
 

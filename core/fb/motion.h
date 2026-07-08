@@ -626,14 +626,21 @@ protected:
         if(!execute || tracked_command_id_ == 0 || group_ref == nullptr) {
             return;
         }
-        if(group_ref->status() == axis::GroupStatus::moving ||
-           group_ref->status() == axis::GroupStatus::stopping) {
+        const axis::GroupStatus gs = group_ref->status();
+        if(gs == axis::GroupStatus::moving || gs == axis::GroupStatus::stopping) {
             outputs.busy = true;
             outputs.active = true;
             outputs.done = false;
             return;
         }
-        outputs.done = group_ref->status() == axis::GroupStatus::standby;
+        if(gs == axis::GroupStatus::interrupted) {
+            outputs.command_aborted = true;
+            outputs.busy = false;
+            outputs.active = false;
+            outputs.done = false;
+            return;
+        }
+        outputs.done = gs == axis::GroupStatus::standby;
         outputs.busy = false;
         outputs.active = false;
     }

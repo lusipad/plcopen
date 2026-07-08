@@ -3,13 +3,14 @@
 > 本页是"现在在哪"的唯一入口，每个批次收口时更新。术语见
 > [CONTEXT.md](CONTEXT.md)；边界细节见
 > [已知边界注册表](doc/compliance/known-boundaries.md)。
-> 最后更新：**2026-07-06**。
+> 最后更新：**2026-07-08**。
 
 ## 一句话
 
 新核 `core/` 软件可写面 100%（R0-R4 重写 + Phase B 纯软件 + 位姿闭环 +
-软件收尾批，KB-034~049），36 项测试全绿、双平台 CI 绿；**v1.0.0-alpha
-已发布（2026-07-06）**，剩余工作全部依赖硬件/用户/日历时间。
+软件收尾批，KB-034~057），36 项测试全绿、双平台 CI 绿；**v1.0.0-alpha
+已发布（2026-07-06）**，Part 4 管理/路径表/变换 + Part 5 回零 FB 全部交付；
+剩余工作全部依赖硬件/用户/日历时间。
 
 ## 历史刻度（处于哪一步）
 
@@ -18,7 +19,7 @@
 | v0.x 旧线（fork 自 i5cnc） | 2026-04 → 07 | Part 1/2 FB 面 45/45 收口于 v0.11.0，冻结为回放/迁移基线 |
 | R0-R4 新核重写 | 2026-07 | `core/` L0-L7 全层落地，与旧线 DoD 对照 PASS |
 | Phase B 纯软件 | 2026-07 | 坐标系/kinematics/轨迹流/cam/前瞻 v2/adapters（KB-034~041） |
-| **← 现在** | 2026-07-07 | v1.0.0-alpha 已发布（KB-001~051）；规划体系收口；当前里程碑 = **PLCopen 扎实化**（Y7/P 系列/探测轮/证据），三轨设计资产待命 |
+| **← 现在** | 2026-07-08 | v1.0.0-alpha 已发布（KB-001~056）；当前里程碑 = **PLCopen 扎实化**——AI 可执行项全部交付（Y7/探测轮/oracle/OTG/solve_fixed_time/E1-E4/Z 全系列），剩余项人工门控 |
 
 ## 能力面（新核，默认消费面 `plcopen::plcopen`）
 
@@ -28,16 +29,16 @@
 | L2/L3 geom·plan | 直线/三点圆弧/Bezier/刚体帧（平移+绕Z+完整 RPY 原语）；路径缓冲、公差带 blending、前瞻窗口（jerk 精确可达扫描） | KB-030/031/039 |
 | L4 exec | 周期采样、gear/cam 同步（C0 + C2 样条重建、在线换表、经典规律生成器）、叠加 | KB-038/046 |
 | L5 axis | 单轴全命令生命周期、组共享路径（2-8 轴）、前瞻窗口执行、坐标系栈（ACS/MCS/PCS + 工件帧/工具偏置）、kinematics 级联（龙门/SCARA）、位姿管线（RPY + 6R，TCP 工具变换）、笛卡尔/位姿回读（含 RPY 反演万向节约定）、段内笛卡尔插补（直线/圆弧/blending + 前瞻窗口，逐周期逆解 + 测地姿态，opt-in；腕奇异可穿越）、窗口深度可配、双空间限速、B9 流会话 | KB-035/036/037/041~050 |
-| L6 fb | Part 1/2 全量 FB 面 + Part 4 线性/圆弧/blending 门面（CoordSystem 输入） | 矩阵 45/45 |
+| L6 fb | Part 1/2 全量 FB 面 + Part 4 线性/圆弧/blending 门面（CoordSystem 输入）+ Part 4 管理 FB（GroupHome/MoveDirect/GroupSetOverride/GroupInterrupt·Continue）+ Part 4 路径表/变换 FB（PathSelect/MovePath/SetKinTransform/ReadCartesianTransform）+ Part 5 回零 FB（StepAbsSwitch/StepLimitSwitch/StepRefPulse/StepDirect/FinishHoming） | 矩阵 45/45 + Part 4/5 |
 | L7 adapters | Servo 窄接口 + ServoSim + 桥接（ADR-0004）、CiA402 状态机、CSP/CSV/CST bumpless 骨架 | KB-040 |
-| 工具面 | pyplcopen（单轴/流/PoseArmSim）、18 份回放黄金语料、28 关节 @1kHz 预算基准 + 笛卡尔 IK 预算门、参考 executor demo（seqlock 双线程 + ServoSim）、周期级 trace 工具 | — |
+| 工具面 | pyplcopen（单轴/流/PoseArmSim，pip 可装 1.0.0a1，CycleConfig SI 换算）、18 份回放黄金语料、28 关节 @1kHz 预算基准 + 笛卡尔 IK 预算门、参考 executor demo（seqlock 双线程 + ServoSim）、周期级 trace 工具、mkdocs 文档站（3 条旅程）、vcpkg/Conan recipe、ErrorCode 诊断文本 | — |
 
 ## 质量门禁现状
 
-- 测试：36 目标全绿（oracle/fuzz/回放/分配卫兵/基准分层）；core 行覆盖 ≥85%
+- 测试：36 目标全绿（oracle/fuzz/回放/分配卫兵/基准分层 + Part 4 管理·路径表 + Part 5 回零）；core 行覆盖 90.1%（≥90% 门禁）
 - 回放：18 语料逐周期比对；声明变更零例外流程运行中
 - RT：静态扫描 21 文件 + 冻结窗口分配断言；DoD §5.3 对照 **PASS**（新核 = 旧线 9.3% 耗时）
-- CI：Windows + Linux（gcc/clang）双绿
+- CI：Windows + Linux（gcc/clang）双绿 + ARM64 交叉编译 + clang-tidy 零 P0 + 变异分数 100% + 覆盖率 ≥90% + cibuildwheel 三平台 + 文档站自动部署
 
 ## 进行中 / 待办
 
@@ -48,6 +49,10 @@
 | 硬件阶段（B5 真栈/B6 台架/B7 RT 报告） | 等台架或灯塔环境；参考 executor 软件形态已备（插上真机即测量） |
 | 72h 分配断言 soak | 运行中（2026-07-06 13:02 起，07-09 出结果回写 DoD 表） |
 | **KB-051 组接管速度断崖** | 对抗性探测发现的未声明缺陷，已登记；修复批次 Y7 插队最前（临时规避：运动中方向变更走 blending/窗口或先 GroupStop） |
+| Part 4 管理/路径表/变换 FB | **已交付**（GroupHome/MoveDirect/GroupSetOverride/GroupInterrupt·Continue + PathSelect/MovePath/SetKinTransform/ReadCartesianTransform，51 测试） |
+| Part 5 回零 FB | **已交付**（StepAbsSwitch/StepLimitSwitch/StepRefPulse/StepDirect/FinishHoming，25 测试） |
+| Y2 epsilon 政策 | **已声明化**（KB-057：段时长钳零 + 复验，整数量化天然覆盖） |
+| Y2 Ruckig 对照 | **人工门控**（ADR-0003：需先审查上游许可证，不进 R1） |
 
 ## 近期计划
 

@@ -46,6 +46,7 @@ jobs:
           -DCMAKE_BUILD_TYPE=Release
           -DCMAKE_C_COMPILER=${{ matrix.cc }}
           -DCMAKE_CXX_COMPILER=${{ matrix.cxx }}
+          -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 
       - name: Build
         run: cmake --build build --parallel
@@ -56,7 +57,11 @@ jobs:
       - name: Print core benchmark baseline
         run: ctest --test-dir build --output-on-failure -R plcopen_core_benchmark -V
 
-      - name: Core cross-compile smoke
+      - name: clang-tidy gate (E2)
+        if: matrix.compiler == 'clang'
+        run: cmake -P cmake/clang_tidy_gate.cmake
+
+      - name: Core cross-compile smoke (legacy)
         if: matrix.compiler == 'gcc'
         run: cmake -P cmake/core_cross_compile_smoke.cmake
 
@@ -111,3 +116,29 @@ jobs:
           test -s build-docs/docs/api/html/index.html
           find build-docs/docs/api/html -name '*.png' -type f -print -quit | grep -q .
           find build-docs/docs/api/html -name '*.map' -type f -print -quit | grep -q .
+
+  arm64-cross:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Install ARM64 toolchain and QEMU
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y g++-aarch64-linux-gnu qemu-user-static
+
+      - name: Configure (ARM64 cross-compile)
+        run: >
+          cmake -S . -B build-arm64
+          -DCMAKE_BUILD_TYPE=Release
+          -DCMAKE_TOOLCHAIN_FILE=cmake/toolchain-aarch64-linux-gnu.cmake
+          -DPLCOPEN_BUILD_DEMOS=OFF
+
+      - name: Build
+        run: cmake --build build-arm64 --parallel
+
+      - name: Test (via QEMU user-mode)
+        run: >
+          ctest --test-dir build-arm64 --output-on-failure
+          -E "(benchmark|jitter_harness)"

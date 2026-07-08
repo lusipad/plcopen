@@ -1,0 +1,44 @@
+site_name: plcopen
+site_url: https://lusipad.github.io/plcopen/
+site_description: Modern C++ PLCopen motion-control kernel
+repo_url: https://github.com/lusipad/plcopen
+repo_name: lusipad/plcopen
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - content.code.copy
+    - navigation.instant
+    - navigation.sections
+
+markdown_extensions:
+  - admonition
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - tables
+
+nav:
+  - Home: index.md
+  - Getting Started:
+    - Python Digital Twin: getting-started/python.md
+    - C++ Embedded: getting-started/cpp.md
+    - Algorithm White-Box: getting-started/algorithms.md
+  - References:
+    - Compliance: https://github.com/lusipad/plcopen/tree/main/doc/compliance
+    - Architecture: https://github.com/lusipad/plcopen/blob/main/doc/design/core/architecture.md
+    - Known Boundaries: https://github.com/lusipad/plcopen/blob/main/doc/compliance/known-boundaries.md
+    - Changelog: https://github.com/lusipad/plcopen/blob/main/CHANGELOG.md
