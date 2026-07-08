@@ -253,16 +253,45 @@ inline rt::ErrorCode push_quintic_correction(Profile1D &profile,
                                              const Limits1D &limits)
 {
     const bool at_target = state.position == to.position && state.velocity == to.velocity &&
-                           state.acceleration == 0.0;
+                           state.acceleration == to.acceleration;
     if(at_target && profile.segment_count() > 0) {
         return rt::ErrorCode::ok;
     }
 
-    const rt::Result<std::int64_t> cycles = min_feasible_quintic_cycles(state, to, limits);
-    if(!cycles) {
-        return cycles.error();
+    if(state.acceleration == 0.0 && to.acceleration == 0.0) {
+        const rt::Result<std::int64_t> cycles = min_feasible_quintic_cycles(state, to, limits);
+        if(!cycles) {
+            return cycles.error();
+        }
+        return profile.add_segment(make_quintic_segment(state, to, cycles.value()));
     }
-    return profile.add_segment(make_quintic_segment(state, to, cycles.value()));
+
+    const double dp = std::fabs(to.position - state.position);
+    const double dv = std::fabs(to.velocity - state.velocity);
+    const double da = std::fabs(to.acceleration - state.acceleration);
+    double estimate = 1.0;
+    if(dp > 0.0) {
+        const double by_vel = dp / limits.max_velocity;
+        if(by_vel > estimate) estimate = by_vel;
+    }
+    if(dv > 0.0) {
+        const double by_accel = dv / limits.max_acceleration;
+        if(by_accel > estimate) estimate = by_accel;
+    }
+    if(da > 0.0) {
+        const double by_jerk = 8.0 * da / limits.max_jerk;
+        if(by_jerk > estimate) estimate = by_jerk;
+    }
+    std::int64_t cycles = static_cast<std::int64_t>(std::ceil(estimate));
+    if(cycles < 1) cycles = 1;
+    for(int attempt = 0; attempt < 80; ++attempt) {
+        const Segment1D segment = make_quintic_segment(state, to, cycles);
+        if(within_limits(segment, limits)) {
+            return profile.add_segment(segment);
+        }
+        cycles = cycles + cycles / 4 + 1;
+    }
+    return rt::ErrorCode::infeasible;
 }
 
 // One full multiphase candidate: acceleration-zeroing reduction, entry ramp,
@@ -481,8 +510,9 @@ inline rt::Result<Profile1D> plan_time_optimal(State1D from, Target1D to, Limits
        limits.max_jerk <= 0.0) {
         return rt::Result<Profile1D>::failure(rt::ErrorCode::invalid_argument);
     }
-    if(to.acceleration != 0.0) {
-        return rt::Result<Profile1D>::failure(rt::ErrorCode::unsupported);
+    if(to.acceleration > limits.max_acceleration ||
+       to.acceleration < -limits.max_deceleration) {
+        return rt::Result<Profile1D>::failure(rt::ErrorCode::infeasible);
     }
     // The entry velocity may exceed the limit (takeover by a command with a
     // tighter velocity limit): the entry ramp is monotone toward the cruise
@@ -504,9 +534,25 @@ inline rt::Result<Profile1D> plan_time_optimal(State1D from, Target1D to, Limits
         state.acceleration = 0.0;
     }
 
-    const double distance = to.position - state.position;
+    Target1D eff = to;
+    double tramp_j = 0.0;
+    double tramp_n = 0.0;
+    if(to.acceleration != 0.0) {
+        const double n = std::ceil(std::fabs(to.acceleration) / limits.max_jerk);
+        const double dv = 0.5 * to.acceleration * n;
+        if(std::fabs(to.velocity - dv) <= limits.max_velocity) {
+            eff.velocity = to.velocity - dv;
+            eff.position = to.position - eff.velocity * n
+                           - to.acceleration * n * n / 6.0;
+            eff.acceleration = 0.0;
+            tramp_j = to.acceleration / n;
+            tramp_n = n;
+        }
+    }
+
+    const double distance = eff.position - state.position;
     const double v0 = state.velocity;
-    const double vt = to.velocity;
+    const double vt = eff.velocity;
 
     // Cruise-velocity selection. D(vc) is continuous but NOT monotone across
     // the whole span: between the boundary velocities, splitting the direct
@@ -577,24 +623,31 @@ inline rt::Result<Profile1D> plan_time_optimal(State1D from, Target1D to, Limits
         }
     };
 
-    consider(detail::build_multiphase(from, to, limits, cruise_velocity, cruise_duration,
-                                      detail::RampRounding::floored));
-    consider(detail::build_multiphase(from, to, limits, cruise_velocity, cruise_duration,
-                                      detail::RampRounding::exact));
-    if(to.velocity != 0.0) {
-        // Nonzero-target-velocity cruise regime: the refined-cruise candidate
-        // avoids the residue-burning correction pathology (A4 finding). The
-        // zero-target domain is untouched by construction (replay-guarded).
-        consider(detail::build_refined_cruise(from, to, limits, cruise_velocity));
+    const auto tramp = [&](rt::Result<Profile1D> r) -> rt::Result<Profile1D> {
+        if(!r || tramp_n < 1.0) return r;
+        Profile1D p = r.value();
+        State1D s = sample(p, rt::CycleTick::from_cycles(p.duration_cycles()));
+        s.acceleration = 0.0;
+        const rt::ErrorCode e = detail::push_cubic_phase(p, s, tramp_j, tramp_n);
+        if(e != rt::ErrorCode::ok) return rt::Result<Profile1D>::failure(e);
+        return rt::Result<Profile1D>::success(p);
+    };
+
+    consider(tramp(detail::build_multiphase(from, eff, limits, cruise_velocity, cruise_duration,
+                                      detail::RampRounding::floored)));
+    consider(tramp(detail::build_multiphase(from, eff, limits, cruise_velocity, cruise_duration,
+                                      detail::RampRounding::exact)));
+    if(eff.velocity != 0.0) {
+        consider(tramp(detail::build_refined_cruise(from, eff, limits, cruise_velocity)));
     }
     if(from.acceleration == 0.0) {
         const rt::Result<std::int64_t> minimal =
-            detail::min_feasible_quintic_cycles(from, to, limits);
+            detail::min_feasible_quintic_cycles(from, eff, limits);
         if(minimal) {
             Profile1D single{};
-            if(single.add_segment(make_quintic_segment(from, to, minimal.value())) ==
+            if(single.add_segment(make_quintic_segment(from, eff, minimal.value())) ==
                rt::ErrorCode::ok) {
-                consider(rt::Result<Profile1D>::success(single));
+                consider(tramp(rt::Result<Profile1D>::success(single)));
             }
         }
     }
@@ -622,12 +675,12 @@ inline rt::Result<Profile1D> plan_time_optimal(State1D from, Target1D to, Limits
         // quintic must not wiggle backward (the forward-only quality
         // contract); reversal-shaped candidates stay with the multiphase
         // constructions.
-        const bool forward = from.velocity >= 0.0 && to.velocity >= 0.0 &&
-                             to.position >= from.position;
-        const bool backward = from.velocity <= 0.0 && to.velocity <= 0.0 &&
-                              to.position <= from.position;
+        const bool forward = from.velocity >= 0.0 && eff.velocity >= 0.0 &&
+                             eff.position >= from.position;
+        const bool backward = from.velocity <= 0.0 && eff.velocity <= 0.0 &&
+                              eff.position <= from.position;
         for(int attempt = 0; attempt < 16; ++attempt, ++cycles) {
-            const Segment1D segment = make_quintic_segment(from, to, cycles);
+            const Segment1D segment = make_quintic_segment(from, eff, cycles);
             if(!within_limits(segment, limits)) {
                 continue;
             }
@@ -645,7 +698,7 @@ inline rt::Result<Profile1D> plan_time_optimal(State1D from, Target1D to, Limits
             if(shape_ok) {
                 Profile1D single{};
                 if(single.add_segment(segment) == rt::ErrorCode::ok) {
-                    consider(rt::Result<Profile1D>::success(single));
+                    consider(tramp(rt::Result<Profile1D>::success(single)));
                 }
                 break;
             }

@@ -727,6 +727,56 @@ int check_excess_cycles(int iterations)
         total_fail += ds.fail;
     }
 
+    // Domain 5: nonzero target acceleration
+    // No hard gate: targeting ramp uses adjusted jerk (j'=at/n), not PMP.
+    {
+        DomainStats ds;
+        ds.hard_gate = false;
+        for(int i = 0; i < iterations; ++i) {
+            double vm = rng.range(1.0, 6.0);
+            double am = rng.range(1.0, 6.0);
+            double dm = rng.range(1.0, 6.0);
+            double jm = rng.range(0.2, 3.0);
+            otg::Limits1D lim{vm, am, dm, jm};
+            double p0 = rng.range(-10.0, 10.0);
+            double v0 = rng.range(-vm * 0.8, vm * 0.8);
+            double pt = rng.range(-10.0, 10.0);
+            double vt = rng.range(-vm * 0.8, vm * 0.8);
+            double at_sign = rng.range(0.0, 1.0) > 0.5 ? 1.0 : -1.0;
+            double at_bound = at_sign > 0 ? am : dm;
+            double at = at_sign * rng.range(0.3, 0.95) * at_bound;
+            ds.record({p0, v0, 0.0}, {pt, vt, at}, lim, tab, i);
+        }
+        ds.report("nonzero-at");
+        total_fail += ds.fail;
+    }
+
+    // Domain 6: both a0 and at nonzero
+    {
+        DomainStats ds;
+        ds.hard_gate = false;
+        for(int i = 0; i < iterations; ++i) {
+            double vm = rng.range(1.0, 6.0);
+            double am = rng.range(1.0, 6.0);
+            double dm = rng.range(1.0, 6.0);
+            double jm = rng.range(0.2, 3.0);
+            otg::Limits1D lim{vm, am, dm, jm};
+            double p0 = rng.range(-10.0, 10.0);
+            double v0 = rng.range(-vm * 0.8, vm * 0.8);
+            double a0_sign = rng.range(0.0, 1.0) > 0.5 ? 1.0 : -1.0;
+            double a0 = a0_sign * rng.range(0.3, 0.95) *
+                        (a0_sign > 0 ? am : dm);
+            double pt = rng.range(-10.0, 10.0);
+            double vt = rng.range(-vm * 0.8, vm * 0.8);
+            double at_sign = rng.range(0.0, 1.0) > 0.5 ? 1.0 : -1.0;
+            double at = at_sign * rng.range(0.3, 0.95) *
+                        (at_sign > 0 ? am : dm);
+            ds.record({p0, v0, a0}, {pt, vt, at}, lim, tab, i);
+        }
+        ds.report("a0-and-at");
+        total_fail += ds.fail;
+    }
+
     if(total_fail > 0) {
         std::printf("FAIL excess_negative=%d\n", total_fail);
         return 1;

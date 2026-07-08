@@ -91,7 +91,7 @@ int verify_profile(const char *name,
         otg::sample(profile, rt::CycleTick::from_cycles(profile.duration_cycles()));
     if(std::fabs(finish.position - to.position) > 1e-6 ||
        std::fabs(finish.velocity - to.velocity) > 1e-6 ||
-       std::fabs(finish.acceleration) > 1e-6) {
+       std::fabs(finish.acceleration - to.acceleration) > 1e-6) {
         std::printf("FAIL %s endpoint (p=%.9f v=%.9f a=%.9f)\n", name, finish.position,
                     finish.velocity, finish.acceleration);
         return 1;
@@ -136,9 +136,16 @@ int check_validation()
 {
     const otg::Limits1D limits{3.0, 2.0, 2.0, 2.5};
 
-    if(otg::plan_time_optimal({0.0, 0.0, 0.0}, {1.0, 0.0, 0.5}, limits).error() !=
-       rt::ErrorCode::unsupported) {
-        return fail("nonzero target acceleration is declared unsupported");
+    if(check_case("nonzero-target-accel-basic", {0.0, 0.0, 0.0}, {1.0, 0.0, 0.5}, limits) != 0) {
+        return fail("nonzero target acceleration should be supported");
+    }
+    if(otg::plan_time_optimal({0.0, 0.0, 0.0}, {1.0, 0.0, 5.0}, limits).error() !=
+       rt::ErrorCode::infeasible) {
+        return fail("target acceleration above limit is infeasible");
+    }
+    if(otg::plan_time_optimal({0.0, 0.0, 0.0}, {1.0, 0.0, -5.0}, limits).error() !=
+       rt::ErrorCode::infeasible) {
+        return fail("target deceleration above limit is infeasible");
     }
     if(otg::plan_time_optimal({0.0, 0.0, 5.0}, {1.0, 0.0, 0.0}, limits).error() !=
        rt::ErrorCode::infeasible) {
@@ -157,6 +164,57 @@ int check_validation()
        rt::ErrorCode::invalid_argument) {
         return fail("non-positive limits rejected");
     }
+    return 0;
+}
+
+int check_nonzero_target_accel_cases()
+{
+    const otg::Limits1D limits{3.0, 2.0, 2.0, 2.5};
+
+    if(check_case("rest-to-accel", {0.0, 0.0, 0.0}, {8.0, 0.0, 1.5}, limits) != 0 ||
+       check_case("rest-to-decel", {0.0, 0.0, 0.0}, {8.0, 0.0, -1.5}, limits) != 0 ||
+       check_case("accel-to-decel", {0.0, 0.0, 1.5}, {8.0, 0.0, -1.0}, limits) != 0 ||
+       check_case("matching-accel", {0.0, 1.0, 1.0}, {10.0, 2.0, 1.0}, limits) != 0 ||
+       check_case("reverse-target-accel", {0.0, 0.0, 0.0}, {5.0, -1.0, -1.5}, limits) != 0 ||
+       check_case("target-at-amax", {0.0, 0.0, 0.0}, {20.0, 0.0, 2.0}, limits) != 0 ||
+       check_case("target-at-dmax", {0.0, 0.0, 0.0}, {-10.0, 0.0, -2.0}, limits) != 0 ||
+       check_case("accel-same-sign", {0.0, 1.0, 1.0}, {10.0, 1.0, 0.5}, limits) != 0 ||
+       check_case("cruise-with-at", {0.0, 0.0, 0.0}, {200.0, 1.0, 1.0}, limits) != 0 ||
+       check_case("short-with-at", {1.0, 0.5, 0.0}, {1.5, 0.5, 1.0}, limits) != 0 ||
+       check_case("a0-and-at", {0.0, 1.0, 1.5}, {15.0, 0.5, -1.0}, limits) != 0 ||
+       check_case("zero-distance-at", {3.0, 0.0, 0.0}, {3.0, 0.0, 1.0}, limits) != 0) {
+        return 1;
+    }
+    return 0;
+}
+
+int check_fuzz_nonzero_target_accel(int iterations)
+{
+    Lcg rng{0xA1C0A1C0u};
+    const otg::Limits1D limits{3.0, 2.0, 2.0, 2.5};
+
+    for(int i = 0; i < iterations; ++i) {
+        const otg::State1D from{rng.range(-10.0, 10.0), rng.range(-2.0, 2.0),
+                                rng.range(-1.8, 1.8)};
+        const double at_sign = rng.range(0.0, 1.0) > 0.5 ? 1.0 : -1.0;
+        const double at_bound = at_sign > 0 ? limits.max_acceleration : limits.max_deceleration;
+        const double at = at_sign * rng.range(0.1, 0.95) * at_bound;
+        const otg::Target1D to{rng.range(-10.0, 10.0), rng.range(-2.0, 2.0), at};
+
+        const rt::Result<otg::Profile1D> planned = otg::plan_time_optimal(from, to, limits);
+        if(!planned) {
+            std::printf("FAIL fuzz-nonzero-at i=%d error=%d\n", i,
+                        static_cast<int>(planned.error()));
+            return 1;
+        }
+        if(verify_profile("fuzz-nonzero-at", planned.value(), from, to, limits) != 0) {
+            std::printf("  seed=0x%08X i=%d from=(%.4f,%.4f,%.4f) to=(%.4f,%.4f,%.4f)\n",
+                        rng.state, i, from.position, from.velocity, from.acceleration,
+                        to.position, to.velocity, to.acceleration);
+            return 1;
+        }
+    }
+    std::printf("nonzero-target-accel fuzz: %d cases\n", iterations);
     return 0;
 }
 
@@ -442,9 +500,11 @@ int main(int argc, char **argv)
     const int iterations = parse_iterations(argc, argv);
     const int quality_iterations = iterations / 5 > 200 ? 200 : (iterations / 5 < 1 ? 1 : iterations / 5);
     if(check_fixed_cases() != 0 || check_validation() != 0 ||
+       check_nonzero_target_accel_cases() != 0 ||
        check_nonzero_target_velocity_quality() != 0 || check_bump_zone_quality() != 0 ||
        check_fuzz_bump_zone(quality_iterations) != 0 ||
        check_fuzz_nonzero_target(quality_iterations) != 0 ||
+       check_fuzz_nonzero_target_accel(quality_iterations) != 0 ||
        check_fuzz_against_baseline(iterations) != 0) {
         return 1;
     }

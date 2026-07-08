@@ -29,12 +29,17 @@ Implemented:
 - `plan(from, to, limits)`: baseline feasible planner (single quintic with a
   grown duration) that accepts arbitrary finite initial states and non-zero
   target velocities, validated against the limit envelope;
-- `plan_time_optimal(from, to, limits)` (`time_optimal.h`, A9 v1): near
-  time-optimal jerk-limited planning for arbitrary initial velocities **and
-  accelerations** (nonzero a₀ reduces through one exact zeroing ramp of
-  ceil(|a₀|/j) cycles with the adjusted jerk −a₀/n₀; the reduction is correct
-  but not optimal for states whose built-up acceleration points the right
-  way — the candidate selection falls back to the baseline there).
+- `plan_time_optimal(from, to, limits)` (`time_optimal.h`, A9 v2 — Y2):
+  near time-optimal jerk-limited planning for **arbitrary state-to-state
+  transitions** including nonzero initial and target accelerations.
+  Nonzero a₀ reduces through one exact zeroing ramp of ceil(|a₀|/j) cycles
+  with the adjusted jerk −a₀/n₀. Nonzero aₜ uses a symmetric **targeting
+  ramp**: ceil(|aₜ|/j) cycles with jerk aₜ/n, appended after the main
+  velocity-cruise chain; the main solver plans to the effective target
+  `(p_eff, v_eff, 0)` that accounts for the ramp's position and velocity
+  contribution. When the effective velocity would exceed ±v_max (large |aₜ|
+  with |vₜ| near the limit), the targeting ramp is omitted and the quintic
+  correction handles the acceleration transition directly.
   Closed-form ramp primitives (`t = 2√(Δv/j)` or `Δv/a + a/j`,
   `d = (va+vb)/2·t`) with zero-crossing splits for the PLCopen accel/decel
   bound selection, one bounded bisection over the cruise velocity (monotone
@@ -42,23 +47,19 @@ Implemented:
   phase durations floored into the integer cycle domain with symmetric jerk
   phases (chained acceleration returns exactly to zero), and one minimal
   feasible quintic segment correcting the quantization residue to the exact
-  target. The result is the shortest of three candidates — the phase
-  construction, the minimal feasible single quintic (zero boundary
-  accelerations only: quintic feasibility is monotone in the duration there
-  and non-monotone otherwise), and the baseline `plan()` (which makes the
-  "never slower than the baseline planner" promise hold by construction).
-  Million-case fuzz: total duration ~65% of baseline on the zero-a₀ domain,
-  ~86% with random entry accelerations. Planning-domain only, not the RT
-  sample path.
+  target. The result is the shortest of multiple candidates — two multiphase
+  constructions (floored and exact rounding), refined-cruise (nonzero target
+  velocity), minimal single quintic, estimate-anchored quintic (bump zone),
+  and the baseline `plan()` (which makes the "never slower than the baseline
+  planner" promise hold by construction). Million-case fuzz: total duration
+  ~73% of baseline. Planning-domain only, not the RT sample path.
 - numeric-integration oracle and randomized fuzz smoke as separate CTest
   entries (the oracle is implemented independently of the solver); the
   time-optimal suite asserts envelope, exact endpoint, per-cycle continuity,
   and duration ≤ baseline per random case.
 
-Not implemented / out of scope for v1:
+Not implemented / out of scope:
 
-- nonzero **target** accelerations for `plan_time_optimal` (reports
-  `unsupported`);
 - true time-optimality for nonzero entry accelerations (the zeroing-ramp
   reduction is correct but conservative; the full case enumeration that keeps
   built-up acceleration is the declared follow-up);
