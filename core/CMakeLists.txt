@@ -123,6 +123,11 @@ if(BUILD_TESTING AND PLCOPEN_BUILD_CORE_TESTS)
     plcopen_core_rt_compile_options(plcopen_core_topp_shadow_oracle)
     add_test(NAME plcopen_core_topp_shadow_oracle COMMAND plcopen_core_topp_shadow_oracle)
 
+    add_executable(plcopen_core_topp_executor_tests test/topp_executor_tests.cpp)
+    target_link_libraries(plcopen_core_topp_executor_tests PRIVATE plcopen::core)
+    plcopen_core_rt_compile_options(plcopen_core_topp_executor_tests)
+    add_test(NAME plcopen_core_topp_executor_tests COMMAND plcopen_core_topp_executor_tests)
+
     add_executable(plcopen_core_a3_circular_tests test/a3_circular_tests.cpp)
     target_link_libraries(plcopen_core_a3_circular_tests PRIVATE plcopen::core)
     plcopen_core_rt_compile_options(plcopen_core_a3_circular_tests)
