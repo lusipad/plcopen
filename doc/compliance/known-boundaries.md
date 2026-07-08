@@ -75,4 +75,6 @@
 
 - `KB-057`：OTG 段时长 epsilon 政策（Y2 §2，声明项）：求解器工作在离散周期域——段时长 t_i 为非负整数（周期计数），连续时间候选解中 t_i < 0 的段按以下规则处理：|t_i| ≤ ε_clamp（实现取 1e-12，即远小于一个周期的数值噪声）时钳零（ceil(0)=0 周期）并**复验钳零后的边界条件**（位置/速度/加速度端点精度 ≤ 1e-9）；|t_i| > ε_clamp 的负时长候选整体丢弃。整数量化本身构成天然钳位（ceil 将 (0, 1) 区间的正连续时长映射为 1 周期），因此 epsilon 政策仅作用于结构切换流形附近的数值噪声域。oracle fuzz 在结构切换流形附近定向加密验证（两结构最优时长近相等的状态族）。该政策为算法合同 §1 附注 #2 的形式化登记。
 
+- `KB-059`：几何路径导数合同（Y3 前置工程）：为 5 种段类型（LineSegment、ArcSegment、CubicBezierSegment、QuadraticBlendSegment、QuinticBlendSegment）实现 `path_derivative(seg, s)` 返回弧长参数化一阶导 q_s = dq/ds（单位切矢）与 `path_second_derivative(seg, s)` 返回二阶导 q_ss = d²q/ds²（曲率矢）。直线段 q_s 常数、q_ss = 0；圆弧段解析旋转导数；cubic/quadratic 以 u≈s/L 近似参数化后链式法则；quintic 通过 33 条弧长表重参数化、链式法则 q_s = d1/σ、q_ss = (d2 − d1·(d2·d1)/σ²)/σ²。PathSegment 类型擦除调度器同步更新。验收：7 项测试 × 中央差分数值 oracle（h₁=1e-7 一阶、h₂=1e-4 二阶）；圆弧曲率 = 1/R 精度 ≤ 1e-10；quintic 容差放宽至 q_s 2e-3、q_ss 1e-2（反映 33 条表离散化误差 O(1/N²)）。
+
 ---

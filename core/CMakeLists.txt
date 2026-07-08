@@ -98,6 +98,11 @@ if(BUILD_TESTING AND PLCOPEN_BUILD_CORE_TESTS)
     plcopen_core_rt_compile_options(plcopen_core_r3_io_tests)
     add_test(NAME plcopen_core_r3_io_tests COMMAND plcopen_core_r3_io_tests)
 
+    add_executable(plcopen_core_geom_derivative_tests test/geom_derivative_tests.cpp)
+    target_link_libraries(plcopen_core_geom_derivative_tests PRIVATE plcopen::core)
+    plcopen_core_rt_compile_options(plcopen_core_geom_derivative_tests)
+    add_test(NAME plcopen_core_geom_derivative_tests COMMAND plcopen_core_geom_derivative_tests)
+
     add_executable(plcopen_core_a3_circular_tests test/a3_circular_tests.cpp)
     target_link_libraries(plcopen_core_a3_circular_tests PRIVATE plcopen::core)
     plcopen_core_rt_compile_options(plcopen_core_a3_circular_tests)
