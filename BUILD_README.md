@@ -38,6 +38,23 @@ ctest --test-dir build --build-config Release --output-on-failure
 | `PLCOPEN_BUILD_DOCS` | OFF | Doxygen `docs` target（未装 Doxygen 时优雅降级） |
 | `PLCOPEN_BUILD_LEGACY` | OFF | 冻结的 v0.x `src/` 线（回放/迁移基线；DoD §5.3 对照工具需要） |
 
+## Python 绑定（pyplcopen）
+
+推荐用 pip 直接从源码构建安装：
+
+```bash
+pip install .                    # 自动调用 scikit-build-core + CMake
+python -c "import pyplcopen; print(pyplcopen.AxisSim)"
+```
+
+需要 C++17 编译器、CMake ≥ 3.21 和 Python 3.10-3.13。也可手动 CMake：
+
+```bash
+cmake -S . -B build -DPLCOPEN_BUILD_PYTHON_BINDINGS=ON
+cmake --build build --config Release
+ctest --test-dir build -R pyplcopen_smoke --output-on-failure
+```
+
 ## 覆盖率（Windows）
 
 ```powershell
