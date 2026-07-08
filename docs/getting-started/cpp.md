@@ -8,7 +8,24 @@ dependencies, no dynamic linking — just `#include` and go.
 - C++17 compiler (GCC 9+, Clang 10+, MSVC 2022+)
 - CMake 3.21+
 
-## Option A: FetchContent (quickest)
+## Option A: vcpkg
+
+Add plcopen as a git overlay port:
+
+```bash
+vcpkg install plcopen --overlay-ports=/path/to/plcopen
+```
+
+Or in your `vcpkg.json` manifest with a git registry overlay.
+
+## Option B: Conan
+
+```bash
+conan create /path/to/plcopen
+conan install . --requires=plcopen/1.0.0-alpha
+```
+
+## Option C: FetchContent (quickest)
 
 ```cmake
 cmake_minimum_required(VERSION 3.21)
@@ -25,7 +42,7 @@ add_executable(my_controller main.cpp)
 target_link_libraries(my_controller PRIVATE plcopen::plcopen)
 ```
 
-## Option B: Install + find_package
+## Option D: Install + find_package
 
 ```bash
 # Build and install plcopen
