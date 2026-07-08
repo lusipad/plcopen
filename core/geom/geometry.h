@@ -99,6 +99,11 @@ inline Vec3 path_second_derivative(LineSegment)
     return {0.0, 0.0, 0.0};
 }
 
+inline Vec3 path_third_derivative(LineSegment)
+{
+    return {0.0, 0.0, 0.0};
+}
+
 struct ArcSegment
 {
     Vec3 start{};
@@ -256,6 +261,17 @@ inline Vec3 path_second_derivative(ArcSegment arc, double arclength)
             0.0};
 }
 
+inline Vec3 path_third_derivative(ArcSegment arc, double arclength)
+{
+    const double ratio = clamp_arclength(arclength, arc.length) / arc.length;
+    const double angle = arc.start_angle + arc.sweep * ratio;
+    const double omega = arc.sweep / arc.length;
+    const double omega3 = omega * omega * omega;
+    return {arc.radius * std::sin(angle) * omega3,
+            -arc.radius * std::cos(angle) * omega3,
+            0.0};
+}
+
 inline Vec3 bezier_point(Vec3 p0, Vec3 p1, Vec3 p2, Vec3 p3, double u)
 {
     const double one_minus = 1.0 - u;
@@ -331,6 +347,13 @@ inline Vec3 path_second_derivative(CubicBezierSegment curve, double arclength)
     return d2u * inv_L2;
 }
 
+inline Vec3 path_third_derivative(CubicBezierSegment curve, double)
+{
+    const Vec3 d3u = (curve.p3 - curve.p2 * 3.0 + curve.p1 * 3.0 - curve.p0) * 6.0;
+    const double inv_L3 = 1.0 / (curve.length * curve.length * curve.length);
+    return d3u * inv_L3;
+}
+
 inline rt::Result<QuadraticBlendSegment> make_quadratic_blend(Vec3 start,
                                                               Vec3 control,
                                                               Vec3 finish,
@@ -387,6 +410,11 @@ inline Vec3 path_second_derivative(QuadraticBlendSegment blend, double)
     return d2u * inv_L2;
 }
 
+inline Vec3 path_third_derivative(QuadraticBlendSegment, double)
+{
+    return {0.0, 0.0, 0.0};
+}
+
 inline Vec3 quintic_point(const QuinticBlendSegment &blend, double u)
 {
     const double v = 1.0 - u;
@@ -418,6 +446,15 @@ inline Vec3 quintic_second_derivative(const QuinticBlendSegment &blend, double u
     const Vec3 d3 = blend.p5 - blend.p4 * 2.0 + blend.p3;
     return d0 * (20.0 * v * v * v) + d1 * (60.0 * v * v * u) + d2 * (60.0 * v * u * u) +
            d3 * (20.0 * u * u * u);
+}
+
+inline Vec3 quintic_third_derivative(const QuinticBlendSegment &blend, double u)
+{
+    const double v = 1.0 - u;
+    const Vec3 e0 = blend.p3 - blend.p2 * 3.0 + blend.p1 * 3.0 - blend.p0;
+    const Vec3 e1 = blend.p4 - blend.p3 * 3.0 + blend.p2 * 3.0 - blend.p1;
+    const Vec3 e2 = blend.p5 - blend.p4 * 3.0 + blend.p3 * 3.0 - blend.p2;
+    return e0 * (60.0 * v * v) + e1 * (120.0 * v * u) + e2 * (60.0 * u * u);
 }
 
 inline Vec3 cross(Vec3 lhs, Vec3 rhs)
@@ -543,6 +580,23 @@ inline Vec3 path_second_derivative(const QuinticBlendSegment &blend, double arcl
     return (d2 - d1 * (dot(d2, d1) / sigma2)) * (1.0 / sigma2);
 }
 
+inline Vec3 path_third_derivative(const QuinticBlendSegment &blend, double arclength)
+{
+    const double u = quintic_parameter_at_length(blend, arclength);
+    const Vec3 d1 = quintic_derivative(blend, u);
+    const Vec3 d2 = quintic_second_derivative(blend, u);
+    const Vec3 d3 = quintic_third_derivative(blend, u);
+    const double sigma2 = dot(d1, d1);
+    if(sigma2 <= 1e-30) {
+        return {0.0, 0.0, 0.0};
+    }
+    const double alpha = dot(d1, d2);
+    const double beta = dot(d2, d2) + dot(d1, d3);
+    const double sigma5 = sigma2 * sigma2 * std::sqrt(sigma2);
+    return (d3 * sigma2 - d2 * (3.0 * alpha) + d1 * (4.0 * alpha * alpha / sigma2 - beta)) *
+           (1.0 / sigma5);
+}
+
 enum class SegmentKind
 {
     line,
@@ -634,6 +688,22 @@ struct PathSegment
         return kind == SegmentKind::cubic_bezier
                    ? geom::path_second_derivative(cubic, arclength)
                    : geom::path_second_derivative(blend, arclength);
+    }
+
+    Vec3 path_third_derivative(double arclength) const
+    {
+        if(kind == SegmentKind::line) {
+            return geom::path_third_derivative(line);
+        }
+        if(kind == SegmentKind::arc) {
+            return geom::path_third_derivative(arc, arclength);
+        }
+        if(kind == SegmentKind::quintic_blend) {
+            return geom::path_third_derivative(quintic, arclength);
+        }
+        return kind == SegmentKind::cubic_bezier
+                   ? geom::path_third_derivative(cubic, arclength)
+                   : geom::path_third_derivative(blend, arclength);
     }
 
     Vec3 start() const

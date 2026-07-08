@@ -103,6 +103,11 @@ if(BUILD_TESTING AND PLCOPEN_BUILD_CORE_TESTS)
     plcopen_core_rt_compile_options(plcopen_core_geom_derivative_tests)
     add_test(NAME plcopen_core_geom_derivative_tests COMMAND plcopen_core_geom_derivative_tests)
 
+    add_executable(plcopen_core_geom_third_derivative_tests test/geom_third_derivative_tests.cpp)
+    target_link_libraries(plcopen_core_geom_third_derivative_tests PRIVATE plcopen::core)
+    plcopen_core_rt_compile_options(plcopen_core_geom_third_derivative_tests)
+    add_test(NAME plcopen_core_geom_third_derivative_tests COMMAND plcopen_core_geom_third_derivative_tests)
+
     add_executable(plcopen_core_topp_oracle test/topp_oracle.cpp)
     target_link_libraries(plcopen_core_topp_oracle PRIVATE plcopen::core)
     plcopen_core_rt_compile_options(plcopen_core_topp_oracle)

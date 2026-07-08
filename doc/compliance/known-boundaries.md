@@ -79,4 +79,6 @@
 
 - `KB-060`：TOPP-RA Layer 1 加速度限幅路径参数化（Y3 §3 首层）：实现 `solve_topp_ra(path, limits[3], grid_size)` 标量路径律求解器。算法：离散化路径 s ∈ [0,L]，逐格点计算最大速度曲线（MVC）含跨轴加速度可行性限制，后向可达性传播，前向最优积分，梯形时间合成。关键修正：cross_axis_velocity_limit 处理高曲率段不同轴的 q_ss/q_s 比率差异导致的加速度区间空集问题。验收：8 项 oracle 测试——直线梯形/三角剖面精度 ≤ 2%、加速度区间可行性验证（含跨轴）、曲率减速效应、网格收敛（N=50→800 相对差 < 0.5%）、非对称限值、cubic Bezier 可行性、速度下界 ∫ds/ṡ_max。声明：Layer 1 仅为加速度限幅——jerk 限制（Layer 2）和离散周期量化待后续批次。
 
+- `KB-061`：几何路径三阶导数合同（Y3 前置工程完结）：为 5 种段类型实现 `path_third_derivative(seg, s)` 返回弧长参数化三阶导 q_sss = d³q/ds³。直线段/二次混合段 q_sss = 0（三阶参数导为零）；圆弧段 q_sss = {R·sin(θ)·ω³, -R·cos(θ)·ω³, 0}（解析旋转三阶）；cubic q_sss = 6·(p3−3p2+3p1−p0)/L³（常量——三次 Bernstein d³B/du³ 为常数）；quintic 通过 `quintic_third_derivative()` + 弧长重参数化链式法则 q_sss = [d3·σ² − 3·d2·α + d1·(4α²/σ² − β)] / σ⁵（α = d1·d2, β = |d2|² + d1·d3）。PathSegment 调度器同步更新。验收：8 项 oracle 测试——数值差分 d(q_ss)/ds（h=1e-5）、圆弧 |q_sss| = 1/R²（精度 ≤ 1e-10）、Frenet 恒等式 q_s·q_sss = −|q_ss|²、cubic 常数性、quadratic 零性。至此 q_s/q_ss/q_sss 完整交付，满足算法合同 §附注3 前置条件，Layer 2 jerk-aware TOPP 可启动。
+
 ---
