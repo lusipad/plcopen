@@ -654,6 +654,140 @@ int check_fixed_time_basic()
     return 0;
 }
 
+int check_fixed_time_short_profile()
+{
+    const otg::Limits1D lim{3.0, 2.0, 2.0, 2.5};
+
+    const auto verify_ft = [&](const char *name, otg::State1D from,
+                               otg::Target1D to, std::int64_t target) -> int {
+        const rt::Result<otg::Profile1D> result =
+            otg::solve_fixed_time(from, to, lim, target);
+        if(!result) {
+            std::printf("FAIL %s: solve_fixed_time error=%d\n", name,
+                        static_cast<int>(result.error()));
+            return 1;
+        }
+        if(result.value().duration_cycles() != target) {
+            std::printf("FAIL %s: duration %lld != target %lld\n", name,
+                        static_cast<long long>(result.value().duration_cycles()),
+                        static_cast<long long>(target));
+            return 1;
+        }
+        int rc = verify_profile(name, result.value(), from, to, lim);
+        if(rc != 0) return rc;
+        const otg::State1D finish = otg::sample(
+            result.value(),
+            rt::CycleTick::from_cycles(result.value().duration_cycles()));
+        if(std::fabs(finish.position - to.position) > 1e-9 ||
+           std::fabs(finish.velocity - to.velocity) > 1e-9 ||
+           std::fabs(finish.acceleration - to.acceleration) > 1e-9) {
+            std::printf("FAIL %s T43 ep=%.2e ev=%.2e ea=%.2e\n", name,
+                        std::fabs(finish.position - to.position),
+                        std::fabs(finish.velocity - to.velocity),
+                        std::fabs(finish.acceleration - to.acceleration));
+            return 1;
+        }
+        return 0;
+    };
+
+    if(verify_ft("short-3cubic-1",
+                 {4.291401590, -1.727409789, -0.271236005},
+                 {-0.752272585, -1.116843684, 1.226577094}, 4) != 0 ||
+       verify_ft("short-3cubic-2",
+                 {-4.704778018, -0.427996515, 1.280746636},
+                 {-3.493035626, 0.730142466, -1.074662344}, 5) != 0 ||
+       verify_ft("short-3cubic-3",
+                 {-6.024168737, -0.735716093, -0.875860967},
+                 {-8.493271146, -0.101226114, 1.408505554}, 4) != 0 ||
+       verify_ft("short-3cubic-4",
+                 {-8.691380616, 0.136316266, 1.165097326},
+                 {-6.638704744, 0.894145115, -0.560010216}, 5) != 0 ||
+       verify_ft("short-4cubic-5",
+                 {4.320893947, -1.771252201, -1.472196077},
+                 {-2.112991324, -1.980602211, 0.138525667}, 5) != 0 ||
+       verify_ft("short-3cubic-6",
+                 {-9.284109161, 1.973558113, 1.208912068},
+                 {-2.476291685, 0.679574412, -1.269371879}, 6) != 0 ||
+       verify_ft("short-3cubic-7",
+                 {-8.197958021, 1.979704230, -0.502585022},
+                 {-3.372841148, 1.037739357, -1.376086989}, 5) != 0 ||
+       verify_ft("short-hybrid-8",
+                 {-4.763297553, -0.051817595, -0.625082527},
+                 {-6.230770304, -0.502296019, 1.484631336}, 3) != 0) {
+        return 1;
+    }
+
+    std::printf("solve_fixed_time short-profile regressions: OK\n");
+    return 0;
+}
+
+int check_fixed_time_tight_fuzz(int iterations)
+{
+    Lcg rng{0xFEED1234u};
+    const otg::Limits1D limits{3.0, 2.0, 2.0, 2.5};
+    int solved = 0;
+
+    for(int i = 0; i < iterations; ++i) {
+        const otg::State1D from{rng.range(-10.0, 10.0), rng.range(-2.0, 2.0),
+                                rng.range(-1.8, 1.8)};
+        const double at_sign = rng.range(0.0, 1.0) > 0.5 ? 1.0 : -1.0;
+        const double at_bound =
+            at_sign > 0 ? limits.max_acceleration : limits.max_deceleration;
+        const double at = at_sign * rng.range(0.0, 0.9) * at_bound;
+        const otg::Target1D to{rng.range(-10.0, 10.0), rng.range(-2.0, 2.0),
+                                at};
+
+        const rt::Result<otg::Profile1D> opt =
+            otg::plan_time_optimal(from, to, limits);
+        if(!opt) continue;
+
+        const std::int64_t target = opt.value().duration_cycles() + 1;
+        const rt::Result<otg::Profile1D> result =
+            otg::solve_fixed_time(from, to, limits, target);
+        if(!result) {
+            std::printf("FAIL tight-fuzz i=%d error=%d t_min=%lld target=%lld\n",
+                        i, static_cast<int>(result.error()),
+                        static_cast<long long>(opt.value().duration_cycles()),
+                        static_cast<long long>(target));
+            std::printf("  from=(%.9f,%.9f,%.9f) to=(%.9f,%.9f,%.9f)\n",
+                        from.position, from.velocity, from.acceleration,
+                        to.position, to.velocity, to.acceleration);
+            return 1;
+        }
+        if(result.value().duration_cycles() != target) {
+            std::printf("FAIL tight-fuzz i=%d duration %lld != %lld\n", i,
+                        static_cast<long long>(result.value().duration_cycles()),
+                        static_cast<long long>(target));
+            return 1;
+        }
+        if(verify_profile("tight-fuzz", result.value(), from, to, limits) != 0) {
+            std::printf("  i=%d from=(%.9f,%.9f,%.9f) to=(%.9f,%.9f,%.9f) "
+                        "target=%lld\n",
+                        i, from.position, from.velocity, from.acceleration,
+                        to.position, to.velocity, to.acceleration,
+                        static_cast<long long>(target));
+            return 1;
+        }
+        const otg::State1D finish = otg::sample(
+            result.value(),
+            rt::CycleTick::from_cycles(result.value().duration_cycles()));
+        if(std::fabs(finish.position - to.position) > 1e-9 ||
+           std::fabs(finish.velocity - to.velocity) > 1e-9 ||
+           std::fabs(finish.acceleration - to.acceleration) > 1e-9) {
+            std::printf("FAIL tight-fuzz T43 i=%d ep=%.2e ev=%.2e ea=%.2e\n",
+                        i,
+                        std::fabs(finish.position - to.position),
+                        std::fabs(finish.velocity - to.velocity),
+                        std::fabs(finish.acceleration - to.acceleration));
+            return 1;
+        }
+        ++solved;
+    }
+    std::printf("solve_fixed_time tight fuzz (extra=1): %d/%d cases\n",
+                solved, iterations);
+    return 0;
+}
+
 int check_fixed_time_fuzz(int iterations)
 {
     Lcg rng{0xF1AED};
@@ -754,10 +888,12 @@ int main(int argc, char **argv)
     if(check_fixed_cases() != 0 || check_validation() != 0 ||
        check_nonzero_target_accel_cases() != 0 || check_pin_boundary_cases() != 0 ||
        check_fixed_time_basic() != 0 ||
+       check_fixed_time_short_profile() != 0 ||
        check_nonzero_target_velocity_quality() != 0 || check_bump_zone_quality() != 0 ||
        check_fuzz_bump_zone(quality_iterations) != 0 ||
        check_fuzz_nonzero_target(quality_iterations) != 0 ||
        check_fuzz_nonzero_target_accel(quality_iterations) != 0 ||
+       check_fixed_time_tight_fuzz(quality_iterations) != 0 ||
        check_fixed_time_fuzz(quality_iterations) != 0 ||
        check_fuzz_against_baseline(iterations) != 0) {
         return 1;

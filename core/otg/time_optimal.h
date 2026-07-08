@@ -294,6 +294,76 @@ inline rt::ErrorCode push_quintic_correction(Profile1D &profile,
     return rt::ErrorCode::infeasible;
 }
 
+// Solve for three constant-jerk phase values (j1,j2,j3) with durations
+// (d1,d2,d3) that connect state (a0,v0,p0) to target (at,vt,pt).
+// Returns {j1,j2,j3,1} on success, {0,0,0,0} if the system is singular.
+struct CubicSolution { double j1, j2, j3; bool valid; };
+inline CubicSolution solve_3cubic(double a0, double v0, double p0,
+                                  double at, double vt, double pt,
+                                  double d1, double d2, double d3)
+{
+    const double T = d1 + d2 + d3;
+    double A[3][3], b[3];
+    A[0][0] = d1;
+    A[0][1] = d2;
+    A[0][2] = d3;
+    b[0] = at - a0;
+    A[1][0] = d1 * (T - d1 * 0.5);
+    A[1][1] = d2 * (T - d1 - d2 * 0.5);
+    A[1][2] = d3 * d3 * 0.5;
+    b[1] = vt - v0 - a0 * T;
+    A[2][0] = d1 * d1 * d1 / 6.0 + d1 * d1 * d2 * 0.5 + d1 * d2 * d2 * 0.5
+              + (d1 * d1 * 0.5 + d1 * d2) * d3 + d1 * d3 * d3 * 0.5;
+    A[2][1] = d2 * d2 * d2 / 6.0 + d2 * d2 * d3 * 0.5 + d2 * d3 * d3 * 0.5;
+    A[2][2] = d3 * d3 * d3 / 6.0;
+    b[2] = pt - (p0 + v0 * T + a0 * (d1 * d1 * 0.5 + d1 * d2 + d2 * d2 * 0.5
+                + (d1 + d2) * d3 + d3 * d3 * 0.5));
+    const double D = A[0][0] * (A[1][1] * A[2][2] - A[1][2] * A[2][1])
+                   - A[0][1] * (A[1][0] * A[2][2] - A[1][2] * A[2][0])
+                   + A[0][2] * (A[1][0] * A[2][1] - A[1][1] * A[2][0]);
+    if(std::fabs(D) < 1e-20) {
+        return {0.0, 0.0, 0.0, false};
+    }
+    auto col = [&](int c) {
+        double M[3][3];
+        for(int i = 0; i < 3; ++i) {
+            for(int j = 0; j < 3; ++j) {
+                M[i][j] = A[i][j];
+            }
+            M[i][c] = b[i];
+        }
+        return M[0][0] * (M[1][1] * M[2][2] - M[1][2] * M[2][1])
+             - M[0][1] * (M[1][0] * M[2][2] - M[1][2] * M[2][0])
+             + M[0][2] * (M[1][0] * M[2][1] - M[1][1] * M[2][0]);
+    };
+    return {col(0) / D, col(1) / D, col(2) / D, true};
+}
+
+// Checks whether a single constant-jerk phase respects velocity and
+// acceleration limits. Acceleration is linear → extremes at endpoints.
+// Velocity is quadratic → one interior extremum at t = -a0/j.
+inline bool check_cubic_phase_limits(double a0, double v0, double jerk,
+                                     double dur, const Limits1D &limits)
+{
+    const double a_end = a0 + jerk * dur;
+    const double a_bound = std::fmax(limits.max_acceleration, limits.max_deceleration);
+    if(std::fabs(a0) > a_bound + 1e-12 || std::fabs(a_end) > a_bound + 1e-12) {
+        return false;
+    }
+    const double v_end = v0 + a0 * dur + jerk * dur * dur * 0.5;
+    double peak_v = std::fmax(std::fabs(v0), std::fabs(v_end));
+    if(std::fabs(jerk) > 1e-15) {
+        const double t_ext = -a0 / jerk;
+        if(t_ext > 0.0 && t_ext < dur) {
+            const double v_ext = v0 + a0 * t_ext + jerk * t_ext * t_ext * 0.5;
+            if(std::fabs(v_ext) > peak_v) {
+                peak_v = std::fabs(v_ext);
+            }
+        }
+    }
+    return peak_v <= limits.max_velocity + 1e-12;
+}
+
 // One full multiphase candidate: acceleration-zeroing reduction, entry ramp,
 // cruise, exit ramp, and the exact quintic correction.
 inline rt::Result<Profile1D> build_multiphase(State1D from,
@@ -901,6 +971,192 @@ inline rt::Result<Profile1D> solve_fixed_time(State1D from, Target1D to,
         const rt::Result<Profile1D> inner = try_inner_quintic();
         if(inner) {
             return inner;
+        }
+    }
+
+    // Candidate 1b': zeroing ramp + quintic directly to target (no targeting
+    // ramp). When nt_cycles > 0 the standard 1b leaves too few cycles for
+    // the inner quintic; here we give all remaining cycles to a quintic that
+    // handles the acceleration transition itself.
+    if(nt_cycles > 0) {
+        Profile1D p{};
+        State1D state = from;
+        bool ok = true;
+        if(n0_cycles > 0) {
+            const double zero_jerk = -from.acceleration /
+                                     static_cast<double>(n0_cycles);
+            ok = (detail::push_cubic_phase(p, state, zero_jerk,
+                                            static_cast<double>(n0_cycles)) ==
+                  rt::ErrorCode::ok);
+            state.acceleration = 0.0;
+        }
+        if(ok) {
+            const std::int64_t inner_cycles = total_cycles - n0_cycles;
+            if(inner_cycles >= 1) {
+                const Segment1D seg =
+                    make_quintic_segment(state, to, inner_cycles);
+                if(within_limits(seg, limits)) {
+                    ok = (p.add_segment(seg) == rt::ErrorCode::ok);
+                    if(ok && p.duration_cycles() == total_cycles) {
+                        return rt::Result<Profile1D>::success(p);
+                    }
+                }
+            }
+        }
+    }
+
+    // Candidate 1d: 3-cubic solve. Three constant-jerk phases whose jerks
+    // are determined by a linear system (acceleration, velocity, position
+    // end-state constraints). Covers short-profile cases where quintic
+    // segments oscillate too aggressively.
+    if(total_cycles <= 20) {
+        for(std::int64_t d1 = 1; d1 <= total_cycles - 2; ++d1) {
+            for(std::int64_t d2 = 1; d2 <= total_cycles - d1 - 1; ++d2) {
+                const std::int64_t d3 = total_cycles - d1 - d2;
+                const detail::CubicSolution sol = detail::solve_3cubic(
+                    from.acceleration, from.velocity, from.position,
+                    to.acceleration, to.velocity, to.position,
+                    static_cast<double>(d1), static_cast<double>(d2),
+                    static_cast<double>(d3));
+                if(!sol.valid) continue;
+                if(std::fabs(sol.j1) > limits.max_jerk + 1e-12 ||
+                   std::fabs(sol.j2) > limits.max_jerk + 1e-12 ||
+                   std::fabs(sol.j3) > limits.max_jerk + 1e-12) {
+                    continue;
+                }
+                double a = from.acceleration, v = from.velocity;
+                const double jerks[3] = {sol.j1, sol.j2, sol.j3};
+                const std::int64_t durs[3] = {d1, d2, d3};
+                bool ok = true;
+                for(int ph = 0; ph < 3 && ok; ++ph) {
+                    ok = detail::check_cubic_phase_limits(
+                        a, v, jerks[ph], static_cast<double>(durs[ph]),
+                        limits);
+                    v += a * static_cast<double>(durs[ph])
+                         + jerks[ph] * static_cast<double>(durs[ph])
+                           * static_cast<double>(durs[ph]) * 0.5;
+                    a += jerks[ph] * static_cast<double>(durs[ph]);
+                }
+                if(!ok) continue;
+                Profile1D p{};
+                State1D state = from;
+                ok = true;
+                for(int ph = 0; ph < 3 && ok; ++ph) {
+                    ok = (detail::push_cubic_phase(
+                              p, state, jerks[ph],
+                              static_cast<double>(durs[ph])) ==
+                          rt::ErrorCode::ok);
+                }
+                if(ok && p.duration_cycles() == total_cycles) {
+                    return rt::Result<Profile1D>::success(p);
+                }
+            }
+        }
+    }
+
+    // Candidate 1e: 4-cubic with sweep. First phase jerk is swept over
+    // [-j_max, j_max]; the remaining three are solved via 3-cubic. Handles
+    // cases where 3 phases cannot simultaneously satisfy jerk and
+    // acceleration limits.
+    if(total_cycles <= 20 && total_cycles >= 4) {
+        for(std::int64_t d1 = 1; d1 <= total_cycles - 3 && d1 <= 3; ++d1) {
+            for(std::int64_t d2 = 1; d2 <= total_cycles - d1 - 2; ++d2) {
+                for(std::int64_t d3 = 1;
+                    d3 <= total_cycles - d1 - d2 - 1; ++d3) {
+                    const std::int64_t d4 = total_cycles - d1 - d2 - d3;
+                    if(d4 < 1) continue;
+                    const double dd1 = static_cast<double>(d1);
+                    for(int trial = -250; trial <= 250; ++trial) {
+                        const double j1 = trial * 0.01;
+                        if(std::fabs(j1) > limits.max_jerk) continue;
+                        const double a1 = from.acceleration + j1 * dd1;
+                        const double v1 = from.velocity
+                            + from.acceleration * dd1 + j1 * dd1 * dd1 * 0.5;
+                        const double p1 = from.position
+                            + from.velocity * dd1
+                            + from.acceleration * dd1 * dd1 * 0.5
+                            + j1 * dd1 * dd1 * dd1 / 6.0;
+                        const detail::CubicSolution sol =
+                            detail::solve_3cubic(
+                                a1, v1, p1,
+                                to.acceleration, to.velocity, to.position,
+                                static_cast<double>(d2),
+                                static_cast<double>(d3),
+                                static_cast<double>(d4));
+                        if(!sol.valid) continue;
+                        if(std::fabs(sol.j1) > limits.max_jerk + 1e-12 ||
+                           std::fabs(sol.j2) > limits.max_jerk + 1e-12 ||
+                           std::fabs(sol.j3) > limits.max_jerk + 1e-12) {
+                            continue;
+                        }
+                        double a = from.acceleration, v = from.velocity;
+                        const double jerks[4] = {j1, sol.j1, sol.j2, sol.j3};
+                        const std::int64_t durs[4] = {d1, d2, d3, d4};
+                        bool ok = true;
+                        for(int ph = 0; ph < 4 && ok; ++ph) {
+                            ok = detail::check_cubic_phase_limits(
+                                a, v, jerks[ph],
+                                static_cast<double>(durs[ph]), limits);
+                            const double dd = static_cast<double>(durs[ph]);
+                            v += a * dd + jerks[ph] * dd * dd * 0.5;
+                            a += jerks[ph] * dd;
+                        }
+                        if(!ok) continue;
+                        Profile1D p{};
+                        State1D state = from;
+                        ok = true;
+                        for(int ph = 0; ph < 4 && ok; ++ph) {
+                            ok = (detail::push_cubic_phase(
+                                      p, state, jerks[ph],
+                                      static_cast<double>(durs[ph])) ==
+                                  rt::ErrorCode::ok);
+                        }
+                        if(ok && p.duration_cycles() == total_cycles) {
+                            return rt::Result<Profile1D>::success(p);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Candidate 1f: quintic-cubic hybrid. Backward-propagate a constant-jerk
+    // tail from the target to obtain a midpoint; build a quintic from the
+    // starting state to that midpoint. The quintic handles the smooth bulk of
+    // the motion while the short cubic tail delivers the final acceleration.
+    if(total_cycles <= 20) {
+        for(std::int64_t k = 1; k < total_cycles; ++k) {
+            const std::int64_t tail = total_cycles - k;
+            const double dd = static_cast<double>(tail);
+            for(int trial = -250; trial <= 250; ++trial) {
+                const double jt = trial * 0.01;
+                if(std::fabs(jt) > limits.max_jerk) continue;
+                const double a_mid = to.acceleration - jt * dd;
+                const double v_mid = to.velocity - a_mid * dd
+                                     - jt * dd * dd * 0.5;
+                const double p_mid = to.position - v_mid * dd
+                                     - a_mid * dd * dd * 0.5
+                                     - jt * dd * dd * dd / 6.0;
+                if(!detail::check_cubic_phase_limits(
+                       a_mid, v_mid, jt, dd, limits)) {
+                    continue;
+                }
+                const Target1D mt{p_mid, v_mid, a_mid};
+                const Segment1D head = make_quintic_segment(from, mt, k);
+                if(!within_limits(head, limits)) {
+                    continue;
+                }
+                Profile1D p{};
+                if(p.add_segment(head) != rt::ErrorCode::ok) continue;
+                State1D state{p_mid, v_mid, a_mid};
+                if(detail::push_cubic_phase(p, state, jt, dd) !=
+                   rt::ErrorCode::ok) {
+                    continue;
+                }
+                if(p.duration_cycles() == total_cycles) {
+                    return rt::Result<Profile1D>::success(p);
+                }
+            }
         }
     }
 

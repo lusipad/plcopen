@@ -17,7 +17,7 @@ sprint 记录）在 [doc/archive/roadmap-history.md](doc/archive/roadmap-history
 | 2 | 对抗性探测轮 | 组/FB 语义面系统扫描，发现即 KB/修复 | **已交付**（KB-052/053/054） |
 | 3 | Y0 最优性 oracle（评审定序提前：先立标尺再修算法） | 切换结构枚举表（第一交付物）+ 双 oracle + Ruckig 黑盒对照，excess_cycles 分域基线入趋势 | **主 oracle 已交付**：678 结构表 + Newton 打靶 + 4 域基线；副 oracle / Ruckig 对照随 Y2 |
 | 4 | Y2 完整 OTG（评审三关键） | state-to-state 任意目标状态（非零 at）+ 钉边界 + epsilon 政策声明化；Ruckig 黑盒对照 | **核心已交付**（KB-055：非零 at + 钉边界 12 用例 + epsilon 声明）；Ruckig 对照待 ADR-0003 人工审批 |
-| 4c | Y4 solve_fixed_time 一等原语（评审三关键，紧跟 Y2） | 同步 + cycle-exact 量化（删 KB-050 尾段补丁）+ 流追赶汇合同一求解；终态 ≤1e-9（T43） | **求解器已交付**（KB-056：5 候选族 + 9 固定 + 1000 fuzz + 速度反转覆盖，T43 worst ep=8e-15）；集成（删 KB-050 补丁 + 组同步切换）待下批 |
+| 4c | Y4 solve_fixed_time 一等原语（评审三关键，紧跟 Y2） | 同步 + cycle-exact 量化（删 KB-050 尾段补丁）+ 流追赶汇合同一求解；终态 ≤1e-9（T43） | **求解器已交付**（KB-056：8 候选族含 multi-cubic + quintic-cubic hybrid + 17 固定 + 1000 tight fuzz（extra=1）+ 1000 random fuzz，T43 worst ep=8e-15）；集成（删 KB-050 补丁 + 组同步切换）待下批 |
 | 5a | P-Part4 剩余 FB | 管理组矩阵 + 路径表/变换第二批矩阵均已起草待批 | 两份矩阵待批 |
 | 5b | P-Part5 回零规程 | MC_Step* 标准回零步 FB 面（数字输入通道模拟验收） | 矩阵已起草待批 |
 | 4b | **信号通道并行项**（拷问后拉入：学习不等建造） | T1 pip wheel + 最小文档站起步——细案见 [signal-channel-plan](doc/planning/signal-channel-plan.md) | 方案已备，可并行 |
