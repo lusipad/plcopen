@@ -623,7 +623,18 @@ int check_fixed_time_basic()
             return 1;
     }
 
-    // T < T_min: should return infeasible.
+    // T far below physical minimum: should return infeasible.
+    {
+        const otg::State1D from{0.0, 0.0, 0.0};
+        const otg::Target1D to{10.0, 0.0, 0.0};
+        const rt::Result<otg::Profile1D> result =
+            otg::solve_fixed_time(from, to, limits, 1);
+        if(result) {
+            return fail("ft-too-short should be infeasible");
+        }
+    }
+
+    // T = T_min - 1: multi-cubic may find a valid profile below quintic T_min.
     {
         const otg::State1D from{0.0, 0.0, 0.0};
         const otg::Target1D to{10.0, 0.0, 0.0};
@@ -634,7 +645,11 @@ int check_fixed_time_basic()
             otg::solve_fixed_time(from, to, limits,
                                   opt.value().duration_cycles() - 1);
         if(result) {
-            return fail("ft-too-short should be infeasible");
+            const auto fin = otg::sample(result.value(),
+                rt::CycleTick::from_cycles(result.value().duration_cycles()));
+            if(std::fabs(fin.position - to.position) > 1e-9 ||
+               std::fabs(fin.velocity - to.velocity) > 1e-9)
+                return fail("ft-below-tmin endpoint error");
         }
     }
 

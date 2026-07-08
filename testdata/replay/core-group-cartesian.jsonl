@@ -170,7 +170,7 @@
 {"tick":55,"axis":1,"position":1.8453317297740162,"velocity":0,"acceleration":0,"source":"core-group-cartesian"}
 {"tick":55,"axis":2,"position":0.1003207501495498,"velocity":0,"acceleration":0,"source":"core-group-cartesian"}
 {"tick":56,"axis":0,"position":-0.10917097977929635,"velocity":0,"acceleration":0,"source":"core-group-cartesian"}
-{"tick":56,"axis":1,"position":1.846955494282684,"velocity":0,"acceleration":0,"source":"core-group-cartesian"}
+{"tick":56,"axis":1,"position":1.8469554942826838,"velocity":0,"acceleration":0,"source":"core-group-cartesian"}
 {"tick":56,"axis":2,"position":0.10224525104684855,"velocity":0,"acceleration":0,"source":"core-group-cartesian"}
 {"tick":57,"axis":0,"position":-0.097581424259094662,"velocity":0,"acceleration":0,"source":"core-group-cartesian"}
 {"tick":57,"axis":1,"position":1.8500126199564271,"velocity":0,"acceleration":0,"source":"core-group-cartesian"}
@@ -202,8 +202,8 @@
 {"tick":66,"axis":0,"position":0.068523197191710294,"velocity":0,"acceleration":0,"source":"core-group-cartesian"}
 {"tick":66,"axis":1,"position":1.8662439188130866,"velocity":0,"acceleration":0,"source":"core-group-cartesian"}
 {"tick":66,"axis":2,"position":0.15773502691896257,"velocity":0,"acceleration":0,"source":"core-group-cartesian"}
-{"tick":67,"axis":0,"position":0.088070194791145973,"velocity":0,"acceleration":0,"source":"core-group-cartesian"}
-{"tick":67,"axis":1,"position":1.8651757206653259,"velocity":0,"acceleration":0,"source":"core-group-cartesian"}
+{"tick":67,"axis":0,"position":0.088070194791146084,"velocity":0,"acceleration":0,"source":"core-group-cartesian"}
+{"tick":67,"axis":1,"position":1.8651757206653257,"velocity":0,"acceleration":0,"source":"core-group-cartesian"}
 {"tick":67,"axis":2,"position":0.16350852961085882,"velocity":0,"acceleration":0,"source":"core-group-cartesian"}
 {"tick":68,"axis":0,"position":0.10776189473398345,"velocity":0,"acceleration":0,"source":"core-group-cartesian"}
 {"tick":68,"axis":1,"position":1.8635275782345859,"velocity":0,"acceleration":0,"source":"core-group-cartesian"}
@@ -220,11 +220,11 @@
 {"tick":72,"axis":0,"position":0.18771031110344061,"velocity":0,"acceleration":0,"source":"core-group-cartesian"}
 {"tick":72,"axis":1,"position":1.8511570006111004,"velocity":0,"acceleration":0,"source":"core-group-cartesian"}
 {"tick":72,"axis":2,"position":0.19237604307034012,"velocity":0,"acceleration":0,"source":"core-group-cartesian"}
-{"tick":73,"axis":0,"position":0.20793014107608299,"velocity":0,"acceleration":0,"source":"core-group-cartesian"}
+{"tick":73,"axis":0,"position":0.20793014107608287,"velocity":0,"acceleration":0,"source":"core-group-cartesian"}
 {"tick":73,"axis":1,"position":1.8466275608912475,"velocity":0,"acceleration":0,"source":"core-group-cartesian"}
 {"tick":73,"axis":2,"position":0.19814954576223637,"velocity":0,"acceleration":0,"source":"core-group-cartesian"}
-{"tick":74,"axis":0,"position":0.22821972972543314,"velocity":0,"acceleration":0,"source":"core-group-cartesian"}
-{"tick":74,"axis":1,"position":1.8415273183117873,"velocity":0,"acceleration":0,"source":"core-group-cartesian"}
+{"tick":74,"axis":0,"position":0.22821972972543303,"velocity":0,"acceleration":0,"source":"core-group-cartesian"}
+{"tick":74,"axis":1,"position":1.8415273183117875,"velocity":0,"acceleration":0,"source":"core-group-cartesian"}
 {"tick":74,"axis":2,"position":0.20392304845413262,"velocity":0,"acceleration":0,"source":"core-group-cartesian"}
 {"tick":75,"axis":0,"position":0.24856839830595978,"velocity":0,"acceleration":0,"source":"core-group-cartesian"}
 {"tick":75,"axis":1,"position":1.83585858044957,"velocity":0,"acceleration":0,"source":"core-group-cartesian"}
@@ -253,8 +253,8 @@
 {"tick":83,"axis":0,"position":0.41241861410108427,"velocity":0,"acceleration":0,"source":"core-group-cartesian"}
 {"tick":83,"axis":1,"position":1.7703553694121357,"velocity":0,"acceleration":0,"source":"core-group-cartesian"}
 {"tick":83,"axis":2,"position":0.25588457268119896,"velocity":0,"acceleration":0,"source":"core-group-cartesian"}
-{"tick":84,"axis":0,"position":0.43292791821038945,"velocity":0,"acceleration":0,"source":"core-group-cartesian"}
-{"tick":84,"axis":1,"position":1.7596882247675967,"velocity":0,"acceleration":0,"source":"core-group-cartesian"}
+{"tick":84,"axis":0,"position":0.43292791821038934,"velocity":0,"acceleration":0,"source":"core-group-cartesian"}
+{"tick":84,"axis":1,"position":1.7596882247675969,"velocity":0,"acceleration":0,"source":"core-group-cartesian"}
 {"tick":84,"axis":2,"position":0.26165807537309521,"velocity":0,"acceleration":0,"source":"core-group-cartesian"}
 {"tick":85,"axis":0,"position":0.45342677685865762,"velocity":0,"acceleration":0,"source":"core-group-cartesian"}
 {"tick":85,"axis":1,"position":1.7484783191363154,"velocity":0,"acceleration":0,"source":"core-group-cartesian"}

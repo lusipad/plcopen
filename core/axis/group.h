@@ -1308,7 +1308,6 @@ private:
     struct CartPiece
     {
         bool corner = false;
-        bool constant_ride = false;
         geom::Vec3 start{};
         geom::Vec3 dir{};
         double length = 0.0;
@@ -1669,63 +1668,48 @@ private:
             piece.v_in = piece.v_in < reach ? piece.v_in : reach;
             v = piece.v_in;
         }
-        // Profiles. Steady interior lines (v_in == v_out > 0) ride constant
-        // node velocity exactly like corners — a node pinned at the command
-        // limit leaves the OTG no cruise-refinement interval and the
-        // quantization residue can fall into a deep dive-and-return burn;
-        // the constant ride absorbs the residue in the declared <=1-cycle
-        // terminal clamp instead. Only the live entry piece and the
-        // terminal to-rest piece carry real profiles.
         for(std::size_t i = cart_piece_index_; i < count; ++i) {
             CartPiece &piece = cart_window_[i];
-            piece.constant_ride = false;
             if(piece.corner) {
-                piece.constant_ride = true;
                 const double speed = piece.v_in > 1e-12 ? piece.v_in : 1e-12;
-                piece.duration = static_cast<std::int64_t>(piece.length / speed) + 1;
+                piece.duration =
+                    static_cast<std::int64_t>(piece.length / speed) + 1;
                 continue;
             }
             const bool live_entry = i == cart_piece_index_;
-            const bool steady = !live_entry && piece.v_out > 1e-12 &&
-                                std::fabs(piece.v_in - piece.v_out) < 1e-12;
-            if(steady) {
-                piece.constant_ride = true;
-                piece.duration =
-                    static_cast<std::int64_t>(piece.length / piece.v_out) + 1;
-                continue;
-            }
             const double entry_v = live_entry ? cart_window_entry_v_ : piece.v_in;
             const double entry_a = live_entry ? cart_window_entry_a_ : 0.0;
             double cap = piece.cap;
             if(cartesian_velocity_limit_ > 0.0 && cap > cartesian_velocity_limit_) {
                 cap = cartesian_velocity_limit_;
             }
-            // Exit-velocity retreat ladder: a target pinned at the limit can
-            // strand the solver in the residue burn; each retreat is a
-            // declared sub-envelope velocity step at the junction.
-            const double ladder[4] = {1.0, 0.99, 0.97, 0.94};
-            const std::int64_t sane =
-                piece.v_out > 1e-12
-                    ? static_cast<std::int64_t>(piece.length / piece.v_out) + 24
-                    : 0;
-            bool planned = false;
-            for(int attempt = 0; attempt < 4; ++attempt) {
-                const double vt = piece.v_out * ladder[attempt];
-                const rt::Result<otg::Profile1D> profile = otg::plan_time_optimal(
-                    {0.0, entry_v, entry_a}, {piece.length, vt, 0.0},
-                    {cap, acc, dec, jerk});
-                if(!profile) {
-                    continue;
-                }
-                piece.profile = profile.value();
-                piece.duration = piece.profile.duration_cycles();
-                planned = true;
-                if(piece.v_out <= 1e-12 || piece.duration <= sane) {
-                    break;
-                }
-            }
-            if(!planned) {
+            const otg::Limits1D lim{cap, acc, dec, jerk};
+            const rt::Result<otg::Profile1D> profile = otg::plan_time_optimal(
+                {0.0, entry_v, entry_a}, {piece.length, piece.v_out, 0.0},
+                lim);
+            if(!profile) {
                 return false;
+            }
+            piece.profile = profile.value();
+            piece.duration = piece.profile.duration_cycles();
+            const double avg_v = entry_v > piece.v_out
+                ? entry_v : (piece.v_out > 1e-12 ? piece.v_out : entry_v);
+            if(avg_v > 1e-12) {
+                const std::int64_t ideal = static_cast<std::int64_t>(
+                    std::ceil(piece.length / avg_v));
+                if(piece.duration > ideal + 4) {
+                    for(std::int64_t t = ideal; t <= ideal + 4; ++t) {
+                        const rt::Result<otg::Profile1D> ft =
+                            otg::solve_fixed_time(
+                                {0.0, entry_v, entry_a},
+                                {piece.length, piece.v_out, 0.0}, lim, t);
+                        if(ft) {
+                            piece.profile = ft.value();
+                            piece.duration = ft.value().duration_cycles();
+                            break;
+                        }
+                    }
+                }
             }
         }
         return true;
@@ -1788,7 +1772,7 @@ private:
         ++cart_piece_tick_;
         CartPiece &piece = cart_window_[cart_piece_index_];
         double s = 0.0;
-        if(piece.constant_ride) {
+        if(piece.corner) {
             s = piece.v_in * static_cast<double>(cart_piece_tick_);
             s = s > piece.length ? piece.length : s;
         } else {
@@ -1843,7 +1827,7 @@ private:
         }
         CartPiece &piece = cart_window_[cart_piece_index_];
         otg::State1D state{};
-        if(piece.constant_ride) {
+        if(piece.corner) {
             double s = piece.v_in * static_cast<double>(cart_piece_tick_);
             s = s > piece.length ? piece.length : s;
             state = {s, piece.v_in, 0.0};

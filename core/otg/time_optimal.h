@@ -809,9 +809,7 @@ inline rt::Result<Profile1D> solve_fixed_time(State1D from, Target1D to,
     if(optimal.value().duration_cycles() == total_cycles) {
         return optimal;
     }
-    if(optimal.value().duration_cycles() > total_cycles) {
-        return rt::Result<Profile1D>::failure(rt::ErrorCode::infeasible);
-    }
+    const bool below_tmin = optimal.value().duration_cycles() > total_cycles;
 
     // Candidate 1: single quintic spanning the full duration.
     {
@@ -860,7 +858,7 @@ inline rt::Result<Profile1D> solve_fixed_time(State1D from, Target1D to,
     // Candidate 1a: split via optimal midpoint — sample the optimal at
     // cycle k, build two quintics (from→mid in k, mid→to in total-k).
     // The longer second segment absorbs the extra time gently.
-    {
+    if(!below_tmin) {
         const std::int64_t t_min = optimal.value().duration_cycles();
         const std::int64_t max_k = t_min - 1 < total_cycles - 1
                                        ? t_min - 1
@@ -885,7 +883,7 @@ inline rt::Result<Profile1D> solve_fixed_time(State1D from, Target1D to,
     // Velocity-reversal profiles cross v=0 with a=0 at segment boundaries;
     // inserting zero-jerk idle cycles there preserves all subsequent segments
     // and extends the total duration by the inserted amount.
-    {
+    if(!below_tmin) {
         const std::int64_t extra =
             total_cycles - optimal.value().duration_cycles();
         if(extra > 0 &&
@@ -1158,6 +1156,10 @@ inline rt::Result<Profile1D> solve_fixed_time(State1D from, Target1D to,
                 }
             }
         }
+    }
+
+    if(below_tmin) {
+        return rt::Result<Profile1D>::failure(rt::ErrorCode::infeasible);
     }
 
     const double distance = eff.position - reduced.position;
