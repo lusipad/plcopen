@@ -1802,32 +1802,6 @@ private:
         }
     }
 
-    int domain_id_ = 0;
-    void *group_owner_ = nullptr;
-    AxisSnapshot snapshot_{};
-    MotionLimits limits_{};
-    rt::StaticVector<AxisCommand, QueueCapacity> queue_{};
-    AxisCommand active_command_{};
-    otg::Profile1D active_profile_{};
-    double active_target_ = 0.0;
-    double active_last_sample_ = 0.0;
-    double base_velocity_ = 0.0;
-    double continuous_hold_velocity_ = 0.0;
-    double override_ = 100.0;
-    std::int64_t active_tick_ = 0;
-    std::uint32_t next_command_id_ = 1;
-    bool active_ = false;
-    bool continuous_holding_ = false;
-    bool halt_profiled_ = false;
-    bool blend_armed_ = false;
-
-    otg::Profile1D superimposed_profile_{};
-    std::int64_t superimposed_tick_ = 0;
-    double superimposed_last_ = 0.0;
-    std::uint32_t superimposed_id_ = 0;
-    std::uint32_t superimposed_completed_id_ = 0;
-    bool superimposed_active_ = false;
-
     struct ProbeSlot
     {
         bool armed = false;
@@ -1839,30 +1813,52 @@ private:
         double recorded_position = 0.0;
         std::uint32_t command_id = 0;
     };
-    std::array<bool, DigitalInputCount> digital_input_{};
-    std::array<bool, DigitalOutputCount> digital_output_{};
-    std::array<ProbeSlot, DigitalInputCount> probes_{};
-    AxisInfoInputs axis_info_{};
 
+    void *group_owner_ = nullptr;
+    double active_target_ = 0.0;
+    double active_last_sample_ = 0.0;
+    double base_velocity_ = 0.0;
+    double continuous_hold_velocity_ = 0.0;
+    double override_ = 100.0;
+    std::int64_t active_tick_ = 0;
+    std::int64_t superimposed_tick_ = 0;
+    double superimposed_last_ = 0.0;
+    double phase_offset_ = 0.0;
+    double phase_target_ = 0.0;
+    double phase_rate_ = 0.0;
+    double approach_window_begin_ = 0.0;
+    double approach_start_slave_ = 0.0;
+    MotionLimits limits_{};
+    GearInCommand sync_gear_{};
+    CombineAxesCommand sync_combine_{};
+    AxisSnapshot snapshot_{};
+    AxisCommand active_command_{};
+    CamInCommand sync_cam_{};
+    std::array<ProbeSlot, DigitalInputCount> probes_{};
+    rt::StaticVector<AxisCommand, QueueCapacity> queue_{};
+    exec::CamSpline cam_spline_{};
+    otg::Profile1D active_profile_{};
+    otg::Profile1D superimposed_profile_{};
+    stream::StreamFilter1D stream_filter_{};
+    int domain_id_ = 0;
+    std::uint32_t next_command_id_ = 1;
+    std::uint32_t superimposed_id_ = 0;
+    std::uint32_t superimposed_completed_id_ = 0;
     SyncKind sync_kind_ = SyncKind::none;
     SyncPhase sync_phase_ = SyncPhase::idle;
     SyncPhase sync_entry_phase_ = SyncPhase::idle;
     std::uint32_t sync_id_ = 0;
-    GearInCommand sync_gear_{};
-    CamInCommand sync_cam_{};
-    CombineAxesCommand sync_combine_{};
-    double phase_offset_ = 0.0;
-    double phase_target_ = 0.0;
-    double phase_rate_ = 0.0;
-    bool phasing_active_ = false;
-    double approach_window_begin_ = 0.0;
-    double approach_start_slave_ = 0.0;
-
-    stream::StreamFilter1D stream_filter_{};
-    bool stream_active_ = false;
     std::uint32_t stream_id_ = 0;
-
-    exec::CamSpline cam_spline_{};
+    bool active_ = false;
+    bool continuous_holding_ = false;
+    bool halt_profiled_ = false;
+    bool blend_armed_ = false;
+    bool superimposed_active_ = false;
+    bool phasing_active_ = false;
+    bool stream_active_ = false;
+    std::array<bool, DigitalInputCount> digital_input_{};
+    std::array<bool, DigitalOutputCount> digital_output_{};
+    AxisInfoInputs axis_info_{};
 };
 
 } // namespace plcopen::core::axis

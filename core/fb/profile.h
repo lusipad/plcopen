@@ -60,7 +60,7 @@ protected:
             return 0;
         }
         const double scaled = static_cast<double>(duration_cycles) * time_scale;
-        return static_cast<std::int64_t>(scaled + 0.5);
+        return static_cast<std::int64_t>(std::llround(scaled));
     }
 
     void track(std::uint32_t first_id, std::uint32_t last_id)
