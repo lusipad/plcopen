@@ -113,6 +113,11 @@ if(BUILD_TESTING AND PLCOPEN_BUILD_CORE_TESTS)
     plcopen_core_rt_compile_options(plcopen_core_topp_oracle)
     add_test(NAME plcopen_core_topp_oracle COMMAND plcopen_core_topp_oracle)
 
+    add_executable(plcopen_core_topp_jerk_oracle test/topp_jerk_oracle.cpp)
+    target_link_libraries(plcopen_core_topp_jerk_oracle PRIVATE plcopen::core)
+    plcopen_core_rt_compile_options(plcopen_core_topp_jerk_oracle)
+    add_test(NAME plcopen_core_topp_jerk_oracle COMMAND plcopen_core_topp_jerk_oracle)
+
     add_executable(plcopen_core_a3_circular_tests test/a3_circular_tests.cpp)
     target_link_libraries(plcopen_core_a3_circular_tests PRIVATE plcopen::core)
     plcopen_core_rt_compile_options(plcopen_core_a3_circular_tests)
