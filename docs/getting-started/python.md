@@ -39,6 +39,33 @@ Each `move_*` call submits a command and runs cycles until the axis settles.
 The `jerk` parameter (default 1.0) controls the smoothness of the
 acceleration ramp.
 
+## SI Units (CycleConfig)
+
+The core uses per-cycle units internally. Use `CycleConfig` to convert
+from human-readable SI values:
+
+```python
+import pyplcopen
+
+cfg = pyplcopen.CycleConfig.at_1khz()  # 1 ms cycle
+
+axis = pyplcopen.AxisSim()
+axis.power_on()
+axis.move_absolute(
+    100.0,                              # position (same units)
+    cfg.velocity_to_cycle(200.0),       # 200 mm/s
+    cfg.acceleration_to_cycle(1000.0),  # 1000 mm/s^2
+    cfg.acceleration_to_cycle(1000.0),  # deceleration
+    cfg.jerk_to_cycle(50000.0),         # 50000 mm/s^3
+)
+
+# Read back in SI
+print(f"Velocity: {cfg.velocity_to_si(axis.command_velocity())} mm/s")
+```
+
+Presets: `at_1khz()`, `at_2khz()`, `at_4khz()`, or `from_period_ns()`
+for any cycle rate.
+
 ## Trajectory Stream (10 minutes)
 
 For robot joint control: push targets at a low rate (e.g. 100 Hz),

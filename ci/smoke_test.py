@@ -47,4 +47,12 @@ table = pyplcopen.generate_cam_law("modified_sine", 6.2832, 0.5, 33)
 assert len(table) == 33
 assert abs(table[-1][1] - 0.5) < 1e-9
 
+cfg = pyplcopen.CycleConfig.at_1khz()
+assert cfg.period_ns() == 1_000_000
+assert abs(cfg.velocity_to_cycle(100.0) - 0.1) < 1e-12
+assert abs(cfg.acceleration_to_cycle(500.0) - 0.0005) < 1e-12
+assert abs(cfg.jerk_to_cycle(10000.0) - 1e-5) < 1e-15
+assert abs(cfg.velocity_to_si(0.1) - 100.0) < 1e-9
+assert abs(cfg.acceleration_to_si(0.0005) - 500.0) < 1e-6
+
 print("pyplcopen smoke test passed")

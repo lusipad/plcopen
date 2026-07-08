@@ -6,6 +6,8 @@
 #include "exec/sync.h"
 #include "geom/frame.h"
 #include "kin/wrist6r.h"
+#include "rt/error_text.h"
+#include "rt/units.h"
 
 #include <fstream>
 #include <sstream>
@@ -24,7 +26,7 @@ namespace
 {
 std::string make_error_message(const char *operation, plcopen::core::rt::ErrorCode error)
 {
-    return std::string(operation) + " failed with error " + std::to_string(static_cast<int>(error));
+    return std::string(operation) + " failed: " + plcopen::core::rt::to_string(error);
 }
 
 void throw_on_error(const char *operation, plcopen::core::rt::ErrorCode error)
@@ -548,4 +550,31 @@ PYBIND11_MODULE(pyplcopen, module)
     module.def("generate_cam_law", &generate_cam_law_py, py::arg("law"),
                py::arg("master_span"), py::arg("rise"), py::arg("points"));
     module.def("load_cam_table_csv", &load_cam_table_csv, py::arg("path"));
+
+    py::class_<plcopen::core::rt::CycleConfig>(module, "CycleConfig",
+        "SI <-> per-cycle unit converter. The core uses per-cycle units "
+        "internally; this helper converts human-readable SI values "
+        "(mm/s, mm/s^2, mm/s^3) to/from per-cycle values.")
+        .def_static("from_period_ns", &plcopen::core::rt::CycleConfig::from_period_ns,
+                     py::arg("period_ns"))
+        .def_static("at_1khz", &plcopen::core::rt::CycleConfig::at_1khz)
+        .def_static("at_2khz", &plcopen::core::rt::CycleConfig::at_2khz)
+        .def_static("at_4khz", &plcopen::core::rt::CycleConfig::at_4khz)
+        .def("period_ns", &plcopen::core::rt::CycleConfig::period_ns)
+        .def("period_seconds", &plcopen::core::rt::CycleConfig::period_seconds)
+        .def("velocity_to_cycle", &plcopen::core::rt::CycleConfig::velocity_to_cycle,
+             py::arg("velocity_per_second"))
+        .def("acceleration_to_cycle", &plcopen::core::rt::CycleConfig::acceleration_to_cycle,
+             py::arg("accel_per_second_sq"))
+        .def("jerk_to_cycle", &plcopen::core::rt::CycleConfig::jerk_to_cycle,
+             py::arg("jerk_per_second_cubed"))
+        .def("velocity_to_si", &plcopen::core::rt::CycleConfig::velocity_to_si,
+             py::arg("velocity_per_cycle"))
+        .def("acceleration_to_si", &plcopen::core::rt::CycleConfig::acceleration_to_si,
+             py::arg("accel_per_cycle_sq"))
+        .def("jerk_to_si", &plcopen::core::rt::CycleConfig::jerk_to_si,
+             py::arg("jerk_per_cycle_cubed"));
+
+    module.def("error_text", &plcopen::core::rt::to_string, py::arg("code"),
+               "Human-readable description of an ErrorCode value.");
 }
