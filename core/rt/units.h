@@ -10,8 +10,8 @@ class CycleConfig
 public:
     static constexpr CycleConfig from_period_ns(std::int64_t period_ns)
     {
-        const double dt = static_cast<double>(period_ns) * 1e-9;
-        return CycleConfig(period_ns, dt);
+        const double ps = static_cast<double>(period_ns) * 1e-9;
+        return CycleConfig(period_ns, ps);
     }
 
     static constexpr CycleConfig at_1khz()
@@ -36,52 +36,52 @@ public:
 
     constexpr double period_seconds() const
     {
-        return dt_;
+        return ps_;
     }
 
     constexpr double velocity_to_cycle(double velocity_per_second) const
     {
-        return velocity_per_second * dt_;
+        return velocity_per_second * ps_;
     }
 
     constexpr double acceleration_to_cycle(double accel_per_second_sq) const
     {
-        return accel_per_second_sq * dt2_;
+        return accel_per_second_sq * ps2_;
     }
 
     constexpr double jerk_to_cycle(double jerk_per_second_cubed) const
     {
-        return jerk_per_second_cubed * dt3_;
+        return jerk_per_second_cubed * ps3_;
     }
 
     constexpr double velocity_to_si(double velocity_per_cycle) const
     {
-        return velocity_per_cycle / dt_;
+        return velocity_per_cycle / ps_;
     }
 
     constexpr double acceleration_to_si(double accel_per_cycle_sq) const
     {
-        return accel_per_cycle_sq / dt2_;
+        return accel_per_cycle_sq / ps2_;
     }
 
     constexpr double jerk_to_si(double jerk_per_cycle_cubed) const
     {
-        return jerk_per_cycle_cubed / dt3_;
+        return jerk_per_cycle_cubed / ps3_;
     }
 
 private:
-    constexpr CycleConfig(std::int64_t period_ns, double dt)
+    constexpr CycleConfig(std::int64_t period_ns, double ps)
         : period_ns_(period_ns)
-        , dt_(dt)
-        , dt2_(dt * dt)
-        , dt3_(dt * dt * dt)
+        , ps_(ps)
+        , ps2_(ps * ps)
+        , ps3_(ps * ps * ps)
     {
     }
 
     std::int64_t period_ns_ = 1'000'000;
-    double dt_ = 0.001;
-    double dt2_ = 0.000001;
-    double dt3_ = 0.000000001;
+    double ps_ = 0.001;
+    double ps2_ = 0.000001;
+    double ps3_ = 0.000000001;
 };
 
 } // namespace plcopen::core::rt

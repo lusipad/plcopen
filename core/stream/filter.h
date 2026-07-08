@@ -399,7 +399,7 @@ private:
 
         otg::Target1D to{clamp_to_envelope(aim), through_velocity, 0.0};
 
-        // T24 quintic fast path (KB-064): try closed-form quintic first
+        // T24 quintic fast path (KB-064): attempt closed-form quintic first
         // when the config enables it and there's a valid rendezvous horizon.
         quintic_active_ = false;
         if(config_.quintic_fast_path && rendezvous_cycles > 0) {

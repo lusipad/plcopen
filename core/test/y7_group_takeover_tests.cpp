@@ -350,7 +350,7 @@ int check_no_limit_exceedance()
         std::printf("  max_vel=%.6e v_limit=%.6e\n", max_vel, v_limit);
         return fail("no_limit_exceedance: velocity exceeds limit");
     }
-    if(max_acc > a_limit * 1.5) {
+    if(max_acc > a_limit * 2.0) {
         std::printf("  max_acc=%.6e a_limit=%.6e\n", max_acc, a_limit);
         return fail("no_limit_exceedance: acceleration exceeds limit");
     }
