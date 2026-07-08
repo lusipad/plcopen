@@ -350,6 +350,7 @@ private:
         // backward or brakes toward rest while the line escapes.
         double through_velocity = pending_velocity_;
         double aim = pending_position_;
+        std::int64_t rendezvous_cycles = 0;
         if(through_velocity != 0.0) {
             // The horizon must be deep enough that a one-quantum (one cycle
             // of line displacement) recovery bump fits the jerk and
@@ -368,7 +369,9 @@ private:
             if(accel_depth > horizon) {
                 horizon = accel_depth;
             }
-            aim += through_velocity * std::ceil(horizon);
+            const double horizon_ceil = std::ceil(horizon);
+            aim += through_velocity * horizon_ceil;
+            rendezvous_cycles = static_cast<std::int64_t>(horizon_ceil);
             const double reach =
                 otg::detail::ramp_between(from.velocity, through_velocity, config_.limits)
                     .distance;
@@ -377,19 +380,23 @@ private:
                 const double merge_cycles =
                     std::ceil((needed - pending_position_) / through_velocity);
                 aim = pending_position_ + through_velocity * merge_cycles;
+                rendezvous_cycles = static_cast<std::int64_t>(merge_cycles);
             }
             if((aim - from.position) * through_velocity < 0.0) {
-                // Pathological entry state (moving against the stream):
-                // approach the current line point at rest; the line opens
-                // the gap and the velocity-matched law takes over.
                 through_velocity = 0.0;
                 aim = pending_position_;
+                rendezvous_cycles = 0;
             }
         }
 
         otg::Target1D to{clamp_to_envelope(aim), through_velocity, 0.0};
         rt::Result<otg::Profile1D> planned =
-            otg::plan_time_optimal(from, to, config_.limits);
+            rendezvous_cycles > 0
+                ? otg::solve_fixed_time(from, to, config_.limits, rendezvous_cycles)
+                : rt::Result<otg::Profile1D>::failure(rt::ErrorCode::infeasible);
+        if(!planned) {
+            planned = otg::plan_time_optimal(from, to, config_.limits);
+        }
 
         if(!planned) {
             // Decision #5: clamp the target harder (rest target) and retry
