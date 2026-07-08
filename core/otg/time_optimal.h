@@ -296,7 +296,7 @@ inline rt::ErrorCode push_quintic_correction(Profile1D &profile,
 
 // Solve for three constant-jerk phase values (j1,j2,j3) with durations
 // (d1,d2,d3) that connect state (a0,v0,p0) to target (at,vt,pt).
-// Returns {j1,j2,j3,1} on success, {0,0,0,0} if the system is singular.
+// Returns {j1,j2,j3,1} on success, {0,0,0,0} if singular.
 struct CubicSolution { double j1, j2, j3; bool valid; };
 inline CubicSolution solve_3cubic(double a0, double v0, double p0,
                                   double at, double vt, double pt,
@@ -1004,7 +1004,7 @@ inline rt::Result<Profile1D> solve_fixed_time(State1D from, Target1D to,
     }
 
     // Candidate 1d: 3-cubic solve. Three constant-jerk phases whose jerks
-    // are determined by a linear system (acceleration, velocity, position
+    // are determined by a linear solve (acceleration, velocity, position
     // end-state constraints). Covers short-profile cases where quintic
     // segments oscillate too aggressively.
     if(total_cycles <= 20) {
@@ -1303,14 +1303,14 @@ inline rt::Result<Profile1D> solve_fixed_time(State1D from, Target1D to,
             return best;
         }
 
-        // Also try vc = 0 (pure ramps + quintic correction, no cruise).
+        // Also test vc = 0 (pure ramps + quintic correction, no cruise).
         const rt::Result<Profile1D> at_zero = try_build(0.0);
         if(at_zero) {
             return at_zero;
         }
     }
 
-    // Candidate 3: try negative direction (overshoot-and-return).
+    // Candidate 3: negative direction (overshoot-and-return).
     {
         double lo = 0.0;
         double hi = -direction * limits.max_velocity;

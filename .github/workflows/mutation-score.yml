@@ -1,4 +1,4 @@
-name: Mutation Smoke
+name: Mutation Score Gate
 
 on:
   workflow_dispatch:
@@ -6,12 +6,13 @@ on:
     - cron: '17 3 * * 1'
 
 jobs:
-  mutation-smoke:
+  mutation-score:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     steps:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Run mutation smoke
-        run: cmake -P cmake/mutation_smoke.cmake
+      - name: Run mutation score gate (E3)
+        run: cmake -P cmake/mutation_score_gate.cmake
