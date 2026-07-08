@@ -130,7 +130,7 @@ The core library is designed for hard real-time:
 - **No floating-point time accumulation** (integer cycle counter)
 
 The `Servo` narrow interface (ADR-0004) bridges to your hardware driver.
-See `core/demo/rt_executor.cpp` for a reference two-thread executor
+See `core/demo/rt_executor_demo.cpp` for a reference two-thread executor
 with `ServoSim`.
 
 ## Build Options
