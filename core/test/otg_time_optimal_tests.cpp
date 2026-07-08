@@ -658,6 +658,7 @@ int check_fixed_time_fuzz(int iterations)
 {
     Lcg rng{0xF1AED};
     const otg::Limits1D limits{3.0, 2.0, 2.0, 2.5};
+    double worst_p = 0.0, worst_v = 0.0, worst_a = 0.0;
 
     for(int i = 0; i < iterations; ++i) {
         const otg::State1D from{rng.range(-10.0, 10.0), rng.range(-2.0, 2.0),
@@ -704,8 +705,29 @@ int check_fixed_time_fuzz(int iterations)
                         static_cast<long long>(target));
             return 1;
         }
+        const otg::State1D finish = otg::sample(
+            result.value(),
+            rt::CycleTick::from_cycles(result.value().duration_cycles()));
+        const double ep = std::fabs(finish.position - to.position);
+        const double ev = std::fabs(finish.velocity - to.velocity);
+        const double ea = std::fabs(finish.acceleration - to.acceleration);
+        if(ep > worst_p) worst_p = ep;
+        if(ev > worst_v) worst_v = ev;
+        if(ea > worst_a) worst_a = ea;
+        if(ep > 1e-9 || ev > 1e-9 || ea > 1e-9) {
+            std::printf("FAIL fuzz-ft T43 i=%d ep=%.2e ev=%.2e ea=%.2e\n",
+                        i, ep, ev, ea);
+            std::printf("  from=(%.9f,%.9f,%.9f) to=(%.9f,%.9f,%.9f) "
+                        "target=%lld\n",
+                        from.position, from.velocity, from.acceleration,
+                        to.position, to.velocity, to.acceleration,
+                        static_cast<long long>(target));
+            return 1;
+        }
     }
-    std::printf("solve_fixed_time fuzz: %d cases\n", iterations);
+    std::printf("solve_fixed_time fuzz: %d cases, T43 worst "
+                "ep=%.2e ev=%.2e ea=%.2e\n",
+                iterations, worst_p, worst_v, worst_a);
     return 0;
 }
 
@@ -728,7 +750,7 @@ int parse_iterations(int argc, char **argv)
 int main(int argc, char **argv)
 {
     const int iterations = parse_iterations(argc, argv);
-    const int quality_iterations = iterations / 5 > 200 ? 200 : (iterations / 5 < 1 ? 1 : iterations / 5);
+    const int quality_iterations = iterations / 5 > 1000 ? 1000 : (iterations / 5 < 1 ? 1 : iterations / 5);
     if(check_fixed_cases() != 0 || check_validation() != 0 ||
        check_nonzero_target_accel_cases() != 0 || check_pin_boundary_cases() != 0 ||
        check_fixed_time_basic() != 0 ||

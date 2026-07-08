@@ -787,6 +787,123 @@ inline rt::Result<Profile1D> solve_fixed_time(State1D from, Target1D to,
         return rt::Result<Profile1D>::failure(rt::ErrorCode::infeasible);
     }
 
+    // Candidate 1a: split via optimal midpoint — sample the optimal at
+    // cycle k, build two quintics (from→mid in k, mid→to in total-k).
+    // The longer second segment absorbs the extra time gently.
+    {
+        const std::int64_t t_min = optimal.value().duration_cycles();
+        const std::int64_t max_k = t_min - 1 < total_cycles - 1
+                                       ? t_min - 1
+                                       : total_cycles - 1;
+        for(std::int64_t k = 1; k <= max_k; ++k) {
+            const State1D mid =
+                sample(optimal.value(), rt::CycleTick::from_cycles(k));
+            const Target1D mid_t{mid.position, mid.velocity, mid.acceleration};
+            const Segment1D seg1 = make_quintic_segment(from, mid_t, k);
+            const Segment1D seg2 = make_quintic_segment(mid, to, total_cycles - k);
+            if(within_limits(seg1, limits) && within_limits(seg2, limits)) {
+                Profile1D p{};
+                if(p.add_segment(seg1) == rt::ErrorCode::ok &&
+                   p.add_segment(seg2) == rt::ErrorCode::ok) {
+                    return rt::Result<Profile1D>::success(p);
+                }
+            }
+        }
+    }
+
+    // Candidate 1c: idle insertion at zero-velocity points in the optimal.
+    // Velocity-reversal profiles cross v=0 with a=0 at segment boundaries;
+    // inserting zero-jerk idle cycles there preserves all subsequent segments
+    // and extends the total duration by the inserted amount.
+    {
+        const std::int64_t extra =
+            total_cycles - optimal.value().duration_cycles();
+        if(extra > 0 &&
+           optimal.value().segment_count() < Profile1D::MaxSegments) {
+            for(std::size_t si = 0;
+                si < optimal.value().segment_count(); ++si) {
+                const State1D &es = optimal.value().segment(si).finish;
+                if(std::fabs(es.velocity) > 1e-12 ||
+                   std::fabs(es.acceleration) > 1e-12) {
+                    continue;
+                }
+                Profile1D p{};
+                bool ok = true;
+                for(std::size_t j = 0; j <= si && ok; ++j) {
+                    ok = (p.add_segment(optimal.value().segment(j)) ==
+                          rt::ErrorCode::ok);
+                }
+                if(ok) {
+                    State1D idle = es;
+                    ok = (detail::push_cubic_phase(
+                              p, idle, 0.0,
+                              static_cast<double>(extra)) ==
+                          rt::ErrorCode::ok);
+                }
+                for(std::size_t j = si + 1;
+                    j < optimal.value().segment_count() && ok; ++j) {
+                    ok = (p.add_segment(optimal.value().segment(j)) ==
+                          rt::ErrorCode::ok);
+                }
+                if(ok && p.duration_cycles() == total_cycles) {
+                    return rt::Result<Profile1D>::success(p);
+                }
+            }
+        }
+    }
+
+    // Candidate 1b: zeroing ramp + inner quintic + targeting ramp.
+    // Covers the case where available cycles are too few for entry/exit ramps
+    // but sufficient for a single quintic spanning the reduced→effective gap.
+    {
+        const auto try_inner_quintic = [&]() -> rt::Result<Profile1D> {
+            Profile1D p{};
+            State1D state = reduced;
+            if(from.acceleration != 0.0) {
+                state = from;
+                const double zero_jerk = -from.acceleration /
+                                         static_cast<double>(n0_cycles);
+                const rt::ErrorCode e =
+                    detail::push_cubic_phase(p, state, zero_jerk,
+                                             static_cast<double>(n0_cycles));
+                if(e != rt::ErrorCode::ok) {
+                    return rt::Result<Profile1D>::failure(e);
+                }
+                state.acceleration = 0.0;
+            }
+            const Segment1D inner =
+                make_quintic_segment(state, eff, available);
+            if(!within_limits(inner, limits)) {
+                return rt::Result<Profile1D>::failure(
+                    rt::ErrorCode::infeasible);
+            }
+            const rt::ErrorCode e1 = p.add_segment(inner);
+            if(e1 != rt::ErrorCode::ok) {
+                return rt::Result<Profile1D>::failure(e1);
+            }
+            if(nt_cycles > 0) {
+                State1D s = sample(p,
+                    rt::CycleTick::from_cycles(p.duration_cycles()));
+                s.acceleration = 0.0;
+                const rt::ErrorCode e2 =
+                    detail::push_cubic_phase(p, s, tramp_j,
+                                             static_cast<double>(nt_cycles));
+                if(e2 != rt::ErrorCode::ok) {
+                    return rt::Result<Profile1D>::failure(e2);
+                }
+            }
+            if(p.duration_cycles() != total_cycles) {
+                return rt::Result<Profile1D>::failure(
+                    rt::ErrorCode::infeasible);
+            }
+            return rt::Result<Profile1D>::success(p);
+        };
+        const rt::Result<Profile1D> inner = try_inner_quintic();
+        if(inner) {
+            return inner;
+        }
+    }
+
     const double distance = eff.position - reduced.position;
     const double v0 = reduced.velocity;
     const double vt = eff.velocity;
@@ -839,44 +956,49 @@ inline rt::Result<Profile1D> solve_fixed_time(State1D from, Target1D to,
         }
 
         // Ideal cruise cycles to cover the distance exactly.
-        std::int64_t n_cruise = 0;
+        std::int64_t n_cruise_start = 0;
         if(std::fabs(vc) > 1e-15) {
             const double ideal =
                 (distance - (pos_after_entry - reduced.position) - exit_ramp_dp) / vc;
-            n_cruise = static_cast<std::int64_t>(std::floor(ideal));
-            if(n_cruise < 0) n_cruise = 0;
-            if(n_cruise > remaining - 1) n_cruise = remaining - 1;
+            n_cruise_start = static_cast<std::int64_t>(std::floor(ideal));
+            if(n_cruise_start < 0) n_cruise_start = 0;
+            if(n_cruise_start > remaining - 1) n_cruise_start = remaining - 1;
         }
 
-        const std::int64_t n_quintic = remaining - n_cruise;
-        if(n_quintic < 1) {
-            return rt::Result<Profile1D>::failure(rt::ErrorCode::infeasible);
-        }
+        // Try reducing cruise to give the quintic more room for the residue.
+        bool cruise_ok = false;
+        for(std::int64_t n_cruise = n_cruise_start; n_cruise >= 0; --n_cruise) {
+            const std::int64_t n_quintic = remaining - n_cruise;
+            if(n_quintic < 1) continue;
 
-        // Build cruise.
-        if(n_cruise > 0) {
-            built = detail::push_cubic_phase(
-                profile, state, 0.0, static_cast<double>(n_cruise));
-            if(built != rt::ErrorCode::ok) {
-                return rt::Result<Profile1D>::failure(built);
+            Profile1D inner_profile = profile;
+            State1D inner_state = state;
+
+            if(n_cruise > 0) {
+                built = detail::push_cubic_phase(
+                    inner_profile, inner_state, 0.0,
+                    static_cast<double>(n_cruise));
+                if(built != rt::ErrorCode::ok) continue;
             }
-        }
 
-        // Build exit ramp.
-        built = detail::push_ramp_with_crossing(
-            profile, state, vt, limits, detail::RampRounding::exact);
-        if(built != rt::ErrorCode::ok) {
-            return rt::Result<Profile1D>::failure(built);
-        }
+            built = detail::push_ramp_with_crossing(
+                inner_profile, inner_state, vt, limits,
+                detail::RampRounding::exact);
+            if(built != rt::ErrorCode::ok) continue;
 
-        // Quintic correction to exact endpoint.
-        const Segment1D correction = make_quintic_segment(state, eff, n_quintic);
-        if(!within_limits(correction, limits)) {
+            const Segment1D correction =
+                make_quintic_segment(inner_state, eff, n_quintic);
+            if(!within_limits(correction, limits)) continue;
+            built = inner_profile.add_segment(correction);
+            if(built != rt::ErrorCode::ok) continue;
+
+            profile = inner_profile;
+            state = inner_state;
+            cruise_ok = true;
+            break;
+        }
+        if(!cruise_ok) {
             return rt::Result<Profile1D>::failure(rt::ErrorCode::infeasible);
-        }
-        built = profile.add_segment(correction);
-        if(built != rt::ErrorCode::ok) {
-            return rt::Result<Profile1D>::failure(built);
         }
 
         // Targeting ramp.
