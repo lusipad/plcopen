@@ -3017,6 +3017,8 @@ private:
 
     // Y7 connector planner: decomposes the takeover velocity into along-path
     // and lateral components, plans both profiles with beta-split limits.
+    // KB-052: projects acceleration onto new tangent for a_s0 continuity.
+    // KB-053: rejects connector when stopping distance exceeds path length.
     rt::ErrorCode plan_connector(const GroupCommand &command, double longest)
     {
         constexpr double kBeta = 0.5;
@@ -3031,10 +3033,12 @@ private:
             }
         }
 
-        // Project takeover velocity onto new path tangent.
+        // Project takeover velocity and acceleration onto new path tangent.
         double s_dot_0 = 0.0;
+        double a_s0 = 0.0;
         for(std::size_t i = 0; i < axes_.size(); ++i) {
             s_dot_0 += takeover_velocity_[i] * t_hat[i];
+            a_s0 += takeover_acceleration_[i] * t_hat[i];
         }
 
         // Lateral residual velocity.
@@ -3048,10 +3052,11 @@ private:
 
         if(lat_speed <= kAlignedThreshold) {
             // Aligned takeover: no lateral residual, plan along-path with
-            // full limits from the projected velocity (zero connector).
+            // full limits from the projected velocity+acceleration (zero
+            // connector). KB-052: a_s0 included.
             if(longest > 0.0) {
                 const rt::Result<otg::Profile1D> along = otg::plan_time_optimal(
-                    {0.0, s_dot_0, 0.0},
+                    {0.0, s_dot_0, a_s0},
                     {longest, 0.0, 0.0},
                     {command.velocity, command.acceleration, command.deceleration,
                      command.jerk});
@@ -3100,20 +3105,35 @@ private:
         }
         connector_r_tube_ = max_disp;
 
-        // Along-path: from (pos=0, vel=s_dot_0) to (pos=longest, vel=0)
-        // with beta-split limits. V1 uses beta limits for the entire
-        // duration (the contract says restore full limits after T_lat;
-        // this is a deliberate simplification — conservative, no limit
-        // exceedance, slightly longer total time).
+        // Along-path: from (pos=0, vel=s_dot_0, acc=a_s0) to
+        // (pos=longest, vel=0, acc=0) with beta-split limits.
+        // KB-052: a_s0 included for acceleration continuity.
         const otg::Limits1D along_limits{
             kBeta * command.velocity,
             kBeta * command.acceleration,
             kBeta * command.deceleration,
             kBeta * command.jerk,
         };
+
+        // Clamp a_s0 to the beta-split acceleration limits so the OTG
+        // entry state is admissible under the split budget.
+        if(a_s0 > along_limits.max_acceleration) {
+            a_s0 = along_limits.max_acceleration;
+        } else if(a_s0 < -along_limits.max_deceleration) {
+            a_s0 = -along_limits.max_deceleration;
+        }
+
+        // KB-053: reject the connector when the along-path stopping
+        // distance far exceeds the path length. The rest-start fallback
+        // is safe (starts from zero velocity, no cliff).
         if(longest > 0.0) {
+            const double stop_dist =
+                otg::detail::ramp_between(s_dot_0, 0.0, along_limits).distance;
+            if(stop_dist > longest * 1.5) {
+                return rt::ErrorCode::infeasible;
+            }
             const rt::Result<otg::Profile1D> along = otg::plan_time_optimal(
-                {0.0, s_dot_0, 0.0}, {longest, 0.0, 0.0}, along_limits);
+                {0.0, s_dot_0, a_s0}, {longest, 0.0, 0.0}, along_limits);
             if(!along) {
                 return along.error();
             }
@@ -3182,10 +3202,12 @@ private:
         }
     }
 
-    // Y7 (KB-051 fix): capture the per-axis velocity vector of the current
-    // plain linear motion before abort_motion() destroys it. During a
-    // connector, the composite velocity (along-path + lateral) is returned
-    // so re-entrant aborting decomposes correctly.
+    // Y7 (KB-051/052 fix): capture the per-axis velocity AND acceleration
+    // vectors of the current plain linear motion before abort_motion()
+    // destroys it. KB-052: acceleration capture ensures a_s0 = ⟨q̈, t̂⟩
+    // continuity (v2.1 decision #1). During a connector, the composite
+    // state (along-path + lateral) is returned so re-entrant aborting
+    // decomposes correctly.
     void capture_takeover_velocity()
     {
         has_takeover_velocity_ = false;
@@ -3196,14 +3218,17 @@ private:
         const otg::State1D along =
             otg::sample(active_profile_, rt::CycleTick::from_cycles(active_tick_));
         for(std::size_t i = 0; i < axes_.size(); ++i) {
-            takeover_velocity_[i] =
-                along.velocity * (active_finish_[i] - active_start_[i]) / active_path_length_;
+            const double dir_i =
+                (active_finish_[i] - active_start_[i]) / active_path_length_;
+            takeover_velocity_[i] = along.velocity * dir_i;
+            takeover_acceleration_[i] = along.acceleration * dir_i;
         }
         if(connector_active_) {
             const otg::State1D lat = otg::sample(
                 connector_lateral_profile_, rt::CycleTick::from_cycles(active_tick_));
             for(std::size_t i = 0; i < axes_.size(); ++i) {
                 takeover_velocity_[i] += lat.velocity * connector_lateral_dir_[i];
+                takeover_acceleration_[i] += lat.acceleration * connector_lateral_dir_[i];
             }
         }
         has_takeover_velocity_ = true;
@@ -4254,6 +4279,7 @@ private:
     std::int64_t connector_duration_ = 0;
     double connector_r_tube_ = 0.0;
     std::array<double, MaxAxes> takeover_velocity_{};
+    std::array<double, MaxAxes> takeover_acceleration_{};
     bool has_takeover_velocity_ = false;
 
     // Part 4 management extensions.

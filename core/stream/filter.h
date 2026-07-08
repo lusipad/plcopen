@@ -25,6 +25,7 @@
 #include "otg/time_optimal.h"
 #include "rt/cycle.h"
 #include "rt/error.h"
+#include "stream/quintic_fast_path.h"
 
 namespace plcopen::core::stream
 {
@@ -54,6 +55,10 @@ struct StreamFilterConfig
     // stop (decision #7).
     std::int64_t timeout_cycles = 1;
     std::int64_t extrapolation_cycles = 0;
+    // T24 quintic fast path (algorithm contract §4, KB-064): when enabled,
+    // replan() tries a closed-form quintic Hermite before falling back to
+    // the full OTG solve. Default off — pending semantic matrix approval.
+    bool quintic_fast_path = false;
 };
 
 class StreamFilter1D
@@ -100,6 +105,7 @@ public:
         now_ = 0;
         have_target_ = false;
         have_profile_ = false;
+        quintic_active_ = false;
         profile_tick_ = 0;
         pending_dirty_ = false;
         clamped_ = false;
@@ -238,8 +244,10 @@ public:
 
         // Coast-drift guard: once the profile is exhausted, the coast should
         // ride the target line exactly; measurable drift re-arms one solve.
+        const std::int64_t profile_duration =
+            quintic_active_ ? quintic_profile_.h : profile_.duration_cycles();
         if(mode_ == Mode::tracking && !pending_dirty_ && have_profile_ &&
-           profile_tick_ > profile_.duration_cycles() &&
+           profile_tick_ > profile_duration &&
            std::fabs(state_.position - pending_position_) >
                1e-9 * (1.0 + std::fabs(pending_position_))) {
             pending_dirty_ = true;
@@ -390,6 +398,22 @@ private:
         }
 
         otg::Target1D to{clamp_to_envelope(aim), through_velocity, 0.0};
+
+        // T24 quintic fast path (KB-064): try closed-form quintic first
+        // when the config enables it and there's a valid rendezvous horizon.
+        quintic_active_ = false;
+        if(config_.quintic_fast_path && rendezvous_cycles > 0) {
+            QuinticProfile qp;
+            if(solve_quintic(from, to.position, to.velocity, rendezvous_cycles, qp) &&
+               check_quintic_limits(qp, config_.limits)) {
+                quintic_profile_ = qp;
+                quintic_active_ = true;
+                profile_tick_ = 0;
+                have_profile_ = true;
+                return;
+            }
+        }
+
         rt::Result<otg::Profile1D> planned =
             rendezvous_cycles > 0
                 ? otg::solve_fixed_time(from, to, config_.limits, rendezvous_cycles)
@@ -419,6 +443,24 @@ private:
             return;
         }
         ++profile_tick_;
+
+        if(quintic_active_) {
+            if(profile_tick_ <= quintic_profile_.h) {
+                state_ = sample_quintic(quintic_profile_, profile_tick_);
+                return;
+            }
+            const otg::State1D finish =
+                sample_quintic(quintic_profile_, quintic_profile_.h);
+            if(finish.velocity != 0.0) {
+                state_.position += finish.velocity;
+                state_.velocity = finish.velocity;
+                state_.acceleration = 0.0;
+            } else {
+                state_ = finish;
+            }
+            return;
+        }
+
         if(profile_tick_ <= profile_.duration_cycles()) {
             state_ = otg::sample(profile_, rt::CycleTick::from_cycles(profile_tick_));
             return;
@@ -451,6 +493,8 @@ private:
     double pending_velocity_ = 0.0;
 
     otg::Profile1D profile_{};
+    QuinticProfile quintic_profile_{};
+    bool quintic_active_ = false;
     std::int64_t profile_tick_ = 0;
     bool have_profile_ = false;
 
