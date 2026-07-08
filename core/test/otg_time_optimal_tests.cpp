@@ -188,6 +188,39 @@ int check_nonzero_target_accel_cases()
     return 0;
 }
 
+int check_pin_boundary_cases()
+{
+    const otg::Limits1D lim{3.0, 2.0, 2.0, 2.5};
+
+    if(// v0 at exact +v_max
+       check_case("pin-v0-vmax", {0.0, 3.0, 0.0}, {20.0, 0.0, 0.0}, lim) != 0 ||
+       // vt at exact +v_max
+       check_case("pin-vt-vmax", {0.0, 0.0, 0.0}, {20.0, 3.0, 0.0}, lim) != 0 ||
+       // both at +v_max
+       check_case("pin-both-vmax", {0.0, 3.0, 0.0}, {30.0, 3.0, 0.0}, lim) != 0 ||
+       // v0 at -v_max, vt at +v_max (reversal at limits)
+       check_case("pin-reverse-limits", {0.0, -3.0, 0.0}, {0.0, 3.0, 0.0}, lim) != 0 ||
+       // a0 at exact +a_max
+       check_case("pin-a0-amax", {0.0, 0.0, 2.0}, {10.0, 0.0, 0.0}, lim) != 0 ||
+       // a0 at exact -d_max
+       check_case("pin-a0-dmax", {0.0, 2.0, -2.0}, {10.0, 0.0, 0.0}, lim) != 0 ||
+       // at at exact a_max with vt at v_max (v_eff fallback path)
+       check_case("pin-at-vt-limits", {0.0, 0.0, 0.0}, {20.0, 3.0, 2.0}, lim) != 0 ||
+       // at at exact a_max with vt=0 (pure targeting ramp)
+       check_case("pin-at-amax-vt0", {0.0, 0.0, 0.0}, {10.0, 0.0, 2.0}, lim) != 0 ||
+       // a0 at a_max and at at -d_max simultaneously
+       check_case("pin-a0-at-opposite", {0.0, 0.0, 2.0}, {15.0, 0.0, -2.0}, lim) != 0 ||
+       // v0 at v_max with at != 0 (targeting ramp from cruise)
+       check_case("pin-v0max-with-at", {0.0, 3.0, 0.0}, {30.0, 1.0, 1.5}, lim) != 0 ||
+       // zero distance, opposite velocities at limits
+       check_case("pin-zero-dist-rev", {5.0, 3.0, 0.0}, {5.0, -3.0, 0.0}, lim) != 0 ||
+       // very short distance at velocity limits
+       check_case("pin-short-at-vlim", {0.0, 2.9, 0.0}, {0.1, 2.8, 0.0}, lim) != 0) {
+        return 1;
+    }
+    return 0;
+}
+
 int check_fuzz_nonzero_target_accel(int iterations)
 {
     Lcg rng{0xA1C0A1C0u};
@@ -500,7 +533,7 @@ int main(int argc, char **argv)
     const int iterations = parse_iterations(argc, argv);
     const int quality_iterations = iterations / 5 > 200 ? 200 : (iterations / 5 < 1 ? 1 : iterations / 5);
     if(check_fixed_cases() != 0 || check_validation() != 0 ||
-       check_nonzero_target_accel_cases() != 0 ||
+       check_nonzero_target_accel_cases() != 0 || check_pin_boundary_cases() != 0 ||
        check_nonzero_target_velocity_quality() != 0 || check_bump_zone_quality() != 0 ||
        check_fuzz_bump_zone(quality_iterations) != 0 ||
        check_fuzz_nonzero_target(quality_iterations) != 0 ||

@@ -58,6 +58,38 @@ Implemented:
   time-optimal suite asserts envelope, exact endpoint, per-cycle continuity,
   and duration ≤ baseline per random case.
 
+### Epsilon policy (Y2 — declared)
+
+Integer cycle quantization means continuous-time phase durations t_i are
+floored to ⌊t_i⌋ cycles. The policy is:
+
+1. **Sub-cycle omission**: any phase with ⌊t_i⌋ < 1 is omitted entirely
+   (floored rounding path). The exact rounding path uses ⌈t_i⌉ ≥ 1 with
+   adjusted jerk j' = Δv/(n₁·(n₁+n₂)) instead, so no phase is dropped.
+2. **No negative durations**: the ramp chain formulation derives durations
+   from |Δv| ≥ 0, so negative durations do not arise in the main solver;
+   the zeroing ramp (a₀ reduction) and targeting ramp (aₜ) use
+   ceil(|a|/j) ≥ 1, also non-negative by construction.
+3. **Post-quantization verification**: after all phases, a quintic
+   correction segment absorbs the accumulated position/velocity residue
+   and re-verifies `within_limits` (96-point sampling, 1e-9 epsilon).
+   If the residue cannot be corrected within limits, the candidate fails
+   and the next candidate is tried.
+4. **Candidate selection absorbs risk**: both floored and exact rounding
+   are tried as independent candidates; the shortest feasible wins. When
+   floored rounding's omitted phases leave a residue too large for the
+   quintic correction, exact rounding's adjusted jerks pick up. The
+   baseline `plan()` provides a worst-case fallback.
+
+This policy is a **declaration**, not a tunable parameter: the threshold
+is one cycle (the indivisible quantum of the integer domain), and the
+post-verification is exhaustive (no sampling shortcuts on the RT path).
+Structure-boundary leakage (two structures with nearly equal optimal
+durations) is handled by the candidate selection rather than by epsilon
+widening — both structures are tried via the floored/exact/refined/quintic
+candidates, and the oracle fuzz validates that no structure-boundary case
+regresses to the baseline.
+
 Not implemented / out of scope:
 
 - true time-optimality for nonzero entry accelerations (the zeroing-ramp

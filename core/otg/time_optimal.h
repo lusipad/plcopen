@@ -1,11 +1,11 @@
 #pragma once
 
-// Time-optimal jerk-limited state-to-state planner v1 (A9).
+// Time-optimal jerk-limited state-to-state planner (A9 v2 — Y2).
 //
-// Scope: arbitrary initial (position, velocity) with zero initial acceleration
-// to an arbitrary target (position, velocity) with zero target acceleration.
-// This covers every runtime call site of the rewrite core today; nonzero
-// boundary accelerations report `unsupported` and stay the declared follow-up.
+// Scope: arbitrary (position, velocity, acceleration) to arbitrary target
+// (position, velocity, acceleration). Nonzero initial acceleration reduces
+// through an exact zeroing ramp; nonzero target acceleration uses a symmetric
+// targeting ramp (or quintic correction fallback when v_eff exceeds v_max).
 //
 // Method: the velocity profile is entry-ramp -> cruise -> exit-ramp, where a
 // ramp between two velocities is the classic jerk-limited shape (triangular or
@@ -500,9 +500,12 @@ inline rt::Result<Profile1D> build_refined_cruise(State1D from,
 // Time-optimal jerk-limited plan. Nonzero initial accelerations reduce to the
 // zero-acceleration problem through one exact zeroing ramp: n0 = ceil(|a0|/j)
 // integer cycles with the adjusted jerk -a0/n0 (magnitude ≤ j) bring the
-// acceleration to exactly zero. Nonzero *target* accelerations stay the
-// declared follow-up. The result reuses Profile1D, so the RT-side sample()
-// path is unchanged.
+// acceleration to exactly zero. Nonzero target accelerations use a symmetric
+// targeting ramp: nt = ceil(|at|/j) cycles with jerk at/nt appended after the
+// main chain; the solver plans to an effective target (p_eff, v_eff, 0). When
+// |v_eff| > v_max the targeting ramp is omitted and the quintic correction
+// handles the acceleration transition directly. The result reuses Profile1D,
+// so the RT-side sample() path is unchanged.
 inline rt::Result<Profile1D> plan_time_optimal(State1D from, Target1D to, Limits1D limits)
 {
     if(!is_finite(from) || !is_finite(to) || !is_finite(limits) || limits.max_velocity <= 0.0 ||
