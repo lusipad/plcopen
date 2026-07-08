@@ -575,37 +575,27 @@ int check_fixed_cases()
     return fail;
 }
 
-int check_excess_cycles(int iterations)
+struct DomainStats
 {
-    std::printf("--- excess_cycles (n=%d) ---\n", iterations);
-    StructureTable tab = build_table();
-    Lcg rng;
-    int fail_count = 0, miss = 0, compared = 0;
+    int compared = 0;
+    int miss = 0;
+    int fail = 0;
     int ec_max = 0;
+    int ec_min = 0;
     double ec_sum = 0.0;
+    bool hard_gate = true;
 
-    for(int i = 0; i < iterations; ++i) {
-        double vm = rng.range(0.5, 8.0);
-        double am = rng.range(0.5, 8.0);
-        double dm = rng.range(0.5, 8.0);
-        double jm = rng.range(0.1, 4.0);
-        otg::Limits1D lim{vm, am, dm, jm};
-
-        double p0 = rng.range(-15.0, 15.0);
-        double v0 = rng.range(-vm * 0.95, vm * 0.95);
-        double pt = rng.range(-15.0, 15.0);
-        double vt = rng.range(-vm * 0.95, vm * 0.95);
-        otg::State1D from{p0, v0, 0.0};
-        otg::Target1D to{pt, vt, 0.0};
-
+    void record(otg::State1D from, otg::Target1D to, otg::Limits1D lim,
+                const StructureTable &tab, int case_id)
+    {
         rt::Result<otg::Profile1D> planned =
             otg::plan_time_optimal(from, to, lim);
-        if(!planned) continue;
+        if(!planned) return;
 
         OracleResult orc = oracle_solve(from, to, lim, tab);
         if(!orc.found) {
             ++miss;
-            continue;
+            return;
         }
 
         std::int64_t plan_c = planned.value().duration_cycles();
@@ -614,31 +604,131 @@ int check_excess_cycles(int iterations)
         if(oracle_c < 1) oracle_c = 1;
 
         std::int64_t excess = plan_c - oracle_c;
-        if(excess < 0) {
-            if(fail_count < 3)
+        if(hard_gate && excess < 0) {
+            if(fail < 3)
                 std::printf(
-                    "  FAIL i=%d excess=%lld plan=%lld oracle=%lld T*=%.6f\n",
-                    i, (long long)excess, (long long)plan_c,
+                    "  FAIL i=%d excess=%lld plan=%lld oracle=%lld "
+                    "T*=%.6f\n",
+                    case_id, (long long)excess, (long long)plan_c,
                     (long long)oracle_c, orc.time);
-            ++fail_count;
-            continue;
+            ++fail;
+            return;
         }
 
         int ec = static_cast<int>(excess);
         if(ec > ec_max) ec_max = ec;
+        if(ec < ec_min) ec_min = ec;
         ec_sum += ec;
         ++compared;
     }
 
-    std::printf("  compared=%d miss=%d\n", compared, miss);
-    if(compared > 0)
-        std::printf("  excess_cycles: max=%d avg=%.2f\n", ec_max,
-                    ec_sum / compared);
-    if(miss > compared / 4 && compared > 0)
-        std::printf("  WARNING: oracle miss rate %.0f%%\n",
-                    100.0 * miss / (compared + miss));
-    if(fail_count > 0) {
-        std::printf("FAIL excess_negative=%d\n", fail_count);
+    void report(const char *domain) const
+    {
+        std::printf("  [%s] compared=%d miss=%d", domain, compared, miss);
+        if(compared > 0) {
+            std::printf(" max=%d avg=%.2f", ec_max, ec_sum / compared);
+            if(ec_min < 0) std::printf(" min=%d", ec_min);
+        }
+        std::printf("\n");
+    }
+};
+
+int check_excess_cycles(int iterations)
+{
+    std::printf("--- excess_cycles (n=%d per domain) ---\n", iterations);
+    StructureTable tab = build_table();
+    Lcg rng;
+    int total_fail = 0;
+
+    // Domain 1: regular — random states within limits
+    {
+        DomainStats ds;
+        for(int i = 0; i < iterations; ++i) {
+            double vm = rng.range(0.5, 8.0);
+            double am = rng.range(0.5, 8.0);
+            double dm = rng.range(0.5, 8.0);
+            double jm = rng.range(0.1, 4.0);
+            otg::Limits1D lim{vm, am, dm, jm};
+            double p0 = rng.range(-15.0, 15.0);
+            double v0 = rng.range(-vm * 0.95, vm * 0.95);
+            double pt = rng.range(-15.0, 15.0);
+            double vt = rng.range(-vm * 0.95, vm * 0.95);
+            ds.record({p0, v0, 0.0}, {pt, vt, 0.0}, lim, tab, i);
+        }
+        ds.report("regular");
+        total_fail += ds.fail;
+    }
+
+    // Domain 2: pin-boundary — velocities near ±v_max
+    {
+        DomainStats ds;
+        for(int i = 0; i < iterations; ++i) {
+            double vm = rng.range(1.0, 6.0);
+            double am = rng.range(0.5, 6.0);
+            double dm = rng.range(0.5, 6.0);
+            double jm = rng.range(0.2, 3.0);
+            otg::Limits1D lim{vm, am, dm, jm};
+            double p0 = rng.range(-10.0, 10.0);
+            double sign0 = rng.range(0.0, 1.0) > 0.5 ? 1.0 : -1.0;
+            double v0 = sign0 * vm * rng.range(0.9, 1.0);
+            double pt = rng.range(-10.0, 10.0);
+            double signt = rng.range(0.0, 1.0) > 0.5 ? 1.0 : -1.0;
+            double vt = signt * vm * rng.range(0.9, 1.0);
+            ds.record({p0, v0, 0.0}, {pt, vt, 0.0}, lim, tab, i);
+        }
+        ds.report("pin-boundary");
+        total_fail += ds.fail;
+    }
+
+    // Domain 3: bump — short distance, similar start/end velocities
+    {
+        DomainStats ds;
+        for(int i = 0; i < iterations; ++i) {
+            double vm = rng.range(1.0, 6.0);
+            double am = rng.range(0.5, 6.0);
+            double dm = rng.range(0.5, 6.0);
+            double jm = rng.range(0.2, 3.0);
+            otg::Limits1D lim{vm, am, dm, jm};
+            double p0 = rng.range(-5.0, 5.0);
+            double v0 = rng.range(-vm * 0.8, vm * 0.8);
+            double pt = p0 + rng.range(-0.5, 0.5);
+            double vt = v0 + rng.range(-0.3, 0.3);
+            if(std::fabs(vt) > vm) vt = (vt > 0 ? 1 : -1) * vm * 0.95;
+            ds.record({p0, v0, 0.0}, {pt, vt, 0.0}, lim, tab, i);
+        }
+        ds.report("bump");
+        total_fail += ds.fail;
+    }
+
+    // Domain 4: nonzero-a0 — high initial acceleration
+    // No hard gate: plan_time_optimal uses adjusted-jerk zeroing (j'=-a0/n0),
+    // which is not a PMP {±j,0} phase, so the PMP-based T* is not a strict
+    // lower bound on plan's integer-cycle count.
+    {
+        DomainStats ds;
+        ds.hard_gate = false;
+        for(int i = 0; i < iterations; ++i) {
+            double vm = rng.range(1.0, 6.0);
+            double am = rng.range(1.0, 6.0);
+            double dm = rng.range(1.0, 6.0);
+            double jm = rng.range(0.2, 3.0);
+            otg::Limits1D lim{vm, am, dm, jm};
+            double p0 = rng.range(-10.0, 10.0);
+            double v0 = rng.range(-vm * 0.8, vm * 0.8);
+            double a0_sign = rng.range(0.0, 1.0) > 0.5 ? 1.0 : -1.0;
+            double a0_mag = rng.range(0.7, 1.0) *
+                            (a0_sign > 0 ? am : dm);
+            double a0 = a0_sign * a0_mag;
+            double pt = rng.range(-10.0, 10.0);
+            double vt = rng.range(-vm * 0.8, vm * 0.8);
+            ds.record({p0, v0, a0}, {pt, vt, 0.0}, lim, tab, i);
+        }
+        ds.report("high-a0");
+        total_fail += ds.fail;
+    }
+
+    if(total_fail > 0) {
+        std::printf("FAIL excess_negative=%d\n", total_fail);
         return 1;
     }
     std::printf("  OK\n");
