@@ -77,4 +77,6 @@
 
 - `KB-059`：几何路径导数合同（Y3 前置工程）：为 5 种段类型（LineSegment、ArcSegment、CubicBezierSegment、QuadraticBlendSegment、QuinticBlendSegment）实现 `path_derivative(seg, s)` 返回弧长参数化一阶导 q_s = dq/ds（单位切矢）与 `path_second_derivative(seg, s)` 返回二阶导 q_ss = d²q/ds²（曲率矢）。直线段 q_s 常数、q_ss = 0；圆弧段解析旋转导数；cubic/quadratic 以 u≈s/L 近似参数化后链式法则；quintic 通过 33 条弧长表重参数化、链式法则 q_s = d1/σ、q_ss = (d2 − d1·(d2·d1)/σ²)/σ²。PathSegment 类型擦除调度器同步更新。验收：7 项测试 × 中央差分数值 oracle（h₁=1e-7 一阶、h₂=1e-4 二阶）；圆弧曲率 = 1/R 精度 ≤ 1e-10；quintic 容差放宽至 q_s 2e-3、q_ss 1e-2（反映 33 条表离散化误差 O(1/N²)）。
 
+- `KB-060`：TOPP-RA Layer 1 加速度限幅路径参数化（Y3 §3 首层）：实现 `solve_topp_ra(path, limits[3], grid_size)` 标量路径律求解器。算法：离散化路径 s ∈ [0,L]，逐格点计算最大速度曲线（MVC）含跨轴加速度可行性限制，后向可达性传播，前向最优积分，梯形时间合成。关键修正：cross_axis_velocity_limit 处理高曲率段不同轴的 q_ss/q_s 比率差异导致的加速度区间空集问题。验收：8 项 oracle 测试——直线梯形/三角剖面精度 ≤ 2%、加速度区间可行性验证（含跨轴）、曲率减速效应、网格收敛（N=50→800 相对差 < 0.5%）、非对称限值、cubic Bezier 可行性、速度下界 ∫ds/ṡ_max。声明：Layer 1 仅为加速度限幅——jerk 限制（Layer 2）和离散周期量化待后续批次。
+
 ---
