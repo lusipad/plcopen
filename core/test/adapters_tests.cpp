@@ -167,6 +167,150 @@ int check_cia402_ladder()
     return 0;
 }
 
+int check_cia402_power_down_paths()
+{
+    using adapters::Cia402Command;
+    using adapters::Cia402Machine;
+    using adapters::Cia402State;
+
+    {
+        Cia402Machine machine;
+        machine.initialize();
+        if(!machine.command(Cia402Command::shutdown) ||
+           machine.state() != Cia402State::ready_to_switch_on ||
+           !machine.command(Cia402Command::switch_on) ||
+           machine.state() != Cia402State::switched_on) {
+            return fail("cia402 switched-on setup");
+        }
+        if(!machine.command(Cia402Command::disable_voltage) ||
+           machine.state() != Cia402State::switch_on_disabled) {
+            return fail("cia402 disable voltage from switched on");
+        }
+    }
+
+    {
+        Cia402Machine machine;
+        machine.initialize();
+        if(!machine.command(Cia402Command::shutdown) ||
+           !machine.command(Cia402Command::switch_on) ||
+           !machine.command(Cia402Command::enable_operation) ||
+           machine.state() != Cia402State::operation_enabled) {
+            return fail("cia402 operation-enabled setup");
+        }
+        if(!machine.command(Cia402Command::disable_voltage) ||
+           machine.state() != Cia402State::switch_on_disabled) {
+            return fail("cia402 disable voltage from operation enabled");
+        }
+    }
+
+    {
+        Cia402Machine machine;
+        machine.initialize();
+        if(!machine.command(Cia402Command::shutdown) ||
+           !machine.command(Cia402Command::switch_on) ||
+           !machine.command(Cia402Command::enable_operation) ||
+           !machine.command(Cia402Command::quick_stop) ||
+           machine.state() != Cia402State::quick_stop_active) {
+            return fail("cia402 quick-stop setup");
+        }
+        if(!machine.command(Cia402Command::disable_voltage) ||
+           machine.state() != Cia402State::switch_on_disabled) {
+            return fail("cia402 disable voltage from quick stop");
+        }
+    }
+
+    {
+        Cia402Machine machine;
+        machine.initialize();
+        if(!machine.command(Cia402Command::shutdown) ||
+           machine.state() != Cia402State::ready_to_switch_on) {
+            return fail("cia402 ready setup");
+        }
+        if(!machine.command(Cia402Command::quick_stop) ||
+           machine.state() != Cia402State::switch_on_disabled) {
+            return fail("cia402 quick stop from ready");
+        }
+    }
+
+    {
+        Cia402Machine machine;
+        machine.initialize();
+        if(!machine.command(Cia402Command::shutdown) ||
+           !machine.command(Cia402Command::switch_on) ||
+           machine.state() != Cia402State::switched_on) {
+            return fail("cia402 switched-on quick-stop setup");
+        }
+        if(!machine.command(Cia402Command::quick_stop) ||
+           machine.state() != Cia402State::switch_on_disabled) {
+            return fail("cia402 quick stop from switched on");
+        }
+    }
+
+    return 0;
+}
+
+int check_cia402_rejections_and_reset_gates()
+{
+    using adapters::Cia402Command;
+    using adapters::Cia402Machine;
+    using adapters::Cia402State;
+
+    Cia402Machine machine;
+    machine.initialize();
+    if(machine.state() != Cia402State::switch_on_disabled || machine.operational()) {
+        return fail("cia402 disabled-state setup");
+    }
+    if(machine.command(Cia402Command::disable_voltage) ||
+       machine.state() != Cia402State::switch_on_disabled) {
+        return fail("cia402 disabled rejects disable voltage");
+    }
+    if(machine.command(Cia402Command::quick_stop) ||
+       machine.state() != Cia402State::switch_on_disabled) {
+        return fail("cia402 disabled rejects quick stop");
+    }
+    if(machine.command(Cia402Command::disable_operation) ||
+       machine.state() != Cia402State::switch_on_disabled) {
+        return fail("cia402 disabled rejects disable operation");
+    }
+    if(machine.command(Cia402Command::fault_reset) ||
+       machine.state() != Cia402State::switch_on_disabled) {
+        return fail("cia402 disabled rejects fault reset");
+    }
+    machine.fault_event();
+    if(machine.state() != Cia402State::fault_reaction_active) {
+        return fail("cia402 enters fault reaction");
+    }
+    machine.fault_event();
+    if(machine.state() != Cia402State::fault_reaction_active ||
+       machine.command(Cia402Command::fault_reset)) {
+        return fail("cia402 reset waits for fault reaction");
+    }
+    machine.initialize();
+    if(machine.state() != Cia402State::fault_reaction_active) {
+        return fail("cia402 initialize is ignored during fault reaction");
+    }
+    machine.quick_stop_complete();
+    if(machine.state() != Cia402State::fault_reaction_active) {
+        return fail("cia402 quick-stop completion is ignored during fault reaction");
+    }
+    machine.fault_reaction_complete();
+    if(machine.state() != Cia402State::fault) {
+        return fail("cia402 fault reaction completes");
+    }
+    machine.fault_event();
+    if(machine.state() != Cia402State::fault) {
+        return fail("cia402 repeated fault event is ignored in fault");
+    }
+    machine.fault_reaction_complete();
+    if(machine.state() != Cia402State::fault ||
+       !machine.command(Cia402Command::fault_reset) ||
+       machine.state() != Cia402State::switch_on_disabled) {
+        return fail("cia402 fault-only reset");
+    }
+
+    return 0;
+}
+
 // Bumpless contract: across CSP -> CSV -> CST -> CSP switches on a live
 // stream, the newly selected primary channel never steps beyond the
 // per-cycle kinematic bound of the underlying motion.
@@ -231,6 +375,8 @@ int check_mode_manager_bumpless()
 int main()
 {
     if(check_bridge_equivalence() != 0 || check_cia402_ladder() != 0 ||
+       check_cia402_power_down_paths() != 0 ||
+       check_cia402_rejections_and_reset_gates() != 0 ||
        check_mode_manager_bumpless() != 0) {
         return 1;
     }

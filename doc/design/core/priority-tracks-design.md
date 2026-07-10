@@ -25,7 +25,7 @@
  stream::JointStreamGroup            ── 同拍生效 · 逐关节 OTG 在线滤波
     │  1-4kHz 平滑 setpoint 流          安全包络 · 协同断流停
     ▼
- executor（参考形态已备：seqlock + 周期线程）
+ executor（参考形态已备：双向 SPSC 单写者；完整规划/RT 双域待落地）
     │  ServoSetpoints / ServoFeedback（窄接口即协议）
     ▼
  ┌─ 仿真：ServoSim / MuJoCo 物理闭环 ─→ 数字孪生（pyplcopen + rerun）

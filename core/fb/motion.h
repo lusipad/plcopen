@@ -98,13 +98,6 @@ protected:
             outputs.active = false;
             return;
         }
-        if(snapshot.status == axis::AxisStatus::standstill ||
-           snapshot.status == axis::AxisStatus::disabled) {
-            outputs.done = true;
-            outputs.busy = false;
-            outputs.active = false;
-            return;
-        }
         outputs.command_aborted = true;
         outputs.busy = false;
         outputs.active = false;

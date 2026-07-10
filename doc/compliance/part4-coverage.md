@@ -81,5 +81,5 @@
 - 圆弧运动：BORDER 模式；CENTER/RADIUS 显式不支持（KB-030），Y5 计划
 - Blending：MaxCornerDeviation + 前瞻窗口（KB-031/032/039）
 - 运动学：龙门/SCARA/SphericalWrist6R 参考实现（KB-037/044）
-- 组接管：速度连续（KB-051）；加速度连续性缺口已登记（KB-052）
+- 组接管：linear 接管速度连续（KB-051）与加速度连续（KB-052）已修复；circular/笛卡尔扩展另批
 - Override：AccFactor 显式 v2（part4-management-semantics §不做）

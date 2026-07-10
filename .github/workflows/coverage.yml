@@ -15,7 +15,7 @@ jobs:
         uses: actions/checkout@v7
 
       - name: Install gcovr
-        run: pip install gcovr
+        run: python -m pip install gcovr==8.6
 
       - name: Run coverage gate (E4)
         run: cmake -P cmake/coverage_gate.cmake

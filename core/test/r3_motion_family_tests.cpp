@@ -1,5 +1,6 @@
 #include <cmath>
 #include <cstdio>
+#include <limits>
 
 #include "axis/group.h"
 #include "axis/state.h"
@@ -841,6 +842,158 @@ int check_motion_fb_error_paths()
     return 0;
 }
 
+int check_motion_power_abort_observation()
+{
+    axis::AxisModel disabled_axis;
+    disabled_axis.set_power(true);
+    fb::FbMoveAbsolute disabled_move;
+    disabled_move.axis_ref = &disabled_axis;
+    disabled_move.position = 3.0;
+    disabled_move.velocity = 0.1;
+    disabled_move.execute = true;
+    disabled_move.call();
+    disabled_axis.set_power(false);
+    disabled_move.call();
+    if(disabled_move.outputs.done || disabled_move.outputs.busy ||
+       disabled_move.outputs.active || disabled_move.outputs.error ||
+       !disabled_move.outputs.command_aborted) {
+        return fail("disabled axis aborts observed command");
+    }
+    disabled_move.execute = false;
+    disabled_move.call();
+    if(disabled_move.outputs.done || disabled_move.outputs.command_aborted ||
+       disabled_move.outputs.error) {
+        return fail("move falling edge clears abort");
+    }
+
+    return 0;
+}
+
+int check_motion_takeover_observation()
+{
+    axis::AxisModel velocity_axis;
+    velocity_axis.set_power(true);
+    fb::FbMoveVelocity velocity;
+    velocity.axis_ref = &velocity_axis;
+    velocity.velocity = 0.2;
+    velocity.continuous_update = true;
+    velocity.execute = true;
+    velocity.call();
+    if(!velocity_axis.submit(make_move(axis::CommandKind::move_absolute, 2.0, 0.2))) {
+        return fail("velocity update takeover accepted");
+    }
+    velocity.call();
+    if(!velocity.outputs.command_aborted || velocity.outputs.error || velocity.outputs.done ||
+       velocity.outputs.busy || velocity.outputs.active) {
+        return fail("velocity takeover reports abort only");
+    }
+
+    axis::AxisModel continuous_axis;
+    continuous_axis.set_power(true);
+    fb::FbMoveContinuousAbsolute continuous;
+    continuous.axis_ref = &continuous_axis;
+    continuous.position = 4.0;
+    continuous.velocity = 0.2;
+    continuous.end_velocity = 0.05;
+    continuous.continuous_update = true;
+    continuous.execute = true;
+    continuous.call();
+    if(!continuous_axis.submit(make_move(axis::CommandKind::move_absolute, 2.0, 0.2))) {
+        return fail("continuous update takeover accepted");
+    }
+    continuous.call();
+    if(!continuous.outputs.command_aborted || continuous.outputs.error ||
+       continuous.outputs.done || continuous.outputs.busy || continuous.outputs.active) {
+        return fail("continuous takeover reports abort only");
+    }
+
+    return 0;
+}
+
+int check_motion_invalid_updates()
+{
+    axis::AxisModel invalid_velocity_axis;
+    invalid_velocity_axis.set_power(true);
+    fb::FbMoveVelocity invalid_velocity;
+    invalid_velocity.axis_ref = &invalid_velocity_axis;
+    invalid_velocity.velocity = 0.2;
+    invalid_velocity.continuous_update = true;
+    invalid_velocity.execute = true;
+    invalid_velocity.call();
+    invalid_velocity.velocity = 0.0;
+    invalid_velocity.call();
+    if(!invalid_velocity.outputs.error ||
+       invalid_velocity.outputs.error_id != rt::ErrorCode::invalid_argument ||
+       invalid_velocity.outputs.command_aborted || !invalid_velocity.outputs.busy ||
+       !invalid_velocity.outputs.active) {
+        return fail("velocity invalid update reports error only");
+    }
+
+    axis::AxisModel invalid_continuous_axis;
+    invalid_continuous_axis.set_power(true);
+    fb::FbMoveContinuousAbsolute invalid_continuous;
+    invalid_continuous.axis_ref = &invalid_continuous_axis;
+    invalid_continuous.position = 4.0;
+    invalid_continuous.velocity = 0.2;
+    invalid_continuous.end_velocity = 0.05;
+    invalid_continuous.continuous_update = true;
+    invalid_continuous.execute = true;
+    invalid_continuous.call();
+    invalid_continuous.position = std::numeric_limits<double>::quiet_NaN();
+    invalid_continuous.call();
+    if(!invalid_continuous.outputs.error ||
+       invalid_continuous.outputs.error_id != rt::ErrorCode::invalid_argument ||
+       invalid_continuous.outputs.command_aborted || !invalid_continuous.outputs.busy ||
+       !invalid_continuous.outputs.active) {
+        return fail("continuous invalid update reports error only");
+    }
+
+    return 0;
+}
+
+int check_motion_rejection_propagation()
+{
+    axis::AxisModel superimposed_axis;
+    superimposed_axis.set_power(true);
+    fb::FbMoveSuperimposed superimposed;
+    superimposed.axis_ref = &superimposed_axis;
+    superimposed.distance = 1.0;
+    superimposed.velocity = 0.0;
+    superimposed.execute = true;
+    superimposed.call();
+    if(!superimposed.outputs.error ||
+       superimposed.outputs.error_id != rt::ErrorCode::invalid_argument ||
+       superimposed.outputs.command_accepted) {
+        return fail("superimposed propagates model rejection");
+    }
+    axis::AxisModel unpowered_axis;
+    fb::FbHaltSuperimposed halt;
+    halt.axis_ref = &unpowered_axis;
+    halt.execute = true;
+    halt.call();
+    if(!halt.outputs.error || halt.outputs.error_id != rt::ErrorCode::invalid_argument ||
+       halt.outputs.done) {
+        return fail("halt superimposed propagates model rejection");
+    }
+    axis::AxisGroup empty_group;
+    fb::FbGroupEnable enable;
+    enable.group_ref = &empty_group;
+    enable.execute = true;
+    enable.call();
+    if(!enable.outputs.error || enable.outputs.error_id != rt::ErrorCode::invalid_argument) {
+        return fail("group enable propagates empty-group rejection");
+    }
+    fb::FbGroupStop stop;
+    stop.group_ref = &empty_group;
+    stop.execute = true;
+    stop.call();
+    if(!stop.outputs.error || stop.outputs.error_id != rt::ErrorCode::invalid_argument) {
+        return fail("group stop propagates disabled-group rejection");
+    }
+
+    return 0;
+}
+
 } // namespace
 
 int main()
@@ -852,7 +1005,11 @@ int main()
        check_move_velocity_continuous_update() != 0 ||
        check_velocity_threshold_blending() != 0 ||
        check_buffered_chain_done_observation() != 0 ||
-       check_motion_fb_error_paths() != 0) {
+       check_motion_fb_error_paths() != 0 ||
+       check_motion_power_abort_observation() != 0 ||
+       check_motion_takeover_observation() != 0 ||
+       check_motion_invalid_updates() != 0 ||
+       check_motion_rejection_propagation() != 0) {
         return 1;
     }
     std::printf("PASS r3 motion family tests\n");

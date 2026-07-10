@@ -6,7 +6,7 @@ on:
     - cron: '23 2 * * *'
 
 jobs:
-  otg-fuzz:
+  deterministic-otg-fuzz:
     runs-on: ubuntu-latest
 
     steps:
@@ -16,16 +16,40 @@ jobs:
       - name: Configure CMake
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 
-      - name: Build core fuzz
-        run: cmake --build build --target plcopen_core_otg_fuzz plcopen_core_otg_time_optimal_tests --parallel
+      - name: Build deterministic OTG fuzz
+        run: cmake --build build --target plcopen_core_otg_fuzz --parallel
 
       - name: Run deterministic OTG fuzz
         run: ./build/core/plcopen_core_otg_fuzz --iterations 1000000
 
+  a2-allocation-soak:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Configure CMake
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build allocation guard
+        run: cmake --build build --target plcopen_core_a2_alloc_guard --parallel
+
       - name: Run allocation-guard soak (A2)
-        run: |
-          cmake --build build --target plcopen_core_a2_alloc_guard --parallel
-          ./build/core/plcopen_core_a2_alloc_guard --cycles 50000000
+        run: ./build/core/plcopen_core_a2_alloc_guard --cycles 50000000
+
+  time-optimal-otg-fuzz:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Configure CMake
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build time-optimal OTG fuzz
+        run: cmake --build build --target plcopen_core_otg_time_optimal_tests --parallel
 
       - name: Run time-optimal OTG fuzz
         run: ./build/core/plcopen_core_otg_time_optimal_tests --iterations 1000000

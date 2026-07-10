@@ -126,7 +126,11 @@ int check_fixed_cases()
        check_case("cruise-at-limit", {0.0, 0.0, 0.0}, {200.0, 0.0, 0.0}, limits) != 0 ||
        check_case("takeover-accelerating", {0.0, 1.0, 1.5}, {8.0, 0.0, 0.0}, limits) != 0 ||
        check_case("takeover-decelerating", {0.0, 2.0, -1.8}, {6.0, 0.5, 0.0}, limits) != 0 ||
-       check_case("takeover-reverse-accel", {0.0, -1.0, 1.0}, {-5.0, 0.0, 0.0}, limits) != 0) {
+       check_case("takeover-reverse-accel", {0.0, -1.0, 1.0}, {-5.0, 0.0, 0.0}, limits) != 0 ||
+       check_case("nightly-target-accel-38049",
+                  {9.9142301780903317, 1.3051241193444292, 0.71593428623535083},
+                  {-8.382270265925273, 0.63063432407347353, -0.46510880602642635},
+                  limits) != 0) {
         return 1;
     }
     return 0;

@@ -1,15 +1,34 @@
 #include <cmath>
 #include <cstdio>
+#include <type_traits>
 
 #include "axis/group.h"
 #include "axis/state.h"
 #include "fb/group.h"
+#include "fb/homing.h"
 #include "fb/sync.h"
 
 namespace
 {
 
 using namespace plcopen::core;
+
+static_assert(!std::is_copy_constructible<axis::AxisModel>::value,
+              "AxisModel owns runtime state and group ownership; copying is unsafe");
+static_assert(!std::is_copy_assignable<axis::AxisModel>::value,
+              "AxisModel owns runtime state and group ownership; copy assignment is unsafe");
+static_assert(!std::is_move_constructible<axis::AxisModel>::value,
+              "AxisModel cannot move without rebinding group ownership");
+static_assert(!std::is_move_assignable<axis::AxisModel>::value,
+              "AxisModel cannot move without rebinding group ownership");
+static_assert(!std::is_copy_constructible<axis::AxisGroup>::value,
+              "AxisGroup stores member AxisModel pointers; copying is unsafe");
+static_assert(!std::is_copy_assignable<axis::AxisGroup>::value,
+              "AxisGroup stores member AxisModel pointers; copy assignment is unsafe");
+static_assert(!std::is_move_constructible<axis::AxisGroup>::value,
+              "AxisGroup cannot move without rebinding member owners");
+static_assert(!std::is_move_assignable<axis::AxisGroup>::value,
+              "AxisGroup cannot move without rebinding member owners");
 
 bool near(double lhs, double rhs, double tolerance)
 {
@@ -236,6 +255,382 @@ int check_group_status_reflects_member_sync()
     return 0;
 }
 
+int check_group_motion_rejects_active_standalone_member()
+{
+    axis::AxisModel x;
+    axis::AxisModel y;
+    x.set_power(true);
+    y.set_power(true);
+    x.set_homed();
+    y.set_homed();
+
+    axis::AxisGroup group;
+    group.add_axis(x);
+    group.add_axis(y);
+    group.enable();
+
+    fb::FbStepRefPulse search;
+    search.axis_ref = &x;
+    search.trigger_input = 0;
+    search.execute = true;
+    search.call();
+    const std::uint32_t search_id = x.snapshot().active_command_id;
+    if(search.outputs.error || !search.outputs.busy || !search.outputs.active ||
+       search_id == 0 || x.status() != axis::AxisStatus::continuous_motion ||
+       group.status() != axis::GroupStatus::standby) {
+        return fail("group standalone guard setup");
+    }
+
+    axis::GroupCommand linear{};
+    linear.target.size = 2;
+    linear.target.value[0] = 1.0;
+    linear.target.value[1] = 1.0;
+    linear.velocity = 0.1;
+    linear.acceleration = 0.1;
+    linear.deceleration = 0.1;
+    linear.jerk = 0.1;
+    const rt::Result<std::uint32_t> linear_result = group.submit_linear(linear);
+    if(linear_result || linear_result.error() != rt::ErrorCode::invalid_argument ||
+       group.status() != axis::GroupStatus::standby ||
+       x.snapshot().active_command_id != search_id ||
+       x.status() != axis::AxisStatus::continuous_motion ||
+       y.status() != axis::AxisStatus::standstill) {
+        return fail("group linear rejects active standalone member atomically");
+    }
+
+    axis::GroupCommand circular = linear;
+    circular.aux.size = 2;
+    circular.aux.value[0] = 0.0;
+    circular.aux.value[1] = 1.0;
+    circular.path_choice = axis::CircPathChoice::clockwise;
+    const rt::Result<std::uint32_t> circular_result = group.submit_circular(circular);
+    if(circular_result || circular_result.error() != rt::ErrorCode::invalid_argument ||
+       group.status() != axis::GroupStatus::standby ||
+       x.snapshot().active_command_id != search_id ||
+       x.status() != axis::AxisStatus::continuous_motion ||
+       y.status() != axis::AxisStatus::standstill) {
+        return fail("group circular rejects active standalone member atomically");
+    }
+
+    const double before = x.snapshot().command_position;
+    x.cycle();
+    search.call();
+    if(x.snapshot().command_position <= before || search.outputs.error ||
+       !search.outputs.busy || !search.outputs.active) {
+        return fail("rejected group motion leaves search ownership intact");
+    }
+
+    axis::AxisModel offset_x;
+    axis::AxisModel offset_y;
+    offset_x.set_power(true);
+    offset_y.set_power(true);
+    axis::AxisGroup offset_group;
+    offset_group.add_axis(offset_x);
+    offset_group.add_axis(offset_y);
+    offset_group.enable();
+    const rt::Result<std::uint32_t> offset =
+        offset_x.submit_superimposed(1.0, 0.1, 0.1, 0.1, 0.1);
+    if(!offset || offset_x.status() != axis::AxisStatus::standstill) {
+        return fail("group pending superimposed guard setup");
+    }
+
+    const rt::Result<std::uint32_t> offset_linear = offset_group.submit_linear(linear);
+    const rt::Result<std::uint32_t> offset_circular = offset_group.submit_circular(circular);
+    if(offset_linear || offset_circular ||
+       offset_linear.error() != rt::ErrorCode::invalid_argument ||
+       offset_circular.error() != rt::ErrorCode::invalid_argument ||
+       offset_group.status() != axis::GroupStatus::standby ||
+       !offset_x.superimposed_active() ||
+       offset_x.superimposed_command_id() != offset.value() ||
+       offset_y.status() != axis::AxisStatus::standstill) {
+        return fail("group motion rejects pending superimposed member atomically");
+    }
+
+    offset_x.cycle();
+    if(offset_x.snapshot().command_position <= 0.0 || !offset_x.superimposed_active()) {
+        return fail("rejected group motion preserves pending superimposed command");
+    }
+
+    return 0;
+}
+
+int check_active_group_rejects_standalone_member_commands()
+{
+    auto start_group = [](axis::AxisGroup &group, axis::AxisModel *axes) {
+        axes[0].set_power(true);
+        axes[1].set_power(true);
+        group.add_axis(axes[0]);
+        group.add_axis(axes[1]);
+        group.enable();
+        axis::GroupCommand command{};
+        command.target.size = 2;
+        command.target.value[0] = 10.0;
+        command.target.value[1] = 5.0;
+        command.velocity = 0.1;
+        command.acceleration = 0.1;
+        command.deceleration = 0.1;
+        command.jerk = 0.1;
+        return group.submit_linear(command);
+    };
+
+    {
+        axis::AxisModel axes[2];
+        axis::AxisGroup group;
+        if(!start_group(group, axes)) {
+            return fail("active group axis command setup");
+        }
+        group.cycle();
+        const double before = axes[0].snapshot().command_position;
+
+        axis::AxisCommand takeover{};
+        takeover.kind = axis::CommandKind::move_absolute;
+        takeover.value = 20.0;
+        takeover.velocity = 0.1;
+        takeover.acceleration = 0.1;
+        takeover.deceleration = 0.1;
+        takeover.jerk = 0.1;
+        const rt::Result<std::uint32_t> result = axes[0].submit(takeover);
+        if(result || result.error() != rt::ErrorCode::invalid_argument ||
+           group.status() != axis::GroupStatus::moving ||
+           axes[0].status() != axis::AxisStatus::synchronized_motion ||
+           axes[0].snapshot().active_command_id != 0) {
+            return fail("active group rejects standalone axis command atomically");
+        }
+
+        group.cycle();
+        axes[0].cycle();
+        axes[1].cycle();
+        if(axes[0].snapshot().command_position <= before) {
+            return fail("rejected axis command leaves group motion running");
+        }
+    }
+
+    {
+        axis::AxisModel axes[2];
+        axis::AxisGroup group;
+        if(!start_group(group, axes)) {
+            return fail("active group superimposed setup");
+        }
+        group.cycle();
+        const double before = axes[0].snapshot().command_position;
+
+        const rt::Result<std::uint32_t> result =
+            axes[0].submit_superimposed(1.0, 0.1, 0.1, 0.1, 0.1);
+        if(result || result.error() != rt::ErrorCode::invalid_argument ||
+           group.status() != axis::GroupStatus::moving ||
+           axes[0].status() != axis::AxisStatus::synchronized_motion ||
+           axes[0].superimposed_active()) {
+            return fail("active group rejects superimposed command atomically");
+        }
+
+        group.cycle();
+        axes[0].cycle();
+        axes[1].cycle();
+        if(axes[0].snapshot().command_position <= before) {
+            return fail("rejected superimposed command leaves group motion running");
+        }
+    }
+
+    return 0;
+}
+
+int check_active_group_rejects_member_sync()
+{
+    axis::AxisModel axes[2];
+    axis::AxisModel master;
+    axes[0].set_power(true);
+    axes[1].set_power(true);
+    master.set_power(true);
+    axis::AxisGroup group;
+    group.add_axis(axes[0]);
+    group.add_axis(axes[1]);
+    group.enable();
+
+    axis::GroupCommand command{};
+    command.target.size = 2;
+    command.target.value[0] = 10.0;
+    command.target.value[1] = 5.0;
+    command.velocity = 0.1;
+    command.acceleration = 0.1;
+    command.deceleration = 0.1;
+    command.jerk = 0.1;
+    if(!group.submit_linear(command)) {
+        return fail("active group sync guard setup");
+    }
+    group.cycle();
+    const double before = axes[0].snapshot().command_position;
+
+    axis::GearInCommand gear{};
+    gear.master = &master;
+    const rt::Result<std::uint32_t> result = axes[0].gear_in(gear);
+    if(result || result.error() != rt::ErrorCode::invalid_argument ||
+       axes[0].sync_command_id() != 0 ||
+       axes[0].status() != axis::AxisStatus::synchronized_motion ||
+       group.status() != axis::GroupStatus::moving) {
+        return fail("active group rejects member sync atomically");
+    }
+
+    group.cycle();
+    axes[0].cycle();
+    axes[1].cycle();
+    if(axes[0].snapshot().command_position <= before) {
+        return fail("rejected member sync leaves group motion running");
+    }
+
+    return 0;
+}
+
+int check_active_group_rejects_member_replan()
+{
+    static axis::AxisModel axes[2];
+    static axis::AxisGroup group;
+    axes[0].set_power(true);
+    axes[1].set_power(true);
+    group.add_axis(axes[0]);
+    group.add_axis(axes[1]);
+    group.enable();
+
+    axis::GroupPosition target{};
+    target.size = 2;
+    target.value[0] = 4.0;
+    target.value[1] = 4.0;
+    const rt::Result<std::uint32_t> direct =
+        group.submit_direct(target, false, 0.5, 0.5, 0.5, 0.5);
+    const std::uint32_t member_id = axes[0].snapshot().active_command_id;
+    if(!direct || member_id == 0 || group.status() != axis::GroupStatus::moving) {
+        return fail("active group member replan guard setup");
+    }
+
+    if(axes[0].set_override(25.0) != rt::ErrorCode::invalid_argument ||
+       axes[0].update_active_target(member_id, 8.0) != rt::ErrorCode::invalid_argument ||
+       axes[0].snapshot().active_command_id != member_id ||
+       group.status() != axis::GroupStatus::moving) {
+        return fail("active group rejects member override and retarget atomically");
+    }
+
+    axes[0].cycle();
+    axes[1].cycle();
+    group.cycle();
+    if(!near(axes[0].snapshot().command_position,
+             axes[1].snapshot().command_position,
+             1e-12) ||
+       group.status() != axis::GroupStatus::moving) {
+        return fail("rejected member replan leaves direct motion unchanged");
+    }
+
+    return 0;
+}
+
+int check_direct_member_command_ids_do_not_alias_axis_commands()
+{
+    {
+        static axis::AxisModel axes[2];
+        static axis::AxisGroup group;
+        axes[0].set_power(true);
+        axes[1].set_power(true);
+        group.add_axis(axes[0]);
+        group.add_axis(axes[1]);
+        group.enable();
+
+        axis::GroupPosition target{};
+        target.size = 2;
+        target.value[0] = 1.0;
+        target.value[1] = 1.0;
+        if(!group.submit_direct(target, false, 1.0, 1.0, 1.0, 1.0)) {
+            return fail("direct completion id guard setup");
+        }
+        for(int i = 0; i < 512 && group.status() != axis::GroupStatus::standby; ++i) {
+            group.cycle();
+            axes[0].cycle();
+            axes[1].cycle();
+        }
+        const std::uint32_t direct_member_id = axes[0].snapshot().last_completed_command_id;
+        if(group.status() != axis::GroupStatus::standby || direct_member_id == 0) {
+            return fail("direct completion id guard completed");
+        }
+
+        fb::FbMoveAbsolute first;
+        first.axis_ref = &axes[0];
+        first.position = 2.0;
+        first.execute = true;
+        first.call();
+
+        fb::FbMoveAbsolute takeover;
+        takeover.axis_ref = &axes[0];
+        takeover.position = 3.0;
+        takeover.execute = true;
+        takeover.call();
+        first.call();
+
+        if(first.outputs.command_id == direct_member_id ||
+           takeover.outputs.command_id == first.outputs.command_id ||
+           !first.outputs.command_aborted || first.outputs.done || first.outputs.busy ||
+           first.outputs.active || first.outputs.error ||
+           axes[0].snapshot().active_command_id != takeover.outputs.command_id) {
+            return fail("completed direct id cannot fabricate axis done");
+        }
+    }
+
+    {
+        static axis::AxisModel axes[2];
+        static axis::AxisGroup group;
+        axes[0].set_power(true);
+        axes[1].set_power(true);
+        group.add_axis(axes[0]);
+        group.add_axis(axes[1]);
+        group.enable();
+
+        axis::GroupPosition target{};
+        target.size = 2;
+        target.value[0] = 10.0;
+        target.value[1] = 10.0;
+        if(!group.submit_direct(target, false, 0.1, 0.1, 0.1, 0.1)) {
+            return fail("direct abort id guard setup");
+        }
+        const std::uint32_t direct_member_id = axes[0].snapshot().active_command_id;
+        if(direct_member_id == 0 || group.stop(1.0, 1.0) != rt::ErrorCode::ok) {
+            return fail("direct stop id guard setup");
+        }
+        const std::uint32_t halt_id = axes[0].snapshot().active_command_id;
+        if(halt_id == 0 || halt_id == direct_member_id ||
+           group.status() != axis::GroupStatus::stopping) {
+            return fail("direct stop uses a local halt id");
+        }
+        for(int i = 0; i < 512 && group.status() != axis::GroupStatus::standby; ++i) {
+            group.cycle();
+            axes[0].cycle();
+            axes[1].cycle();
+        }
+        if(group.status() != axis::GroupStatus::standby ||
+           axes[0].snapshot().last_completed_command_id != halt_id) {
+            return fail("direct stop id guard completed");
+        }
+
+        fb::FbMoveAbsolute first;
+        first.axis_ref = &axes[0];
+        first.position = 1.0;
+        first.execute = true;
+        first.call();
+
+        fb::FbMoveAbsolute takeover;
+        takeover.axis_ref = &axes[0];
+        takeover.position = 2.0;
+        takeover.execute = true;
+        takeover.call();
+        first.call();
+
+        if(first.outputs.command_id == halt_id ||
+           takeover.outputs.command_id == first.outputs.command_id ||
+           !first.outputs.command_aborted || first.outputs.done || first.outputs.busy ||
+           first.outputs.active || first.outputs.error ||
+           axes[0].snapshot().active_command_id != takeover.outputs.command_id) {
+            return fail("stopped direct id cannot fabricate axis done");
+        }
+    }
+
+    return 0;
+}
+
 int check_group_fb_error_paths()
 {
     axis::AxisGroup group;
@@ -347,6 +742,11 @@ int main()
     if(check_add_remove() != 0 || check_group_reset() != 0 ||
        check_group_read_status_and_positions() != 0 ||
        check_group_status_reflects_member_sync() != 0 ||
+       check_group_motion_rejects_active_standalone_member() != 0 ||
+       check_active_group_rejects_standalone_member_commands() != 0 ||
+       check_active_group_rejects_member_sync() != 0 ||
+       check_active_group_rejects_member_replan() != 0 ||
+       check_direct_member_command_ids_do_not_alias_axis_commands() != 0 ||
        check_group_fb_error_paths() != 0) {
         return 1;
     }

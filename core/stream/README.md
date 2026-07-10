@@ -12,12 +12,18 @@ at 1 kHz cost ~24 us/cycle at the staggered 100 Hz steady state and ~241
 us/cycle with every joint re-solving every cycle (`STREAM_METRICS` in the
 core benchmark), inside the 300 us (30%) budget gate.
 
+Shared group configuration is transactional: every member is preflighted
+before any configuration is committed. A rejected running reconfiguration
+keeps the previous joint count, member configurations, and profiles intact;
+`end_session()` reopens the next shared configuration window.
+
 First slice scope (BS1.2-BS1.5):
 
 - `StreamFilter1D`: one joint, keep-latest timestamped targets, event-driven
-  re-planning through `otg::plan_time_optimal` (the envelope is part of the
-  solve, not a post-clamp);
-- optional position envelope with clamp-and-flag semantics;
+  fixed-time/time-optimal OTG planning with an optional quintic fast path;
+- optional position envelope clamps and flags the incoming target position, then separately
+  proves every candidate profile over the complete segment interior before accepting it; this
+  is not per-cycle output clipping;
 - two-stage dropout watchdog: linearly decaying extrapolation, then a
   jerk-limited controlled stop; fresh targets re-enter tracking continuously;
 - explicit degradation counters (`rejected_targets`, `dropout_count`,
@@ -40,6 +46,10 @@ Tracking law (moving targets):
 
 Semantics notes:
 
+- call `configure()` only during idle setup, before `reset()` starts the
+  session; later configuration attempts are rejected atomically and leave the
+  accepted configuration and running profile unchanged. The owning session
+  must call `end_session()` before opening a new configuration window;
 - timestamps are integer cycle counts in the caller's cycle domain and must
   be strictly increasing across accepted targets; rejected pushes return
   `invalid_argument`, are counted, and never disturb the running filter;
@@ -47,6 +57,10 @@ Semantics notes:
   positions; producers that know their velocities should send them;
 - the dropout extrapolation decays the *output* velocity (bounded by the
   envelope by construction), not the raw producer velocity.
+- position-envelope proofs run in normalized time: constant-jerk segments check endpoints plus
+  every velocity root, while quintic segments prove monotonicity from velocity extrema at the
+  acceleration roots. Numerically unsafe or non-monotone candidates are rejected so the planner
+  can fall back to another candidate or retain the prior safe profile.
 
 RT constraints (cycle path = `cycle()`):
 

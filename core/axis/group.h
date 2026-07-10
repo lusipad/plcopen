@@ -19,16 +19,6 @@
 namespace plcopen::core::axis
 {
 
-enum class GroupStatus
-{
-    disabled,
-    standby,
-    moving,
-    stopping,
-    errorstop,
-    interrupted,
-};
-
 struct GroupPosition
 {
     static constexpr std::size_t MaxAxes = 8;
@@ -180,6 +170,22 @@ public:
     {
     }
 
+    // Members are non-owning and must remain alive while registered. Detach
+    // them on group destruction so an outliving axis never retains owner state.
+    ~AxisGroup()
+    {
+        for(std::size_t i = 0; i < axes_.size(); ++i) {
+            if(axes_[i]->group_owner() == this) {
+                axes_[i]->set_group_owner(nullptr);
+            }
+        }
+    }
+
+    AxisGroup(const AxisGroup &) = delete;
+    AxisGroup &operator=(const AxisGroup &) = delete;
+    AxisGroup(AxisGroup &&) = delete;
+    AxisGroup &operator=(AxisGroup &&) = delete;
+
     GroupStatus status() const
     {
         return status_;
@@ -226,7 +232,7 @@ public:
         if(pushed != rt::ErrorCode::ok) {
             return pushed;
         }
-        axis.set_group_owner(this);
+        axis.set_group_owner(this, &status_);
         return rt::ErrorCode::ok;
     }
 
@@ -263,6 +269,10 @@ public:
 
     rt::ErrorCode disable()
     {
+        if(direct_active_) {
+            last_aborted_direct_id_ = direct_command_id_;
+            abort_direct_members();
+        }
         abort_motion();
         status_ = GroupStatus::disabled;
         for(std::size_t i = 0; i < axes_.size(); ++i) {
@@ -287,6 +297,9 @@ public:
         }
         if(status_ != GroupStatus::moving) {
             return rt::ErrorCode::ok;
+        }
+        if(direct_active_) {
+            return stop_direct_members(deceleration, jerk);
         }
         queue_.clear();
         if(window_active_) {
@@ -397,6 +410,9 @@ public:
         if(status_ != GroupStatus::moving || !std::isfinite(deceleration) ||
            deceleration <= 0.0 || !std::isfinite(jerk) || jerk <= 0.0) {
             return rt::ErrorCode::invalid_argument;
+        }
+        if(direct_active_) {
+            return rt::ErrorCode::unsupported;
         }
         if(cart_window_active_ || cart_window_stopping_) {
             return rt::ErrorCode::unsupported;
@@ -598,6 +614,9 @@ public:
         if(status_ == GroupStatus::disabled || status_ == GroupStatus::errorstop) {
             return rt::ErrorCode::invalid_argument;
         }
+        if(direct_active_) {
+            return rt::ErrorCode::unsupported;
+        }
         const double previous = group_override_;
         group_override_ = factor;
         if(previous == factor) {
@@ -700,7 +719,7 @@ public:
         return group_override_;
     }
 
-    // MC_MoveDirectAbsolute/Relative: non-coordinated PTP. Each member gets
+    // MC_MoveDirectAbsolute/Relative (KB-068): non-coordinated PTP. Each member gets
     // an independent jerk-limited profile with the shared dynamics; members
     // arrive at different times. Done when all members reach standstill.
     rt::Result<std::uint32_t> submit_direct(GroupPosition target,
@@ -710,6 +729,9 @@ public:
                                             double deceleration,
                                             double jrk)
     {
+        if(direct_active_) {
+            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
+        }
         if(status_ != GroupStatus::standby && status_ != GroupStatus::moving) {
             return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
         }
@@ -724,32 +746,39 @@ public:
                 return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
             }
         }
-        abort_motion();
-        const std::uint32_t cmd_id = next_command_id_++;
+        if(!members_ready_for_group_motion()) {
+            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
+        }
+
+        std::array<AxisCommand, MaxAxes> direct_commands{};
         for(std::size_t i = 0; i < axes_.size(); ++i) {
-            AxisCommand cmd{};
+            AxisCommand &cmd = direct_commands[i];
             cmd.kind = relative ? CommandKind::move_relative : CommandKind::move_absolute;
             cmd.value = target.value[i];
             cmd.velocity = velocity;
             cmd.acceleration = acceleration;
             cmd.deceleration = deceleration;
             cmd.jerk = jrk;
-            cmd.command_id = cmd_id;
-            const rt::Result<std::uint32_t> result = axes_[i]->submit(cmd);
+            const rt::ErrorCode preflight = axes_[i]->preflight_group_owned(cmd);
+            if(preflight != rt::ErrorCode::ok) {
+                return rt::Result<std::uint32_t>::failure(preflight);
+            }
+        }
+
+        abort_motion();
+        const std::uint32_t cmd_id = next_command_id_++;
+        for(std::size_t i = 0; i < axes_.size(); ++i) {
+            AxisCommand &cmd = direct_commands[i];
+            const rt::Result<std::uint32_t> result = axes_[i]->submit_group_owned(cmd);
             if(!result) {
-                for(std::size_t j = 0; j < i; ++j) {
-                    AxisCommand halt{};
-                    halt.kind = CommandKind::halt;
-                    halt.velocity = velocity;
-                    halt.acceleration = acceleration;
-                    halt.deceleration = deceleration;
-                    halt.jerk = jrk;
-                    axes_[j]->submit(halt);
-                }
+                abort_direct_members();
+                abort_motion();
+                status_ = GroupStatus::errorstop;
                 return rt::Result<std::uint32_t>::failure(result.error());
             }
         }
         direct_active_ = true;
+        direct_stopping_ = false;
         direct_command_id_ = cmd_id;
         status_ = GroupStatus::moving;
         return rt::Result<std::uint32_t>::success(cmd_id);
@@ -763,11 +792,8 @@ public:
         if(status_ != GroupStatus::standby || !queue_.empty()) {
             return rt::ErrorCode::invalid_argument;
         }
-        for(std::size_t i = 0; i < axes_.size(); ++i) {
-            if(!axes_[i]->powered() ||
-               axes_[i]->status() == AxisStatus::errorstop) {
-                return rt::ErrorCode::invalid_argument;
-            }
+        if(!members_ready_for_group_motion()) {
+            return rt::ErrorCode::invalid_argument;
         }
         for(std::size_t i = 0; i < axes_.size(); ++i) {
             const rt::ErrorCode homed = axes_[i]->home_direct(0.0);
@@ -783,6 +809,16 @@ public:
     bool direct_motion_active() const
     {
         return direct_active_;
+    }
+
+    std::uint32_t last_completed_direct_command() const
+    {
+        return last_completed_direct_id_;
+    }
+
+    std::uint32_t last_aborted_direct_command() const
+    {
+        return last_aborted_direct_id_;
     }
 
     // Approved coordinate matrix (B1 v1): the workpiece frame (PCS over MCS)
@@ -1045,8 +1081,14 @@ public:
             interrupted_window_ = false;
             interrupting_ = false;
         }
+        // MoveDirect is driven by member base profiles. Until a coordinated
+        // takeover can cancel every member atomically, accepting a path here
+        // would leave AxisGroup::cycle() and AxisModel::cycle() as two writers.
+        if(direct_active_) {
+            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
+        }
         if((status_ != GroupStatus::standby && status_ != GroupStatus::moving &&
-            status_ != GroupStatus::interrupted) ||
+             status_ != GroupStatus::interrupted) ||
            axes_.size() < 2 ||
            command.target.size != axes_.size() || command.velocity <= 0.0 ||
            !std::isfinite(command.velocity) || command.acceleration <= 0.0 ||
@@ -1055,10 +1097,8 @@ public:
            !std::isfinite(command.jerk) || !finite(command.target)) {
             return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
         }
-        for(std::size_t i = 0; i < axes_.size(); ++i) {
-            if(!axes_[i]->powered() || axes_[i]->status() == AxisStatus::errorstop) {
-                return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
-            }
+        if(!members_ready_for_group_motion()) {
+            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
         }
         // Cartesian-interpolation batch (approved matrix): resolve the
         // opt-in segment before the frame collapse — pre-validation either
@@ -1177,8 +1217,11 @@ public:
             interrupted_window_ = false;
             interrupting_ = false;
         }
+        if(direct_active_) {
+            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
+        }
         if((status_ != GroupStatus::standby && status_ != GroupStatus::moving &&
-            status_ != GroupStatus::interrupted) ||
+             status_ != GroupStatus::interrupted) ||
            axes_.size() < 2 || command.target.size != axes_.size() ||
            command.aux.size != axes_.size() || command.velocity <= 0.0 ||
            !std::isfinite(command.velocity) || command.acceleration <= 0.0 ||
@@ -1187,10 +1230,8 @@ public:
            !std::isfinite(command.jerk) || !finite(command.target) || !finite(command.aux)) {
             return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
         }
-        for(std::size_t i = 0; i < axes_.size(); ++i) {
-            if(!axes_[i]->powered() || axes_[i]->status() == AxisStatus::errorstop) {
-                return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
-            }
+        if(!members_ready_for_group_motion()) {
+            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
         }
         if(command.circ_mode != CircMode::border) {
             // CENTER/RADIUS are declared unsupported in v1, not approximated.
@@ -1341,9 +1382,12 @@ public:
             return;
         }
         for(std::size_t i = 0; i < axes_.size(); ++i) {
-            if(axes_[i]->status() == AxisStatus::errorstop) {
+            if(!axes_[i]->powered() || axes_[i]->status() == AxisStatus::errorstop) {
+                if(direct_active_) {
+                    last_aborted_direct_id_ = direct_command_id_;
+                    abort_direct_members();
+                }
                 abort_motion();
-                direct_active_ = false;
                 interrupting_ = false;
                 status_ = GroupStatus::errorstop;
                 return;
@@ -1359,7 +1403,13 @@ public:
                 }
             }
             if(all_done) {
+                if(direct_stopping_) {
+                    last_aborted_direct_id_ = direct_command_id_;
+                } else {
+                    last_completed_direct_id_ = direct_command_id_;
+                }
                 direct_active_ = false;
+                direct_stopping_ = false;
                 status_ = GroupStatus::standby;
             }
             return;
@@ -1460,6 +1510,59 @@ public:
     }
 
 private:
+    void abort_direct_members()
+    {
+        for(std::size_t i = 0; i < axes_.size(); ++i) {
+            axes_[i]->abort_group_owned_motion();
+        }
+    }
+
+    rt::ErrorCode stop_direct_members(double deceleration, double jerk)
+    {
+        for(std::size_t i = 0; i < axes_.size(); ++i) {
+            if(!axes_[i]->powered() || axes_[i]->status() == AxisStatus::errorstop) {
+                abort_direct_members();
+                abort_motion();
+                status_ = GroupStatus::errorstop;
+                return rt::ErrorCode::precondition_failed;
+            }
+        }
+
+        for(std::size_t i = 0; i < axes_.size(); ++i) {
+            AxisCommand halt{};
+            halt.kind = CommandKind::halt;
+            halt.velocity = 1.0;
+            halt.acceleration = deceleration;
+            halt.deceleration = deceleration;
+            halt.jerk = jerk;
+            const rt::Result<std::uint32_t> submitted = axes_[i]->submit_group_owned(halt);
+            if(!submitted) {
+                last_aborted_direct_id_ = direct_command_id_;
+                abort_direct_members();
+                abort_motion();
+                status_ = GroupStatus::standby;
+                return submitted.error();
+            }
+        }
+        direct_stopping_ = true;
+        status_ = GroupStatus::stopping;
+        return rt::ErrorCode::ok;
+    }
+
+    bool members_ready_for_group_motion() const
+    {
+        for(std::size_t i = 0; i < axes_.size(); ++i) {
+            const AxisStatus member_status = axes_[i]->status();
+            if(!axes_[i]->powered() || member_status == AxisStatus::errorstop ||
+               (status_ == GroupStatus::standby &&
+                (member_status != AxisStatus::standstill ||
+                 axes_[i]->has_standalone_motion()))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     std::size_t find(const AxisModel &axis) const
     {
         for(std::size_t i = 0; i < axes_.size(); ++i) {
@@ -3206,6 +3309,7 @@ private:
         active_ = false;
         connector_active_ = false;
         direct_active_ = false;
+        direct_stopping_ = false;
         override_paused_ = false;
         interrupting_ = false;
         interrupted_plain_ = false;
@@ -4288,6 +4392,8 @@ private:
     std::uint32_t last_blend_degraded_id_ = 0;
     std::uint32_t next_command_id_ = 1;
     std::uint32_t direct_command_id_ = 0;
+    std::uint32_t last_completed_direct_id_ = 0;
+    std::uint32_t last_aborted_direct_id_ = 0;
     bool cart_window_active_ = false;
     bool cart_window_stopping_ = false;
     bool window_active_ = false;
@@ -4301,6 +4407,7 @@ private:
     bool interrupted_plain_ = false;
     bool interrupted_window_ = false;
     bool direct_active_ = false;
+    bool direct_stopping_ = false;
 };
 
 } // namespace plcopen::core::axis

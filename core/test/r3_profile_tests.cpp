@@ -1,7 +1,9 @@
 #include <cmath>
 #include <cstdio>
+#include <limits>
 
 #include "axis/state.h"
+#include "fb/homing.h"
 #include "fb/profile.h"
 
 namespace
@@ -12,6 +14,21 @@ using namespace plcopen::core;
 bool near(double lhs, double rhs, double tolerance)
 {
     return std::fabs(lhs - rhs) <= tolerance;
+}
+
+bool same_snapshot(const axis::AxisSnapshot &lhs, const axis::AxisSnapshot &rhs)
+{
+    return lhs.status == rhs.status && lhs.command_position == rhs.command_position &&
+           lhs.command_velocity == rhs.command_velocity &&
+           lhs.command_acceleration == rhs.command_acceleration &&
+           lhs.actual_position == rhs.actual_position &&
+           lhs.actual_velocity == rhs.actual_velocity &&
+           lhs.actual_acceleration == rhs.actual_acceleration &&
+           lhs.actual_torque == rhs.actual_torque && lhs.powered == rhs.powered &&
+           lhs.homed == rhs.homed && lhs.error == rhs.error &&
+           lhs.active_command_reached_target == rhs.active_command_reached_target &&
+           lhs.active_command_id == rhs.active_command_id &&
+           lhs.last_completed_command_id == rhs.last_completed_command_id;
 }
 
 int fail(const char *name)
@@ -407,13 +424,525 @@ int check_acceleration_profile()
     return 0;
 }
 
+int check_position_profile_submit_rejection_and_reset()
+{
+    axis::ProfileSegment position_segment{};
+    position_segment.target = 4.0;
+    position_segment.velocity = 0.1;
+    axis::AxisModel position_axis;
+    fb::FbPositionProfile position;
+    position.axis_ref = &position_axis;
+    position.segments = &position_segment;
+    position.segment_count = 1;
+    position.continuous_update = true;
+    position.execute = true;
+    position.call();
+    if(!position.outputs.error || position.outputs.error_id != rt::ErrorCode::invalid_argument) {
+        return fail("position profile propagates submit rejection");
+    }
+    position.execute = false;
+    position.call();
+    if(position.outputs.error || position.outputs.command_aborted) {
+        return fail("position profile falling edge clears rejection");
+    }
+
+    return 0;
+}
+
+int check_position_profile_takeover()
+{
+    axis::ProfileSegment position_segment{};
+    position_segment.target = 4.0;
+    position_segment.velocity = 0.1;
+    axis::AxisModel position_axis;
+    position_axis.set_power(true);
+    fb::FbPositionProfile position;
+    position.axis_ref = &position_axis;
+    position.segments = &position_segment;
+    position.segment_count = 1;
+    position.continuous_update = true;
+    position.execute = true;
+    position.call();
+    axis::AxisCommand takeover{};
+    takeover.kind = axis::CommandKind::move_absolute;
+    takeover.value = 2.0;
+    takeover.velocity = 0.2;
+    if(!position_axis.submit(takeover)) {
+        return fail("position profile takeover accepted");
+    }
+    position.call();
+    if(!position.outputs.command_aborted || position.outputs.error || position.outputs.done ||
+       position.outputs.busy || position.outputs.active) {
+        return fail("position profile takeover reports abort only");
+    }
+
+    return 0;
+}
+
+int check_position_profile_step_direct_takeover()
+{
+    axis::AxisModel axis;
+    axis.set_power(true);
+    axis::ProfileSegment segments[3] = {};
+    segments[0].target = 4.0;
+    segments[1].target = 8.0;
+    segments[2].target = 12.0;
+    for(auto &segment : segments) { segment.velocity = 0.1; }
+
+    fb::FbPositionProfile profile;
+    profile.axis_ref = &axis;
+    profile.segments = segments;
+    profile.segment_count = 3;
+    profile.execute = true;
+    profile.call();
+    const auto first_id = profile.outputs.command_id;
+    const auto last_id = first_id + 2;
+    if(!profile.outputs.command_accepted || !profile.outputs.busy ||
+       axis.snapshot().active_command_id != first_id ||
+       !axis.command_pending(first_id + 1) || !axis.command_pending(last_id)) {
+        return fail("position profile step direct setup");
+    }
+
+    fb::FbStepDirect step;
+    step.axis_ref = &axis;
+    step.set_position = 2.0;
+    step.execute = true;
+    step.call();
+    profile.call();
+    if(!step.outputs.done || !profile.outputs.command_aborted || profile.outputs.done ||
+       profile.outputs.error || profile.outputs.busy || profile.outputs.active) {
+        return fail("position profile step direct reports abort only");
+    }
+    if(axis.snapshot().active_command_id != 0 || axis.command_pending(first_id + 1) ||
+       axis.command_pending(last_id)) {
+        return fail("position profile step direct clears pending segments");
+    }
+
+    for(int i = 0; i < 128; ++i) {
+        axis.cycle();
+        profile.call();
+    }
+    if(!profile.outputs.command_aborted || profile.outputs.done || profile.outputs.error ||
+       profile.outputs.busy || profile.outputs.active ||
+       axis.status() != axis::AxisStatus::standstill || axis.snapshot().active_command_id != 0 ||
+       axis.snapshot().last_completed_command_id == last_id ||
+       !near(axis.snapshot().command_position, 2.0, 1e-12)) {
+        return fail("position profile step direct does not revive or report done");
+    }
+
+    return 0;
+}
+
+int check_position_profile_invalid_update()
+{
+    axis::AxisModel invalid_update_axis;
+    invalid_update_axis.set_power(true);
+    axis::ProfileSegment invalid_update_segment{};
+    invalid_update_segment.target = 4.0;
+    invalid_update_segment.velocity = 0.1;
+    fb::FbPositionProfile invalid_update;
+    invalid_update.axis_ref = &invalid_update_axis;
+    invalid_update.segments = &invalid_update_segment;
+    invalid_update.segment_count = 1;
+    invalid_update.continuous_update = true;
+    invalid_update.execute = true;
+    invalid_update.call();
+    invalid_update_segment.target = std::nan("");
+    invalid_update.call();
+    if(!invalid_update.outputs.error ||
+       invalid_update.outputs.error_id != rt::ErrorCode::invalid_argument ||
+       invalid_update.outputs.command_aborted || !invalid_update.outputs.busy ||
+       !invalid_update.outputs.active) {
+        return fail("position profile invalid update reports error only");
+    }
+
+    return 0;
+}
+
+int check_velocity_profile_submit_rejections()
+{
+    axis::ProfileSegment invalid_scale_segment{};
+    invalid_scale_segment.target = 1.0;
+    axis::AxisModel powered_axis;
+    powered_axis.set_power(true);
+    fb::FbVelocityProfile invalid_scale;
+    invalid_scale.axis_ref = &powered_axis;
+    invalid_scale.segments = &invalid_scale_segment;
+    invalid_scale.segment_count = 1;
+    invalid_scale.velocity_scale = std::nan("");
+    invalid_scale.execute = true;
+    invalid_scale.call();
+    if(!invalid_scale.outputs.error ||
+       invalid_scale.outputs.error_id != rt::ErrorCode::invalid_argument) {
+        return fail("velocity profile rejects non-finite scale");
+    }
+    axis::AxisModel unpowered_axis;
+    fb::FbVelocityProfile rejected_velocity;
+    rejected_velocity.axis_ref = &unpowered_axis;
+    rejected_velocity.segments = &invalid_scale_segment;
+    rejected_velocity.segment_count = 1;
+    rejected_velocity.execute = true;
+    rejected_velocity.call();
+    if(!rejected_velocity.outputs.error ||
+       rejected_velocity.outputs.error_id != rt::ErrorCode::invalid_argument) {
+        return fail("velocity profile propagates submit rejection");
+    }
+
+    return 0;
+}
+
+int check_velocity_profile_atomic_rejection()
+{
+    axis::AxisModel rollback_axis;
+    rollback_axis.set_power(true);
+    axis::ProfileSegment partial[2] = {};
+    partial[0].target = 1.0;
+    partial[0].duration_cycles = 10;
+    partial[1].target = 0.0;
+    fb::FbVelocityProfile rollback;
+    rollback.axis_ref = &rollback_axis;
+    rollback.segments = partial;
+    rollback.segment_count = 2;
+    rollback.execute = true;
+    rollback.call();
+    if(!rollback.outputs.error || rollback.outputs.error_id != rt::ErrorCode::invalid_argument ||
+       rollback.outputs.command_accepted ||
+       rollback_axis.status() != axis::AxisStatus::standstill ||
+       rollback_axis.snapshot().active_command_id != 0 ||
+       !near(rollback_axis.snapshot().command_position, 0.0, 1e-12) ||
+       !near(rollback_axis.snapshot().command_velocity, 0.0, 1e-12)) {
+        return fail("velocity profile rejects invalid table atomically");
+    }
+
+    return 0;
+}
+
+int check_position_profile_duration_scaled_to_zero_rejection()
+{
+    axis::AxisModel axis;
+    axis.set_power(true);
+    axis::ProfileSegment segments[2] = {};
+    segments[0].target = 1.0;
+    segments[1].target = 2.0;
+    segments[1].duration_cycles = 1;
+
+    fb::FbPositionProfile profile;
+    profile.axis_ref = &axis;
+    profile.segments = segments;
+    profile.segment_count = 2;
+    profile.time_scale = 0.1;
+    profile.execute = true;
+    profile.call();
+    if(!profile.outputs.error || profile.outputs.error_id != rt::ErrorCode::invalid_argument ||
+       profile.outputs.command_accepted || axis.status() != axis::AxisStatus::standstill ||
+       axis.snapshot().active_command_id != 0 ||
+       axis.snapshot().last_completed_command_id != 0 ||
+       !near(axis.snapshot().command_position, 0.0, 1e-12) ||
+       !near(axis.snapshot().command_velocity, 0.0, 1e-12)) {
+        return fail("position profile rejects duration scaled to zero atomically");
+    }
+
+    return 0;
+}
+
+int check_position_profile_duration_overflow_rejection()
+{
+    axis::AxisModel axis;
+    axis.set_power(true);
+    axis::ProfileSegment segments[2] = {};
+    segments[0].target = 1.0;
+    segments[1].target = 2.0;
+    segments[1].duration_cycles = std::numeric_limits<std::int64_t>::max();
+
+    fb::FbPositionProfile profile;
+    profile.axis_ref = &axis;
+    profile.segments = segments;
+    profile.segment_count = 2;
+    profile.time_scale = 2.0;
+    profile.execute = true;
+    profile.call();
+    if(!profile.outputs.error || profile.outputs.error_id != rt::ErrorCode::invalid_argument ||
+       profile.outputs.command_accepted || axis.status() != axis::AxisStatus::standstill ||
+       axis.snapshot().active_command_id != 0 ||
+       axis.snapshot().last_completed_command_id != 0 ||
+       !near(axis.snapshot().command_position, 0.0, 1e-12) ||
+       !near(axis.snapshot().command_velocity, 0.0, 1e-12)) {
+        return fail("position profile rejects duration overflow atomically");
+    }
+
+    return 0;
+}
+
+int check_position_profile_invalid_later_segment_rejected_atomically()
+{
+    enum class InvalidField
+    {
+        target,
+        soft_limit,
+        velocity,
+        acceleration,
+        deceleration,
+        jerk,
+    };
+    struct TestCase
+    {
+        InvalidField field;
+        rt::ErrorCode expected_error;
+        const char *name;
+    };
+    const TestCase cases[] = {
+        {InvalidField::target, rt::ErrorCode::invalid_argument, "position profile later NaN target"},
+        {InvalidField::soft_limit,
+         rt::ErrorCode::out_of_range,
+         "position profile later soft-limit target"},
+        {InvalidField::velocity,
+         rt::ErrorCode::invalid_argument,
+         "position profile later invalid velocity"},
+        {InvalidField::acceleration,
+         rt::ErrorCode::invalid_argument,
+         "position profile later invalid acceleration"},
+        {InvalidField::deceleration,
+         rt::ErrorCode::invalid_argument,
+         "position profile later invalid deceleration"},
+        {InvalidField::jerk, rt::ErrorCode::invalid_argument, "position profile later invalid jerk"},
+    };
+
+    for(const TestCase &test_case : cases) {
+        axis::AxisModel axis;
+        if(test_case.field == InvalidField::soft_limit) {
+            axis::MotionLimits limits{};
+            limits.max_position_enabled = true;
+            limits.max_position = 1.5;
+            if(axis.configure_limits(limits) != rt::ErrorCode::ok) {
+                return fail("position profile atomic rejection limit setup");
+            }
+        }
+        axis.set_power(true);
+        axis::AxisCommand running{};
+        running.value = 0.5;
+        running.velocity = 0.1;
+        const rt::Result<std::uint32_t> running_id = axis.submit(running);
+        if(!running_id || running_id.value() != 1) {
+            return fail("position profile atomic rejection motion setup");
+        }
+        axis.cycle();
+        const axis::AxisSnapshot before = axis.snapshot();
+        if(before.active_command_id != running_id.value() ||
+           before.status != axis::AxisStatus::discrete_motion || before.command_velocity == 0.0) {
+            return fail("position profile atomic rejection running state setup");
+        }
+
+        axis::ProfileSegment segments[2] = {};
+        segments[0].target = 1.0;
+        segments[1].target = 2.0;
+        switch(test_case.field) {
+        case InvalidField::target:
+            segments[1].target = std::nan("");
+            break;
+        case InvalidField::soft_limit:
+            segments[1].target = 0.75;
+            segments[1].relative = true;
+            break;
+        case InvalidField::velocity:
+            segments[1].velocity = 0.0;
+            break;
+        case InvalidField::acceleration:
+            segments[1].acceleration = std::nan("");
+            break;
+        case InvalidField::deceleration:
+            segments[1].deceleration = 0.0;
+            break;
+        case InvalidField::jerk:
+            segments[1].jerk = std::nan("");
+            break;
+        }
+
+        fb::FbPositionProfile profile;
+        profile.axis_ref = &axis;
+        profile.segments = segments;
+        profile.segment_count = 2;
+        profile.execute = true;
+        profile.call();
+        if(!profile.outputs.error || profile.outputs.error_id != test_case.expected_error ||
+           profile.outputs.command_accepted || profile.outputs.command_id != 0 ||
+           profile.outputs.busy || profile.outputs.active || profile.outputs.done ||
+           profile.outputs.command_aborted || !same_snapshot(axis.snapshot(), before) ||
+           axis.command_pending(2) || axis.command_pending(3)) {
+            return fail(test_case.name);
+        }
+
+        axis::AxisCommand valid{};
+        valid.value = 0.75;
+        const rt::Result<std::uint32_t> accepted = axis.submit(valid);
+        if(!accepted || accepted.value() != 2) {
+            return fail("position profile atomic rejection preserves command id");
+        }
+    }
+
+    return 0;
+}
+
+int check_position_profile_homing_soft_limit_lifecycle()
+{
+    axis::AxisModel axis;
+    axis::MotionLimits limits{};
+    limits.max_position_enabled = true;
+    limits.max_position = 1.0;
+    if(axis.configure_limits(limits) != rt::ErrorCode::ok) {
+        return fail("position profile homing soft-limit setup");
+    }
+    axis.set_power(true);
+    axis.clear_homed();
+
+    axis::ProfileSegment segment{};
+    segment.target = 2.0;
+    fb::FbPositionProfile profile;
+    profile.axis_ref = &axis;
+    profile.segments = &segment;
+    profile.segment_count = 1;
+    profile.execute = true;
+    profile.call();
+    if(!profile.outputs.command_accepted || profile.outputs.error) {
+        return fail("position profile honors suspended homing soft limits");
+    }
+    for(int i = 0; i < 800 && !profile.outputs.done; ++i) {
+        axis.cycle();
+        profile.call();
+    }
+    if(!profile.outputs.done || !near(axis.snapshot().command_position, 2.0, 1e-8)) {
+        return fail("position profile completes outside suspended homing soft limit");
+    }
+
+    fb::FbFinishHoming finish;
+    finish.axis_ref = &axis;
+    finish.execute = true;
+    finish.call();
+    if(!finish.outputs.done || finish.outputs.error || !axis.snapshot().homed) {
+        return fail("position profile homing soft-limit finish setup");
+    }
+
+    profile.execute = false;
+    profile.call();
+    const axis::AxisSnapshot before = axis.snapshot();
+    profile.execute = true;
+    profile.call();
+    if(!profile.outputs.error || profile.outputs.error_id != rt::ErrorCode::out_of_range ||
+       profile.outputs.command_accepted || profile.outputs.command_id != 0 ||
+       profile.outputs.busy || profile.outputs.active || !same_snapshot(axis.snapshot(), before)) {
+        return fail("position profile restores soft limits after FinishHoming");
+    }
+
+    return 0;
+}
+
+int check_profile_scaled_duration_rejections()
+{
+    axis::AxisModel shortened_axis;
+    shortened_axis.set_power(true);
+    const axis::AxisSnapshot shortened_before = shortened_axis.snapshot();
+    axis::ProfileSegment shortened[2] = {};
+    shortened[0].target = 1.0;
+    shortened[0].duration_cycles = 1;
+    shortened[1].target = 2.0;
+    fb::FbVelocityProfile velocity;
+    velocity.axis_ref = &shortened_axis;
+    velocity.segments = shortened;
+    velocity.segment_count = 2;
+    velocity.time_scale = 0.1;
+    velocity.execute = true;
+    velocity.call();
+    if(!velocity.outputs.error ||
+       velocity.outputs.error_id != rt::ErrorCode::invalid_argument ||
+       velocity.outputs.command_accepted ||
+       !same_snapshot(shortened_axis.snapshot(), shortened_before)) {
+        return fail("velocity profile rejects duration scaled to zero atomically");
+    }
+
+    axis::AxisModel velocity_overflow_axis;
+    velocity_overflow_axis.set_power(true);
+    const axis::AxisSnapshot velocity_overflow_before = velocity_overflow_axis.snapshot();
+    axis::ProfileSegment velocity_overflow[2] = {};
+    velocity_overflow[0].target = 1.0;
+    velocity_overflow[0].duration_cycles = std::numeric_limits<std::int64_t>::max();
+    velocity_overflow[1].target = 2.0;
+    fb::FbVelocityProfile overflow_velocity;
+    overflow_velocity.axis_ref = &velocity_overflow_axis;
+    overflow_velocity.segments = velocity_overflow;
+    overflow_velocity.segment_count = 2;
+    overflow_velocity.time_scale = 2.0;
+    overflow_velocity.execute = true;
+    overflow_velocity.call();
+    if(!overflow_velocity.outputs.error ||
+       overflow_velocity.outputs.error_id != rt::ErrorCode::invalid_argument ||
+       overflow_velocity.outputs.command_accepted ||
+       !same_snapshot(velocity_overflow_axis.snapshot(), velocity_overflow_before)) {
+        return fail("velocity profile rejects duration overflow atomically");
+    }
+
+    axis::AxisModel acceleration_shortened_axis;
+    acceleration_shortened_axis.set_power(true);
+    const axis::AxisSnapshot acceleration_shortened_before =
+        acceleration_shortened_axis.snapshot();
+    axis::ProfileSegment acceleration_shortened[2] = {};
+    acceleration_shortened[0].target = 1.0;
+    acceleration_shortened[0].duration_cycles = 1;
+    acceleration_shortened[1].target = 2.0;
+    fb::FbAccelerationProfile shortened_acceleration;
+    shortened_acceleration.axis_ref = &acceleration_shortened_axis;
+    shortened_acceleration.segments = acceleration_shortened;
+    shortened_acceleration.segment_count = 2;
+    shortened_acceleration.time_scale = 0.1;
+    shortened_acceleration.execute = true;
+    shortened_acceleration.call();
+    if(!shortened_acceleration.outputs.error ||
+       shortened_acceleration.outputs.error_id != rt::ErrorCode::invalid_argument ||
+       shortened_acceleration.outputs.command_accepted ||
+       !same_snapshot(acceleration_shortened_axis.snapshot(), acceleration_shortened_before)) {
+        return fail("acceleration profile rejects duration scaled to zero atomically");
+    }
+
+    axis::AxisModel overflow_axis;
+    overflow_axis.set_power(true);
+    const axis::AxisSnapshot overflow_before = overflow_axis.snapshot();
+    axis::ProfileSegment overflow[2] = {};
+    overflow[0].target = 1.0;
+    overflow[0].duration_cycles = std::numeric_limits<std::int64_t>::max();
+    overflow[1].target = 2.0;
+    fb::FbAccelerationProfile acceleration;
+    acceleration.axis_ref = &overflow_axis;
+    acceleration.segments = overflow;
+    acceleration.segment_count = 2;
+    acceleration.time_scale = 2.0;
+    acceleration.execute = true;
+    acceleration.call();
+    if(!acceleration.outputs.error ||
+       acceleration.outputs.error_id != rt::ErrorCode::invalid_argument ||
+       acceleration.outputs.command_accepted ||
+       !same_snapshot(overflow_axis.snapshot(), overflow_before)) {
+        return fail("acceleration profile rejects duration overflow atomically");
+    }
+
+    return 0;
+}
+
 } // namespace
 
 int main()
 {
     if(check_position_profile() != 0 || check_position_profile_timing_and_scaling() != 0 ||
        check_position_profile_update_and_validation() != 0 || check_velocity_profile() != 0 ||
-       check_velocity_profile_update() != 0 || check_acceleration_profile() != 0) {
+       check_velocity_profile_update() != 0 || check_acceleration_profile() != 0 ||
+       check_position_profile_duration_scaled_to_zero_rejection() != 0 ||
+       check_position_profile_duration_overflow_rejection() != 0 ||
+       check_position_profile_invalid_later_segment_rejected_atomically() != 0 ||
+       check_position_profile_homing_soft_limit_lifecycle() != 0 ||
+       check_profile_scaled_duration_rejections() != 0 ||
+       check_position_profile_submit_rejection_and_reset() != 0 ||
+       check_position_profile_takeover() != 0 ||
+       check_position_profile_step_direct_takeover() != 0 ||
+       check_position_profile_invalid_update() != 0 ||
+       check_velocity_profile_submit_rejections() != 0 ||
+       check_velocity_profile_atomic_rejection() != 0) {
         return 1;
     }
     std::printf("PASS r3 profile tests\n");

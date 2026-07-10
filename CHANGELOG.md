@@ -9,15 +9,15 @@ All notable changes to this project will be documented in this file.
 - 参考 executor 软件形态 + 周期级 trace 工具（X3/X4）：`rt_executor_demo`
   落成 architecture.md 图 3/4——周期线程（Linux SCHED_FIFO 尝试 + 绝对
   截止期睡眠，无特权优雅降级；Windows 冒烟节拍）驱动组 + ServoSim 桥接，
-  seqlock 快照发布给低优先级规划线程（实测零撕裂读）；每周期落 trace 环
-  （复用 rt SPSC），版本化二进制落盘。`tools/plcopen_trace.py` 解析统计 +
-  CSV 导出。CTest 冒烟 `plcopen_core_rt_executor_smoke`（37 测试目标）。
-  硬件阶段自此为"插上真机测量"。
+  规划线程只经 SPSC 命令队列提交，周期线程保持 AxisGroup/AxisModel 单写者，
+  再经 SPSC 快照队列发布状态；每周期 trace 复用独立 SPSC 环并版本化落盘。
+  `tools/plcopen_trace.py` 解析统计 + CSV 导出，CTest 冒烟校验双向队列均有流量
+  且无满队列。canonical `planning → committed trajectory → RT` 双域仍为后续项。
 - 关闭 alpha 豁免项（X2）：`legacy_compare` 扩展为老-新**语义等价 harness**
   ——同工况驱动冻结旧线与新核，终点合同（绝对/相对目标）逐位相等、速度+
   停车合同完成到静止（停车点差异为 KB-026 声明变更的正确后果，如实框定）；
-  DoD 5.3 复跑 core = 旧线 9.3%。72h 冻结窗口分配断言 soak 已启动（分离
-  进程，2026-07-09 出结果）。
+  DoD 5.3 复跑 core = 旧线 9.3%。本提交的 50M-cycle 冻结窗口分配门本地
+  零分配通过；72h 结束日志与真机抖动报告仍未关闭。
 - 笛卡尔前瞻窗口 v1（KB-050，已批准 v3 增补）：平移插件组的连续笛卡尔
   blending 后继构成 TCP 空间前瞻窗口——结点速度双向 jerk 精确扫描 ∩ 拐角
   曲率限速，直线不再被最急拐角拖慢；6 段折线实测优于 0.8× 停车基线门槛，
@@ -88,6 +88,27 @@ All notable changes to this project will be documented in this file.
 - Fix the time-optimal OTG planner's bump zone (KB-034, declared change, found while tuning the B9 tracker): the cruise-velocity bisection now selects the monotone branch of the chain distance by comparing against the direct-ramp distance — D(vc) is not monotone between the boundary velocities, and the old global bisection could converge to a spurious crossing (a negative cruise velocity for a short forward move), degenerating every fast candidate. A new estimate-anchored single-quintic candidate (bounded upward probe from the continuous-time chain duration, nonzero entry accelerations supported, forward-only shape guard) lands exactly where the quantized multiphase chains would burn a dozens-of-cycles correction at the boundary velocity: the B9 tracking case plans 68 -> 19 cycles. Replay baseline `core-group-window-arc` re-recorded (endpoints bit-identical, duration 90 -> 88 ticks; all other fixtures byte-identical); new fixed and randomized bump-zone quality tiers in `otg_time_optimal_tests`.
 
 ### Fixed
+
+- 加固 Stream/Profile/Homing 的边界与命令生命周期：Stream 的周期换算拒绝
+  非有限、亚周期和 `int64_t` 溢出输入，配置只允许在 session 外整体提交；
+  PositionProfile 在首段前完成整表端点、软限位与 OTG 预检，后续段非法时不再
+  留下已启动运动；Velocity/AccelerationProfile 校验缩放时长与整表静态输入；
+  Homing 按运动/探针命令 ID 处理接管、Execute 下降沿与 replacement probe，
+  在序列期间挂起旧软件限位，并让 FinishHoming Park 在置 homed 前原子预检。
+
+- 修复 AxisGroup 与成员轴之间的双写者风险并收紧 MoveDirect 生命周期（KB-068）：
+  standby 组命令会原子拒绝仍有单轴 ownership 的成员，组活动期拒绝成员公开的
+  单轴/override/retarget/叠加/同步入口；owner 与同步位置写入收进 private friend 边界；
+  MoveDirect 全成员预检后才接管协调路径，组/成员命令 ID 分域，活动期显式拒绝
+  linear/circular、Direct 重入、GroupSetOverride 与 GroupInterrupt。Direct 自然完成
+  才报 Done，GroupStop/GroupDisable 报 CommandAborted，成员 ErrorStop 报 Error，终态锁存
+  到 Execute 下降沿；验收
+  覆盖 `plcopen_core_r3_group_fb_tests` 与 `plcopen_core_part4_management_tests`。
+
+- 恢复周期质量门的可判定性：固定 Nightly 基线 fuzz 的零边界加速度合同并加入
+  第 38049 例回归；OTG fuzz、50M 分配门和 time-optimal fuzz 拆为独立 job；
+  Coverage 固定 gcovr 8.6，Python 扩展只要求 `Development.Module`，executor
+  冒烟以实际命令/快照流量和失败标记裁决。
 
 - `axis::AxisModel::set_power` is now level-controlled (MC_Power is called every scan cycle): calls that do not change the powered state are no-ops instead of unconditionally aborting motion — under the normative cyclic MC_Power call pattern every running command was aborted each cycle and the tracking FB fabricated a spurious `Done` through the standstill fallback, which also mis-attributed the DoD §5.3 comparison (re-measured: legacy 43 ms / core 4 ms = 0.093, gate PASS; the "planning 15x" root-cause note in the R4 evidence package is corrected).
 

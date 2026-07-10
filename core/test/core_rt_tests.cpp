@@ -1,9 +1,11 @@
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include <new>
 
 #include "rt/cycle.h"
 #include "rt/error.h"
+#include "rt/error_text.h"
 #include "rt/spsc_queue.h"
 #include "rt/static_vector.h"
 
@@ -29,6 +31,43 @@ int fail(const char *name)
 {
     std::printf("FAIL %s\n", name);
     return 1;
+}
+
+int check_error_text()
+{
+    using plcopen::core::rt::ErrorCode;
+    using plcopen::core::rt::to_string;
+
+    struct ErrorTextCase
+    {
+        ErrorCode code;
+        const char *text;
+    };
+
+    const ErrorTextCase cases[] = {
+        {ErrorCode::ok, "ok"},
+        {ErrorCode::invalid_argument,
+         "invalid_argument: a parameter value is out of its valid domain"},
+        {ErrorCode::out_of_range,
+         "out_of_range: a value exceeds an array or container bound"},
+        {ErrorCode::capacity_exceeded,
+         "capacity_exceeded: a fixed-size container is full"},
+        {ErrorCode::infeasible,
+         "infeasible: no solution exists for the given constraints"},
+        {ErrorCode::precondition_failed,
+         "precondition_failed: the object is not in the required state"},
+        {ErrorCode::unsupported, "unsupported: this operation is not implemented"},
+    };
+
+    for(const ErrorTextCase &test : cases) {
+        if(std::strcmp(to_string(test.code), test.text) != 0) {
+            return fail("error text mapping");
+        }
+    }
+    if(std::strcmp(to_string(static_cast<ErrorCode>(999)), "unknown error code") != 0) {
+        return fail("unknown error text fallback");
+    }
+    return 0;
 }
 
 } // namespace
@@ -111,6 +150,9 @@ int main()
     const rt::Result<int> bad = rt::Result<int>::failure(rt::ErrorCode::infeasible);
     if(!ok || ok.value() != 42 || bad || bad.error() != rt::ErrorCode::infeasible) {
         return fail("result semantics");
+    }
+    if(check_error_text() != 0) {
+        return 1;
     }
 
     g_alloc_frozen = true;

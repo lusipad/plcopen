@@ -63,25 +63,43 @@ private:
         if(!execute || tracked_command_id_ == 0 || group_ref == nullptr) {
             return;
         }
+        if(outputs.done || outputs.command_aborted || outputs.error) {
+            return;
+        }
         const axis::GroupStatus gs = group_ref->status();
-        if(gs == axis::GroupStatus::moving && group_ref->direct_motion_active()) {
-            outputs.busy = true;
-            outputs.active = true;
-            outputs.done = false;
-            return;
-        }
-        if(gs == axis::GroupStatus::standby && !group_ref->direct_motion_active()) {
-            outputs.done = true;
-            outputs.busy = false;
-            outputs.active = false;
-            return;
-        }
         if(gs == axis::GroupStatus::errorstop) {
             outputs.error = true;
             outputs.error_id = rt::ErrorCode::precondition_failed;
             outputs.busy = false;
             outputs.active = false;
+            return;
         }
+        if(group_ref->last_completed_direct_command() == tracked_command_id_) {
+            outputs.done = true;
+            outputs.busy = false;
+            outputs.active = false;
+            return;
+        }
+        if(group_ref->last_aborted_direct_command() == tracked_command_id_) {
+            outputs.command_aborted = true;
+            outputs.done = false;
+            outputs.busy = false;
+            outputs.active = false;
+            tracked_command_id_ = 0;
+            return;
+        }
+        if((gs == axis::GroupStatus::moving || gs == axis::GroupStatus::stopping) &&
+           group_ref->direct_motion_active()) {
+            outputs.busy = true;
+            outputs.active = true;
+            outputs.done = false;
+            return;
+        }
+        outputs.command_aborted = true;
+        outputs.done = false;
+        outputs.busy = false;
+        outputs.active = false;
+        tracked_command_id_ = 0;
     }
 };
 
@@ -114,25 +132,43 @@ private:
         if(!execute || tracked_command_id_ == 0 || group_ref == nullptr) {
             return;
         }
+        if(outputs.done || outputs.command_aborted || outputs.error) {
+            return;
+        }
         const axis::GroupStatus gs = group_ref->status();
-        if(gs == axis::GroupStatus::moving && group_ref->direct_motion_active()) {
-            outputs.busy = true;
-            outputs.active = true;
-            outputs.done = false;
-            return;
-        }
-        if(gs == axis::GroupStatus::standby && !group_ref->direct_motion_active()) {
-            outputs.done = true;
-            outputs.busy = false;
-            outputs.active = false;
-            return;
-        }
         if(gs == axis::GroupStatus::errorstop) {
             outputs.error = true;
             outputs.error_id = rt::ErrorCode::precondition_failed;
             outputs.busy = false;
             outputs.active = false;
+            return;
         }
+        if(group_ref->last_completed_direct_command() == tracked_command_id_) {
+            outputs.done = true;
+            outputs.busy = false;
+            outputs.active = false;
+            return;
+        }
+        if(group_ref->last_aborted_direct_command() == tracked_command_id_) {
+            outputs.command_aborted = true;
+            outputs.done = false;
+            outputs.busy = false;
+            outputs.active = false;
+            tracked_command_id_ = 0;
+            return;
+        }
+        if((gs == axis::GroupStatus::moving || gs == axis::GroupStatus::stopping) &&
+           group_ref->direct_motion_active()) {
+            outputs.busy = true;
+            outputs.active = true;
+            outputs.done = false;
+            return;
+        }
+        outputs.command_aborted = true;
+        outputs.done = false;
+        outputs.busy = false;
+        outputs.active = false;
+        tracked_command_id_ = 0;
     }
 };
 

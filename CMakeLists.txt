@@ -73,7 +73,7 @@ if(PLCOPEN_BUILD_DOCS)
 endif()
 
 if(PLCOPEN_BUILD_PYTHON_BINDINGS)
-  find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
+  find_package(Python3 COMPONENTS Interpreter Development.Module REQUIRED)
 
   set(PYBIND11_FINDPYTHON ON CACHE BOOL "" FORCE)
   find_package(pybind11 CONFIG QUIET)

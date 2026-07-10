@@ -326,7 +326,25 @@ int check_cubic_solver()
         return fail("cubic: x²-5x+6=0");
     }
 
+    n = stream::quintic_detail::solve_cubic(0.0, 0.0, 2.0, -6.0, roots);
+    if(n != 1 || !near(roots[0], 3.0, 1e-10)) {
+        return fail("cubic: degenerate linear root");
+    }
+
     std::printf("  PASS cubic_solver\n");
+    return 0;
+}
+
+int check_invalid_profile_inputs()
+{
+    stream::QuinticProfile qp;
+    if(stream::solve_quintic({0.0, 0.0, 0.0}, 1.0, 0.0, 0, qp)) {
+        return fail("quintic: zero horizon rejected");
+    }
+    const otg::Limits1D limits{1.0, 1.0, 1.0, 1.0};
+    if(stream::check_quintic_limits(qp, limits)) {
+        return fail("quintic: empty profile rejected");
+    }
     return 0;
 }
 
@@ -427,6 +445,7 @@ int main()
     int failures = 0;
     failures += check_boundary_conditions();
     failures += check_cubic_solver();
+    failures += check_invalid_profile_inputs();
     failures += check_horner_vs_naive();
     failures += check_known_accept();
     failures += check_known_reject();

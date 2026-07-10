@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <cmath>
 #include <cstdint>
 
@@ -79,6 +80,29 @@ protected:
         return active_id >= first_id_ && active_id <= last_id_;
     }
 
+    bool tracked_pending(const axis::AxisModel &axis) const
+    {
+        for(std::uint64_t id = first_id_; id <= last_id_; ++id) {
+            if(axis.command_pending(static_cast<std::uint32_t>(id))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    bool scaled_duration_valid(std::int64_t duration_cycles) const
+    {
+        if(duration_cycles <= 0) {
+            return false;
+        }
+        const double scaled = static_cast<double>(duration_cycles) * time_scale;
+        if(!std::isfinite(scaled)) {
+            return false;
+        }
+        const double rounded = std::round(scaled);
+        return rounded >= 1.0 && rounded < std::ldexp(1.0, 63);
+    }
+
     std::uint32_t first_id_ = 0;
     std::uint32_t last_id_ = 0;
 
@@ -109,14 +133,18 @@ private:
             fail(rt::ErrorCode::invalid_argument);
             return;
         }
-        last_target_ = segments[0].target;
-        start_position_ = axis_ref->snapshot().command_position;
+        for(std::size_t i = 0; i < segment_count; ++i) {
+            const std::int64_t duration = segments[i].duration_cycles;
+            if(duration < 0 || (duration > 0 && !scaled_duration_valid(duration))) {
+                fail(rt::ErrorCode::invalid_argument);
+                return;
+            }
+        }
 
-        std::uint32_t first_id = 0;
-        std::uint32_t last_id = 0;
+        std::array<axis::AxisCommand, axis::AxisModel::QueueCapacity> commands{};
         for(std::size_t i = 0; i < segment_count; ++i) {
             const axis::ProfileSegment &segment = segments[i];
-            axis::AxisCommand command{};
+            axis::AxisCommand &command = commands[i];
             command.kind = segment.relative ? axis::CommandKind::move_relative
                                             : axis::CommandKind::move_absolute;
             command.value = segment.relative
@@ -129,7 +157,21 @@ private:
             command.min_duration_cycles = scaled_duration(segment.duration_cycles);
             command.buffer_mode =
                 i == 0 ? axis::BufferMode::aborting : axis::BufferMode::buffered;
-            const rt::Result<std::uint32_t> accepted = axis_ref->submit(command);
+        }
+        const rt::ErrorCode preflight =
+            axis_ref->preflight_position_sequence(commands.data(), segment_count);
+        if(preflight != rt::ErrorCode::ok) {
+            fail(preflight);
+            return;
+        }
+
+        last_target_ = segments[0].target;
+        start_position_ = axis_ref->snapshot().command_position;
+
+        std::uint32_t first_id = 0;
+        std::uint32_t last_id = 0;
+        for(std::size_t i = 0; i < segment_count; ++i) {
+            const rt::Result<std::uint32_t> accepted = axis_ref->submit(commands[i]);
             if(!accepted) {
                 fail(accepted.error());
                 return;
@@ -168,18 +210,19 @@ private:
             return;
         }
         const axis::AxisSnapshot &snapshot = axis_ref->snapshot();
-        if(tracked_active(snapshot.active_command_id)) {
-            outputs.busy = true;
-            outputs.active = true;
-            return;
-        }
-        if(snapshot.active_command_id == 0 && snapshot.status == axis::AxisStatus::standstill) {
+        if(snapshot.last_completed_command_id == last_id_) {
             outputs.done = true;
             outputs.busy = false;
             outputs.active = false;
             return;
         }
+        if(tracked_active(snapshot.active_command_id) || tracked_pending(*axis_ref)) {
+            outputs.busy = true;
+            outputs.active = true;
+            return;
+        }
         outputs.command_aborted = true;
+        outputs.done = false;
         outputs.busy = false;
         outputs.active = false;
         first_id_ = 0;
@@ -210,6 +253,24 @@ protected:
         }
         last_target_ = segments[0].target;
 
+        for(std::size_t i = 0; i < segment_count; ++i) {
+            const axis::ProfileSegment &segment = segments[i];
+            const double target_velocity = segment.target * velocity_scale + velocity_offset;
+            const double acceleration =
+                segment.acceleration * acceleration_scale + acceleration_offset;
+            const double deceleration =
+                segment.deceleration * acceleration_scale + acceleration_offset;
+            const bool final_segment = i + 1 == segment_count;
+            if(!std::isfinite(target_velocity) || target_velocity == 0.0 ||
+               !std::isfinite(acceleration) || acceleration <= 0.0 ||
+               !std::isfinite(deceleration) || deceleration <= 0.0 ||
+               !std::isfinite(segment.jerk) || segment.jerk <= 0.0 ||
+               (!final_segment && !scaled_duration_valid(segment.duration_cycles))) {
+                fail(rt::ErrorCode::invalid_argument);
+                return;
+            }
+        }
+
         std::uint32_t first_id = 0;
         std::uint32_t last_id = 0;
         for(std::size_t i = 0; i < segment_count; ++i) {
@@ -220,15 +281,6 @@ protected:
             const double deceleration =
                 segment.deceleration * acceleration_scale + acceleration_offset;
             const bool final_segment = i + 1 == segment_count;
-            if(target_velocity == 0.0 || acceleration <= 0.0 || deceleration <= 0.0 ||
-               (!final_segment && segment.duration_cycles <= 0)) {
-                fail(rt::ErrorCode::invalid_argument);
-                if(i > 0) {
-                    axis_ref->submit(halt_command());
-                }
-                return;
-            }
-
             axis::AxisCommand command{};
             command.kind = axis::CommandKind::move_velocity;
             command.value = target_velocity;
@@ -291,13 +343,6 @@ protected:
     }
 
 private:
-    static axis::AxisCommand halt_command()
-    {
-        axis::AxisCommand command{};
-        command.kind = axis::CommandKind::halt;
-        return command;
-    }
-
     double last_target_ = 0.0;
 };
 

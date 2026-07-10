@@ -17,14 +17,17 @@ Implementation boundary:
 
 - unit semantics are caller-owned cycle units, not seconds;
 - invalid or already out-of-limit start/target states return `ErrorCode`;
-- `plan()` is the baseline feasible solver: a conservative single quintic segment whose
-  duration grows until sampled velocity, acceleration, and jerk checks pass;
-- `plan_time_optimal()` (`time_optimal.h`, A9 v1) is the near time-optimal jerk-limited
-  solver for zero boundary accelerations: closed-form ramp phases, one bounded
-  cruise-velocity bisection, integer-cycle quantization with an exact quintic correction,
-  and a strict never-slower-than-`plan()` guarantee (fuzz-asserted). Nonzero *entry*
-  accelerations reduce through one exact zeroing ramp (KB-026); nonzero *target*
-  accelerations report `unsupported` (declared follow-up).
+- `plan()` is the baseline feasible solver for zero boundary accelerations: a conservative
+  single quintic segment whose duration grows until sampled velocity, acceleration, and
+  jerk checks pass. Within-limit nonzero boundary accelerations can have no feasible
+  single-quintic duration; use `plan_time_optimal()` for arbitrary state-to-state input;
+- `plan_time_optimal()` (`time_optimal.h`, A9 v2) is the near time-optimal jerk-limited
+  solver for arbitrary state-to-state transitions. Nonzero entry acceleration is reduced
+  by an exact zeroing ramp; nonzero target acceleration uses a symmetric targeting ramp
+  or a direct quintic correction when its effective velocity would exceed the envelope
+  (KB-026/055). Closed-form ramp phases, bounded cruise-velocity search, integer-cycle
+  quantization, and exact correction compete with the baseline candidate; the selected
+  profile is never slower than a feasible `plan()` result (fuzz-asserted).
 - nonzero target velocities in the cruise regime are served by the refined-cruise
   candidate (2026-07-05, fixing the A4 finding): an integer cruise duration whose cruise
   velocity is fixed-point refined until the quantized ramps plus cruise land on the

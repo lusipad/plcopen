@@ -49,6 +49,8 @@ ctest --test-dir build --build-config Release --output-on-failure
 
 最简单轴示例与组/圆弧/blending 示例见 `core/demo/`；下游 CMake 消费
 （`find_package` / `FetchContent`）见 [BUILD_README.md](BUILD_README.md)。
+旧 `src/demo/` 属 v0.x 迁移对照，不代表新核 RT 编码风格；新代码优先参考
+`core/demo/`、`docs/getting-started/` 与 pyplcopen 示例。
 
 ### 十分钟上手：Python 驱动一条关节目标流（B9）
 

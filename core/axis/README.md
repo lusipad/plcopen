@@ -40,9 +40,36 @@ Responsibilities:
   the window through tangent continuity (KB-033): aligned junctions pass at the scanned
   node velocity, the arc segment is clamped to sqrt(a*R), and non-tangent junctions
   degrade to a reported full stop.
-- Preserve one writer for each state object; group commands write member synchronized positions.
+- Preserve one writer for each state object. Public single-axis submit/superimposed/sync entry
+  points reject while the owning group is active; only `AxisGroup` can use the private friend
+  entry points that submit, preflight, or cancel group-owned member motion (KB-068).
+- `preflight_position_sequence` validates an aborting position command plus its buffered
+  successors against the same endpoint, software-limit, override, and OTG rules without changing
+  axis state. Profile and homing facades use it to make whole-sequence rejection atomic.
+- A group that is still `standby` accepts linear/circular/direct motion and GroupHome only when
+  every member is at `standstill` with no base, sync, stream, or superimposed command pending; an
+  active standalone command (including a homing Step search) makes the group request fail
+  atomically. Buffered/blending successors remain valid once the group owns motion.
+- MoveDirect has its own non-coordinated lifecycle rather than joining the linear/circular queue:
+  all member profiles are preflighted before the current coordinated path is replaced. While
+  Direct is active, linear/circular submission and Direct re-entry return `invalid_argument`, and
+  GroupSetOverride/GroupInterrupt return `unsupported`, without disturbing member motion.
+  GroupStop performs controlled member halts and GroupDisable cancels them; both finish the tracked
+  Direct FB as CommandAborted. Only natural all-member completion reports Done. A powered-off or
+  ErrorStop member cancels its peers, moves the group to ErrorStop, and makes the Direct FB report
+  Error (`precondition_failed`). The group-level Direct ID is separate from each member's locally
+  allocated base/Halt command IDs, so later single-axis FB completion cannot alias a Direct command
+  (KB-068).
 - Own slave-side synchronization (gear/cam/combine): the slave axis samples master snapshots
   read-only in its own `cycle()` and drives itself through `set_synchronized_position`.
+
+`AxisGroup` member lifetime:
+
+- Membership is non-owning: every registered `AxisModel` must outlive the group. Construct axes
+  before the group so the group is destroyed first, or call `remove_axis` while the group is
+  disabled before destroying an axis.
+- `AxisGroup` cannot be copied or moved. Its destructor detaches every still-registered member and
+  clears the owner/status link on axes that outlive it.
 
 Synchronization semantics carried from the v0.x tests:
 

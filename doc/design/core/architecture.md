@@ -124,9 +124,10 @@ sequenceDiagram
 
 ---
 
-## 实现现状（2026-07-07，X 系列收口；本表随批次收口更新，漂移即缺陷）
+## 实现现状（2026-07-10 复核；本表随批次收口更新，漂移即缺陷）
 
-图 1-4 的蓝图已全部落为实现；层 → 目录 → 边界编号对照：
+图 1-2 的分层与核心能力已落地；图 3-4 仅完成单写者交接基础，完整
+规划/RT 双域仍是下文开放项。层 → 目录 → 边界编号对照：
 
 | 层 | 目录 | 已落地 | KB |
 |----|------|--------|-----|
@@ -139,13 +140,15 @@ sequenceDiagram
 | L6 | `core/fb` | Part 1/2 全量 + Part 4 线性/圆弧/blending 门面 + 回读 FB 承接 | 矩阵 45/45 |
 | L7 | `core/adapters` | Servo 接口/桥接/ServoSim（ADR-0004）、CiA402、CSP/CSV/CST 骨架 | KB-040 |
 
-**已知开放缺陷**：KB-051 组 aborting 接管速度断崖（修复矩阵
-[group-takeover-semantics](../../compliance/group-takeover-semantics.md) 待批，Y7 队列第一位）。
+**已知边界**：KB-051 的 linear 组级 aborting 接管速度连续性已由 Y7
+修复；circular/笛卡尔接管扩展仍按 KB-051 的适用范围开放。
 
-图 3 的 seqlock 快照与图 4 的规划域低优先级唤醒已有参考 executor 软件
-形态（X3，`core/demo/rt_executor_demo.cpp`，ServoSim 闭环）；硬件对接
-待 B7。库内以显式 `cycle()` 与快照读取承载同一合同。各模块详细
-设计随码维护在 `core/*/README.md`（设计文档「随码写」原则）。
+X3 参考 executor（`core/demo/rt_executor_demo.cpp`，ServoSim 闭环）已用
+双向 SPSC 关闭示例中的跨线程对象共享与普通 payload 数据竞争，但它仍在
+唯一 executor 循环内执行 `submit*` 规划，只是单写者交接参考，**不是**
+图 3/4 的完整双域落地。规划域产出 committed trajectory、RT 域仅消费
+预计算结果，以及共享内存 seqlock/双缓冲，仍需独立 ADR 与实现验证；
+硬件对接待 B7。各模块详细设计随码维护在 `core/*/README.md`。
 
 ## 维护规则
 

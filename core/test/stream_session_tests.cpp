@@ -8,6 +8,7 @@
 #include <cmath>
 #include <cstdio>
 
+#include "axis/group.h"
 #include "axis/state.h"
 #include "fb/motion.h"
 
@@ -109,8 +110,8 @@ int check_engage_preconditions()
 
     axis::AxisModel grouped;
     grouped.set_power(true);
-    int owner = 0;
-    grouped.set_group_owner(&owner);
+    axis::AxisGroup group;
+    group.add_axis(grouped);
     if(grouped.stream_engage(session_config())) {
         return fail("engage rejected while group-owned");
     }

@@ -27,8 +27,11 @@ Implemented:
 - `Profile1D`: fixed-storage piecewise polynomial profile, O(1) `sample()`
   that clamps to the finish state beyond the profile duration;
 - `plan(from, to, limits)`: baseline feasible planner (single quintic with a
-  grown duration) that accepts arbitrary finite initial states and non-zero
-  target velocities, validated against the limit envelope;
+  grown duration) for zero boundary accelerations and non-zero target
+  velocities, validated against the limit envelope. A within-limit nonzero
+  boundary acceleration can still be `infeasible` when no single-quintic
+  duration satisfies the envelope; arbitrary state-to-state input belongs to
+  `plan_time_optimal()`;
 - `plan_time_optimal(from, to, limits)` (`time_optimal.h`, A9 v2 — Y2):
   near time-optimal jerk-limited planning for **arbitrary state-to-state
   transitions** including nonzero initial and target accelerations.

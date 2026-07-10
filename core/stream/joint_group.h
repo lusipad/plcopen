@@ -29,15 +29,28 @@ public:
         if(joint_count < 1 || joint_count > MaxJoints) {
             return rt::ErrorCode::invalid_argument;
         }
+        const std::size_t preflight_count =
+            joint_count > joint_count_ ? joint_count : joint_count_;
+        for(std::size_t i = 0; i < preflight_count; ++i) {
+            if(!filters_[i].can_configure(config)) {
+                return rt::ErrorCode::invalid_argument;
+            }
+        }
         for(std::size_t i = 0; i < joint_count; ++i) {
             const rt::ErrorCode configured = filters_[i].configure(config);
             if(configured != rt::ErrorCode::ok) {
-                joint_count_ = 0;
                 return configured;
             }
         }
         joint_count_ = joint_count;
         return rt::ErrorCode::ok;
+    }
+
+    void end_session()
+    {
+        for(std::size_t i = 0; i < joint_count_; ++i) {
+            filters_[i].end_session();
+        }
     }
 
     rt::ErrorCode reset(std::size_t joint, otg::State1D state)

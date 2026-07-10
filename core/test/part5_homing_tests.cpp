@@ -1,8 +1,11 @@
 #include <cmath>
 #include <cstdio>
+#include <limits>
 
+#include "axis/group.h"
 #include "axis/state.h"
 #include "fb/homing.h"
+#include "fb/management.h"
 
 namespace
 {
@@ -14,10 +17,43 @@ bool near(double lhs, double rhs, double tolerance)
     return std::fabs(lhs - rhs) <= tolerance;
 }
 
+bool same_snapshot(const axis::AxisSnapshot &lhs, const axis::AxisSnapshot &rhs)
+{
+    return lhs.status == rhs.status && lhs.command_position == rhs.command_position &&
+           lhs.command_velocity == rhs.command_velocity &&
+           lhs.command_acceleration == rhs.command_acceleration &&
+           lhs.actual_position == rhs.actual_position &&
+           lhs.actual_velocity == rhs.actual_velocity &&
+           lhs.actual_acceleration == rhs.actual_acceleration &&
+           lhs.actual_torque == rhs.actual_torque && lhs.powered == rhs.powered &&
+           lhs.homed == rhs.homed && lhs.error == rhs.error &&
+           lhs.active_command_reached_target == rhs.active_command_reached_target &&
+           lhs.active_command_id == rhs.active_command_id &&
+           lhs.last_completed_command_id == rhs.last_completed_command_id;
+}
+
 int fail(const char *name)
 {
     std::printf("FAIL %s\n", name);
     return 1;
+}
+
+rt::Result<std::uint32_t> submit_takeover(axis::AxisModel &axis, double position)
+{
+    axis::AxisCommand command{};
+    command.kind = axis::CommandKind::move_absolute;
+    command.value = position;
+    command.velocity = 0.2;
+    command.acceleration = 0.1;
+    command.deceleration = 0.1;
+    command.jerk = 0.1;
+    return axis.submit(command);
+}
+
+bool aborted_without_revival(const fb::MotionOutputs &outputs)
+{
+    return outputs.command_aborted && !outputs.done && !outputs.busy && !outputs.active &&
+           !outputs.error;
 }
 
 // --- MC_StepDirect ---
@@ -63,6 +99,198 @@ int check_step_direct_null_axis()
         return fail("step_direct null axis error");
     }
     std::printf("  PASS step_direct_null_axis\n");
+    return 0;
+}
+
+int check_step_direct_aborting_takeover()
+{
+    axis::AxisModel axis;
+    axis.set_power(true);
+
+    fb::FbMoveAbsolute move;
+    move.axis_ref = &axis;
+    move.position = 10.0;
+    move.velocity = 0.1;
+    move.acceleration = 0.1;
+    move.deceleration = 0.1;
+    move.jerk = 0.1;
+    move.execute = true;
+    move.call();
+    axis.cycle();
+    if(!move.outputs.busy || move.outputs.error) {
+        return fail("step_direct motion setup");
+    }
+
+    fb::FbStepDirect step;
+    step.axis_ref = &axis;
+    step.set_position = 2.0;
+    step.execute = true;
+    step.call();
+    move.call();
+    if(!step.outputs.done || step.outputs.error || step.outputs.busy || step.outputs.active ||
+       axis.status() != axis::AxisStatus::standstill ||
+       !near(axis.snapshot().command_position, 2.0, 1e-12) || axis.snapshot().homed) {
+        return fail("step_direct aborting takeover completes");
+    }
+    if(!move.outputs.command_aborted || move.outputs.error || move.outputs.done ||
+       move.outputs.busy || move.outputs.active) {
+        return fail("step_direct aborts prior command");
+    }
+
+    step.execute = false;
+    step.call();
+    if(step.outputs.error || step.outputs.done) {
+        return fail("step_direct falling edge resets result");
+    }
+
+    std::printf("  PASS step_direct_aborting_takeover\n");
+    return 0;
+}
+
+int check_step_direct_rejects_errorstop_until_reset()
+{
+    axis::AxisModel axis;
+    axis.set_power(true);
+    axis.set_position(3.0);
+
+    axis::AxisCommand move{};
+    move.kind = axis::CommandKind::move_absolute;
+    move.value = 3.25;
+    const rt::Result<std::uint32_t> accepted = axis.submit(move);
+    if(!accepted) {
+        return fail("step_direct errorstop setup submit");
+    }
+    for(int i = 0; i < 64 && axis.snapshot().last_completed_command_id != accepted.value(); ++i) {
+        axis.cycle();
+    }
+    if(axis.snapshot().last_completed_command_id != accepted.value()) {
+        return fail("step_direct errorstop setup completes command");
+    }
+    axis.set_homed();
+    axis.trigger_error();
+    const axis::AxisSnapshot before = axis.snapshot();
+
+    fb::FbStepDirect step;
+    step.axis_ref = &axis;
+    step.set_position = 42.0;
+    step.execute = true;
+    step.call();
+
+    if(!step.outputs.error || step.outputs.error_id != rt::ErrorCode::invalid_argument ||
+       step.outputs.done || step.outputs.busy || step.outputs.active ||
+       !same_snapshot(axis.snapshot(), before)) {
+        return fail("step_direct rejects errorstop without side effects");
+    }
+
+    if(axis.reset_error() != rt::ErrorCode::ok) {
+        return fail("step_direct errorstop requires reset");
+    }
+    step.execute = false;
+    step.call();
+    step.execute = true;
+    step.call();
+    if(!step.outputs.done || step.outputs.error ||
+       axis.status() != axis::AxisStatus::standstill || axis.snapshot().error ||
+       axis.snapshot().homed || !near(axis.snapshot().command_position, 42.0, 1e-12)) {
+        return fail("step_direct succeeds after reset");
+    }
+
+    std::printf("  PASS step_direct_rejects_errorstop_until_reset\n");
+    return 0;
+}
+
+int check_step_direct_rejects_active_group_member()
+{
+    axis::AxisModel axes[2];
+    axis::AxisGroup group;
+    for(auto &member : axes) {
+        member.set_power(true);
+        member.set_homed();
+        group.add_axis(member);
+    }
+    group.enable();
+
+    axis::GroupCommand command{};
+    command.target.size = 2;
+    command.target.value[0] = 10.0;
+    command.target.value[1] = 5.0;
+    command.velocity = 0.1;
+    command.acceleration = 0.1;
+    command.deceleration = 0.1;
+    command.jerk = 0.1;
+    if(!group.submit_linear(command)) {
+        return fail("step_direct group motion setup");
+    }
+    for(int i = 0; i < 4; ++i) {
+        group.cycle();
+        for(auto &member : axes) { member.cycle(); }
+    }
+    if(group.status() != axis::GroupStatus::moving) {
+        return fail("step_direct group remains moving setup");
+    }
+
+    const axis::AxisSnapshot before = axes[0].snapshot();
+    fb::FbStepDirect step;
+    step.axis_ref = &axes[0];
+    step.set_position = 42.0;
+    step.execute = true;
+    step.call();
+
+    const axis::AxisSnapshot &after = axes[0].snapshot();
+    if(!step.outputs.error || step.outputs.error_id != rt::ErrorCode::invalid_argument ||
+       step.outputs.done || step.outputs.busy || step.outputs.active ||
+       group.status() != axis::GroupStatus::moving || !same_snapshot(after, before)) {
+        return fail("step_direct rejects active group member without side effects");
+    }
+
+    for(int i = 0; i < 4; ++i) {
+        group.cycle();
+        for(auto &member : axes) { member.cycle(); }
+    }
+    if(group.status() != axis::GroupStatus::moving ||
+       axes[0].snapshot().command_position == before.command_position) {
+        return fail("step_direct rejected group path continues");
+    }
+
+    std::printf("  PASS step_direct_rejects_active_group_member\n");
+    return 0;
+}
+
+int check_step_direct_group_binding_lifetime()
+{
+    axis::AxisModel axis;
+    axis.set_power(true);
+    {
+        axis::AxisGroup group;
+        group.add_axis(axis);
+        group.enable();
+
+        fb::FbStepDirect step;
+        step.axis_ref = &axis;
+        step.set_position = 3.0;
+        step.execute = true;
+        step.call();
+        if(!step.outputs.done || step.outputs.error ||
+           group.status() != axis::GroupStatus::standby ||
+           !near(axis.snapshot().command_position, 3.0, 1e-12)) {
+            return fail("step_direct allows standby group member");
+        }
+    }
+    if(axis.group_owner() != nullptr || axis.home_direct(4.0) != rt::ErrorCode::ok ||
+       !near(axis.snapshot().command_position, 4.0, 1e-12)) {
+        return fail("step_direct group destruction detaches member");
+    }
+
+    axis::AxisModel removed;
+    removed.set_power(true);
+    axis::AxisGroup group;
+    if(group.add_axis(removed) != rt::ErrorCode::ok ||
+       group.remove_axis(removed) != rt::ErrorCode::ok || removed.group_owner() != nullptr ||
+       removed.home_direct(5.0) != rt::ErrorCode::ok) {
+        return fail("step_direct group removal detaches member");
+    }
+
+    std::printf("  PASS step_direct_group_binding_lifetime\n");
     return 0;
 }
 
@@ -125,6 +353,249 @@ int check_finish_homing_with_park()
     }
 
     std::printf("  PASS finish_homing_with_park\n");
+    return 0;
+}
+
+int check_finish_homing_null_axis()
+{
+    fb::FbFinishHoming finish;
+    finish.execute = true;
+    finish.call();
+
+    if(!finish.outputs.error ||
+       finish.outputs.error_id != rt::ErrorCode::invalid_argument ||
+       finish.outputs.busy || finish.outputs.active) {
+        return fail("finish_homing null axis error");
+    }
+
+    std::printf("  PASS finish_homing_null_axis\n");
+    return 0;
+}
+
+int check_finish_homing_rejects_invalid_park_atomically()
+{
+    const double nan = std::numeric_limits<double>::quiet_NaN();
+    const double inf = std::numeric_limits<double>::infinity();
+    const auto rejects = [](double park, double velocity, double acceleration,
+                            double deceleration, double jerk) {
+        axis::AxisModel axis;
+        axis.set_power(true);
+        const axis::AxisSnapshot before = axis.snapshot();
+        fb::FbFinishHoming finish;
+        finish.axis_ref = &axis;
+        finish.park_enabled = true;
+        finish.park_position = park;
+        finish.velocity = velocity;
+        finish.acceleration = acceleration;
+        finish.deceleration = deceleration;
+        finish.jerk = jerk;
+        finish.execute = true;
+        finish.call();
+        return finish.outputs.error &&
+               finish.outputs.error_id == rt::ErrorCode::invalid_argument &&
+               !finish.outputs.done && !finish.outputs.busy && !finish.outputs.active &&
+               same_snapshot(axis.snapshot(), before);
+    };
+    if(!rejects(nan, 1.0, 1.0, 1.0, 1.0) ||
+       !rejects(0.0, nan, 1.0, 1.0, 1.0) ||
+       !rejects(0.0, 1.0, 0.0, 1.0, 1.0) ||
+       !rejects(0.0, 1.0, 1.0, inf, 1.0) ||
+       !rejects(0.0, 1.0, 1.0, 1.0, -1.0)) {
+        return fail("finish_homing invalid park is atomic");
+    }
+    return 0;
+}
+
+int check_finish_homing_rejects_soft_limit_park_atomically()
+{
+    axis::MotionLimits limits{};
+    limits.max_position = 1.0;
+    limits.max_position_enabled = true;
+
+    axis::AxisModel axis;
+    if(axis.configure_limits(limits) != rt::ErrorCode::ok) {
+        return fail("finish_homing soft limit configure");
+    }
+    axis.set_power(true);
+    axis.clear_homed();
+    const rt::Result<std::uint32_t> moving = submit_takeover(axis, 2.0);
+    if(!moving) {
+        return fail("finish_homing soft limit suspended setup");
+    }
+    axis.cycle();
+    const axis::AxisSnapshot before = axis.snapshot();
+    if(before.active_command_id != moving.value()) {
+        return fail("finish_homing soft limit active setup");
+    }
+
+    fb::FbFinishHoming finish;
+    finish.axis_ref = &axis;
+    finish.park_enabled = true;
+    finish.park_position = 3.0;
+    finish.velocity = 0.2;
+    finish.acceleration = 0.1;
+    finish.deceleration = 0.1;
+    finish.jerk = 0.1;
+    finish.execute = true;
+    finish.call();
+
+    if(!finish.outputs.error || finish.outputs.error_id != rt::ErrorCode::out_of_range ||
+       finish.outputs.done || finish.outputs.busy || finish.outputs.active ||
+       !same_snapshot(axis.snapshot(), before)) {
+        return fail("finish_homing rejects soft limit park without side effects");
+    }
+    if(!submit_takeover(axis, 4.0)) {
+        return fail("finish_homing rejected park keeps soft limits suspended");
+    }
+
+    std::printf("  PASS finish_homing_rejects_soft_limit_park_atomically\n");
+    return 0;
+}
+
+int check_finish_homing_rejects_unpowered_and_errorstop_atomically()
+{
+    axis::MotionLimits limits{};
+    limits.max_position = 1.0;
+    limits.max_position_enabled = true;
+
+    {
+        axis::AxisModel axis;
+        if(axis.configure_limits(limits) != rt::ErrorCode::ok) {
+            return fail("finish_homing unpowered limit configure");
+        }
+        axis.clear_homed();
+        const axis::AxisSnapshot before = axis.snapshot();
+
+        fb::FbFinishHoming finish;
+        finish.axis_ref = &axis;
+        finish.park_enabled = true;
+        finish.park_position = 0.5;
+        finish.execute = true;
+        finish.call();
+
+        if(!finish.outputs.error ||
+           finish.outputs.error_id != rt::ErrorCode::invalid_argument ||
+           finish.outputs.done || finish.outputs.busy || finish.outputs.active ||
+           !same_snapshot(axis.snapshot(), before)) {
+            return fail("finish_homing rejects unpowered axis without side effects");
+        }
+        axis.set_power(true);
+        if(!submit_takeover(axis, 2.0)) {
+            return fail("finish_homing unpowered rejection keeps soft limits suspended");
+        }
+    }
+
+    {
+        axis::AxisModel axis;
+        if(axis.configure_limits(limits) != rt::ErrorCode::ok) {
+            return fail("finish_homing errorstop limit configure");
+        }
+        axis.set_power(true);
+        axis.set_position(0.25);
+        axis.clear_homed();
+        axis.trigger_error();
+        const axis::AxisSnapshot before = axis.snapshot();
+
+        fb::FbFinishHoming finish;
+        finish.axis_ref = &axis;
+        finish.park_enabled = true;
+        finish.park_position = 0.5;
+        finish.execute = true;
+        finish.call();
+
+        if(!finish.outputs.error ||
+           finish.outputs.error_id != rt::ErrorCode::invalid_argument ||
+           finish.outputs.done || finish.outputs.busy || finish.outputs.active ||
+           !same_snapshot(axis.snapshot(), before)) {
+            return fail("finish_homing rejects errorstop axis without side effects");
+        }
+        if(axis.reset_error() != rt::ErrorCode::ok || !submit_takeover(axis, 2.0)) {
+            return fail("finish_homing errorstop rejection keeps soft limits suspended");
+        }
+    }
+
+    std::printf("  PASS finish_homing_rejects_unpowered_and_errorstop_atomically\n");
+    return 0;
+}
+
+int check_finish_homing_rejects_active_group_member_atomically()
+{
+    axis::MotionLimits limits{};
+    limits.max_position = 1.0;
+    limits.max_position_enabled = true;
+
+    axis::AxisModel axes[2];
+    axis::AxisGroup group;
+    for(auto &member : axes) {
+        if(member.configure_limits(limits) != rt::ErrorCode::ok) {
+            return fail("finish_homing group limit configure");
+        }
+        member.set_power(true);
+        member.set_homed();
+        if(group.add_axis(member) != rt::ErrorCode::ok) {
+            return fail("finish_homing group member setup");
+        }
+    }
+    if(group.enable() != rt::ErrorCode::ok) {
+        return fail("finish_homing group enable setup");
+    }
+
+    axis::GroupCommand command{};
+    command.target.size = 2;
+    command.target.value[0] = 0.5;
+    command.target.value[1] = 0.25;
+    command.velocity = 0.1;
+    command.acceleration = 0.1;
+    command.deceleration = 0.1;
+    command.jerk = 0.1;
+    if(!group.submit_linear(command)) {
+        return fail("finish_homing group motion setup");
+    }
+    for(int i = 0; i < 4; ++i) {
+        group.cycle();
+        for(auto &member : axes) { member.cycle(); }
+    }
+    if(group.status() != axis::GroupStatus::moving) {
+        return fail("finish_homing group moving setup");
+    }
+
+    axes[0].clear_homed();
+    const axis::AxisSnapshot before = axes[0].snapshot();
+    const axis::GroupStatus group_before = group.status();
+
+    fb::FbFinishHoming finish;
+    finish.axis_ref = &axes[0];
+    finish.park_enabled = true;
+    finish.park_position = 0.75;
+    finish.velocity = 0.1;
+    finish.acceleration = 0.1;
+    finish.deceleration = 0.1;
+    finish.jerk = 0.1;
+    finish.execute = true;
+    finish.call();
+
+    if(!finish.outputs.error ||
+       finish.outputs.error_id != rt::ErrorCode::invalid_argument ||
+       finish.outputs.done || finish.outputs.busy || finish.outputs.active ||
+       group.status() != group_before || !same_snapshot(axes[0].snapshot(), before)) {
+        return fail("finish_homing rejects active group member without side effects");
+    }
+
+    for(int i = 0; i < 4; ++i) {
+        group.cycle();
+        for(auto &member : axes) { member.cycle(); }
+    }
+    if(group.status() != axis::GroupStatus::moving ||
+       axes[0].snapshot().command_position == before.command_position) {
+        return fail("finish_homing rejected group path continues");
+    }
+
+    group.disable();
+    if(group.remove_axis(axes[0]) != rt::ErrorCode::ok || !submit_takeover(axes[0], 2.0)) {
+        return fail("finish_homing group rejection keeps soft limits suspended");
+    }
+
+    std::printf("  PASS finish_homing_rejects_active_group_member_atomically\n");
     return 0;
 }
 
@@ -223,6 +694,528 @@ int check_step_abs_switch_escape()
     }
 
     std::printf("  PASS step_abs_switch_escape\n");
+    return 0;
+}
+
+int check_search_validation_errors()
+{
+    axis::AxisModel axis;
+    axis.set_power(true);
+
+    fb::FbStepAbsSwitch abs_switch;
+    abs_switch.execute = true;
+    abs_switch.call();
+    if(!abs_switch.outputs.error ||
+       abs_switch.outputs.error_id != rt::ErrorCode::invalid_argument) {
+        return fail("abs_switch validates axis");
+    }
+
+    fb::FbStepLimitSwitch limit_switch;
+    limit_switch.axis_ref = &axis;
+    limit_switch.velocity = 0.0;
+    limit_switch.execute = true;
+    limit_switch.call();
+    if(!limit_switch.outputs.error ||
+       limit_switch.outputs.error_id != rt::ErrorCode::invalid_argument) {
+        return fail("limit_switch validates velocity");
+    }
+
+    fb::FbStepRefPulse ref_pulse;
+    ref_pulse.axis_ref = &axis;
+    ref_pulse.trigger_input = axis::AxisModel::DigitalInputCount;
+    ref_pulse.execute = true;
+    ref_pulse.call();
+    if(!ref_pulse.outputs.error ||
+       ref_pulse.outputs.error_id != rt::ErrorCode::invalid_argument) {
+        return fail("ref_pulse validates input");
+    }
+
+    std::printf("  PASS search_validation_errors\n");
+    return 0;
+}
+
+int check_search_start_errors()
+{
+    axis::AxisModel escape_axis;
+    escape_axis.set_homed();
+    escape_axis.set_digital_input(0, true);
+    const axis::AxisSnapshot escape_before = escape_axis.snapshot();
+    fb::FbStepAbsSwitch escape;
+    escape.axis_ref = &escape_axis;
+    escape.trigger_input = 0;
+    escape.execute = true;
+    escape.call();
+    if(!escape.outputs.error || escape.outputs.error_id != rt::ErrorCode::invalid_argument ||
+       escape.outputs.busy || escape.outputs.active ||
+       !same_snapshot(escape_axis.snapshot(), escape_before)) {
+        return fail("abs_switch escape submit error");
+    }
+
+    axis::AxisModel search_axis;
+    search_axis.set_homed();
+    const axis::AxisSnapshot search_before = search_axis.snapshot();
+    fb::FbStepAbsSwitch search;
+    search.axis_ref = &search_axis;
+    search.trigger_input = 0;
+    search.execute = true;
+    search.call();
+    if(!search.outputs.error || search.outputs.error_id != rt::ErrorCode::invalid_argument ||
+       search.outputs.busy || search.outputs.active ||
+       !same_snapshot(search_axis.snapshot(), search_before)) {
+        return fail("abs_switch search submit error");
+    }
+
+    axis::AxisModel limit_axis;
+    limit_axis.set_homed();
+    const axis::AxisSnapshot limit_before = limit_axis.snapshot();
+    fb::FbStepLimitSwitch limit;
+    limit.axis_ref = &limit_axis;
+    limit.trigger_input = 1;
+    limit.execute = true;
+    limit.call();
+    if(!limit.outputs.error || limit.outputs.error_id != rt::ErrorCode::invalid_argument ||
+       limit.outputs.busy || limit.outputs.active ||
+       !same_snapshot(limit_axis.snapshot(), limit_before)) {
+        return fail("limit_switch search submit error");
+    }
+
+    axis::AxisModel pulse_axis;
+    pulse_axis.set_homed();
+    const axis::AxisSnapshot pulse_before = pulse_axis.snapshot();
+    fb::FbStepRefPulse pulse;
+    pulse.axis_ref = &pulse_axis;
+    pulse.trigger_input = 2;
+    pulse.execute = true;
+    pulse.call();
+    if(!pulse.outputs.error || pulse.outputs.error_id != rt::ErrorCode::invalid_argument ||
+       pulse.outputs.busy || pulse.outputs.active ||
+       !same_snapshot(pulse_axis.snapshot(), pulse_before)) {
+        return fail("ref_pulse search submit error");
+    }
+
+    axis::AxisModel errorstop_axis;
+    errorstop_axis.set_power(true);
+    errorstop_axis.set_position(7.0);
+    errorstop_axis.set_homed();
+    errorstop_axis.trigger_error();
+    const axis::AxisSnapshot errorstop_before = errorstop_axis.snapshot();
+    fb::FbStepAbsSwitch errorstop;
+    errorstop.axis_ref = &errorstop_axis;
+    errorstop.trigger_input = 0;
+    errorstop.execute = true;
+    errorstop.call();
+    if(!errorstop.outputs.error ||
+       errorstop.outputs.error_id != rt::ErrorCode::invalid_argument ||
+       errorstop.outputs.busy || errorstop.outputs.active ||
+       !same_snapshot(errorstop_axis.snapshot(), errorstop_before)) {
+        return fail("abs_switch rejects errorstop without side effects");
+    }
+
+    std::printf("  PASS search_start_errors\n");
+    return 0;
+}
+
+int check_search_step_group_guard()
+{
+    axis::AxisModel axes[2];
+    axis::AxisGroup group;
+    for(auto &member : axes) {
+        member.set_power(true);
+        member.set_homed();
+        group.add_axis(member);
+    }
+    group.enable();
+
+    axis::GroupCommand command{};
+    command.target.size = 2;
+    command.target.value[0] = 10.0;
+    command.target.value[1] = 5.0;
+    command.velocity = 0.1;
+    command.acceleration = 0.1;
+    command.deceleration = 0.1;
+    command.jerk = 0.1;
+    if(!group.submit_linear(command)) {
+        return fail("search group guard setup");
+    }
+    for(int i = 0; i < 4; ++i) {
+        group.cycle();
+        for(auto &member : axes) { member.cycle(); }
+    }
+    const axis::AxisSnapshot before = axes[0].snapshot();
+
+    fb::FbStepAbsSwitch rejected;
+    rejected.axis_ref = &axes[0];
+    rejected.trigger_input = 0;
+    rejected.execute = true;
+    rejected.call();
+    if(!rejected.outputs.error ||
+       rejected.outputs.error_id != rt::ErrorCode::invalid_argument ||
+       rejected.outputs.busy || rejected.outputs.active ||
+       group.status() != axis::GroupStatus::moving ||
+       !same_snapshot(axes[0].snapshot(), before)) {
+        return fail("search rejects active group member without side effects");
+    }
+
+    for(int i = 0; i < 4; ++i) {
+        group.cycle();
+        for(auto &member : axes) { member.cycle(); }
+    }
+    if(group.status() != axis::GroupStatus::moving ||
+       axes[0].snapshot().command_position == before.command_position) {
+        return fail("search rejected group path continues");
+    }
+
+    axis::AxisModel standby_axis;
+    standby_axis.set_power(true);
+    standby_axis.set_homed();
+    axis::AxisGroup standby_group;
+    standby_group.add_axis(standby_axis);
+    standby_group.enable();
+    fb::FbStepRefPulse allowed;
+    allowed.axis_ref = &standby_axis;
+    allowed.trigger_input = 0;
+    allowed.execute = true;
+    allowed.call();
+    if(allowed.outputs.error || !allowed.outputs.busy || !allowed.outputs.active ||
+       standby_group.status() != axis::GroupStatus::standby ||
+       standby_axis.status() != axis::AxisStatus::continuous_motion ||
+       standby_axis.snapshot().homed) {
+        return fail("search allows standby group member");
+    }
+
+    std::printf("  PASS search_step_group_guard\n");
+    return 0;
+}
+
+int check_search_axis_error_and_reset()
+{
+    axis::AxisModel axis;
+    axis.set_power(true);
+
+    fb::FbStepAbsSwitch step;
+    step.axis_ref = &axis;
+    step.trigger_input = 0;
+    step.execute = true;
+    step.call();
+    if(!step.outputs.busy || step.outputs.error) {
+        return fail("search axis error setup");
+    }
+
+    axis.trigger_error();
+    step.call();
+    if(!step.outputs.error ||
+       step.outputs.error_id != rt::ErrorCode::precondition_failed ||
+       step.outputs.busy || step.outputs.active) {
+        return fail("search reports axis errorstop");
+    }
+    if(axis.reset_error() != rt::ErrorCode::ok) {
+        return fail("search axis reset");
+    }
+
+    step.execute = false;
+    step.call();
+    if(step.outputs.error || step.outputs.busy || step.outputs.active) {
+        return fail("search falling edge clears error");
+    }
+    step.execute = true;
+    step.call();
+    if(!step.outputs.busy || !step.outputs.active || step.outputs.error) {
+        return fail("search restarts after reset");
+    }
+
+    std::printf("  PASS search_axis_error_and_reset\n");
+    return 0;
+}
+
+int check_abs_switch_escape_takeover()
+{
+    axis::AxisModel axis;
+    axis.set_power(true);
+    axis.set_digital_input(0, true);
+
+    fb::FbStepAbsSwitch step;
+    step.axis_ref = &axis;
+    step.trigger_input = 0;
+    step.execute = true;
+    step.call();
+    const std::uint32_t search_id = axis.snapshot().active_command_id;
+    const rt::Result<std::uint32_t> takeover = submit_takeover(axis, 1.0);
+    if(search_id == 0 || !takeover || takeover.value() == search_id) {
+        return fail("abs_switch escape takeover setup");
+    }
+    step.call();
+    if(!aborted_without_revival(step.outputs) || axis.probe_command_id(0) != 0) {
+        return fail("abs_switch escape reports takeover");
+    }
+    for(int cycle = 0; cycle < 1000 &&
+                       axis.snapshot().last_completed_command_id != takeover.value();
+        ++cycle) {
+        axis.cycle();
+        step.call();
+        if(!aborted_without_revival(step.outputs)) {
+            return fail("abs_switch escape does not revive");
+        }
+    }
+    if(axis.snapshot().last_completed_command_id != takeover.value()) {
+        return fail("abs_switch escape takeover completes");
+    }
+    return 0;
+}
+
+int check_limit_switch_search_takeover()
+{
+    axis::AxisModel axis;
+    axis.set_power(true);
+
+    fb::FbStepLimitSwitch step;
+    step.axis_ref = &axis;
+    step.trigger_input = 1;
+    step.execute = true;
+    step.call();
+    const std::uint32_t search_id = axis.snapshot().active_command_id;
+    const rt::Result<std::uint32_t> takeover = submit_takeover(axis, 1.0);
+    if(search_id == 0 || axis.probe_command_id(1) == 0 || !takeover ||
+       takeover.value() == search_id) {
+        return fail("limit_switch search takeover setup");
+    }
+    step.call();
+    if(!aborted_without_revival(step.outputs) || axis.probe_command_id(1) != 0) {
+        return fail("limit_switch search reports takeover");
+    }
+    for(int cycle = 0; cycle < 1000 &&
+                       axis.snapshot().last_completed_command_id != takeover.value();
+        ++cycle) {
+        axis.cycle();
+        step.call();
+        if(!aborted_without_revival(step.outputs)) {
+            return fail("limit_switch search does not revive");
+        }
+    }
+    if(axis.snapshot().last_completed_command_id != takeover.value()) {
+        return fail("limit_switch search takeover completes");
+    }
+    return 0;
+}
+
+int check_ref_pulse_halting_takeover()
+{
+    axis::AxisModel axis;
+    axis.set_power(true);
+
+    fb::FbStepRefPulse step;
+    step.axis_ref = &axis;
+    step.trigger_input = 2;
+    step.execute = true;
+    step.call();
+    axis.set_digital_input(2, true);
+    axis.cycle();
+    step.call();
+    const std::uint32_t halt_id = axis.snapshot().active_command_id;
+    const rt::Result<std::uint32_t> takeover = submit_takeover(axis, 1.0);
+    if(halt_id == 0 || !takeover || takeover.value() == halt_id) {
+        return fail("ref_pulse halting takeover setup");
+    }
+    step.call();
+    if(!aborted_without_revival(step.outputs) || axis.probe_command_id(2) != 0) {
+        return fail("ref_pulse halting reports takeover");
+    }
+    for(int cycle = 0; cycle < 1000 &&
+                       axis.snapshot().last_completed_command_id != takeover.value();
+        ++cycle) {
+        axis.cycle();
+        step.call();
+        if(!aborted_without_revival(step.outputs)) {
+            return fail("ref_pulse halting does not revive");
+        }
+    }
+    if(axis.snapshot().last_completed_command_id != takeover.value()) {
+        return fail("ref_pulse halting takeover completes");
+    }
+    return 0;
+}
+
+int check_ref_pulse_positioning_takeover()
+{
+    axis::AxisModel axis;
+    axis.set_power(true);
+
+    fb::FbStepRefPulse step;
+    step.axis_ref = &axis;
+    step.trigger_input = 2;
+    step.offset = 1.0;
+    step.execute = true;
+    step.call();
+    axis.set_digital_input(2, true);
+    axis.cycle();
+    step.call();
+    const std::uint32_t halt_id = axis.snapshot().active_command_id;
+    for(int cycle = 0; cycle < 1000 &&
+                       axis.snapshot().last_completed_command_id != halt_id;
+        ++cycle) {
+        axis.cycle();
+        step.call();
+    }
+    const std::uint32_t positioning_id = axis.snapshot().active_command_id;
+    const rt::Result<std::uint32_t> takeover = submit_takeover(axis, 2.0);
+    if(halt_id == 0 || positioning_id == 0 || positioning_id == halt_id || !takeover ||
+       takeover.value() == positioning_id) {
+        return fail("ref_pulse positioning takeover setup");
+    }
+    step.call();
+    if(!aborted_without_revival(step.outputs) || axis.probe_command_id(2) != 0) {
+        return fail("ref_pulse positioning reports takeover");
+    }
+    for(int cycle = 0; cycle < 1000 &&
+                       axis.snapshot().last_completed_command_id != takeover.value();
+        ++cycle) {
+        axis.cycle();
+        step.call();
+        if(!aborted_without_revival(step.outputs)) {
+            return fail("ref_pulse positioning does not revive");
+        }
+    }
+    if(axis.snapshot().last_completed_command_id != takeover.value()) {
+        return fail("ref_pulse positioning takeover completes");
+    }
+    return 0;
+}
+
+int check_search_falling_edge_stops_motion()
+{
+    axis::AxisModel axis;
+    axis.set_power(true);
+
+    fb::FbStepLimitSwitch step;
+    step.axis_ref = &axis;
+    step.trigger_input = 1;
+    step.execute = true;
+    step.call();
+    const std::uint32_t search_id = axis.snapshot().active_command_id;
+    if(search_id == 0 || axis.probe_command_id(1) == 0) {
+        return fail("search falling edge setup");
+    }
+
+    step.execute = false;
+    step.call();
+    if(step.outputs.busy || step.outputs.active || step.outputs.done ||
+       step.outputs.command_aborted || step.outputs.error ||
+       axis.snapshot().active_command_id == search_id || axis.probe_command_id(1) != 0) {
+        return fail("search falling edge releases search ownership");
+    }
+    for(int cycle = 0; cycle < 1000 && axis.status() != axis::AxisStatus::standstill; ++cycle) {
+        axis.cycle();
+    }
+    if(axis.status() != axis::AxisStatus::standstill ||
+       !near(axis.snapshot().command_velocity, 0.0, 1e-9)) {
+        return fail("search falling edge controlled stop");
+    }
+    return 0;
+}
+
+int check_search_does_not_abort_rearmed_probe()
+{
+    axis::AxisModel axis;
+    axis.set_power(true);
+
+    fb::FbStepLimitSwitch step;
+    step.axis_ref = &axis;
+    step.trigger_input = 1;
+    step.execute = true;
+    step.call();
+    const std::uint32_t old_probe = axis.probe_command_id(1);
+    const rt::Result<std::uint32_t> takeover = submit_takeover(axis, 1.0);
+    const rt::Result<std::uint32_t> replacement =
+        axis.arm_touch_probe(1, false, 0.0, 0.0);
+    if(old_probe == 0 || !takeover || !replacement || replacement.value() == old_probe) {
+        return fail("search probe rearm setup");
+    }
+
+    step.call();
+    if(!aborted_without_revival(step.outputs) ||
+       axis.probe_command_id(1) != replacement.value()) {
+        return fail("old search preserves rearmed probe");
+    }
+    axis.set_digital_input(1, true);
+    axis.cycle();
+    step.call();
+    if(!axis.probe_captured(1) || axis.probe_command_id(1) != replacement.value() ||
+       !aborted_without_revival(step.outputs)) {
+        return fail("old search does not consume replacement probe");
+    }
+    return 0;
+}
+
+int check_homing_soft_limit_lifecycle()
+{
+    axis::MotionLimits limits{};
+    limits.min_position = -1.0;
+    limits.max_position = 1.0;
+    limits.min_position_enabled = true;
+    limits.max_position_enabled = true;
+
+    axis::AxisModel axis;
+    if(axis.configure_limits(limits) != rt::ErrorCode::ok) {
+        return fail("homing soft limit configure");
+    }
+    axis.set_power(true);
+    fb::FbStepRefPulse step;
+    step.axis_ref = &axis;
+    step.velocity = 0.05;
+    step.acceleration = 0.01;
+    step.deceleration = 0.01;
+    step.jerk = 0.005;
+    step.offset = 2.0;
+    step.trigger_input = 2;
+    step.execute = true;
+    step.call();
+    bool fired = false;
+    for(int cycle = 0; cycle < 5000 && !step.outputs.done && !step.outputs.error; ++cycle) {
+        if(!fired && axis.snapshot().command_position > 0.5) {
+            axis.set_digital_input(2, true);
+            fired = true;
+        }
+        axis.cycle();
+        step.call();
+    }
+    if(!step.outputs.done || step.outputs.error) {
+        return fail("homing positioning bypasses old soft limit");
+    }
+
+    fb::FbFinishHoming finish;
+    finish.axis_ref = &axis;
+    finish.execute = true;
+    finish.call();
+    if(!finish.outputs.done || finish.outputs.error ||
+       submit_takeover(axis, 2.0).error() != rt::ErrorCode::out_of_range) {
+        return fail("finish homing restores soft limits");
+    }
+
+    axis::AxisModel direct;
+    if(direct.configure_limits(limits) != rt::ErrorCode::ok) {
+        return fail("home_direct limit configure");
+    }
+    direct.set_power(true);
+    if(direct.home_direct(0.0) != rt::ErrorCode::ok ||
+       submit_takeover(direct, 2.0).error() != rt::ErrorCode::out_of_range) {
+        return fail("home_direct does not suspend soft limits");
+    }
+
+    axis::AxisModel member;
+    if(member.configure_limits(limits) != rt::ErrorCode::ok) {
+        return fail("group_home limit configure");
+    }
+    member.set_power(true);
+    axis::AxisGroup group;
+    group.add_axis(member);
+    group.enable();
+    fb::FbGroupHome group_home;
+    group_home.group_ref = &group;
+    group_home.execute = true;
+    group_home.call();
+    if(!group_home.outputs.done || group_home.outputs.error ||
+       submit_takeover(member, 2.0).error() != rt::ErrorCode::out_of_range) {
+        return fail("group_home does not suspend soft limits");
+    }
     return 0;
 }
 
@@ -522,10 +1515,30 @@ int main()
     int failures = 0;
     failures += check_step_direct_basic();
     failures += check_step_direct_null_axis();
+    failures += check_step_direct_aborting_takeover();
+    failures += check_step_direct_rejects_errorstop_until_reset();
+    failures += check_step_direct_rejects_active_group_member();
+    failures += check_step_direct_group_binding_lifetime();
     failures += check_finish_homing_no_park();
     failures += check_finish_homing_with_park();
+    failures += check_finish_homing_null_axis();
+    failures += check_finish_homing_rejects_invalid_park_atomically();
+    failures += check_finish_homing_rejects_soft_limit_park_atomically();
+    failures += check_finish_homing_rejects_unpowered_and_errorstop_atomically();
+    failures += check_finish_homing_rejects_active_group_member_atomically();
     failures += check_step_abs_switch_basic();
     failures += check_step_abs_switch_escape();
+    failures += check_search_validation_errors();
+    failures += check_search_start_errors();
+    failures += check_search_step_group_guard();
+    failures += check_search_axis_error_and_reset();
+    failures += check_abs_switch_escape_takeover();
+    failures += check_limit_switch_search_takeover();
+    failures += check_ref_pulse_halting_takeover();
+    failures += check_ref_pulse_positioning_takeover();
+    failures += check_search_falling_edge_stops_motion();
+    failures += check_search_does_not_abort_rearmed_probe();
+    failures += check_homing_soft_limit_lifecycle();
     failures += check_step_limit_switch_basic();
     failures += check_step_limit_switch_already_triggered();
     failures += check_step_ref_pulse_basic();

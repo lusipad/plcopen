@@ -6,6 +6,7 @@
 
 #include <cmath>
 #include <cstdio>
+#include <limits>
 
 #include "stream/filter.h"
 #include "stream/joint_group.h"
@@ -40,9 +41,9 @@ stream::StreamFilterConfig test_config(std::int64_t timeout_cycles,
     return config;
 }
 
-// Per-cycle envelope assertion. The jerk bound carries a 1.25x slack: the
-// quintic correction segments are validated at 96 sample points during
-// planning, so between-sample peaks may exceed the bound by a small margin.
+// Per-cycle envelope assertion. The jerk bound carries a 1.25x slack because
+// general fixed-time/baseline quintic candidates still use the OTG 96-point
+// dynamics verifier. Position-envelope acceptance is proved analytically.
 struct EnvelopeGuard
 {
     otg::State1D previous{};
@@ -83,6 +84,382 @@ stream::StreamTarget velocity_target(double position, double velocity, std::int6
     target.velocity = velocity;
     target.has_velocity = true;
     return target;
+}
+
+int check_invalid_inputs()
+{
+    stream::StreamFilter1D filter;
+    stream::StreamFilterConfig config = test_config(20, 40);
+    config.limits.max_velocity = 0.0;
+    if(filter.configure(config) != rt::ErrorCode::invalid_argument) {
+        return fail("invalid limits rejected");
+    }
+
+    config = test_config(20, 40);
+    config.position_envelope_enabled = true;
+    config.min_position = 1.0;
+    config.max_position = -1.0;
+    if(filter.configure(config) != rt::ErrorCode::invalid_argument) {
+        return fail("invalid envelope rejected");
+    }
+
+    if(filter.configure(test_config(20, 40)) != rt::ErrorCode::ok) {
+        return fail("invalid input setup");
+    }
+    const double nan = std::numeric_limits<double>::quiet_NaN();
+    if(filter.reset({nan, 0.0, 0.0}) != rt::ErrorCode::invalid_argument ||
+       filter.reset({0.0, 0.0, 0.0}) != rt::ErrorCode::ok ||
+       filter.push_target(position_target(nan, 1)) != rt::ErrorCode::invalid_argument) {
+        return fail("non-finite state or target rejected");
+    }
+    stream::StreamFilterConfig late_config = test_config(20, 40);
+    late_config.position_envelope_enabled = true;
+    late_config.min_position = -1.0;
+    late_config.max_position = 1.0;
+    if(filter.configure(late_config) != rt::ErrorCode::invalid_argument) {
+        return fail("configure must precede reset");
+    }
+    filter.end_session();
+    if(filter.configure(late_config) != rt::ErrorCode::ok) {
+        return fail("configure allowed after session end");
+    }
+    return 0;
+}
+
+int check_normalized_position_envelope_proof()
+{
+    stream::StreamFilterConfig config{};
+    config.limits = {1.0, 1.0, 1.0, 1.0};
+    config.timeout_cycles = 100;
+    config.position_envelope_enabled = true;
+
+    for(int fast_path = 0; fast_path <= 1; ++fast_path) {
+        config.quintic_fast_path = fast_path != 0;
+        for(int sign = -1; sign <= 1; sign += 2) {
+            const double direction = static_cast<double>(sign);
+            config.min_position = sign < 0 ? -1.0 : 0.0;
+            config.max_position = sign < 0 ? 0.0 : 1.0;
+            stream::StreamFilter1D filter;
+            if(filter.configure(config) != rt::ErrorCode::ok ||
+               filter.reset({0.0, direction, 0.0}) != rt::ErrorCode::ok ||
+               filter.push_target(velocity_target(0.0, direction * 1e-16, 1)) !=
+                   rt::ErrorCode::ok) {
+                return fail("normalized position envelope setup");
+            }
+
+            for(int cycle = 0; cycle < 2; ++cycle) {
+                const otg::State1D state = filter.cycle();
+                if(state.position < config.min_position ||
+                   state.position > config.max_position) {
+                    return fail("normalized position envelope proof");
+                }
+            }
+        }
+    }
+
+    const double extreme_jerks[] = {1e-60, std::numeric_limits<double>::denorm_min()};
+    for(double max_jerk : extreme_jerks) {
+        stream::StreamFilterConfig extreme{};
+        extreme.limits = {1.0, 1.0, 1.0, max_jerk};
+        extreme.timeout_cycles = 1000000;
+        stream::StreamFilter1D reference;
+        stream::StreamFilter1D filter;
+        if(reference.configure(extreme) != rt::ErrorCode::ok ||
+           filter.configure(extreme) != rt::ErrorCode::ok ||
+           reference.reset({0.0, 0.0, 0.0}) != rt::ErrorCode::ok ||
+           filter.reset({0.0, 0.0, 0.0}) != rt::ErrorCode::ok ||
+           reference.push_target(velocity_target(0.0, 0.0, 1)) != rt::ErrorCode::ok ||
+           filter.push_target(velocity_target(0.0, 1.0, 1)) != rt::ErrorCode::ok) {
+            return fail("extreme horizon setup");
+        }
+        for(int cycle = 0; cycle < 4; ++cycle) {
+            const otg::State1D expected = reference.cycle();
+            const otg::State1D actual = filter.cycle();
+            if(!std::isfinite(actual.position) || !std::isfinite(actual.velocity) ||
+               !std::isfinite(actual.acceleration) || actual.position != expected.position ||
+               actual.velocity != expected.velocity ||
+               actual.acceleration != expected.acceleration) {
+                return fail("extreme horizon falls back before integer conversion");
+            }
+        }
+    }
+    return 0;
+}
+
+int check_moving_target_envelope()
+{
+    stream::StreamFilterConfig config = test_config(1000000, 0);
+    config.position_envelope_enabled = true;
+    config.min_position = -1.0;
+    config.max_position = 1.0;
+
+    for(int fast_path = 0; fast_path <= 1; ++fast_path) {
+        config.quintic_fast_path = fast_path != 0;
+        for(int sign = -1; sign <= 1; sign += 2) {
+            const double direction = static_cast<double>(sign);
+
+            // Fixed-seed public-API reproducer (seed 0x7F4A7C15, attempt 5):
+            // the shortest rest-to-boundary profile crossed 1.0 at cycle 17.
+            // Mirror it to prove the lower and upper envelopes with both
+            // solver configurations.
+            stream::StreamFilter1D profile_filter;
+            const otg::State1D profile_initial{0.10772829055786133 * direction,
+                                               0.0, 0.0};
+            if(profile_filter.configure(config) != rt::ErrorCode::ok ||
+               profile_filter.reset(profile_initial) != rt::ErrorCode::ok ||
+               profile_filter.push_target(
+                   velocity_target(3.7771422266960144 * direction,
+                                   0.20904370605945588 * direction, 1)) !=
+                   rt::ErrorCode::ok) {
+                return fail("profile envelope setup");
+            }
+            EnvelopeGuard profile_guard;
+            profile_guard.previous = profile_initial;
+            profile_guard.primed = true;
+            otg::State1D profile_state{};
+            for(int cycle = 0; cycle < 256; ++cycle) {
+                profile_state = profile_filter.cycle();
+                if(!std::isfinite(profile_state.position) ||
+                   !std::isfinite(profile_state.velocity) ||
+                   !std::isfinite(profile_state.acceleration) ||
+                   profile_state.position < config.min_position - 1e-9 ||
+                   profile_state.position > config.max_position + 1e-9 ||
+                   !profile_guard.admit(profile_state)) {
+                    return fail("profile remains in position envelope");
+                }
+            }
+            if(!near(profile_state.position, direction, 1e-6) ||
+               !near(profile_state.velocity, 0.0, 1e-9) ||
+               !profile_filter.clamped() || profile_filter.filter_faults() != 0) {
+                return fail("profile reaches clamped envelope boundary");
+            }
+
+            stream::StreamFilter1D filter;
+            const otg::State1D initial{0.4 * direction, 0.0, 0.0};
+            if(filter.configure(config) != rt::ErrorCode::ok ||
+               filter.reset(initial) != rt::ErrorCode::ok ||
+               filter.push_target(position_target(initial.position, 1)) != rt::ErrorCode::ok ||
+               filter.push_target(
+                   velocity_target(5.0 * direction, 0.1 * direction, 21)) !=
+                   rt::ErrorCode::ok) {
+                return fail("moving envelope setup");
+            }
+
+            EnvelopeGuard guard;
+            guard.previous = initial;
+            guard.primed = true;
+            const double boundary = direction > 0.0 ? config.max_position
+                                                    : config.min_position;
+            int boundary_ticks = 0;
+            for(int cycle = 0; cycle < 256 && boundary_ticks < 3; ++cycle) {
+                const otg::State1D state = filter.cycle();
+                if(!std::isfinite(state.position) || !std::isfinite(state.velocity) ||
+                   !std::isfinite(state.acceleration) ||
+                   state.position < config.min_position - 1e-9 ||
+                   state.position > config.max_position + 1e-9 || !guard.admit(state)) {
+                    return fail("moving target remains in envelope");
+                }
+                if(near(state.position, boundary, 1e-9)) {
+                    ++boundary_ticks;
+                } else if(boundary_ticks != 0) {
+                    return fail("moving target holds envelope boundary");
+                }
+            }
+            if(!filter.clamped() || boundary_ticks < 3) {
+                return fail("moving target reaches envelope boundary");
+            }
+
+            stream::StreamFilterConfig near_config = config;
+            near_config.min_position = -2.15;
+            near_config.max_position = 2.15;
+            stream::StreamFilter1D near_filter;
+            const otg::State1D near_initial{direction, 0.0, 0.0};
+            if(near_filter.configure(near_config) != rt::ErrorCode::ok ||
+               near_filter.reset(near_initial) != rt::ErrorCode::ok ||
+               near_filter.push_target(position_target(0.0, -19)) != rt::ErrorCode::ok ||
+               near_filter.push_target(velocity_target(0.0, 0.1 * direction, 1)) !=
+                   rt::ErrorCode::ok) {
+                return fail("near-boundary moving envelope setup");
+            }
+
+            EnvelopeGuard near_guard;
+            near_guard.previous = near_initial;
+            near_guard.primed = true;
+            const double near_boundary =
+                direction > 0.0 ? near_config.max_position : near_config.min_position;
+            int near_boundary_ticks = 0;
+            for(int cycle = 0; cycle < 256 && near_boundary_ticks < 3; ++cycle) {
+                const otg::State1D state = near_filter.cycle();
+                if(!std::isfinite(state.position) || !std::isfinite(state.velocity) ||
+                   !std::isfinite(state.acceleration) ||
+                   state.position < near_config.min_position - 1e-9 ||
+                   state.position > near_config.max_position + 1e-9 ||
+                   !near_guard.admit(state)) {
+                    return fail("near-boundary moving target remains in envelope");
+                }
+                if(near(state.position, near_boundary, 1e-9)) {
+                    ++near_boundary_ticks;
+                } else if(near_boundary_ticks != 0) {
+                    return fail("near-boundary moving target holds envelope boundary");
+                }
+            }
+            if(near_boundary_ticks < 3) {
+                return fail("moving target line reaches envelope boundary safely");
+            }
+
+            stream::StreamFilterConfig coast_config = config;
+            coast_config.min_position = -10.0625;
+            coast_config.max_position = 10.0625;
+            stream::StreamFilter1D coast_filter;
+            if(coast_filter.configure(coast_config) != rt::ErrorCode::ok ||
+               coast_filter.reset(near_initial) != rt::ErrorCode::ok ||
+               coast_filter.push_target(position_target(0.0, -19)) != rt::ErrorCode::ok ||
+               coast_filter.push_target(velocity_target(0.0, 0.125 * direction, 1)) !=
+                   rt::ErrorCode::ok) {
+                return fail("long-coast moving envelope setup");
+            }
+
+            EnvelopeGuard coast_guard;
+            coast_guard.previous = near_initial;
+            coast_guard.primed = true;
+            const double coast_boundary =
+                direction > 0.0 ? coast_config.max_position : coast_config.min_position;
+            int coast_boundary_ticks = 0;
+            for(int cycle = 0; cycle < 512 && coast_boundary_ticks < 3; ++cycle) {
+                const otg::State1D state = coast_filter.cycle();
+                if(!std::isfinite(state.position) || !std::isfinite(state.velocity) ||
+                   !std::isfinite(state.acceleration) ||
+                   state.position < coast_config.min_position - 1e-9 ||
+                   state.position > coast_config.max_position + 1e-9 ||
+                   !coast_guard.admit(state)) {
+                    return fail("long coast remains in moving envelope");
+                }
+                if(near(state.position, coast_boundary, 1e-9)) {
+                    ++coast_boundary_ticks;
+                } else if(coast_boundary_ticks != 0) {
+                    return fail("long coast holds envelope boundary");
+                }
+            }
+            if(coast_boundary_ticks < 3) {
+                return fail("long coast reaches envelope boundary safely");
+            }
+        }
+    }
+    return 0;
+}
+
+int check_quintic_fast_path_coast()
+{
+    stream::StreamFilterConfig config{};
+    config.limits = {1.0, 1.0, 1.0, 1.0};
+    config.timeout_cycles = 1000000;
+    config.quintic_fast_path = true;
+
+    stream::StreamFilter1D filter;
+    if(filter.configure(config) != rt::ErrorCode::ok ||
+       filter.reset({0.0, 0.0, 0.0}) != rt::ErrorCode::ok ||
+       filter.push_target(position_target(0.0, -19)) != rt::ErrorCode::ok ||
+       filter.push_target(velocity_target(2.0, 0.1, 1)) != rt::ErrorCode::ok) {
+        return fail("quintic fast path setup");
+    }
+
+    otg::State1D state{};
+    for(int i = 0; i <= 20; ++i) {
+        state = filter.cycle();
+    }
+    if(!near(state.position, 4.1, 1e-10) || !near(state.velocity, 0.1, 1e-12) ||
+       state.acceleration != 0.0 || filter.filter_faults() != 0) {
+        return fail("quintic fast path coasts after rendezvous");
+    }
+    return 0;
+}
+
+int check_unrepresentable_tracking_horizon()
+{
+    stream::StreamFilterConfig config{};
+    config.limits = {1.0, 1.0, 1.0, 1.0};
+    config.timeout_cycles = 1000000;
+    config.position_envelope_enabled = true;
+    config.min_position = -16.0;
+    config.max_position = 16.0;
+
+    for(int fast_path = 0; fast_path <= 1; ++fast_path) {
+        config.quintic_fast_path = fast_path != 0;
+        stream::StreamFilter1D reference;
+        stream::StreamFilter1D filter;
+        if(reference.configure(config) != rt::ErrorCode::ok ||
+           filter.configure(config) != rt::ErrorCode::ok ||
+           reference.reset({0.0, 1.0, 0.0}) != rt::ErrorCode::ok ||
+           filter.reset({0.0, 1.0, 0.0}) != rt::ErrorCode::ok ||
+           reference.push_target(velocity_target(0.0, 0.0, 1)) != rt::ErrorCode::ok ||
+           filter.push_target(velocity_target(0.0, 1e-20, 1)) != rt::ErrorCode::ok) {
+            return fail("unrepresentable tracking horizon setup");
+        }
+
+        for(int cycle = 0; cycle < 128; ++cycle) {
+            const otg::State1D expected = reference.cycle();
+            const otg::State1D actual = filter.cycle();
+            if(!std::isfinite(actual.position) || !std::isfinite(actual.velocity) ||
+               !std::isfinite(actual.acceleration) || actual.position < config.min_position ||
+               actual.position > config.max_position ||
+               !near(actual.position, expected.position, 1e-15) ||
+               !near(actual.velocity, expected.velocity, 1e-15) ||
+               !near(actual.acceleration, expected.acceleration, 1e-15)) {
+                return fail("unrepresentable tracking horizon falls back to rest");
+            }
+        }
+    }
+    return 0;
+}
+
+int check_running_configure_is_atomic()
+{
+    stream::StreamFilterConfig config{};
+    config.limits = {1.0, 1.0, 1.0, 1.0};
+    config.timeout_cycles = 100;
+    config.quintic_fast_path = true;
+
+    stream::StreamFilter1D reference;
+    stream::StreamFilter1D filter;
+    if(reference.configure(config) != rt::ErrorCode::ok ||
+       filter.configure(config) != rt::ErrorCode::ok ||
+       reference.reset({0.0, 0.0, 0.0}) != rt::ErrorCode::ok ||
+       filter.reset({0.0, 0.0, 0.0}) != rt::ErrorCode::ok ||
+       reference.push_target(position_target(0.0, -19)) != rt::ErrorCode::ok ||
+       filter.push_target(position_target(0.0, -19)) != rt::ErrorCode::ok ||
+       reference.push_target(velocity_target(2.0, 0.1, 1)) != rt::ErrorCode::ok ||
+       filter.push_target(velocity_target(2.0, 0.1, 1)) != rt::ErrorCode::ok) {
+        return fail("running configure setup");
+    }
+
+    const otg::State1D first_reference = reference.cycle();
+    const otg::State1D first = filter.cycle();
+    if(!near(first.position, first_reference.position, 1e-15) ||
+       !near(first.velocity, first_reference.velocity, 1e-15) ||
+       !near(first.acceleration, first_reference.acceleration, 1e-15)) {
+        return fail("running configure initial profile");
+    }
+
+    stream::StreamFilterConfig rejecting = config;
+    rejecting.position_envelope_enabled = true;
+    rejecting.min_position = first.position;
+    rejecting.max_position = first.position;
+    if(filter.configure(rejecting) != rt::ErrorCode::invalid_argument) {
+        return fail("running configure rejected");
+    }
+
+    const otg::State1D expected = reference.cycle();
+    const otg::State1D actual = filter.cycle();
+    if(filter.filter_faults() != 0 || !near(actual.position, expected.position, 1e-15) ||
+       !near(actual.velocity, expected.velocity, 1e-15) ||
+       !near(actual.acceleration, expected.acceleration, 1e-15)) {
+        return fail("running configure retains profile");
+    }
+    if(filter.push_target(position_target(5.0, 2)) != rt::ErrorCode::ok ||
+       filter.clamped()) {
+        return fail("running configure retains config");
+    }
+    return 0;
 }
 
 // Before the first target the filter holds the engage state: no motion, no
@@ -207,6 +584,33 @@ int check_timestamp_rejection()
     }
     if(!near(state.position, 1.0, 1e-6)) {
         return fail("timestamp keeps previous target");
+    }
+
+    stream::StreamFilter1D extreme;
+    stream::StreamFilter1D reference;
+    if(extreme.configure(test_config(1000000, 0)) != rt::ErrorCode::ok ||
+       reference.configure(test_config(1000000, 0)) != rt::ErrorCode::ok ||
+       extreme.reset({0.0, 0.0, 0.0}) != rt::ErrorCode::ok ||
+       reference.reset({0.0, 0.0, 0.0}) != rt::ErrorCode::ok ||
+       extreme.push_target(position_target(0.0, std::numeric_limits<std::int64_t>::min())) !=
+           rt::ErrorCode::ok ||
+       reference.push_target(position_target(0.0, 0)) != rt::ErrorCode::ok ||
+       extreme.push_target(position_target(1.0, std::numeric_limits<std::int64_t>::max())) !=
+           rt::ErrorCode::ok ||
+       reference.push_target(velocity_target(1.0, std::ldexp(1.0, -64), 256)) !=
+           rt::ErrorCode::ok) {
+        return fail("extreme timestamp setup");
+    }
+    for(int cycle = 0; cycle < 8; ++cycle) {
+        const otg::State1D expected = reference.cycle();
+        const otg::State1D actual = extreme.cycle();
+        if(!std::isfinite(actual.position) || !std::isfinite(actual.velocity) ||
+           !std::isfinite(actual.acceleration) ||
+           !near(actual.position, expected.position, 1e-15) ||
+           !near(actual.velocity, expected.velocity, 1e-15) ||
+           !near(actual.acceleration, expected.acceleration, 1e-15)) {
+            return fail("extreme timestamp span is defined");
+        }
     }
     return 0;
 }
@@ -349,10 +753,59 @@ int check_joint_group()
            rt::ErrorCode::ok) {
         return fail("joint group count validation");
     }
+    stream::StreamFilterConfig invalid_config = test_config(50, 40);
+    invalid_config.limits.max_jerk = 0.0;
+    if(group.configure(4, invalid_config) != rt::ErrorCode::invalid_argument ||
+       group.joint_count() != 0) {
+        return fail("joint group rejects invalid shared config");
+    }
     if(group.configure(4, test_config(50, 40)) != rt::ErrorCode::ok ||
        group.joint_count() != 4) {
         return fail("joint group configure");
     }
+
+    stream::JointStreamGroup partial;
+    const stream::StreamFilterConfig original = test_config(1000000, 0);
+    stream::StreamFilterConfig replacement = original;
+    replacement.limits.max_velocity = 0.01;
+    if(partial.configure(2, original) != rt::ErrorCode::ok ||
+       partial.reset(1, {1.0, 0.0, 0.0}) != rt::ErrorCode::ok ||
+       partial.configure(2, replacement) != rt::ErrorCode::invalid_argument ||
+       partial.joint_count() != 2 ||
+       partial.reset(0, {0.0, 0.0, 0.0}) != rt::ErrorCode::ok ||
+       partial.push_target(0, velocity_target(10.0, 0.2, 1)) != rt::ErrorCode::ok) {
+        return fail("joint group configure is atomic");
+    }
+    for(int cycle = 0; cycle < 200; ++cycle) {
+        partial.cycle();
+    }
+    if(partial.state(0).velocity < 0.05) {
+        return fail("joint group failed configure retains member config");
+    }
+    partial.end_session();
+    if(partial.configure(2, replacement) != rt::ErrorCode::ok) {
+        return fail("joint group reconfigure after session end");
+    }
+
+    stream::JointStreamGroup shrinking;
+    if(shrinking.configure(4, original) != rt::ErrorCode::ok ||
+       shrinking.reset(3, {3.0, 0.0, 0.0}) != rt::ErrorCode::ok ||
+       shrinking.push_target(3, velocity_target(10.0, 0.2, 1)) != rt::ErrorCode::ok) {
+        return fail("joint group shrink setup");
+    }
+    shrinking.cycle();
+    const double before_shrink = shrinking.state(3).position;
+    if(shrinking.configure(2, replacement) != rt::ErrorCode::invalid_argument ||
+       shrinking.joint_count() != 4) {
+        return fail("joint group rejects active member shrink");
+    }
+    for(int cycle = 0; cycle < 32; ++cycle) {
+        shrinking.cycle();
+    }
+    if(shrinking.state(3).position == before_shrink) {
+        return fail("joint group failed shrink retains removed member trajectory");
+    }
+
     for(std::size_t j = 0; j < 4; ++j) {
         if(group.reset(j, {static_cast<double>(j), 0.0, 0.0}) != rt::ErrorCode::ok) {
             return fail("joint group reset");
@@ -362,7 +815,6 @@ int check_joint_group()
        group.push_target(4, position_target(0.0, 1)) == rt::ErrorCode::ok) {
         return fail("joint group bounds");
     }
-
     // Independent per-joint ramps at different speeds; each joint must ride
     // its own line within the acceptance lag.
     EnvelopeGuard guards[4];
@@ -411,7 +863,12 @@ int check_joint_group()
 
 int main()
 {
-    if(check_idle_hold() != 0 || check_step_target() != 0 ||
+    if(check_invalid_inputs() != 0 || check_normalized_position_envelope_proof() != 0 ||
+       check_moving_target_envelope() != 0 ||
+       check_quintic_fast_path_coast() != 0 ||
+       check_unrepresentable_tracking_horizon() != 0 ||
+       check_running_configure_is_atomic() != 0 || check_idle_hold() != 0 ||
+       check_step_target() != 0 ||
        check_ramp_phase_lag(true, "ramp lag explicit velocity") != 0 ||
        check_ramp_phase_lag(false, "ramp lag differencing") != 0 ||
        check_timestamp_rejection() != 0 || check_position_envelope() != 0 ||

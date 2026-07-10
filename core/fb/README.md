@@ -31,9 +31,24 @@ parameters report `rt::ErrorCode::unsupported` instead of guessing (KB-006 carri
 
 `profile.h` carries the profile-table facades (`FbPositionProfile`, `FbVelocityProfile`,
 `FbAccelerationProfile`): tables are caller-owned fixed arrays of `axis::ProfileSegment`
-(≤ queue capacity), durations are cycle counts, and velocity-driving profiles report done
-while holding the final segment velocity. External profile-table import stays out of the
+(≤ queue capacity), durations are cycle counts, and `TimeScale` must be finite and positive.
+Before the first submit, all three FBs pre-validate scaled-duration representability: every
+positive PositionProfile duration and every non-final Velocity/AccelerationProfile duration
+must round to at least one cycle and fit in `int64_t`; the final velocity-driving segment holds
+indefinitely. PositionProfile materializes its fixed command table and preflights every resolved
+endpoint and OTG profile before the first segment starts. Velocity/AccelerationProfile atomically
+validate the full transformed table (target velocity, acceleration/deceleration, and jerk). An
+invalid or infeasible successor therefore causes no partial execution. PositionProfile reports
+Done only when the axis reports its last command ID completed; tracked active or pending segments
+stay Busy, and takeover reports CommandAborted. External profile-table import stays out of the
 runtime (KB-010).
+
+`management.h` carries GroupHome, MoveDirect, GroupSetOverride, and GroupInterrupt/Continue.
+MoveDirect uses the dedicated group-owned Direct lifecycle from KB-068: natural all-member
+completion reports Done; GroupStop/GroupDisable report CommandAborted for the tracked Direct ID;
+a member power loss or ErrorStop reports Error (`precondition_failed`). While Direct is active,
+linear/circular and Direct re-entry are rejected with `invalid_argument`, and
+GroupSetOverride/GroupInterrupt are rejected with `unsupported`.
 
 `probe.h` carries `FbTouchProbe`, `FbAbortTrigger`, and `FbEmergencyStop`. Trigger levels are
 the digital inputs on `AxisModel` (adapters call `set_digital_input`); capture is the rising
