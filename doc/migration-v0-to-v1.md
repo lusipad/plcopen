@@ -64,7 +64,7 @@
 | `FbReadCommandPosition` / `FbReadCommandVelocity`（项目扩展） | 同名 | 同上 |
 | `FbReadStatus` / `FbReadAxisError` | 同名 | 状态布尔按 PLCopen 轴状态逐一暴露；`axis_error` 读 `snapshot().error` |
 | `FbSetPosition` | `fb::FbSetPosition` | 支持 `relative`；运动中拒绝（含同步与叠加偏移进行中） |
-| `FbPositionProfile` / `FbVelocityProfile` / `FbAccelerationProfile` | 同名（`fb/profile.h`） | 表为调用方持有的 `axis::ProfileSegment` 定长数组（≤8 段，替代 `mNext` 链表）；段时长为周期计数，`TimeScale` 乘于时长；速度/加速度剖面 `Done` 表示"保持终段速度中"；`ContinuousUpdate` 仅支持单段剖面；加速度整形不建模（加速度缩放仅作用于限值输入） |
+| `FbPositionProfile` / `FbVelocityProfile` / `FbAccelerationProfile` | 同名（`fb/profile.h`） | 表为调用方持有的 `axis::ProfileSegment` 定长数组（≤8 段，替代 `mNext` 链表）；`TimeScale` 缩放后的有效时长在提交首段前校验为至少 1 周期且可表示，速度/加速度剖面同时静态校验整表并以终段持续保持表示 `Done`；PositionProfile 仅在最后命令 ID 完成时 `Done`，active/pending 保持 `Busy`，接管报 `CommandAborted`；`ContinuousUpdate` 仅支持单段剖面；加速度整形不建模（加速度缩放仅作用于限值输入） |
 | `FbTouchProbe` / `FbAbortTrigger` | 同名（`fb/probe.h`） | 触发源即数字输入组 `AxisModel::set_digital_input`（固定 4 通道，替代 Servo 数字输入通道）；上升沿捕获、`WindowOnly` 门控、按通道独立、解除空闲通道非错误等边界一致；Servo 锁存位置回读不承接（记录 capture 周期的 actual position） |
 | `FbReadDigitalInput` / `FbReadDigitalOutput` / `FbWriteDigitalOutput` | 同名（`fb/io.h`） | 通道即 `AxisModel` 数字 IO 组（输入/输出各固定 4 通道）；不支持通道报 `unsupported` |
 | `FbDigitalCamSwitch` | `fb::FbDigitalCamSwitch` | 位置窗驱动一路数字输出；周期窗支持跨界（`on > off`）；换通道/禁用清旧输出；非周期反向窗显式报错 |
@@ -82,7 +82,7 @@
 - `KB-021`：同步逼近段按主轴行程线性插值 + 可选每周期速度上限，无加速度/加加速度整形；相位过渡为速度斜坡。
 - `KB-022`：TouchProbe 触发源为固定 4 通道数字输入组，记录 capture 周期 actual position，无 Servo 锁存回读。
 - `KB-023`：位置滞后监控参数显式 `unsupported`；错误码粗映射（`PARAMETER_NOT_SUPPORT` → `unsupported`，组前置失败 → `precondition_failed`）。
-- `KB-024`：轨迹表为定长段数组（≤8 段）、时长按周期计数、`ContinuousUpdate` 仅单段、终段速度无限保持。
+- `KB-024`：轨迹表为定长段数组（≤8 段）；三类 Profile 在提交首段前校验缩放时长可表示性，速度/加速度剖面静态整表原子拒绝、终段速度无限保持；PositionProfile 以最后完成 ID 判定 Done，接管报 CommandAborted；`ContinuousUpdate` 仅单段。
 - `KB-025`：连续运动与速度/加速度剖面的 `Done` 为持续态非锁存完成态；`MC_HaltSuperimposed` 当周期完成。
 - `KB-026`：离散运动经近时间最优 7 段 S 曲线规划，时长显著短于 v0.x/早期新核的保守剖面；加速度形状为梯形/三角相位。
 - `KB-027`：组线性命令共享路径参数承接完整动力学输入（jerk-limited 剖面，以行程最长成员为基准）；`MC_GroupStop` 沿原路径按 `Deceleration`/`Jerk` 受控减速（承接 v0.x 合同），刹车距离超出剩余路径时在命令终点停住。

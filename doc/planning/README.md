@@ -23,10 +23,12 @@
 | [v1.0.0-alpha-release-draft.md](v1.0.0-alpha-release-draft.md) | v1.0.0-alpha 发布草案与人工检查单 | T3 草案，待人工发布 |
 | [r1-rt-report-template.md](r1-rt-report-template.md) | 72h PREEMPT_RT 报告模板（B7 硬件阶段使用） | 模板，待真机 |
 | [software-excellence-plan.md](software-excellence-plan.md) | 软件极致候选清单（Y 算法/P 标准面/Z 采纳/E 证据四线） | 候选，复盘定序 |
+| [full-project-review-2026-07-09.md](full-project-review-2026-07-09.md) | 全项目 Review：架构热点、门禁漂移、公共 API 合同与修复队列 | 已执行，P1/P2 修复批输入 |
+| [axis-group-split-plan-2026-07-09.md](axis-group-split-plan-2026-07-09.md) | `AxisGroup` 按行为簇拆分计划与验收顺序 | 现行，下一批迁移输入 |
 
 已完成的执行文档（R0-R4 拆解、证据包、rewrite-plan、v0.11 草案等）在
 [doc/archive/](../archive/)。
 
 ---
 
-*本索引最后更新：2026-07-05（文档体系重建批③）*
+*本索引最后更新：2026-07-09（Review 修复批）*
