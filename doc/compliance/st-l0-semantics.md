@@ -1,6 +1,6 @@
-# ST 批次 L0 语义矩阵：ST 子集 + 确定性 VM 地基（草案）
+# ST 批次 L0 语义矩阵：ST 子集 + 确定性 VM 地基
 
-> 状态：**草案，待维护者批准**。本文件是 L 系列批次 L0（ST 逻辑子集 +
+> 状态：**已批准（2026-07-11，维护者，L0 全范围按草案）**。本文件是 L 系列批次 L0（ST 逻辑子集 +
 > 字节码 VM + 容错前端）的验收规格（normative）。依据：
 > [st-runtime-design](../design/core/st-runtime-design.md)（2026-07-07
 > 已裁决选项 A，自研）、long-term-plan 难点 T30/T37/T40（T32/T35 仅
