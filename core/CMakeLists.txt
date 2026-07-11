@@ -180,6 +180,7 @@ if(BUILD_TESTING AND PLCOPEN_BUILD_CORE_TESTS)
     add_test(NAME plcopen_core_st_l1a_matrix_check
              COMMAND ${CMAKE_COMMAND}
                      -DEXE=$<TARGET_FILE:plcopen_core_st_l1a_conversion_tests>
+                     "-DEMULATOR=${CMAKE_CROSSCOMPILING_EMULATOR}"
                      -P ${CMAKE_CURRENT_SOURCE_DIR}/../cmake/verify_st_l1a_conversions.cmake)
 
     add_executable(plcopen_core_st_fuzz test/st_fuzz.cpp)

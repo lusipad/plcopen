@@ -15,8 +15,10 @@ if(NOT EXISTS "${YAML}")
     message(FATAL_ERROR "missing ${YAML}")
 endif()
 
+# EMULATOR carries CMAKE_CROSSCOMPILING_EMULATOR (e.g. qemu-user for the
+# ARM64 cross job); empty on native builds.
 execute_process(
-    COMMAND "${EXE}" --dump-matrix
+    COMMAND ${EMULATOR} "${EXE}" --dump-matrix
     OUTPUT_VARIABLE DUMP
     RESULT_VARIABLE RC)
 if(NOT RC EQUAL 0)
