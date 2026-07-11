@@ -4,6 +4,7 @@
 #include <cmath>
 #include <cstdint>
 
+#include "axis/group_takeover_connector.h"
 #include "axis/state.h"
 #include "geom/frame.h"
 #include "geom/geometry.h"
@@ -198,12 +199,12 @@ public:
 
     bool connector_active() const
     {
-        return connector_active_;
+        return connector_.active();
     }
 
     double connector_tube_radius() const
     {
-        return connector_active_ ? connector_r_tube_ : 0.0;
+        return connector_.tube_radius();
     }
 
     const AxisModel *member(std::size_t index) const
@@ -398,7 +399,7 @@ public:
         active_profile_ = halt.value();
         active_tick_ = 0;
         active_duration_ = active_profile_.duration_cycles();
-        connector_active_ = false;
+        connector_.deactivate();
         status_ = GroupStatus::stopping;
         return rt::ErrorCode::ok;
     }
@@ -512,7 +513,7 @@ public:
         active_profile_ = halt.value();
         active_tick_ = 0;
         active_duration_ = active_profile_.duration_cycles();
-        connector_active_ = false;
+        connector_.deactivate();
         interrupting_ = true;
         interrupted_plain_ = true;
         interrupted_window_ = false;
@@ -1467,21 +1468,13 @@ public:
             // along-path position plus the lateral decay offset. After
             // the lateral profile completes, its position is zero and
             // the motion continues as pure along-path interpolation.
-            double lat_offset = 0.0;
-            if(connector_active_) {
-                const otg::State1D lat = otg::sample(
-                    connector_lateral_profile_,
-                    rt::CycleTick::from_cycles(active_tick_));
-                lat_offset = lat.position;
-                if(active_tick_ >= connector_duration_) {
-                    connector_active_ = false;
-                }
-            }
+            const double lat_offset =
+                connector_.sample_lateral_offset(active_tick_);
             for(std::size_t i = 0; i < axes_.size(); ++i) {
                 double position =
                     active_start_[i] + (active_finish_[i] - active_start_[i]) * ratio;
                 if(lat_offset != 0.0) {
-                    position += connector_lateral_dir_[i] * lat_offset;
+                    position += connector_.lateral_dir(i) * lat_offset;
                 }
                 axes_[i]->set_synchronized_position(position);
             }
@@ -3066,7 +3059,7 @@ private:
     {
         active_command_ = command;
         active_tick_ = 0;
-        connector_active_ = false;
+        connector_.deactivate();
         double longest = 0.0;
         for(std::size_t i = 0; i < axes_.size(); ++i) {
             active_start_[i] = axes_[i]->snapshot().command_position;
@@ -3101,19 +3094,22 @@ private:
         // into an along-path scalar (projected onto the new path tangent)
         // and a lateral residual that decays to zero via an independent
         // jerk-limited profile (approved v2.1 matrix, linear scope).
-        const bool try_connector =
-            has_takeover_velocity_ && command.path_kind == GroupPathKind::linear;
-        has_takeover_velocity_ = false;
+        const bool try_connector = connector_.take_captured_velocity() &&
+                                   command.path_kind == GroupPathKind::linear;
 
         if(try_connector) {
-            const rt::ErrorCode planned = plan_connector(command, longest);
+            const rt::ErrorCode planned = connector_.plan(
+                {command.velocity, command.acceleration, command.deceleration,
+                 command.jerk},
+                longest, axes_.size(), active_start_, active_finish_,
+                active_profile_, active_duration_);
             if(planned == rt::ErrorCode::ok) {
                 active_ = true;
                 status_ = GroupStatus::moving;
                 return rt::ErrorCode::ok;
             }
             // Connector planning failed; fall through to the rest-start path.
-            connector_active_ = false;
+            connector_.deactivate();
         }
 
         if(longest > 0.0) {
@@ -3135,140 +3131,6 @@ private:
         return rt::ErrorCode::ok;
     }
 
-    // Y7 connector planner: decomposes the takeover velocity into along-path
-    // and lateral components, plans both profiles with beta-split limits.
-    // KB-052: projects acceleration onto new tangent for a_s0 continuity.
-    // KB-053: rejects connector when stopping distance exceeds path length.
-    rt::ErrorCode plan_connector(const GroupCommand &command, double longest)
-    {
-        constexpr double kBeta = 0.5;
-        constexpr double kAlignedThreshold = 1e-9;
-
-        // New path tangent (unit direction). For zero-distance moves the
-        // tangent is undefined; all velocity is lateral.
-        std::array<double, MaxAxes> t_hat{};
-        if(longest > 0.0) {
-            for(std::size_t i = 0; i < axes_.size(); ++i) {
-                t_hat[i] = (active_finish_[i] - active_start_[i]) / longest;
-            }
-        }
-
-        // Project takeover velocity and acceleration onto new path tangent.
-        double s_dot_0 = 0.0;
-        double a_s0 = 0.0;
-        for(std::size_t i = 0; i < axes_.size(); ++i) {
-            s_dot_0 += takeover_velocity_[i] * t_hat[i];
-            a_s0 += takeover_acceleration_[i] * t_hat[i];
-        }
-
-        // Lateral residual velocity.
-        double lat_speed_sq = 0.0;
-        std::array<double, MaxAxes> lat_vel{};
-        for(std::size_t i = 0; i < axes_.size(); ++i) {
-            lat_vel[i] = takeover_velocity_[i] - s_dot_0 * t_hat[i];
-            lat_speed_sq += lat_vel[i] * lat_vel[i];
-        }
-        const double lat_speed = std::sqrt(lat_speed_sq);
-
-        if(lat_speed <= kAlignedThreshold) {
-            // Aligned takeover: no lateral residual, plan along-path with
-            // full limits from the projected velocity+acceleration (zero
-            // connector). KB-052: a_s0 included.
-            if(longest > 0.0) {
-                const rt::Result<otg::Profile1D> along = otg::plan_time_optimal(
-                    {0.0, s_dot_0, a_s0},
-                    {longest, 0.0, 0.0},
-                    {command.velocity, command.acceleration, command.deceleration,
-                     command.jerk});
-                if(!along) {
-                    return along.error();
-                }
-                active_profile_ = along.value();
-                active_duration_ = active_profile_.duration_cycles();
-            } else {
-                active_profile_ = otg::Profile1D{};
-                active_duration_ = 1;
-            }
-            return rt::ErrorCode::ok;
-        }
-
-        // Non-aligned takeover: plan both profiles with beta-split limits.
-        for(std::size_t i = 0; i < axes_.size(); ++i) {
-            connector_lateral_dir_[i] = lat_vel[i] / lat_speed;
-        }
-
-        // Lateral decay: from (pos=0, vel=lat_speed) to (pos=0, vel=0).
-        // The profile overshoots, peaks at R_tube, then returns to zero.
-        const otg::Limits1D lat_limits{
-            (1.0 - kBeta) * command.velocity,
-            (1.0 - kBeta) * command.acceleration,
-            (1.0 - kBeta) * command.deceleration,
-            (1.0 - kBeta) * command.jerk,
-        };
-        const rt::Result<otg::Profile1D> lat =
-            otg::plan_time_optimal({0.0, lat_speed, 0.0}, {0.0, 0.0, 0.0}, lat_limits);
-        if(!lat) {
-            return lat.error();
-        }
-        connector_lateral_profile_ = lat.value();
-        connector_duration_ = connector_lateral_profile_.duration_cycles();
-
-        // R_tube = peak lateral displacement during the decay profile.
-        double max_disp = 0.0;
-        for(std::int64_t t = 1; t <= connector_duration_; ++t) {
-            const otg::State1D s =
-                otg::sample(connector_lateral_profile_, rt::CycleTick::from_cycles(t));
-            const double d = std::fabs(s.position);
-            if(d > max_disp) {
-                max_disp = d;
-            }
-        }
-        connector_r_tube_ = max_disp;
-
-        // Along-path: from (pos=0, vel=s_dot_0, acc=a_s0) to
-        // (pos=longest, vel=0, acc=0) with beta-split limits.
-        // KB-052: a_s0 included for acceleration continuity.
-        const otg::Limits1D along_limits{
-            kBeta * command.velocity,
-            kBeta * command.acceleration,
-            kBeta * command.deceleration,
-            kBeta * command.jerk,
-        };
-
-        // Clamp a_s0 to the beta-split acceleration limits so the OTG
-        // entry state is admissible under the split budget.
-        if(a_s0 > along_limits.max_acceleration) {
-            a_s0 = along_limits.max_acceleration;
-        } else if(a_s0 < -along_limits.max_deceleration) {
-            a_s0 = -along_limits.max_deceleration;
-        }
-
-        // KB-053: reject the connector when the along-path stopping
-        // distance far exceeds the path length. The rest-start fallback
-        // is safe (starts from zero velocity, no cliff).
-        if(longest > 0.0) {
-            const double stop_dist =
-                otg::detail::ramp_between(s_dot_0, 0.0, along_limits).distance;
-            if(stop_dist > longest * 1.5) {
-                return rt::ErrorCode::infeasible;
-            }
-            const rt::Result<otg::Profile1D> along = otg::plan_time_optimal(
-                {0.0, s_dot_0, a_s0}, {longest, 0.0, 0.0}, along_limits);
-            if(!along) {
-                return along.error();
-            }
-            active_profile_ = along.value();
-            active_duration_ = std::max(active_profile_.duration_cycles(),
-                                        connector_duration_);
-        } else {
-            // Zero-distance: all velocity is lateral, along-path is trivial.
-            active_profile_ = otg::Profile1D{};
-            active_duration_ = connector_duration_;
-        }
-        connector_active_ = true;
-        return rt::ErrorCode::ok;
-    }
-
     void finish_active()
     {
         if(override_paused_) {
@@ -3281,7 +3143,7 @@ private:
             if(interrupt_ratio_ > 1.0) { interrupt_ratio_ = 1.0; }
         }
         active_ = false;
-        connector_active_ = false;
+        connector_.deactivate();
         if(!interrupting_) {
             for(std::size_t i = 0; i < axes_.size(); ++i) {
                 axes_[i]->clear_synchronized();
@@ -3307,7 +3169,7 @@ private:
     void abort_motion()
     {
         active_ = false;
-        connector_active_ = false;
+        connector_.deactivate();
         direct_active_ = false;
         direct_stopping_ = false;
         override_paused_ = false;
@@ -3323,36 +3185,13 @@ private:
         }
     }
 
-    // Y7 (KB-051/052 fix): capture the per-axis velocity AND acceleration
-    // vectors of the current plain linear motion before abort_motion()
-    // destroys it. KB-052: acceleration capture ensures a_s0 = ⟨q̈, t̂⟩
-    // continuity (v2.1 decision #1). During a connector, the composite
-    // state (along-path + lateral) is returned so re-entrant aborting
-    // decomposes correctly.
+    // Y7 (KB-051/052): forwards to the extracted connector cluster; only
+    // plain linear motions qualify (approved v2.1 scope).
     void capture_takeover_velocity()
     {
-        has_takeover_velocity_ = false;
-        if(!active_ || active_kind_ != GroupPathKind::linear ||
-           active_path_length_ <= 0.0) {
-            return;
-        }
-        const otg::State1D along =
-            otg::sample(active_profile_, rt::CycleTick::from_cycles(active_tick_));
-        for(std::size_t i = 0; i < axes_.size(); ++i) {
-            const double dir_i =
-                (active_finish_[i] - active_start_[i]) / active_path_length_;
-            takeover_velocity_[i] = along.velocity * dir_i;
-            takeover_acceleration_[i] = along.acceleration * dir_i;
-        }
-        if(connector_active_) {
-            const otg::State1D lat = otg::sample(
-                connector_lateral_profile_, rt::CycleTick::from_cycles(active_tick_));
-            for(std::size_t i = 0; i < axes_.size(); ++i) {
-                takeover_velocity_[i] += lat.velocity * connector_lateral_dir_[i];
-                takeover_acceleration_[i] += lat.acceleration * connector_lateral_dir_[i];
-            }
-        }
-        has_takeover_velocity_ = true;
+        connector_.capture(active_, active_kind_ == GroupPathKind::linear,
+                           active_path_length_, active_profile_, active_tick_,
+                           active_start_, active_finish_, axes_.size());
     }
 
     // A5 look-ahead window (KB-032, approved A5 matrix): consecutive blending
@@ -4354,8 +4193,6 @@ private:
     double active_path_length_ = 0.0;
     std::int64_t active_tick_ = 0;
     std::int64_t active_duration_ = 1;
-    std::int64_t connector_duration_ = 0;
-    double connector_r_tube_ = 0.0;
     double group_override_ = 1.0;
     double interrupt_ratio_ = 0.0;
     geom::Vec3 tool_offset_{};
@@ -4367,9 +4204,7 @@ private:
     double cart_joints_[MaxAxes] = {};
     double cart_tail_joints_[MaxAxes] = {};
     double cart_window_joints_[MaxAxes] = {};
-    std::array<double, MaxAxes> connector_lateral_dir_{};
-    std::array<double, MaxAxes> takeover_velocity_{};
-    std::array<double, MaxAxes> takeover_acceleration_{};
+    GroupTakeoverConnector<MaxAxes> connector_{};
     rt::StaticVector<AxisModel *, MaxAxes> axes_{};
     geom::RigidTransform workpiece_frame_{};
     geom::RigidTransform pose_tool_{};
@@ -4380,7 +4215,6 @@ private:
     otg::Profile1D cart_halt_profile_{};
     otg::Profile1D window_stop_profile_{};
     otg::Profile1D active_profile_{};
-    otg::Profile1D connector_lateral_profile_{};
     rt::StaticVector<GroupCommand, QueueCapacity> queue_{};
     rt::StaticVector<CartPiece, CartWindowPieces> cart_window_{};
     rt::StaticVector<WindowSegment, WindowCapacity> window_{};
@@ -4400,8 +4234,6 @@ private:
     bool window_in_curve_ = false;
     bool window_stop_ = false;
     bool active_ = false;
-    bool connector_active_ = false;
-    bool has_takeover_velocity_ = false;
     bool override_paused_ = false;
     bool interrupting_ = false;
     bool interrupted_plain_ = false;

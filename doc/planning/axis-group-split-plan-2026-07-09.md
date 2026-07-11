@@ -17,7 +17,7 @@
 
 | 顺序 | 行为簇 | 候选目标 | 主要状态 | 最小验收 |
 |------|--------|----------|----------|----------|
-| 1 | Y7 接管 connector | `core/axis/group_takeover_connector.h` | `connector_*`、`takeover_velocity_`、`takeover_acceleration_`、`connector_lateral_dir_` | `plcopen_core_y7_group_takeover_tests`、`plcopen_core_replay_regression` |
+| 1 | Y7 接管 connector | `core/axis/group_takeover_connector.h` | `connector_*`、`takeover_velocity_`、`takeover_acceleration_`、`connector_lateral_dir_` | **已完成（2026-07-11）**：`GroupTakeoverConnector<MaxAxes>` 承载 8 个状态字段 + plan/capture/采样；group.h 4306→4246 行；Y7 测试 + 回放逐位 + RT 扫描全绿 |
 | 2 | joint lookahead window | `core/axis/group_window.h` | `window_*`、`window_depth_`、active path timing | `plcopen_core_a5_lookahead_tests`、`plcopen_core_part4_pathtable_tests`、replay |
 | 3 | Cartesian path/window | `core/axis/group_cartesian.h` | `cart_*`、`active_cart_`、Cartesian prevalidation/readback | `plcopen_core_cartesian_tests`、replay |
 | 4 | frame/pose/kinematics | `core/axis/group_pose_frames.h` | `workpiece_frame_*`、`tool_*`、`kinematics_*`、pose margins | `plcopen_core_pose_tests`、`plcopen_core_readback_tests`、`plcopen_core_kinematics_tests` |
