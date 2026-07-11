@@ -6,6 +6,7 @@
 
 #include "st/ast.h"
 #include "st/bytecode.h"
+#include "st/conv.h"
 #include "st/diag.h"
 #include "st/sema.h"
 
@@ -213,22 +214,63 @@ private:
         case ExprKind::unary:
             emit_expr(expr.lhs);
             if(expr.unary_op == UnaryOp::logical_not) {
-                emit_op(Op::not_bool);
+                if(is_bitstring(note.type)) {
+                    emit_op(Op::bit_not);
+                    emit_u8(static_cast<std::uint8_t>(note.type));
+                } else {
+                    emit_op(Op::not_bool);
+                }
             } else {
                 switch(note.type) {
                 case Type::int_: emit_op(Op::neg_int); break;
                 case Type::dint: emit_op(Op::neg_dint); break;
                 case Type::real: emit_op(Op::neg_real); break;
-                default: emit_op(Op::neg_lreal); break;
+                case Type::lreal: emit_op(Op::neg_lreal); break;
+                default:
+                    emit_op(Op::iarith);
+                    emit_u8(5); // neg
+                    emit_u8(static_cast<std::uint8_t>(note.type));
+                    break;
                 }
             }
             return;
         case ExprKind::binary: {
             emit_expr(expr.lhs);
             emit_expr(expr.rhs);
-            emit_binary_op(expr.binary_op,
-                           info(expr.lhs).type);
+            if(expr.binary_op == BinaryOp::power) {
+                // integer exponents widen to double first (L1a 5.2)
+                const Type exp_type = info(expr.rhs).type;
+                if(is_integer(exp_type)) {
+                    emit_op(is_unsigned_int(exp_type) ? Op::conv_u2d
+                                                      : Op::conv_i2d);
+                }
+                emit_op(Op::power);
+                emit_u8(static_cast<std::uint8_t>(note.type));
+            } else if(note.type == Type::time &&
+                      (expr.binary_op == BinaryOp::multiply ||
+                       expr.binary_op == BinaryOp::divide)) {
+                const bool floaty = is_real_family(info(expr.rhs).type);
+                const std::uint8_t sub =
+                    expr.binary_op == BinaryOp::multiply
+                        ? (floaty ? 2 : 0)
+                        : (floaty ? 3 : 1);
+                emit_op(Op::time_scale);
+                emit_u8(sub);
+            } else {
+                emit_binary_op(expr.binary_op, info(expr.lhs).type);
+            }
             pop(); // two operands popped, one result pushed
+            return;
+        }
+        case ExprKind::call: {
+            // Conversion function (L1a 4.x): argument then lowering ops.
+            emit_expr(expr.lhs);
+            ConvDesc desc;
+            if(!resolve_conversion(lower_name(expr.name), desc)) {
+                fail(DiagCode::capacity_code); // sema guaranteed resolvable
+                return;
+            }
+            emit_conversion(desc);
             return;
         }
         default:
@@ -239,11 +281,80 @@ private:
         }
     }
 
+    static std::string lower_name(const std::string &text)
+    {
+        std::string lower;
+        lower.reserve(text.size());
+        for(char c : text) {
+            lower.push_back(
+                static_cast<char>(c >= 'A' && c <= 'Z' ? c - 'A' + 'a' : c));
+        }
+        return lower;
+    }
+
+    void emit_conversion(const ConvDesc &desc)
+    {
+        switch(desc.kind) {
+        case ConvKind::identity:
+        case ConvKind::float_widen:
+            return; // canonical form already matches
+        case ConvKind::wrap:
+            emit_op(Op::conv_wrap);
+            emit_u8(static_cast<std::uint8_t>(desc.to));
+            return;
+        case ConvKind::int_to_float:
+        case ConvKind::uint_to_float:
+            emit_op(desc.kind == ConvKind::int_to_float ? Op::conv_i2d
+                                                        : Op::conv_u2d);
+            if(desc.to == Type::real) {
+                emit_op(Op::f_narrow);
+            }
+            return;
+        case ConvKind::float_round:
+            emit_op(desc.trunc ? Op::conv_trunc : Op::conv_round);
+            emit_u8(static_cast<std::uint8_t>(desc.to));
+            return;
+        case ConvKind::float_narrow:
+            emit_op(Op::f_narrow);
+            return;
+        case ConvKind::to_bool_int:
+            emit_op(Op::conv_to_bool);
+            return;
+        case ConvKind::to_bool_float:
+            emit_op(Op::conv_f_to_bool);
+            return;
+        default:
+            fail(DiagCode::capacity_code);
+            return;
+        }
+    }
+
+    // Legacy L0 types keep their dedicated opcodes so L0 bytecode stays
+    // byte-identical (determinism anchor); the L1a breadth goes through the
+    // parametrized iarith/cmp_u/bit_* extensions.
+    static bool legacy_arith_type(Type type)
+    {
+        return type == Type::int_ || type == Type::dint ||
+               type == Type::real || type == Type::lreal ||
+               type == Type::time;
+    }
+
+    void emit_iarith(std::uint8_t sub, Type type)
+    {
+        emit_op(Op::iarith);
+        emit_u8(sub);
+        emit_u8(static_cast<std::uint8_t>(type));
+    }
+
     void emit_binary_op(BinaryOp op, Type operand)
     {
         const bool floaty = operand == Type::real || operand == Type::lreal;
         switch(op) {
         case BinaryOp::add:
+            if(!legacy_arith_type(operand)) {
+                emit_iarith(0, operand);
+                return;
+            }
             switch(operand) {
             case Type::int_: emit_op(Op::add_int); return;
             case Type::dint: emit_op(Op::add_dint); return;
@@ -252,6 +363,10 @@ private:
             default: emit_op(Op::add_time); return;
             }
         case BinaryOp::subtract:
+            if(!legacy_arith_type(operand)) {
+                emit_iarith(1, operand);
+                return;
+            }
             switch(operand) {
             case Type::int_: emit_op(Op::sub_int); return;
             case Type::dint: emit_op(Op::sub_dint); return;
@@ -260,6 +375,10 @@ private:
             default: emit_op(Op::sub_time); return;
             }
         case BinaryOp::multiply:
+            if(!legacy_arith_type(operand)) {
+                emit_iarith(2, operand);
+                return;
+            }
             switch(operand) {
             case Type::int_: emit_op(Op::mul_int); return;
             case Type::dint: emit_op(Op::mul_dint); return;
@@ -267,6 +386,10 @@ private:
             default: emit_op(Op::mul_lreal); return;
             }
         case BinaryOp::divide:
+            if(!legacy_arith_type(operand)) {
+                emit_iarith(3, operand);
+                return;
+            }
             switch(operand) {
             case Type::int_: emit_op(Op::div_int); return;
             case Type::dint: emit_op(Op::div_dint); return;
@@ -274,11 +397,33 @@ private:
             default: emit_op(Op::div_lreal); return;
             }
         case BinaryOp::modulo:
+            if(operand != Type::int_ && operand != Type::dint) {
+                emit_iarith(4, operand);
+                return;
+            }
             emit_op(operand == Type::int_ ? Op::mod_int : Op::mod_dint);
             return;
-        case BinaryOp::logical_and: emit_op(Op::and_bool); return;
-        case BinaryOp::logical_or: emit_op(Op::or_bool); return;
-        case BinaryOp::logical_xor: emit_op(Op::xor_bool); return;
+        case BinaryOp::logical_and:
+            if(is_bitstring(operand)) {
+                emit_op(Op::bit_and);
+                return;
+            }
+            emit_op(Op::and_bool);
+            return;
+        case BinaryOp::logical_or:
+            if(is_bitstring(operand)) {
+                emit_op(Op::bit_or);
+                return;
+            }
+            emit_op(Op::or_bool);
+            return;
+        case BinaryOp::logical_xor:
+            if(is_bitstring(operand)) {
+                emit_op(Op::bit_xor);
+                return;
+            }
+            emit_op(Op::xor_bool);
+            return;
         case BinaryOp::cmp_eq:
             emit_op(floaty ? Op::cmp_eq_f : Op::cmp_eq_i);
             return;
@@ -286,15 +431,35 @@ private:
             emit_op(floaty ? Op::cmp_ne_f : Op::cmp_ne_i);
             return;
         case BinaryOp::cmp_lt:
+            if(is_unsigned_int(operand)) {
+                emit_op(Op::cmp_u);
+                emit_u8(0);
+                return;
+            }
             emit_op(floaty ? Op::cmp_lt_f : Op::cmp_lt_i);
             return;
         case BinaryOp::cmp_gt:
+            if(is_unsigned_int(operand)) {
+                emit_op(Op::cmp_u);
+                emit_u8(1);
+                return;
+            }
             emit_op(floaty ? Op::cmp_gt_f : Op::cmp_gt_i);
             return;
         case BinaryOp::cmp_le:
+            if(is_unsigned_int(operand)) {
+                emit_op(Op::cmp_u);
+                emit_u8(2);
+                return;
+            }
             emit_op(floaty ? Op::cmp_le_f : Op::cmp_le_i);
             return;
         default:
+            if(is_unsigned_int(operand)) {
+                emit_op(Op::cmp_u);
+                emit_u8(3);
+                return;
+            }
             emit_op(floaty ? Op::cmp_ge_f : Op::cmp_ge_i);
             return;
         }
@@ -329,9 +494,19 @@ private:
         case StmtKind::repeat: emit_repeat(stmt); return;
         case StmtKind::fb_call: emit_fb_call(stmt, stmt_info(index)); return;
         case StmtKind::exit_:
-            if(!exit_patches_.empty()) {
+            if(!loops_.empty()) {
                 emit_op(Op::jmp);
-                exit_patches_.back().push_back(emit_u32(0));
+                loops_.back().exits.push_back(emit_u32(0));
+            }
+            return;
+        case StmtKind::continue_:
+            if(!loops_.empty()) {
+                emit_op(Op::jmp);
+                if(loops_.back().continue_known) {
+                    emit_u32(loops_.back().continue_target);
+                } else {
+                    loops_.back().continues.push_back(emit_u32(0));
+                }
             }
             return;
         case StmtKind::return_:
@@ -459,7 +634,7 @@ private:
             emit_u16(by_slot);
         }
 
-        exit_patches_.emplace_back();
+        loops_.emplace_back();
         const std::uint32_t loop_start = here();
         emit_op(Op::for_test);
         emit_u16(info.slot);
@@ -470,6 +645,7 @@ private:
         pop();
         const std::size_t exit_at = emit_u32(0);
         emit_body(stmt.body);
+        const std::uint32_t step_at = here();
         emit_op(info.type == Type::int_ ? Op::for_step_int
                                         : Op::for_step_dint);
         emit_u16(info.slot);
@@ -477,17 +653,22 @@ private:
         emit_op(Op::jmp);
         emit_u32(loop_start);
         patch_u32(exit_at, here());
-        for(const std::size_t at : exit_patches_.back()) {
+        for(const std::size_t at : loops_.back().exits) {
             patch_u32(at, here());
         }
-        exit_patches_.pop_back();
+        for(const std::size_t at : loops_.back().continues) {
+            patch_u32(at, step_at);
+        }
+        loops_.pop_back();
         release_temps(watermark);
     }
 
     void emit_while(const Stmt &stmt)
     {
-        exit_patches_.emplace_back();
+        loops_.emplace_back();
         const std::uint32_t loop_start = here();
+        loops_.back().continue_target = loop_start;
+        loops_.back().continue_known = true;
         emit_expr(stmt.condition);
         emit_op(Op::jmp_if_false);
         pop();
@@ -496,25 +677,29 @@ private:
         emit_op(Op::jmp);
         emit_u32(loop_start);
         patch_u32(exit_at, here());
-        for(const std::size_t at : exit_patches_.back()) {
+        for(const std::size_t at : loops_.back().exits) {
             patch_u32(at, here());
         }
-        exit_patches_.pop_back();
+        loops_.pop_back();
     }
 
     void emit_repeat(const Stmt &stmt)
     {
-        exit_patches_.emplace_back();
+        loops_.emplace_back();
         const std::uint32_t loop_start = here();
         emit_body(stmt.body);
+        const std::uint32_t condition_at = here();
         emit_expr(stmt.condition);
         emit_op(Op::jmp_if_false);
         pop();
         emit_u32(loop_start);
-        for(const std::size_t at : exit_patches_.back()) {
+        for(const std::size_t at : loops_.back().exits) {
             patch_u32(at, here());
         }
-        exit_patches_.pop_back();
+        for(const std::size_t at : loops_.back().continues) {
+            patch_u32(at, condition_at);
+        }
+        loops_.pop_back();
     }
 
     void emit_fb_call(const Stmt &stmt, const StmtInfo &info)
@@ -535,10 +720,18 @@ private:
     std::vector<Diagnostic> &diagnostics_;
     CodegenLimits limits_;
 
+    struct LoopCtx
+    {
+        std::vector<std::size_t> exits;
+        std::vector<std::size_t> continues;
+        std::uint32_t continue_target = 0;
+        bool continue_known = false; // WHILE knows its target up front
+    };
+
     std::vector<std::uint8_t> code_;
     std::vector<std::uint64_t> constants_;
     std::map<std::uint64_t, std::uint16_t> const_index_;
-    std::vector<std::vector<std::size_t>> exit_patches_;
+    std::vector<LoopCtx> loops_;
     std::uint32_t temp_top_ = 0;
     std::uint32_t temp_high_ = 0;
     int depth_ = 0;

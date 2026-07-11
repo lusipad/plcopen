@@ -217,9 +217,9 @@ void unsupported_constructs()
         // anchor L0-6-l1
         {"PROGRAM p VAR s : STRING; END_VAR END_PROGRAM",
          st::DiagCode::unsupported_l1},
-        {"PROGRAM p VAR x : INT; END_VAR CONTINUE; END_PROGRAM",
-         st::DiagCode::unsupported_l1},
-        {"PROGRAM p VAR x : BYTE; END_VAR END_PROGRAM",
+        // (CONTINUE and BYTE graduated to real constructs in L1a; STRING
+        // and ARRAY stay L1b representatives.)
+        {"PROGRAM p VAR a : ARRAY [1..3] OF INT; END_VAR END_PROGRAM",
          st::DiagCode::unsupported_l1},
         // anchor L0-6-l2
         {"FUNCTION f : INT END_FUNCTION", st::DiagCode::unsupported_l2},
@@ -251,16 +251,17 @@ void unsupported_constructs()
 
 void strict_typing()
 {
-    // No implicit conversion between variables (anchor L0-1.7-strict).
+    // Lossy directions stay strict (anchor L0-1.7-strict); the lossless
+    // widening whitelist is L1a 3.1 (tested in the L1a suite).
     {
         const st::CompileResult r = compile(
-            wrap("a : INT; b : DINT;", "b := a;").c_str());
-        check(!r.ok, "INT to DINT assignment rejected");
+            wrap("a : INT; b : DINT;", "a := b;").c_str());
+        check(!r.ok, "DINT to INT assignment rejected");
         check(has_code(r, st::DiagCode::sema_type_mismatch),
-              "INT/DINT mismatch code");
+              "DINT/INT mismatch code");
     }
-    check(!compile(wrap("a : REAL; b : LREAL;", "b := a + 1.0;").c_str()).ok,
-          "REAL/LREAL mix rejected");
+    check(!compile(wrap("a : REAL; b : LREAL;", "a := b + 1.0;").c_str()).ok,
+          "LREAL to REAL mix rejected");
     check(!compile(wrap("a : INT; b : INT;", "a := b + T#1s;").c_str()).ok,
           "INT/TIME mix rejected");
 
@@ -309,8 +310,10 @@ void strict_typing()
     // TIME operator surface (matrix 1.11, anchor L0-1.11-time-ops).
     check(compile(wrap("t : TIME;", "t := T#1s + T#500ms;").c_str()).ok,
           "TIME add");
-    check(!compile(wrap("t : TIME;", "t := T#1s * 2;").c_str()).ok,
-          "TIME multiply rejected");
+    check(compile(wrap("t : TIME;", "t := T#1s * 2;").c_str()).ok,
+          "TIME multiply by scale accepted (L1a 5.1)");
+    check(!compile(wrap("t : TIME;", "t := T#1s * T#2s;").c_str()).ok,
+          "TIME multiply by TIME rejected");
     check(!compile(wrap("t : TIME;", "t := -T#1s;").c_str()).ok,
           "unary minus on TIME rejected");
 
@@ -479,9 +482,10 @@ void fb_surface()
         check(has_code(r, st::DiagCode::sema_type_mismatch),
               "pin type mismatch code");
     }
-    // Positional call is a parse error in L0 (anchor L0-3.9-formal-only).
-    check(!compile(wrap("t : TON;", "t(TRUE, T#1s);").c_str()).ok,
-          "positional call rejected");
+    // Full-coverage positional calls graduated in L1a 5.4; mixing forms
+    // stays rejected (anchor L0-3.9-formal-only).
+    check(!compile(wrap("t : TON;", "t(IN := TRUE, T#1s);").c_str()).ok,
+          "mixed call forms rejected");
     // FB instances take no initializer.
     check(!compile(wrap("t : TON := 5;", ";").c_str()).ok,
           "FB initializer rejected");

@@ -168,6 +168,20 @@ if(BUILD_TESTING AND PLCOPEN_BUILD_CORE_TESTS)
     plcopen_core_rt_compile_options(plcopen_core_st_l0_quality_tests)
     add_test(NAME plcopen_core_st_l0_quality_tests COMMAND plcopen_core_st_l0_quality_tests)
 
+    add_executable(plcopen_core_st_l1a_types_tests test/st_l1a_types_tests.cpp)
+    target_link_libraries(plcopen_core_st_l1a_types_tests PRIVATE plcopen::core)
+    plcopen_core_rt_compile_options(plcopen_core_st_l1a_types_tests)
+    add_test(NAME plcopen_core_st_l1a_types_tests COMMAND plcopen_core_st_l1a_types_tests)
+
+    add_executable(plcopen_core_st_l1a_conversion_tests test/st_l1a_conversion_tests.cpp)
+    target_link_libraries(plcopen_core_st_l1a_conversion_tests PRIVATE plcopen::core)
+    plcopen_core_rt_compile_options(plcopen_core_st_l1a_conversion_tests)
+    add_test(NAME plcopen_core_st_l1a_conversion_tests COMMAND plcopen_core_st_l1a_conversion_tests)
+    add_test(NAME plcopen_core_st_l1a_matrix_check
+             COMMAND ${CMAKE_COMMAND}
+                     -DEXE=$<TARGET_FILE:plcopen_core_st_l1a_conversion_tests>
+                     -P ${CMAKE_CURRENT_SOURCE_DIR}/../cmake/verify_st_l1a_conversions.cmake)
+
     add_executable(plcopen_core_st_fuzz test/st_fuzz.cpp)
     target_link_libraries(plcopen_core_st_fuzz PRIVATE plcopen::core)
     plcopen_core_rt_compile_options(plcopen_core_st_fuzz)

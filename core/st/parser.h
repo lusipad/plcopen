@@ -34,6 +34,7 @@ public:
         , max_diagnostics_(max_diagnostics)
         , max_nesting_(max_nesting)
     {
+        next_ = fetch();
         bump();
     }
 
@@ -47,15 +48,27 @@ public:
 private:
     // --- token plumbing -------------------------------------------------
 
+    // Lexical errors surface as diagnostics immediately; the token stream
+    // continues so parsing can recover.
+    Token fetch()
+    {
+        Token token = lexer_.next();
+        while(token.kind == TokenKind::error) {
+            diag(static_cast<DiagCode>(token.diag_payload), token);
+            token = lexer_.next();
+        }
+        return token;
+    }
+
     void bump()
     {
-        current_ = lexer_.next();
-        // Lexical errors surface as diagnostics immediately; the token
-        // stream continues so parsing can recover.
-        while(current_.kind == TokenKind::error) {
-            diag(static_cast<DiagCode>(current_.diag_payload), current_);
-            current_ = lexer_.next();
-        }
+        current_ = next_;
+        next_ = fetch();
+    }
+
+    const Token &peek_next() const
+    {
+        return next_;
     }
 
     bool at(TokenKind kind) const
@@ -132,6 +145,7 @@ private:
         case TokenKind::kw_while:
         case TokenKind::kw_repeat:
         case TokenKind::kw_exit:
+        case TokenKind::kw_continue:
         case TokenKind::kw_return:
         case TokenKind::semicolon:
             return true;
@@ -203,6 +217,9 @@ private:
     void parse_var_block()
     {
         bump(); // VAR
+        // VAR CONSTANT block (approved st-l1a-semantics 2.5): every member
+        // is a compile-time constant.
+        const bool constant_block = eat(TokenKind::kw_constant);
         while(!at(TokenKind::kw_end_var) && !at(TokenKind::end_of_input)) {
             if(at(TokenKind::unsupported_keyword)) {
                 diag(static_cast<DiagCode>(current_.diag_payload), current_);
@@ -221,6 +238,7 @@ private:
                 continue;
             }
             VarDecl decl;
+            decl.is_constant = constant_block;
             decl.line = current_.line;
             decl.column = current_.column;
             decl.name.assign(current_.text.data(), current_.text.size());
@@ -256,6 +274,16 @@ private:
         case TokenKind::kw_real: decl.type = Type::real; break;
         case TokenKind::kw_lreal: decl.type = Type::lreal; break;
         case TokenKind::kw_time: decl.type = Type::time; break;
+        case TokenKind::kw_sint: decl.type = Type::sint; break;
+        case TokenKind::kw_lint: decl.type = Type::lint; break;
+        case TokenKind::kw_usint: decl.type = Type::usint; break;
+        case TokenKind::kw_uint: decl.type = Type::uint_; break;
+        case TokenKind::kw_udint: decl.type = Type::udint; break;
+        case TokenKind::kw_ulint: decl.type = Type::ulint; break;
+        case TokenKind::kw_byte: decl.type = Type::byte_; break;
+        case TokenKind::kw_word: decl.type = Type::word; break;
+        case TokenKind::kw_dword: decl.type = Type::dword; break;
+        case TokenKind::kw_lword: decl.type = Type::lword; break;
         case TokenKind::unsupported_keyword:
             diag(static_cast<DiagCode>(current_.diag_payload), current_);
             bump();
@@ -357,6 +385,15 @@ private:
             expect(TokenKind::semicolon, "';'");
             return result_.ast.add_stmt(static_cast<Stmt &&>(stmt));
         }
+        case TokenKind::kw_continue: {
+            Stmt stmt;
+            stmt.kind = StmtKind::continue_;
+            stmt.line = current_.line;
+            stmt.column = current_.column;
+            bump();
+            expect(TokenKind::semicolon, "';'");
+            return result_.ast.add_stmt(static_cast<Stmt &&>(stmt));
+        }
         case TokenKind::kw_return: {
             Stmt stmt;
             stmt.kind = StmtKind::return_;
@@ -389,26 +426,32 @@ private:
         bump();
 
         if(at(TokenKind::lparen)) {
-            // FB invocation: inst(PIN := expr, ...);
+            // FB invocation: formal inst(PIN := expr, ...) or non-formal
+            // inst(expr, expr, ...) covering every input pin in declaration
+            // order (approved st-l1a-semantics 5.4). Mixing forms is an
+            // error; the form is decided by the first argument.
             stmt.kind = StmtKind::fb_call;
             stmt.instance = static_cast<std::string &&>(first);
             bump();
             if(!at(TokenKind::rparen)) {
+                const bool formal = at(TokenKind::identifier) &&
+                                    peek_next().kind == TokenKind::assign;
                 do {
                     CallParam param;
                     param.line = current_.line;
                     param.column = current_.column;
-                    if(!at(TokenKind::identifier)) {
-                        diag(DiagCode::parse_expected_token, current_,
-                             "formal parameter name");
-                        recover_statement();
-                        return -2;
-                    }
-                    param.pin.assign(current_.text.data(), current_.text.size());
-                    bump();
-                    if(!expect(TokenKind::assign, "':=' (formal call only)")) {
-                        recover_statement();
-                        return -2;
+                    if(formal) {
+                        if(!at(TokenKind::identifier) ||
+                           peek_next().kind != TokenKind::assign) {
+                            diag(DiagCode::parse_expected_token, current_,
+                                 "formal parameter (no mixing of forms)");
+                            recover_statement();
+                            return -2;
+                        }
+                        param.pin.assign(current_.text.data(),
+                                         current_.text.size());
+                        bump();
+                        bump(); // ':='
                     }
                     param.value = parse_expression();
                     if(param.value == kNoExpr) {
@@ -790,7 +833,26 @@ private:
             }
             return result_.ast.add_expr(static_cast<Expr &&>(expr));
         }
-        return parse_primary();
+        return parse_power();
+    }
+
+    // ** binds tighter than unary minus and is right-associative; the
+    // exponent may carry its own sign (IEC precedence, L1a 5.2).
+    ExprIndex parse_power()
+    {
+        ExprIndex lhs = parse_primary();
+        if(lhs == kNoExpr || !at(TokenKind::star_star)) {
+            return lhs;
+        }
+        const Token token = current_;
+        bump();
+        ++nesting_;
+        const ExprIndex rhs =
+            nesting_ >= max_nesting_
+                ? (diag(DiagCode::parse_nesting_too_deep, current_), kNoExpr)
+                : parse_unary();
+        --nesting_;
+        return make_binary(BinaryOp::power, lhs, rhs, token);
     }
 
     ExprIndex parse_primary()
@@ -820,6 +882,16 @@ private:
             expr.signed_value = current_.signed_value;
             bump();
             return result_.ast.add_expr(static_cast<Expr &&>(expr));
+        case TokenKind::typed_literal:
+            expr.kind = ExprKind::literal_typed;
+            expr.literal_type = current_.literal_type;
+            expr.unsigned_value = current_.unsigned_value;
+            expr.real_value = current_.real_value;
+            expr.real_form = current_.real_form;
+            expr.based = current_.based;
+            expr.signed_value = current_.signed_value; // sign marker
+            bump();
+            return result_.ast.add_expr(static_cast<Expr &&>(expr));
         case TokenKind::lparen: {
             bump();
             ++nesting_;
@@ -845,6 +917,24 @@ private:
                 expr.kind = ExprKind::pin_read;
                 expr.pin.assign(current_.text.data(), current_.text.size());
                 bump();
+            } else if(at(TokenKind::lparen)) {
+                // Conversion-function call (approved st-l1a-semantics 4.x):
+                // single argument, resolved by sema against conv.h.
+                bump();
+                expr.kind = ExprKind::call;
+                ++nesting_;
+                expr.lhs = nesting_ >= max_nesting_
+                               ? (diag(DiagCode::parse_nesting_too_deep,
+                                       current_),
+                                  kNoExpr)
+                               : parse_expression();
+                --nesting_;
+                if(expr.lhs == kNoExpr) {
+                    return kNoExpr;
+                }
+                if(!expect(TokenKind::rparen, "')'")) {
+                    return kNoExpr;
+                }
             } else {
                 expr.kind = ExprKind::variable;
             }
@@ -888,6 +978,7 @@ private:
 
     Lexer lexer_;
     Token current_;
+    Token next_;
     ParseResult result_;
     std::size_t max_diagnostics_ = 256;
     std::int32_t max_nesting_ = 64;

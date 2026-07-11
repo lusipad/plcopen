@@ -86,6 +86,25 @@ enum class Op : std::uint8_t
     fb_store_in,   // u16 fb index, u8 pin id; pops value
     fb_call,       // u16 fb index
     fb_load_out,   // u16 fb index, u8 pin id; pushes value
+
+    // --- L1a extensions (approved st-l1a-semantics; append-only so L0
+    // bytecode stays byte-identical and the determinism anchor holds) ---
+    iarith,        // u8 sub (0 add,1 sub,2 mul,3 div,4 mod,5 neg), u8 Type
+    cmp_u,         // u8 sub (0 lt,1 gt,2 le,3 ge); unsigned 64-bit compare
+    bit_and,       // bit-string AND (canonical, no re-mask needed)
+    bit_or,
+    bit_xor,
+    bit_not,       // u8 Type: complement + re-canonicalize
+    time_scale,    // u8 sub (0 mul_i,1 div_i,2 mul_f,3 div_f); matrix 5.1
+    power,         // u8 Type (real/lreal); libm pow, never const-folded
+    conv_wrap,     // u8 Type target: integer/bit re-canonicalization
+    conv_i2d,      // signed canonical -> double
+    conv_u2d,      // unsigned/bit canonical -> double
+    f_narrow,      // double -> binary32 -> double (canonical REAL)
+    conv_round,    // u8 Type target: round-half-even; NaN/Inf fault
+    conv_trunc,    // u8 Type target: toward zero; NaN/Inf fault
+    conv_to_bool,  // canonical != 0
+    conv_f_to_bool, // double value != 0.0
 };
 
 struct VarInfo
@@ -93,6 +112,7 @@ struct VarInfo
     std::string name;   // original spelling (diagnostics/symbol API)
     std::string lower;  // lookup key
     Type type = Type::bool_;
+    bool constant = false;       // VAR CONSTANT member (L1a 2.5)
     std::uint16_t slot = 0;      // 8-byte slot index inside the vars area
     std::uint64_t init_bits = 0; // canonical initial value
 };

@@ -159,6 +159,43 @@ void determinism()
     const st::CompileResult other = st::compile(
         "PROGRAM q VAR x : INT; END_VAR x := 1; END_PROGRAM");
     check(other.ok, "secondary program compiles");
+
+    // L1a extension anchor (anchor L1a-7.7-hash): exercises the appended
+    // opcode families (iarith/cmp_u/bit_*/time_scale/power/conversions).
+    // ** never folds, so the pool carries no libm result (matrix 5.2).
+    const char *reference_l1a =
+        "PROGRAM anchor2\n"
+        "VAR\n"
+        "  s8 : SINT; u64 : ULINT; w : WORD; l : LREAL; t : TIME;\n"
+        "  n : INT; q : BOOL; d : DINT;\n"
+        "END_VAR\n"
+        "VAR CONSTANT k : DINT := 7; END_VAR\n"
+        "n := n + 1;\n"
+        "s8 := s8 + 1;\n"
+        "u64 := u64 * 3 + 1;\n"
+        "w := (w OR WORD#16#0F0F) XOR NOT w;\n"
+        "l := 1.5 ** n;\n"
+        "t := T#1s * 2 / 3;\n"
+        "d := LREAL_TO_DINT(l) + DINT_TO_INT(k) + WORD_TO_DINT(w);\n"
+        "q := u64 > 100;\n"
+        "FOR n := 1 TO 3 DO CONTINUE; END_FOR;\n"
+        "END_PROGRAM\n";
+    const st::CompileResult l1a = st::compile(reference_l1a);
+    check(l1a.ok, "L1a reference compiles");
+    if(l1a.ok) {
+        const unsigned long long l1a_hash = fnv1a(l1a.program);
+        std::printf("determinism anchor hash (l1a): %llu\n", l1a_hash);
+        check(l1a_hash == 4976297220763985794ULL,
+              "cross-platform L1a anchor hash");
+        for(int i = 0; i < 20; ++i) {
+            const st::CompileResult again = st::compile(reference_l1a);
+            if(!again.ok || again.program.code != l1a.program.code ||
+               again.program.constants != l1a.program.constants) {
+                fail("L1a repeat compile determinism");
+                break;
+            }
+        }
+    }
 }
 
 void zero_allocation_scan()

@@ -7,6 +7,7 @@
 
 #include "st/ast.h"
 #include "st/bytecode.h"
+#include "st/conv.h"
 #include "st/diag.h"
 #include "st/pins.h"
 
@@ -22,12 +23,21 @@ namespace plcopen::core::st
 namespace detail
 {
 
+// Negatable numeric types (unary minus): signed integers + reals. Unsigned
+// negation is rejected (write 0 - x explicitly; declared L1a record).
 constexpr bool is_numeric(Type type)
 {
-    return type == Type::int_ || type == Type::dint || type == Type::real ||
-           type == Type::lreal;
+    return is_signed_int(type) || is_real_family(type);
 }
 
+// Arithmetic operand universe: any integer or real type.
+constexpr bool is_arith(Type type)
+{
+    return is_integer(type) || is_real_family(type);
+}
+
+// Control-construct integer subset: FOR controls and CASE selectors stay
+// on the L0 pair (declared L1a implementation record).
 constexpr bool is_int_family(Type type)
 {
     return type == Type::int_ || type == Type::dint;
@@ -184,6 +194,7 @@ private:
             info.name = decl.name;
             info.lower = decl.lower;
             info.type = decl.type;
+            info.constant = decl.is_constant;
             info.slot = static_cast<std::uint16_t>(result_.vars.size());
             if(decl.init != kNoExpr) {
                 if(check_expr(decl.init, want(decl.type))) {
@@ -196,6 +207,9 @@ private:
                         info.init_bits = init.bits;
                     }
                 }
+            } else if(decl.is_constant) {
+                diag(DiagCode::sema_not_const_expr, decl.line, decl.column,
+                     "VAR CONSTANT requires an initializer");
             }
             result_.vars.push_back(static_cast<VarInfo &&>(info));
         }
@@ -259,6 +273,7 @@ private:
             break;
         case StmtKind::fb_call: check_fb_call(stmt, info); break;
         case StmtKind::exit_:
+        case StmtKind::continue_:
             if(loop_depth_ == 0) {
                 diag(DiagCode::sema_exit_outside_loop, stmt.line, stmt.column);
             }
@@ -295,6 +310,11 @@ private:
                      stmt.column, stmt.target);
                 return;
             }
+        }
+        if(result_.vars[static_cast<std::size_t>(var)].constant) {
+            diag(DiagCode::sema_not_assignable, stmt.line, stmt.column,
+                 "VAR CONSTANT member");
+            return;
         }
         info.slot = result_.vars[static_cast<std::size_t>(var)].slot;
         info.type = result_.vars[static_cast<std::size_t>(var)].type;
@@ -455,6 +475,29 @@ private:
         const FbType type = result_.fbs[static_cast<std::size_t>(fb)].type;
         const PinTable table = pin_table(type);
         info.param_pins.reserve(stmt.params.size());
+
+        // Non-formal call (L1a 5.4): positional arguments must cover every
+        // input pin in declaration order (pin tables list inputs first).
+        if(!stmt.params.empty() && stmt.params[0].pin.empty()) {
+            std::uint8_t input_count = 0;
+            for(std::uint8_t i = 0; i < table.count; ++i) {
+                if(table.pins[i].is_input) {
+                    ++input_count;
+                }
+            }
+            if(stmt.params.size() != input_count) {
+                diag(DiagCode::sema_unknown_fb_pin, stmt.line, stmt.column,
+                     "non-formal call must cover every input pin");
+                return;
+            }
+            for(std::size_t i = 0; i < stmt.params.size(); ++i) {
+                info.param_pins.push_back(static_cast<std::uint8_t>(i));
+                check_expr(stmt.params[i].value,
+                           want(table.pins[i].type));
+            }
+            return;
+        }
+
         std::vector<std::uint8_t> used;
         for(const CallParam &param : stmt.params) {
             const std::string pin_lower = lower_copy(param.pin);
@@ -536,6 +579,17 @@ private:
         case ExprKind::literal_bool:
             saw_bool = true;
             return Type::bool_;
+        case ExprKind::literal_typed:
+            anchor_found_ = true;
+            return expr.literal_type;
+        case ExprKind::call: {
+            ConvDesc desc;
+            if(resolve_conversion(lower_copy(expr.name), desc)) {
+                anchor_found_ = true;
+                return desc.to;
+            }
+            return Type::bool_;
+        }
         case ExprKind::variable: {
             const int var = find_var(lower_copy(expr.name));
             if(var >= 0) {
@@ -603,6 +657,9 @@ private:
         ExprInfo &info = result_.exprs[static_cast<std::size_t>(index)];
         switch(expr.kind) {
         case ExprKind::literal_int: return literal_int(expr, info, expected);
+        case ExprKind::literal_typed:
+            return literal_typed(expr, info, expected);
+        case ExprKind::call: return conversion_call(expr, info, expected);
         case ExprKind::literal_real: return literal_real(expr, info, expected);
         case ExprKind::literal_bool:
             if(expected.has && expected.type != Type::bool_) {
@@ -640,50 +697,60 @@ private:
         return false;
     }
 
+    // Integer-payload literal adoption for any integer/bit-string target
+    // (matrix 1.6/3.3/3.5/5.5): decimal literals are range-checked as
+    // values, based literals as bit patterns of the target width.
+    bool int_payload_bits(const Expr &expr, Type target,
+                          std::uint64_t magnitude, bool negative, bool based,
+                          std::uint64_t &bits)
+    {
+        const int width = width_bits(target);
+        const std::uint64_t umax =
+            width >= 64 ? ~0ULL : ((1ULL << width) - 1ULL);
+        if(based) {
+            if(negative) {
+                diag(DiagCode::sema_operand_type_invalid, expr.line,
+                     expr.column, "based literals cannot be negated");
+                return false;
+            }
+            if(magnitude > umax) {
+                return out_of_range(expr);
+            }
+            bits = detail::canon(target, magnitude);
+            return true;
+        }
+        if(is_unsigned_int(target) || is_bitstring(target)) {
+            if(negative || magnitude > umax) {
+                return out_of_range(expr);
+            }
+            bits = magnitude;
+            return true;
+        }
+        // signed target
+        const std::uint64_t smax =
+            width >= 64 ? 0x7FFFFFFFFFFFFFFFULL
+                        : ((1ULL << (width - 1)) - 1ULL);
+        if(negative) {
+            if(magnitude > smax + 1ULL) {
+                return out_of_range(expr);
+            }
+            bits = static_cast<std::uint64_t>(
+                -static_cast<std::int64_t>(magnitude));
+            return true;
+        }
+        if(magnitude > smax) {
+            return out_of_range(expr);
+        }
+        bits = magnitude;
+        return true;
+    }
+
     bool literal_int(const Expr &expr, ExprInfo &info, Expected expected)
     {
         const Type target = expected.has ? expected.type : Type::dint;
         const std::uint64_t magnitude = expr.unsigned_value;
         const bool negative = expr.signed_value < 0; // parser-folded sign
-        std::int64_t value = 0;
-        switch(target) {
-        case Type::int_:
-            if(expr.based) {
-                if(magnitude > 0xFFFFULL) {
-                    return out_of_range(expr);
-                }
-                value = detail::wrap16(static_cast<std::int64_t>(magnitude));
-            } else if(negative) {
-                if(magnitude > 32768ULL) {
-                    return out_of_range(expr);
-                }
-                value = -static_cast<std::int64_t>(magnitude);
-            } else {
-                if(magnitude > 32767ULL) {
-                    return out_of_range(expr);
-                }
-                value = static_cast<std::int64_t>(magnitude);
-            }
-            break;
-        case Type::dint:
-            if(expr.based) {
-                if(magnitude > 0xFFFFFFFFULL) {
-                    return out_of_range(expr);
-                }
-                value = detail::wrap32(static_cast<std::int64_t>(magnitude));
-            } else if(negative) {
-                if(magnitude > 2147483648ULL) {
-                    return out_of_range(expr);
-                }
-                value = -static_cast<std::int64_t>(magnitude);
-            } else {
-                if(magnitude > 2147483647ULL) {
-                    return out_of_range(expr);
-                }
-                value = static_cast<std::int64_t>(magnitude);
-            }
-            break;
-        case Type::real: {
+        if(is_real_family(target)) {
             if(expr.based) {
                 return mismatch(expr, target, Type::dint);
             }
@@ -691,33 +758,74 @@ private:
             if(negative) {
                 as_real = -as_real;
             }
-            const float narrowed = static_cast<float>(as_real);
-            info.type = Type::real;
+            if(target == Type::real) {
+                const float narrowed = static_cast<float>(as_real);
+                info.bits =
+                    detail::double_bits(static_cast<double>(narrowed));
+            } else {
+                info.bits = detail::double_bits(as_real);
+            }
+            info.type = target;
             info.is_const = true;
-            info.bits = detail::double_bits(static_cast<double>(narrowed));
             info.valid = true;
             return true;
         }
-        case Type::lreal: {
-            if(expr.based) {
-                return mismatch(expr, target, Type::dint);
-            }
-            double as_real = static_cast<double>(magnitude);
-            if(negative) {
-                as_real = -as_real;
-            }
-            info.type = Type::lreal;
-            info.is_const = true;
-            info.bits = detail::double_bits(as_real);
-            info.valid = true;
-            return true;
-        }
-        default:
+        if(!is_integer(target) && !is_bitstring(target)) {
             return mismatch(expr, target, Type::dint);
+        }
+        std::uint64_t bits = 0;
+        if(!int_payload_bits(expr, target, magnitude, negative, expr.based,
+                             bits)) {
+            return false;
         }
         info.type = target;
         info.is_const = true;
-        info.bits = static_cast<std::uint64_t>(value);
+        info.bits = bits;
+        info.valid = true;
+        return true;
+    }
+
+    // TYPE# literal (matrix 3.4): the type is fixed by the prefix; the
+    // expected type may still widen it.
+    bool literal_typed(const Expr &expr, ExprInfo &info, Expected expected)
+    {
+        const Type own = expr.literal_type;
+        if(expected.has && own != expected.type &&
+           !widens_to(own, expected.type)) {
+            return mismatch(expr, expected.type, own);
+        }
+        const bool negative = expr.signed_value < 0;
+        if(expr.real_form) {
+            if(!is_real_family(own)) {
+                diag(DiagCode::sema_type_mismatch, expr.line, expr.column,
+                     "real payload on a non-real typed literal");
+                return false;
+            }
+            info.bits = own == Type::real
+                            ? detail::double_bits(static_cast<double>(
+                                  static_cast<float>(expr.real_value)))
+                            : detail::double_bits(expr.real_value);
+        } else if(is_real_family(own)) {
+            double as_real = static_cast<double>(expr.unsigned_value);
+            if(negative) {
+                as_real = -as_real;
+            }
+            info.bits = own == Type::real
+                            ? detail::double_bits(static_cast<double>(
+                                  static_cast<float>(as_real)))
+                            : detail::double_bits(as_real);
+        } else if(own == Type::bool_) {
+            info.bits = expr.unsigned_value ? 1 : 0;
+        } else {
+            std::uint64_t bits = 0;
+            if(!int_payload_bits(expr, own, expr.unsigned_value, negative,
+                                 expr.based, bits)) {
+                return false;
+            }
+            info.bits = bits;
+        }
+        info.type = expected.has ? expected.type : own;
+        info.is_const = true;
         info.valid = true;
         return true;
     }
@@ -745,6 +853,95 @@ private:
         return false;
     }
 
+    // <SRC>_TO_<DST> / TRUNC_* call (matrix 4.x): the single argument is
+    // typed against the source cell type (whitelist widening applies), the
+    // result carries the destination type. Constant arguments fold with
+    // exactly the runtime semantics; a folded conversion that would fault
+    // at runtime (NaN/Inf into an integer) is left to the runtime.
+    bool conversion_call(const Expr &expr, ExprInfo &info, Expected expected)
+    {
+        ConvDesc desc;
+        if(!resolve_conversion(lower_copy(expr.name), desc)) {
+            diag(DiagCode::sema_unknown_identifier, expr.line, expr.column,
+                 expr.name);
+            return false;
+        }
+        if(expected.has && desc.to != expected.type &&
+           !widens_to(desc.to, expected.type)) {
+            return mismatch(expr, expected.type, desc.to);
+        }
+        if(!check_expr(expr.lhs, want(desc.from))) {
+            return false;
+        }
+        const ExprInfo &arg = result_.exprs[static_cast<std::size_t>(expr.lhs)];
+        info.type = expected.has ? expected.type : desc.to;
+        info.fb_index = static_cast<std::uint16_t>(desc.to); // conv target
+        info.pin_id = static_cast<std::uint8_t>(desc.kind);
+        info.slot = desc.trunc ? 1 : 0;
+        info.valid = true;
+        if(arg.is_const) {
+            std::uint64_t folded = 0;
+            if(fold_conversion(desc, arg.bits, folded)) {
+                info.is_const = true;
+                info.bits = folded;
+            }
+        }
+        return true;
+    }
+
+    static bool fold_conversion(const ConvDesc &desc, std::uint64_t arg,
+                                std::uint64_t &out)
+    {
+        switch(desc.kind) {
+        case ConvKind::identity:
+        case ConvKind::float_widen:
+            out = arg;
+            return true;
+        case ConvKind::wrap:
+            out = detail::canon(desc.to, arg);
+            return true;
+        case ConvKind::int_to_float: {
+            const double value =
+                static_cast<double>(static_cast<std::int64_t>(arg));
+            out = desc.to == Type::real
+                      ? detail::double_bits(static_cast<double>(
+                            static_cast<float>(value)))
+                      : detail::double_bits(value);
+            return true;
+        }
+        case ConvKind::uint_to_float: {
+            const double value = static_cast<double>(arg);
+            out = desc.to == Type::real
+                      ? detail::double_bits(static_cast<double>(
+                            static_cast<float>(value)))
+                      : detail::double_bits(value);
+            return true;
+        }
+        case ConvKind::float_round: {
+            const double value = detail::bits_double(arg);
+            if(!std::isfinite(value)) {
+                return false; // runtime fault, never folded
+            }
+            const double adjusted =
+                desc.trunc ? std::trunc(value) : std::nearbyint(value);
+            out = detail::canon(desc.to, detail::wrap_double_to_u64(adjusted));
+            return true;
+        }
+        case ConvKind::float_narrow:
+            out = detail::double_bits(static_cast<double>(
+                static_cast<float>(detail::bits_double(arg))));
+            return true;
+        case ConvKind::to_bool_int:
+            out = arg != 0 ? 1 : 0;
+            return true;
+        case ConvKind::to_bool_float:
+            out = detail::bits_double(arg) != 0.0 ? 1 : 0;
+            return true;
+        default:
+            return false;
+        }
+    }
+
     bool variable(const Expr &expr, ExprInfo &info, Expected expected)
     {
         const std::string lower = lower_copy(expr.name);
@@ -760,12 +957,19 @@ private:
             return false;
         }
         const VarInfo &decl = result_.vars[static_cast<std::size_t>(var)];
-        if(expected.has && decl.type != expected.type) {
+        if(expected.has && decl.type != expected.type &&
+           !widens_to(decl.type, expected.type)) {
+            // Only whitelist widenings are implicit (L1a 3.1/3.2); the
+            // canonical slot form makes an accepted widening a runtime no-op.
             return mismatch(expr, expected.type, decl.type);
         }
-        info.type = decl.type;
+        info.type = expected.has ? expected.type : decl.type;
         info.slot = decl.slot;
         info.valid = true;
+        if(decl.constant) {
+            info.is_const = true;
+            info.bits = decl.init_bits;
+        }
         return true;
     }
 
@@ -790,10 +994,11 @@ private:
                  expr.pin);
             return false;
         }
-        if(expected.has && desc.type != expected.type) {
+        if(expected.has && desc.type != expected.type &&
+           !widens_to(desc.type, expected.type)) {
             return mismatch(expr, expected.type, desc.type);
         }
-        info.type = desc.type;
+        info.type = expected.has ? expected.type : desc.type;
         info.fb_index = static_cast<std::uint16_t>(fb);
         info.pin_id = static_cast<std::uint8_t>(pin);
         info.valid = true;
@@ -803,19 +1008,32 @@ private:
     bool unary(const Expr &expr, ExprInfo &info, Expected expected)
     {
         if(expr.unary_op == UnaryOp::logical_not) {
-            if(expected.has && expected.type != Type::bool_) {
-                return mismatch(expr, expected.type, Type::bool_);
+            // NOT is boolean negation or bit-string complement (L1a 2.3),
+            // selected by the expected/anchored type.
+            Type target = Type::bool_;
+            if(expected.has) {
+                target = expected.type;
+            } else {
+                const Type anchored = anchor_type(expr.lhs, Type::bool_);
+                if(is_bitstring(anchored)) {
+                    target = anchored;
+                }
             }
-            if(!check_expr(expr.lhs, want(Type::bool_))) {
+            if(target != Type::bool_ && !is_bitstring(target)) {
+                return mismatch(expr, target, Type::bool_);
+            }
+            if(!check_expr(expr.lhs, want(target))) {
                 return false;
             }
             const ExprInfo &operand =
                 result_.exprs[static_cast<std::size_t>(expr.lhs)];
-            info.type = Type::bool_;
+            info.type = target;
             info.valid = true;
             if(operand.is_const) {
                 info.is_const = true;
-                info.bits = operand.bits ? 0 : 1;
+                info.bits = target == Type::bool_
+                                ? (operand.bits ? 0 : 1)
+                                : detail::canon(target, ~operand.bits);
             }
             return true;
         }
@@ -839,14 +1057,6 @@ private:
         if(operand.is_const) {
             info.is_const = true;
             switch(inner.type) {
-            case Type::int_:
-                info.bits = static_cast<std::uint64_t>(detail::wrap16(
-                    -static_cast<std::int64_t>(operand.bits)));
-                break;
-            case Type::dint:
-                info.bits = static_cast<std::uint64_t>(detail::wrap32(
-                    -static_cast<std::int64_t>(operand.bits)));
-                break;
             case Type::real: {
                 const float value = -static_cast<float>(
                     detail::bits_double(operand.bits));
@@ -854,9 +1064,16 @@ private:
                     detail::double_bits(static_cast<double>(value));
                 break;
             }
-            default:
+            case Type::lreal:
                 info.bits = detail::double_bits(
                     -detail::bits_double(operand.bits));
+                break;
+            default:
+                // signed integers: negate at 64 bit, re-canonicalize
+                info.bits = detail::canon(
+                    inner.type,
+                    static_cast<std::uint64_t>(detail::wrap_sub64(
+                        0, static_cast<std::int64_t>(operand.bits))));
                 break;
             }
         }
@@ -884,36 +1101,73 @@ private:
                op == BinaryOp::logical_xor;
     }
 
+    // Common-type resolution for two operand anchors (L1a 3.2): identical,
+    // or one side widens to the other; anything else surfaces as a
+    // mismatch when the loser is checked.
+    Type join_anchors(ExprIndex lhs, ExprIndex rhs, Type fallback) const
+    {
+        Type left = anchor_type(lhs, fallback);
+        const bool left_found = anchor_found_;
+        Type right = anchor_type(rhs, fallback);
+        const bool right_found = anchor_found_;
+        if(!left_found && !right_found) {
+            return left; // literal-kind fallback from the left walk
+        }
+        if(!left_found) {
+            return right;
+        }
+        if(!right_found) {
+            return left;
+        }
+        if(left == right || widens_to(right, left)) {
+            return left;
+        }
+        if(widens_to(left, right)) {
+            return right;
+        }
+        return left; // mismatch surfaces on the right operand check
+    }
+
     bool binary(const Expr &expr, ExprInfo &info, Expected expected)
     {
         if(is_logical(expr.binary_op)) {
-            if(expected.has && expected.type != Type::bool_) {
-                return mismatch(expr, expected.type, Type::bool_);
+            // Boolean logic or bit-string bitwise (L1a 2.3), selected by
+            // the expected/anchored type.
+            Type target = Type::bool_;
+            if(expected.has) {
+                target = expected.type;
+            } else {
+                const Type joined =
+                    join_anchors(expr.lhs, expr.rhs, Type::bool_);
+                if(is_bitstring(joined)) {
+                    target = joined;
+                }
             }
-            const bool lhs_ok = check_expr(expr.lhs, want(Type::bool_));
-            const bool rhs_ok = check_expr(expr.rhs, want(Type::bool_));
+            if(target != Type::bool_ && !is_bitstring(target)) {
+                return mismatch(expr, target, Type::bool_);
+            }
+            const bool lhs_ok = check_expr(expr.lhs, want(target));
+            const bool rhs_ok = check_expr(expr.rhs, want(target));
             if(!lhs_ok || !rhs_ok) {
                 return false;
             }
-            info.type = Type::bool_;
+            info.type = target;
             info.valid = true;
-            fold_logical(expr, info);
+            fold_logical(expr, info, target);
             return true;
         }
         if(is_comparison(expr.binary_op)) {
             if(expected.has && expected.type != Type::bool_) {
                 return mismatch(expr, expected.type, Type::bool_);
             }
-            Type operand = anchor_type(expr.lhs, Type::dint);
-            if(!anchor_found_) {
-                // literal-only left side: prefer a right-side anchor
-                operand = anchor_type(expr.rhs, operand);
-            }
+            const Type operand = join_anchors(expr.lhs, expr.rhs, Type::dint);
             const bool ordering = expr.binary_op != BinaryOp::cmp_eq &&
                                   expr.binary_op != BinaryOp::cmp_ne;
-            if(ordering && operand == Type::bool_) {
+            if(ordering &&
+               (operand == Type::bool_ || is_bitstring(operand))) {
                 diag(DiagCode::sema_operand_type_invalid, expr.line,
-                     expr.column, "ordering comparison on BOOL");
+                     expr.column,
+                     "ordering comparison on BOOL/bit strings");
                 return false;
             }
             const bool lhs_ok = check_expr(expr.lhs, want(operand));
@@ -926,14 +1180,19 @@ private:
             fold_compare(expr, info, operand);
             return true;
         }
+        if(expr.binary_op == BinaryOp::power) {
+            return power_op(expr, info, expected);
+        }
+        if((expr.binary_op == BinaryOp::multiply ||
+            expr.binary_op == BinaryOp::divide) &&
+           ((expected.has && expected.type == Type::time) ||
+            anchor_type(expr.lhs, Type::dint) == Type::time)) {
+            return time_scale(expr, info, expected);
+        }
         // arithmetic
         Expected operand = expected;
         if(!operand.has) {
-            Type inferred = anchor_type(expr.lhs, Type::dint);
-            if(!anchor_found_) {
-                inferred = anchor_type(expr.rhs, inferred);
-            }
-            operand = want(inferred);
+            operand = want(join_anchors(expr.lhs, expr.rhs, Type::dint));
         }
         if(!valid_arith(expr.binary_op, operand.type)) {
             diag(DiagCode::sema_operand_type_invalid, expr.line, expr.column,
@@ -951,8 +1210,8 @@ private:
         const ExprInfo &rhs = result_.exprs[static_cast<std::size_t>(expr.rhs)];
         const bool divides = expr.binary_op == BinaryOp::divide ||
                              expr.binary_op == BinaryOp::modulo;
-        if(divides && detail::is_int_family(operand.type) && rhs.is_const &&
-           static_cast<std::int64_t>(rhs.bits) == 0) {
+        if(divides && is_integer(operand.type) && rhs.is_const &&
+           rhs.bits == 0) {
             diag(DiagCode::sema_division_by_zero_const, expr.line,
                  expr.column);
             return false;
@@ -961,23 +1220,117 @@ private:
         return true;
     }
 
+    // ** power (L1a 5.2): REAL/LREAL base, ANY_NUM exponent. Never folds:
+    // the value comes from platform libm at runtime; embedding it into the
+    // constant pool would break cross-platform bytecode determinism.
+    bool power_op(const Expr &expr, ExprInfo &info, Expected expected)
+    {
+        Type base = Type::lreal;
+        if(expected.has) {
+            base = expected.type;
+        } else {
+            base = anchor_type(expr.lhs, Type::lreal);
+        }
+        if(!is_real_family(base)) {
+            diag(DiagCode::sema_operand_type_invalid, expr.line, expr.column,
+                 "** base must be REAL or LREAL");
+            return false;
+        }
+        if(!check_expr(expr.lhs, want(base))) {
+            return false;
+        }
+        const Type exp_anchor = anchor_type(expr.rhs, base);
+        const Type exp_type =
+            is_integer(exp_anchor) ? exp_anchor : base;
+        if(!check_expr(expr.rhs, want(exp_type))) {
+            return false;
+        }
+        if(!detail::is_arith(result_.exprs[static_cast<std::size_t>(expr.rhs)]
+                                 .type)) {
+            diag(DiagCode::sema_operand_type_invalid, expr.line, expr.column,
+                 "** exponent must be numeric");
+            return false;
+        }
+        info.type = base;
+        info.valid = true;
+        return true;
+    }
+
+    // TIME * / scale (L1a 5.1): TIME on the left, integer or real scale on
+    // the right; real results truncate toward zero at the ns grain.
+    bool time_scale(const Expr &expr, ExprInfo &info, Expected expected)
+    {
+        if(expected.has && expected.type != Type::time) {
+            return mismatch(expr, expected.type, Type::time);
+        }
+        if(!check_expr(expr.lhs, want(Type::time))) {
+            return false;
+        }
+        const Type scale_type = anchor_type(expr.rhs, Type::dint);
+        if(!is_integer(scale_type) && !is_real_family(scale_type)) {
+            diag(DiagCode::sema_operand_type_invalid, expr.line, expr.column,
+                 "TIME scale must be numeric");
+            return false;
+        }
+        if(!check_expr(expr.rhs, want(scale_type))) {
+            return false;
+        }
+        const ExprInfo &rhs =
+            result_.exprs[static_cast<std::size_t>(expr.rhs)];
+        if(expr.binary_op == BinaryOp::divide && rhs.is_const) {
+            if(is_integer(rhs.type) && rhs.bits == 0) {
+                diag(DiagCode::sema_division_by_zero_const, expr.line,
+                     expr.column);
+                return false;
+            }
+        }
+        info.type = Type::time;
+        info.valid = true;
+        const ExprInfo &lhs =
+            result_.exprs[static_cast<std::size_t>(expr.lhs)];
+        if(lhs.is_const && rhs.is_const) {
+            const std::int64_t t = static_cast<std::int64_t>(lhs.bits);
+            if(is_integer(rhs.type)) {
+                const std::int64_t s = static_cast<std::int64_t>(rhs.bits);
+                info.is_const = true;
+                info.bits = static_cast<std::uint64_t>(
+                    expr.binary_op == BinaryOp::multiply
+                        ? detail::wrap_mul64(t, s)
+                        : (s == -1 ? detail::wrap_sub64(0, t) : t / s));
+            } else {
+                const double s = detail::bits_double(rhs.bits);
+                const double value =
+                    expr.binary_op == BinaryOp::multiply
+                        ? static_cast<double>(t) * s
+                        : static_cast<double>(t) / s;
+                if(std::isfinite(value)) {
+                    info.is_const = true;
+                    info.bits =
+                        detail::wrap_double_to_u64(std::trunc(value));
+                }
+                // non-finite folds are left to the runtime fault path
+            }
+        }
+        return true;
+    }
+
     static bool valid_arith(BinaryOp op, Type type)
     {
         switch(op) {
         case BinaryOp::add:
         case BinaryOp::subtract:
-            return detail::is_numeric(type) || type == Type::time;
+            return detail::is_arith(type) || type == Type::time;
         case BinaryOp::multiply:
         case BinaryOp::divide:
-            return detail::is_numeric(type);
+            return detail::is_arith(type);
         case BinaryOp::modulo:
-            return detail::is_int_family(type);
+            return is_integer(type);
         default:
             return false;
         }
     }
 
-    void fold_logical(const Expr &expr, ExprInfo &info)
+    void fold_logical(const Expr &expr, ExprInfo &info, Type target)
     {
         const ExprInfo &lhs = result_.exprs[static_cast<std::size_t>(expr.lhs)];
         const ExprInfo &rhs = result_.exprs[static_cast<std::size_t>(expr.rhs)];
@@ -985,6 +1338,14 @@ private:
             return;
         }
         info.is_const = true;
+        if(is_bitstring(target)) {
+            switch(expr.binary_op) {
+            case BinaryOp::logical_and: info.bits = lhs.bits & rhs.bits; break;
+            case BinaryOp::logical_or: info.bits = lhs.bits | rhs.bits; break;
+            default: info.bits = lhs.bits ^ rhs.bits; break;
+            }
+            return;
+        }
         const bool a = lhs.bits != 0;
         const bool b = rhs.bits != 0;
         switch(expr.binary_op) {
@@ -1006,6 +1367,17 @@ private:
         if(operand == Type::real || operand == Type::lreal) {
             const double a = detail::bits_double(lhs.bits);
             const double b = detail::bits_double(rhs.bits);
+            switch(expr.binary_op) {
+            case BinaryOp::cmp_eq: value = a == b; break;
+            case BinaryOp::cmp_ne: value = a != b; break;
+            case BinaryOp::cmp_lt: value = a < b; break;
+            case BinaryOp::cmp_gt: value = a > b; break;
+            case BinaryOp::cmp_le: value = a <= b; break;
+            default: value = a >= b; break;
+            }
+        } else if(is_unsigned_int(operand)) {
+            const std::uint64_t a = lhs.bits;
+            const std::uint64_t b = rhs.bits;
             switch(expr.binary_op) {
             case BinaryOp::cmp_eq: value = a == b; break;
             case BinaryOp::cmp_ne: value = a != b; break;
@@ -1064,23 +1436,39 @@ private:
             info.bits = detail::double_bits(value);
             return;
         }
-        const std::int64_t a = static_cast<std::int64_t>(lhs.bits);
-        const std::int64_t b = static_cast<std::int64_t>(rhs.bits);
-        std::int64_t value = 0;
-        switch(expr.binary_op) {
-        case BinaryOp::add: value = detail::wrap_add64(a, b); break;
-        case BinaryOp::subtract: value = detail::wrap_sub64(a, b); break;
-        case BinaryOp::multiply: value = detail::wrap_mul64(a, b); break;
-        case BinaryOp::divide: value = a / b; break; // b != 0 checked above
-        default: value = a % b; break;
-        }
-        if(type == Type::int_) {
-            value = detail::wrap16(value);
-        } else if(type == Type::dint) {
-            value = detail::wrap32(value);
+        // Integer family: add/sub/mul share two's-complement low bits; div
+        // and mod split by signedness. INT64_MIN / -1 is guarded so LINT
+        // wraps instead of trapping (matrix 1.8 policy at full width).
+        std::uint64_t bits = 0;
+        if(is_unsigned_int(type)) {
+            const std::uint64_t a = lhs.bits;
+            const std::uint64_t b = rhs.bits;
+            switch(expr.binary_op) {
+            case BinaryOp::add: bits = a + b; break;
+            case BinaryOp::subtract: bits = a - b; break;
+            case BinaryOp::multiply: bits = a * b; break;
+            case BinaryOp::divide: bits = a / b; break; // b != 0 checked
+            default: bits = a % b; break;
+            }
+        } else {
+            const std::int64_t a = static_cast<std::int64_t>(lhs.bits);
+            const std::int64_t b = static_cast<std::int64_t>(rhs.bits);
+            std::int64_t value = 0;
+            switch(expr.binary_op) {
+            case BinaryOp::add: value = detail::wrap_add64(a, b); break;
+            case BinaryOp::subtract: value = detail::wrap_sub64(a, b); break;
+            case BinaryOp::multiply: value = detail::wrap_mul64(a, b); break;
+            case BinaryOp::divide:
+                value = b == -1 ? detail::wrap_sub64(0, a) : a / b;
+                break;
+            default:
+                value = b == -1 ? 0 : a % b;
+                break;
+            }
+            bits = static_cast<std::uint64_t>(value);
         }
         info.is_const = true;
-        info.bits = static_cast<std::uint64_t>(value);
+        info.bits = detail::canon(type, bits);
     }
 
     const Ast &ast_;

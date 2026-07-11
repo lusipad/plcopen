@@ -23,10 +23,12 @@ enum class ExprKind : std::uint8_t
     literal_real,  // real_value
     literal_bool,  // unsigned_value 0/1
     literal_time,  // signed_value ns
+    literal_typed, // TYPE# literal: literal_type + int/real payload (L1a)
     variable,      // name
     pin_read,      // name '.' pin_name (FB output read)
     unary,         // op: minus / not
     binary,        // op token kind
+    call,          // name '(' expr ')': conversion function (L1a 4.x)
 };
 
 enum class UnaryOp : std::uint8_t
@@ -51,6 +53,7 @@ enum class BinaryOp : std::uint8_t
     cmp_gt,
     cmp_le,
     cmp_ge,
+    power, // ** (L1a 5.2)
 };
 
 struct Expr
@@ -63,8 +66,10 @@ struct Expr
     std::int64_t signed_value = 0;
     double real_value = 0.0;
     bool based = false;
+    bool real_form = false;           // literal_typed real payload
+    Type literal_type = Type::bool_;  // literal_typed target type
 
-    std::string name;      // variable / instance name (original spelling)
+    std::string name;      // variable / instance / conversion name
     std::string pin;       // pin name for pin_read
 
     UnaryOp unary_op = UnaryOp::negate;
@@ -83,6 +88,7 @@ enum class StmtKind : std::uint8_t
     repeat,
     fb_call,
     exit_,
+    continue_,
     return_,
     empty,
 };
@@ -147,6 +153,7 @@ struct VarDecl
     std::string name;          // original spelling
     std::string lower;         // lookup key
     bool is_fb = false;
+    bool is_constant = false;  // VAR CONSTANT block member (L1a 2.5)
     Type type = Type::bool_;
     FbType fb_type = FbType::r_trig;
     ExprIndex init = kNoExpr;  // constant expression or kNoExpr

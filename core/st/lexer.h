@@ -90,7 +90,9 @@ inline constexpr KeywordEntry kKeywords[] = {
     {"until", TokenKind::kw_until},
     {"end_repeat", TokenKind::kw_end_repeat},
     {"exit", TokenKind::kw_exit},
+    {"continue", TokenKind::kw_continue},
     {"return", TokenKind::kw_return},
+    {"constant", TokenKind::kw_constant},
     {"and", TokenKind::kw_and},
     {"or", TokenKind::kw_or},
     {"xor", TokenKind::kw_xor},
@@ -102,6 +104,16 @@ inline constexpr KeywordEntry kKeywords[] = {
     {"real", TokenKind::kw_real},
     {"lreal", TokenKind::kw_lreal},
     {"time", TokenKind::kw_time},
+    {"sint", TokenKind::kw_sint},
+    {"lint", TokenKind::kw_lint},
+    {"usint", TokenKind::kw_usint},
+    {"uint", TokenKind::kw_uint},
+    {"udint", TokenKind::kw_udint},
+    {"ulint", TokenKind::kw_ulint},
+    {"byte", TokenKind::kw_byte},
+    {"word", TokenKind::kw_word},
+    {"dword", TokenKind::kw_dword},
+    {"lword", TokenKind::kw_lword},
 };
 
 struct UnsupportedEntry
@@ -126,17 +138,7 @@ inline constexpr UnsupportedEntry kUnsupported[] = {
     {"var_global", DiagCode::unsupported_l2},
     // (EN/ENO are call-mechanism parameter names owned by L2, not reserved
     // identifiers; they stay usable as variable names in L0.)
-    // L1 type universe
-    {"sint", DiagCode::unsupported_l1},
-    {"usint", DiagCode::unsupported_l1},
-    {"uint", DiagCode::unsupported_l1},
-    {"udint", DiagCode::unsupported_l1},
-    {"lint", DiagCode::unsupported_l1},
-    {"ulint", DiagCode::unsupported_l1},
-    {"byte", DiagCode::unsupported_l1},
-    {"word", DiagCode::unsupported_l1},
-    {"dword", DiagCode::unsupported_l1},
-    {"lword", DiagCode::unsupported_l1},
+    // L1b composite/string/date universe
     {"string", DiagCode::unsupported_l1},
     {"wstring", DiagCode::unsupported_l1},
     {"char", DiagCode::unsupported_l1},
@@ -151,8 +153,6 @@ inline constexpr UnsupportedEntry kUnsupported[] = {
     {"array", DiagCode::unsupported_l1},
     {"type", DiagCode::unsupported_l1},
     {"end_type", DiagCode::unsupported_l1},
-    {"constant", DiagCode::unsupported_l1},
-    {"continue", DiagCode::unsupported_l1},
     // L3 process image / retention
     {"retain", DiagCode::unsupported_l3},
     {"non_retain", DiagCode::unsupported_l3},
@@ -313,6 +313,30 @@ private:
             detail::ascii_iequals(token.text, "time"))) {
             advance(); // '#'
             return lex_time_literal(token, start);
+        }
+
+        // Typed literal prefixes: TYPE#... (approved st-l1a-semantics 3.4).
+        if(peek() == '#') {
+            static constexpr struct
+            {
+                std::string_view lower;
+                Type type;
+            } kTypedPrefixes[] = {
+                {"bool", Type::bool_},   {"sint", Type::sint},
+                {"int", Type::int_},     {"dint", Type::dint},
+                {"lint", Type::lint},    {"usint", Type::usint},
+                {"uint", Type::uint_},   {"udint", Type::udint},
+                {"ulint", Type::ulint},  {"real", Type::real},
+                {"lreal", Type::lreal},  {"byte", Type::byte_},
+                {"word", Type::word},    {"dword", Type::dword},
+                {"lword", Type::lword},
+            };
+            for(const auto &prefix : kTypedPrefixes) {
+                if(detail::ascii_iequals(token.text, prefix.lower)) {
+                    advance(); // '#'
+                    return lex_typed_literal(token, start, prefix.type);
+                }
+            }
         }
 
         if(detail::ascii_iequals(token.text, "true")) {
@@ -604,6 +628,70 @@ private:
         return token;
     }
 
+    Token lex_typed_literal(Token token, std::size_t start, Type type)
+    {
+        token.literal_type = type;
+        if(type == Type::bool_) {
+            const std::size_t word_start = pos_;
+            if(detail::is_ident_start(peek())) {
+                while(!at_end() && detail::is_ident_char(peek())) {
+                    advance();
+                }
+                const std::string_view word =
+                    source_.substr(word_start, pos_ - word_start);
+                if(detail::ascii_iequals(word, "true")) {
+                    token.kind = TokenKind::typed_literal;
+                    token.unsigned_value = 1;
+                } else if(detail::ascii_iequals(word, "false")) {
+                    token.kind = TokenKind::typed_literal;
+                    token.unsigned_value = 0;
+                } else {
+                    return make_error(token, DiagCode::lex_bad_numeric_literal,
+                                      start);
+                }
+            } else if(peek() == '0' || peek() == '1') {
+                token.kind = TokenKind::typed_literal;
+                token.unsigned_value =
+                    static_cast<std::uint64_t>(peek() - '0');
+                advance();
+            } else {
+                return make_error(token, DiagCode::lex_bad_numeric_literal,
+                                  start);
+            }
+            token.text = source_.substr(start, pos_ - start);
+            return token;
+        }
+
+        bool negative = false;
+        if(peek() == '-') {
+            negative = true;
+            advance();
+        } else if(peek() == '+') {
+            advance();
+        }
+        if(!detail::is_digit(peek())) {
+            skip_ident_tail();
+            return make_error(token, DiagCode::lex_bad_numeric_literal, start);
+        }
+        Token number;
+        number.line = token.line;
+        number.column = token.column;
+        number = lex_number(number, pos_);
+        if(number.kind == TokenKind::error) {
+            number.text = source_.substr(start, pos_ - start);
+            return number;
+        }
+        token.kind = TokenKind::typed_literal;
+        token.real_form = number.kind == TokenKind::real_literal;
+        token.real_value =
+            negative ? -number.real_value : number.real_value;
+        token.unsigned_value = number.unsigned_value;
+        token.based = number.based;
+        token.signed_value = negative ? -1 : 0; // sign marker
+        token.text = source_.substr(start, pos_ - start);
+        return token;
+    }
+
     Token time_error(Token token, std::size_t start)
     {
         // Consume the remaining literal-ish tail so recovery resumes cleanly.
@@ -683,7 +771,14 @@ private:
         case ')': token.kind = TokenKind::rparen; break;
         case '+': token.kind = TokenKind::plus; break;
         case '-': token.kind = TokenKind::minus; break;
-        case '*': token.kind = TokenKind::star; break;
+        case '*':
+            if(peek() == '*') {
+                advance();
+                token.kind = TokenKind::star_star;
+            } else {
+                token.kind = TokenKind::star;
+            }
+            break;
         case '/': token.kind = TokenKind::slash; break;
         case '&': token.kind = TokenKind::ampersand; break;
         case '=': token.kind = TokenKind::equal; break;

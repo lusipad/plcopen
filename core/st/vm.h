@@ -7,6 +7,7 @@
 // semantics per matrix 3.7: the scan stops at the faulting instruction,
 // prior assignments stay, the fault latches until reset().
 
+#include <cmath>
 #include <cstdint>
 #include <cstring>
 
@@ -26,6 +27,7 @@ enum class ScanError : std::uint8_t
     for_step_zero,
     budget_exceeded,
     invalid_bytecode,
+    conversion_invalid, // NaN/Inf into an integer domain (L1a 4.3/5.1)
 };
 
 constexpr const char *to_string(ScanError error)
@@ -37,6 +39,7 @@ constexpr const char *to_string(ScanError error)
     case ScanError::for_step_zero: return "for_step_zero";
     case ScanError::budget_exceeded: return "budget_exceeded";
     case ScanError::invalid_bytecode: return "invalid_bytecode";
+    case ScanError::conversion_invalid: return "conversion_invalid";
     }
     return "unknown";
 }
@@ -465,6 +468,243 @@ public:
                 const FbInfo &info = program_->fbs[fb];
                 stack_[sp++] =
                     as_u64(fb_load(info.type, fb_area_ + info.offset, pin));
+                break;
+            }
+
+            // --- L1a extensions (approved st-l1a-semantics) --------------
+
+            case Op::iarith: {
+                if(pc + 2 > size) {
+                    return latch(ScanError::invalid_bytecode);
+                }
+                const std::uint8_t sub = code[pc++];
+                const Type type = static_cast<Type>(code[pc++]);
+                if(sub == 5) { // neg (signed only)
+                    if(sp < 1) {
+                        return latch(ScanError::invalid_bytecode);
+                    }
+                    const std::int64_t a = as_i64(stack_[sp - 1]);
+                    stack_[sp - 1] = detail::canon(
+                        type,
+                        static_cast<std::uint64_t>(detail::wrap_sub64(0, a)));
+                    break;
+                }
+                if(sp < 2) {
+                    return latch(ScanError::invalid_bytecode);
+                }
+                const std::uint64_t rb = stack_[--sp];
+                const std::uint64_t ra = stack_[--sp];
+                std::uint64_t bits = 0;
+                if(is_unsigned_int(type)) {
+                    switch(sub) {
+                    case 0: bits = ra + rb; break;
+                    case 1: bits = ra - rb; break;
+                    case 2: bits = ra * rb; break;
+                    case 3:
+                        if(rb == 0) {
+                            return latch(ScanError::division_by_zero);
+                        }
+                        bits = ra / rb;
+                        break;
+                    case 4:
+                        if(rb == 0) {
+                            return latch(ScanError::division_by_zero);
+                        }
+                        bits = ra % rb;
+                        break;
+                    default:
+                        return latch(ScanError::invalid_bytecode);
+                    }
+                } else {
+                    const std::int64_t a = as_i64(ra);
+                    const std::int64_t b = as_i64(rb);
+                    std::int64_t value = 0;
+                    switch(sub) {
+                    case 0: value = detail::wrap_add64(a, b); break;
+                    case 1: value = detail::wrap_sub64(a, b); break;
+                    case 2: value = detail::wrap_mul64(a, b); break;
+                    case 3:
+                        if(b == 0) {
+                            return latch(ScanError::division_by_zero);
+                        }
+                        value = b == -1 ? detail::wrap_sub64(0, a) : a / b;
+                        break;
+                    case 4:
+                        if(b == 0) {
+                            return latch(ScanError::division_by_zero);
+                        }
+                        value = b == -1 ? 0 : a % b;
+                        break;
+                    default:
+                        return latch(ScanError::invalid_bytecode);
+                    }
+                    bits = static_cast<std::uint64_t>(value);
+                }
+                stack_[sp++] = detail::canon(type, bits);
+                break;
+            }
+
+            case Op::cmp_u: {
+                if(pc >= size || sp < 2) {
+                    return latch(ScanError::invalid_bytecode);
+                }
+                const std::uint8_t sub = code[pc++];
+                const std::uint64_t b = stack_[--sp];
+                const std::uint64_t a = stack_[--sp];
+                bool value = false;
+                switch(sub) {
+                case 0: value = a < b; break;
+                case 1: value = a > b; break;
+                case 2: value = a <= b; break;
+                case 3: value = a >= b; break;
+                default:
+                    return latch(ScanError::invalid_bytecode);
+                }
+                stack_[sp++] = value ? 1 : 0;
+                break;
+            }
+
+            case Op::bit_and:
+            case Op::bit_or:
+            case Op::bit_xor: {
+                if(sp < 2) {
+                    return latch(ScanError::invalid_bytecode);
+                }
+                const std::uint64_t b = stack_[--sp];
+                const std::uint64_t a = stack_[--sp];
+                stack_[sp++] = op == Op::bit_and
+                                   ? (a & b)
+                                   : (op == Op::bit_or ? (a | b) : (a ^ b));
+                break;
+            }
+            case Op::bit_not: {
+                if(pc >= size || sp < 1) {
+                    return latch(ScanError::invalid_bytecode);
+                }
+                const Type type = static_cast<Type>(code[pc++]);
+                stack_[sp - 1] = detail::canon(type, ~stack_[sp - 1]);
+                break;
+            }
+
+            case Op::time_scale: {
+                if(pc >= size || sp < 2) {
+                    return latch(ScanError::invalid_bytecode);
+                }
+                const std::uint8_t sub = code[pc++];
+                const std::uint64_t rs = stack_[--sp];
+                const std::int64_t t = as_i64(stack_[--sp]);
+                std::uint64_t bits = 0;
+                switch(sub) {
+                case 0:
+                    bits = static_cast<std::uint64_t>(
+                        detail::wrap_mul64(t, as_i64(rs)));
+                    break;
+                case 1: {
+                    const std::int64_t s = as_i64(rs);
+                    if(s == 0) {
+                        return latch(ScanError::division_by_zero);
+                    }
+                    bits = static_cast<std::uint64_t>(
+                        s == -1 ? detail::wrap_sub64(0, t) : t / s);
+                    break;
+                }
+                case 2:
+                case 3: {
+                    const double s = detail::bits_double(rs);
+                    const double value = sub == 2
+                                             ? static_cast<double>(t) * s
+                                             : static_cast<double>(t) / s;
+                    if(!std::isfinite(value)) {
+                        return latch(ScanError::conversion_invalid);
+                    }
+                    bits = detail::wrap_double_to_u64(std::trunc(value));
+                    break;
+                }
+                default:
+                    return latch(ScanError::invalid_bytecode);
+                }
+                stack_[sp++] = bits;
+                break;
+            }
+
+            case Op::power: {
+                if(pc >= size || sp < 2) {
+                    return latch(ScanError::invalid_bytecode);
+                }
+                const Type type = static_cast<Type>(code[pc++]);
+                const double b = detail::bits_double(stack_[--sp]);
+                const double a = detail::bits_double(stack_[--sp]);
+                const double value = std::pow(a, b);
+                stack_[sp++] =
+                    type == Type::real
+                        ? detail::double_bits(static_cast<double>(
+                              static_cast<float>(value)))
+                        : detail::double_bits(value);
+                break;
+            }
+
+            case Op::conv_wrap: {
+                if(pc >= size || sp < 1) {
+                    return latch(ScanError::invalid_bytecode);
+                }
+                const Type type = static_cast<Type>(code[pc++]);
+                stack_[sp - 1] = detail::canon(type, stack_[sp - 1]);
+                break;
+            }
+            case Op::conv_i2d: {
+                if(sp < 1) {
+                    return latch(ScanError::invalid_bytecode);
+                }
+                stack_[sp - 1] = detail::double_bits(
+                    static_cast<double>(as_i64(stack_[sp - 1])));
+                break;
+            }
+            case Op::conv_u2d: {
+                if(sp < 1) {
+                    return latch(ScanError::invalid_bytecode);
+                }
+                stack_[sp - 1] = detail::double_bits(
+                    static_cast<double>(stack_[sp - 1]));
+                break;
+            }
+            case Op::f_narrow: {
+                if(sp < 1) {
+                    return latch(ScanError::invalid_bytecode);
+                }
+                stack_[sp - 1] = detail::double_bits(static_cast<double>(
+                    static_cast<float>(detail::bits_double(stack_[sp - 1]))));
+                break;
+            }
+            case Op::conv_round:
+            case Op::conv_trunc: {
+                if(pc >= size || sp < 1) {
+                    return latch(ScanError::invalid_bytecode);
+                }
+                const Type type = static_cast<Type>(code[pc++]);
+                const double value = detail::bits_double(stack_[sp - 1]);
+                if(!std::isfinite(value)) {
+                    return latch(ScanError::conversion_invalid);
+                }
+                const double adjusted = op == Op::conv_trunc
+                                            ? std::trunc(value)
+                                            : std::nearbyint(value);
+                stack_[sp - 1] = detail::canon(
+                    type, detail::wrap_double_to_u64(adjusted));
+                break;
+            }
+            case Op::conv_to_bool: {
+                if(sp < 1) {
+                    return latch(ScanError::invalid_bytecode);
+                }
+                stack_[sp - 1] = stack_[sp - 1] != 0 ? 1 : 0;
+                break;
+            }
+            case Op::conv_f_to_bool: {
+                if(sp < 1) {
+                    return latch(ScanError::invalid_bytecode);
+                }
+                stack_[sp - 1] =
+                    detail::bits_double(stack_[sp - 1]) != 0.0 ? 1 : 0;
                 break;
             }
 

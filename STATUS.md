@@ -3,7 +3,7 @@
 > 本页是"现在在哪"的唯一入口，每个批次收口时更新。术语见
 > [CONTEXT.md](CONTEXT.md)；边界细节见
 > [已知边界注册表](doc/compliance/known-boundaries.md)。
-> 最后更新：**2026-07-10**。
+> 最后更新：**2026-07-12**。
 
 ## 一句话
 
@@ -15,7 +15,7 @@
 双域已落地**（ADR-0007：规划域产帧、RT 域仅消费承诺轨迹，TSAN 零
 报告）。S0 纯软件面仅剩 PyPI 发布（Trusted Publishing 作业已备，
 publisher 注册与 tag 为人专属）；S1-S3 另依赖硬件、用户和日历时间。**L 系列语言层已启动（2026-07-11 维护者拍板）**，
-批次 L0（ST 子集 + VM 地基）已交付（KB-069，矩阵批准同日实现收口）。
+批次 L0（KB-069）与 L1a（标量宇宙 + 转换矩阵机读化，KB-070）均已交付。
 
 ## 历史刻度（处于哪一步）
 
@@ -36,12 +36,12 @@ publisher 注册与 tag 为人专属）；S1-S3 另依赖硬件、用户和日�
 | L5 axis | 单轴全命令生命周期、组共享路径（2-8 轴）、前瞻窗口执行、坐标系栈（ACS/MCS/PCS + 工件帧/工具偏置）、kinematics 级联（龙门/SCARA）、位姿管线（RPY + 6R，TCP 工具变换）、笛卡尔/位姿回读（含 RPY 反演万向节约定）、段内笛卡尔插补（直线/圆弧/blending + 前瞻窗口，逐周期逆解 + 测地姿态，opt-in；腕奇异可穿越）、窗口深度可配、双空间限速、B9 流会话 | KB-035/036/037/041~050 |
 | L6 fb | Part 1/2 全量 FB 面 + Part 4 线性/圆弧/blending 门面（CoordSystem 输入）+ Part 4 管理 FB（GroupHome/MoveDirect/GroupSetOverride/GroupInterrupt·Continue）+ Part 4 路径表/变换 FB（PathSelect/MovePath/SetKinTransform/ReadCartesianTransform）+ Part 5 回零 FB（StepAbsSwitch/StepLimitSwitch/StepRefPulse/StepDirect/FinishHoming） | 矩阵 45/45 + Part 4/5 |
 | L7 adapters | Servo 窄接口 + ServoSim + 桥接（ADR-0004）、CiA402 状态机、CSP/CSV/CST bumpless 骨架 | KB-040 |
-| st 语言层（批次 L0） | IEC 61131-3 ST 逻辑子集：容错前端 + 确定性字节码 VM（指令预算看门狗、加载期全静态布局、scan 零分配）、basic.h 十 FB 命名形参绑定、TIME=纳秒/精度=任务周期；一致性矩阵 + fuzz + 跨平台字节码锚点 | KB-069 |
+| st 语言层（批次 L0+L1a） | IEC 61131-3 ST：容错前端 + 确定性字节码 VM（指令预算看门狗、加载期全静态布局、scan 零分配）、basic.h 十 FB 绑定（命名/非正式两形态）、16 标量类型宇宙 + 无损加宽白名单 + 210 格转换矩阵机读化（round-half-even/TRUNC/conversion_invalid fault）、TIME 乘除、** 幂、VAR CONSTANT、类型化字面量；一致性矩阵×2 + 转换三方比对 + fuzz + 双锚点哈希门 | KB-069/070 |
 | 工具面 | pyplcopen（单轴/流/PoseArmSim，三平台 wheel 远端绿，PyPI 发布作业已备待 publisher 注册，CycleConfig SI 换算）、18 份回放黄金语料、28 关节 @1kHz 预算基准 + 笛卡尔 IK 预算门、参考 executor demo（canonical `planning → committed trajectory → RT` 双域，ADR-0007，TSAN 零报告）、周期级 trace、**文档站已上线**（http://lusipad.com/plcopen/ ）、vcpkg/Conan recipe、ErrorCode 诊断文本 | — |
 
 ## 质量门禁现状
 
-- 测试：48 项 CTest；当前提交在 WSL 复现的 gcovr 8.6/Linux CI 口径为 90.1%（8868/9840，达到 90% 门槛），远端 workflow 结果仍待复验；Windows `coverage.ps1` 的独立 Debug 全模块口径为 87.88%（21958/24985，通过其 50% 门），两者不混用
+- 测试：56 项 CTest（含 st 语言层 8 项与转换矩阵三方比对）；当前提交在 WSL 复现的 gcovr 8.6/Linux CI 口径为 90.1%（8868/9840，达到 90% 门槛），远端 workflow 结果仍待复验；Windows `coverage.ps1` 的独立 Debug 全模块口径为 87.88%（21958/24985，通过其 50% 门），两者不混用
 - 回放：18 语料逐周期比对；声明变更零例外流程运行中
 - RT：静态扫描 26 文件（含 st 语言层 vm/bind）+ 冻结窗口分配断言；DoD §5.3 的周期耗时对比通过（新核 = 旧线 9.3%）；分配 soak 以周期等效口径关闭（25.92 亿周期零分配，2026-07-11），墙钟 72h/抖动证据归 B7 真机报告
 - CI（远端基线 `23fd571`，截至 2026-07-11）：Windows/Linux 主线通过，Mutation 18/18 通过；KB-068 修复后远端复验完成——Core Nightly（07-11 定时：OTG 1M fuzz、50M-cycle allocation soak、time-optimal 1M fuzz 三作业拆分后全绿）、Coverage Gate 与 Wheels（07-11 手动重触发）全部通过。`main` 仍无 branch protection/ruleset，这些是 workflow 证据而非技术强制的 required checks。触发边界见 [CI gate 矩阵](doc/compliance/ci-gates.md)

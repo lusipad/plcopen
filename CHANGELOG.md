@@ -6,6 +6,16 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- L 系列批次 L1a（KB-070）：标量类型宇宙 + 转换矩阵机读化。10 新标量
+  （全宽度有符号/无符号 + 位串四型）、无损加宽白名单（规范槽位形式下
+  运行期零成本）、210 格 `<SRC>_TO_<DST>` 全声明（conv.h 单一事实源，
+  YAML 三方比对入 CTest；round-half-even/TRUNC/NaN·Inf→conversion_invalid
+  fault）、TIME 乘除、`**` 幂（永不折叠，保跨平台字节码确定性）、
+  CONTINUE、非正式 FB 调用、VAR CONSTANT、类型化字面量。指令面纯追加：
+  L0 字节码逐位不变（锚点哈希保持），L1a 扩展锚点哈希入门禁。实战修复：
+  wrap_double_to_u64 负值浮点补偿塌缩缺陷（手写决胜期望值抓出，独立
+  oracle 镜像公式未抓到——KB-051 教训再验证）。
+
 - 参考 executor 双域落地（ADR-0007）：`rt_executor_demo` 重构为 canonical
   `planning → committed trajectory → RT` 三线程形态——规划线程独占
   AxisGroup/AxisModel（消费命令、桥接反馈、提前 H=16 周期 cycle() 产帧），

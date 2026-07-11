@@ -41,12 +41,16 @@ while(running) {
 // 只读符号表：vm.find("counter") → value_i64/value_f64/value_bool
 ```
 
-## L0 范围备忘
+## 范围备忘（L0 + L1a）
 
-单 PROGRAM；BOOL/INT/DINT/REAL/LREAL/TIME；IF/CASE/FOR/WHILE/REPEAT/
-EXIT/RETURN；`basic.h` 十个 IEC FB 命名形参直调（RTC 排除）。无隐式
-转换（L1）、无用户 POU 与 MC_* 绑定（L2）、无进程映像（L3）、无标准
-函数库（L4）、无任务语法（L5）、无 SFC（L6）。完整不做清单见矩阵 §6。
+单 PROGRAM；16 标量类型（6 L0 型 + 全宽度有符号/无符号 + 位串四型，
+KB-070）；IF/CASE/FOR/WHILE/REPEAT/EXIT/CONTINUE/RETURN；`basic.h` 十
+IEC FB（命名/非正式两种调用形态，RTC 排除）；无损加宽白名单 + 210 格
+`<SRC>_TO_<DST>` 转换矩阵（[st-l1a-conversions.yaml](../../doc/compliance/st-l1a-conversions.yaml)
+三方比对入 CTest）；TIME 乘除、`**` 幂（永不折叠）、VAR CONSTANT、
+`TYPE#` 字面量。无复合类型（L1b）、无用户 POU 与 MC_* 绑定（L2）、
+无进程映像（L3）、无标准函数库（L4）、无任务语法（L5）、无 SFC（L6）。
+完整不做清单见两份矩阵 §6/§8。
 
 ## 测试
 

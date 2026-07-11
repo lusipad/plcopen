@@ -52,6 +52,10 @@ const char *const kFragments[] = {
     "ARRAY", "STRING", "TASK", ":=", ";", ":", ",", "..", ".", "(", ")",
     "+", "-", "*", "/", "<", ">", "<=", ">=", "<>", "=", "&", "16#FF",
     "2#10", "8#7", "T#1s", "T#", "TIME#5ms", "T#1.5s2h", "1.5e3", "1..",
+    "SINT", "LINT", "USINT", "ULINT", "BYTE", "WORD", "DWORD", "LWORD",
+    "CONSTANT", "CONTINUE", "**", "INT#5", "BYTE#16#FF", "LREAL#1.5",
+    "SINT#-129", "ULINT#", "INT_TO_REAL", "LREAL_TO_DINT", "TRUNC_INT",
+    "BOOL_TO_BYTE", "WORD_TO_UINT", "TIME_TO_LINT", "XXX_TO_YYY",
     "1__2", "x", "y", "zz_9", "TRUE", "FALSE", "32768", "-32769",
     "9999999999999999999999", "0.0", "(*", "*)", "//", "\n", "\t", "\"",
     "'", "#", "%", "@", "\x01", "\xFF", "\x80",
@@ -61,9 +65,10 @@ std::string structured_program(Rng &rng)
 {
     std::string source = "PROGRAM f\nVAR\n";
     const int vars = 1 + static_cast<int>(rng.below(4));
-    static const char *const kTypes[] = {"BOOL", "INT",  "DINT",
-                                         "REAL", "LREAL", "TIME", "TON",
-                                         "CTU"};
+    static const char *const kTypes[] = {
+        "BOOL", "INT",   "DINT",  "REAL", "LREAL", "TIME",  "TON",
+        "CTU",  "SINT",  "LINT",  "USINT", "UINT", "UDINT", "ULINT",
+        "BYTE", "WORD",  "DWORD", "LWORD"};
     for(int i = 0; i < vars; ++i) {
         source += "v";
         source += std::to_string(i);
@@ -74,7 +79,7 @@ std::string structured_program(Rng &rng)
     source += "END_VAR\n";
     const int statements = static_cast<int>(rng.below(12));
     for(int i = 0; i < statements; ++i) {
-        switch(rng.below(6)) {
+        switch(rng.below(8)) {
         case 0:
             source += "v0 := v";
             source += std::to_string(rng.below(4));

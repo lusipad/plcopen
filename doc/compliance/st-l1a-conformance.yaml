@@ -1,0 +1,66 @@
+# st-l1a-conformance v1 -- L1a 语义矩阵（st-l1a-semantics.md，已批准
+# 2026-07-11）决策行 -> 测试锚点的机读映射。
+# 校验：cmake -P cmake/verify_st_conformance.cmake（与 L0 清单同跑）
+# 转换矩阵 210 格另有专用三方校验：st-l1a-conversions.yaml +
+# CTest plcopen_core_st_l1a_matrix_check。
+entries:
+  - id: L1a-2.1-wrap
+    file: core/test/st_l1a_types_tests.cpp
+    anchor: anchor L1a-2.1-wrap
+    test: plcopen_core_st_l1a_types_tests
+  - id: L1a-2.3-bits
+    file: core/test/st_l1a_types_tests.cpp
+    anchor: anchor L1a-2.3-bits
+    test: plcopen_core_st_l1a_types_tests
+  - id: L1a-2.5-constant
+    file: core/test/st_l1a_types_tests.cpp
+    anchor: anchor L1a-2.5-constant
+    test: plcopen_core_st_l1a_types_tests
+  - id: L1a-3.1-widen
+    file: core/test/st_l1a_types_tests.cpp
+    anchor: anchor L1a-3.1-widen
+    test: plcopen_core_st_l1a_types_tests
+  - id: L1a-3.1-widen-neg
+    file: core/test/st_l1a_types_tests.cpp
+    anchor: anchor L1a-3.1-widen-neg
+    test: plcopen_core_st_l1a_types_tests
+  - id: L1a-4.3-round
+    file: core/test/st_l1a_conversion_tests.cpp
+    anchor: anchor L1a-4.3-round
+    test: plcopen_core_st_l1a_conversion_tests
+  - id: L1a-4.3-fault
+    file: core/test/st_l1a_conversion_tests.cpp
+    anchor: anchor L1a-4.3-fault
+    test: plcopen_core_st_l1a_conversion_tests
+  - id: L1a-4.6-time
+    file: core/test/st_l1a_conversion_tests.cpp
+    anchor: anchor L1a-4.6-time
+    test: plcopen_core_st_l1a_conversion_tests
+  - id: L1a-4.8-trunc
+    file: core/test/st_l1a_conversion_tests.cpp
+    anchor: anchor L1a-4.8-trunc
+    test: plcopen_core_st_l1a_conversion_tests
+  - id: L1a-5.1-time-scale
+    file: core/test/st_l1a_types_tests.cpp
+    anchor: anchor L1a-5.1-time-scale
+    test: plcopen_core_st_l1a_types_tests
+  - id: L1a-5.2-power
+    file: core/test/st_l1a_types_tests.cpp
+    anchor: anchor L1a-5.2-power
+    test: plcopen_core_st_l1a_types_tests
+  - id: L1a-5.3-continue
+    file: core/test/st_l1a_types_tests.cpp
+    anchor: anchor L1a-5.3-continue
+    test: plcopen_core_st_l1a_types_tests
+  - id: L1a-5.4-nonformal
+    file: core/test/st_l1a_types_tests.cpp
+    anchor: anchor L1a-5.4-nonformal
+    test: plcopen_core_st_l1a_types_tests
+  - id: L1a-7.1-matrix
+    file: core/test/st_l1a_conversion_tests.cpp
+    anchor: metric
+    test: plcopen_core_st_l1a_matrix_check
+  - id: L1a-7.7-hash
+    file: core/test/st_l0_quality_tests.cpp
+    anchor: anchor L1a-7.7-hash
+    test: plcopen_core_st_l0_quality_tests

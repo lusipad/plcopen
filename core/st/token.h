@@ -3,6 +3,8 @@
 #include <cstdint>
 #include <string_view>
 
+#include "st/types.h"
+
 namespace plcopen::core::st
 {
 
@@ -16,6 +18,7 @@ enum class TokenKind : std::uint8_t
     real_literal,  // value in Token::real_value
     time_literal,  // nanoseconds in Token::signed_value
     bool_literal,  // TRUE/FALSE; value in Token::unsigned_value (0/1)
+    typed_literal, // TYPE#... ; type in Token::literal_type (L1a 3.4)
 
     // punctuation
     assign,        // :=
@@ -29,6 +32,7 @@ enum class TokenKind : std::uint8_t
     plus,
     minus,
     star,
+    star_star,     // ** power operator (L1a 5.2)
     slash,
     ampersand,     // & (alias of AND)
     equal,         // =
@@ -62,12 +66,16 @@ enum class TokenKind : std::uint8_t
     kw_until,
     kw_end_repeat,
     kw_exit,
+    kw_continue,
     kw_return,
     kw_and,
     kw_or,
     kw_xor,
     kw_not,
     kw_mod,
+
+    // declaration qualifiers
+    kw_constant,
 
     // type keywords
     kw_bool,
@@ -76,6 +84,16 @@ enum class TokenKind : std::uint8_t
     kw_real,
     kw_lreal,
     kw_time,
+    kw_sint,
+    kw_lint,
+    kw_usint,
+    kw_uint,
+    kw_udint,
+    kw_ulint,
+    kw_byte,
+    kw_word,
+    kw_dword,
+    kw_lword,
 
     // recognized-but-unsupported IEC keyword; payload in Token::diag_code
     unsupported_keyword,
@@ -88,9 +106,11 @@ struct Token
     std::int32_t column = 1;
     std::string_view text;              // slice of the source buffer
     std::uint64_t unsigned_value = 0;   // int/bool literals (magnitude / 0-1)
-    std::int64_t signed_value = 0;      // time literals (nanoseconds)
+    std::int64_t signed_value = 0;      // time ns / typed-literal sign marker
     double real_value = 0.0;            // real literals
     bool based = false;                 // int literal written in 2#/8#/16#
+    bool real_form = false;             // typed literal carries a real payload
+    Type literal_type = Type::bool_;    // typed_literal target type
     std::uint16_t diag_payload = 0;     // DiagCode value for error/unsupported
 };
 

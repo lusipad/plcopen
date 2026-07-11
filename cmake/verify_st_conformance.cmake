@@ -7,14 +7,20 @@
 cmake_minimum_required(VERSION 3.21)
 
 get_filename_component(PLCOPEN_ROOT "${CMAKE_CURRENT_LIST_DIR}/.." ABSOLUTE)
-set(YAML "${PLCOPEN_ROOT}/doc/compliance/st-l0-conformance.yaml")
+set(YAML_FILES
+    "${PLCOPEN_ROOT}/doc/compliance/st-l0-conformance.yaml"
+    "${PLCOPEN_ROOT}/doc/compliance/st-l1a-conformance.yaml")
 
-if(NOT EXISTS "${YAML}")
-    message(FATAL_ERROR "missing ${YAML}")
-endif()
+set(LINES)
+foreach(yaml IN LISTS YAML_FILES)
+    if(NOT EXISTS "${yaml}")
+        message(FATAL_ERROR "missing ${yaml}")
+    endif()
+    file(STRINGS "${yaml}" file_lines)
+    list(APPEND LINES ${file_lines})
+endforeach()
 
 file(READ "${PLCOPEN_ROOT}/core/CMakeLists.txt" CMAKE_TEXT)
-file(STRINGS "${YAML}" LINES)
 
 set(ENTRY_ID "")
 set(ENTRY_FILE "")
