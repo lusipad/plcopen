@@ -81,8 +81,16 @@ function Get-CMakeGenerator {
 }
 
 # Coverage runs every deterministic core executable (family test suites,
-# oracle/fuzz, replay regression, benchmark, demos); a single suite badly
-# understates the surface now that acceptance tests are split per family.
+# oracle/fuzz, replay regression, demos); a single suite badly understates
+# the surface now that acceptance tests are split per family.
+# Wall-clock-gated benchmarks are excluded: under dynamic coverage
+# instrumentation a latency gate measures the instrumentation, not the
+# budget (2026-07-11 CI instance: cartesian_ik 158us vs 50us gate). Those
+# gates stay enforced by the uninstrumented ctest step.
+$ExcludedFromCoverage = @(
+    "plcopen_core_benchmark"
+)
+
 function Get-CoverageExecutables {
     param(
         [string]$ResolvedBuildDir,
@@ -98,7 +106,8 @@ function Get-CoverageExecutables {
         if (-not (Test-Path $Dir)) {
             continue
         }
-        $Found = Get-ChildItem -Path $Dir -File -Filter 'plcopen_core_*.exe' -ErrorAction SilentlyContinue
+        $Found = Get-ChildItem -Path $Dir -File -Filter 'plcopen_core_*.exe' -ErrorAction SilentlyContinue |
+            Where-Object { $ExcludedFromCoverage -notcontains $_.BaseName }
         if ($Found) {
             return @($Found | Sort-Object Name | Select-Object -ExpandProperty FullName)
         }
