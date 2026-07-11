@@ -13,7 +13,7 @@
 远端复验：Nightly/Coverage/Wheels 全通过）。S0 仍有纯软件闭环：PyPI/Pages
 外部发布动作、参考 executor 的规划域/RT 域拆分与 TSAN 证据；S1-S3 另
 依赖硬件、用户和日历时间。**L 系列语言层已启动（2026-07-11 维护者拍板）**，
-L0 语义矩阵草案送批中。
+批次 L0（ST 子集 + VM 地基）已交付（KB-069，矩阵批准同日实现收口）。
 
 ## 历史刻度（处于哪一步）
 
@@ -34,6 +34,7 @@ L0 语义矩阵草案送批中。
 | L5 axis | 单轴全命令生命周期、组共享路径（2-8 轴）、前瞻窗口执行、坐标系栈（ACS/MCS/PCS + 工件帧/工具偏置）、kinematics 级联（龙门/SCARA）、位姿管线（RPY + 6R，TCP 工具变换）、笛卡尔/位姿回读（含 RPY 反演万向节约定）、段内笛卡尔插补（直线/圆弧/blending + 前瞻窗口，逐周期逆解 + 测地姿态，opt-in；腕奇异可穿越）、窗口深度可配、双空间限速、B9 流会话 | KB-035/036/037/041~050 |
 | L6 fb | Part 1/2 全量 FB 面 + Part 4 线性/圆弧/blending 门面（CoordSystem 输入）+ Part 4 管理 FB（GroupHome/MoveDirect/GroupSetOverride/GroupInterrupt·Continue）+ Part 4 路径表/变换 FB（PathSelect/MovePath/SetKinTransform/ReadCartesianTransform）+ Part 5 回零 FB（StepAbsSwitch/StepLimitSwitch/StepRefPulse/StepDirect/FinishHoming） | 矩阵 45/45 + Part 4/5 |
 | L7 adapters | Servo 窄接口 + ServoSim + 桥接（ADR-0004）、CiA402 状态机、CSP/CSV/CST bumpless 骨架 | KB-040 |
+| st 语言层（批次 L0） | IEC 61131-3 ST 逻辑子集：容错前端 + 确定性字节码 VM（指令预算看门狗、加载期全静态布局、scan 零分配）、basic.h 十 FB 命名形参绑定、TIME=纳秒/精度=任务周期；一致性矩阵 + fuzz + 跨平台字节码锚点 | KB-069 |
 | 工具面 | pyplcopen（单轴/流/PoseArmSim，wheel 构建链已具备但 PyPI 尚未发布，CycleConfig SI 换算）、18 份回放黄金语料、28 关节 @1kHz 预算基准 + 笛卡尔 IK 预算门、参考 executor demo（双向 SPSC 单写者基础；canonical `planning → committed trajectory → RT` 双域尚未完成）、周期级 trace、MkDocs 源码与部署 workflow（Pages 尚未启用）、vcpkg/Conan recipe、ErrorCode 诊断文本 | — |
 
 ## 质量门禁现状

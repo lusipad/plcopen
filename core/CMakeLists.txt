@@ -148,6 +148,31 @@ if(BUILD_TESTING AND PLCOPEN_BUILD_CORE_TESTS)
     plcopen_core_rt_compile_options(plcopen_core_y7_group_takeover_tests)
     add_test(NAME plcopen_core_y7_group_takeover_tests COMMAND plcopen_core_y7_group_takeover_tests)
 
+    add_executable(plcopen_core_st_l0_compiler_tests test/st_l0_compiler_tests.cpp)
+    target_link_libraries(plcopen_core_st_l0_compiler_tests PRIVATE plcopen::core)
+    plcopen_core_rt_compile_options(plcopen_core_st_l0_compiler_tests)
+    add_test(NAME plcopen_core_st_l0_compiler_tests COMMAND plcopen_core_st_l0_compiler_tests)
+
+    add_executable(plcopen_core_st_l0_runtime_tests test/st_l0_runtime_tests.cpp)
+    target_link_libraries(plcopen_core_st_l0_runtime_tests PRIVATE plcopen::core)
+    plcopen_core_rt_compile_options(plcopen_core_st_l0_runtime_tests)
+    add_test(NAME plcopen_core_st_l0_runtime_tests COMMAND plcopen_core_st_l0_runtime_tests)
+
+    add_executable(plcopen_core_st_l0_golden_tests test/st_l0_golden_tests.cpp)
+    target_link_libraries(plcopen_core_st_l0_golden_tests PRIVATE plcopen::core)
+    plcopen_core_rt_compile_options(plcopen_core_st_l0_golden_tests)
+    add_test(NAME plcopen_core_st_l0_golden_tests COMMAND plcopen_core_st_l0_golden_tests)
+
+    add_executable(plcopen_core_st_l0_quality_tests test/st_l0_quality_tests.cpp)
+    target_link_libraries(plcopen_core_st_l0_quality_tests PRIVATE plcopen::core)
+    plcopen_core_rt_compile_options(plcopen_core_st_l0_quality_tests)
+    add_test(NAME plcopen_core_st_l0_quality_tests COMMAND plcopen_core_st_l0_quality_tests)
+
+    add_executable(plcopen_core_st_fuzz test/st_fuzz.cpp)
+    target_link_libraries(plcopen_core_st_fuzz PRIVATE plcopen::core)
+    plcopen_core_rt_compile_options(plcopen_core_st_fuzz)
+    add_test(NAME plcopen_core_st_fuzz_smoke COMMAND plcopen_core_st_fuzz --iterations 3000)
+
     add_executable(plcopen_core_stream_tests test/stream_filter_tests.cpp)
     target_link_libraries(plcopen_core_stream_tests PRIVATE plcopen::core)
     plcopen_core_rt_compile_options(plcopen_core_stream_tests)
@@ -287,6 +312,6 @@ endif()
 install(TARGETS plcopen_core
     EXPORT plcopenTargets)
 
-install(DIRECTORY adapters axis exec fb geom kin otg plan rt stream
+install(DIRECTORY adapters axis exec fb geom kin otg plan rt st stream
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/plcopen
     FILES_MATCHING PATTERN "*.h")

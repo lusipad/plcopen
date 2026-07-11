@@ -38,8 +38,10 @@ G-code、硬件验证（S1）。
 维护者裁决 L 系列（IEC 61131-3 语言层，自研）优先于 H/F/T 三轨启动；
 触发器挂账：**台架下单 → F（EtherCAT）插队；真机在手 → H1 修订稿送批**。
 批次表见[软件极致计划](doc/planning/software-excellence-plan.md) L 系列节。
-当前进度：L0（ST 子集 + VM 地基）语义矩阵
-[st-l0-semantics.md](doc/compliance/st-l0-semantics.md) 草案送批中；
+当前进度：**L0（ST 子集 + VM 地基）已交付**（KB-069，矩阵
+[st-l0-semantics.md](doc/compliance/st-l0-semantics.md) 2026-07-11 批准
+并同日实现收口：容错前端 + 确定性 VM + 50 黄金程序 + 10 万 fuzz +
+一致性矩阵 47 锚点）；下一批次 L1（类型系统全量）矩阵待起草。
 扎实化剩余收口项（AxisGroup 拆分、executor 双域、发布动作、72h soak）
 并行推进。
 

@@ -53,3 +53,23 @@ jobs:
 
       - name: Run time-optimal OTG fuzz
         run: ./build/core/plcopen_core_otg_time_optimal_tests --iterations 1000000
+
+  st-frontend-fuzz-sanitized:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Configure CMake (ASan/UBSan)
+        run: >
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo
+          -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined
+          -fno-sanitize-recover=all"
+          -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined"
+
+      - name: Build ST fuzz
+        run: cmake --build build --target plcopen_core_st_fuzz --parallel
+
+      - name: Run ST front-end fuzz (metric 5.2)
+        run: ./build/core/plcopen_core_st_fuzz --iterations 100000

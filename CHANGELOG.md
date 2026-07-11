@@ -6,6 +6,18 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- L 系列批次 L0（KB-069）：IEC 61131-3 ST 逻辑子集 + 确定性字节码 VM
+  （`core/st/`）。自研容错递归下降前端（语句级错误恢复 + 稳定诊断码 +
+  POU 级增量接口形态）、严格同型类型规则（无隐式转换）、常量折叠与
+  运行时共用同一 wrap/f32 语义；栈机字节码 LE 编码确定性生成（同源
+  重复编译与跨平台逐字节一致，锚点哈希入门禁）；VM 加载期全静态布局
+  （调用方缓冲）、`scan(budget)` 指令计数看门狗、fault 锁存语义；
+  `basic.h` 十个 IEC FB 命名形参绑定（TIME 全程纳秒，精度 = 任务周期）。
+  验收：黄金程序 50 个、fuzz 10 万输入零 crash（抓出并修复 VAR 块恢复
+  死循环）、一致性矩阵 47 锚点校验、scan 零分配断言、指令预算 ±1 边界、
+  Debug 下 1e6 指令 8.4ms。规格 `doc/compliance/st-l0-semantics.md`
+  （已批准 2026-07-11）。
+
 - 参考 executor 软件形态 + 周期级 trace 工具（X3/X4）：`rt_executor_demo`
   落成 architecture.md 图 3/4——周期线程（Linux SCHED_FIFO 尝试 + 绝对
   截止期睡眠，无特权优雅降级；Windows 冒烟节拍）驱动组 + ServoSim 桥接，
