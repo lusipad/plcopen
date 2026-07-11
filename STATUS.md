@@ -9,9 +9,11 @@
 
 新核 `core/` 主体能力已落地（R0-R4 重写 + Phase B 纯软件 + 位姿闭环 +
 软件收尾批，KB-034~068），**v1.0.0-alpha 已发布（2026-07-06）**，Part 4
-管理/路径表/变换 + Part 5 回零 FB 已交付。S0 仍有纯软件闭环：周期质量门
-复绿、三平台 wheel/PyPI/Pages 外部发布、参考 executor 的规划域/RT 域拆分与
-TSAN 证据；S1-S3 另依赖硬件、用户和日历时间。
+管理/路径表/变换 + Part 5 回零 FB 已交付。周期质量门已复绿（2026-07-11
+远端复验：Nightly/Coverage/Wheels 全通过）。S0 仍有纯软件闭环：PyPI/Pages
+外部发布动作、参考 executor 的规划域/RT 域拆分与 TSAN 证据；S1-S3 另
+依赖硬件、用户和日历时间。**L 系列语言层已启动（2026-07-11 维护者拍板）**，
+L0 语义矩阵草案送批中。
 
 ## 历史刻度（处于哪一步）
 
@@ -39,7 +41,7 @@ TSAN 证据；S1-S3 另依赖硬件、用户和日历时间。
 - 测试：48 项 CTest；当前提交在 WSL 复现的 gcovr 8.6/Linux CI 口径为 90.1%（8868/9840，达到 90% 门槛），远端 workflow 结果仍待复验；Windows `coverage.ps1` 的独立 Debug 全模块口径为 87.88%（21958/24985，通过其 50% 门），两者不混用
 - 回放：18 语料逐周期比对；声明变更零例外流程运行中
 - RT：静态扫描 24 文件 + 冻结窗口分配断言；DoD §5.3 的周期耗时对比通过（新核 = 旧线 9.3%），72h 分配/抖动证据未关闭
-- CI（推送前远端基线 `1d634bc`，截至 2026-07-10）：Windows/Linux 主线通过，Mutation 18/18 通过；Coverage、Core Nightly、Wheels 最近一次失败。本提交已本地通过 coverage 90% 门、OTG 1M fuzz、50M-cycle allocation soak 与 time-optimal 1M fuzz，新的远端 workflow 结果待复验；且 `main` 无 branch protection/ruleset，这些是 workflow 证据而非技术强制的 required checks。触发边界见 [CI gate 矩阵](doc/compliance/ci-gates.md)
+- CI（远端基线 `23fd571`，截至 2026-07-11）：Windows/Linux 主线通过，Mutation 18/18 通过；KB-068 修复后远端复验完成——Core Nightly（07-11 定时：OTG 1M fuzz、50M-cycle allocation soak、time-optimal 1M fuzz 三作业拆分后全绿）、Coverage Gate 与 Wheels（07-11 手动重触发）全部通过。`main` 仍无 branch protection/ruleset，这些是 workflow 证据而非技术强制的 required checks。触发边界见 [CI gate 矩阵](doc/compliance/ci-gates.md)
 
 ## 进行中 / 待办
 
