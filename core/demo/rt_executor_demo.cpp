@@ -302,7 +302,20 @@ int main(int argc, char **argv)
     adapters::ServoSim *servos[2] = {&servo_x, &servo_y};
     for(long tick = 0; tick < cycles; ++tick) {
         CommittedFrame next{};
-        if(committed_ring.pop(next)) {
+        bool frame_ready = committed_ring.pop(next);
+#if !defined(__linux__)
+        // Windows smoke tier makes no wall-clock RT claim: the cycle is
+        // paced by frame availability (bounded wait), which exercises the
+        // same handoff structure without depending on Windows timer
+        // quantization (the planner's microsecond sleeps round up to the
+        // ~15 ms scheduler grain on loaded CI runners). Starvation then
+        // only fires when the planning domain genuinely stopped.
+        for(int spin = 0; spin < 200000 && !frame_ready; ++spin) {
+            std::this_thread::yield();
+            frame_ready = committed_ring.pop(next);
+        }
+#endif
+        if(frame_ready) {
             current = next;
             ++frames_consumed;
         } else {
