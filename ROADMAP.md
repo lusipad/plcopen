@@ -20,10 +20,10 @@ sprint 记录）在 [doc/archive/roadmap-history.md](doc/archive/roadmap-history
 | 4c | Y4 solve_fixed_time 一等原语（评审三关键，紧跟 Y2） | 同步 + cycle-exact 量化（删 KB-050 尾段补丁）+ 流追赶汇合同一求解；终态 ≤1e-9（T43） | **求解器 + KB-050 集成 + 流 rendezvous 已交付**（KB-056：8 候选族 + below_tmin multi-cubic；KB-050：匀速骑行/退避梯子删除；KB-035：流跟踪律 solve_fixed_time rendezvous 优先——38/38 pass）；组同步切换待下批 |
 | 5a | P-Part4 剩余 FB | 管理组矩阵 + 路径表/变换第二批矩阵均已批准实现 | **已交付**（管理 FB + 路径表/变换 FB，验收测试已接入 CTest） |
 | 5b | P-Part5 回零规程 | MC_Step* 标准回零步 FB 面（数字输入通道模拟验收） | **已交付**（5 FB，验收测试已接入 CTest） |
-| 4b | **信号通道并行项 + Z 系列全量**（拷问后拉入） | T1 pip wheel + Z3 文档站 + Z2 单位层 + Z4 包管理 + Z5 诊断 | **实现面完成，发布动作待人/token**：Wheels workflow 已远端复绿（2026-07-11），PyPI 未发布，Pages 未启用 |
+| 4b | **信号通道并行项 + Z 系列全量**（拷问后拉入） | T1 pip wheel + Z3 文档站 + Z2 单位层 + Z4 包管理 + Z5 诊断 | **Z3 文档站已上线**（http://lusipad.com/plcopen/ ，Pages 2026-07-11 启用）；Wheels 三平台远端绿 + PyPI Trusted Publishing 作业已备——剩余人专属：PyPI publisher 注册 + 发布 tag |
 | 6 | E 系列证据 | ARM64 CI + clang-tidy 零 P0 + 变异分数门 | **已复绿（2026-07-11 远端复验）**：Mutation 18/18、Coverage Gate（gcovr 90% 门）、Core Nightly 三作业全部通过 |
 | 7 | 台架采购决策 | 下单或共建协议（S1 之门，与本里程碑并行） | **人工** |
-| 8 | 72h soak 回写 | 保存完整结束日志并回写 DoD 表 | **未完成**：原定 2026-07-09 回写未发生 |
+| 8 | 72h soak 回写 | 保存完整结束日志并回写 DoD 表 | **周期等效口径关闭（2026-07-11）**：07-06 墙钟版证据链断裂如实登记；25.92 亿冻结周期（72h@1kHz ×10）Release 零分配 PASS 回写 DoD；墙钟 72h 归 B7。口径调整开放维护者复核 |
 | 9 | Part 4 原文核对 | 坐标矩阵 3 项线下核实 | 人工 |
 
 **算法主线现状**：T24 quintic 快路径及 Y3 TOPP-RA 两层求解、executor/
