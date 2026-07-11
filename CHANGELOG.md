@@ -6,6 +6,16 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- 参考 executor 双域落地（ADR-0007）：`rt_executor_demo` 重构为 canonical
+  `planning → committed trajectory → RT` 三线程形态——规划线程独占
+  AxisGroup/AxisModel（消费命令、桥接反馈、提前 H=16 周期 cycle() 产帧），
+  RT 线程每周期仅弹一帧承诺轨迹写 servo（帧 = 全阶前馈 POD）；四条 SPSC
+  为全部跨域结构；饥饿保持上帧并判 FAIL、接管延迟 ≤H 为声明口径；启动
+  屏障排除填充竞态。TSAN 全程零报告（WSL 实测 + Core Nightly 新增
+  executor-tsan 作业，含 ubuntu-24.04 ASLR 兼容处理）。architecture.md
+  图 3/4 开放项关闭为"进程内形态已验证"，跨进程共享内存形态（ADR-0006
+  IPC）仍开放。
+
 - L 系列批次 L0（KB-069）：IEC 61131-3 ST 逻辑子集 + 确定性字节码 VM
   （`core/st/`）。自研容错递归下降前端（语句级错误恢复 + 稳定诊断码 +
   POU 级增量接口形态）、严格同型类型规则（无隐式转换）、常量折叠与

@@ -54,6 +54,30 @@ jobs:
       - name: Run time-optimal OTG fuzz
         run: ./build/core/plcopen_core_otg_time_optimal_tests --iterations 1000000
 
+  executor-tsan:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Configure CMake (TSan)
+        run: >
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo
+          -DCMAKE_CXX_FLAGS="-fsanitize=thread -g"
+          -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=thread"
+
+      - name: Build dual-domain executor demo
+        run: cmake --build build --target plcopen_core_rt_executor_demo --parallel
+
+      # setarch -R: TSan is incompatible with the high ASLR entropy of
+      # ubuntu-24.04 kernels (unexpected memory mapping otherwise).
+      - name: Run executor under ThreadSanitizer (ADR-0007)
+        run: >
+          setarch $(uname -m) -R
+          ./build/core/plcopen_core_rt_executor_demo
+          --cycles 20000 --period-ns 250000 --trace /tmp/tsan_trace.bin
+
   st-frontend-fuzz-sanitized:
     runs-on: ubuntu-latest
 

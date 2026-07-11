@@ -11,10 +11,10 @@
 软件收尾批，KB-034~068），**v1.0.0-alpha 已发布（2026-07-06）**，Part 4
 管理/路径表/变换 + Part 5 回零 FB 已交付。周期质量门已复绿（2026-07-11
 远端复验：Nightly/Coverage/Wheels 全通过）。**文档站已上线**
-（http://lusipad.com/plcopen/ ，Pages 2026-07-11 启用）。S0 仍有纯软件
-闭环：PyPI 发布（Trusted Publishing 作业已备，publisher 注册与 tag 为
-人专属）、参考 executor 的规划域/RT 域拆分与 TSAN 证据；S1-S3 另
-依赖硬件、用户和日历时间。**L 系列语言层已启动（2026-07-11 维护者拍板）**，
+（http://lusipad.com/plcopen/ ，Pages 2026-07-11 启用）。**executor
+双域已落地**（ADR-0007：规划域产帧、RT 域仅消费承诺轨迹，TSAN 零
+报告）。S0 纯软件面仅剩 PyPI 发布（Trusted Publishing 作业已备，
+publisher 注册与 tag 为人专属）；S1-S3 另依赖硬件、用户和日历时间。**L 系列语言层已启动（2026-07-11 维护者拍板）**，
 批次 L0（ST 子集 + VM 地基）已交付（KB-069，矩阵批准同日实现收口）。
 
 ## 历史刻度（处于哪一步）
@@ -37,7 +37,7 @@
 | L6 fb | Part 1/2 全量 FB 面 + Part 4 线性/圆弧/blending 门面（CoordSystem 输入）+ Part 4 管理 FB（GroupHome/MoveDirect/GroupSetOverride/GroupInterrupt·Continue）+ Part 4 路径表/变换 FB（PathSelect/MovePath/SetKinTransform/ReadCartesianTransform）+ Part 5 回零 FB（StepAbsSwitch/StepLimitSwitch/StepRefPulse/StepDirect/FinishHoming） | 矩阵 45/45 + Part 4/5 |
 | L7 adapters | Servo 窄接口 + ServoSim + 桥接（ADR-0004）、CiA402 状态机、CSP/CSV/CST bumpless 骨架 | KB-040 |
 | st 语言层（批次 L0） | IEC 61131-3 ST 逻辑子集：容错前端 + 确定性字节码 VM（指令预算看门狗、加载期全静态布局、scan 零分配）、basic.h 十 FB 命名形参绑定、TIME=纳秒/精度=任务周期；一致性矩阵 + fuzz + 跨平台字节码锚点 | KB-069 |
-| 工具面 | pyplcopen（单轴/流/PoseArmSim，三平台 wheel 远端绿，PyPI 发布作业已备待 publisher 注册，CycleConfig SI 换算）、18 份回放黄金语料、28 关节 @1kHz 预算基准 + 笛卡尔 IK 预算门、参考 executor demo（双向 SPSC 单写者基础；canonical `planning → committed trajectory → RT` 双域尚未完成）、周期级 trace、**文档站已上线**（http://lusipad.com/plcopen/ ）、vcpkg/Conan recipe、ErrorCode 诊断文本 | — |
+| 工具面 | pyplcopen（单轴/流/PoseArmSim，三平台 wheel 远端绿，PyPI 发布作业已备待 publisher 注册，CycleConfig SI 换算）、18 份回放黄金语料、28 关节 @1kHz 预算基准 + 笛卡尔 IK 预算门、参考 executor demo（canonical `planning → committed trajectory → RT` 双域，ADR-0007，TSAN 零报告）、周期级 trace、**文档站已上线**（http://lusipad.com/plcopen/ ）、vcpkg/Conan recipe、ErrorCode 诊断文本 | — |
 
 ## 质量门禁现状
 
@@ -52,7 +52,7 @@
 |----|------|
 | 抽查评审 | 2026-07-05 批次核心提交（OTG/流/kin/adapters）开放抽查，证据链在各提交信息；非合入门槛 |
 | v0.x EOL 窗口 | v1.0.0-alpha 已发布（2026-07-06）；旧线 90 天 P0-only 窗口至 2026-10-04 |
-| 硬件阶段（B5 真栈/B6 台架/B7 RT 报告） | 等台架或灯塔环境；参考 executor 的单写者/SPSC 基础已备，双域与真机测量链仍待完成 |
+| 硬件阶段（B5 真栈/B6 台架/B7 RT 报告） | 等台架或灯塔环境；参考 executor 双域已落地（ADR-0007，TSAN 零报告），真机测量链待硬件 |
 | 72h 分配断言 soak | **周期等效口径关闭（2026-07-11）**：07-06 墙钟版证据链断裂（无结束日志，如实登记）；改交付 2,592,000,000 冻结周期（72h@1kHz ×10）Release 零分配 PASS；真实 72h 墙钟连续运行归 B7 真机 RT 报告。口径调整开放维护者复核 |
 | **KB-051 组接管速度断崖** | **已修复（Y7，2026-07-08）**：linear 组级 aborting 接管速度连续；circular/笛卡尔接管扩展仍按 KB-051 适用范围声明另批 |
 | Part 4 管理/路径表/变换 FB | **已交付**（GroupHome/MoveDirect/GroupSetOverride/GroupInterrupt·Continue + PathSelect/MovePath/SetKinTransform/ReadCartesianTransform，验收测试已接入 CTest） |

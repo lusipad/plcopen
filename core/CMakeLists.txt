@@ -297,7 +297,7 @@ if(PLCOPEN_BUILD_DEMOS)
                          ${CMAKE_CURRENT_BINARY_DIR}/rt_executor_trace_smoke.bin)
         set_tests_properties(plcopen_core_rt_executor_smoke PROPERTIES
             PASS_REGULAR_EXPRESSION
-                "commands_enqueued=[1-9][0-9]* commands_consumed=[1-9][0-9]* command_queue_full=0 command_rejections=[0-9][0-9]* snapshot_published=[1-9][0-9]* snapshot_reads=[1-9][0-9]* snapshot_queue_full=0"
+                "commands_enqueued=[1-9][0-9]* commands_consumed=[1-9][0-9]* command_queue_full=0 command_rejections=[0-9]+ frames_planned=[1-9][0-9]* frames_consumed=[1-9][0-9]* starvation=0 feedback_bridged=[1-9][0-9]* feedback_queue_full=0 snapshot_published=[1-9][0-9]* snapshot_reads=[1-9][0-9]* snapshot_queue_full=0"
             FAIL_REGULAR_EXPRESSION "EXECUTOR FAIL")
     endif()
 endif()

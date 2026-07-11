@@ -143,12 +143,15 @@ sequenceDiagram
 **已知边界**：KB-051 的 linear 组级 aborting 接管速度连续性已由 Y7
 修复；circular/笛卡尔接管扩展仍按 KB-051 的适用范围开放。
 
-X3 参考 executor（`core/demo/rt_executor_demo.cpp`，ServoSim 闭环）已用
-双向 SPSC 关闭示例中的跨线程对象共享与普通 payload 数据竞争，但它仍在
-唯一 executor 循环内执行 `submit*` 规划，只是单写者交接参考，**不是**
-图 3/4 的完整双域落地。规划域产出 committed trajectory、RT 域仅消费
-预计算结果，以及共享内存 seqlock/双缓冲，仍需独立 ADR 与实现验证；
-硬件对接待 B7。各模块详细设计随码维护在 `core/*/README.md`。
+X3 参考 executor（`core/demo/rt_executor_demo.cpp`，ServoSim 闭环）自
+2026-07-11 起为图 3/4 的**进程内 canonical 双域落地**（ADR-0007）：
+规划线程独占 AxisGroup/AxisModel（消费命令、桥接反馈、提前 H 周期
+`cycle()` 产帧），RT 线程每周期仅弹一帧承诺轨迹写 servo；四条 SPSC
+（命令/承诺帧/反馈/快照）为全部跨域结构，饥饿保持上帧并判 FAIL、
+接管延迟 ≤H 为声明口径。TSAN 全程零报告（Core Nightly
+`executor-tsan` 作业）。仍开放：跨进程共享内存 seqlock/双缓冲
+（ADR-0006 IPC 形态的实现验证）；硬件对接与真机测量链待 B7。
+各模块详细设计随码维护在 `core/*/README.md`。
 
 ## 维护规则
 
@@ -159,5 +162,5 @@ X3 参考 executor（`core/demo/rt_executor_demo.cpp`，ServoSim 闭环）已用
 
 ---
 
-*本文档最后更新：2026-07-05（实现现状对齐：Phase B 纯软件收口）*
+*本文档最后更新：2026-07-11（实现现状对齐：executor 双域落地，ADR-0007）*
 *关联：[rewrite-plan.md](../../archive/rewrite-plan.md) §2、[long-term-plan.md](../../planning/long-term-plan.md) §6.2、[robot-integration.md](../../planning/robot-integration.md) §2*
