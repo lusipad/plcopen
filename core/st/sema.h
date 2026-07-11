@@ -968,7 +968,6 @@ private:
         case BinaryOp::subtract:
             return detail::is_numeric(type) || type == Type::time;
         case BinaryOp::multiply:
-            return detail::is_numeric(type);
         case BinaryOp::divide:
             return detail::is_numeric(type);
         case BinaryOp::modulo:

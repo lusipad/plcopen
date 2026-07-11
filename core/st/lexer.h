@@ -366,7 +366,8 @@ private:
                 if(lower < 'a' || lower > 'f') {
                     break;
                 }
-                digit = static_cast<std::uint64_t>(lower - 'a' + 10);
+                digit = static_cast<std::uint64_t>(lower) -
+                        static_cast<std::uint64_t>('a') + 10;
             } else {
                 break;
             }

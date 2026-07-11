@@ -96,9 +96,10 @@ constexpr PinTable pin_table(FbType type)
     case FbType::f_trig: return {detail::kPinsFTrig, 2};
     case FbType::sr: return {detail::kPinsSr, 3};
     case FbType::rs: return {detail::kPinsRs, 3};
-    case FbType::ton: return {detail::kPinsTimer, 4};
-    case FbType::tof: return {detail::kPinsTimer, 4};
-    case FbType::tp: return {detail::kPinsTimer, 4};
+    case FbType::ton:
+    case FbType::tof:
+    case FbType::tp:
+        return {detail::kPinsTimer, 4};
     case FbType::ctu: return {detail::kPinsCtu, 5};
     case FbType::ctd: return {detail::kPinsCtd, 5};
     case FbType::ctud: return {detail::kPinsCtud, 8};
