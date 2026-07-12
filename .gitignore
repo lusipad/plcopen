@@ -44,3 +44,7 @@ site/
 # (.claude/skills/) is part of the repository.
 .claude/*
 !.claude/skills/
+
+# PLCopen 规格文档本地缓存（版权文档，不再分发——见
+# doc/compliance/plcopen-specs-manifest.md；用 tools/fetch-plcopen-specs.sh 取回）
+refs/plcopen-specs/
