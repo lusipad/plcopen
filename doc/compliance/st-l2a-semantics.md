@@ -51,7 +51,7 @@
 | 3.3 | BufferMode 引脚 | 以 **INT 编码**绑定：0=aborting、1=buffered、2=blending_low、3=blending_previous、4=blending_next、5=blending_high、6=blending_cnc（映射 axis::BufferMode，超域 = FB Error invalid_argument）；`MC_BUFFER_MODE` 枚举语法糖随 L1b 枚举落地后补 | 枚举类型属 L1b；先给显式编码不堵 buffered/blending 用法 |
 | 3.4 | 调用形态 | 与 basic.h 同：命名形参 + 非正式全覆盖两种；`Axis :=` 实参只接受 AXIS_REF 变量（表达式/字面量 = 编译错误）；输出经 `inst.Done` 等只读 | 机制复用，零新文法 |
 | 3.5 | 未赋输入保持 | 沿 KB-069 口径：未赋 input 保持上次值（含 Axis——绑定一次后续调用可省略） | IEC FB 调用语义连续 |
-| 3.6 | Direction/Home 输入 | `MC_MoveVelocity.Direction` 以 INT 编码（1=positive、-1=negative、0=current，超域 FB Error）；`MC_Home.Position` = LREAL | 同 3.3 编码先行原则 |
+| 3.6 | Direction/Home 输入 | `MC_MoveAbsolute.Direction` 与 `MC_MoveVelocity.Direction` 使用 INT 编码（0=current、1=positive、-1=negative、2=shortest_way；MoveVelocity 不接受 shortest_way 时走 FB Error）；`MC_Home.Position` = LREAL | 对齐已批准 P1-A1 Direction 矩阵；枚举语法糖仍随 L1b |
 
 ## 4. 决策点：执行域与实例模型
 

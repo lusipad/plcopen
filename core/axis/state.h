@@ -62,6 +62,14 @@ enum class CommandKind
     torque,
 };
 
+enum class Direction
+{
+    current,
+    positive,
+    negative,
+    shortest_way,
+};
+
 struct MotionLimits
 {
     double max_velocity = 1.0;
@@ -107,6 +115,7 @@ struct AxisCommand
     double acceleration = 1.0;
     double deceleration = 1.0;
     double jerk = 1.0;
+    Direction direction = Direction::current;
     // Only used by the move_continuous_* kinds; must be positive there.
     double end_velocity = 0.0;
     // Minimum command time in cycles (profile-table segments). A position
@@ -242,6 +251,12 @@ inline bool is_finite_command(const AxisCommand &command)
     return std::isfinite(command.value) && std::isfinite(command.velocity) &&
            std::isfinite(command.acceleration) && std::isfinite(command.deceleration) &&
            std::isfinite(command.jerk) && std::isfinite(command.end_velocity);
+}
+
+inline bool is_valid_direction(Direction direction)
+{
+    return direction == Direction::current || direction == Direction::positive ||
+           direction == Direction::negative || direction == Direction::shortest_way;
 }
 
 inline bool is_continuous_kind(CommandKind kind)
@@ -585,6 +600,8 @@ public:
             if(command.buffer_mode != expected_mode ||
                (command.kind != CommandKind::move_absolute &&
                 command.kind != CommandKind::move_relative) ||
+               (command.kind == CommandKind::move_absolute &&
+                !is_valid_direction(command.direction)) ||
                !is_finite_command(command) || command.velocity <= 0.0 ||
                command.acceleration <= 0.0 || command.deceleration <= 0.0 ||
                command.jerk <= 0.0 || command.min_duration_cycles < 0) {
@@ -681,6 +698,10 @@ private:
         if(!snapshot_.powered || snapshot_.status == AxisStatus::errorstop ||
            !is_finite_command(command) || command.velocity <= 0.0 || command.acceleration <= 0.0 ||
            command.deceleration <= 0.0 || command.jerk <= 0.0) {
+            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
+        }
+        if(command.kind == CommandKind::move_absolute &&
+           !is_valid_direction(command.direction)) {
             return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
         }
 

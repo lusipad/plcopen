@@ -196,6 +196,7 @@ public:
     double acceleration = 1.0;
     double deceleration = 1.0;
     double jerk = 1.0;
+    axis::Direction direction = axis::Direction::current;
     axis::BufferMode buffer_mode = axis::BufferMode::aborting;
 
     void call()
@@ -220,6 +221,9 @@ protected:
         command.acceleration = acceleration;
         command.deceleration = deceleration;
         command.jerk = jerk;
+        if(kind == axis::CommandKind::move_absolute) {
+            command.direction = direction;
+        }
         command.buffer_mode = buffer_mode;
         accept(axis_ref->submit(command));
     }

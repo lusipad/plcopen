@@ -194,9 +194,9 @@
 
 | 条款 | 要求（自述） | 判定 | 证据/说明 |
 |------|-------------|------|----------|
-| 3.5-io | B 级 I/O：Axis、Execute、Position、Velocity、Direction、Done、Error | ❌缺失 | `FbMoveAbsolute` 缺少 B 级 `Direction`（`core/fb/motion.h:191-225`）；其余由本类和 `MotionOutputs` 提供；见 D-05 |
+| 3.5-io | B 级 I/O：Axis、Execute、Position、Velocity、Direction、Done、Error | ✅符合 | `FbMoveAbsolute` 暴露强类型 `Direction`，命令层在分配 ID/接管前校验；其余由本类和 `MotionOutputs` 提供（`core/fb/motion.h`; `core/axis/state.h`） |
 | 3.5-n1 | 无后继命令时到位速度为零 | ✅符合 | 目标状态显式为 `{target,0,0}`，完成清零（`core/axis/state.h:1752-1766,1900-1913`） |
-| 3.5-n2 | 单解线性轴可忽略 Direction；模轴需按方向/最短路规则选解 | ⚠️偏差 | 当前仅线性位置轴模型，未建模 modulo/direction（`core/axis/state.h:1678-1689,1752-1766`），且未用 KB 声明 Part 1 范围 |
+| 3.5-n2 | 单解线性轴可忽略 Direction；模轴需按方向/最短路规则选解 | ⚠️部分支持 | 四个合法值在线性轴均按唯一位移执行并逐周期等价；非法值原子拒绝。modulo 轴/多圈选路仍未实现，见已批准 [P1-A1 矩阵](part1-move-absolute-direction-semantics.md) |
 | 3.5-state | 状态机交互 | ✅符合 | 启动进入 DiscreteMotion，完成回 Standstill（`core/axis/state.h:1758-1777,1900-1913`） |
 | 3.5-out | Done/Busy/Active/Aborted 时序 | 🔴违规 | 受 D-01 影响；队列完成账本由 KB-029 与 `core/axis/state.h:1900-1923` 支持 |
 | 3.5-v | 厂商扩展：`command_id/command_accepted` | ⚠️偏差 | `MotionOutputs`（`core/fb/motion.h:20-31,62-68`）未在认证扩展清单登记 |
@@ -704,15 +704,19 @@ AxisModel 不知道对应 FB 的 Execute 电平；aborting 命令还可直接接
 
 **修复方向**：为 Stop 建独立完成保持态，并由 FB Execute 下降沿显式释放。
 
-### 🔴 D-05：MC_MoveAbsolute 缺少 B 级 Direction（§3.5）
+### ✅ D-05：MC_MoveAbsolute B 级 Direction 已补齐（§3.5）
 
 **规格要求**：绝对运动必须具备 Direction 输入，即使单解线性轴可忽略其值。
 
-**我们的行为**：`FbMoveAbsolute` 没有该成员（`core/fb/motion.h:191-225`）。
+**当前行为**：`FbMoveAbsolute` 与 `AxisCommand` 均携带强类型 Direction；
+`current/positive/negative/shortest_way` 在线性单解轴产生相同唯一位移，非法值
+在命令 ID 分配和接管之前原子拒绝。
 
-**影响面**：B 级接口不完整，无法声明模轴方向或最短路行为。
+**剩余边界**：仓库没有 modulo 轴/多圈位置模型，因此不能声明旋转轴方向或
+最短路选解能力；§3.5-n2 仍为部分支持。
 
-**修复方向**：规格先行补接口与线性轴忽略/模轴选路矩阵；实现前需裁决模轴范围。
+**证据**：[已批准 P1-A1 语义矩阵](part1-move-absolute-direction-semantics.md)；
+`core/test/r3_semantics_tests.cpp` 的合法组合等价与非法值原子拒绝测试。
 
 ### 🔴 D-06：Relative/Additive 在部分状态使用错误的基准点（§3.6/§3.7）
 

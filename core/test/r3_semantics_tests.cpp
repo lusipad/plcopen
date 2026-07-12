@@ -478,6 +478,91 @@ int check_motion_facades()
     return 0;
 }
 
+int check_move_absolute_direction()
+{
+    using namespace plcopen::core;
+
+    const axis::Direction directions[] = {axis::Direction::current,
+                                          axis::Direction::positive,
+                                          axis::Direction::negative,
+                                          axis::Direction::shortest_way};
+    for(double target : {2.0, -2.0, 0.0}) {
+        axis::AxisModel baseline;
+        baseline.set_power(true);
+        axis::AxisCommand baseline_command{};
+        baseline_command.kind = axis::CommandKind::move_absolute;
+        baseline_command.value = target;
+        baseline_command.direction = axis::Direction::current;
+        if(!baseline.submit(baseline_command)) {
+            return fail("move absolute direction baseline accepted");
+        }
+
+        axis::AxisModel candidates[4];
+        for(std::size_t i = 0; i < 4; ++i) {
+            candidates[i].set_power(true);
+            axis::AxisCommand command = baseline_command;
+            command.direction = directions[i];
+            if(!candidates[i].submit(command)) {
+                return fail("move absolute direction accepted");
+            }
+        }
+
+        for(int cycle = 0; cycle < 300; ++cycle) {
+            baseline.cycle();
+            for(axis::AxisModel &candidate : candidates) {
+                candidate.cycle();
+                const axis::AxisSnapshot &expected = baseline.snapshot();
+                const axis::AxisSnapshot &actual = candidate.snapshot();
+                if(actual.status != expected.status ||
+                   actual.command_position != expected.command_position ||
+                   actual.command_velocity != expected.command_velocity ||
+                   actual.command_acceleration != expected.command_acceleration) {
+                    return fail("move absolute direction linear equivalence");
+                }
+            }
+            if(baseline.status() == axis::AxisStatus::standstill) {
+                break;
+            }
+        }
+    }
+
+    axis::AxisModel active;
+    active.set_power(true);
+    axis::AxisCommand running{};
+    running.kind = axis::CommandKind::move_absolute;
+    running.value = 10.0;
+    const rt::Result<std::uint32_t> accepted = active.submit(running);
+    active.cycle();
+    const axis::AxisSnapshot before = active.snapshot();
+
+    axis::AxisCommand invalid = running;
+    invalid.value = -10.0;
+    invalid.direction = static_cast<axis::Direction>(255);
+    if(active.submit(invalid).error() != rt::ErrorCode::invalid_argument) {
+        return fail("move absolute direction invalid rejected");
+    }
+    const axis::AxisSnapshot after = active.snapshot();
+    if(after.status != before.status || after.command_position != before.command_position ||
+       after.command_velocity != before.command_velocity ||
+       after.command_acceleration != before.command_acceleration ||
+       after.active_command_id != accepted.value()) {
+        return fail("move absolute direction invalid atomic");
+    }
+
+    fb::FbMoveAbsolute move;
+    move.axis_ref = &active;
+    move.direction = static_cast<axis::Direction>(255);
+    move.position = -5.0;
+    move.execute = true;
+    move.call();
+    if(!move.outputs.error || move.outputs.error_id != rt::ErrorCode::invalid_argument ||
+       active.snapshot().active_command_id != accepted.value()) {
+        return fail("fb move absolute direction invalid atomic");
+    }
+
+    return 0;
+}
+
 // MC_Power is level-controlled: a PLC program calls it every scan cycle.
 // Holding Enable high on an already-powered axis must be a no-op — it must
 // not abort the active command, and the tracking move FB must not observe a
@@ -712,6 +797,7 @@ int main()
     if(check_basic_fb_contracts() != 0 || check_base_latches() != 0 ||
        check_axis_state_and_motion() != 0 || check_axis_buffering_and_limits() != 0 ||
        check_group_linear_contract() != 0 || check_motion_facades() != 0 ||
+       check_move_absolute_direction() != 0 ||
        check_cyclic_power_keeps_motion() != 0 || check_basic_fb_edge_cases() != 0 ||
        check_cycle_config_and_error_text() != 0) {
         return 1;
