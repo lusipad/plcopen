@@ -107,7 +107,7 @@ pip install .          # 从仓库源码构建安装
 | own planning thread    depth, never RT timing)        0-alloc @ 1 kHz  |
 +-----------------------------------+------------------------------------+
                                     v  Servo narrow interface (ADR-0004)
-  EtherCAT / CiA402 (fieldbus repo)  |  Feetech STS bus (S2, planned)  |  ServoSim twin
+  EtherCAT / CiA402 (fieldbus repo)  |  Feetech STS protocol (S2 done) |  ServoSim twin
 ```
 
 规划慢只会缩短前瞻深度，永远不碰 RT 周期——运动平滑**由构造保证**，

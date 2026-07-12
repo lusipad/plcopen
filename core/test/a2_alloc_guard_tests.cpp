@@ -13,6 +13,7 @@
 
 #include "axis/group.h"
 #include "axis/state.h"
+#include "adapters/feetech.h"
 #include "fb/group.h"
 #include "fb/homing.h"
 
@@ -217,6 +218,16 @@ int main(int argc, char **argv)
     read_limits.group_ref = &read_group;
     read_limits.enable = true;
 
+    const std::uint8_t feetech_ids[] = {1, 2};
+    adapters::FeetechBus feetech;
+    adapters::FeetechSim feetech_sim;
+    feetech.bind(feetech_ids, 2);
+    feetech_sim.bind(feetech_ids, 2);
+    adapters::FeetechServo feetech_servo(feetech, 0);
+    adapters::FeetechPacket feetech_write{};
+    adapters::FeetechPacket feetech_read{};
+    adapters::FeetechPacket feetech_responses[2] = {};
+
     // ---- Frozen window: any heap allocation is a defect -----------------
     g_frozen_allocations = 0;
     g_frozen = true;
@@ -233,6 +244,15 @@ int main(int argc, char **argv)
         read_acceleration.call();
         read_motion.call();
         read_limits.call();
+        adapters::ServoSetpoints feetech_setpoints{};
+        feetech_setpoints.position = static_cast<double>(i & 4095) *
+                                      adapters::FeetechConfig::RadiansPerCount;
+        feetech_servo.write_setpoints(feetech_setpoints);
+        feetech.build_cycle(feetech_write, feetech_read);
+        feetech_sim.exchange(feetech_write, feetech_read, feetech_responses, 2);
+        feetech.begin_feedback_cycle();
+        for(const auto &response : feetech_responses) feetech.consume(response);
+        feetech.end_feedback_cycle();
     }
     g_frozen = false;
 

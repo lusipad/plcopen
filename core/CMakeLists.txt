@@ -223,6 +223,17 @@ if(BUILD_TESTING AND PLCOPEN_BUILD_CORE_TESTS)
     plcopen_core_rt_compile_options(plcopen_core_adapters_tests)
     add_test(NAME plcopen_core_adapters_tests COMMAND plcopen_core_adapters_tests)
 
+    add_executable(plcopen_core_feetech_tests test/feetech_tests.cpp)
+    target_link_libraries(plcopen_core_feetech_tests PRIVATE plcopen::core)
+    plcopen_core_rt_compile_options(plcopen_core_feetech_tests)
+    add_test(NAME plcopen_core_feetech_tests COMMAND plcopen_core_feetech_tests)
+
+    add_executable(plcopen_core_feetech_fuzz test/feetech_fuzz.cpp)
+    target_link_libraries(plcopen_core_feetech_fuzz PRIVATE plcopen::core)
+    plcopen_core_rt_compile_options(plcopen_core_feetech_fuzz)
+    add_test(NAME plcopen_core_feetech_fuzz_smoke
+             COMMAND plcopen_core_feetech_fuzz --iterations 2000)
+
     add_executable(plcopen_core_cam_tests test/cam_tests.cpp)
     target_link_libraries(plcopen_core_cam_tests PRIVATE plcopen::core)
     plcopen_core_rt_compile_options(plcopen_core_cam_tests)

@@ -17,8 +17,9 @@
 publisher 注册与 tag 为人专属）；S1-S3 另依赖硬件、用户和日历时间。**L 系列语言层已启动（2026-07-11 维护者拍板）**，
 批次 ST-L0（KB-069）、ST-L1a（标量宇宙 + 转换矩阵机读化，KB-070）与
 ST-L2a-Bind 首批十个单轴 MC 块（KB-071）均已交付；Part 5 P5-B 六个缺失
-门面（KB-072）已补齐；Part 4 P4-B1 十九项管理/回读门面（KB-073）已
-交付。Part 4 为 40/68 有同名门面，Part 5 为 11/11 有门面，均仍不合规。
+门面（KB-072）已补齐；Part 4 P4-B1 十九项管理/回读门面（KB-073）与
+Feetech STS S2 纯软件协议层（KB-074）已交付。Part 4 为 40/68 有同名
+门面，Part 5 为 11/11 有门面，均仍不合规；Feetech 4.8 未核，不进真机。
 
 ## 历史刻度（处于哪一步）
 
@@ -43,7 +44,7 @@ sink 门面，生产层无反向引用）。分层健康度见
 | L4 exec | 周期采样、gear/cam 同步（C0 + C2 样条重建、在线换表、经典规律生成器）、叠加 | KB-038/046 |
 | L5 axis | 单轴全命令生命周期、组共享路径（2-8 轴）、前瞻窗口执行、坐标系栈（ACS/MCS/PCS + 工件帧/工具偏置）、kinematics 级联（消费支撑库 kin：龙门/SCARA）、位姿管线（RPY + 6R，TCP 工具变换）、笛卡尔/位姿回读（含 RPY 反演万向节约定）、段内笛卡尔插补（直线/圆弧/blending + 前瞻窗口，逐周期逆解 + 测地姿态，opt-in；腕奇异可穿越）、窗口深度可配、双空间限速、B9 流会话（消费支撑库 stream） | KB-035/036/037/041~050 |
 | L6 fb | **Part 1 v2.0：43 个 FB 均有门面，但 B 级 I/O 齐备仅 22/43（2026-07-12 审计时点 C++ 字段面口径；P1-A 已补 4 项结构缺口，其余命名/形态缺口归 L2a 引脚层），条款审计确认 D-01~D-20（D-05/D-12/D-13/D-15 已关，16 项开放），不能宣称合规**；**Part 4 v2.0：40/68 有同名门面，28 项无同名入口**，另保留 2 个旧名/自定义 Position 回读兼容门面；P4-B1 新门面仍有 `mcSetValue`、非 ACS 高阶回读、start-point 等边界；**Part 5 v2.0：11/11 有 C++ 公开门面，但旧五块名称/I/O/语义偏差、标准派生类型与正式声明仍开放，只能标部分覆盖，不能宣称合规**；Part 6 的 5 个 FB 全部门控未实现。35 个 PLCopen 官方技术文件（2047 页）已完成全文审计；Safety、OPC UA、XML/TC6 均仅登记缺口，未解锁实现 | 全文审计见 [总账](doc/compliance/plcopen-conformance-audit.md) 与各专项矩阵 |
-| L7 adapters | **外圈消费面之一**（绕过 L6，只消费 axis/state.h + rt/error.h）：Servo 窄接口 + ServoSim + 桥接（ADR-0004）、CiA402 状态机、CSP/CSV/CST bumpless 骨架、Feetech STS 总线（语义矩阵已批准 2026-07-12，S2 实现已排期） | KB-040 |
+| L7 adapters | **外圈消费面之一**（绕过 L6，只消费 axis/state.h + rt/error.h）：Servo 窄接口 + ServoSim + 桥接（ADR-0004）、CiA402 状态机、CSP/CSV/CST bumpless 骨架、Feetech STS 协议 0 固定容量总线/Servo/Sim（无 IO；动态单位与 Status 位未核，不进真机） | KB-040/074 |
 | 支撑库 kin | 阶梯旁支撑库（依赖 geom/rt，被 L5 消费）：kinematics 插件 ABI + 合规 harness、龙门/SCARA 解析解、球腕 6R（Pieper + 8 分支 seed 选支、奇异 margin） | KB-037/041 |
 | 支撑库 stream | 阶梯旁支撑库（依赖 otg/rt，被 L5 消费）：B9 轨迹流滤波（OTG 在线重解、断流看门狗、solve_fixed_time rendezvous 跟踪律）、多关节聚合 | KB-035 |
 | st 语言层（批次 ST-L0+ST-L1a+ST-L2a） | **外圈消费面之一**（与 L7 adapters 平行、居 L6 之上，纯 sink：消费 fb/basic.h、fb/motion.h 与 rt/error.h，生产层无反向引用）。IEC 61131-3 ST：容错前端 + 确定性字节码 VM、16 标量类型与转换矩阵、AXIS_REF 宿主绑定、首批十个单轴 MC_* ST 门面；PinTable 由 Part 1 B3 YAML 生成。未承载引脚语义与 BufferMode 3/4/6 保持显式边界，不宣称完整合规 | KB-069/070/071 |
@@ -51,10 +52,10 @@ sink 门面，生产层无反向引用）。分层健康度见
 
 ## 质量门禁现状
 
-- 测试：59 项 CTest（含 st L2a 与 P4-B1 专项/fuzz）；本地 Debug 59/59 通过。既有 WSL gcovr 8.6/Linux CI 口径为 90.1%（8868/9840，达到 90% 门槛），本批远端 workflow 仍待复验；Windows `coverage.ps1` 独立口径与 Linux 门不混用
+- 测试：61 项 CTest（含 st L2a、P4-B1 与 Feetech 专项/fuzz）；本地 Debug 61/61 通过。既有 WSL gcovr 8.6/Linux CI 口径为 90.1%（8868/9840，达到 90% 门槛），本批远端 workflow 仍待复验；Windows `coverage.ps1` 独立口径与 Linux 门不混用
 - 回放：18 语料逐周期比对；声明变更零例外流程运行中
 - 分层：2026-07-12 include 图审计 **0 违规**（L0-L4 零 PLCopen 语义引用、无循环依赖、L4 不引 L3），见 [架构审查报告](doc/design/architecture-review-2026-07.md)
-- RT：静态扫描 26 文件（含 st 语言层 vm/bind）+ 冻结窗口分配断言；DoD §5.3 的周期耗时对比通过（新核 = 旧线 9.3%）；分配 soak 以周期等效口径关闭（25.92 亿周期零分配，2026-07-11），墙钟 72h/抖动证据归 B7 真机报告
+- RT：静态扫描 27 文件（含 st vm/bind 与 Feetech adapter）+ 冻结窗口分配断言；DoD §5.3 的周期耗时对比通过（新核 = 旧线 9.3%）；分配 soak 以周期等效口径关闭（25.92 亿周期零分配，2026-07-11），墙钟 72h/抖动证据归 B7 真机报告
 - CI（远端基线 `23fd571`，截至 2026-07-11）：Windows/Linux 主线通过，Mutation 18/18 通过；KB-068 修复后远端复验完成——Core Nightly（07-11 定时：OTG 1M fuzz、50M-cycle allocation soak、time-optimal 1M fuzz 三作业拆分后全绿）、Coverage Gate 与 Wheels（07-11 手动重触发）全部通过。`main` 仍无 branch protection/ruleset，这些是 workflow 证据而非技术强制的 required checks。触发边界见 [CI gate 矩阵](doc/compliance/ci-gates.md)
 
 ## 进行中 / 待办

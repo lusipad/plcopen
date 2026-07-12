@@ -6,6 +6,12 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- Feetech STS S2（KB-074）交付无 IO、固定容量的协议 0 adapter：帧编解码与
+  流重同步、每周期一次同步写读、Servo 窄接口、寄存器映像 Sim、M 周期
+  失联冻结。黄金向量、符号幅值、端到端 SI 往返、10 万解析 fuzz 与冻结
+  窗口零分配通过。官方动态单位和 Status 位仍未核，须显式配置且不进真机；
+  协议 LENGTH 限制令单帧周期最多 31 舵机，32 槽存储不等于 32 可绑定。
+
 - Part 4 P4-B1（KB-073）新增 19 个管理与回读 C++ 门面：组配置/owner、
   DH/Joint 元数据、Source 型位置/速度/加速度、MotionState/CommandInfo、
   两项标准 GroupParameter、三类 Dynamics 与组 SWLimits。配置均为固定容量

@@ -16,7 +16,7 @@
 | st  (6355)  IEC 61131-3 ST layer |   | L7 adapters  (353)               |
 | compiler front end + bytecode vm |   | Servo narrow iface (ADR-0004),   |
 | ST-L0+L1a shipped (KB-069/070);  |   | CiA402 FSM, CSP/CSV/CST modes;   |
-| bytecode anchor-hash gate in CI  |   | Feetech STS: approved, S2 next   |
+| bytecode anchor-hash gate in CI  |   | Feetech STS: S2 protocol shipped |
 +----------------+-----------------+   +----------------+-----------------+
                  |                                      |
                  | fb/basic.h + rt/error.h              | axis/state.h

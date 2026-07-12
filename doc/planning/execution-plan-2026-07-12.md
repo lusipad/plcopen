@@ -46,11 +46,11 @@
 
 按已批矩阵 [feetech-sts-adapter-semantics.md](../compliance/feetech-sts-adapter-semantics.md) 验收指标 4.1-4.8：
 
-- [ ] 测试先行：黄金字节用例 ≥12（4.1）+ 符号-幅值编解码边界表（4.2）
-- [ ] `core/adapters/feetech.h` 协议纯函数层：帧编解码 / 总线调度 / 单位换算，零 IO（决策点 2.1）
-- [ ] FeetechSim 寄存器映像 + write→帧→sim→帧→read 全链路往返（4.3）
-- [ ] 解析器 fuzz 10 万输入零 crash（4.4）+ 调度预算静态断言 N=16/32 @50/100Hz（4.5）+ 失联 M 周期时序（4.6）
-- [ ] RT 扫描纳入 feetech.h、scan 路径零分配（4.7）；门禁 + 提交
+- [x] 测试先行：黄金字节用例 ≥12（4.1）+ 符号-幅值编解码边界表（4.2）（KB-074，2026-07-13）
+- [x] `core/adapters/feetech.h` 协议纯函数层：帧编解码 / 总线调度 / 显式单位比例，零 IO（决策点 2.1）
+- [x] FeetechSim 寄存器映像 + write→帧→sim→帧→read 全链路往返（4.3）
+- [x] 解析器 fuzz 10 万输入零 crash（4.4）+ 调度预算静态断言 N=16/31 @50/100Hz、N=32 协议长度拒绝（4.5）+ 失联 M 周期时序（4.6）
+- [x] RT 扫描纳入 feetech.h、scan 路径零分配（4.7）；门禁 + 提交
 - [ ] **待核项关卡（4.8）**：Goal_Velocity/Acceleration 换算系数 + Status 错误位定义按官方手册锁定并记录进矩阵——锁定前不进真机（S5）里程碑
 
 ## 3. 线③：送批线（人批空窗正好执行线①）

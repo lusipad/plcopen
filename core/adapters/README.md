@@ -3,8 +3,9 @@
 `core/adapters` owns the ADR-0004 hardware boundary: the stable narrow
 `Servo` interface, the executor-side bridge helpers, the `ServoSim`
 reference drive, the CiA402 (DS402) power state machine, and the
-CSP/CSV/CST mode-manager skeleton。规划中：Feetech STS 总线 adapter——
-语义矩阵已批准（2026-07-12），S2 实现已排期，本目录尚无其实现。
+CSP/CSV/CST mode-manager skeleton。Feetech STS S2 协议层（KB-074）已交付：
+协议 0 固定容量帧/流解析、`FeetechBus`、`FeetechServo` 与 `FeetechSim`，
+不含串口 IO。官方动态单位与 Status 位仍由 4.8 真机关卡阻止 S5。
 
 Composition rule (ADR-0004 +
 [ADR-0007](../../doc/design/decisions/0007-executor-committed-trajectory.md)):

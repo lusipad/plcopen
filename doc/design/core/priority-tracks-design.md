@@ -15,7 +15,7 @@
 | 基座帧输入通道 | L5 | T17 | 组的"参考基座帧"每周期可更新输入（坐标栈前置换算链承载），库不做估计 | ⏳ 待起草（小矩阵） |
 | `plcopen-fieldbus`（独立仓） | 外圈 | F | **双形态（ADR-0006 裁决）**：同进程直连（性能默认）+ 总线进程共享内存 IPC（分发合规形态），同一适配器代码双构建；SOEM 适配 + CiA402 映射 + DC 锁相 + 虚拟从站 CI | ADR-0006 Accepted（GPL 口径待人核验）；驱动差异矩阵 F3 |
 | `python/` + `tools/`（扩展） | 工具面 | T | pip wheel（cibuildwheel）、rerun 孪生 demo、单位换算辅助 | 无核心语义 |
-| Feetech STS adapter（新） | L7 adapters | S | Feetech STS 串行总线协议层 + FeetechSim，走 ADR-0004 Servo 窄接口；面向桌面臂/舵机生态 | ✅ S1 语义矩阵已批（2026-07-12，[feetech-sts-adapter-semantics](../../compliance/feetech-sts-adapter-semantics.md)）；S2 实现已排 |
+| Feetech STS adapter（新） | L7 adapters | S | Feetech STS 串行总线协议层 + FeetechSim，走 ADR-0004 Servo 窄接口；面向桌面臂/舵机生态 | ✅ S2 纯软件协议层已交付（KB-074）；官方动态单位/Status 位仍受 4.8 真机关卡约束 |
 
 ## 2. 人形数据流（ADR-0005 (c) 形态）
 

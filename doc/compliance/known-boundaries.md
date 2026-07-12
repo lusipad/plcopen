@@ -105,4 +105,6 @@
 
 - `KB-073`：Part 4 P4-B1 交付 19 个管理与回读 C++ 门面（配置/运动学信息 4、运动回读 5、参数/动态 8、软件限位 2），以固定容量状态承载 DH/Joint、Reference/Default/Jogging Dynamics 与最多 8 轴 SWLimits。`mcDynamicsMode=percentage` 只影响之后提交的新命令；显式 Default 直接替代四阶输入；组 SWLimits 整表原子写入成员轴唯一限位状态，入组期间轴级外部写入拒绝。**边界**：无 virtual AXIS_REF、`mcSetValue`、start-point transition、非 ACS 速度/加速度或 Cartesian-window 逐命令信息；标准 E 级接口、ST 引脚与供应商声明未闭合。出口仅为 Part 4 40/68 有同名门面、28 项无同名入口，仍不合规。规格 `doc/compliance/part4-p4b1-semantics.md`；验收 `plcopen_core_part4_p4b1_{tests,fuzz}`、10 万周期零分配与 18 回放零差异。
 
+- `KB-074`：Feetech STS S2 交付协议 0 的固定容量、无 IO adapter：`FeetechBus` 汇聚 `FeetechServo` 锁存值，每周期生成一次 SYNC_WRITE/SYNC_READ；持久流解析器校验 checksum/长度并重同步；`FeetechSim` 以寄存器映像完成端到端往返；失联冻结最后有效值，连续 M 周期令 `communication_ready=false`。**边界**：官方 Goal_Velocity/Acceleration 物理单位与 Status 位定义尚未锁定，绑定期必须显式注入比例且原始 Status 不解释，S5 真机禁止；协议 0 单字节 LENGTH 与 7 字节写块使单帧最多绑定 31 个舵机（存储容量仍为 32），N=32 显式拒绝。规格 `doc/compliance/feetech-sts-adapter-semantics.md`；验收 `plcopen_core_feetech_{tests,fuzz}`、10 万 fuzz 与冻结周期零分配。
+
 ---
