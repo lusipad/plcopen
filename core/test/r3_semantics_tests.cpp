@@ -537,7 +537,7 @@ int check_move_absolute_direction()
 
     axis::AxisCommand invalid = running;
     invalid.value = -10.0;
-    invalid.direction = static_cast<axis::Direction>(255);
+    invalid.direction = static_cast<axis::Direction>(255); // NOLINT(clang-analyzer-optin.core.EnumCastOutOfRange)
     if(active.submit(invalid).error() != rt::ErrorCode::invalid_argument) {
         return fail("move absolute direction invalid rejected");
     }
@@ -551,7 +551,7 @@ int check_move_absolute_direction()
 
     fb::FbMoveAbsolute move;
     move.axis_ref = &active;
-    move.direction = static_cast<axis::Direction>(255);
+    move.direction = static_cast<axis::Direction>(255); // NOLINT(clang-analyzer-optin.core.EnumCastOutOfRange)
     move.position = -5.0;
     move.execute = true;
     move.call();
