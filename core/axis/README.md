@@ -2,10 +2,18 @@
 
 `core/axis` is the R3 L5 semantic layer for axis and group state.
 
+运行时形态（[ADR-0007](../../doc/design/decisions/0007-executor-committed-trajectory.md)，
+已落地）：规划域线程是 `AxisGroup`/`AxisModel` 的唯一写者——排空命令队列、
+桥接反馈、运行 `cycle()`，向承诺轨迹环（SPSC，容量 = 前瞻深度 H）预填帧；
+RT 线程每周期只从环中弹出一帧，O(1) 零分配采样。规划慢只缩前瞻深度，不扰
+RT 周期与运动平滑；跨域共享仅限命令/承诺轨迹/反馈/状态快照四条 SPSC 队列
+（TSAN 零报告为证）。
+
 Responsibilities:
 
 - Own PLCopen-visible axis and group lifecycle state.
-- Accept already-validated motion commands and map them onto R1/R2 primitives.
+- Accept already-validated motion commands and map them onto L1-L4 primitives
+  (otg/geom/plan/exec).
 - Coordinate stack v1 (KB-036, approved coordinate matrix): MCS/PCS targets convert to ACS
   at submit through the group workpiece frame (translation + rotation about Z) and tool
   offset; ACS commands never see the frames; frames only change at standby.
@@ -62,6 +70,11 @@ Responsibilities:
   (KB-068).
 - Own slave-side synchronization (gear/cam/combine): the slave axis samples master snapshots
   read-only in its own `cycle()` and drives itself through `set_synchronized_position`.
+- Y7 aborting-takeover 连接器（`group_takeover_connector.h`，KB-051/052/053，已批 v2.1
+  矩阵）：从 `AxisGroup` 提取的第一个行为簇（拆分计划见
+  [axis-group-split-plan-2026-07-09](../../doc/planning/axis-group-split-plan-2026-07-09.md)），
+  持有接管前速度/加速度捕获向量、横向衰减 profile 与容差管半径；规划在
+  submit（规划域），采样每周期 O(1)。
 
 `AxisGroup` member lifetime:
 
@@ -82,7 +95,7 @@ Synchronization semantics carried from the v0.x tests:
 
 B9 stream session (approved trajectory-stream matrix, decisions #9/#10):
 
-- `stream_engage` is an aborting-class takeover: the L3 `StreamFilter1D` starts from the
+- `stream_engage` is an aborting-class takeover: stream 支撑库的 `StreamFilter1D` starts from the
   current kinematic state (a moving entry runs the filter's controlled-stop ladder until
   the first target); the session drives the axis as `synchronized_motion`.
 - One command lifecycle with the standard FBs: an aborting command (move/halt/stop) takes
@@ -113,6 +126,6 @@ Motion-family semantics carried from the v0.x tests:
 
 Non-goals:
 
-- No EtherCAT, kinematics, coordinate transforms, or install/export switching.
+- No EtherCAT/fieldbus, no install/export switching.
 - No direct dependency from L0-L4 back to PLCopen semantics.
 - No copying old `src/` implementation shapes; compliance docs and tests are the contract.

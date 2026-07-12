@@ -8,15 +8,13 @@ dependencies, no dynamic linking — just `#include` and go.
 - C++17 compiler (GCC 9+, Clang 10+, MSVC 2022+)
 - CMake 3.21+
 
-## Option A: vcpkg
+## Option A: vcpkg (planned)
 
-Add plcopen as a git overlay port:
-
-```bash
-vcpkg install plcopen --overlay-ports=/path/to/plcopen
-```
-
-Or in your `vcpkg.json` manifest with a git registry overlay.
+An overlay port (`ports/plcopen/` with a `portfile.cmake`) is not yet
+published — the repository currently only ships a root `vcpkg.json`,
+which is a port-style manifest draft (name / version / `vcpkg-cmake`
+host-tool dependencies), not a usable port. Until the port lands, use
+FetchContent (Option C) or install + `find_package` (Option D).
 
 ## Option B: Conan
 
@@ -124,14 +122,63 @@ int main()
 
 The core library is designed for hard real-time:
 
-- **Zero heap allocation** on the cycle path (L0-L4)
+- **Zero heap allocation, zero locks, no exceptions** on the entire cycle
+  path — this covers the full RT scan surface (rt / otg / geom / exec /
+  kin / stream / adapters, plus the L5 axis and L6 fb cycle paths)
+- **L0-L4 carry zero PLCopen semantics** — the generic trajectory kernel
+  is reusable on its own
 - **No exceptions, no RTTI** (`-fno-exceptions -fno-rtti`)
 - **No OS calls** in the cycle loop
 - **No floating-point time accumulation** (integer cycle counter)
 
 The `Servo` narrow interface (ADR-0004) bridges to your hardware driver.
-See `core/demo/rt_executor_demo.cpp` for a reference two-thread executor
-with `ServoSim`.
+
+## Production Runtime Shape (ADR-0007)
+
+The single-thread `while` loops in the examples above are a **teaching
+simplification** — they are correct, but not the production shape.
+
+In production (ADR-0007), a **planning-domain thread** is the sole owner
+of `AxisGroup` / `AxisModel`: it drains commands, bridges feedback, runs
+`cycle()`, and fills a **committed trajectory ring** up to H frames ahead
+of the RT clock. The **RT thread only pops one frame per tick** —
+O(1), zero-alloc. If planning runs slow, the ring level drops and the
+lookahead depth shrinks; RT cycle timing and motion smoothness are never
+disturbed. The only cross-domain sharing is four SPSC queues (commands,
+trajectory ring, feedback, state snapshots); the reference executor runs
+with zero TSAN findings.
+
+See `core/demo/rt_executor_demo.cpp` for the reference two-thread executor
+with `ServoSim`, and the
+[runtime diagram](../index.md#runtime-shape-adr-0007) on the home page.
+
+## Embedding the ST Runtime
+
+The kernel also ships an IEC 61131-3 ST logic-subset runtime you can embed
+next to the motion API. Compilation may allocate (load domain); the cyclic
+`scan()` obeys the same RT rules as the motion cycle path:
+
+```cpp
+#include "st/st.h"
+using namespace plcopen::core;
+
+const st::CompileResult r = st::compile(source); // diagnostics in r.diagnostics
+alignas(8) static unsigned char buffer[65536];   // caller-owned static placement
+st::Instance vm;
+vm.load(r.program, buffer, sizeof(buffer), task_period_ns); // Program must outlive vm
+while (running) {
+    const st::ScanError e = vm.scan(budget_instructions);
+    // faults latch until reset(): division_by_zero / for_step_zero / budget_exceeded
+}
+```
+
+`load()` preconditions: the buffer must be **8-byte aligned** (`alignas(8)`;
+a misaligned buffer is rejected with `invalid_argument`) and at least
+`r.program.required_bytes()` long (`capacity_exceeded` otherwise).
+
+Details: [core/st/README.md](https://github.com/lusipad/plcopen/blob/main/core/st/README.md),
+normative spec:
+[st-l0-semantics.md](https://github.com/lusipad/plcopen/blob/main/doc/compliance/st-l0-semantics.md).
 
 ## Build Options
 

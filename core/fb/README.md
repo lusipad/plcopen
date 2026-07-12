@@ -2,9 +2,9 @@
 
 `core/fb` is the R3 L6 PLCopen function-block contract layer.
 
-The first migration keeps the code small: shared Execute/Enable lifecycle latches and basic IEC
-blocks live here, while the first single-axis and group motion facades bind to the `core/axis`
-command contract through `motion.h`. `motion.h` also carries the A3 circular facades
+本层现有 75 个 `Fb*` 门面（约 4300 行），按头文件分组组织：共享
+Execute/Enable 生命周期锁存与基础 IEC 块（`base.h`/`basic.h`），单轴与群组
+运动门面通过 `motion.h` 绑定 `core/axis` 命令契约。 `motion.h` also carries the A3 circular facades
 (`FbMoveCircularAbsolute/Relative`, BORDER-only, KB-030): CENTER/RADIUS circ modes and blending
 buffer modes surface explicit errors per the approved circular matrix. The linear facades carry
 the A4 transition inputs (`transition_mode`, `transition_parameter`, KB-031): MaxCornerDeviation
@@ -56,10 +56,34 @@ edge evaluated in the axis cycle, optionally gated by the position window.
 
 `io.h` carries the digital IO and diagnostic facades (`FbReadDigitalInput/Output`,
 `FbWriteDigitalOutput`, `FbDigitalCamSwitch`, `FbReadAxisInfo`, `FbReadMotionState`) over the
-fixed `AxisModel` IO banks and info bits. With it the v0.x public FB surface is fully carried;
-the hardware `Servo` virtual interface remains an L7 adapter design item.
+fixed `AxisModel` IO banks and info bits. With it the v0.x public FB surface is fully carried。
+门面覆盖≠合规：诚实口径为 Part 1 门面 43/43 但 B 级 I/O 齐备 22/43
+（2026-07-12 审计时点 C++ 字段面；P1-A 已补 4 项结构缺口，其余命名/形态
+缺口归 L2a 引脚层）、条款级问题 D-01~D-20 中 16 项未清（D-05/D-12/D-13/
+D-15 已关；不能宣称合规），Part 4 同名门面 21/68，Part 5 5/11——
+逐条审计公开于 [doc/compliance/](../../doc/compliance/)。硬件 `Servo` 窄接口
+已在 [core/adapters](../adapters/README.md) 交付（ADR-0004，含 CiA402 状态机
+与 CSP/CSV/CST 模式管理）。
+
+`group.h` carries the execute-based group administration facades
+(`FbAddAxisToGroup`, `FbRemoveAxisFromGroup`, `FbGroupReset`, `FbGroupReadStatus`,
+`FbGroupReadActualPosition`, `FbGroupReadCommandPosition`)：群组管理方法在
+触发周期内完成，done 随 execute 下降沿清除。
+
+`homing.h` carries the Part 5 composable homing step FBs（`FbStepDirect`、
+`FbStepAbsSwitch`、`FbStepLimitSwitch`、`FbStepRefPulse`、`FbFinishHoming`，
+已批矩阵 2026-07-07）：每个成功启动的 Step FB 清除 homed，只有
+MC_FinishHoming 置位；回零步骤期间软限位监控挂起、由 FinishHoming 恢复。
+
+`path_table.h` carries the Part 4 path table and transform FBs（`FbPathSelect`、
+`FbMovePath`、`FbSetKinTransform`、`FbReadCartesianTransform`，已批矩阵
+2026-07-07）：调用方持有的定长 waypoint 表经校验后以句柄交给
+MC_MovePath 逐段执行。
 
 Non-goals:
 
-- No one-class-per-legacy-FB copy until the public v1 facade is switched in R4.
+- No one-class-per-legacy-FB copy：门面按语义矩阵组织，不逐一复刻旧线类形状。
 - No new behavior beyond the existing compliance matrix and known-boundary IDs.
+
+外圈消费者：st 语言层（`core/st`）只消费本层的 `fb/basic.h`（连同
+`rt/error.h`），是纯 sink——生产层不反向引用 st。

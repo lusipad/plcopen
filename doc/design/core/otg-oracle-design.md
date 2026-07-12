@@ -3,14 +3,16 @@
 > 目的：给"时间最优"三个字装上标尺——独立参照解算器量化
 > `plan_time_optimal` 每个解与理论最优的差距，此后算法极致是趋势线
 > 上的数字而非形容词。测试层专用，零运行时成本。
+> **状态：已落地**（`core/test/otg_optimality_oracle.cpp`）。
 
 ## 1. 问题形式
 
 三重积分器最小时间控制：状态 (p, v, a)，控制 u = jerk，约束
 |u| ≤ j_max、|a| ≤ a_max、|v| ≤ v_max，边界 (0, v0, a0) → (d, vt, at)
 ——**完整任意状态形态（含非零目标加速度，Ruckig 论文的目标形态，
-arXiv:2105.04830）**；现行 runtime 求解器 at=0 是声明子集，Y2 补齐，
-oracle 从第一天就按完整形态建（标尺先于被测物）。求最小 T*。Pontryagin 极小值原理给出最优控制为 bang-singular-bang
+arXiv:2105.04830）**；runtime 求解器 Y2 已补齐同形态
+（`time_optimal.h` A9 v2，任意 a₀/aₜ targeting ramp），oracle 从第一天
+就按完整形态建（标尺先于被测物）。求最小 T*。Pontryagin 极小值原理给出最优控制为 bang-singular-bang
 （u ∈ {+j, 0, −j}，饱和段为奇异段），至多 7 段。
 
 ## 2. 双 oracle 架构（独立性分层）
@@ -61,8 +63,9 @@ excess_cycles(case) = our_duration_cycles − ceil(T*_shoot / cycle)
 - 报告 p50 / p99 / max 的 excess_cycles 分布，按域分层；
 - **合法性硬门**：excess_cycles ≥ 0（低于理论最优 = oracle 或我们
   必有一错，立即失败）；
-- **质量趋势门**：初始阈值按首测实录（预期常规域 p99 ≤ 2 周期；
-  钉边界域现状会难看——这正是 Y2 的靶子），Y2 落地后棘轮收紧。
+- **质量趋势门**：初始阈值按首测实录设定；**Y2 已落地**（钉边界域
+  为其靶子，百万级 fuzz 实测总时长约为修复前基线的 ~73%），阈值按
+  Y2 后实测口径棘轮收紧。
 
 ## 4. 实现边界
 

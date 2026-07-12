@@ -1,8 +1,12 @@
-# L3 stream
+# stream —— 支撑库（依赖 otg/rt，被 L5 消费）
+
+stream 是阶梯旁支撑库：仅依赖 otg/rt、被 L5 axis 消费，不碰语义层（阶梯
+全貌见 [core/README.md](../README.md)）。
 
 `core/stream` owns the B9 trajectory-stream online filter (approved matrix:
 `doc/compliance/trajectory-stream-semantics.md`). It has no PLCopen FB
-semantics; the axis-session integration lives in L5/L6 (second slice, BS1.6).
+semantics; 轴会话集成已在 L5/L6 交付（见
+[core/axis README](../axis/README.md) 的 B9 stream session 一节）。
 
 Multi-joint aggregation (`joint_group.h`, BS1.7): `JointStreamGroup` banks up
 to 32 independent per-joint filters behind one shared configuration call — a

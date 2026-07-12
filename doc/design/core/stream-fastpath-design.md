@@ -1,5 +1,10 @@
 # T24 流式快路径设计（H1 前置，2026-07-06）
 
+> 状态：**已落地**（KB-064，`core/stream/quintic_fast_path.h`，配置
+> 开关**默认关**）；已按流程补入
+> [trajectory-stream-semantics](../../compliance/trajectory-stream-semantics.md)
+> 矩阵（其行 5 注明"T24 已实现、默认关闭"）。以下为提案期原文。
+>
 > 难点：混合帧下 48 关节同拍重解，全解 ≈8.6µs/关节 → 413µs 超
 > 300µs@1kHz 预算，且帧模式下是每帧常态。本设计给出增量快路径，
 > 是 H1 矩阵修订的技术依据。
@@ -36,10 +41,12 @@ q(τ) = 五次 Hermite（边界位置/速度/加速度全约束），τ∈[0,h]
 ## 2. 剖面表示的结构变更（唯一实质改动）
 
 滤波器现存 `otg::Profile1D`（相位剖面）；五次多项式不可表示为相位
-剖面。引入最小变体：
+剖面。引入最小变体（**提案期草图**——实现落地为独立头
+`core/stream/quintic_fast_path.h` + `filter.h` 内
+`quintic_active_`/`quintic_profile_` 分支，并无 `StreamProfile` 类型）：
 
 ```cpp
-struct StreamProfile {            // filter 内部
+struct StreamProfile {            // filter 内部（提案期草图，未采用）
     bool quintic = false;
     otg::Profile1D phases;        // 慢路径
     double c[6]; std::int64_t h;  // 快路径系数与时长

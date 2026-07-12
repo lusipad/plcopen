@@ -1,4 +1,7 @@
-# L2/L3 kin
+# kin —— 支撑库（依赖 geom/rt，被 L5 消费）
+
+kin 是阶梯旁支撑库：仅依赖 geom/rt、被 L5 axis 消费，不碰语义层（阶梯全貌
+见 [core/README.md](../README.md)）。
 
 `core/kin` owns the B2 kinematics plugin contract and the analytic reference
 mechanisms (approved matrix: `doc/compliance/kinematics-plugin-semantics.md`).

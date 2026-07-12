@@ -2,7 +2,10 @@
 
 `core/geom` owns path geometry values. It has no PLCopen FB semantics.
 
-R2 v1 scope:
+阶梯位置与消费者：L2 阶梯层（阶梯全貌见 [core/README.md](../README.md)）；
+L3 plan、L4 exec、L5 axis 直接消费本层，kin 支撑库亦依赖 geom/rt。
+
+当前 L2 范围：
 
 - line segments;
 - planar circular arcs through three points, with linear `z` interpolation;

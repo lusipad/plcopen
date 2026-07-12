@@ -18,7 +18,8 @@ x = (p, v, a)；u = jerk；|v| ≤ v_max，|a| ≤ a_max，|u| ≤ j_max
 
 测试 oracle 三层：A 切换结构打靶 / B 粗网格值迭代 / C Ruckig 黑盒
 时长对照（ADR-0003，不进 runtime）。runtime 只用自研求解器。
-→ 落地：Y2（[otg-oracle-design](otg-oracle-design.md) 为标尺）。
+→ 落地：Y2 **已交付**（`time_optimal.h` A9 v2，任意目标加速度；
+Y0 oracle 亦已落地，[otg-oracle-design](otg-oracle-design.md) 为标尺）。
 
 ## 2. 多轴同步（solve_fixed_time——必须补的核心能力）
 
@@ -37,7 +38,7 @@ profile[i].duration == T_sync
 全程 v/a/j 在限
 ```
 
-没有它，"全身同时到达"不成立。→ 落地：Y4（难点 T43）。
+没有它，"全身同时到达"不成立。→ 落地：Y4 **已交付**（难点 T43）。
 
 ## 3. 组路径运动 / TOPP（标量路径律）
 
@@ -48,7 +49,9 @@ profile[i].duration == T_sync
 ```
 
 linear / circular / 笛卡尔**全部走标量路径律**——组运动（路径律）
-与单轴 OTG（状态到状态）分工清晰。不再堆局部扫描。→ 落地：Y3。
+与单轴 OTG（状态到状态）分工清晰。不再堆局部扫描。→ 落地：Y3
+**影子中**（`core/plan/topp.h` + `topp_jerk.h` + `topp_executor.h`
+已在库中，按附注 #3 以影子 oracle 对照现行扫描，数字定去留）。
 
 ## 4. 流式快路径（仅此一种）
 
@@ -60,7 +63,8 @@ quintic Hermite: 当前 (p,v,a) → 瞄准 (p,v,0)，时长 h
 
 **禁止**：8 点采样、0.95 边距、平均命中率作安全证明。采样只做测试
 （对照 fuzz），不做合同。慢解每周期限流（最坏拍合同）。
-→ 落地：T24（随 H1，[stream-fastpath-design](stream-fastpath-design.md)）。
+→ 落地：T24 **已交付**（KB-064，`core/stream/quintic_fast_path.h`，
+配置开关默认关；[stream-fastpath-design](stream-fastpath-design.md)）。
 
 ## 5. aborting 接管（先批 linear 组）
 
@@ -82,7 +86,7 @@ q̈  = q_ss·ṡ² + q_s·s̈
 q⃛  = q_sss·ṡ³ + 3·q_ss·ṡ·s̈ + q_s·s⃛
 ```
 
-→ 落地：Y7（[group-takeover-semantics](../../compliance/group-takeover-semantics.md)，linear 范围已批）。
+→ 落地：Y7 **已交付**（[group-takeover-semantics](../../compliance/group-takeover-semantics.md)，linear 范围已批已实现；circular/笛卡尔扩展开放）。
 
 ## 6. IK（解析优先，DLS 只做兜底）
 
@@ -97,7 +101,8 @@ for k in 0..N_max:
   not_converged / singular_region / limit_infeasible
 ```
 
-→ 落地：H2（kinematics 矩阵 v2.1，已批准）。
+→ 落地：H2 **待实现**（kinematics 矩阵 v2.1 已批准；
+`core/kin/serial_chain.h` 尚不存在，仍是规划项）。
 
 ## 落地顺序（最小正确序）
 
@@ -106,8 +111,12 @@ Y7 linear 接管 → Y0 oracle → Y2 完整 OTG → Y4 定时同步
 → T24 解析快路径 → Y3 TOPP-RA/jerk-aware → H2 IK v2.1
 ```
 
+落地状态（2026-07-12）：**Y7/Y0/Y2/Y4/T24 已交付**（T24 = KB-064，
+默认关）；**Y3 影子中**（TOPP 三头已在库，影子 oracle 对照）；
+**H2 待实现**（矩阵 v2.1 已批，`serial_chain` 未动工）。
+
 **最关键三件**：完整 OTG（Y2）、定时同步（Y4）、解析快路径校验
-（T24）——其余可等。
+（T24）——已全部交付。
 
 ## 附注：内核实现观点（AI 提案，维护者批准 2026-07-07）
 

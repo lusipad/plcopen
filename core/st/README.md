@@ -1,6 +1,9 @@
-# core/st — IEC 61131-3 ST 语言层（批次 L0）
+# core/st — IEC 61131-3 ST 语言层（批次 ST-L0+ST-L1a，批次编号非 core 分层编号）
 
-L 系列批次 L0：ST 逻辑子集 + 确定性字节码 VM + 容错前端。normative 规格
+st 语言层是外圈消费面，与 adapters 平行（L6 之上）：只消费 `fb/basic.h` 与
+`rt/error.h`，不被生产层反向引用（阶梯全貌见 [core/README.md](../README.md)）。
+
+L 系列批次 ST-L0：ST 逻辑子集 + 确定性字节码 VM + 容错前端。normative 规格
 见 [st-l0-semantics.md](../../doc/compliance/st-l0-semantics.md)
 （已批准 2026-07-11），行为边界登记 KB-069，一致性矩阵
 [st-l0-conformance.yaml](../../doc/compliance/st-l0-conformance.yaml)
@@ -31,7 +34,7 @@ L 系列批次 L0：ST 逻辑子集 + 确定性字节码 VM + 容错前端。nor
 using namespace plcopen::core;
 
 const st::CompileResult r = st::compile(source); // 诊断在 r.diagnostics
-static unsigned char buffer[65536];              // 静态放置，调用方所有
+alignas(8) static unsigned char buffer[65536];   // 静态放置，调用方所有；load() 强制 8 字节对齐
 st::Instance vm;
 vm.load(r.program, buffer, sizeof(buffer), task_period_ns); // Program 须存活
 while(running) {
@@ -41,15 +44,16 @@ while(running) {
 // 只读符号表：vm.find("counter") → value_i64/value_f64/value_bool
 ```
 
-## 范围备忘（L0 + L1a）
+## 范围备忘（ST-L0 + ST-L1a）
 
 单 PROGRAM；16 标量类型（6 L0 型 + 全宽度有符号/无符号 + 位串四型，
 KB-070）；IF/CASE/FOR/WHILE/REPEAT/EXIT/CONTINUE/RETURN；`basic.h` 十
 IEC FB（命名/非正式两种调用形态，RTC 排除）；无损加宽白名单 + 210 格
 `<SRC>_TO_<DST>` 转换矩阵（[st-l1a-conversions.yaml](../../doc/compliance/st-l1a-conversions.yaml)
 三方比对入 CTest）；TIME 乘除、`**` 幂（永不折叠）、VAR CONSTANT、
-`TYPE#` 字面量。无复合类型（L1b）、无用户 POU 与 MC_* 绑定（L2）、
-无进程映像（L3）、无标准函数库（L4）、无任务语法（L5）、无 SFC（L6）。
+`TYPE#` 字面量。无复合类型（ST-L1b）、无用户 POU 与 MC_* 绑定（ST-L2）、
+无进程映像（ST-L3）、无标准函数库（ST-L4）、无任务语法（ST-L5）、
+无 SFC（ST-L6）。
 完整不做清单见两份矩阵 §6/§8。
 
 ## 测试

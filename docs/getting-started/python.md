@@ -68,6 +68,11 @@ for any cycle rate.
 
 ## Trajectory Stream (10 minutes)
 
+This capability is provided by the `core/stream` support library (B9):
+a jerk-limited online filter that sits beside the layer ladder, depends
+only on otg/rt, and is consumed by the L5 axis layer — see the
+[architecture diagram](../index.md#architecture).
+
 For robot joint control: push targets at a low rate (e.g. 100 Hz),
 the library upsamples to the cycle rate through a jerk-limited online filter.
 

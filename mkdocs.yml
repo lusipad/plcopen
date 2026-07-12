@@ -1,6 +1,8 @@
 site_name: plcopen
 site_url: https://lusipad.github.io/plcopen/
-site_description: Modern C++ PLCopen motion-control kernel
+site_description: >-
+  Modern C++ PLCopen motion-control kernel + IEC 61131-3 ST runtime —
+  embed it in your controller, or put it under your learning stack
 repo_url: https://github.com/lusipad/plcopen
 repo_name: lusipad/plcopen
 

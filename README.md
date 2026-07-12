@@ -1,8 +1,8 @@
 # plcopen
 
-> **现代 C++ 的 PLCopen 运动控制内核 —— 嵌入到你的控制器里，不替代你的控制器。**
+> **现代 C++ 的 PLCopen 运动控制内核 + IEC 61131-3 ST 运行时——嵌入你的控制器，或垫在你的学习栈下面。**
 >
-> *A modern C++ motion-control core for PLCopen-style function blocks and coordinated motion. Embed it in your controller, not replace your controller.*
+> *A modern C++ motion-control core with PLCopen-style function blocks and a deterministic IEC 61131-3 ST runtime. Embed it in your controller — or put it under your learning stack.*
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Windows CI](https://github.com/lusipad/plcopen/actions/workflows/windows-ci.yml/badge.svg)](https://github.com/lusipad/plcopen/actions/workflows/windows-ci.yml)
@@ -17,18 +17,28 @@
 
 ## 这是什么
 
-plcopen 是一个 **C++17 运动控制内核**：实时基础设施、OTG/前瞻规划、
-轴与组状态机、PLCopen 风格功能块，按 L0-L7 分层放在 `core/`。它是
-**可嵌入的库**，不是完整 PLC 运行时；同一套应用代码从仿真
-（`ServoSim`/pyplcopen）到真机零修改。
+plcopen 是一个 **C++17 header-only 运动控制内核**：实时基础设施、
+时间最优 OTG 与前瞻规划、轴与组状态机、PLCopen 风格功能块，以及
+**IEC 61131-3 ST 编译器 + 确定性字节码 VM**，分层放在 `core/`
+（依赖只向内；周期路径零分配/零锁/无异常）。它是**可嵌入的库**，
+不是完整 PLC 运行时；同一套应用代码从仿真（`ServoSim`/pyplcopen）
+到真机零修改，**同一段轨迹逐位可回放**——确定性不是形容词，是门禁。
 
-**适合你**，如果你在做工业设备/机器人（含人形关节执行层）的 C++
-控制器，需要标准运动语义（PTP/直线/圆弧/blending/前瞻/齿轮凸轮/
-坐标系/kinematics/轨迹流）而不想绑死一个平台。
+**两类人适合它：**
 
-**不适合你**，如果你要 PLC 编程 IDE（看 Beremiz）、IEC 61131-3 编译器
-（看 MatIEC）、入门教学 PLC（看 OpenPLC）或商业整机平台（CODESYS /
-TwinCAT）——定位对比与差异化见 [VISION.md](VISION.md)。
+- **工业设备/机器人控制器的 C++ 开发者**——需要标准运动语义
+  （PTP/直线/圆弧/blending/前瞻/齿轮凸轮/坐标系/kinematics/回零/
+  轨迹流）而不想绑死一个平台；
+- **具身智能与机器人生态的建造者**（LeRobot/VLA 一系）——学习策略
+  输出意图，谁把它变成平滑、受限、可复现的关节轨迹？plcopen 的定位
+  是**学习栈下面的工业级确定性执行底座**（串行总线舵机 adapter
+  语义矩阵已批准，实现批次已排；方向见
+  [具身智能战略](doc/planning/embodied-strategy.md)）。
+
+**不适合你**，如果你要：PLC 编程 IDE 与图形语言编辑器（看 Beremiz）、
+IEC 61131-3 全语言成熟编译器（看 MatIEC——我们的 ST 层是**运动导向
+子集**，按批次演进，L0+L1a 已交付）、入门教学 PLC（看 OpenPLC）、
+商业整机平台（CODESYS / TwinCAT）。定位对比见 [VISION.md](VISION.md)。
 
 ---
 
@@ -49,8 +59,6 @@ ctest --test-dir build --build-config Release --output-on-failure
 
 最简单轴示例与组/圆弧/blending 示例见 `core/demo/`；下游 CMake 消费
 （`find_package` / `FetchContent`）见 [BUILD_README.md](BUILD_README.md)。
-旧 `src/demo/` 属 v0.x 迁移对照，不代表新核 RT 编码风格；新代码优先参考
-`core/demo/`、`docs/getting-started/` 与 pyplcopen 示例。
 
 ### 十分钟上手：Python 驱动一条关节目标流（B9）
 
@@ -79,27 +87,51 @@ axis.stream_disengage()
 pip install .          # 从仓库源码构建安装
 ```
 
-或手动 CMake：`-DPLCOPEN_BUILD_PYTHON_BINDINGS=ON`。更多用法（单轴/流/
-位姿/凸轮/SI 单位转换）见 [Python 上手指南](docs/getting-started/python.md)
-与 `doc/compliance/trajectory-stream-semantics.md`。
+更多用法（单轴/流/位姿/凸轮/SI 单位转换）见
+[Python 上手指南](docs/getting-started/python.md)。ST 语言层用法见
+[core/st/README.md](core/st/README.md)（容错前端、指令预算看门狗、
+跨平台字节码锚点哈希）。
 
 ---
 
 ## 架构一图
 
 ```
- L6 fb        PLCopen FB 门面（Part 1/2 全量 + Part 4 线性/圆弧/blending）
- L5 axis      轴/组状态机 · 坐标系栈 · kinematics 级联 · B9 流会话
- L4 exec      周期采样 · gear/cam（C2 样条）· 叠加          ← 周期路径：零分配/零锁/无异常
- L3 plan      路径缓冲 · 前瞻窗口 · blending 决策            ← 规划域：贵的计算都在 submit 时
- L2 geom      直线/圆弧/Bezier/刚体帧
- L1 otg       时间最优 jerk-limited 状态到状态求解器
- L0 rt        整型周期时间 · 定长容器 · SPSC · 错误码
- L7 adapters  Servo 窄接口（ADR-0004）· CiA402 · 模式管理    ← 外圈组合，核心不碰 OS
+  your C++ app / IEC 61131-3 ST program        VLA / LeRobot / teleop
+              | MC_* function blocks                | trajectory stream
+              v                                     v
++------------------------------- plcopen --------------------------------+
+| planning domain  ==>  committed trajectory ring  ==>  RT domain        |
+| lookahead, blending,   (depth H: slow planning        pop ONE frame    |
+| kinematics; may alloc, only shrinks lookahead         per tick; O(1),  |
+| own planning thread    depth, never RT timing)        0-alloc @ 1 kHz  |
++-----------------------------------+------------------------------------+
+                                    v  Servo narrow interface (ADR-0004)
+  EtherCAT / CiA402 (fieldbus repo)  |  Feetech STS bus (S2, planned)  |  ServoSim twin
 ```
 
-详见 [doc/design/core/architecture.md](doc/design/core/architecture.md)；
-旧 `src/` v0.x 线已冻结为回放/迁移基线（`-DPLCOPEN_BUILD_LEGACY=ON`）。
+规划慢只会缩短前瞻深度，永远不碰 RT 周期——运动平滑**由构造保证**，
+不靠预算自觉（ADR-0007 双域模型）。内核按
+L0 rt → L1 otg → L2 geom → L3 plan → L4 exec → L5 axis → L6 fb →
+L7 adapters 分层，依赖只向内，L0-L4 不含任何 PLCopen 语义；
+st 语言层与 adapters 平行位于外圈。结构/运行时/生态三张全图见
+[doc/design/core/architecture.md](doc/design/core/architecture.md)，
+分层纪律见 [2026-07 架构体检](doc/design/architecture-review-2026-07.md)
+（零违规）；旧 `src/` v0.x 线已冻结为回放/迁移基线
+（`-DPLCOPEN_BUILD_LEGACY=ON`）。
+
+---
+
+## 合规：我们把审计挂在明面上
+
+"支持 PLCopen"谁都能写，我们选择公开逐条对照：Part 1 的 43 个 FB
+**门面全量**，但条款级审计（2026-07-12）发现 B 级 I/O 齐备 22/43
+（P1-A 批次此后已补 4 项结构缺口，其余命名/形态缺口归 L2a 引脚层）、
+D-01~D-20 生命周期问题 16 项开放（D-05/D-12/D-13/D-15 已关）——全部
+登记在[条款矩阵](doc/compliance/plcopen-part1-clause-matrix.md)
+与[全量审计](doc/compliance/plcopen-conformance-audit.md)，补齐批次
+公开排期于[合规计划](doc/planning/plcopen-conformance-plan.md)。
+**不宣称尚未验证的合规**——这比一枚"兼容"徽章更值得信。
 
 ---
 
@@ -112,7 +144,7 @@ pip install .          # 从仓库源码构建安装
 | "做到"的定义（normative 规格） | [doc/compliance/](doc/compliance/)（矩阵 + [已知边界](doc/compliance/known-boundaries.md)） |
 | 为什么这样设计 | [doc/design/](doc/design/)（架构 + ADR） |
 | 接下来做什么 | [ROADMAP.md](ROADMAP.md) · [doc/planning/](doc/planning/) |
-| 长期方向 | [VISION.md](VISION.md) |
+| 长期方向与战略 | [VISION.md](VISION.md) · [具身智能战略](doc/planning/embodied-strategy.md) |
 | 怎么构建 | [BUILD_README.md](BUILD_README.md) · [BUILD_LINUX.md](BUILD_LINUX.md) |
 | 从 v0.x 迁移 | [doc/migration-v0-to-v1.md](doc/migration-v0-to-v1.md) |
 | 版本变化 | [CHANGELOG.md](CHANGELOG.md) |

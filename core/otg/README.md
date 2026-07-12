@@ -1,6 +1,7 @@
 # L1 otg
 
-`core/otg` contains the R1 one-dimensional online trajectory generation contract.
+`core/otg` 是 L1 阶梯层：一维在线轨迹生成（OTG）契约，被 stream 支撑库与
+L4 exec、L5 axis 直接消费（阶梯全貌见 [core/README.md](../README.md)）。
 
 Inputs:
 
@@ -49,5 +50,6 @@ Implementation boundary:
   cases and a randomized bump-zone tier (duration-sanity asserted; the solver's own
   contract still allows overshoot-and-return, which the trackers exclude on their side).
 
-R1 deliberately does not add path buffering, arcs, PLCopen FB migration, or external OTG
-dependencies.
+层边界：路径缓冲与 blending 属 L3 plan，圆弧等路径几何属 L2 geom，PLCopen FB
+语义属 L6 fb——这些能力本层不承载，也不引入外部 OTG 依赖。消费者：stream
+支撑库构建于本层之上（依赖 otg/rt），L4 exec 与 L5 axis 亦直接消费本层。
