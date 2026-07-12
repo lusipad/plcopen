@@ -62,7 +62,7 @@
 ## 4. Codex 线观察点（不动手，只核对）
 
 - [x] L2a-Bind：AXIS_REF + 首批 10 个 MC_* ST 绑定——只消费 `plcopen-motion-part1-io.yml` 单一事实源（KB-071，2026-07-13）
-- [ ] P5-B（Part 5 缺失 6 项）：语义矩阵已起草待维护者批准（`part5-p5b-semantics.md`，2026-07-13）；批准后按 StepBlock → DistanceCoded → HomeAbsolute → Flying+AbortPassive 实现
+- [x] P5-B（Part 5 缺失 6 项）：按已批准矩阵交付 StepBlock → DistanceCoded → HomeAbsolute → Flying+AbortPassive（KB-072，2026-07-13）；11/11 有门面但仍不宣称合规
 - [ ] P4-B1（薄门面 21 项）
 - [x] L2a-Bind 落地后全仓口径同步检查：canonical 口径（门面 43/43、B 级 22/43 审计时点、D 项 4 关 16 开、不宣称合规）未漂移（2026-07-13）
 

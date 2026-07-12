@@ -6,6 +6,7 @@
 #include "axis/state.h"
 #include "fb/homing.h"
 #include "fb/management.h"
+#include "adapters/servo.h"
 
 namespace
 {
@@ -1507,6 +1508,555 @@ int check_full_homing_sequence()
     return 0;
 }
 
+int check_step_block_feedback_hold_and_position()
+{
+    axis::AxisModel axis;
+    axis.set_power(true);
+
+    fb::FbStepBlock step;
+    step.axis_ref = &axis;
+    step.execute = true;
+    step.direction = axis::HomeDirection::positive;
+    step.velocity = 0.5;
+    step.set_position = 3.0;
+    step.set_position_enabled = true;
+    step.detection_velocity_limit = 0.01;
+    step.detection_velocity_cycles = 3;
+    step.torque_limit = 2.0;
+    step.deceleration = 1.0;
+    step.jerk = 1.0;
+    step.call();
+    if(step.outputs.error || !step.outputs.busy) {
+        return fail("step_block: starts");
+    }
+
+    axis.set_actual_feedback(0.0, 0.0, 0.0, 2.5);
+    step.call();
+    step.call();
+    axis.set_actual_feedback(0.0, 0.02, 0.0, 2.5);
+    step.call();
+    if(step.outputs.done) {
+        return fail("step_block: interrupted hold resets");
+    }
+    axis.set_actual_feedback(0.0, 0.0, 0.0, 2.5);
+    for(int i = 0; i < 3; ++i) step.call();
+    if(step.outputs.done) {
+        return fail("step_block: halt before done");
+    }
+    for(int i = 0; i < 2000 && !step.outputs.done; ++i) {
+        axis.cycle();
+        step.call();
+    }
+    if(!step.outputs.done || step.outputs.error ||
+       !near(axis.snapshot().command_position, 3.0, 1e-12)) {
+        return fail("step_block: done and positioned");
+    }
+    if(axis.snapshot().homed) {
+        return fail("step_block: step does not finish homing");
+    }
+    std::printf("  PASS step_block_feedback_hold_and_position\n");
+    return 0;
+}
+
+int check_step_block_zero_hold_and_bridge()
+{
+    axis::AxisModel axis;
+    axis.set_power(true);
+    adapters::ServoFeedback feedback{};
+    feedback.position = 0.0;
+    feedback.velocity = 0.0;
+    feedback.torque = 4.0;
+    adapters::bridge_feedback(axis, feedback);
+    if(axis.snapshot().actual_torque != 4.0) {
+        return fail("step_block: bridge torque");
+    }
+    adapters::ServoSim sim;
+    sim.write_setpoints({0.0, 0.0, 0.0, 3.0});
+    adapters::ServoFeedback simulated{};
+    sim.read_feedback(simulated);
+    adapters::bridge_feedback(axis, simulated);
+    if(axis.snapshot().actual_torque != 3.0) {
+        return fail("step_block: ServoSim independent torque");
+    }
+    fb::FbStepBlock step;
+    step.axis_ref = &axis;
+    step.execute = true;
+    step.velocity = 0.5;
+    step.detection_velocity_limit = 0.01;
+    step.detection_velocity_cycles = 0;
+    step.torque_limit = 0.0;
+    step.call();
+    step.call();
+    if(step.outputs.error || !step.outputs.busy) {
+        return fail("step_block: zero hold accepts first condition");
+    }
+    std::printf("  PASS step_block_zero_hold_and_bridge\n");
+    return 0;
+}
+
+int check_step_block_invalid_inputs_atomic()
+{
+    axis::AxisModel axis;
+    axis.set_power(true);
+    const axis::AxisSnapshot before = axis.snapshot();
+    fb::FbStepBlock step;
+    step.axis_ref = &axis;
+    step.execute = true;
+    step.velocity = -1.0;
+    step.call();
+    if(!step.outputs.error ||
+       step.outputs.error_id != rt::ErrorCode::invalid_argument ||
+       !same_snapshot(before, axis.snapshot())) {
+        return fail("step_block: invalid velocity atomic");
+    }
+    std::printf("  PASS step_block_invalid_inputs_atomic\n");
+    return 0;
+}
+
+int check_step_block_limits()
+{
+    {
+        axis::AxisModel axis;
+        axis.set_power(true);
+        fb::FbStepBlock step;
+        step.axis_ref = &axis;
+        step.execute = true;
+        step.velocity = 0.5;
+        step.detection_velocity_limit = 0.0;
+        step.torque_limit = 10.0;
+        step.time_limit = 2;
+        step.call();
+        for(int i = 0; i < 3; ++i) step.call();
+        if(!step.outputs.error ||
+           step.outputs.error_id != rt::ErrorCode::out_of_range ||
+           axis.status() != axis::AxisStatus::errorstop) {
+            return fail("step_block: time limit");
+        }
+    }
+    {
+        axis::AxisModel axis;
+        axis.set_power(true);
+        fb::FbStepBlock step;
+        step.axis_ref = &axis;
+        step.execute = true;
+        step.velocity = 1.0;
+        step.acceleration = 1.0;
+        step.deceleration = 1.0;
+        step.jerk = 1.0;
+        step.detection_velocity_limit = 0.0;
+        step.torque_limit = 10.0;
+        step.distance_limit = 0.01;
+        step.call();
+        for(int i = 0; i < 100 && !step.outputs.error; ++i) {
+            axis.cycle();
+            step.call();
+        }
+        if(!step.outputs.error ||
+           step.outputs.error_id != rt::ErrorCode::out_of_range) {
+            return fail("step_block: distance limit");
+        }
+    }
+    std::printf("  PASS step_block_limits\n");
+    return 0;
+}
+
+int check_step_block_takeover()
+{
+    axis::AxisModel axis;
+    axis.set_power(true);
+    fb::FbStepBlock step;
+    step.axis_ref = &axis;
+    step.execute = true;
+    step.velocity = 0.2;
+    step.torque_limit = 10.0;
+    step.call();
+    if(!submit_takeover(axis, 1.0)) {
+        return fail("step_block: takeover submitted");
+    }
+    step.call();
+    if(!aborted_without_revival(step.outputs)) {
+        return fail("step_block: takeover aborted");
+    }
+    std::printf("  PASS step_block_takeover\n");
+    return 0;
+}
+
+int check_step_distance_coded_unique_match()
+{
+    fb::DistanceCodeMap map;
+    map.tolerance = 10.0;
+    map.entries[0] = {2.0, 12.0};
+    map.count = 1;
+
+    axis::AxisModel axis;
+    axis.set_power(true);
+    fb::FbStepDistanceCoded step;
+    step.axis_ref = &axis;
+    step.code_map = &map;
+    step.execute = true;
+    step.direction = axis::HomeDirection::positive;
+    step.velocity = 0.5;
+    step.trigger_input = 0;
+    step.call();
+    axis.set_digital_input(0, true);
+    axis.cycle();
+    step.call();
+    axis.set_digital_input(0, false);
+    axis.cycle();
+    step.call();
+    axis.set_digital_input(0, true);
+    axis.cycle();
+    step.call();
+    for(int i = 0; i < 2000 && !step.outputs.done; ++i) {
+        axis.cycle();
+        step.call();
+    }
+    if(!step.outputs.done || step.outputs.error ||
+       !near(axis.snapshot().command_position, 12.0, 1e-12)) {
+        return fail("distance_coded: unique match position");
+    }
+    std::printf("  PASS step_distance_coded_unique_match\n");
+    return 0;
+}
+
+int check_step_distance_coded_rejects_map_ambiguity()
+{
+    fb::DistanceCodeMap map;
+    map.tolerance = 0.1;
+    map.entries[0] = {2.0, 12.0};
+    map.entries[1] = {2.05, 22.0};
+    map.count = 2;
+    axis::AxisModel axis;
+    axis.set_power(true);
+    fb::FbStepDistanceCoded step;
+    step.axis_ref = &axis;
+    step.code_map = &map;
+    step.execute = true;
+    step.call();
+    if(!step.outputs.error ||
+       step.outputs.error_id != rt::ErrorCode::invalid_argument) {
+        return fail("distance_coded: ambiguous map rejected");
+    }
+    std::printf("  PASS step_distance_coded_rejects_map_ambiguity\n");
+    return 0;
+}
+
+int check_step_distance_coded_reverse_and_no_match()
+{
+    fb::DistanceCodeMap map;
+    map.tolerance = 0.01;
+    map.entries[0] = {-3.0, -12.0};
+    map.count = 1;
+    axis::AxisModel axis;
+    axis.set_power(true);
+    fb::FbStepDistanceCoded step;
+    step.axis_ref = &axis;
+    step.code_map = &map;
+    step.execute = true;
+    step.direction = axis::HomeDirection::negative;
+    step.velocity = 0.5;
+    step.call();
+    axis.set_digital_input(0, true);
+    axis.cycle();
+    step.call();
+    axis.set_digital_input(0, false);
+    axis.cycle();
+    step.call();
+    for(int i = 0; i < 4; ++i) axis.cycle();
+    axis.set_digital_input(0, true);
+    axis.cycle();
+    step.call();
+    for(int i = 0; i < 2000 && !step.outputs.done; ++i) {
+        axis.cycle();
+        step.call();
+    }
+    if(!step.outputs.done || !near(axis.snapshot().command_position, -12.0, 1e-12)) {
+        return fail("distance_coded: reverse match");
+    }
+
+    fb::DistanceCodeMap missing_map;
+    missing_map.tolerance = 0.0;
+    missing_map.entries[0] = {100.0, 1.0};
+    missing_map.count = 1;
+    axis::AxisModel missing_axis;
+    missing_axis.set_power(true);
+    fb::FbStepDistanceCoded missing;
+    missing.axis_ref = &missing_axis;
+    missing.code_map = &missing_map;
+    missing.execute = true;
+    missing.call();
+    missing_axis.set_digital_input(0, true);
+    missing_axis.cycle();
+    missing.call();
+    missing_axis.set_digital_input(0, false);
+    missing_axis.cycle();
+    missing.call();
+    missing_axis.set_digital_input(0, true);
+    missing_axis.cycle();
+    missing.call();
+    if(!missing.outputs.error ||
+       missing.outputs.error_id != rt::ErrorCode::out_of_range ||
+       missing_axis.snapshot().homed) {
+        return fail("distance_coded: no match rejected");
+    }
+    std::printf("  PASS step_distance_coded_reverse_and_no_match\n");
+    return 0;
+}
+
+int check_home_absolute_source_contract()
+{
+    axis::AxisModel axis;
+    axis.set_power(true);
+    axis.set_position(5.0);
+    double absolute_position = -12.5;
+    fb::FbHomeAbsolute home;
+    home.axis_ref = &axis;
+    if(home.bind_source(&absolute_position) != rt::ErrorCode::ok) {
+        return fail("home_absolute: source binds");
+    }
+    const std::uint32_t command_before = axis.snapshot().active_command_id;
+    home.execute = true;
+    home.call();
+    if(!home.outputs.done || home.outputs.error ||
+       !near(axis.snapshot().command_position, -12.5, 1e-12) ||
+       !axis.snapshot().homed ||
+       axis.snapshot().active_command_id != command_before) {
+        return fail("home_absolute: static position and homed");
+    }
+    double replacement = 7.0;
+    if(home.bind_source(&replacement) != rt::ErrorCode::precondition_failed) {
+        return fail("home_absolute: running rebind rejected");
+    }
+    std::printf("  PASS home_absolute_source_contract\n");
+    return 0;
+}
+
+int check_home_absolute_rejects_missing_and_nonfinite()
+{
+    axis::AxisModel axis;
+    axis.set_power(true);
+    fb::FbHomeAbsolute missing;
+    missing.axis_ref = &axis;
+    missing.execute = true;
+    missing.call();
+    if(!missing.outputs.error ||
+       missing.outputs.error_id != rt::ErrorCode::invalid_argument) {
+        return fail("home_absolute: missing source");
+    }
+    double invalid = std::numeric_limits<double>::quiet_NaN();
+    fb::FbHomeAbsolute nonfinite;
+    nonfinite.axis_ref = &axis;
+    nonfinite.bind_source(&invalid);
+    nonfinite.execute = true;
+    nonfinite.call();
+    if(!nonfinite.outputs.error ||
+       nonfinite.outputs.error_id != rt::ErrorCode::invalid_argument) {
+        return fail("home_absolute: nonfinite source");
+    }
+    std::printf("  PASS home_absolute_rejects_missing_and_nonfinite\n");
+    return 0;
+}
+
+int check_home_absolute_zero_and_active_motion()
+{
+    axis::AxisModel axis;
+    axis.set_power(true);
+    double zero = 0.0;
+    fb::FbHomeAbsolute home;
+    home.axis_ref = &axis;
+    home.bind_source(&zero);
+    home.execute = true;
+    home.call();
+    if(!home.outputs.done || axis.snapshot().command_position != 0.0) {
+        return fail("home_absolute: zero source");
+    }
+
+    axis::AxisModel moving;
+    moving.set_power(true);
+    if(!submit_takeover(moving, 10.0)) return fail("home_absolute: motion starts");
+    const axis::AxisSnapshot before = moving.snapshot();
+    double position = 2.0;
+    fb::FbHomeAbsolute rejected;
+    rejected.axis_ref = &moving;
+    rejected.bind_source(&position);
+    rejected.execute = true;
+    rejected.call();
+    if(!rejected.outputs.error || !same_snapshot(before, moving.snapshot())) {
+        return fail("home_absolute: active motion rejected atomically");
+    }
+    std::printf("  PASS home_absolute_zero_and_active_motion\n");
+    return 0;
+}
+
+int check_flying_switch_preserves_motion()
+{
+    axis::AxisModel axis;
+    axis.set_power(true);
+    const rt::Result<std::uint32_t> motion = submit_takeover(axis, 10.0);
+    if(!motion) return fail("flying_switch: motion starts");
+    for(int i = 0; i < 5; ++i) axis.cycle();
+    const std::uint32_t command_id = axis.snapshot().active_command_id;
+    const double velocity_before = axis.snapshot().command_velocity;
+    fb::FbStepReferenceFlyingSwitch flying;
+    flying.axis_ref = &axis;
+    flying.execute = true;
+    flying.switch_mode = axis::SwitchMode::rising_edge;
+    flying.trigger_input = 0;
+    flying.set_position = 100.0;
+    flying.call();
+    axis.set_digital_input(0, true);
+    axis.cycle();
+    const double captured_position = axis.snapshot().command_position;
+    flying.call();
+    if(!flying.outputs.done || flying.outputs.error ||
+       axis.snapshot().active_command_id != command_id ||
+       axis.snapshot().command_velocity != velocity_before) {
+        return fail("flying_switch: capture keeps command");
+    }
+    const double shifted = axis.snapshot().command_position;
+    axis.cycle();
+    if(!near(shifted, 100.0, 1e-12) ||
+       !near(axis.snapshot().command_position - shifted,
+             axis.snapshot().command_velocity, 1e-9)) {
+        return fail("flying_switch: profile remains shifted");
+    }
+    for(int i = 0; i < 3000 && axis.snapshot().active_command_id != 0; ++i)
+        axis.cycle();
+    if(!near(axis.snapshot().command_position,
+             100.0 + (10.0 - captured_position),
+             1e-6)) {
+        return fail("flying_switch: absolute target shifted");
+    }
+    std::printf("  PASS flying_switch_preserves_motion\n");
+    return 0;
+}
+
+int check_flying_pulse_and_abort()
+{
+    axis::AxisModel axis;
+    axis.set_power(true);
+    if(!submit_takeover(axis, 10.0)) return fail("flying_pulse: motion starts");
+    axis.cycle();
+    fb::FbStepReferenceFlyingRefPulse pulse;
+    pulse.axis_ref = &axis;
+    pulse.execute = true;
+    pulse.trigger_input = 1;
+    pulse.set_position = 20.0;
+    pulse.call();
+    if(!pulse.outputs.busy) return fail("flying_pulse: busy");
+
+    fb::FbAbortPassiveHoming abort;
+    abort.axis_ref = &axis;
+    abort.execute = true;
+    abort.call();
+    pulse.call();
+    if(!abort.outputs.done || !pulse.outputs.command_aborted ||
+       axis.snapshot().active_command_id == 0) {
+        return fail("flying_pulse: abort session only");
+    }
+    std::printf("  PASS flying_pulse_and_abort\n");
+    return 0;
+}
+
+int check_flying_rejections_and_takeover()
+{
+    axis::AxisModel idle;
+    idle.set_power(true);
+    fb::FbStepReferenceFlyingSwitch no_motion;
+    no_motion.axis_ref = &idle;
+    no_motion.execute = true;
+    no_motion.call();
+    if(!no_motion.outputs.error ||
+       no_motion.outputs.error_id != rt::ErrorCode::precondition_failed) {
+        return fail("flying_switch: idle rejected");
+    }
+
+    axis::AxisModel zero_velocity;
+    zero_velocity.set_power(true);
+    if(!submit_takeover(zero_velocity, 10.0)) return fail("flying_switch: zero setup");
+    fb::FbStepReferenceFlyingSwitch directional;
+    directional.axis_ref = &zero_velocity;
+    directional.execute = true;
+    directional.switch_mode = axis::SwitchMode::edge_positive;
+    directional.call();
+    if(!directional.outputs.error ||
+       directional.outputs.error_id != rt::ErrorCode::precondition_failed) {
+        return fail("flying_switch: zero velocity rejected");
+    }
+
+    axis::AxisModel takeover_axis;
+    takeover_axis.set_power(true);
+    if(!submit_takeover(takeover_axis, 10.0)) return fail("flying_switch: takeover setup");
+    takeover_axis.cycle();
+    fb::FbStepReferenceFlyingRefPulse first;
+    first.axis_ref = &takeover_axis;
+    first.execute = true;
+    first.call();
+    fb::FbStepReferenceFlyingRefPulse second;
+    second.axis_ref = &takeover_axis;
+    second.execute = true;
+    second.call();
+    first.call();
+    if(!first.outputs.command_aborted || !second.outputs.busy) {
+        return fail("flying_pulse: second owner takes over");
+    }
+    std::printf("  PASS flying_rejections_and_takeover\n");
+    return 0;
+}
+
+int check_flying_initial_level_and_soft_limit()
+{
+    axis::AxisModel axis;
+    axis.set_digital_input(0, true);
+    axis::MotionLimits limits{};
+    limits.max_velocity = 10.0;
+    limits.max_acceleration = 10.0;
+    limits.max_deceleration = 10.0;
+    limits.max_jerk = 10.0;
+    limits.max_position = 20.0;
+    limits.max_position_enabled = true;
+    if(axis.configure_limits(limits) != rt::ErrorCode::ok) {
+        return fail("flying_switch: soft limit setup");
+    }
+    axis.set_power(true);
+    if(!submit_takeover(axis, 10.0)) return fail("flying_switch: initial level setup");
+    axis.cycle();
+    fb::FbStepReferenceFlyingSwitch flying;
+    flying.axis_ref = &axis;
+    flying.execute = true;
+    flying.switch_mode = axis::SwitchMode::rising_edge;
+    flying.set_position = 100.0;
+    flying.call();
+    axis.cycle();
+    flying.call();
+    if(flying.outputs.done || !flying.outputs.busy) {
+        return fail("flying_switch: initial high does not capture");
+    }
+    axis.set_digital_input(0, false);
+    axis.cycle();
+    flying.call();
+    axis.set_digital_input(0, true);
+    axis.cycle();
+    const axis::AxisSnapshot before = axis.snapshot();
+    flying.call();
+    if(!flying.outputs.error || axis.status() != axis::AxisStatus::errorstop ||
+       axis.snapshot().command_position != before.command_position) {
+        return fail("flying_switch: soft limit shift rejected atomically");
+    }
+
+    axis::AxisModel empty;
+    fb::FbAbortPassiveHoming abort;
+    abort.axis_ref = &empty;
+    abort.execute = true;
+    abort.call();
+    if(!abort.outputs.error ||
+       abort.outputs.error_id != rt::ErrorCode::precondition_failed) {
+        return fail("abort_passive: empty session rejected");
+    }
+    std::printf("  PASS flying_initial_level_and_soft_limit\n");
+    return 0;
+}
+
 } // anonymous namespace
 
 int main()
@@ -1546,6 +2096,21 @@ int main()
     failures += check_step_distance_limit();
     failures += check_homed_lifecycle();
     failures += check_full_homing_sequence();
+    failures += check_step_block_feedback_hold_and_position();
+    failures += check_step_block_zero_hold_and_bridge();
+    failures += check_step_block_invalid_inputs_atomic();
+    failures += check_step_block_limits();
+    failures += check_step_block_takeover();
+    failures += check_step_distance_coded_unique_match();
+    failures += check_step_distance_coded_rejects_map_ambiguity();
+    failures += check_step_distance_coded_reverse_and_no_match();
+    failures += check_home_absolute_source_contract();
+    failures += check_home_absolute_rejects_missing_and_nonfinite();
+    failures += check_home_absolute_zero_and_active_motion();
+    failures += check_flying_switch_preserves_motion();
+    failures += check_flying_pulse_and_abort();
+    failures += check_flying_rejections_and_takeover();
+    failures += check_flying_initial_level_and_soft_limit();
     std::printf("---\n%d failures\n", failures);
     return failures;
 }

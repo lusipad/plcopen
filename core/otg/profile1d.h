@@ -77,6 +77,17 @@ public:
         return segments_[index];
     }
 
+    rt::ErrorCode translate(double delta)
+    {
+        if(!std::isfinite(delta)) return rt::ErrorCode::invalid_argument;
+        for(std::size_t i = 0; i < segments_.size(); ++i) {
+            segments_[i].c0 += delta;
+            segments_[i].start.position += delta;
+            segments_[i].finish.position += delta;
+        }
+        return rt::ErrorCode::ok;
+    }
+
 private:
     rt::StaticVector<Segment1D, MaxSegments> segments_{};
     std::int64_t duration_cycles_ = 0;

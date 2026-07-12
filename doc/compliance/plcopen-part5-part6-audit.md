@@ -11,7 +11,7 @@
 
 | 规格 | 当前结论 | 关键依据 |
 |---|---|---|
-| Part 5 回零规程 | **部分覆盖，不得声明 Part 5 合规** | 11 个标准 FB 中，3 个搜索步、直接回零和结束回零有内部近似实现，但公开名称、I/O 与部分行为不完全一致；其余 6 个缺失 |
+| Part 5 回零规程 | **11/11 有门面但仍部分覆盖，不得声明 Part 5 合规** | P5-B 补齐此前缺失的 6 个 C++ 入口；旧五块公开名称、I/O 与部分行为仍不完全一致，派生类型、逐 I/O 声明与硬件证据未闭合 |
 | Part 6 流体动力扩展 | **门控未实现，不得声明 Part 6 支持或合规** | `VISION.md` 要求出现流体动力行业用户需求后才启动评估；5 个 FB、专用数据类型、状态扩展和合规材料均不存在 |
 
 ## 2. Part 5：回零规程
@@ -20,8 +20,8 @@
 
 | 条款 | 要求自述 | 结论 | 当前证据与差距 |
 |---|---|---|---|
-| 1.1 | 以可组合原子步骤构造设备专用回零流程 | ⚠️ | `part5-homing-semantics.md` 采用相同设计，但只实现部分原子步骤 |
-| 1.2 | 提供步骤 FB，并支持时间、距离和力矩等过程诊断 | ⚠️ | 搜索基类实现时间/距离限制；无力矩限制，6 个标准 FB 缺失 |
+| 1.1 | 以可组合原子步骤构造设备专用回零流程 | ⚠️ | 11 个标准名称均有 C++ 门面，但旧五块标准接口与部分语义仍未闭合 |
+| 1.2 | 提供步骤 FB，并支持时间、距离和力矩等过程诊断 | ⚠️ | P5-B 的 StepBlock/DistanceCoded 有时间、距离与独立力矩反馈合同；旧搜索块仍缺标准 TorqueLimit/I/O 对齐 |
 | 1.3 | 长名称可采用规范给出的短名映射，但语义身份不变 | ⚠️ | `FbStepAbsSwitch`、`FbStepRefPulse` 是内部 C++ 缩写；`FbStepDirect` 对应标准 `MC_HomeDirect` 却改变了语义名称，未提供规范名称的公开适配层 |
 
 ### 2.2 第 2 章：典型回零规程
@@ -30,11 +30,11 @@
 |---|---|---|---|
 | 2.1 | 绝对开关结合限位开关和参考脉冲完成回零 | ⚠️ | 可用已实现的开关/脉冲步骤手工编排，但缺少完整规范 I/O、力矩监督及合规示例 |
 | 2.2 | 以限位开关为基准完成回零 | ⚠️ | `FbStepLimitSwitch` 提供单沿搜索；未覆盖规范的开关模式、力矩限制和缓冲接口 |
-| 2.3 | 通过机械堵转及力矩/速度判据完成回零 | ❌ | `MC_StepBlock` 缺失；语义矩阵明确将其留待力矩反馈批次 |
+| 2.3 | 通过机械堵转及力矩/速度判据完成回零 | ⚠️ | `FbStepBlock` 以 Servo 独立 actual torque/velocity 连续保持判定并受控 Halt；仅有软件仿真证据，不证明真机械堵转安全 |
 | 2.4 | 通过编码器参考脉冲完成回零 | ⚠️ | `FbStepRefPulse` 可通过数字输入捕获脉冲；未提供 `MC_REF_SIGNAL_REF`、力矩限制与缓冲接口 |
-| 2.5 | 通过距离编码参考标记推导绝对位置 | ❌ | `MC_StepDistanceCoded` 缺失 |
+| 2.5 | 通过距离编码参考标记推导绝对位置 | ⚠️ | `FbStepDistanceCoded` 捕获相邻两标记并按宿主定长码表唯一解码；不自动识别厂商编码格式 |
 | 2.6 | 从用户给定位置直接建立坐标，不产生运动 | ⚠️ | `FbStepDirect` 调用 `home_direct` 后又清除 homed，按仓库的“步骤后由 FinishHoming 收口”语义工作；名称与标准 `MC_HomeDirect` 不一致且无 `BufferMode` |
-| 2.7 | 从绝对编码器读数建立坐标，不产生运动 | ❌ | `MC_HomeAbsolute` 及绝对编码器引用/读数路径缺失 |
+| 2.7 | 从绝对编码器读数建立坐标，不产生运动 | ⚠️ | `FbHomeAbsolute` 原子快照宿主位置槽并零运动置 homed；厂商协议、多圈状态和 source 生命周期由宿主负责 |
 
 ### 2.3 第 3 章：回零步骤 FB
 
@@ -47,15 +47,15 @@ C++ 产品接口，并不能替代规范要求的数据类型与 I/O。
 |---|---|---|---|
 | 3.1 `MC_StepAbsoluteSwitch` | ⚠️ | 内部 `FbStepAbsSwitch` 有轴、执行、方向、速度、设定位置、时间/距离限制和通用输出；缺 `MC_HOME_DIRECTION`、`MC_SWITCH_MODE`、`MC_REF_SIGNAL_REF`、`TorqueLimit`、`MC_BUFFER_MODE` | 实现“初态触发先脱离再回找”、捕获、停止、偏移定位；测试覆盖基本流程、脱离、接管、限值及组约束，但未覆盖规范全部开关模式和力矩条件 |
 | 3.2 `MC_StepLimitSwitch` | ⚠️ | 内部 `FbStepLimitSwitch` 覆盖基础字段；缺规范方向枚举、限位开关模式、`TorqueLimit`、`BufferMode` | 实现未触发到触发的单沿搜索，初态触发时报参数错误；测试覆盖完成、初态错误、接管和下降沿停止 |
-| 3.3 `MC_StepBlock` | ❌ | 无类、无 I/O | 无堵转、实际速度保持时间和力矩判据；语义矩阵明确不做 |
+| 3.3 `MC_StepBlock` | ⚠️ | `FbStepBlock` 有方向、运动限值、SetPosition、actual velocity/torque 判据与通用输出；尚非逐项标准 I/O 声明 | 独立 ServoFeedback、连续保持重计、Halt/置位、限值与接管均有测试；真机械安全待硬件 |
 | 3.4 `MC_StepReferencePulse` | ⚠️ | 内部 `FbStepRefPulse` 覆盖基础字段；缺 `MC_HOME_DIRECTION`、`MC_REF_SIGNAL_REF`、`TorqueLimit`、`BufferMode` | 以数字输入上升沿代替编码器参考对象；测试覆盖捕获、定位、接管、超时/距离限制，但未证明硬件参考脉冲数据合同 |
-| 3.5 `MC_StepDistanceCoded` | ❌ | 无类、无 I/O | 无距离编码标记识别及位置推导 |
+| 3.5 `MC_StepDistanceCoded` | ⚠️ | `FbStepDistanceCoded` 消费定长 `DistanceCodeMap` 与数字 probe；尚缺标准引用类型/I/O 声明 | 正反向、唯一/无匹配/歧义与停稳置位有软件测试；厂商码制不在范围 |
 | 3.6 `MC_HomeDirect` | ⚠️ | 内部类名为 `FbStepDirect`，有轴、执行、设定位置和通用输出；缺 `BufferMode` | 无运动直接设位并执行接管/前置条件检查；成功后清 homed，必须另调 FinishHoming，与标准 FB 独立完成回零的表面合同不一致 |
-| 3.7 `MC_HomeAbsolute` | ❌ | 无类、无 I/O | 无绝对编码器位置读取和坐标建立 |
+| 3.7 `MC_HomeAbsolute` | ⚠️ | `FbHomeAbsolute::bind_source` 绑定宿主读数槽；无标准绝对编码器引用类型 | 正/负/零、未绑定、非有限、活动运动与换源拒绝有测试；不解析协议/多圈 |
 | 3.8 `MC_FinishHoming` | ⚠️ | 内部 `FbFinishHoming` 使用 `park_enabled` + 绝对 `park_position`；规范要求相对 `Distance`，且缺 `BufferMode` | 无 park 时置 homed；有 park 时先置 homed 再提交绝对移动。测试覆盖无 park、有 park、非法参数原子拒绝和限位恢复，但移动合同与规范不一致 |
-| 3.9 `MC_StepReferenceFlyingSwitch` | ❌ | 无类、无 I/O | 无在既有运动上被动捕获开关并重设位置的语义 |
-| 3.10 `MC_StepReferenceFlyingRefPulse` | ❌ | 无类、无 I/O | 无在既有运动上被动捕获编码器参考脉冲的语义 |
-| 3.11 `MC_AbortPassiveHoming` | ❌ | 无类、无 I/O | 无终止被动回零捕获的标准 FB；内部探针撤销只服务于已实现搜索步骤，不构成该公开 FB |
+| 3.9 `MC_StepReferenceFlyingSwitch` | ⚠️ | `FbStepReferenceFlyingSwitch` 有六种强枚举模式、probe、SetPosition 与限值；未暴露标准派生类型/I/O | standalone base motion 上捕获并整体平移坐标/绝对目标，不改 command id/速度；软限位失败 ErrorStop |
+| 3.10 `MC_StepReferenceFlyingRefPulse` | ⚠️ | `FbStepReferenceFlyingRefPulse` 复用被动会话与数字 probe；缺标准参考信号类型 | 捕获/平移合同与 FlyingSwitch 相同；硬件参考脉冲真实性待 adapter/真机 |
+| 3.11 `MC_AbortPassiveHoming` | ⚠️ | `FbAbortPassiveHoming` 有 Axis/Execute 与通用输出；未形成逐 I/O 声明 | 只撤销当前被动 owner，不停止活动运动；空会话和抢占有测试 |
 
 ### 2.4 第 4 章：专用回零 FB 示例
 
@@ -69,14 +69,14 @@ C++ 产品接口，并不能替代规范要求的数据类型与 I/O。
 |---|---|---|---|
 | 5.1 | 供应商、产品、版本和签署信息应形成正式声明 | ❌ | 仓库无已签署的 Part 5 供应商合规声明；本审计不得替代该声明 |
 | 5.2 | 声明基础类型及 Part 5 派生类型的支持情况 | ❌ | 未提供正式支持表；`MC_HOME_DIRECTION`、`MC_SWITCH_MODE`、`MC_REF_SIGNAL_REF` 未作为规范类型实现，Part 5 FB 也未暴露标准 `MC_BUFFER_MODE` |
-| 5.3 | 对 11 个 FB 给出支持/不支持总表 | ⚠️ | 本文给出内部审计表，但不是提交 PLCopen 的供应商清单；当前只能认定 5 个部分覆盖、6 个缺失 |
+| 5.3 | 对 11 个 FB 给出支持/不支持总表 | ⚠️ | 本文给出内部审计表，但不是提交 PLCopen 的供应商清单；当前只能认定 11 个均有门面且仍部分覆盖 |
 | 5.4–5.14 | 对每个 FB 的每项 I/O 作正式支持声明 | ❌ | 尚无可签署的逐 I/O 合规表；第 2.3 节仅用于工程差距追踪 |
 | 5.15 | Logo 使用须建立在获批合规声明上 | 不适用 | 当前未获 Part 5 合规批准，不得以本仓库审计主张 Logo 使用权 |
 
 ### 2.6 Part 5 待处理清单
 
-1. 补齐 6 个缺失 FB，或在产品支持声明中明确标为不支持。
-2. 为 5 个近似实现提供规范名称和逐项 I/O 合同；不得把内部近似类直接标为合规。
+1. 为 11 个门面提供规范名称、标准派生类型和逐项 I/O 合同；不得把内部近似类直接标为合规。
+2. 补齐旧五块与标准行为的差异，并为 P5-B 建立 adapter/硬件真实性证据。
 3. 裁决并修正 `MC_HomeDirect` 的 homed 完成语义，以及 `MC_FinishHoming`
    的相对 Distance 与当前绝对 ParkPosition 差异。
 4. 补齐方向、开关、参考信号与缓冲派生类型，并处理 TorqueLimit 能力边界。

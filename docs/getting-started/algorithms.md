@@ -56,7 +56,7 @@ completeness was 22/43 at the 2026-07-12 audit (P1-A has since closed the
 4 structural gaps; remaining naming/shape gaps move to the L2a pin layer)
 and 16 of the clause-level issues D-01..D-20 remain open
 (D-05/D-12/D-13/D-15 closed) — **no conformance claim is made**.
-Part 4 same-name facades: 21/68. Part 5 homing: 5/11.
+Part 4 same-name facades: 21/68. Part 5 homing: 11/11 C++ facades, partial coverage.
 
 Start here:
 
@@ -65,7 +65,7 @@ Start here:
 - [Part 4 coverage](https://github.com/lusipad/plcopen/blob/main/doc/compliance/part4-coverage.md) — 21/68 same-name facades (incl. management / path table)
 - [Part 4 linear matrix](https://github.com/lusipad/plcopen/blob/main/doc/compliance/plcopen-motion-part4-linear-matrix.md) — coordinated linear motion
 - [Part 4 circular matrix](https://github.com/lusipad/plcopen/blob/main/doc/compliance/plcopen-motion-part4-circular-matrix.md) — coordinated circular motion
-- [Part 5 homing semantics](https://github.com/lusipad/plcopen/blob/main/doc/compliance/part5-homing-semantics.md) — 5/11 homing procedures
+- [Part 5 homing semantics](https://github.com/lusipad/plcopen/blob/main/doc/compliance/part5-p5b-semantics.md) — 11/11 C++ facades; interfaces, derived types, and hardware evidence remain partial
 - [Conformance audit](https://github.com/lusipad/plcopen/blob/main/doc/compliance/plcopen-conformance-audit.md) — cross-part audit summary
 
 ## Known Boundaries

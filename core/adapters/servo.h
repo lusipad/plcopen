@@ -65,7 +65,8 @@ inline ServoSetpoints make_setpoints(const axis::AxisSnapshot &snapshot)
 
 inline void bridge_feedback(axis::AxisModel &axis, const ServoFeedback &feedback)
 {
-    axis.set_actual_feedback(feedback.position, feedback.velocity, feedback.acceleration);
+    axis.set_actual_feedback(feedback.position, feedback.velocity,
+                             feedback.acceleration, feedback.torque);
     for(std::size_t i = 0; i < ServoFeedback::DigitalInputCount; ++i) {
         axis.set_digital_input(i, feedback.digital_inputs[i]);
     }

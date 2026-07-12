@@ -101,4 +101,6 @@
 
 - `KB-071`：L 系列批次 L2a-Bind——新增不透明 `AXIS_REF` 与宿主 `Instance::bind_axis`，首扫前允许覆盖绑定、运行后拒绝重绑；首批十个单轴 MC 块（Power/Home/Stop/Halt/MoveAbsolute/MoveRelative/MoveAdditive/MoveVelocity/SetOverride/Reset）的 ST PinTable 只由 `plcopen-motion-part1-io.yml` 生成，未绑定轴走 FB Error 而不令 scan fault。scan 属规划域；专项冻结窗口 1000 周期零分配，扩展 MC/AXIS_REF 语料 10 万 fuzz 通过，MoveAbsolute 与 C++ 门面逐周期 setpoint 逐位一致，SPSC committed-frame executor 冒烟通过。**边界**：现有轴层仅承载 BufferMode 0/1/2/5，3/4/6 明确 `invalid_argument`；Power 分方向使能、MoveAbsolute/Relative/Additive ContinuousUpdate、SetOverride AccFactor/JerkFactor/Busy 仅暴露官方引脚但没有 C++ 行为承载，合规声明继续标未通过；43/43 门面、B 级 22/43 审计时点与 D 项 4 关 16 开口径不因本批改变。规格与实现记录见 `doc/compliance/st-l2a-semantics.md`。
 
+- `KB-072`：Part 5 P5-B 补齐此前缺失的六个 C++ 公开门面：StepBlock 只以独立实际 torque/velocity 连续保持判定堵转，DistanceCoded 只消费宿主定长唯一距离码表，HomeAbsolute 只消费宿主长寿命绝对位置槽，Flying Switch/Pulse 只在 standalone base motion 上被动捕获并整体平移活动剖面及排队绝对目标，AbortPassive 只撤销当前被动回零 owner。Flying 不改变活动命令 ID、速度、相对距离或物理剩余行程；平移越软限位/非有限目标进入 ErrorStop。**边界**：StepBlock 软件仿真不证明真机械堵转安全；不解析厂商绝对编码器协议、多圈状态或距离码格式；旧五块名称/I/O/语义偏差、标准派生类型和逐 I/O 声明仍开放，因此 11/11 有门面不等于 Part 5 合规。规格 `doc/compliance/part5-p5b-semantics.md`，验收 `plcopen_core_part5_homing_tests` 与 10 万周期零分配守卫；无既有回放声明变更。
+
 ---

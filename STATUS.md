@@ -16,7 +16,8 @@
 报告）。S0 纯软件面仅剩 PyPI 发布（Trusted Publishing 作业已备，
 publisher 注册与 tag 为人专属）；S1-S3 另依赖硬件、用户和日历时间。**L 系列语言层已启动（2026-07-11 维护者拍板）**，
 批次 ST-L0（KB-069）、ST-L1a（标量宇宙 + 转换矩阵机读化，KB-070）与
-ST-L2a-Bind 首批十个单轴 MC 块（KB-071）均已交付。
+ST-L2a-Bind 首批十个单轴 MC 块（KB-071）均已交付；Part 5 P5-B 六个缺失
+门面（KB-072）已补齐，11/11 均有 C++ 公开入口，但仍仅部分覆盖。
 
 ## 历史刻度（处于哪一步）
 
@@ -40,7 +41,7 @@ sink 门面，生产层无反向引用）。分层健康度见
 | L2/L3 geom·plan | 直线/三点圆弧/Bezier/刚体帧（平移+绕Z+完整 RPY 原语）；路径缓冲、公差带 blending、前瞻窗口（jerk 精确可达扫描） | KB-030/031/039 |
 | L4 exec | 周期采样、gear/cam 同步（C0 + C2 样条重建、在线换表、经典规律生成器）、叠加 | KB-038/046 |
 | L5 axis | 单轴全命令生命周期、组共享路径（2-8 轴）、前瞻窗口执行、坐标系栈（ACS/MCS/PCS + 工件帧/工具偏置）、kinematics 级联（消费支撑库 kin：龙门/SCARA）、位姿管线（RPY + 6R，TCP 工具变换）、笛卡尔/位姿回读（含 RPY 反演万向节约定）、段内笛卡尔插补（直线/圆弧/blending + 前瞻窗口，逐周期逆解 + 测地姿态，opt-in；腕奇异可穿越）、窗口深度可配、双空间限速、B9 流会话（消费支撑库 stream） | KB-035/036/037/041~050 |
-| L6 fb | **Part 1 v2.0：43 个 FB 均有门面，但 B 级 I/O 齐备仅 22/43（2026-07-12 审计时点 C++ 字段面口径；P1-A 已补 4 项结构缺口，其余命名/形态缺口归 L2a 引脚层），条款审计确认 D-01~D-20（D-05/D-12/D-13/D-15 已关，16 项开放），不能宣称合规**；**Part 4 v2.0：21/68 有同名门面（约 31%），47 项无同名入口**，另有 2 个旧名/自定义回读门面；**Part 5 v2.0：5/11 部分覆盖、6 项缺失**；Part 6 的 5 个 FB 全部门控未实现。35 个 PLCopen 官方技术文件（2047 页）已完成全文审计；Safety、OPC UA、XML/TC6 均仅登记缺口，未解锁实现 | 全文审计见 [总账](doc/compliance/plcopen-conformance-audit.md) 与各专项矩阵 |
+| L6 fb | **Part 1 v2.0：43 个 FB 均有门面，但 B 级 I/O 齐备仅 22/43（2026-07-12 审计时点 C++ 字段面口径；P1-A 已补 4 项结构缺口，其余命名/形态缺口归 L2a 引脚层），条款审计确认 D-01~D-20（D-05/D-12/D-13/D-15 已关，16 项开放），不能宣称合规**；**Part 4 v2.0：21/68 有同名门面（约 31%），47 项无同名入口**，另有 2 个旧名/自定义回读门面；**Part 5 v2.0：11/11 有 C++ 公开门面，但旧五块名称/I/O/语义偏差、标准派生类型与正式声明仍开放，只能标部分覆盖，不能宣称合规**；Part 6 的 5 个 FB 全部门控未实现。35 个 PLCopen 官方技术文件（2047 页）已完成全文审计；Safety、OPC UA、XML/TC6 均仅登记缺口，未解锁实现 | 全文审计见 [总账](doc/compliance/plcopen-conformance-audit.md) 与各专项矩阵 |
 | L7 adapters | **外圈消费面之一**（绕过 L6，只消费 axis/state.h + rt/error.h）：Servo 窄接口 + ServoSim + 桥接（ADR-0004）、CiA402 状态机、CSP/CSV/CST bumpless 骨架、Feetech STS 总线（语义矩阵已批准 2026-07-12，S2 实现已排期） | KB-040 |
 | 支撑库 kin | 阶梯旁支撑库（依赖 geom/rt，被 L5 消费）：kinematics 插件 ABI + 合规 harness、龙门/SCARA 解析解、球腕 6R（Pieper + 8 分支 seed 选支、奇异 margin） | KB-037/041 |
 | 支撑库 stream | 阶梯旁支撑库（依赖 otg/rt，被 L5 消费）：B9 轨迹流滤波（OTG 在线重解、断流看门狗、solve_fixed_time rendezvous 跟踪律）、多关节聚合 | KB-035 |
@@ -65,7 +66,7 @@ sink 门面，生产层无反向引用）。分层健康度见
 | 72h 分配断言 soak | **周期等效口径关闭（2026-07-11）**：07-06 墙钟版证据链断裂（无结束日志，如实登记）；改交付 2,592,000,000 冻结周期（72h@1kHz ×10）Release 零分配 PASS；真实 72h 墙钟连续运行归 B7 真机 RT 报告。口径调整开放维护者复核 |
 | **KB-051 组接管速度断崖** | **已修复（Y7，2026-07-08）**：linear 组级 aborting 接管速度连续；circular/笛卡尔接管扩展仍按 KB-051 适用范围声明另批 |
 | Part 4 管理/路径表/变换 FB | **已交付**（GroupHome/MoveDirect/GroupSetOverride/GroupInterrupt·Continue + PathSelect/MovePath/SetKinTransform/ReadCartesianTransform，验收测试已接入 CTest） |
-| Part 5 回零 FB | **内部子集已交付、标准合规未闭合**：5 个近似门面有测试，但名称/I/O/部分语义有偏差；另缺 6 个标准 FB |
+| Part 5 回零 FB | **11/11 C++ 门面已交付、标准合规未闭合**：P5-B 六块按批准矩阵有软件测试；旧五块名称/I/O/部分语义、派生类型和硬件真实性仍开放 |
 | Y2 epsilon 政策 | **已声明化**（KB-057：段时长钳零 + 复验，整数量化天然覆盖） |
 | Y2 Ruckig 对照 | **人工门控**（ADR-0003：需先审查上游许可证，不进 R1） |
 

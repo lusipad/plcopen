@@ -1,10 +1,10 @@
 # Part 5 P5-B 六项缺口语义矩阵
 
-> 状态：**草案，待维护者批准**（2026-07-13）。
+> 状态：**已批准**（2026-07-13，维护者批准全部条款）。
 > 依据：PLCopen Motion Control Part 5 v2.0 §3.3/3.5/3.7/3.9-3.11，
-> 条目级对照见 `plcopen-part5-part6-audit.md`。本矩阵会改变已批准
-> `part5-homing-semantics.md` 的“StepBlock 随扭矩批次”不做边界；批准前
-> 不进入实现。
+> 条目级对照见 `plcopen-part5-part6-audit.md`。本批准取代已批准的
+> `part5-homing-semantics.md` 中“StepBlock 随扭矩批次”不做
+> 边界；实现按本矩阵四个纵向切片推进。
 
 ## 1. 定位与不变量
 
@@ -75,6 +75,20 @@
 | 距离码厂商格式自动识别 | 只消费显式定长码表，不猜编码体系 |
 | PLCopen Part 5 合规声明/Logo | 人专属，且旧五块标准 I/O/语义偏差与派生类型未全部闭合前不得提交 |
 | 组回零编排器 | 仍由用户组合 Step FB；不新增 GroupHome 语义 |
+
+## 6. 实现记录（KB-072）
+
+- 六个此前缺失的标准名称均有 C++ 公开门面；StepBlock 使用 Servo 独立
+  actual torque/velocity，DistanceCoded 使用定长宿主码表，HomeAbsolute
+  使用绑定位置槽，Flying/Abort 使用每轴单一被动 owner。
+- Flying 捕获保持活动 command id、速度与相对行程不变，原子平移活动剖面、
+  command/actual 坐标及排队绝对目标；非有限或软限位失败保持坐标不变并
+  进入 ErrorStop。
+- `plcopen_core_part5_homing_tests` 覆盖完成、拒绝、限值、接管与 ServoSim
+  独立反馈；`plcopen_core_a2_alloc_guard --cycles 100000` 覆盖新增周期路径
+  零分配。18 份既有回放不重录，本批无声明变更。
+- 出口口径固定为“11/11 有门面、仍部分覆盖且不合规”；旧五块标准 I/O/
+  语义、派生类型、逐 I/O 声明和真机证据继续开放。
 
 ---
 

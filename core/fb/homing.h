@@ -496,4 +496,640 @@ public:
     }
 };
 
+class FbStepBlock
+{
+public:
+    // KB-072: actual feedback is the only block-detection source.
+    axis::AxisModel *axis_ref = nullptr;
+    bool execute = false;
+    axis::HomeDirection direction = axis::HomeDirection::positive;
+    double velocity = 1.0;
+    double acceleration = 1.0;
+    double deceleration = 1.0;
+    double jerk = 1.0;
+    double set_position = 0.0;
+    bool set_position_enabled = false;
+    double detection_velocity_limit = 0.0;
+    std::int64_t detection_velocity_cycles = 0;
+    double torque_limit = 0.0;
+    std::int64_t time_limit = 0;
+    double distance_limit = 0.0;
+    MotionOutputs outputs{};
+
+    void call()
+    {
+        const bool rising = execute && !last_execute_;
+        last_execute_ = execute;
+        if(!execute) {
+            clear(outputs);
+            phase_ = Phase::idle;
+            return;
+        }
+        if(rising) start();
+        observe();
+    }
+
+private:
+    enum class Phase { idle, searching, halting, positioning };
+
+    void start()
+    {
+        clear(outputs);
+        if(axis_ref == nullptr || !std::isfinite(velocity) || velocity <= 0.0 ||
+           !std::isfinite(acceleration) || acceleration <= 0.0 ||
+           !std::isfinite(deceleration) || deceleration <= 0.0 ||
+           !std::isfinite(jerk) || jerk <= 0.0 ||
+           !std::isfinite(set_position) ||
+           !std::isfinite(detection_velocity_limit) ||
+           detection_velocity_limit < 0.0 || detection_velocity_cycles < 0 ||
+           !std::isfinite(torque_limit) || torque_limit < 0.0 ||
+           time_limit < 0 || !std::isfinite(distance_limit) ||
+           distance_limit < 0.0 ||
+           axis_ref->homing_step_precondition() != rt::ErrorCode::ok) {
+            fail(rt::ErrorCode::invalid_argument);
+            return;
+        }
+        axis::AxisCommand command{};
+        command.kind = axis::CommandKind::move_velocity;
+        command.value = direction == axis::HomeDirection::positive ? 1.0 : -1.0;
+        command.velocity = velocity;
+        command.acceleration = acceleration;
+        command.deceleration = deceleration;
+        command.jerk = jerk;
+        const rt::Result<std::uint32_t> submitted = axis_ref->submit(command);
+        if(!submitted) {
+            fail(submitted.error());
+            return;
+        }
+        axis_ref->clear_homed();
+        command_id_ = submitted.value();
+        start_position_ = axis_ref->snapshot().command_position;
+        elapsed_cycles_ = 0;
+        detected_cycles_ = 0;
+        outputs.busy = true;
+        outputs.active = true;
+        phase_ = Phase::searching;
+    }
+
+    void observe()
+    {
+        if(axis_ref == nullptr || phase_ == Phase::idle) return;
+        const axis::AxisSnapshot &snapshot = axis_ref->snapshot();
+        if(phase_ == Phase::searching) {
+            if(snapshot.active_command_id != command_id_) {
+                abort();
+                return;
+            }
+            ++elapsed_cycles_;
+            if((time_limit > 0 && elapsed_cycles_ > time_limit) ||
+               (distance_limit > 0.0 &&
+                std::fabs(snapshot.command_position - start_position_) >
+                    distance_limit)) {
+                axis_ref->trigger_error();
+                fail(rt::ErrorCode::out_of_range);
+                return;
+            }
+            const bool torque_reached =
+                torque_limit == 0.0 ||
+                std::fabs(snapshot.actual_torque) >= torque_limit;
+            const bool velocity_reached =
+                std::fabs(snapshot.actual_velocity) <= detection_velocity_limit;
+            detected_cycles_ = torque_reached && velocity_reached
+                                   ? detected_cycles_ + 1 : 0;
+            const std::int64_t required =
+                detection_velocity_cycles == 0 ? 1 : detection_velocity_cycles;
+            if(detected_cycles_ < required) return;
+            axis::AxisCommand halt{};
+            halt.kind = axis::CommandKind::halt;
+            halt.velocity = velocity;
+            halt.acceleration = acceleration;
+            halt.deceleration = deceleration;
+            halt.jerk = jerk;
+            const rt::Result<std::uint32_t> submitted = axis_ref->submit(halt);
+            if(!submitted) {
+                fail(submitted.error());
+                return;
+            }
+            command_id_ = submitted.value();
+            phase_ = Phase::halting;
+            return;
+        }
+        if(snapshot.active_command_id == command_id_) return;
+        if(snapshot.active_command_id != 0 ||
+           snapshot.last_completed_command_id != command_id_) {
+            abort();
+            return;
+        }
+        if(phase_ == Phase::halting && set_position_enabled) {
+            if(axis_ref->set_position(set_position) != rt::ErrorCode::ok) {
+                fail(rt::ErrorCode::invalid_argument);
+                return;
+            }
+            phase_ = Phase::positioning;
+        }
+        outputs.done = true;
+        outputs.busy = false;
+        outputs.active = false;
+        phase_ = Phase::idle;
+    }
+
+    void fail(rt::ErrorCode error)
+    {
+        clear(outputs);
+        outputs.error = true;
+        outputs.error_id = error;
+        phase_ = Phase::idle;
+    }
+
+    void abort()
+    {
+        clear(outputs);
+        outputs.command_aborted = true;
+        phase_ = Phase::idle;
+    }
+
+    Phase phase_ = Phase::idle;
+    bool last_execute_ = false;
+    std::uint32_t command_id_ = 0;
+    double start_position_ = 0.0;
+    std::int64_t elapsed_cycles_ = 0;
+    std::int64_t detected_cycles_ = 0;
+};
+
+struct DistanceCodeEntry
+{
+    double signed_distance = 0.0;
+    double second_mark_position = 0.0;
+};
+
+struct DistanceCodeMap
+{
+    static constexpr std::size_t Capacity = 32;
+    DistanceCodeEntry entries[Capacity]{};
+    std::size_t count = 0;
+    double tolerance = 0.0;
+};
+
+class FbStepDistanceCoded
+{
+public:
+    axis::AxisModel *axis_ref = nullptr;
+    const DistanceCodeMap *code_map = nullptr;
+    bool execute = false;
+    axis::HomeDirection direction = axis::HomeDirection::positive;
+    double velocity = 1.0;
+    double acceleration = 1.0;
+    double deceleration = 1.0;
+    double jerk = 1.0;
+    double torque_limit = 0.0;
+    std::int64_t time_limit = 0;
+    double distance_limit = 0.0;
+    std::size_t trigger_input = 0;
+    MotionOutputs outputs{};
+
+    void call()
+    {
+        const bool rising = execute && !last_execute_;
+        last_execute_ = execute;
+        if(!execute) {
+            clear(outputs);
+            release_probe();
+            phase_ = Phase::idle;
+            return;
+        }
+        if(rising) start();
+        observe();
+    }
+
+private:
+    enum class Phase { idle, first_mark, second_mark, halting };
+
+    bool valid_map() const
+    {
+        if(code_map == nullptr || code_map->count == 0 ||
+           code_map->count > DistanceCodeMap::Capacity ||
+           !std::isfinite(code_map->tolerance) || code_map->tolerance < 0.0) {
+            return false;
+        }
+        for(std::size_t i = 0; i < code_map->count; ++i) {
+            const DistanceCodeEntry &entry = code_map->entries[i];
+            if(!std::isfinite(entry.signed_distance) ||
+               !std::isfinite(entry.second_mark_position) ||
+               entry.signed_distance == 0.0) return false;
+            for(std::size_t j = i + 1; j < code_map->count; ++j) {
+                if(std::fabs(entry.signed_distance -
+                             code_map->entries[j].signed_distance) <=
+                   code_map->tolerance) return false;
+            }
+        }
+        return true;
+    }
+
+    void start()
+    {
+        clear(outputs);
+        if(axis_ref == nullptr || !valid_map() ||
+           !std::isfinite(velocity) || velocity <= 0.0 ||
+           !std::isfinite(acceleration) || acceleration <= 0.0 ||
+           !std::isfinite(deceleration) || deceleration <= 0.0 ||
+           !std::isfinite(jerk) || jerk <= 0.0 ||
+           !std::isfinite(torque_limit) || torque_limit < 0.0 ||
+           time_limit < 0 || !std::isfinite(distance_limit) ||
+           distance_limit < 0.0 ||
+           trigger_input >= axis::AxisModel::DigitalInputCount ||
+           axis_ref->homing_step_precondition() != rt::ErrorCode::ok) {
+            fail(rt::ErrorCode::invalid_argument);
+            return;
+        }
+        axis::AxisCommand command{};
+        command.kind = axis::CommandKind::move_velocity;
+        command.value = direction == axis::HomeDirection::positive ? 1.0 : -1.0;
+        command.velocity = velocity;
+        command.acceleration = acceleration;
+        command.deceleration = deceleration;
+        command.jerk = jerk;
+        const rt::Result<std::uint32_t> submitted = axis_ref->submit(command);
+        if(!submitted) {
+            fail(submitted.error());
+            return;
+        }
+        const rt::Result<std::uint32_t> armed =
+            axis_ref->arm_touch_probe(trigger_input, false, 0.0, 0.0);
+        if(!armed) {
+            fail(armed.error());
+            return;
+        }
+        axis_ref->clear_homed();
+        command_id_ = submitted.value();
+        probe_id_ = armed.value();
+        start_position_ = axis_ref->snapshot().command_position;
+        elapsed_cycles_ = 0;
+        outputs.busy = true;
+        outputs.active = true;
+        phase_ = Phase::first_mark;
+    }
+
+    void observe()
+    {
+        if(axis_ref == nullptr || phase_ == Phase::idle) return;
+        const axis::AxisSnapshot &snapshot = axis_ref->snapshot();
+        if(phase_ == Phase::first_mark || phase_ == Phase::second_mark) {
+            if(snapshot.active_command_id != command_id_) {
+                abort();
+                return;
+            }
+            ++elapsed_cycles_;
+            if((time_limit > 0 && elapsed_cycles_ > time_limit) ||
+               (distance_limit > 0.0 &&
+                std::fabs(snapshot.command_position - start_position_) >
+                    distance_limit)) {
+                axis_ref->trigger_error();
+                fail(rt::ErrorCode::out_of_range);
+                return;
+            }
+            if(!axis_ref->probe_captured(trigger_input)) return;
+            const double mark = axis_ref->probe_recorded_position(trigger_input);
+            release_probe();
+            if(phase_ == Phase::first_mark) {
+                first_mark_ = mark;
+                const rt::Result<std::uint32_t> armed =
+                    axis_ref->arm_touch_probe(trigger_input, false, 0.0, 0.0);
+                if(!armed) {
+                    fail(armed.error());
+                    return;
+                }
+                probe_id_ = armed.value();
+                phase_ = Phase::second_mark;
+                return;
+            }
+            const double distance = mark - first_mark_;
+            std::size_t matches = 0;
+            double position = 0.0;
+            for(std::size_t i = 0; i < code_map->count; ++i) {
+                if(std::fabs(distance - code_map->entries[i].signed_distance) <=
+                   code_map->tolerance) {
+                    ++matches;
+                    position = code_map->entries[i].second_mark_position;
+                }
+            }
+            if(matches != 1) {
+                fail(matches == 0 ? rt::ErrorCode::out_of_range
+                                  : rt::ErrorCode::invalid_argument);
+                return;
+            }
+            resolved_position_ = position;
+            axis::AxisCommand halt{};
+            halt.kind = axis::CommandKind::halt;
+            halt.velocity = velocity;
+            halt.acceleration = acceleration;
+            halt.deceleration = deceleration;
+            halt.jerk = jerk;
+            const rt::Result<std::uint32_t> submitted = axis_ref->submit(halt);
+            if(!submitted) {
+                fail(submitted.error());
+                return;
+            }
+            command_id_ = submitted.value();
+            phase_ = Phase::halting;
+            return;
+        }
+        if(snapshot.active_command_id == command_id_) return;
+        if(snapshot.active_command_id != 0 ||
+           snapshot.last_completed_command_id != command_id_) {
+            abort();
+            return;
+        }
+        if(axis_ref->set_position(resolved_position_) != rt::ErrorCode::ok) {
+            fail(rt::ErrorCode::invalid_argument);
+            return;
+        }
+        outputs.done = true;
+        outputs.busy = false;
+        outputs.active = false;
+        phase_ = Phase::idle;
+    }
+
+    void release_probe()
+    {
+        if(axis_ref != nullptr && probe_id_ != 0 &&
+           axis_ref->probe_command_id(trigger_input) == probe_id_) {
+            axis_ref->abort_trigger(trigger_input);
+        }
+        probe_id_ = 0;
+    }
+
+    void fail(rt::ErrorCode error)
+    {
+        release_probe();
+        clear(outputs);
+        outputs.error = true;
+        outputs.error_id = error;
+        phase_ = Phase::idle;
+    }
+
+    void abort()
+    {
+        release_probe();
+        clear(outputs);
+        outputs.command_aborted = true;
+        phase_ = Phase::idle;
+    }
+
+    Phase phase_ = Phase::idle;
+    bool last_execute_ = false;
+    std::uint32_t command_id_ = 0;
+    std::uint32_t probe_id_ = 0;
+    double start_position_ = 0.0;
+    double first_mark_ = 0.0;
+    double resolved_position_ = 0.0;
+    std::int64_t elapsed_cycles_ = 0;
+};
+
+class FbHomeAbsolute
+{
+public:
+    axis::AxisModel *axis_ref = nullptr;
+    bool execute = false;
+    MotionOutputs outputs{};
+
+    rt::ErrorCode bind_source(const double *source)
+    {
+        if(started_) return rt::ErrorCode::precondition_failed;
+        if(source == nullptr) return rt::ErrorCode::invalid_argument;
+        source_ = source;
+        return rt::ErrorCode::ok;
+    }
+
+    void call()
+    {
+        const bool rising = execute && !last_execute_;
+        last_execute_ = execute;
+        if(!execute) {
+            clear(outputs);
+            return;
+        }
+        if(!rising) return;
+        started_ = true;
+        clear(outputs);
+        if(axis_ref == nullptr || source_ == nullptr ||
+           !std::isfinite(*source_) || axis_ref->has_standalone_motion()) {
+            outputs.error = true;
+            outputs.error_id = rt::ErrorCode::invalid_argument;
+            return;
+        }
+        const rt::ErrorCode result = axis_ref->home_direct(*source_);
+        if(result != rt::ErrorCode::ok) {
+            outputs.error = true;
+            outputs.error_id = result;
+            return;
+        }
+        outputs.done = true;
+    }
+
+private:
+    const double *source_ = nullptr;
+    bool last_execute_ = false;
+    bool started_ = false;
+};
+
+class PassiveHomingFb
+{
+public:
+    // KB-072: one passive owner observes motion without replacing it.
+    axis::AxisModel *axis_ref = nullptr;
+    bool execute = false;
+    std::size_t trigger_input = 0;
+    double set_position = 0.0;
+    std::int64_t time_limit = 0;
+    double distance_limit = 0.0;
+    MotionOutputs outputs{};
+
+protected:
+    bool rising_edge()
+    {
+        const bool rising = execute && !last_execute_;
+        last_execute_ = execute;
+        if(!execute) clear(outputs);
+        return rising;
+    }
+
+    void start()
+    {
+        clear(outputs);
+        if(axis_ref == nullptr || !std::isfinite(set_position) ||
+           time_limit < 0 || !std::isfinite(distance_limit) ||
+           distance_limit < 0.0 ||
+           trigger_input >= axis::AxisModel::DigitalInputCount) {
+            fail(rt::ErrorCode::invalid_argument);
+            return;
+        }
+        const rt::Result<std::uint32_t> begun =
+            axis_ref->begin_passive_homing(trigger_input);
+        if(!begun) {
+            fail(begun.error());
+            return;
+        }
+        owner_id_ = begun.value();
+        start_position_ = axis_ref->snapshot().actual_position;
+        elapsed_cycles_ = 0;
+        outputs.busy = true;
+        outputs.active = true;
+    }
+
+    void observe(bool condition)
+    {
+        if(axis_ref == nullptr || owner_id_ == 0) return;
+        if(axis_ref->passive_homing_aborted_id() == owner_id_) {
+            clear(outputs);
+            outputs.command_aborted = true;
+            owner_id_ = 0;
+            return;
+        }
+        ++elapsed_cycles_;
+        const axis::AxisSnapshot &snapshot = axis_ref->snapshot();
+        if((time_limit > 0 && elapsed_cycles_ > time_limit) ||
+           (distance_limit > 0.0 &&
+            std::fabs(snapshot.actual_position - start_position_) >
+                distance_limit)) {
+            fail(rt::ErrorCode::out_of_range);
+            axis_ref->abort_passive_homing();
+            owner_id_ = 0;
+            return;
+        }
+        if(!condition || !axis_ref->probe_captured(trigger_input)) return;
+        const double captured = axis_ref->probe_recorded_position(trigger_input);
+        const double delta = set_position - captured;
+        const rt::ErrorCode shifted = axis_ref->shift_coordinates(delta);
+        if(shifted != rt::ErrorCode::ok ||
+           axis_ref->finish_passive_homing(owner_id_) != rt::ErrorCode::ok) {
+            if(shifted != rt::ErrorCode::ok) axis_ref->trigger_error();
+            fail(shifted != rt::ErrorCode::ok ? shifted
+                                              : rt::ErrorCode::precondition_failed);
+            owner_id_ = 0;
+            return;
+        }
+        outputs.done = true;
+        outputs.busy = false;
+        outputs.active = false;
+        owner_id_ = 0;
+    }
+
+    void fail(rt::ErrorCode error)
+    {
+        clear(outputs);
+        outputs.error = true;
+        outputs.error_id = error;
+    }
+
+    std::uint32_t owner_id_ = 0;
+
+private:
+    bool last_execute_ = false;
+    double start_position_ = 0.0;
+    std::int64_t elapsed_cycles_ = 0;
+};
+
+class FbStepReferenceFlyingSwitch : public PassiveHomingFb
+{
+public:
+    axis::SwitchMode switch_mode = axis::SwitchMode::rising_edge;
+
+    void call()
+    {
+        if(rising_edge()) {
+            const rt::Result<bool> level =
+                axis_ref == nullptr
+                    ? rt::Result<bool>::failure(rt::ErrorCode::invalid_argument)
+                    : axis_ref->digital_input(trigger_input);
+            if(!level) {
+                fail(level.error());
+                return;
+            }
+            last_level_ = level.value();
+            start();
+        }
+        if(axis_ref == nullptr || owner_id_ == 0) return;
+        const rt::Result<bool> level = axis_ref->digital_input(trigger_input);
+        if(!level) {
+            fail(level.error());
+            return;
+        }
+        const bool rising = level.value() && !last_level_;
+        const bool falling = !level.value() && last_level_;
+        last_level_ = level.value();
+        const double actual_velocity = axis_ref->snapshot().actual_velocity;
+        if((switch_mode == axis::SwitchMode::edge_positive ||
+            switch_mode == axis::SwitchMode::edge_negative) &&
+           actual_velocity == 0.0) {
+            axis_ref->abort_passive_homing();
+            owner_id_ = 0;
+            fail(rt::ErrorCode::precondition_failed);
+            return;
+        }
+        bool condition = false;
+        switch(switch_mode) {
+        case axis::SwitchMode::on: condition = level.value(); break;
+        case axis::SwitchMode::off: condition = !level.value(); break;
+        case axis::SwitchMode::rising_edge: condition = rising; break;
+        case axis::SwitchMode::falling_edge: condition = falling; break;
+        case axis::SwitchMode::edge_positive:
+            condition = actual_velocity > 0.0 ? rising : falling;
+            break;
+        case axis::SwitchMode::edge_negative:
+            condition = actual_velocity < 0.0 ? rising : falling;
+            break;
+        }
+        observe(condition);
+    }
+
+private:
+    bool last_level_ = false;
+};
+
+class FbStepReferenceFlyingRefPulse : public PassiveHomingFb
+{
+public:
+    void call()
+    {
+        if(rising_edge()) start();
+        observe(true);
+    }
+};
+
+class FbAbortPassiveHoming
+{
+public:
+    axis::AxisModel *axis_ref = nullptr;
+    bool execute = false;
+    MotionOutputs outputs{};
+
+    void call()
+    {
+        const bool rising = execute && !last_execute_;
+        last_execute_ = execute;
+        if(!execute) {
+            clear(outputs);
+            return;
+        }
+        if(!rising) return;
+        clear(outputs);
+        if(axis_ref == nullptr) {
+            outputs.error = true;
+            outputs.error_id = rt::ErrorCode::invalid_argument;
+            return;
+        }
+        const rt::Result<std::uint32_t> aborted =
+            axis_ref->abort_passive_homing();
+        if(!aborted) {
+            outputs.error = true;
+            outputs.error_id = aborted.error();
+            return;
+        }
+        outputs.done = true;
+    }
+
+private:
+    bool last_execute_ = false;
+};
+
 } // namespace plcopen::core::fb

@@ -60,7 +60,8 @@ fixed `AxisModel` IO banks and info bits. With it the v0.x public FB surface is 
 门面覆盖≠合规：诚实口径为 Part 1 门面 43/43 但 B 级 I/O 齐备 22/43
 （2026-07-12 审计时点 C++ 字段面；P1-A 已补 4 项结构缺口，其余命名/形态
 缺口归 L2a 引脚层）、条款级问题 D-01~D-20 中 16 项未清（D-05/D-12/D-13/
-D-15 已关；不能宣称合规），Part 4 同名门面 21/68，Part 5 5/11——
+D-15 已关；不能宣称合规），Part 4 同名门面 21/68，Part 5 11/11 有门面但
+旧五块接口/语义与派生类型仍部分覆盖——
 逐条审计公开于 [doc/compliance/](../../doc/compliance/)。硬件 `Servo` 窄接口
 已在 [core/adapters](../adapters/README.md) 交付（ADR-0004，含 CiA402 状态机
 与 CSP/CSV/CST 模式管理）。
@@ -74,6 +75,9 @@ D-15 已关；不能宣称合规），Part 4 同名门面 21/68，Part 5 5/11—
 `FbStepAbsSwitch`、`FbStepLimitSwitch`、`FbStepRefPulse`、`FbFinishHoming`，
 已批矩阵 2026-07-07）：每个成功启动的 Step FB 清除 homed，只有
 MC_FinishHoming 置位；回零步骤期间软限位监控挂起、由 FinishHoming 恢复。
+P5-B（KB-072）另提供 StepBlock、DistanceCoded、HomeAbsolute、Flying
+Switch/RefPulse 与 AbortPassive；这些软件合同不替代真机堵转安全、厂商
+编码器协议或正式 Part 5 逐 I/O 合规声明。
 
 `path_table.h` carries the Part 4 path table and transform FBs（`FbPathSelect`、
 `FbMovePath`、`FbSetKinTransform`、`FbReadCartesianTransform`，已批矩阵

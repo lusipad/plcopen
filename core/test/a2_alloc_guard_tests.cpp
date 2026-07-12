@@ -13,6 +13,7 @@
 
 #include "axis/group.h"
 #include "axis/state.h"
+#include "fb/homing.h"
 
 namespace
 {
@@ -178,6 +179,20 @@ int main(int argc, char **argv)
     // Warm up stdio before freezing (first printf may allocate its buffer).
     std::printf("a2 alloc guard: frozen window of %lld cycles\n", frozen_cycles);
 
+    axis::AxisModel homing_axis;
+    homing_axis.set_power(true);
+    fb::FbStepBlock step_block;
+    step_block.axis_ref = &homing_axis;
+    step_block.execute = true;
+    step_block.velocity = 0.001;
+    step_block.torque_limit = 1.0;
+    step_block.call();
+    fb::FbStepReferenceFlyingRefPulse flying;
+    flying.axis_ref = &master;
+    flying.execute = true;
+    flying.trigger_input = 1;
+    flying.call();
+
     // ---- Frozen window: any heap allocation is a defect -----------------
     g_frozen_allocations = 0;
     g_frozen = true;
@@ -186,6 +201,9 @@ int main(int argc, char **argv)
         slave.cycle();
         group.cycle();
         circle_group.cycle();
+        homing_axis.cycle();
+        step_block.call();
+        flying.call();
     }
     g_frozen = false;
 

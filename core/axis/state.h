@@ -70,6 +70,22 @@ enum class Direction
     shortest_way,
 };
 
+enum class HomeDirection
+{
+    positive,
+    negative,
+};
+
+enum class SwitchMode
+{
+    on,
+    off,
+    rising_edge,
+    falling_edge,
+    edge_positive,
+    edge_negative,
+};
+
 struct MotionLimits
 {
     double max_velocity = 1.0;
@@ -407,6 +423,55 @@ public:
             return rt::Result<double>::failure(rt::ErrorCode::unsupported);
         }
         return rt::Result<double>::success(value);
+    }
+
+    rt::ErrorCode shift_coordinates(double delta)
+    {
+        // KB-072: flying homing shifts the complete absolute coordinate domain.
+        if(!std::isfinite(delta) || !active_ ||
+           sync_kind_ != SyncKind::none || stream_active_ ||
+           superimposed_active_ || group_blocks_standalone_motion()) {
+            return rt::ErrorCode::precondition_failed;
+        }
+        if(!std::isfinite(snapshot_.command_position + delta) ||
+           !std::isfinite(snapshot_.actual_position + delta) ||
+           !std::isfinite(active_target_ + delta) ||
+           !target_inside_limits(active_target_ + delta, true)) {
+            return rt::ErrorCode::invalid_argument;
+        }
+        for(std::size_t i = 0; i < queue_.size(); ++i) {
+            if((queue_[i].kind == CommandKind::move_absolute ||
+                queue_[i].kind == CommandKind::move_continuous_absolute) &&
+               (!std::isfinite(queue_[i].value + delta) ||
+                !target_inside_limits(queue_[i].value + delta, true))) {
+                return rt::ErrorCode::invalid_argument;
+            }
+        }
+        if(active_profile_.translate(delta) != rt::ErrorCode::ok) {
+            return rt::ErrorCode::invalid_argument;
+        }
+        snapshot_.command_position += delta;
+        snapshot_.actual_position += delta;
+        active_target_ += delta;
+        active_last_sample_ += delta;
+        if(active_command_.kind == CommandKind::move_absolute ||
+           active_command_.kind == CommandKind::move_continuous_absolute) {
+            active_command_.value += delta;
+        }
+        for(std::size_t i = 0; i < queue_.size(); ++i) {
+            if(queue_[i].kind == CommandKind::move_absolute ||
+               queue_[i].kind == CommandKind::move_continuous_absolute) {
+                queue_[i].value += delta;
+            }
+        }
+        for(ProbeSlot &probe : probes_) {
+            if(probe.captured) probe.recorded_position += delta;
+            if(probe.window_only) {
+                probe.first_position += delta;
+                probe.last_position += delta;
+            }
+        }
+        return rt::ErrorCode::ok;
     }
 
     rt::Result<bool> read_bool_parameter(AxisParameter parameter) const
@@ -1156,14 +1221,18 @@ public:
     }
 
     // Adapter hook: inject measured feedback without touching command state.
-    rt::ErrorCode set_actual_feedback(double position, double velocity, double acceleration = 0.0)
+    rt::ErrorCode set_actual_feedback(double position, double velocity,
+                                      double acceleration = 0.0,
+                                      double torque = 0.0)
     {
-        if(!std::isfinite(position) || !std::isfinite(velocity) || !std::isfinite(acceleration)) {
+        if(!std::isfinite(position) || !std::isfinite(velocity) ||
+           !std::isfinite(acceleration) || !std::isfinite(torque)) {
             return rt::ErrorCode::invalid_argument;
         }
         snapshot_.actual_position = position;
         snapshot_.actual_velocity = velocity;
         snapshot_.actual_acceleration = acceleration;
+        snapshot_.actual_torque = torque;
         return rt::ErrorCode::ok;
     }
 
@@ -1301,6 +1370,54 @@ public:
     std::uint32_t probe_command_id(std::size_t input) const
     {
         return input < DigitalInputCount ? probes_[input].command_id : 0;
+    }
+
+    rt::Result<std::uint32_t> begin_passive_homing(std::size_t input)
+    {
+        if(!active_ || input >= DigitalInputCount ||
+           sync_kind_ != SyncKind::none || stream_active_ ||
+           superimposed_active_ || group_blocks_standalone_motion()) {
+            return rt::Result<std::uint32_t>::failure(
+                rt::ErrorCode::precondition_failed);
+        }
+        if(passive_homing_id_ != 0) {
+            passive_homing_aborted_id_ = passive_homing_id_;
+            abort_trigger(passive_homing_input_);
+        }
+        const rt::Result<std::uint32_t> armed =
+            arm_touch_probe(input, false, 0.0, 0.0);
+        if(!armed) return armed;
+        passive_homing_id_ = armed.value();
+        passive_homing_input_ = input;
+        return armed;
+    }
+
+    rt::ErrorCode finish_passive_homing(std::uint32_t owner)
+    {
+        if(owner == 0 || passive_homing_id_ != owner) {
+            return rt::ErrorCode::precondition_failed;
+        }
+        passive_homing_id_ = 0;
+        return rt::ErrorCode::ok;
+    }
+
+    rt::Result<std::uint32_t> abort_passive_homing()
+    {
+        if(passive_homing_id_ == 0) {
+            return rt::Result<std::uint32_t>::failure(
+                rt::ErrorCode::precondition_failed);
+        }
+        const std::uint32_t owner = passive_homing_id_;
+        abort_trigger(passive_homing_input_);
+        passive_homing_aborted_id_ = owner;
+        passive_homing_id_ = 0;
+        return rt::Result<std::uint32_t>::success(owner);
+    }
+
+    std::uint32_t passive_homing_id() const { return passive_homing_id_; }
+    std::uint32_t passive_homing_aborted_id() const
+    {
+        return passive_homing_aborted_id_;
     }
 
     bool probe_captured(std::size_t input) const
@@ -2140,6 +2257,9 @@ private:
     SyncPhase sync_entry_phase_ = SyncPhase::idle;
     std::uint32_t sync_id_ = 0;
     std::uint32_t stream_id_ = 0;
+    std::uint32_t passive_homing_id_ = 0;
+    std::uint32_t passive_homing_aborted_id_ = 0;
+    std::size_t passive_homing_input_ = 0;
     bool active_ = false;
     bool continuous_holding_ = false;
     bool override_braking_ = false;

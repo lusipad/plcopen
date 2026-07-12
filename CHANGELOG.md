@@ -6,6 +6,13 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- Part 5 P5-B（KB-072）补齐六个 C++ 门面：独立实际反馈判定的 StepBlock、
+  显式定长码表驱动的 DistanceCoded、宿主绝对位置源驱动的 HomeAbsolute、
+  不改变在途命令的 Flying Switch/RefPulse 与只撤销被动会话的 AbortPassive。
+  活动剖面和排队绝对目标随坐标原子平移，软限位失败进入 ErrorStop；专项
+  测试、ServoSim 独立反馈冒烟及 10 万周期零分配通过。11/11 有公开门面，
+  但旧五块接口/语义与标准派生类型仍未闭合，不构成 Part 5 合规声明。
+
 - L 系列批次 L2a-Bind（KB-071）：`AXIS_REF` 宿主绑定 + 首批十个单轴
   `MC_*` ST 门面；PinTable 由 Part 1 B3 YAML 唯一事实源生成，未绑定轴走
   FB Error。MoveAbsolute 与 C++ 逐周期等价、规划域→committed frame→RT
