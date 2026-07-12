@@ -11,6 +11,8 @@ AI 与人协作时的共享语言，避免每次会话重新解释。测试命�
 | **新核** | `core/` 下的重写内核（R0-R4 交付），当前默认消费面 `plcopen::plcopen` |
 | **旧线 / v0.x** | 冻结的 `src/`，仅 P0 维护；golden replay 与迁移基线；`PLCOPEN_BUILD_LEGACY=ON` 才构建 |
 | **L0-L7** | 新核分层：rt → otg → geom → plan → exec → axis → fb → adapters；依赖只向内；L0-L4 不得引用 PLCopen 语义 |
+| **支撑库 kin / stream** | 阶梯旁的向内依赖库：`kin/`（运动学，仅依赖 geom/rt）、`stream/`（在线滤波，仅依赖 otg/rt）；被 L5 axis 消费，不碰语义层 |
+| **st 语言层** | IEC 61131-3 ST 编译器 + 确定性字节码 VM（`core/st/`）：外圈消费面，与 adapters 平行（L6 之上）；只消费 `fb/basic.h` 与 `rt/error.h`，不被生产层反向引用 |
 | **对齐点** | 需要人拍板的三类时刻（CLAUDE.md）：语义批准、声明变更、人专属动作（许可证/发布/对外承诺）；其余 AI 自主、门禁裁决 |
 | **批次代号** | 历史阶段的任务编号：R0-R4（新核重写冲刺）、A1-A9（重写期算法批次）、B/BS（Phase B 机器人化批次，BS = 纯软件拆解）；细节在 doc/planning 与 doc/archive，新文档不必引用 |
 
