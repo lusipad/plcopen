@@ -126,3 +126,47 @@ Client FB**——**它骑在语言层上，而我们正在做语言层**。L2（
 
 *创建：2026-07-12。规格 PDF 已存 scratchpad，`pdftotext` 可直读——
 后续所有合规工作以原文为准，自编清单永久作废。*
+
+---
+
+## 7. Part 1 · B 级（强制）I/O 逐 FB 核对（2026-07-12 新增）
+
+> 依据：Part 1 v2.0 **附录 B3**（43 个 FB 的 I/O 合规表，`B`=强制 /
+> `E`=可选 / `V`=厂商扩展）。**B 级 I/O 总数 236，E 级 302。**
+> 这是认证的实质内容——不是 FB 数量，是**声明支持的每个 FB 的 B 级
+> I/O 是否齐备**。
+
+**结论：22/43 完全合规；21 个 FB 有 B 级缺口（29 个字段）。**
+
+### 🔴 A 类：结构性真缺口（功能真的缺，必须补 C++ 层）
+
+| FB | 缺失 B 级 I/O | 说明 |
+|----|--------------|------|
+| `MC_MoveAbsolute` | **Direction** | 旋转轴的运动方向选择（最短路径/正/负）——我们完全没有此输入 |
+| `MC_SetOverride` | **Enable / Enabled / VelFactor** | **结构性错误**：规格是**电平控制**（Enable↔Enabled 配对），我们实现成**边沿触发**（Execute↔Done）；且 `VelFactor`（0..1 因子）语义 ≠ 我们的 `percent`（100.0）。**这正是"Creating compliant FB libraries"指南第 1 节讲的边沿 vs 电平之分** |
+| `MC_PhasingAbsolute` / `MC_PhasingRelative` | **Master / Slave** | 规格要求主从**双轴引用**，我们只有单个 `axis_ref` |
+| `MC_DigitalCamSwitch` | **Switches / InOperation / TrackNumber** | 规格要求开关定义**数组** + 轨道号；我们是单窗口简化实现（KB-005 已声明此边界，但**它使该 FB 不合规**） |
+
+### 🟡 B 类：接口命名不合规（功能有，名字/形态不符）
+
+| 类别 | 涉及 FB | 缺失 B 级 I/O | 我们的现状 |
+|------|---------|--------------|-----------|
+| 命名输出 | `MC_MoveVelocity`、`MC_MoveContinuousAbs/Rel`、`MC_GearIn` | `InVelocity`、`InEndVelocity`、`InGear` | 统一用 `MotionOutputs.done/busy/active`，**无规格命名的专属输出** |
+| 剖面完成输出 | `MC_PositionProfile`、`MC_VelocityProfile`、`MC_AccelerationProfile` | `ProfileCompleted` | 同上 |
+| 剖面数据输入 | 同上三个 | `TimePosition`/`TimeVelocity`/`TimeAcceleration` | 我们的 profile 数据结构命名不同 |
+| 回读值输出 | `MC_ReadActualPosition/Velocity/Torque` | `Position`/`Velocity`/`Torque` | 共用基类的泛型 `value` 字段 |
+| 数字 IO 通道 | `MC_ReadDigitalInput/Output`、`MC_WriteDigitalOutput` | `Input`/`Output` | 通道号字段命名不同 |
+| 主从轴命名 | `MC_CamOut`、`MC_GearOut` | `Slave` | 单 `axis_ref` |
+
+### 🔑 关键洞察：合规接口面 = ST 层引脚，不是 C++ 字段
+
+PLCopen 合规表登记的是 **FB 的 I/O 名字**——而 61131-3 用户看到的接口
+是 **L2a 的 MC_* 引脚表**，不是我们的 C++ 类字段。因此：
+
+- **B 类（命名）缺口应在 L2a 引脚表解决**——C++ facade 的字段命名是
+  实现细节，引脚表按规格 B/E 名精确暴露即可；
+- **A 类（结构）缺口必须补 C++ 层**——功能真的缺，引脚表无法凭空造；
+- **⚠️ L2a 矩阵草案方向需修正**：现草案"从 `fb/motion.h` 字段映射引脚"
+  ——**应改为"从规格附录 B3 的 B/E 表映射引脚"**。L2a 不只是身份闭环件，
+  **它就是 PLCopen 合规面本身**。
+

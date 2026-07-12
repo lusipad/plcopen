@@ -45,6 +45,24 @@ L1a：16 标量宇宙 + 无损加宽白名单 + 210 格转换矩阵机读化三�
 MC_* 绑定）。扎实化收口项全部关闭（AxisGroup 第 1 批、executor 双域
 ADR-0007、Pages 上线、soak 周期等效），剩 PyPI 人专属动作。
 
+## PLCopen 合规补齐（2026-07-12 原文审计后重构，最高优先）
+
+原文审计推翻旧覆盖率声明并发现**认证不是黑箱**（自声明填表 + 提交 +
+批准，无测试套件；"一个或多个 FB 即可合规"，关键是 **B 级 I/O 齐备**）。
+详见 [合规补齐计划](doc/planning/plcopen-conformance-plan.md)。
+
+| 批 | 内容 | 量级 | 出口 |
+|----|------|------|------|
+| **P1-A** | Part 1 结构性缺口 4 项（MoveAbsolute.Direction / SetOverride 电平化 / Phasing 主从双轴 / DigitalCamSwitch 完整化） | 0.5 L0 | **B 级 I/O 43/43 → 具备提交合规声明条件** |
+| **L2a**（矩阵重写） | 引脚表改以规格附录 B3 的 B/E 表为准——**L2a 就是合规面本身**；机读引脚表 → 自动生成合规声明 | 0.5 L0 | 认证材料自动化 |
+| P5-B | Part 5 缺 6 项（StepBlock/DistanceCoded/HomeAbsolute/飞越式×2/AbortPassiveHoming） | 0.5 L0 | Part 5 11/11 |
+| P4-B1 | Part 4 薄门面 21 项（组参数/动态/SW限位/回读/运动学信息） | 1 L0 | Part 4 → ~70% |
+| P-GUIDE | 对照 Creating compliant FB libraries / Coding Guidelines / Software Quality Metrics / Annex A-E | 0.3 L0 | #5 合规口径 |
+| P4-B2/B3 | 工具负载/点动/同步/刚体动力学/跟踪 | 1.5 L0 | Part 4 全量 |
+
+**人专属待裁**：OOP（排期/门控/永不）· OPC UA 触发条件（现为死锁条件）
+· 向 PLCopen 确认提交是否需会员资格 · 合规声明提交动作。
+
 ## 商用门板穿插队列（2026-07-12 CEO 评审拍板，硬承诺非候选）
 
 商用八项硬指标中四个纯软件可关切片，此前无挂号——本次评审发现并

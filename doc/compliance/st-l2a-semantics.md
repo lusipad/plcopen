@@ -1,6 +1,14 @@
 # ST 批次 L2a 语义矩阵：MC_* 绑定 + AXIS_REF（草案）
 
-> 状态：**草案，待维护者批准**。本文件是 L 系列批次 L2a 的验收规格
+> 🔴 **草案方向需修正（2026-07-12 原文审计）**：本草案的引脚表设计为
+> "从 `fb/motion.h` 字段映射"——**方向错误**。PLCopen 合规登记的是
+> **FB 的 I/O 名字**，而 61131-3 用户看到的接口就是这里的 MC_* 引脚表
+> ——**L2a 就是 PLCopen 合规面本身**。引脚表必须**以规格附录 B3 的
+> B/E 表为准**（`B` 强制全暴露 / `E` 按需 / `V` 我们的扩展如 jerk、
+> buffer_mode 标注为厂商扩展）。批准前将按此重写 §3。
+> 详见 [plcopen-conformance-audit §7](plcopen-conformance-audit.md)。
+>
+> 状态：**草案（待重写引脚表后再送批）**。本文件是 L 系列批次 L2a 的验收规格
 > （normative）。依据：T34（POU 与实例模型——本批次只取其 MC 绑定
 > 半边）、已批准的 [st-l0-semantics.md](st-l0-semantics.md) 与
 > [st-l1a-semantics.md](st-l1a-semantics.md)（全部合同为不变量）。

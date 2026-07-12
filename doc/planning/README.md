@@ -24,6 +24,7 @@
 | [r1-rt-report-template.md](r1-rt-report-template.md) | 72h PREEMPT_RT 报告模板（B7 硬件阶段使用） | 模板，待真机 |
 | [software-excellence-plan.md](software-excellence-plan.md) | 软件极致候选清单（Y 算法/P 标准面/Z 采纳/E 证据四线） | 候选，复盘定序 |
 - [L 系列工作拆解](l-series-work-breakdown.md) —— 语言层批次的可执行拆解：范围/矩阵决策点/前置/出口判据/规模标定 + 送批队列填充策略（2026-07-12）
+- [PLCopen 合规补齐计划](plcopen-conformance-plan.md) —— 原文审计后的 P 系列重构：P1-A 结构缺口 → L2a 引脚表（即合规面）→ 可提交认证声明（2026-07-12）
 - [**主计划：从这里到商用级**](master-plan.md) —— 复盘第一入口：剩余工作按 AI 能力边界四栏分类（全自主/起草待批/人专属/买不到）+ 依赖链总图 + 人侧杠杆排序（2026-07-12）
 - [采纳与推广计划](adoption-plan.md) —— 开源本位的 90 天推广序列：人群分层/渠道三选/证据即内容/灯塔口径/P0 人专属五件（2026-07-12）
 | [full-project-review-2026-07-09.md](full-project-review-2026-07-09.md) | 全项目 Review：架构热点、门禁漂移、公共 API 合同与修复队列 | 已执行，P1/P2 修复批输入 |
