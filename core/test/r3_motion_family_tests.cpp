@@ -381,7 +381,7 @@ int check_override_replanning()
     if(axis.status() != axis::AxisStatus::discrete_motion) {
         return fail("override move active");
     }
-    if(axis.set_override(25.0) != rt::ErrorCode::ok) {
+    if(axis.set_override(0.25) != rt::ErrorCode::ok) {
         return fail("override drop accepted");
     }
     double max_velocity_after_settle = 0.0;
@@ -416,7 +416,7 @@ int check_override_replanning()
     if(!near(axis.snapshot().command_velocity, 0.125, 1e-12)) {
         return fail("override velocity live scaling (25%)");
     }
-    if(axis.set_override(100.0) != rt::ErrorCode::ok) {
+    if(axis.set_override(1.0) != rt::ErrorCode::ok) {
         return fail("override restore accepted");
     }
     axis.cycle();
@@ -655,9 +655,9 @@ int check_motion_fb_error_paths()
     // FbSetOverride: null axis
     {
         fb::FbSetOverride ovr;
-        ovr.execute = true;
+        ovr.enable = true;
         ovr.call();
-        if(!ovr.outputs.error || ovr.outputs.error_id != rt::ErrorCode::invalid_argument) {
+        if(!ovr.error || ovr.error_id != rt::ErrorCode::invalid_argument || ovr.enabled) {
             return fail("set override null axis");
         }
     }
@@ -666,27 +666,31 @@ int check_motion_fb_error_paths()
     {
         fb::FbSetOverride ovr;
         ovr.axis_ref = &axis;
-        ovr.percent = 50.0;
-        ovr.execute = true;
+        ovr.vel_factor = 0.5;
+        ovr.enable = true;
         ovr.call();
-        if(!ovr.outputs.done || ovr.outputs.error) {
+        if(!ovr.enabled || ovr.error) {
             return fail("set override success");
         }
+        ovr.vel_factor = 0.25;
         ovr.call();
-        if(!ovr.outputs.done) {
-            return fail("set override non-rising holds done");
+        if(!ovr.enabled || ovr.error) {
+            return fail("set override level update");
         }
+        ovr.enable = false;
+        ovr.call();
+        if(ovr.enabled || ovr.error) { return fail("set override disable clears"); }
     }
 
-    // FbSetOverride: invalid percent
+    // FbSetOverride: invalid factor
     {
         fb::FbSetOverride ovr;
         ovr.axis_ref = &axis;
-        ovr.percent = -10.0;
-        ovr.execute = true;
+        ovr.vel_factor = -0.1;
+        ovr.enable = true;
         ovr.call();
-        if(!ovr.outputs.error) {
-            return fail("set override invalid percent");
+        if(!ovr.error || ovr.enabled) {
+            return fail("set override invalid factor");
         }
     }
 
@@ -837,6 +841,45 @@ int check_motion_fb_error_paths()
         if(!mc.outputs.error || mc.outputs.error_id != rt::ErrorCode::invalid_argument) {
             return fail("move circular null group");
         }
+    }
+
+    return 0;
+}
+
+int check_override_zero_pause_resume()
+{
+    axis::AxisModel axis;
+    axis.set_power(true);
+    const axis::AxisCommand move = make_move(axis::CommandKind::move_absolute, 20.0, 0.5);
+    const rt::Result<std::uint32_t> accepted = axis.submit(move);
+    if(!accepted) { return fail("override zero move accepted"); }
+    for(int i = 0; i < 20; ++i) { axis.cycle(); }
+
+    if(axis.set_override(0.0) != rt::ErrorCode::ok) {
+        return fail("override zero accepted");
+    }
+    for(int i = 0; i < 500; ++i) { axis.cycle(); }
+    const double paused = axis.snapshot().command_position;
+    if(axis.status() != axis::AxisStatus::discrete_motion ||
+       axis.snapshot().active_command_id != accepted.value() ||
+       std::fabs(axis.snapshot().command_velocity) > 1e-12) {
+        return fail("override zero holds ownership");
+    }
+    for(int i = 0; i < 100; ++i) { axis.cycle(); }
+    if(!near(axis.snapshot().command_position, paused, 1e-12)) {
+        return fail("override zero position frozen");
+    }
+
+    if(axis.set_override(1.0) != rt::ErrorCode::ok) {
+        return fail("override zero resume accepted");
+    }
+    for(int i = 0; i < 10000 && axis.status() != axis::AxisStatus::standstill; ++i) {
+        axis.cycle();
+    }
+    if(axis.status() != axis::AxisStatus::standstill ||
+       !near(axis.snapshot().command_position, 20.0, 1e-8) ||
+       axis.snapshot().last_completed_command_id != accepted.value()) {
+        return fail("override zero resume completes");
     }
 
     return 0;
@@ -1002,6 +1045,7 @@ int main()
        check_halt_superimposed() != 0 || check_move_continuous() != 0 ||
        check_move_continuous_relative_and_update() != 0 ||
        check_superimposed_boundaries() != 0 || check_override_replanning() != 0 ||
+       check_override_zero_pause_resume() != 0 ||
        check_move_velocity_continuous_update() != 0 ||
        check_velocity_threshold_blending() != 0 ||
        check_buffered_chain_done_observation() != 0 ||

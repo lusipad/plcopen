@@ -47,7 +47,7 @@
 | # | 决策点 | 提案 | 理由 |
 |---|--------|------|------|
 | 3.1 | FB 集合 | 单轴核心 10 块：`MC_Power`、`MC_MoveAbsolute`、`MC_MoveRelative`、`MC_MoveAdditive`、`MC_MoveVelocity`、`MC_Halt`、`MC_Stop`、`MC_Reset`、`MC_Home`、`MC_SetOverride`——全部为 `fb/motion.h` 既有门面的直绑 | 覆盖"上电-运动-停-复位"完整生命周期；其余单轴面（叠加/触探/相位/剖面/读写参数）随后续批按同机制扩表 |
-| 3.2 | 引脚类型映射 | Execute/Enable/Done/Busy/Active/CommandAccepted/CommandAborted/Error/Status/Valid ↔ BOOL；Position/Distance/Velocity/Acceleration/Deceleration/Jerk/OverrideFactor ↔ LREAL；ErrorID ↔ DINT（rt::ErrorCode 数值）；CommandID ↔ UDINT；机读引脚表延续 pins.h 模式并进一致性矩阵 | LREAL=双精度 double 直通；错误码数值与 ErrorCode 诊断文本表对齐 |
+| 3.2 | 引脚类型映射 | Execute/Enable/Enabled/Done/Busy/Active/CommandAccepted/CommandAborted/Error/Status/Valid ↔ BOOL；Position/Distance/Velocity/Acceleration/Deceleration/Jerk/VelFactor ↔ LREAL；ErrorID ↔ DINT；CommandID ↔ UDINT；`MC_SetOverride` 精确使用 Enable/VelFactor/Enabled/Error | 对齐 P1-A2；LREAL=double 直通 |
 | 3.3 | BufferMode 引脚 | 以 **INT 编码**绑定：0=aborting、1=buffered、2=blending_low、3=blending_previous、4=blending_next、5=blending_high、6=blending_cnc（映射 axis::BufferMode，超域 = FB Error invalid_argument）；`MC_BUFFER_MODE` 枚举语法糖随 L1b 枚举落地后补 | 枚举类型属 L1b；先给显式编码不堵 buffered/blending 用法 |
 | 3.4 | 调用形态 | 与 basic.h 同：命名形参 + 非正式全覆盖两种；`Axis :=` 实参只接受 AXIS_REF 变量（表达式/字面量 = 编译错误）；输出经 `inst.Done` 等只读 | 机制复用，零新文法 |
 | 3.5 | 未赋输入保持 | 沿 KB-069 口径：未赋 input 保持上次值（含 Axis——绑定一次后续调用可省略） | IEC FB 调用语义连续 |

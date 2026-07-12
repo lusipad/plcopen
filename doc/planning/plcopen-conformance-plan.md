@@ -37,7 +37,7 @@ Part 4 = 21/68 个同名门面、47 个无同名入口；Part 5 = 5/11 部分覆
 | # | 缺口 | 工作 |
 |---|------|------|
 | 1 | `MC_MoveAbsolute.Direction` | ✅ P1-A1 已批准并实现：四值强类型输入；线性轴合法忽略，非法值原子拒绝；modulo 轴另批 |
-| 2 | `MC_SetOverride` 电平化 | 从边沿触发（Execute/Done）改为**电平控制**（Enable↔Enabled）；`percent` → `VelFactor`(0..1)——**声明变更**（既有语义改变，回放需评估） |
+| 2 | `MC_SetOverride` 电平化 | ✅ P1-A2 已预批准并实现：Enable/Enabled、VelFactor `[0,1]`、0 受控暂停/恢复 |
 | 3 | `MC_Phasing*` 主从双轴 | 单 `axis_ref` → `Master`/`Slave` 双引用 |
 | 4 | `MC_DigitalCamSwitch` 完整化 | 开关定义**数组** + `TrackNumber` + `InOperation`；KB-005 的简化边界升级为合规实现 |
 

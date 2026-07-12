@@ -64,7 +64,7 @@
 | **2.4.1-m** | **`Inxxx` 语义**（`InVelocity`/`InGear`/`InTorque`/`InSync`）：**与 Done 不同**——FB Active 期间，**set value == commanded value 时置位，后续不等时复位**；**Execute 低电平时仍更新**（只要 Active+Busy）；**指内部瞬时 setpoint，非 actual 值** | 🔴 **已确认缺失+语义错误** | 我们**完全没有这些输出**，且用 `Done` 顶替是**语义错误**（Done=一次性完成锁存，Inxxx=持续状态）。**详见下方 D-02** |
 | 2.4.1-n | `Active`：buffered FB **必须有**；FB 取得轴控制权时置位；**一轴同时只能一个 Active**（例外：MoveSuperimposed / Phasing 可并行） | ⚠️ | 我们有 `active`，但"仅一个 Active"未断言 |
 | 2.4.1-o | `CommandAborted`：被其他运动命令打断时置位；**复位行为同 Done**；置位时**其他输出（如 InVelocity）复位** | 🔴违规 | 接管时可置 CommandAborted，但 Execute 已提前下降会丢失跟踪，且 Inxxx 缺失；受 D-01/D-02 影响（`core/fb/motion.h:37-44,70-104`） |
-| 2.4.1-p | `Enable`↔`Valid` 配对：`Enable` **电平敏感**；`Valid` 表示有效输出可用；**FB 错误时 `Valid`=FALSE**，错误消失后恢复 | 🔴 **部分违规** | `MC_SetOverride` 被我们实现成 Execute 型（见 B 级 I/O 审计 A 类缺口） |
+| 2.4.1-p | `Enable`↔`Valid` 配对：`Enable` **电平敏感**；`Valid` 表示有效输出可用；**FB 错误时 `Valid`=FALSE**，错误消失后恢复 | ✅符合 | `MC_SetOverride` 已改为 Enable/Enabled 电平型；其他 Enable 型 FB 同规则 |
 | 2.4.1-q | `Position` 是坐标系内的值；`Distance` 是两位置之差 | ✅ | — |
 | **2.4.1-r** | **符号规则**：`Acceleration`/`Deceleration`/`Jerk` **恒为正**；`Velocity`/`Position`/`Distance` 可正可负 | ✅ **已验** | `state.h:589` 拒绝 `acceleration<=0 \|\| deceleration<=0 \|\| jerk<=0` |
 | 2.4.1-s | `Error` 上升沿表示 FB 执行期间发生错误；`ErrorID` 为扩展参数 | ✅ | — |
@@ -340,13 +340,13 @@
 
 | 条款 | 要求（自述） | 判定 | 证据/说明 |
 |------|-------------|------|----------|
-| 3.18-io | B 级 I/O：Axis、Enable、VelFactor、Enabled、Error | ❌缺失 | 实现为 `execute/percent/done`（`core/fb/motion.h:165-188`）；见 D-12 |
-| 3.18-n1 | Enable 高期间持续写入，低后保留最后值 | 🔴违规 | 仅 Execute 上升沿写一次（`core/fb/motion.h:170-184`）；见 D-12 |
-| 3.18-n2 | VelFactor 为 0..1，0 使速度降零但不进入 Standstill | 🔴违规 | 使用 0..100 百分比且拒绝 `<=0`（`core/fb/motion.h:168-179`; `core/axis/state.h:486-493`）；见 D-12 |
+| 3.18-io | B 级 I/O：Axis、Enable、VelFactor、Enabled、Error | ✅符合 | `FbSetOverride` 精确暴露电平型接口（`core/fb/motion.h`） |
+| 3.18-n1 | Enable 高期间持续写入，低后保留最后值 | ✅符合 | 每周期应用 factor；Disable 仅清 FB 输出，轴保留最后倍率 |
+| 3.18-n2 | VelFactor 为 0..1，0 使速度降零但不进入 Standstill | ✅符合 | factor 闭区间；0 受控减速后保持原状态/命令，恢复正值继续目标 |
 | 3.18-n3 | 不改变轴状态；同步从轴不受本地 override | ✅符合 | `core/axis/state.h:480-505`; KB-020 |
 | 3.18-n4 | 对活动运动及 Profile 的选择必须声明 | ⚠️偏差(KB-003/020 已声明) | `known-boundaries.md:14,35` |
 | 3.18-state | 状态机交互 | ✅符合 | override 更新与重规划不直接写轴状态（`core/axis/state.h:480-505`） |
-| 3.18-out | Enabled 是持续有效状态，不是一次性 Done | 🔴违规 | 成功即 `done=true,busy=false,active=false`（`core/fb/motion.h:184-188`）；见 D-12 |
+| 3.18-out | Enabled 是持续有效状态，不是一次性 Done | ✅符合 | Enabled 随 Enable 和当前周期结果持续刷新 |
 | 3.18-v | 厂商扩展：百分比量纲、Execute/Done、CommandID/Accepted | ⚠️偏差 | `core/fb/motion.h:165-188`；这些差异未列 V 清单 |
 
 ## §3.19 MC_ReadParameter / MC_ReadBoolParameter — normative
@@ -789,12 +789,14 @@ MoveAdditive 仅在 DiscreteMotion 中使用最近命令终点，在 ContinuousM
 
 **修复方向**：建立坐标偏置层，同时平移命令/实际坐标表示而不重规划当前运动。
 
-### 🔴 D-12：MC_SetOverride 的 B 级接口与量纲不符（§3.18）
+### ✅ D-12：MC_SetOverride 的 B 级接口与量纲已对齐（§3.18）
 
 **规格要求**：Enable 电平持续生效，VelFactor 范围 0..1，0 可把速度降至零且
 不进入 Standstill，Enabled 表示持续有效。
 
-**我们的行为**：使用 Execute 上升沿、0..100 percent、一次性 Done，并拒绝 0
+**当前行为**：使用 Enable/Enabled 电平接口和 `[0,1]` factor；0 受控暂停，
+保持原运动状态与命令所有权，恢复正值继续原目标。详见
+[P1-A2 语义矩阵](part1-set-override-semantics.md)。
 （`core/fb/motion.h:165-188`; `core/axis/state.h:486-493`）。
 
 **影响面**：接口、量纲、零速和输出时序均不兼容标准调用方。

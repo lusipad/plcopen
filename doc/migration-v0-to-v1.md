@@ -108,6 +108,11 @@ MC_Home 直接回零语义置 homed 标志。
 
 ## 迁移步骤建议
 
+`MC_SetOverride` 在 P1-A2 对齐标准接口：`execute/percent/outputs.done` 改为
+`enable/vel_factor/enabled`。底层 `AxisModel::set_override()` 同步从百分比
+改为 `[0,1]` 因子，例如 `25.0` 改为 `0.25`；factor=0 为受控减速暂停，
+恢复正值后继续原命令。未提供同名 percent 兼容入口，避免量纲混用。
+
 1. 先把消费方式切到 `find_package(plcopen)` / `FetchContent` 新核目标，确认编译期暴露的缺失符号清单。
 2. 缺失符号落在"尚未迁移"分组的，评估：等新核排期，或临时锁定 `v0.11.0` + `PLCOPEN_BUILD_LEGACY=ON`。
 3. 逐个替换 FB：字段改 snake_case、输出读 `outputs.*`、错误码换 `rt::ErrorCode`。

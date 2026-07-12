@@ -498,17 +498,74 @@ public:
     // its current state under the re-scaled velocity limit (an override drop
     // below the current velocity plans a deceleration entry). A failed replan
     // keeps the previous override and the running profile untouched.
-    rt::ErrorCode set_override(double percent)
+    rt::ErrorCode set_override(double factor)
     {
         if(group_blocks_standalone_motion()) {
             return rt::ErrorCode::invalid_argument;
         }
-        if(!std::isfinite(percent) || percent <= 0.0 || percent > 100.0) {
+        if(!std::isfinite(factor) || factor < 0.0 || factor > 1.0) {
             return rt::ErrorCode::invalid_argument;
         }
         const double previous = override_;
-        override_ = percent;
-        if(previous == percent) {
+        override_ = factor;
+        if(previous == factor) {
+            return rt::ErrorCode::ok;
+        }
+
+        if(factor == 0.0 && active_ && active_command_.kind != CommandKind::halt &&
+           active_command_.kind != CommandKind::stop) {
+            const double v0 = snapshot_.command_velocity;
+            const double a0 = snapshot_.command_acceleration;
+            const otg::Limits1D halt_limits{
+                std::fabs(v0) + active_command_.velocity + 1e-9,
+                std::fmax(std::fabs(a0), active_command_.acceleration),
+                active_command_.deceleration, active_command_.jerk};
+            double brake_velocity = v0;
+            double brake_shift = 0.0;
+            if(a0 != 0.0) {
+                const double zero_cycles = std::ceil(std::fabs(a0) / active_command_.jerk);
+                brake_velocity += 0.5 * a0 * zero_cycles;
+                brake_shift += v0 * zero_cycles + a0 * zero_cycles * zero_cycles / 3.0;
+            }
+            const double stop_position = snapshot_.command_position + brake_shift +
+                otg::detail::ramp_between(brake_velocity, 0.0, halt_limits).distance;
+            const rt::Result<otg::Profile1D> profile = otg::plan_time_optimal(
+                {snapshot_.command_position, v0, a0}, {stop_position, 0.0, 0.0}, halt_limits);
+            if(!profile) {
+                override_ = previous;
+                return profile.error();
+            }
+            active_profile_ = profile.value();
+            active_last_sample_ = snapshot_.command_position;
+            active_tick_ = 0;
+            override_braking_ = true;
+            override_paused_ = false;
+            return rt::ErrorCode::ok;
+        }
+
+        if(previous == 0.0 && factor > 0.0 && override_paused_) {
+            override_paused_ = false;
+            if(active_command_.kind == CommandKind::move_velocity || continuous_holding_) {
+                return rt::ErrorCode::ok;
+            }
+            const otg::Limits1D limits{active_command_.velocity * factor,
+                                       active_command_.acceleration,
+                                       active_command_.deceleration,
+                                       active_command_.jerk};
+            const double direction = active_target_ >= snapshot_.command_position ? 1.0 : -1.0;
+            const double end_velocity = is_continuous_kind(active_command_.kind)
+                                            ? direction * active_command_.end_velocity * factor
+                                            : 0.0;
+            const rt::Result<otg::Profile1D> profile = otg::plan_time_optimal(
+                {snapshot_.command_position, 0.0, 0.0}, {active_target_, end_velocity, 0.0}, limits);
+            if(!profile) {
+                override_ = previous;
+                override_paused_ = true;
+                return profile.error();
+            }
+            active_profile_ = profile.value();
+            active_last_sample_ = snapshot_.command_position;
+            active_tick_ = 0;
             return rt::ErrorCode::ok;
         }
 
@@ -523,14 +580,14 @@ public:
             active_target_ >= snapshot_.command_position ? 1.0 : -1.0;
         const double end_velocity =
             is_continuous_kind(active_command_.kind)
-                ? direction * active_command_.end_velocity * (override_ / 100.0)
+                ? direction * active_command_.end_velocity * override_
                 : 0.0;
         if(continuous_holding_) {
             continuous_hold_velocity_ = end_velocity;
             return rt::ErrorCode::ok;
         }
 
-        otg::Limits1D limits{active_command_.velocity * (override_ / 100.0),
+        otg::Limits1D limits{active_command_.velocity * override_,
                              active_command_.acceleration,
                              active_command_.deceleration,
                              active_command_.jerk};
@@ -618,7 +675,7 @@ public:
                 return rt::ErrorCode::out_of_range;
             }
 
-            const otg::Limits1D limits{command.velocity * (override_ / 100.0),
+            const otg::Limits1D limits{command.velocity * override_,
                                        command.acceleration,
                                        command.deceleration,
                                        command.jerk};
@@ -666,7 +723,7 @@ private:
         if(!target_inside_limits(command.value)) {
             return rt::ErrorCode::out_of_range;
         }
-        const otg::Limits1D limits{command.velocity * (override_ / 100.0),
+        const otg::Limits1D limits{command.velocity * override_,
                                    command.acceleration,
                                    command.deceleration,
                                    command.jerk};
@@ -1284,7 +1341,7 @@ public:
             return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
         }
 
-        otg::Limits1D limits{velocity * (override_ / 100.0), acceleration, deceleration, jerk};
+        otg::Limits1D limits{velocity * override_, acceleration, deceleration, jerk};
         const rt::Result<otg::Profile1D> profile =
             otg::plan_time_optimal({0.0, 0.0, 0.0}, {distance, 0.0, 0.0}, limits);
         if(!profile) {
@@ -1378,9 +1435,9 @@ public:
         double end_velocity = 0.0;
         if(is_continuous_kind(active_command_.kind)) {
             const double direction = target >= snapshot_.command_position ? 1.0 : -1.0;
-            end_velocity = direction * active_command_.end_velocity * (override_ / 100.0);
+            end_velocity = direction * active_command_.end_velocity * override_;
         }
-        otg::Limits1D limits{active_command_.velocity * (override_ / 100.0),
+        otg::Limits1D limits{active_command_.velocity * override_,
                              active_command_.acceleration,
                              active_command_.deceleration,
                              active_command_.jerk};
@@ -1692,7 +1749,7 @@ private:
 
     double signed_velocity(AxisCommand command) const
     {
-        const double scaled = command.velocity * (override_ / 100.0);
+        const double scaled = command.velocity * override_;
         return command.value < 0.0 ? -scaled : scaled;
     }
 
@@ -1773,11 +1830,11 @@ private:
         double target_velocity = 0.0;
         if(is_continuous_kind(command.kind)) {
             const double direction = target >= snapshot_.command_position ? 1.0 : -1.0;
-            target_velocity = direction * command.end_velocity * (override_ / 100.0);
+            target_velocity = direction * command.end_velocity * override_;
         }
 
         active_target_ = target;
-        otg::Limits1D limits{command.velocity * (override_ / 100.0),
+        otg::Limits1D limits{command.velocity * override_,
                              command.acceleration,
                              command.deceleration,
                              command.jerk};
@@ -1804,7 +1861,12 @@ private:
             return;
         }
 
-        if(active_command_.kind == CommandKind::move_velocity || continuous_holding_) {
+        if(override_paused_) {
+            return;
+        }
+
+        if(!override_braking_ &&
+           (active_command_.kind == CommandKind::move_velocity || continuous_holding_)) {
             const double velocity = continuous_holding_ ? continuous_hold_velocity_
                                                         : signed_velocity(active_command_);
             base_velocity_ = velocity;
@@ -1854,7 +1916,7 @@ private:
             (queue_[0].buffer_mode == BufferMode::blending_low ||
              queue_[0].buffer_mode == BufferMode::blending_high);
         if(blend_eligible) {
-            const double nominal = active_command_.velocity * (override_ / 100.0);
+            const double nominal = active_command_.velocity * override_;
             const double threshold =
                 (queue_[0].buffer_mode == BufferMode::blending_low ? 0.3 : 0.7) * nominal;
             const double speed = std::fabs(state.velocity);
@@ -1869,6 +1931,15 @@ private:
         }
 
         if(active_tick_ >= active_profile_.duration_cycles()) {
+            if(override_braking_) {
+                override_braking_ = false;
+                override_paused_ = true;
+                snapshot_.command_velocity = 0.0;
+                snapshot_.actual_velocity = 0.0;
+                snapshot_.command_acceleration = 0.0;
+                snapshot_.actual_acceleration = 0.0;
+                return;
+            }
             // Timed profile segments hold at the target until their minimum
             // duration elapses (otg::sample keeps returning the finish state).
             if(active_tick_ < active_command_.min_duration_cycles) {
@@ -1963,6 +2034,8 @@ private:
         active_ = false;
         active_tick_ = 0;
         continuous_holding_ = false;
+        override_braking_ = false;
+        override_paused_ = false;
         base_velocity_ = 0.0;
         queue_.clear();
         reset_sync();
@@ -2031,7 +2104,7 @@ private:
     double active_last_sample_ = 0.0;
     double base_velocity_ = 0.0;
     double continuous_hold_velocity_ = 0.0;
-    double override_ = 100.0;
+    double override_ = 1.0;
     std::int64_t active_tick_ = 0;
     std::int64_t superimposed_tick_ = 0;
     double superimposed_last_ = 0.0;
@@ -2063,6 +2136,8 @@ private:
     std::uint32_t stream_id_ = 0;
     bool active_ = false;
     bool continuous_holding_ = false;
+    bool override_braking_ = false;
+    bool override_paused_ = false;
     bool halt_profiled_ = false;
     bool blend_armed_ = false;
     bool superimposed_active_ = false;

@@ -162,29 +162,33 @@ public:
     }
 };
 
-class FbSetOverride : public AxisExecuteFb
+class FbSetOverride
 {
 public:
-    double percent = 100.0;
+    axis::AxisModel *axis_ref = nullptr;
+    bool enable = false;
+    double vel_factor = 1.0;
+    bool enabled = false;
+    bool error = false;
+    rt::ErrorCode error_id = rt::ErrorCode::ok;
 
     void call()
     {
-        if(!rising_edge()) {
+        if(!enable) {
+            enabled = false;
+            error = false;
+            error_id = rt::ErrorCode::ok;
             return;
         }
         if(axis_ref == nullptr) {
-            accept(rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument));
+            enabled = false;
+            error = true;
+            error_id = rt::ErrorCode::invalid_argument;
             return;
         }
-        const rt::ErrorCode result = axis_ref->set_override(percent);
-        if(result != rt::ErrorCode::ok) {
-            accept(rt::Result<std::uint32_t>::failure(result));
-            return;
-        }
-        accept(rt::Result<std::uint32_t>::success(1));
-        outputs.done = true;
-        outputs.busy = false;
-        outputs.active = false;
+        error_id = axis_ref->set_override(vel_factor);
+        error = error_id != rt::ErrorCode::ok;
+        enabled = !error;
     }
 };
 

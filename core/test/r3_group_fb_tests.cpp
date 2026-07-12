@@ -501,7 +501,7 @@ int check_active_group_rejects_member_replan()
         return fail("active group member replan guard setup");
     }
 
-    if(axes[0].set_override(25.0) != rt::ErrorCode::invalid_argument ||
+    if(axes[0].set_override(0.25) != rt::ErrorCode::invalid_argument ||
        axes[0].update_active_target(member_id, 8.0) != rt::ErrorCode::invalid_argument ||
        axes[0].snapshot().active_command_id != member_id ||
        group.status() != axis::GroupStatus::moving) {

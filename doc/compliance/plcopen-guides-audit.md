@@ -24,7 +24,7 @@
 
 | 章节 | 要求（自述） | 判定 | 仓库证据 |
 |------|-------------|------|----------|
-| §1 | 明确区分 Execute 边沿型与 Enable 电平型；Execute 配 Done，Enable 配 Valid | 🔴 | `MC_SetOverride` 使用 Execute/Done 而规范接口为 Enable/Enabled，见 Part 1 D-12（`plcopen-part1-clause-matrix.md`）；`core/fb/motion.h:165-188` |
+| §1 | 明确区分 Execute 边沿型与 Enable 电平型；Execute 配 Done，Enable 配 Valid | ✅ | P1-A2 已将 `MC_SetOverride` 改为 Enable/Enabled 电平型；其他 FB 按各自类别保持 |
 | §1 | 边沿型异步动作必须在后续周期保持可观察终态 | 🔴 | Execute 低后停止观察并清跟踪，见 Part 1 D-01；`core/fb/motion.h:35-105` |
 | §2 | 基础边沿模型应具 Dormant/Executing/Done/Error/Resetting 生命周期 | ⚠️ | `AxisExecuteFb` 具有 busy/done/error，但没有显式 resetting 状态；`core/fb/motion.h:35-105` |
 | §3 | 可中止模型应区分 Aborting 与 Aborted，并保证中止终态 | ⚠️ | 对外只有 `CommandAborted`，内部 takeover 无通用 aborting 状态；轴/组实现分散处理（`core/axis/state.h:707-721`; `core/axis/group.h`） |
