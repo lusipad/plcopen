@@ -63,5 +63,7 @@ publisher 注册与 tag 为人专属）；S1-S3 另依赖硬件、用户和日�
 ## 近期计划
 
 见 [ROADMAP.md](ROADMAP.md)（当前里程碑）、
-[软件极致计划](doc/planning/software-excellence-plan.md)（Y/P/Z/E 候选）与
+[L 系列工作拆解](doc/planning/l-series-work-breakdown.md)（语言层批次
+主线与并行项）、[软件极致计划](doc/planning/software-excellence-plan.md)
+（Y/P/Z/E 候选 + 2026-07-12 计划补遗）与
 [长期规划第 7 稿](doc/planning/long-term-plan.md)（S0-S3 商业化关键路径）。
