@@ -15,17 +15,26 @@
 
 | 边界 | 事实 |
 |------|------|
-| 步态天花板 | STS3215 只有位置模式（无力矩控制）→ 只能准静态步态（慢走/挥臂/舞步表），做不出跑跳。真·动态行走归 Berkeley Lite 级（RL 策略，非 PLCopen FB 地盘）——那是第二步的事，且届时 plcopen 的角色是上肢/执行器桥，不是步态生成器 |
+| 步态天花板 | 总线舵机只有位置模式（无力矩控制）→ 查表/RL 位置步态可行（Zeroth/ToddlerBot 已实证慢走），但**鲁棒动态步态（抗扰、跑跳）不可行**。上游勘误：STS3215 腿部速度不足，腿改 STS3250（K-Scale 官方 BOM 注记）。跑跳级能力归 Berkeley Lite 级（RL 策略，非 PLCopen FB 地盘）——第二步的事，届时 plcopen 的角色是上肢/执行器桥，不是步态生成器 |
 | 总线速率 | TTL 半双工串行 1Mbps，16-20 舵机轮询 ≈ 50–100Hz 周期档——不是 EtherCAT 1kHz。CycleConfig 按实际周期声明，不虚标 |
 | 部署平台 | 真机跑 RPi/Linux；Windows 串口延迟仅限开发环境 |
 
 ## 3. 硬件路线
 
 **机械设计消费上游开源项目 Zeroth-01**（kscalelabs/zeroth-bot，MIT，
-未归档，最后推送 2026-04）：只取 STL/CAD + 结构 BOM，**其软件栈一概
-不用**（我们的价值主张就是换成 plcopen 栈）。打印件不入本仓库，引用
-上游 commit hash 记录版本；若后续需要修改结构件再按 vendoring 流程
-（plcopen-provenance）带 LICENSE 落 `third_party/`。
+未归档）：只取 CAD + 结构 BOM，**其软件栈一概不用**（我们的价值主张
+就是换成 plcopen 栈）。
+
+**文档考古结论（2026-07-12 尽职调查）**：docs.zeroth.bot 域名已失效，
+zeroth-bot 代码仓内无制造级 CAD；完整制造资料存于 **kscalelabs/docs
+仓库**（`docs/robots/zeroth-01/`，源提交 `d4ca00ddc760`）：螺丝级
+BOM、Onshape CAD 链接、装配指南（Google Doc）、逐项 BOM 表。该 docs
+仓库**无许可证声明** → 镜像仅落本地 `refs/zeroth-01/`（gitignored，
+个人使用不再分发），本仓库只记链接与源提交号。**上游勘误**：K-Scale
+官方注记 STS3215 腿部速度不足，腿部改用 STS3250（协议/控制表与 3215
+完全相同，adapter 不受影响）。Onshape 导出 STL 与 Google Doc 获取
+需要网络条件（人操作）。打印件不入本仓库；若后续修改结构件再按
+vendoring 流程（plcopen-provenance）带 LICENSE 落 `third_party/`。
 
 **舵机选型即战略**：飞特 STS3215 与 SO-ARM101（已购）同款——一个
 Feetech 总线 adapter 同时服务机械臂与人形两台设备。
@@ -34,16 +43,19 @@ Feetech 总线 adapter 同时服务机械臂与人形两台设备。
 
 | 项 | 规格 | 数量 | 估价 |
 |----|------|------|------|
-| 飞特 STS3215 | 12V 版（30kg·cm） | 16 + 备 2 | ≈ ¥1950 |
+| 飞特 STS3250 | 腿部（50kg·cm 铝壳，上游勘误指定） | 10 + 备 1 | ≈ ¥1900 |
+| 飞特 STS3215 | 臂/颈（30kg·cm）；与 SO-ARM101 同款 | 6 + 备 1 | ≈ ¥770 |
 | 舵机驱动板 | 飞特 FE-URT-1（USB↔TTL 总线） | 1 | ≈ ¥100 |
-| 打印件外包 | 嘉立创 3D 打印，PETG，按上游 STL | 1 套 | ≈ ¥300–450 |
+| 打印件外包 | 嘉立创 3D 打印，PETG，按 Onshape 导出 STL | 1 套 | ≈ ¥300–450 |
 | 控制板 | Raspberry Pi 5 4GB（生态优先，不随上游用 Milk-V） | 1 | ≈ ¥520 |
 | IMU | BNO085 或 BMI088 模块（I²C） | 1 | ≈ ¥80 |
 | 电源 | 3S 锂电 + 12V/5V DCDC + XT30 + 开关保险 | 1 套 | ≈ ¥180 |
-| 紧固件杂项 | 螺丝/轴承/线材/绕线管 | — | ≈ ¥200 |
-| **合计** | | | **≈ ¥3300–3600**（¥5k 档含余量） |
+| 紧固件 | 按上游螺丝级 BOM（M2/M3 + 热熔嵌件 + 螺纹胶） | — | ≈ ¥200 |
+| **合计** | | | **≈ ¥4100–4600**（¥5k 档内） |
 
-搜索关键词：`飞特 STS3215 12V`、`FE-URT-1`、`嘉立创三维猴 3D打印`。
+搜索关键词：`飞特 STS3250`、`飞特 STS3215 12V`、`FE-URT-1`、
+`嘉立创三维猴 3D打印`。舵机可先行下单（机械路线无关件）；打印件
+待 Onshape 导出核对后下单。
 
 ## 4. 软件工作流（AI 全量承担，硬件到货前即可开工）
 
@@ -65,8 +77,13 @@ ST 语言直驱（L2a 之后）：`MC_MoveAbsolute` 由 ST 程序发出、驱动
   第二个实现，CiA402 之后），属并行/穿插项性质；L 系列批次照常。
 - **PLCopen 对照线（P-AUDIT）归 Codex**，本计划不触碰
   `doc/compliance/plcopen-*`。
-- Berkeley Lite（¥2.3万级，真·RL 行走）为第二步候选，**迷你级收口
-  后再议**——届时迷你级的 adapter/管线/步态表资产全部可迁移。
+- 第二步候选两条（**迷你级收口后再议**，届时 adapter/管线/步态表
+  资产全部可迁移）：**Berkeley Lite**（¥2.3万级，真·RL 行走/运动
+  能力向）或 **HopeJr**（¥2.2万级，LeRobot 官方 66 DoF 带灵巧手，
+  上肢/遥操作向；同 STS/SMS 协议族，S1/S2 直接复用）。
+- **LeRobot 关系**：舵机层同族（SO-ARM101 主从遥操作进 S3）、数据层
+  互通（S6）；LeRobot 管示教/数据/策略，plcopen 管确定性执行——
+  互补分工，不是二选一。
 
 ---
 
