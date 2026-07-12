@@ -66,9 +66,12 @@ STATUS.md，不另写大文档。
 
 ## 当前不在路线图上的能力
 
-ST/IL/LD 编译器与 IDE、工业通信协议（Modbus/OPC UA/EtherNet-IP）、
+IL（永不，Ed3 已弃用）、LD/FBD 图形画布与 IDE、cam 表图形编辑器、
+TC6-XML 工程交换、工业通信协议（Modbus/OPC UA/EtherNet-IP）、
 Web HMI、SIL/冗余、云原生——何时启动见
 [VISION.md 解锁条件表](VISION.md#解锁条件)。
+（ST/SFC 编译器已上路线图 = L 系列；编辑器的文本路线 = D1 LSP/
+VS Code 扩展与 D2 WASM Playground，挂在 L 系列拆解的触发表。）
 
 ---
 
