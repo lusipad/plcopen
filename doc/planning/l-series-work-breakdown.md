@@ -176,7 +176,12 @@ seqlock 变量监控（X3 资产 + 既有符号表）、force（L3 资产）、�
 | 项 | 性质 |
 |----|------|
 | AxisGroup 拆分 2-5 批（window/cartesian/pose/path_table 簇） | 穿插缓冲任务，每批半天级，回放逐位门 |
-| D2 WASM Playground | 独立小批（T41：CI 锁 wasm32 编译目标先行），任意时点可插 |
+| **pyplcopen ST 暴露批** | st.compile/Instance/bind_axis 的 Python 面——孪生里原样跑 ST（st-runtime-design §1 承诺）与 T2 MuJoCo 闭环联动；建议 L2a 后（带 MC 绑定一起暴露才有演示价值），≈0.2 L0 |
+| **语言层对抗性探测轮** | L2a 收口后一轮（plcopen-adversarial-probe 方法论）：折叠 vs 运行时、平台对、预算边界、恢复路径的跨域对照——KB-051/wrap_double 两案都证明"写测试的人想不到的格子"要系统猎杀 |
+| **st 模块入变异抽查 + 覆盖盲区盘点** | E3/E4 延伸：mutation 抽查清单加 st/；下一次 Coverage 定时跑首次含 st 面，跌破 90% 即按模块补盲区 |
+| **文档站 ST 教程**（Z3′ 联动） | "ST 直驱 MC"快速开始进文档站首页——L2a 的采纳出口 |
+| D2 WASM Playground | 独立小批（T41：CI 锁 wasm32 编译目标先行——半天级可随时插），任意时点可插 |
+| 运动侧补遗批（Y7b/Y4b/Y3′/X5/E5，见软件极致计划补遗节） | 与语言层主线无依赖，可交错排 |
 | PyPI publisher 注册 + tag / 台架决策 / Part4 原文核对 / Ruckig ADR-0003 / MatIEC 法务口径 | **人专属**，全部不阻塞上表 |
 
 ## 硬件/人工延后清单
