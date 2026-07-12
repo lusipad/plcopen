@@ -7,8 +7,8 @@
 | [原文审计](../compliance/plcopen-conformance-audit.md) 发现的真实缺口 → 可执行批次 | 新的战略——八项硬指标 #3 的目标不变 |
 | P 系列的**重构**（旧 P 系列基于失效的自编清单） | 承诺排期 |
 
-**审计结论回顾**：Part 1 = 43/43 FB（但 **B 级 I/O 仅 22/43 齐备**）；
-Part 4 = 23/63；Part 5 = 5/11。**认证的实质不是 FB 数量，是 B 级 I/O
+**审计结论回顾**：Part 1 = 43 个 FB 均有门面（但 **B 级 I/O 仅 22/43 齐备**，且条款矩阵有 D-01~D-20）；
+Part 4 = 21/68 个同名门面、47 个无同名入口；Part 5 = 5/11 部分覆盖。**认证的实质不是 FB 数量，是 B 级 I/O
 的齐备性**（附录 B3）。
 
 ---
@@ -70,13 +70,16 @@ v2.0（`MC_SetDynCoordTransform`/`MC_GroupTransformPosition`）——**声明变
 `MC_StepReferenceFlyingSwitch`、`MC_StepReferenceFlyingRefPulse`、
 `MC_AbortPassiveHoming`。
 
-### 🟢 P-GUIDE：PLCopen 指南对照（≈0.3 L0）
+### ✅ P-GUIDE：PLCopen 指南对照（审计完成）
 
 - **Creating compliant FB libraries**：边沿/电平约定、`Execute↔Done` /
   `Enable↔Valid` 配对、定时器语义、数据表规范——逐条对照我们的 FB 面
 - **Coding Guidelines v1.0** + **Software Quality Metrics v1.0**：用他们
   的尺子量我们的质量体系（八项 #5 的合规口径）
-- **Annex A-E 文本语言规范方法**：纳入 L∀ 一致性验证体系（L 系列）
+- **Annex A-E 文本语言规范方法**：已完成覆盖审计；实现依赖参数与缺失语言面见 G-05
+
+审计产物：[plcopen-guides-audit.md](../compliance/plcopen-guides-audit.md)。
+G-01~G-05 是后续实现/门禁批次，不再把“尚未阅读指南”作为待办。
 
 ---
 
@@ -90,13 +93,13 @@ P1-A ──► L2a（矩阵重写 + 实现）──► 【可提交 PLCopen 合�
   │
   ├─► P5-B（便宜，0.5 L0）
   ├─► P4-B1（薄门面，1 L0）
-  ├─► P-GUIDE（对照指南）
+  ├─► P-GUIDE（✅ 审计完成；G-01~G-05 后续）
   └─► P4-B2/B3（新功能，随需）
 ```
 
-**P1-A 最先**，理由：Part 1 是我们唯一 100% 覆盖的 Part，**只差 B 级
-I/O 的 4 个结构性缺口就能提交合规声明**——这是通往八项 #3 的最短路径，
-而 #3 此前被误判为"6-12 个月黑箱"。
+**P1-A 仍优先**，但全文条款审计已证明“43 个门面存在”不等于合规：除
+B 级 I/O 结构缺口外还有 D-01~D-20 生命周期与状态语义问题。提交合规声明
+必须以逐条矩阵清零为准，不能再以“只差 4 项”表述。
 
 **L2a 紧随**：引脚表按规格 B/E 表重写后，**合规声明表可机读生成**——
 认证材料自动化。

@@ -34,7 +34,7 @@ publisher 注册与 tag 为人专属）；S1-S3 另依赖硬件、用户和日�
 | L2/L3 geom·plan | 直线/三点圆弧/Bezier/刚体帧（平移+绕Z+完整 RPY 原语）；路径缓冲、公差带 blending、前瞻窗口（jerk 精确可达扫描） | KB-030/031/039 |
 | L4 exec | 周期采样、gear/cam 同步（C0 + C2 样条重建、在线换表、经典规律生成器）、叠加 | KB-038/046 |
 | L5 axis | 单轴全命令生命周期、组共享路径（2-8 轴）、前瞻窗口执行、坐标系栈（ACS/MCS/PCS + 工件帧/工具偏置）、kinematics 级联（龙门/SCARA）、位姿管线（RPY + 6R，TCP 工具变换）、笛卡尔/位姿回读（含 RPY 反演万向节约定）、段内笛卡尔插补（直线/圆弧/blending + 前瞻窗口，逐周期逆解 + 测地姿态，opt-in；腕奇异可穿越）、窗口深度可配、双空间限速、B9 流会话 | KB-035/036/037/041~050 |
-| L6 fb | **Part 1 v2.0：43/43（100%，原文对照）**；**Part 4 v2.0：~23/63（~35%）**——线性/圆弧/blending/管理/路径表已交付，组参数·动态·工具负载·点动·同步·跟踪等 44 项缺失；**Part 5 v2.0：5/11（45%）**——缺 StepBlock/StepDistanceCoded/HomeAbsolute/飞越式两项/AbortPassiveHoming | 原文审计见 [plcopen-conformance-audit](doc/compliance/plcopen-conformance-audit.md) |
+| L6 fb | **Part 1 v2.0：43 个 FB 均有门面，但条款审计确认 D-01~D-20，不能宣称合规**；**Part 4 v2.0：21/68 有同名门面（约 31%），47 项无同名入口**，另有 2 个旧名/自定义回读门面；**Part 5 v2.0：5/11 部分覆盖、6 项缺失**；Part 6 的 5 个 FB 全部门控未实现 | 全文审计见 [Part 1](doc/compliance/plcopen-part1-clause-matrix.md)、[Part 4](doc/compliance/plcopen-part4-clause-audit.md)、[Part 5/6](doc/compliance/plcopen-part5-part6-audit.md) |
 | L7 adapters | Servo 窄接口 + ServoSim + 桥接（ADR-0004）、CiA402 状态机、CSP/CSV/CST bumpless 骨架 | KB-040 |
 | st 语言层（批次 L0+L1a） | IEC 61131-3 ST：容错前端 + 确定性字节码 VM（指令预算看门狗、加载期全静态布局、scan 零分配）、basic.h 十 FB 绑定（命名/非正式两形态）、16 标量类型宇宙 + 无损加宽白名单 + 210 格转换矩阵机读化（round-half-even/TRUNC/conversion_invalid fault）、TIME 乘除、** 幂、VAR CONSTANT、类型化字面量；一致性矩阵×2 + 转换三方比对 + fuzz + 双锚点哈希门 | KB-069/070 |
 | 工具面 | pyplcopen（单轴/流/PoseArmSim，三平台 wheel 远端绿，PyPI 发布作业已备待 publisher 注册，CycleConfig SI 换算）、18 份回放黄金语料、28 关节 @1kHz 预算基准 + 笛卡尔 IK 预算门、参考 executor demo（canonical `planning → committed trajectory → RT` 双域，ADR-0007，TSAN 零报告）、周期级 trace、**文档站已上线**（http://lusipad.com/plcopen/ ）、vcpkg/Conan recipe、ErrorCode 诊断文本 | — |
@@ -56,7 +56,7 @@ publisher 注册与 tag 为人专属）；S1-S3 另依赖硬件、用户和日�
 | 72h 分配断言 soak | **周期等效口径关闭（2026-07-11）**：07-06 墙钟版证据链断裂（无结束日志，如实登记）；改交付 2,592,000,000 冻结周期（72h@1kHz ×10）Release 零分配 PASS；真实 72h 墙钟连续运行归 B7 真机 RT 报告。口径调整开放维护者复核 |
 | **KB-051 组接管速度断崖** | **已修复（Y7，2026-07-08）**：linear 组级 aborting 接管速度连续；circular/笛卡尔接管扩展仍按 KB-051 适用范围声明另批 |
 | Part 4 管理/路径表/变换 FB | **已交付**（GroupHome/MoveDirect/GroupSetOverride/GroupInterrupt·Continue + PathSelect/MovePath/SetKinTransform/ReadCartesianTransform，验收测试已接入 CTest） |
-| Part 5 回零 FB | **已交付**（StepAbsSwitch/StepLimitSwitch/StepRefPulse/StepDirect/FinishHoming，验收测试已接入 CTest） |
+| Part 5 回零 FB | **内部子集已交付、标准合规未闭合**：5 个近似门面有测试，但名称/I/O/部分语义有偏差；另缺 6 个标准 FB |
 | Y2 epsilon 政策 | **已声明化**（KB-057：段时长钳零 + 复验，整数量化天然覆盖） |
 | Y2 Ruckig 对照 | **人工门控**（ADR-0003：需先审查上游许可证，不进 R1） |
 

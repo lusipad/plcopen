@@ -26,23 +26,23 @@ tools/fetch-plcopen-specs.sh --verify   # 只校验本地已有文件
 
 | 键 | 文档 | 版本 | 页 | SHA256（前 16） | 审计状态 |
 |----|------|------|----|----------------|---------|
-| `mc_part1` | Function Blocks for Motion Control – Part 1 | 2.0 (2011) | 141 | `adac5d8d5f773624` | 🟡 §2 已对照（[条款矩阵](plcopen-part1-clause-matrix.md)），§3/§4/附录进行中 |
-| `mc_part3` | User Guidelines – Part 3 | 2.0 | 94 | `3233f08272ad8b75` | ⬜ 未开始 |
-| `mc_part4` | Coordinated Motion – Part 4 | **2.0 (2026-05)** | 217 | `a0b1e688e7c6df17` | 🟡 FB 名单已抽（63 个），正文未读 |
-| `mc_part4_v1` | Coordinated Motion – Part 4 | 1.0（旧版，用于命名溯源） | 119 | `b43683a19b22f67b` | ⬜ 未开始 |
-| `mc_part5` | Homing Procedures – Part 5 | 2.0 (2011) | 38 | `d77847d0d355c14f` | 🟡 FB 名单已抽（11 个），正文未读 |
-| `mc_part6` | Fluid Power Extensions – Part 6 | 2.0 | 27 | `e678ef33533df47c` | ⬜ 门控（VISION 解锁表），仅编目 |
+| `mc_part1` | Function Blocks for Motion Control – Part 1 | 2.0 (2011) | 141 | `adac5d8d5f773624` | ✅ 全文完成（[条款矩阵](plcopen-part1-clause-matrix.md)，D-01~D-20） |
+| `mc_part3` | User Guidelines – Part 3 | 2.0 | 94 | `3233f08272ad8b75` | ✅ 全文完成（[25 节审计](plcopen-part3-audit.md)） |
+| `mc_part4` | Coordinated Motion – Part 4 | **2.0 (2026-05)** | 217 | `a0b1e688e7c6df17` | ✅ 全文完成（[68 FB 条款审计](plcopen-part4-clause-audit.md)，D4-01~D4-13） |
+| `mc_part4_v1` | Coordinated Motion – Part 4 | 1.0（旧版，用于命名溯源） | 119 | `b43683a19b22f67b` | ✅ 全文完成（39 FB 与 v1→v2 迁移，见 Part 4 审计） |
+| `mc_part5` | Homing Procedures – Part 5 | 2.0 (2011) | 38 | `d77847d0d355c14f` | ✅ 全文完成（[Part 5/6 审计](plcopen-part5-part6-audit.md)，5 部分/6 缺失） |
+| `mc_part6` | Fluid Power Extensions – Part 6 | 2.0 | 27 | `e678ef33533df47c` | ✅ 全文完成（门控未实现，5 FB 均明确不支持） |
 
 ### 指南与方法（合规/质量/语言）
 
 | 键 | 文档 | 版本 | 页 | SHA256（前 16） | 审计状态 |
 |----|------|------|----|----------------|---------|
-| `guide_compliant_fb` | Creating PLCopen compliant Function Block libraries | 1.0 | 4 | `753c241953625525` | 🟡 抽读（边沿 vs 电平约定——已抓出我们的 `MC_SetOverride` 违规） |
-| `guide_coding` | PLCopen Coding Guidelines | 1.0 | 127 | `feffbe8e47b78bc2` | ⬜ 未开始（P-GUIDE） |
-| `guide_quality_metrics` | Guideline Software Quality Metrics | 1.0 | 65 | `2863c2edbe215f5a` | ⬜ 未开始（八项 #5 的合规尺子） |
-| `guide_quality_automation` | Quality Metrics for Automation Software | — | 5 | `00f1a3990f3e49ac` | ⬜ 未开始 |
-| `guide_oop` | PLCopen OOP Guidelines | 1.0 | 27 | `70d6977342bc3a8a` | ⬜ 未开始（**L 系列 OOP 盲区**，待裁决） |
-| `annex_a_e` | Annex A-E: specification method for textual languages | — | 24 | `8b2798805c4a530b` | ⬜ 未开始（**L 系列 ST 应据此**） |
+| `guide_compliant_fb` | Creating PLCopen compliant Function Block libraries | 1.0 | 4 | `753c241953625525` | ✅ 全文完成（[指南审计](plcopen-guides-audit.md)，G-01） |
+| `guide_coding` | PLCopen Coding Guidelines | 1.0 | 127 | `feffbe8e47b78bc2` | ✅ 全文完成（64 条正式 Guideline 规则族，G-02） |
+| `guide_quality_metrics` | Guideline Software Quality Metrics | 1.0 | 65 | `2863c2edbe215f5a` | ✅ 全文完成（指标覆盖矩阵，G-03） |
+| `guide_quality_automation` | Quality Metrics for Automation Software | — | 5 | `00f1a3990f3e49ac` | ✅ 全文完成（提案性质与成熟度缺口已登记） |
+| `guide_oop` | PLCopen OOP Guidelines | 1.0 | 27 | `70d6977342bc3a8a` | ✅ 全文完成（OOP 能力缺失，G-04） |
+| `annex_a_e` | Annex A-E: specification method for textual languages | — | 24 | `8b2798805c4b78bc2` | ✅ 全文完成（Annex A-E 覆盖与实现依赖参数，G-05） |
 
 **未纳入**（VISION 显式门控，需要时再取）：Safety Part 1-4 + SafeMotion、
 OPC UA（Client FB / 信息模型）、XML-TC6（IEC 61131-10）、OOP 运动库（zip）、

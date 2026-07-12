@@ -1,11 +1,12 @@
 # Part 4 全量 FB 对照表（P 系列收口文档）
 
 > 🔴 **本表已失效（2026-07-12 原文审计）**：本表跟踪的 30 个 FB 是
-> **自编清单**，而 Part 4 **v2.0 规格实际定义 63 个 FB**——本表漏了
-> 33 个，并在残缺清单上错误宣布了"零留白"。
+> **自编清单**，而 Part 4 **v2.0 规格实际定义 68 个 FB**——本表漏了
+> 38 个，并在残缺清单上错误宣布了"零留白"。
 >
-> **真实覆盖率：~23/63 ≈ 35%**。完整缺口清单与原文对照见
-> **[plcopen-conformance-audit.md](plcopen-conformance-audit.md)**。
+> **当前同名门面：21/68 ≈ 31%，47 项无同名入口**；另有两个旧名/自定义
+> 回读门面，不计入 v2 同名覆盖。完整清单见
+> **[plcopen-part4-clause-audit.md](plcopen-part4-clause-audit.md)**。
 > 本表保留为历史记录（其对 30 个 FB 的实现映射仍准确），**不得再
 > 用于任何覆盖率声明**；重建工作见 P-Part4b 批次。
 >
@@ -86,8 +87,8 @@
 | ~~留白~~ | ~~0~~ | ~~0%~~ |
 
 🔴 **上表分母错误**。以 Part 4 v2.0 原文为准的真实账：
-**规格 63 个 FB，我们 ~23 个（~35%），缺 44 个**——
-见 [plcopen-conformance-audit.md](plcopen-conformance-audit.md)。
+**规格 68 个 FB，21 个有同名门面（约 31%），47 个无同名入口**——
+见 [plcopen-part4-clause-audit.md](plcopen-part4-clause-audit.md)。
 
 ## 已知实现边界（与对照表交叉引用）
 

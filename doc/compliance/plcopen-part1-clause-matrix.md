@@ -4,8 +4,9 @@
 > 不是 I/O 表——是**行为语义**）。出处纪律：只引条款号 + 自述要求，
 > 不抄原文。
 >
-> **进度**：§2 Model 的规范条款已登记（26 条）；§3 的 **34/34 个章节、
-> 36/36 个单轴 FB** 与 §4 的 **9/9 个多轴 FB** 已完成逐条对照；附录未开始。
+> **进度**：§2 Model 的 **11/11 个正文小节、64 条规则/示例已审计**；§3 的 **34/34 个章节、
+> 36/36 个单轴 FB** 与 §4 的 **9/9 个多轴 FB** 已完成逐条对照；
+> 附录 A/B 已审计。
 > 当前确认违规见文末 D-01 起的详情，所有判定均附实现、KB 或测试证据。
 >
 > **总工程量**：PLCopen 全部文档 **888 页 / 约 4 万行**（Part 1 141 页 ·
@@ -26,23 +27,23 @@
 | 2.1-c | 任何状态（除 `ErrorStop`）下 `MC_Power.Enable=FALSE` → `Disabled`，**进行中命令全部 CommandAborted** | ✅ | `set_power(false)` 路径 |
 | 2.1-d | `ErrorStop` **最高优先级**；错误未清前状态保持；**不接受任何运动命令直到 Reset** | ✅ | KB-068 |
 | 2.1-e | `ErrorStop` 指**轴与轴控制的错误**，不是 FB 实例错误 | ✅ | 两级错误分离 |
-| 2.1-f | `MC_Stop` 在 `Standstill` 调用 → `Stopping`，`Execute=FALSE` 后回 `Standstill`；**`Stopping` 保持只要 Execute 为真** | 🔴 **待验** | 需核实我们是否在 Standstill 接受 Stop 并进 Stopping |
-| 2.1-g | `MC_MoveSuperimposed` 在 `Standstill` → `DiscreteMotion`；其他状态不影响状态 | 🔴 **待验** | — |
-| 2.1-h | `MC_GearOut`/`MC_CamOut` 把从轴 `SynchronizedMotion`→`ContinuousMotion`；**其他状态调用产生错误** | 🔴 **待验** | KB-019 声明"同步从轴只接受 aborting 接管"，口径可能不同 |
-| 2.1-i | **不影响状态图的 FB 清单**（22 个：ReadStatus/ReadAxisError/Read·WriteParameter/数字 IO/ReadActual*/ReadMotionState/SetPosition/SetOverride/AbortTrigger/TouchProbe/DigitalCamSwitch/CamTableSelect/ReadAxisInfo/Phasing*/HaltSuperimposed） | 🔴 **待验** | **注意 `MC_SetOverride` 与 `MC_Phasing*` 在此列**——不改状态 |
-| 2.1-note3 | `MC_Reset` **且** `MC_Power.Status=FALSE` → `Disabled` | 🔴 待验 | — |
-| 2.1-note4 | `MC_Reset` **且** `Power.Status=TRUE` **且** `Power.Enable=TRUE` → `Standstill` | 🔴 待验 | — |
-| 2.1-note6 | `MC_Stop.Done=TRUE` **且** `MC_Stop.Execute=FALSE` → 离开 `Stopping` | 🔴 待验 | — |
+| 2.1-f | `MC_Stop` 在 `Standstill` 调用 → `Stopping`，`Execute=FALSE` 后回 `Standstill`；**`Stopping` 保持只要 Execute 为真** | 🔴违规 | 接受 Stop 并进入 Stopping，但 profile 完成即回 Standstill，不等待 Execute 下降；见 D-04（`core/axis/state.h:1707-1744,1900-1913`） |
+| 2.1-g | `MC_MoveSuperimposed` 在 `Standstill` → `DiscreteMotion`；其他状态不影响状态 | 🔴违规 | 叠加 profile 独立运行但不更新轴状态，Standstill 调用后仍为 Standstill；见 D-18（`core/axis/state.h:1251-1279,1869-1892`） |
+| 2.1-h | `MC_GearOut`/`MC_CamOut` 把从轴 `SynchronizedMotion`→`ContinuousMotion`；**其他状态调用产生错误** | 🔴违规 | 非同步态会报错，但成功脱离后清零速度并转 Standstill；见 D-14（`core/axis/state.h:932-944`） |
+| 2.1-i | **不影响状态图的 FB 清单**（22 个：ReadStatus/ReadAxisError/Read·WriteParameter/数字 IO/ReadActual*/ReadMotionState/SetPosition/SetOverride/AbortTrigger/TouchProbe/DigitalCamSwitch/CamTableSelect/ReadAxisInfo/Phasing*/HaltSuperimposed） | ✅符合 | 参数/IO/探针 FB 不写状态；SetPosition/Override 保持当前状态；Phasing 只改同步相位；HaltSuperimposed 只清叠加所有权（`core/axis/state.h:338-347,486-493,1049-1071,1284-1292`） |
+| 2.1-note3 | `MC_Reset` **且** `MC_Power.Status=FALSE` → `Disabled` | ✅符合 | `reset_error()` 按 `powered` 选择 Disabled（`core/axis/state.h:547-554`） |
+| 2.1-note4 | `MC_Reset` **且** `Power.Status=TRUE` **且** `Power.Enable=TRUE` → `Standstill` | ✅符合 | `reset_error()` 在 powered 时进入 Standstill（`core/axis/state.h:547-554`） |
+| 2.1-note6 | `MC_Stop.Done=TRUE` **且** `MC_Stop.Execute=FALSE` → 离开 `Stopping` | 🔴违规 | 状态释放不由 FB Execute 控制，完成时已提前离开 Stopping；见 D-04（`core/axis/state.h:1900-1913`） |
 
 ## §2.2 错误处理（Error Handling）— normative
 
 | 条款 | 要求 | 判定 | 说明 |
 |------|------|------|------|
-| 2.2.2-a | 轴进 `ErrorStop` 时**所有 buffered 命令中止**，被中止 FB 的 `Error` 置位（**不是 CommandAborted**） | 🔴 **待验** | 我们可能置 CommandAborted 而非 Error |
+| 2.2.2-a | 轴进 `ErrorStop` 时**所有 buffered 命令中止**，被中止 FB 的 `Error` 置位（**不是 CommandAborted**） | 🔴违规 | `trigger_error()` 清活动与队列；FB 随后只见命令 ID 消失而置 CommandAborted，不识别轴错误；见 D-16（`core/axis/state.h:539-544`; `core/fb/motion.h:70-104`） |
 | 2.2.2-b | 后续命令被拒绝且 `Error` 置位（action not allowed） | ✅ | KB-068 |
-| 2.2.2-c | FB 自身错误（如参数非法）→ `Error` 置位；**buffered 的后继 FB 变 active 并立即执行** | 🔴 **待验** | 我们的队列在前一条 FB 错误时行为需核实 |
-| 2.2.3-a | `Enable` 型 FB：错误使 `Valid` 复位，**`Busy` 保持高** | 🔴 **待验** | — |
-| 2.2.3-b | 不可自动清除的错误：`Busy` 与 `Valid` 均复位，**需 `Enable` 上升沿才能继续** | 🔴 待验 | — |
+| 2.2.2-c | FB 自身错误（如参数非法）→ `Error` 置位；**buffered 的后继 FB 变 active 并立即执行** | 🔴违规 | 提交前参数错误会在 FB 层置 Error，但没有“活动 FB 运行期自身错误”与队列接续的独立生命周期；队列只由运动完成路径推进；见 D-17（`core/fb/motion.h:48-60`; `core/axis/state.h:1830-1866`） |
+| 2.2.3-a | `Enable` 型 FB：错误使 `Valid` 复位，**`Busy` 保持高** | 🔴违规 | Enable 型读 FB 没有 Busy 输出；错误仅令 Valid=false/Error=true；见 D-19（`core/fb/parameter.h:13-55`） |
+| 2.2.3-b | 不可自动清除的错误：`Busy` 与 `Valid` 均复位，**需 `Enable` 上升沿才能继续** | 🔴违规 | Enable 保持高时每周期自动重试，错误条件消失即可恢复 Valid，无重新上升沿锁存；见 D-19（`core/fb/parameter.h:24-46`） |
 
 ## §2.4.1 FB 接口通用规则 — normative（**本节含两条已确认违规**）
 
@@ -50,23 +51,95 @@
 |------|------|------|------|
 | 2.4.1-a | 输入参数：`Execute` 无 `ContinuousUpdate` 时，**参数在 Execute 上升沿采样**；改参数需重新触发 | ✅ | `rising_edge()` 时 submit |
 | 2.4.1-b | `Execute` + `ContinuousUpdate`：上升沿采样，`ContinuousUpdate` 置位期间可持续改 | ✅ | KB-009 |
-| 2.4.1-c | `Enable` 型：上升沿采样且**可持续修改** | 🔴 待验 | — |
+| 2.4.1-c | `Enable` 型：上升沿采样且**可持续修改** | ✅符合 | Enable 高时每周期重新读取当前成员参数，修改立即生效（`core/fb/parameter.h:24-46,69-91`） |
 | 2.4.1-d | 参数越限：**系统限幅 或 FB 报错**（二选一，应用处理后果） | ⚠️ | 我们报错（`invalid_argument`）——**符合但未在文档声明选择** |
 | 2.4.1-e | 缺省输入：按 IEC 61131-3，**沿用上次调用值**；首次调用用初值 | ✅ | C++ 成员默认值 |
 | 2.4.1-f | `Acceleration`/`Deceleration`/`Jerk` = 0 → **实现相关**（可报错/警告/取限值等），**必须声明** | ⚠️ | 我们的行为未在合规文档声明——**需登记 KB** |
 | **2.4.1-g** | **输出互斥（Execute）**：`Busy`/`Done`/`Error`/`CommandAborted` **互斥**，且 Execute 为真时**必有其一为真** | ✅ **已验** | `accept()` 成功置 busy/清 done·error·aborted；失败置 error/清 busy·active；`observe_axis()` 置 done 时清 busy·active。**但缺自动断言**——建议加不变量测试 |
-| 2.4.1-h | `Active`/`Error`/`Done`/`CommandAborted` **同时只能一个**——**`MC_Stop` 例外**（Active 与 Done 可同时真） | 🔴 待验 | — |
+| 2.4.1-h | `Active`/`Error`/`Done`/`CommandAborted` **同时只能一个**——**`MC_Stop` 例外**（Active 与 Done 可同时真） | ✅符合 | accept/observe 的各终态路径显式清 Active；Stop 未利用允许的例外但不违反互斥要求（`core/fb/motion.h:48-104`） |
 | **2.4.1-i** | **输出保持**：`Done`/`Error`/`ErrorID`/`CommandAborted` 在 `Execute` 下降沿复位；**但必须保证至少置位一个周期，即使 Execute 在 FB 完成前已复位** | 🔴 **已确认违规** | `rising_edge()` 中 `if(!execute){ clear(outputs); tracked_command_id_=0; }` + `observe_axis()` 的 `if(!execute) return;` ——**Execute 脉冲后 Done 永不出现**。这是 PLC 最标准用法（脉冲触发 + 等 Done）。**详见下方 D-01** |
-| 2.4.1-j | 同实例收到新 `Execute`（未完成时）→ **不为前一动作返回任何反馈**（无 Done/CommandAborted） | 🔴 待验 | — |
+| 2.4.1-j | 同实例收到新 `Execute`（未完成时）→ **不为前一动作返回任何反馈**（无 Done/CommandAborted） | ✅符合 | 形成新上升沿必须先降 Execute；下降沿清旧跟踪与全部反馈，新上升沿只登记新命令（`core/fb/motion.h:37-68`） |
 | 2.4.1-k | `Busy`（Execute）：Execute 上升沿置位，`Done`/`Aborted`/`Error` 任一置位时复位 | ✅ | `accept()`/`observe_axis()` |
-| 2.4.1-l | `Busy`（Enable）：Enable 上升沿置位，**FB 执行任何动作期间保持** | 🔴 待验 | — |
+| 2.4.1-l | `Busy`（Enable）：Enable 上升沿置位，**FB 执行任何动作期间保持** | 🔴违规 | Enable 型 FB 接口普遍没有 Busy；见 D-19（`core/fb/parameter.h:13-22`; `core/fb/io.h:16-25`） |
 | **2.4.1-m** | **`Inxxx` 语义**（`InVelocity`/`InGear`/`InTorque`/`InSync`）：**与 Done 不同**——FB Active 期间，**set value == commanded value 时置位，后续不等时复位**；**Execute 低电平时仍更新**（只要 Active+Busy）；**指内部瞬时 setpoint，非 actual 值** | 🔴 **已确认缺失+语义错误** | 我们**完全没有这些输出**，且用 `Done` 顶替是**语义错误**（Done=一次性完成锁存，Inxxx=持续状态）。**详见下方 D-02** |
 | 2.4.1-n | `Active`：buffered FB **必须有**；FB 取得轴控制权时置位；**一轴同时只能一个 Active**（例外：MoveSuperimposed / Phasing 可并行） | ⚠️ | 我们有 `active`，但"仅一个 Active"未断言 |
-| 2.4.1-o | `CommandAborted`：被其他运动命令打断时置位；**复位行为同 Done**；置位时**其他输出（如 InVelocity）复位** | 🔴 待验 | 依赖 2.4.1-i 与 -m 的修复 |
+| 2.4.1-o | `CommandAborted`：被其他运动命令打断时置位；**复位行为同 Done**；置位时**其他输出（如 InVelocity）复位** | 🔴违规 | 接管时可置 CommandAborted，但 Execute 已提前下降会丢失跟踪，且 Inxxx 缺失；受 D-01/D-02 影响（`core/fb/motion.h:37-44,70-104`） |
 | 2.4.1-p | `Enable`↔`Valid` 配对：`Enable` **电平敏感**；`Valid` 表示有效输出可用；**FB 错误时 `Valid`=FALSE**，错误消失后恢复 | 🔴 **部分违规** | `MC_SetOverride` 被我们实现成 Execute 型（见 B 级 I/O 审计 A 类缺口） |
 | 2.4.1-q | `Position` 是坐标系内的值；`Distance` 是两位置之差 | ✅ | — |
 | **2.4.1-r** | **符号规则**：`Acceleration`/`Deceleration`/`Jerk` **恒为正**；`Velocity`/`Position`/`Distance` 可正可负 | ✅ **已验** | `state.h:589` 拒绝 `acceleration<=0 \|\| deceleration<=0 \|\| jerk<=0` |
 | 2.4.1-s | `Error` 上升沿表示 FB 执行期间发生错误；`ErrorID` 为扩展参数 | ✅ | — |
+
+## §2.3 Commanded / Set / Actual 定义 — normative
+
+| 条款 | 要求（自述） | 判定 | 证据/说明 |
+|------|-------------|------|----------|
+| 2.3-a | Commanded 值由 FB 输入形成，是轨迹生成器的目标输入 | ✅符合 | `AxisCommand` 保存命令目标，`submit_impl()` 归一化后交给 profile 规划（`core/axis/state.h:105-126,680-735`） |
+| 2.3-b | Set 值是轨迹生成器当周期送往伺服环的内部命令值 | ✅符合 | 周期采样更新 `snapshot_.command_position/velocity/acceleration`（`core/axis/state.h:1780-1828`） |
+| 2.3-c | Actual 值来自反馈系统的最新可用值 | ✅符合 | adapter 经 `set_feedback()` 注入 actual 值，独立于 command 通道（`core/axis/state.h:1074-1114`） |
+
+## §2.4.2 Aborting 与 Buffered 模式 — normative
+
+| 条款 | 要求（自述） | 判定 | 证据/说明 |
+|------|-------------|------|----------|
+| 2.4.2-a | Aborting 为缺省模式，新命令立即接管并清空已有缓冲 | ✅符合 | 枚举缺省及 `abort_motion()` 接管路径（`core/axis/state.h:39-45,707-735`） |
+| 2.4.2-b | Buffered 等当前命令达到相应完成信号后再启动，无速度 blending | ✅符合 | 后继进入固定队列，自然完成时同周期启动（`core/axis/state.h:738-742,1830-1866`; `core/test/r3_motion_family_tests.cpp:559-592`） |
+| 2.4.2-c | 标准枚举包含 Low/Previous/Next/High 四种 blending，厂商扩展只能追加 | ❌缺失 | 仅有 Low/High，缺 Previous/Next；见附录 A A-3～A-6（`core/axis/state.h:39-45`） |
+| 2.4.2-d | Low/High 的交接速度分别取前后两命令速度的较低/较高者 | ⚠️偏差(KB-029 已声明) | 当前采用前命令标称速度 30%/70% 阈值，不按两命令速度求 min/max（`known-boundaries.md:44`; `core/axis/state.h:1830-1866`） |
+| 2.4.2-e | 可缓冲 FB、可被缓冲后继以及激活后继的信号须符合正文表 | 🔴违规 | 多个 FB 暴露继承而来的错误 BufferMode，且 InVelocity/InTorque/InSync 等激活信号缺失；受 D-02，另见各 FB 的 `-v` 行（`core/fb/motion.h:288-321`） |
+| 2.4.2-f | 行政类 FB 默认不参与缓冲；供应商可另行扩展并声明 | ✅符合 | 参数、IO、CamTableSelect 等不进入 AxisModel 命令队列（`core/fb/parameter.h`; `core/fb/io.h`; `core/fb/sync.h:248-286`） |
+| 2.4.2-g | Aborting 接管在制动距离不足时仍需形成可解释的后续轨迹 | ✅符合 | 接管保存当前速度/加速度并从实时状态重规划（KB-026；`core/axis/state.h:707-720`） |
+| 2.4.2-h | 模轴可用模数选择不反向的最近绝对位置；线性轴可通过反向消除越过 | ⚠️偏差 | 只实现线性坐标与软限位，无 modulo 轴选路口径；仓库未声明该可选能力（`core/axis/state.h:338-347,723-727`） |
+
+## §2.4.3 AXIS_REF 数据类型 — normative
+
+| 条款 | 要求（自述） | 判定 | 证据/说明 |
+|------|-------------|------|----------|
+| 2.4.3-a | 所有运动 FB 通过轴引用关联对应轴；引用内部内容由实现决定 | ✅符合 | C++ 以 `AxisModel* axis_ref` 作为等价引用（如 `core/fb/motion.h:29-34,113-121`） |
+| 2.4.3-b | 若公开轴引用内部成员，访问和刷新机制由供应商负责说明 | ✅符合 | `AxisSnapshot` 通过只读 `snapshot()` 暴露，并由周期与 adapter 入口刷新（`core/axis/state.h:231-287,1074-1114`） |
+| 2.4.3-c | 活动 FB 期间切换轴引用虽被 IEC 允许，但行为可由平台自定且不建议使用 | ⚠️偏差 | C++ 指针可被调用方改写；FB 未锁存初始轴，新指针会参与后续观察，行为未声明（`core/fb/motion.h:32,70-104`） |
+
+## §2.4.4 工程单位 — normative
+
+| 条款 | 要求（自述） | 判定 | 证据/说明 |
+|------|-------------|------|----------|
+| 2.4.4-a | 长度单位由实现选择，但位置、速度、加速度、jerk 必须保持 u、u/s、u/s²、u/s³ 的量纲关系 | ✅符合 | `AxisCommand` 与 `otg::Limits1D` 分字段传递，周期时基统一由 `CyclePeriod` 提供（`core/axis/state.h:105-126,1266-1268`; `core/rt/cycle.h`） |
+
+## §2.4.5 Execute 沿触发与命令串接 — normative
+
+| 条款 | 要求（自述） | 判定 | 证据/说明 |
+|------|-------------|------|----------|
+| 2.4.5-a | Execute 只在上升沿提交新动作，以精确界定参数采样和命令时刻 | ✅符合 | `AxisExecuteFb::rising_edge()`（`core/fb/motion.h:37-46`） |
+| 2.4.5-b | 一个 FB 的完成输出可经应用逻辑触发下一个 FB，形成复杂运动链 | 🔴违规 | Done 必须在 Execute 保持高时才可被观察，标准脉冲调用链受 D-01 阻断（`core/fb/motion.h:41-44,70-78`） |
+| 2.4.5-c | FB 链可把完成信号与外部条件组合后触发下一动作 | ⚠️偏差 | C++ 调用方可组合布尔条件，但仓库无 Part 1 示例中的 LD/SFC 执行面；ST MC 调用属 L2（KB-069） |
+
+## §2.4.6 ContinuousUpdate — normative
+
+| 条款 | 要求（自述） | 判定 | 证据/说明 |
+|------|-------------|------|----------|
+| 2.4.6-a | 仅当 Execute 上升沿时 ContinuousUpdate 已为真，之后保持真期间才逐周期采用新输入 | 🔴违规 | 实现不锁存上升沿值，运动中从 false 改 true 也会开始更新；见 D-20（`core/fb/motion.h:264-274,341-378`; `core/fb/sync.h:121-152`） |
+| 2.4.6-b | ContinuousUpdate 为假触发的命令在整个运动期间忽略后续参数变化 | ✅符合 | 更新分支要求当前 `continuous_update` 为真，缺省 false 时只使用提交快照（`core/fb/motion.h:260-274,336-378`） |
+| 2.4.6-c | 连续更新只修改当前运动，不应重触发命令或改变状态机 | ✅符合 | 调用 `update_active_velocity/target` 或同步参数更新，不分配新 command ID（`core/fb/motion.h:268-274,372-378`; `core/fb/sync.h:145-152`） |
+| 2.4.6-d | Busy 结束或 ContinuousUpdate 复位后停止采用新参数 | ✅符合 | 更新要求 tracked command 仍为活动/同步关系且 ContinuousUpdate 当前为真（同上） |
+| 2.4.6-e | 相对量连续更新仍以 Execute 上升沿的初始条件为基准 | ✅符合 | `start_position_` 在提交时锁存，后续 Distance 更新仍加该基准（`core/fb/motion.h:353-378,415-420`; `core/test/r3_motion_family_tests.cpp:284-322`） |
+| 2.4.6-f | ContinuousUpdate 是扩展输入，只适用于可连续修改的 FB | ⚠️偏差(KB-009 已声明) | 当前仅 MoveVelocity、ContinuousMove 与同步 FB 的部分参数支持（`known-boundaries.md:20`; `core/fb/motion.h:260,336`; `core/fb/sync.h:36`） |
+
+## §2.5 示例 1：同一 FB 实例复用 — informative verification
+
+| 条款 | 示例行为（自述） | 判定 | 证据/说明 |
+|------|------------------|------|----------|
+| 2.5-a | 同一 MoveVelocity 实例可通过 Execute 降低再上升，依次提交不同速度 | ✅符合 | 下降沿清生命周期，下一上升沿重新提交成员当前值（`core/fb/motion.h:37-68,256-283`） |
+| 2.5-b | 每次达到新的 set velocity 后由 InVelocity 驱动示例状态推进 | 🔴违规 | MoveVelocity 没有 InVelocity 持续输出；受 D-02（`core/fb/motion.h:256-285`） |
+| 2.5-c | 示例最后以速度零结束该速度序列 | 🔴违规 | 公共提交入口拒绝 `velocity<=0`；受 D-07（`core/axis/state.h:681-685`） |
+| 2.5-d | 已处于同一速度时重新触发，InVelocity 是否短暂复位可由实现决定 | ➖不适用 | InVelocity 本身缺失，尚不能声明该实现选择（D-02） |
+
+## §2.6 示例 2：不同 FB 实例串接 — informative verification
+
+| 条款 | 示例行为（自述） | 判定 | 证据/说明 |
+|------|------------------|------|----------|
+| 2.6-a | 多个 FB 实例可引用同一轴，各实例负责全局轨迹的一段 | ✅符合 | 每实例独立跟踪 command ID，AxisModel 串行仲裁同轴命令（`core/fb/motion.h:29-110`; `core/axis/state.h:698-742`） |
+| 2.6-b | 前一实例的 InVelocity 与外部条件可触发下一实例接管 | 🔴违规 | 缺 InVelocity，无法按示例时序串接；受 D-02 |
+| 2.6-c | 后一实例接管时前一实例应得到规范终态并保持各自输出所有权 | 🔴违规 | Execute 脉冲时旧实例会提前清跟踪；保持高时 aborting 接管可报 CommandAborted，整体仍受 D-01（`core/fb/motion.h:41-44,70-104`） |
+| 2.6-d | 文本、LD 或其他 IEC 表示应能表达等价串接逻辑 | ⚠️偏差 | C++ 可表达；当前 ST 无 MC FB 调用，且无 LD 图形执行面（KB-069；`core/st/README.md`） |
 
 ---
 
@@ -544,6 +617,35 @@
 
 ---
 
+## 附录 A：缓冲模式示例审计
+
+附录 A 用六组时序示例解释 Aborting、Buffered 与四种 Blending 的交接行为。
+这些示例不增加正文之外的 FB，但可作为 §2.4.2 的行为验收依据。
+
+| 项目 | 要求（自述） | 判定 | 证据/说明 |
+|------|-------------|------|----------|
+| A-1 | Aborting 后继立即接管，前一 FB 报 CommandAborted | ✅符合 | aborting 提交先中止活动命令并从实时状态重规划（`core/axis/state.h:707-735`; `core/test/r3_semantics_tests.cpp`） |
+| A-2 | Buffered 后继等待前一命令完成并在交接点无空拍启动 | ✅符合 | 固定容量队列与完成后同周期 `start_next()`（`core/axis/state.h:738-742,1830-1866`; `core/test/r3_semantics_tests.cpp`） |
+| A-3 | BlendingLow 按两命令较低交接速度连续过渡 | ⚠️偏差(KB-029 已声明) | 单轴实现采用前命令标称速度 30% 阈值提前交接，不是两命令端点速度的逐项最低值（`known-boundaries.md:44`） |
+| A-4 | BlendingPrevious 采用前一命令的交接速度 | ❌缺失 | `BufferMode` 仅有 aborting/buffered/blending_low/blending_high（`core/axis/state.h:39-45`） |
+| A-5 | BlendingNext 采用后一命令的交接速度；后继为速度命令时按前一模式或报错 | ❌缺失 | 无 blending_previous/blending_next 枚举与单轴行为（`core/axis/state.h:39-45`） |
+| A-6 | BlendingHigh 按两命令较高交接速度连续过渡 | ⚠️偏差(KB-029 已声明) | 单轴实现采用前命令标称速度 70% 阈值提前交接（`known-boundaries.md:44`） |
+| A-7 | 同轴叠加运动与 blending 贡献应组合后再输出轴位置 | ⚠️偏差(KB-019/029 已声明) | 活动 base 可叠加独立 offset，但同步接入或接管会清 offset；未覆盖附录全部组合（`core/axis/state.h:1245-1247,1417-1419`） |
+
+## 附录 B：合规程序与清单审计
+
+附录 B 规定供应商提交数据类型、FB 及逐 I/O 支持声明，经 PLCopen 审核后才可
+形成公开合规清单。仓库矩阵可提供工程证据，但不能替代认证主体的正式声明。
+
+| 项目 | 要求（自述） | 判定 | 证据/说明 |
+|------|-------------|------|----------|
+| B-1 | 供应商填写所支持的数据类型表 | ❌缺失 | 仓库没有按附录 B 模板形成的正式供应商数据类型声明；现有 `plcopen-motion-v2-function-blocks.yml` 只覆盖 FB 清单 |
+| B-2 | 供应商填写支持的 FB 及每项 B/E/V I/O | ⚠️偏差 | 机读清单与本矩阵已有接口证据，但不是附录 B 的提交表，且 D-05/D-12/D-13/D-15 等 B 级缺口尚存（`doc/compliance/plcopen-motion-v2-function-blocks.yml`） |
+| B-3 | 产品只对已声明并通过审核的范围主张合规 | ❌缺失 | `plcopen-conformance-audit.md` 已明确当前无 PLCopen 认证程序、无可核验官方 listing |
+| B-4 | 矩阵中的厂商扩展应在 V 栏单独申报 | ⚠️偏差 | §3/§4 已逐 FB 登记 V 扩展，但尚未转换为附录 B 正式表格 |
+
+---
+
 ## 已确认违规详情
 
 ### 🔴 D-01：Execute 脉冲后 `Done` 永不出现（§2.4.1-i）
@@ -729,7 +831,74 @@ MoveAdditive 仅在 DiscreteMotion 中使用最近命令终点，在 ContinuousM
 
 **修复方向**：增加 Master 引用并校验其与当前同步关系一致；不匹配时显式报错。
 
+### 🔴 D-16：轴错误被活动/缓冲 FB 误报为 CommandAborted（§2.2.2）
+
+**规格要求**：轴进入 ErrorStop 时，活动与缓冲运动 FB 应以 Error 终结，而不是
+以普通接管的 CommandAborted 终结。
+
+**我们的行为**：`trigger_error()` 通过 `abort_motion()` 清除命令所有权；
+`AxisExecuteFb::observe_axis()` 无轴错误分支，命令 ID 消失后统一置
+`command_aborted`（`core/axis/state.h:539-544`; `core/fb/motion.h:70-104`）。
+
+**影响面**：应用无法区分轴故障与正常命令接管，可能走错误的恢复策略。
+
+**修复方向**：观察命令账本前先检查与该命令关联的轴故障终态，并锁存 Error/ErrorID。
+
+### 🔴 D-17：活动 FB 自身错误后的 buffered 接续未建模（§2.2.2）
+
+**规格要求**：活动 FB 在执行期发生自身错误时，当前 FB 报 Error，后继 buffered
+FB 取得控制权并立即执行。
+
+**我们的行为**：参数错误仅在提交时同步返回；命令进入活动态后没有“FB 自身错误”
+终态或对应的队列推进分支，队列只在自然完成时推进（`core/fb/motion.h:48-60`；
+`core/axis/state.h:1830-1866`）。
+
+**影响面**：无法表达或验证规范规定的运行期 FB 错误恢复链。
+
+**修复方向**：区分命令自身失败与轴错误，在命令账本记录失败原因，并按规范决定后继激活。
+
+### 🔴 D-18：Standstill 下 MoveSuperimposed 不进入 DiscreteMotion（§2.1）
+
+**规格要求**：MC_MoveSuperimposed 从 Standstill 启动时应进入 DiscreteMotion；
+从其他允许运动态启动时不改变基础运动状态。
+
+**我们的行为**：叠加 profile 独立于基础命令运行，只增量写位置，不更新
+`AxisStatus`；Standstill 下调用后状态仍为 Standstill（`core/axis/state.h:1251-1279,
+1869-1892`）。
+
+**影响面**：ReadStatus/ReadMotionState 无法反映叠加运动正在执行。
+
+**修复方向**：在无基础运动的叠加生命周期内建立 DiscreteMotion 状态所有权，完成后释放。
+
+### 🔴 D-19：Enable 型 FB 缺 Busy 与不可恢复错误锁存（§2.2.3/§2.4.1）
+
+**规格要求**：Enable 型 FB 在动作期间提供 Busy；可恢复错误保持 Busy、复位 Valid；
+不可自动恢复错误同时复位 Busy/Valid，必须经新的 Enable 上升沿重启。
+
+**我们的行为**：读参数、回读和 IO Enable 型 FB 普遍没有 Busy；Enable 保持高时
+每周期自动重试，条件恢复即直接 Valid，无上升沿锁存（`core/fb/parameter.h:13-55`；
+`core/fb/io.h:16-25`）。
+
+**影响面**：标准调用方无法判断动作仍在进行，也无法依规范区分可恢复与锁存错误。
+
+**修复方向**：统一 Enable 生命周期基类，明确错误分类、Busy/Valid 状态与重新触发规则。
+
+### 🔴 D-20：ContinuousUpdate 未锁存触发沿许可（§2.4.6）
+
+**规格要求**：只有在 Execute 上升沿时 ContinuousUpdate 已为 TRUE，当前命令才
+进入连续更新模式；若触发时为 FALSE，本次运动后续输入变化都应忽略。
+
+**我们的行为**：MoveVelocity、MoveContinuous*、Gear/Cam/Combine 每周期直接检查
+当前 `continuous_update` 成员，没有保存触发沿值。因此命令启动后把它从 FALSE
+改为 TRUE 会在同一命令中开启更新（`core/fb/motion.h:264-274,341-378`；
+`core/fb/sync.h:121-152,304-340,361-396`）。
+
+**影响面**：应用误触或延迟赋值会改变已按锁存参数启动的运动，跨平台行为不一致。
+
+**修复方向**：Execute 上升沿锁存本命令的 ContinuousUpdate 许可；许可为 FALSE 时
+直到下一次 Execute 上升沿都禁止更新。
+
 ---
 
-*创建：2026-07-12（P-AUDIT2 第一批）。规格原文存 scratchpad；
-本矩阵随审计推进增量填充，"待验"项逐条清零。*
+*创建：2026-07-12（P-AUDIT2）；同日完成 §2、§3、§4 与附录 A/B 全范围审计。
+规格原文仅存于 gitignore 的 `refs/plcopen-specs/`。*
