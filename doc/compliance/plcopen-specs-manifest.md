@@ -18,7 +18,7 @@ tools/fetch-plcopen-specs.sh --verify   # 只校验本地已有文件
 
 依赖：`curl`、`sha256sum`、`pdftotext`（poppler-utils，抽文本用，可选）。
 
-## 清单（12 份 · 888 页 · 全部公开免费）
+## 清单（35 个文件 · 2047 页 · 全部公开免费）
 
 来源均为 PLCopen 官方下载页 <https://www.plcopen.org/downloads/>。
 
@@ -44,9 +44,18 @@ tools/fetch-plcopen-specs.sh --verify   # 只校验本地已有文件
 | `guide_oop` | PLCopen OOP Guidelines | 1.0 | 27 | `70d6977342bc3a8a` | ✅ 全文完成（OOP 能力缺失，G-04） |
 | `annex_a_e` | Annex A-E: specification method for textual languages | — | 24 | `8b2798805c4b78bc2` | ✅ 全文完成（Annex A-E 覆盖与实现依赖参数，G-05） |
 
-**未纳入**（VISION 显式门控，需要时再取）：Safety Part 1-4 + SafeMotion、
-OPC UA（Client FB / 信息模型）、XML-TC6（IEC 61131-10）、OOP 运动库（zip）、
-PackML/OMAC 映射、各语言入门与本地化材料。
+### 后续官方技术资料（待审计）
+
+| 领域 | 已取回资料 | 文件/页数 | 审计状态 |
+|------|------------|-----------|----------|
+| Motion 补充 | Annex F、Motion Application Examples、OOP Motion Examples + Library | 4 个文件 / 96 页 | ⏳ 待审计 |
+| Safety | Safety Part 1-4、SafeMotion、Logic/Motion Safety | 6 份 / 493 页 | ⏳ 待审计（实现范围仍受 VISION 门控） |
+| OPC UA | Client FB、Information Model、NodeSet、NodeIds、Client Architecture、Use Cases | 6 个文件 / 140 页 | ⏳ 待审计（实现范围仍受 VISION 门控） |
+| XML / TC6 | XML v2.01 Technical、XSD 文档与文件、IEC 61131-10 组件 | 4 个文件 / 420 页 | ⏳ 待审计（实现范围仍受 VISION 门控） |
+| Logic 指南 | PackML 映射、程序结构化、软件评价 | 3 份 / 10 页 | ⏳ 待审计 |
+
+未取回：重复旧版、翻译/本地化版本、入门宣传、演示文稿、会员与认证表单；
+这些资料不作为本仓库技术合规判定的规范依据。
 
 ## 使用纪律
 
@@ -57,6 +66,6 @@ PackML/OMAC 映射、各语言入门与本地化材料。
 
 ---
 
-*创建：2026-07-12。审计进度以本表"审计状态"列为准；
+*创建：2026-07-12；扩展：2026-07-12。审计进度以本表"审计状态"列为准；
 详见 [全面合规审计](plcopen-conformance-audit.md) 与
 [Part 1 条款矩阵](plcopen-part1-clause-matrix.md)。*
