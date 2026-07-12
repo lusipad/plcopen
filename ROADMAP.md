@@ -72,7 +72,7 @@ ADR-0007、Pages 上线、soak 周期等效），剩 PyPI 人专属动作。
 | **P1-A** | Part 1 首批结构性缺口 4 项（MoveAbsolute.Direction / SetOverride 电平化 / Phasing 主从双轴 / DigitalCamSwitch 完整化） | 0.5 L0 | **完成**：D-05/D-12/D-13/D-15 已关闭；其他 D 项另批清零 |
 | **L2a**（矩阵重写） | 引脚表改以规格附录 B3 的 B/E 表为准——**L2a 就是合规面本身**；机读引脚表 → 自动生成合规声明 | 0.5 L0 | 认证材料自动化 |
 | P5-B | Part 5 缺 6 项（StepBlock/DistanceCoded/HomeAbsolute/飞越式×2/AbortPassiveHoming） | 0.5 L0 | Part 5 11/11 |
-| P4-B1 | Part 4 第一波缺口（组参数/动态/SW限位/回读/运动学信息） | 1 L0 | 以 68 项机读清单逐项减少 47 个无同名入口 |
+| P4-B1 | Part 4 第一波缺口（组参数/动态/SW限位/回读/运动学信息，精确 19 项） | 1 L0 | 以 68 项权威清单逐项减少 47 个无同名入口；语义矩阵待批 |
 | P-GUIDE / P-OFFICIAL | 对照全部 35 个已取回 PLCopen 官方技术文件：指南、OOP/Annex F、Safety、OPC UA、XML/TC6 | 0.3 L0 | ✅ **2047 页全文审计完成**；G/M/L/S/U/X 缺口已登记，门控领域未进入实现 |
 | P4-B2/B3 | 工具负载/点动/同步/刚体动力学/跟踪 | 1.5 L0 | Part 4 全量 |
 
