@@ -35,6 +35,12 @@ st-runtime-design（已裁决）、已批矩阵 st-l0/l1a-semantics、KB-069/070
 3. **诊断码只增不改号**；unsupported 构造必须带归属批次码。
 4. **锚点哈希风险面**：改 codegen 的批次在矩阵验收表里预登记"锚点
    刷新与否"；能追加就不重排。
+5. **源码兼容纪律**（2026-07-12 CEO 评审补）：已批语法永不失效——
+   后续批次只加不改（如 BufferMode 的 INT 编码在枚举糖落地后永久有效）；
+   任何源码级破坏 = 声明变更级事件。
+6. **大批次止损条件**：L2b/L3/L6 的矩阵必须含吞吐检查点与止损条款
+   （连续两周期实际/估计比 >2× 即回矩阵重切范围）——L0 当量外推对
+   大批次非线性，估计只作参考。
 
 规模标定（按已交付批实测）：**1 L0 当量 ≈ 7000 行/一个工作日**（含
 测试与文档）；L1a ≈ 0.4 L0。下表估计均以 L0 当量计，偏差 ±50% 属正常。
@@ -70,7 +76,7 @@ st-runtime-design（已裁决）、已批矩阵 st-l0/l1a-semantics、KB-069/070
 | 范围 | AXIS_REF 句柄类型 + 单轴 MC 十块（Power/MoveAbs/Rel/Additive/Velocity/Halt/Stop/Reset/Home/SetOverride）+ 宿主 bind_axis API |
 | 矩阵决策点 | 已在草案：L2 三拆、INT 编码 BufferMode/Direction、未绑定=FB 错误路径、规划域声明、指令预算≠时间预算 |
 | 前置 | 矩阵人批 |
-| 任务拆分 | ① mc_pins 引脚表（机读）② AXIS_REF 类型/sema 拒绝面 ③ FbType 扩展 + 实例区静态断言 ④ bind_axis/重绑定语义 ⑤ 端到端黄金场景 ×6 ⑥ ST↔C++ setpoint 逐位等价门 ⑦ executor 集成冒烟 ⑧ fuzz 扩语料 + docs/KB |
+| 任务拆分 | ⓪ 矩阵修订：AXIS_REF 生命周期条款（悬空绑定/轴销毁/名字复用 = 宿主合同显式化，Codex 评审输入）① mc_pins 引脚表（机读）② AXIS_REF 类型/sema 拒绝面 ③ FbType 扩展 + 实例区静态断言 ④ bind_axis/重绑定语义 ⑤ 端到端黄金场景 ×6 ⑥ ST↔C++ setpoint 逐位等价门 ⑦ executor 集成冒烟 ⑧ fuzz 扩语料 + docs/KB |
 | 出口判据 | 矩阵 6.1-6.7 全绿；既有锚点哈希不变 |
 | 难点 | T34（半边）；无新算法面 |
 
@@ -92,7 +98,7 @@ st-runtime-design（已裁决）、已批矩阵 st-l0/l1a-semantics、KB-069/070
 | 矩阵决策点 | VAR_IN_OUT 别名规则（L0 无指针的前提下=受限引用，别名分析口径）；EN/ENO 链式使能精确语义（EN=FALSE 时输出保持还是清零——标准松散处钉死）；调用栈静态定界（无递归→编译期展开每 POU 帧，栈深进容量表）；FUNCTION 在表达式中的调用与转换函数名字空间共存；实例内存树布局 |
 | 前置 | 无硬前置；建议 L1b1 后（枚举可作形参类型） |
 | 任务拆分 | ① 矩阵（决策点多，预计送批 2 轮）② 语法/AST 多 POU ③ 符号表分层（全局/POU 局部）④ 调用帧 codegen + CALL_POU 指令 ⑤ IN_OUT 别名 sema ⑥ EN/ENO ⑦ 黄金程序 ≥20 ⑧ fuzz 结构化生成器升级（多 POU）|
-| 出口判据 | 用户 FB 含 basic.h/MC 成员实例的嵌套场景；锚点哈希预登记为"追加不刷新" |
+| 出口判据 | 用户 FB 含 basic.h/MC 成员实例的嵌套场景；锚点哈希预登记为"追加不刷新"；**收口即采纳信号检查点**（T1 裁决：pip/stars/询盘/冷用户，零信号则 L3-L7 降优先级重议） |
 | 难点 | T34 主体 + T40 增量接口按 POU 粒度真正生效 |
 
 ### L4a：标准函数库第一批（矩阵待起草，≈0.5 L0）

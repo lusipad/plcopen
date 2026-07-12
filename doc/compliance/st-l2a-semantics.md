@@ -32,6 +32,7 @@
 | 2.2 | 绑定时机 | 宿主在 load 后、首个 scan 前经 `Instance::bind_axis(name, AxisModel*)` 绑定（大小写不敏感名字查找）；绑定为加载域 API | 轴对象生命周期归 executor，ST 只持句柄（T34"AXIS_REF 解析为轴对象句柄"） |
 | 2.3 | 未绑定语义 | 未绑定的 AXIS_REF 参与 MC 调用不阻止 load/scan：FB 走既有 `axis_ref == nullptr` 错误路径（Error + ErrorID=invalid_argument） | 与 C++ 门面语义完全一致，零新语义 |
 | 2.4 | 重绑定 | 仅 fault 态或首个 scan 前允许 `bind_axis` 覆盖；运行中重绑 = `precondition_failed` | 防运行中偷换轴对象 |
+| 2.5 | 生命周期（宿主合同） | 轴对象必须比绑定长寿：宿主销毁 AxisModel 前必须先停 scan 并 reload/解除绑定——悬空绑定属宿主合同违约（与 Program 生命周期合同同族，文档显式声明+集成指南强调）；名字复用（rebind 同名到新对象）走 2.4 重绑定规则，无静默切换 | Codex 外部评审输入：悬空/销毁/复用在真实部署是非确定性故障源，边界必须显式 |
 
 ## 3. 决策点：MC FB 绑定面（L2a 集合）
 
