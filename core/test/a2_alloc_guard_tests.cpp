@@ -13,6 +13,7 @@
 
 #include "axis/group.h"
 #include "axis/state.h"
+#include "fb/group.h"
 #include "fb/homing.h"
 
 namespace
@@ -193,6 +194,29 @@ int main(int argc, char **argv)
     flying.trigger_input = 1;
     flying.call();
 
+    axis::AxisModel read_axes[2];
+    axis::AxisGroup read_group;
+    for(auto &axis : read_axes) {
+        axis.set_power(true);
+        read_group.add_axis(axis);
+    }
+    read_group.enable();
+    fb::FbGroupReadPosition read_position;
+    read_position.group_ref = &read_group;
+    read_position.enable = true;
+    fb::FbGroupReadVelocity read_velocity;
+    read_velocity.group_ref = &read_group;
+    read_velocity.enable = true;
+    fb::FbGroupReadAcceleration read_acceleration;
+    read_acceleration.group_ref = &read_group;
+    read_acceleration.enable = true;
+    fb::FbGroupReadMotionState read_motion;
+    read_motion.group_ref = &read_group;
+    read_motion.enable = true;
+    fb::FbGroupReadSWLimits read_limits;
+    read_limits.group_ref = &read_group;
+    read_limits.enable = true;
+
     // ---- Frozen window: any heap allocation is a defect -----------------
     g_frozen_allocations = 0;
     g_frozen = true;
@@ -204,6 +228,11 @@ int main(int argc, char **argv)
         homing_axis.cycle();
         step_block.call();
         flying.call();
+        read_position.call();
+        read_velocity.call();
+        read_acceleration.call();
+        read_motion.call();
+        read_limits.call();
     }
     g_frozen = false;
 

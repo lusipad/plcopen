@@ -12,7 +12,7 @@
 | Part | 规格版本 | 规格 FB 数 | 我们实现 | 覆盖率 | 旧声明 | 判定 |
 |------|---------|-----------|---------|--------|--------|------|
 | Part 1 | v2.0 (2011) | **43** | **43 个门面** | 名称面 100%，条款不合规 | "45/45" | 🔴 D-01~D-20 表明不能以数量宣称合规 |
-| Part 4 | v2.0 (2026-05) | **68** | **21 个同名门面** | **约 31%** | "零留白" | 🔴 **严重失实**；47 项无同名入口 |
+| Part 4 | v2.0 (2026-05) | **68** | **40 个同名门面** | **约 59%** | "零留白" | 🟡 P4-B1 后仍有 28 项无同名入口，且已有门面多为部分覆盖 |
 | Part 5 | v2.0 (2011) | **11** | **11 个有门面、均仍部分覆盖** | 不计算合规率 | "已交付" | 🟡 门面齐备；接口、派生类型、硬件证据与正式声明未闭合 |
 | **合计** | — | **122** | 不做简单相加 | — | — | 接口/条款符合度不能由 FB 名称数量替代 |
 
@@ -21,7 +21,7 @@ FB 清单**，而规格 v2.0 实际定义 **68 个**——我们在漏掉 38 个
 上宣布了"零留白"。**这是 KB-051 教训（"测试只看得见写它的人想到的
 东西"）在合规面上的重演。**
 
-### Part 4 v2.0 缺失清单（47 个无同名入口，按性质分组）
+### Part 4 v2.0 缺失清单（28 个无同名入口，按性质分组）
 
 > 本节的旧分组保留为规划摘要；权威 68 项逐 FB 账见
 > [Part 4 条款审计](plcopen-part4-clause-audit.md)。两个旧名/自定义回读门面
@@ -29,10 +29,8 @@ FB 清单**，而规格 v2.0 实际定义 **68 个**——我们在漏掉 38 个
 
 | 组 | FB | 性质/成本 |
 |----|-----|----------|
-| **组参数与动态**（12） | `MC_GroupReadParameter`/`GroupWriteParamater`、`GroupRead/WriteDefaultDynamics`、`GroupRead/WriteReferenceDynamics`、`GroupRead/WriteJoggingDynamics`、`GroupRead/WriteSWLimits` | 🟢 **薄门面**——底层状态基本齐备 |
-| **组回读**（5） | `MC_GroupReadPosition`/`Velocity`/`Acceleration`/`MotionState`/`CommandInfo` | 🟢 薄门面。**注意**：我们的 `FbGroupReadActualPosition`/`ReadCommandPosition` 是 **v1.0 旧名**，v2.0 已并为 `MC_GroupReadPosition`（带 Source 输入） |
+| **组参数/动态/SW限位/回读/运动学信息**（19） | P4-B1 已新增同名 C++ 门面 | ⚠️ 已从无门面清单移出；`mcSetValue`、非 ACS 高阶回读、start-point、virtual AXIS_REF 与部分 E 级仍未支持（KB-073） |
 | **工具与负载**（8） | `GroupRead/WriteToolData`、`GroupSelectTool`、`GroupReadTool`、`GroupRead/WritePayloadData`、`GroupSelectPayload`、`GroupReadPayload` | 🟡 需新数据结构（机器人必需，底层仅有 tool_offset） |
-| **运动学信息**（4） | `MC_ReadDHParameters`、`MC_ReadJointInfo`、`MC_ReadAxisGroupInfo`、`MC_GroupReadConfiguration` | 🟢 薄门面（kinematics 插件已有数据） |
 | **同步**（3） | `MC_SyncAxisToGroup`、`MC_SyncGroupToAxis`、`MC_SetDynCoordTransform` | 🔴 **真新功能** |
 | **点动**（2） | `MC_GroupJog`、`MC_GroupJogVector` | 🟡 新功能，不难 |
 | **刚体动力学**（2） | `MC_GroupRead/WriteRigidBodyDynamic` | 🔴 与 H3 动力学前馈同族 |

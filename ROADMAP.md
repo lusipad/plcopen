@@ -34,8 +34,8 @@ soak 周期等效）；剩余仅人专属动作（PyPI publisher 注册 + 发布
 | 3 | Y0 最优性 oracle（评审定序提前：先立标尺再修算法） | 切换结构枚举表（第一交付物）+ 双 oracle + Ruckig 黑盒对照，excess_cycles 分域基线入趋势 | **主 oracle 已交付**：678 结构表 + Newton 打靶 + 4 域基线；副 oracle / Ruckig 对照随 Y2 |
 | 4 | Y2 完整 OTG（评审三关键） | state-to-state 任意目标状态（非零 at）+ 钉边界 + epsilon 政策声明化；Ruckig 黑盒对照 | **软件全交付**（KB-055 非零 at + 12 固定 + 50k fuzz；KB-057 epsilon 政策声明化；Y0 oracle 678 结构表 + 4 域基线）；Ruckig 对照待 ADR-0003 人工审批 |
 | 4c | Y4 solve_fixed_time 一等原语（评审三关键，紧跟 Y2） | 同步 + cycle-exact 量化（删 KB-050 尾段补丁）+ 流追赶汇合同一求解；终态 ≤1e-9（T43） | **求解器 + KB-050 集成 + 流 rendezvous 已交付**（KB-056：8 候选族 + below_tmin multi-cubic；KB-050：匀速骑行/退避梯子删除；KB-035：流跟踪律 solve_fixed_time rendezvous 优先——38/38 pass）；组同步切换待下批 |
-| 5a | P-Part4 剩余 FB | 管理组矩阵 + 路径表/变换第二批矩阵均已批准实现 | ⚠️ **二次口径修正（2026-07-12 全文审计）**：Part 4 v2.0 权威清单为 **68 个 FB**；当前 **21 个同名门面（约 31%）**，47 项无同名入口，另有 2 个旧名/自定义回读门面。旧 30 项与后续 63 项分母均作废，见 [完整条款审计](doc/compliance/plcopen-part4-clause-audit.md) |
-| 5b | P-Part5 回零规程 | MC_Step* 标准回零步 FB 面（数字输入通道模拟验收） | ⚠️ **口径修正**：5 FB 已交付属实，但 **规格共 11 个**（5/11 = 45%）——缺 StepBlock/StepDistanceCoded/HomeAbsolute/飞越式×2/AbortPassiveHoming，见 P-Part5b |
+| 5a | P-Part4 剩余 FB | 管理组矩阵 + 路径表/变换第二批矩阵均已批准实现 | ⚠️ Part 4 v2.0 权威清单为 **68 个 FB**；P4-B1 后当前 **40 个同名门面**、28 项无同名入口，另保留 2 个旧 Position 回读兼容门面。接口/语义仍逐项部分覆盖，不宣称合规，见 [完整条款审计](doc/compliance/plcopen-part4-clause-audit.md) |
+| 5b | P-Part5 回零规程 | MC_Step* 标准回零步 FB 面（数字输入通道模拟验收） | ⚠️ **11/11 C++ 门面已交付**（KB-072）：P5-B 补齐 StepBlock/StepDistanceCoded/HomeAbsolute/飞越式×2/AbortPassiveHoming；旧五块接口/语义、标准派生类型与硬件真实性仍开放，不宣称合规 |
 | 4b | **信号通道并行项 + Z 系列全量**（拷问后拉入） | T1 pip wheel + Z3 文档站 + Z2 单位层 + Z4 包管理 + Z5 诊断 | **Z3 文档站已上线**（http://lusipad.com/plcopen/ ，Pages 2026-07-11 启用）；Wheels 三平台远端绿 + PyPI Trusted Publishing 作业已备——剩余人专属：PyPI publisher 注册 + 发布 tag |
 | 6 | E 系列证据 | ARM64 CI + clang-tidy 零 P0 + 变异分数门 | **已复绿（2026-07-11 远端复验）**：Mutation 18/18、Coverage Gate（gcovr 90% 门）、Core Nightly 三作业全部通过 |
 | 7 | 台架采购决策 | 下单或共建协议（S1 之门，与本里程碑并行） | **人工** |
@@ -72,7 +72,7 @@ ADR-0007、Pages 上线、soak 周期等效），剩 PyPI 人专属动作。
 | **P1-A** | Part 1 首批结构性缺口 4 项（MoveAbsolute.Direction / SetOverride 电平化 / Phasing 主从双轴 / DigitalCamSwitch 完整化） | 0.5 L0 | **完成**：D-05/D-12/D-13/D-15 已关闭；其他 D 项另批清零 |
 | **L2a**（矩阵重写） | 引脚表改以规格附录 B3 的 B/E 表为准——**L2a 就是合规面本身**；机读引脚表 → 自动生成合规声明 | 0.5 L0 | 认证材料自动化 |
 | P5-B | Part 5 缺 6 项（StepBlock/DistanceCoded/HomeAbsolute/飞越式×2/AbortPassiveHoming） | 0.5 L0 | Part 5 11/11 |
-| P4-B1 | Part 4 第一波缺口（组参数/动态/SW限位/回读/运动学信息，精确 19 项） | 1 L0 | 以 68 项权威清单逐项减少 47 个无同名入口；语义矩阵待批 |
+| **P4-B1** | Part 4 第一波缺口（组参数/动态/SW限位/回读/运动学信息，精确 19 项） | 1 L0 | **完成（KB-073）**：40/68 有同名门面，28 项仍缺失 |
 | P-GUIDE / P-OFFICIAL | 对照全部 35 个已取回 PLCopen 官方技术文件：指南、OOP/Annex F、Safety、OPC UA、XML/TC6 | 0.3 L0 | ✅ **2047 页全文审计完成**；G/M/L/S/U/X 缺口已登记，门控领域未进入实现 |
 | P4-B2/B3 | 工具负载/点动/同步/刚体动力学/跟踪 | 1.5 L0 | Part 4 全量 |
 

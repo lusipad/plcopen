@@ -87,8 +87,8 @@ facades), but B-grade I/O completeness was 22/43 at the 2026-07-12 audit
 (the P1-A batch has since closed the 4 structural gaps; the remaining
 naming/shape gaps move to the L2a pin layer), and 16 of the clause-level
 issues D-01..D-20 remain open (D-05/D-12/D-13/D-15 closed), so **no
-conformance claim is made**. Part 4: same-name facades 21/68. Part 5:
-homing 5/11. Per-clause audits are
+conformance claim is made**. Part 4: same-name facades 40/68. Part 5:
+homing 11/11 C++ facades with partial coverage. Per-clause audits are
 published in
 [doc/compliance](https://github.com/lusipad/plcopen/tree/main/doc/compliance).
 

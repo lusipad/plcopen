@@ -1,9 +1,9 @@
 # Part 4 P4-B1 十九项管理与回读语义矩阵
 
-> 状态：**草案，待维护者批准**（2026-07-13）。
+> 状态：**已批准**（2026-07-13，维护者批准全部条款）。
 > 依据：PLCopen Motion Control Part 4 v2.0 §9.4-9.5、§9.11-9.12、
 > §9.14-9.24、§9.32-9.33；条目级缺口见
-> `plcopen-part4-clause-audit.md`。批准前不进入实现。
+> `plcopen-part4-clause-audit.md`。实现按五个纵向切片推进。
 >
 > 计数纠错：旧计划写“薄门面 21 项”，但其命名分组按标准逐项展开只能
 > 得到 **19 项**：配置/运动学信息 4 + 回读 5 + 参数/动态 8 + SW 限位 2。
@@ -38,7 +38,7 @@
 | 3.2 | IdentInGroup | 首批强类型 `IdentInGroup{index}`，0-based，稳定性仅保证组 Disabled 期间成员表不变；越界 `out_of_range` | 与 AxisGroup 固定插入槽一致；不引入不存在的持久 UUID |
 | 3.3 | GroupReadConfiguration | ACS 返回槽位的真实 `AxisModel*`；MCS/PCS/WCS/FCS/TCS 不伪造 virtual AXIS_REF，首批显式 `unsupported`；AxisID 仅作为同拍槽号诊断 | 核没有虚拟路径轴对象，不能返回悬空或合成引用 |
 | 3.4 | ReadAxisGroupInfo | 由 `AxisModel::group_owner()` + owner 内槽位反查；未入组 `precondition_failed`；只认真实 `AxisGroup` owner | 已有非 owning owner 合同，读取不改所有权 |
-| 3.5 | 运动学元数据 | 新增宿主绑定的固定容量 `GroupKinematicsInfo`：serial 标志、每 link 四个 DH 值、每 joint ZeroPosition/DirectionClockwise；仅 Disabled 且无成员运动时绑定，首次 Enable 后冻结；插件不自动推导这些值 | `Kinematics`/`PoseKinematics` ABI 没有 DH 与方向信息；显式事实源优于猜测 |
+| 3.5 | 运动学元数据 | 新增宿主绑定的固定容量 `GroupKinematicsInfo`：serial 标志、每 link 四个 DH 值、每 joint ZeroPosition/DirectionClockwise；仅 Disabled 且无成员运动时绑定，首次成功 Enable 后冻结；插件不自动推导这些值 | `Kinematics`/`PoseKinematics` ABI 没有 DH 与方向信息；显式事实源优于猜测 |
 | 3.6 | DH/Joint 拒绝 | 未绑定、非 serial、数量与成员/plugin joint_count 不一致、非有限值均 Error；无局部输出 | 标准限定 serial kinematics，失败必须原子 |
 | 3.7 | Source | 强枚举 `GroupValueSource::{commanded, actual, set}`；commanded 映射 command snapshot，actual 映射 actual snapshot；`set` 首批 `unsupported` | AxisSnapshot 没有独立 set-value 域，不能把 commanded 重命名冒充 |
 | 3.8 | Position | ACS 逐成员读取；MCS/PCS 沿现有 `read_cartesian` 与同一 Source；其余坐标系沿 KB-036 `unsupported`；旧两个 Position FB 调新实现 | 复用已批准位置转换链并消除 v1 双门面漂移 |
@@ -99,6 +99,24 @@
 | 在线 Dynamics/SWLimits 追改活动命令 | 属声明行为变更，需单独矩阵与回放 |
 | Jog、工具/载荷、刚体、同步/跟踪 | P4-B2/B3 或后续专批 |
 | ST 引脚与正式供应商声明 | 先完成 C++ 结构能力，再由 Part 4 机读 I/O 批次承接 |
+
+## 7. 实现记录（KB-073）
+
+- 19 个标准名称均新增 C++ 门面；旧 Position 双门面保留兼容并复用 v2
+  Source 型实现。配置、DH/Joint 元数据、Dynamics 与 SWLimits 全为最多 8 轴
+  的固定容量状态，读块同拍 Valid，写块上升沿同拍 Done/Error。
+- MotionState/CommandInfo 对普通、Direct 与 joint-window 命令提供真实同拍
+  状态；Cartesian window 没有逐段 CommandID 存储，查询显式 unsupported。
+  `mcSetValue`、非 ACS 速度/加速度、virtual AXIS_REF 与 start-point 仍按矩阵
+  显式拒绝。
+- percentage mode 消费 Reference Dynamics；显式 Default 选择直接替代四阶
+  输入，不做 percentage 二次缩放。SWLimits 整表预检后写入成员轴唯一限位
+  状态，所有 joint/Cartesian 提交在接管前检查最终 ACS 目标。
+- `plcopen_core_part4_p4b1_tests` 覆盖 1/2/3/6/8 轴、生命周期、状态、
+  部分更新与原子拒绝；10 万输入 fuzz 零崩溃，10 万冻结周期零分配。
+  默认配置下 18 份回放逐位不变。
+- 出口口径为 40/68 有同名门面、28 项无同名入口；本批门面仍有 E 级和
+  分支边界，不构成 Part 4 合规声明。
 
 ---
 

@@ -6,6 +6,13 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- Part 4 P4-B1（KB-073）新增 19 个管理与回读 C++ 门面：组配置/owner、
+  DH/Joint 元数据、Source 型位置/速度/加速度、MotionState/CommandInfo、
+  两项标准 GroupParameter、三类 Dynamics 与组 SWLimits。配置均为固定容量
+  事务，percentage/default 真实影响后续新命令，SWLimits 在接管前约束最终
+  ACS 目标；10 万 fuzz、10 万周期零分配和 18 回放零差异通过。Part 4
+  同名门面升至 40/68，但不支持分支与正式接口声明仍开放，不构成合规声明。
+
 - Part 5 P5-B（KB-072）补齐六个 C++ 门面：独立实际反馈判定的 StepBlock、
   显式定长码表驱动的 DistanceCoded、宿主绝对位置源驱动的 HomeAbsolute、
   不改变在途命令的 Flying Switch/RefPulse 与只撤销被动会话的 AbortPassive。

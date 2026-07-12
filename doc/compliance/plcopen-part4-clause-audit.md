@@ -10,7 +10,7 @@
 >
 > **结论：不合规，且现有“63 个 FB / 约 35%”基线本身有误。** v2 §1.3
 > 与附录 1 的短表均列出 **68 个** FB；仓库现有审计漏计 5 个。当前可找到
-> 同名公开门面的为 21 个，另有 2 个旧名/自定义回读门面，不能据此声明 Part 4 合规。
+> 同名公开门面的为 40 个，另保留 2 个旧名/自定义 Position 回读兼容门面，不能据此声明 Part 4 合规。
 
 ## 1. 审计方法与状态口径
 
@@ -39,16 +39,16 @@
 v2 §2.1 将 v1 扩展为机器人动力学、工具/载荷、组参数、软件限位、点动、
 等待与更丰富回读；§2.2 同步 Part 1 v2 的接口约定。v1 的三项
 `MC_GroupReadActual{Position,Velocity,Acceleration}` 在 v2 改为带 Source 选择的
-`MC_GroupRead{Position,Velocity,Acceleration}`。当前两个 Position 门面仍采用
-Actual/Command 分拆旧形态，Velocity/Acceleration 均缺失。
+`MC_GroupRead{Position,Velocity,Acceleration}`。P4-B1 已补三个 v2 Source 门面，
+其中 Position 保留两个旧名门面作兼容；`mcSetValue` 与非 ACS 高阶回读仍不支持。
 
 ### 2.2 v1 到 v2 的迁移账
 
 | 迁移类别 | 条款 | 当前情况 |
 |---|---|---|
-| 保留的 v1 FB | v2 §2.1、§9、§10 | 当前共 21 个同名门面；其余仍缺或只有非标准近似入口 |
-| 三个回读 FB 改型 | v2 §2.1、§9.14-9.16 | ⚠️ Position 用两个旧名门面近似；Velocity/Acceleration 缺失 |
-| v2 新增管理/诊断 | v2 §9.5、§9.11-9.12、§9.17-9.24、§9.32-9.33 | ❌ 全部或绝大多数缺失 |
+| 保留的 v1 FB | v2 §2.1、§9、§10 | 当前共 40 个同名门面；其余仍缺或只有非标准近似入口 |
+| 三个回读 FB 改型 | v2 §2.1、§9.14-9.16 | ⚠️ 三个 v2 Source 门面已存在；`mcSetValue` 与非 ACS 高阶回读仍缺，Position 旧名门面仅作兼容 |
+| v2 新增管理/诊断 | v2 §9.5、§9.11-9.12、§9.17-9.24、§9.32-9.33 | ⚠️ P4-B1 已覆盖其中 16 项批准子集；独立错误回读等仍缺 |
 | v2 新增机器人数据 | v2 §7-§8、§9.48-9.58 | ❌ 刚体、工具、载荷 FB 全缺 |
 | v2 新增运动 | v2 §9.9、§9.40、§9.44-9.47 | ❌ GroupPower/Wait/Jog/JogVector/点动动态缺 |
 
@@ -64,10 +64,10 @@ Actual/Command 分拆旧形态，Velocity/Acceleration 均缺失。
 | v2 §4 | 位置、Configuration、Turn、姿态表示 | ⚠️ `GroupPosition` 是最多 8 个标量，缺标准 MC_POS_REF 的 Configuration/Turn 完整合同；姿态/奇异边界见 KB-044 |
 | v2 §5；v1 §3 | 组状态图及组轴状态关系 | ⚠️ Disabled/Standby/Moving/Stopping/ErrorStop 可观察；项目新增 Interrupted，且 FB 生命周期并非逐项按 Notes 验证 |
 | v1 §3.3 | Input Execution Mode | ⚠️ 统一 rising-edge/Enable 基类覆盖部分约定；同步/跟踪 FB 缺失，无法完整验证 |
-| v2 §6；v1 §4 | 建组、成员标识、组使用约束 | ⚠️ Add/Remove 可用，但无 IdentInGroup 输入、ReadConfiguration 和 UngroupAllAxes；成员采用插入槽位 |
+| v2 §6；v1 §4 | 建组、成员标识、组使用约束 | ⚠️ Add/Remove 可用，ReadConfiguration 可回读 ACS 真实成员槽；Add/Remove 仍无 IdentInGroup 输入，UngroupAllAxes 缺失 |
 | v2 §7 | 刚体动力学与载荷 | ❌ 无标准数据引用与读写/选择 FB |
 | v2 §8 | 工具管理 | ⚠️ 底层工具变换存在；标准 ToolData/Select/Read FB 全缺 |
-| v2 §11.1-11.10；v1 §7 | Buffer/Transition、CommandID、圆弧选择、软件限位、TCS | ⚠️ 有内部枚举和命令 ID；没有完整标准数据类型/输出面，TCS 不支持，软件限位组 FB 缺失 |
+| v2 §11.1-11.10；v1 §7 | Buffer/Transition、CommandID、圆弧选择、软件限位、TCS | ⚠️ 有内部枚举、命令 ID 与组软件限位读写门面；标准数据类型/输出面仍不完整，TCS 不支持 |
 
 ## 4. v2 全部 68 个 FB 审计
 
@@ -78,8 +78,8 @@ Actual/Command 分拆旧形态，Velocity/Acceleration 均缺失。
 | 1 | §9.1 `MC_AddAxisToGroup` | ⚠️ | `FbAddAxisToGroup`；缺标准 `IdentInGroup`，按插入槽位分配 |
 | 2 | §9.2 `MC_RemoveAxisFromGroup` | ⚠️ | `FbRemoveAxisFromGroup` 以 AxisRef 删除，不是标准 IdentInGroup 接口 |
 | 3 | §9.3 `MC_UngroupAllAxes` | ❌ | 无门面 |
-| 4 | §9.4 `MC_GroupReadConfiguration` | ❌ | 无门面 |
-| 5 | §9.5 `MC_ReadAxisGroupInfo` | ❌ | 无门面 |
+| 4 | §9.4 `MC_GroupReadConfiguration` | ⚠️ | P4-B1 门面支持 ACS 真实成员槽；无 virtual AXIS_REF，非 ACS `unsupported` |
+| 5 | §9.5 `MC_ReadAxisGroupInfo` | ⚠️ | P4-B1 门面反查真实 owner/0-based 槽；无全局 GroupID 注册表 |
 | 6 | §9.6 `MC_GroupEnable` | ✅ | `FbGroupEnable`；组启用测试覆盖基本路径 |
 | 7 | §9.7 `MC_GroupDisable` | ✅ | `FbGroupDisable`；取消/禁用路径有管理测试 |
 | 8 | §9.8 `MC_GroupHome` | 🔴 | `FbGroupHome` 缺标准 Position，且启动成员回零后立即 Done；见 D4-13 |
@@ -90,30 +90,30 @@ Actual/Command 分拆旧形态，Velocity/Acceleration 均缺失。
 | 13 | §9.10.4 `MC_ReadKinTransform` | ❌ | 无门面 |
 | 14 | §9.10.5 `MC_ReadCartesianTransform` | ⚠️ | `FbReadCartesianTransform` 合并回读 workpiece/tool RPY，接口与标准引用形态不同 |
 | 15 | §9.10.6 `MC_ReadCoordinateTransform` | ❌ | 无门面 |
-| 16 | §9.11 `MC_ReadDHParameters` | ❌ | 无门面 |
-| 17 | §9.12 `MC_ReadJointInfo` | ❌ | 无门面 |
+| 16 | §9.11 `MC_ReadDHParameters` | ⚠️ | P4-B1 固定容量宿主元数据，只适用显式 serial 配置；不从插件猜测 DH |
+| 17 | §9.12 `MC_ReadJointInfo` | ⚠️ | P4-B1 固定容量 ZeroPosition/DirectionClockwise 回读；同上需显式元数据 |
 | 18 | §9.13 `MC_GroupSetPosition` | ❌ | 无门面 |
-| 19 | §9.14 `MC_GroupReadPosition` | ⚠️ | 旧式 `FbGroupReadActualPosition`/`CommandPosition` 分拆；无 v2 Source 接口 |
-| 20 | §9.15 `MC_GroupReadVelocity` | ❌ | 无门面 |
-| 21 | §9.16 `MC_GroupReadAcceleration` | ❌ | 无门面 |
-| 22 | §9.17 `MC_GroupReadMotionState` | ❌ | 无门面 |
-| 23 | §9.18 `MC_GroupReadCommandInfo` | ❌ | 内部 command ID 不等于标准回读 FB |
-| 24 | §9.19 `MC_GroupReadParameter` | ❌ | 无门面 |
-| 25 | §9.20 `MC_GroupWriteParameter` | ❌ | 规格目录有 Paramater 拼写差异；标准 FB 门面不存在 |
-| 26 | §9.21 `MC_GroupWriteReferenceDynamics` | ❌ | 无门面 |
-| 27 | §9.22 `MC_GroupReadReferenceDynamics` | ❌ | 无门面 |
-| 28 | §9.23 `MC_GroupWriteDefaultDynamics` | ❌ | 无门面 |
-| 29 | §9.24 `MC_GroupReadDefaultDynamics` | ❌ | 无门面；规格概览的 Deynamics 为原文拼写误差 |
+| 19 | §9.14 `MC_GroupReadPosition` | ⚠️ | v2 Source 门面支持 commanded/actual；`mcSetValue` 缺失，旧双门面保留兼容 |
+| 20 | §9.15 `MC_GroupReadVelocity` | ⚠️ | ACS commanded/actual + 真实 path velocity；非 ACS 与 set source `unsupported` |
+| 21 | §9.16 `MC_GroupReadAcceleration` | ⚠️ | ACS commanded/actual + 真实 path acceleration；非 ACS 与 set source `unsupported` |
+| 22 | §9.17 `MC_GroupReadMotionState` | ⚠️ | 标准运动位与活动 ID 有同拍快照；tracking 未实现时固定 false/in-sync true |
+| 23 | §9.18 `MC_GroupReadCommandInfo` | ⚠️ | active/accepted 与进度/距离/周期可查；Cartesian window 逐段 ID `unsupported`，终态不留历史 |
+| 24 | §9.19 `MC_GroupReadParameter` | ⚠️ | 精确承接 DynamicsMode 与 TransitionReferencePoint 两项标准参数 |
+| 25 | §9.20 `MC_GroupWriteParameter` | ⚠️ | DynamicsMode 支持 absolute/percentage；Transition 仅 end-point，start-point `unsupported` |
+| 26 | §9.21 `MC_GroupWriteReferenceDynamics` | ⚠️ | 路径四阶固定状态；percentage 模式真实消费，0/负值保持 |
+| 27 | §9.22 `MC_GroupReadReferenceDynamics` | ⚠️ | 同拍回读固定路径四阶状态 |
+| 28 | §9.23 `MC_GroupWriteDefaultDynamics` | ⚠️ | 路径四阶默认值；C++ 以显式 `use_default_dynamics` 表达未连接输入 |
+| 29 | §9.24 `MC_GroupReadDefaultDynamics` | ⚠️ | 同拍回读固定路径四阶状态 |
 | 30 | §9.29 `MC_GroupReadStatus` | ⚠️ | 字段账确认缺 Busy、增加 Interrupted；Enable 真时每周期重算状态位，假时清除 Valid/Error |
 | 31 | §9.30 `MC_GroupReadError` | ❌ | 不能以 ReadStatus 内 error/error_id 替代独立标准 FB |
 | 32 | §9.31 `MC_GroupReset` | ✅ | `FbGroupReset`，错误复位路径有测试 |
-| 33 | §9.32 `MC_GroupReadSWLimits` | ❌ | 无门面 |
+| 33 | §9.32 `MC_GroupReadSWLimits` | ⚠️ | 最多 8 轴整表回读；以成员轴软件限位为唯一事实源 |
 
 ### 4.2 运动、路径与点动（34-51）
 
 | # | 条款 / FB | 状态 | 当前证据或缺口 |
 |---:|---|---|---|
-| 34 | §9.33 `MC_GroupWriteSWLimits` | ❌ | 无门面 |
+| 34 | §9.33 `MC_GroupWriteSWLimits` | ⚠️ | Disabled/Standby 无 pending 时整表原子写；限制后续最终 ACS 目标 |
 | 35 | §9.25 `MC_GroupStop` | ✅ | `FbGroupStop`；受控停止和接管测试覆盖 |
 | 36 | §9.26 `MC_GroupHalt` | ❌ | 无门面；Stop+Reset 组合不算实现 |
 | 37 | §9.27 `MC_GroupInterrupt` | ⚠️ | 字段账确认缺 `BufferMode`/标准中断参数面；实现增加 Interrupted 状态，Done 在到达该状态时置位 |
@@ -130,13 +130,13 @@ Actual/Command 分拆旧形态，Velocity/Acceleration 均缺失。
 | 48 | §9.43 `MC_GroupSetOverride` | ⚠️ | 同名门面仅 `VelFactor`；AccFactor 等不做，零因子语义见 KB-058/067 |
 | 49 | §9.44 `MC_GroupJog` | ❌ | 无门面 |
 | 50 | §9.45 `MC_GroupJogVector` | ❌ | 无门面 |
-| 51 | §9.46 `MC_GroupWriteJoggingDynamics` | ❌ | 无门面；目录 Dyamics 拼写不影响标准名称判定 |
+| 51 | §9.46 `MC_GroupWriteJoggingDynamics` | ⚠️ | 路径 + 最多 8 轴四阶固定容量状态；GroupJog 尚缺，当前只配置/回读 |
 
 ### 4.3 动力学、工具、载荷与变换（52-63）
 
 | # | 条款 / FB | 状态 | 当前证据或缺口 |
 |---:|---|---|---|
-| 52 | §9.47 `MC_GroupReadJoggingDynamics` | ❌ | 无门面 |
+| 52 | §9.47 `MC_GroupReadJoggingDynamics` | ⚠️ | 同拍回读 Jogging Dynamics；尚无运动消费方 |
 | 53 | §9.48 `MC_GroupReadRigidBodyDynamic` | ❌ | 无门面 |
 | 54 | §9.49 `MC_GroupWriteRigidBodyDynamic` | ❌ | 无门面 |
 | 55 | §9.50 `MC_GroupWriteToolData` | ❌ | 底层工具变换不等于 ToolData 标准 FB |
@@ -159,13 +159,13 @@ Actual/Command 分拆旧形态，Velocity/Acceleration 均缺失。
 | 67 | §10.6 `MC_TrackConveyorBelt` | ❌ | 无门面 |
 | 68 | §10.7 `MC_TrackRotaryTable` | ❌ | 无门面 |
 
-## 5. 已有 21 个同名门面的逐 FB 五问
+## 5. 已有同名门面的逐 FB 五问
 
 “I/O”只列影响兼容性的 B 级必需接口族；“Notes”记录核心行为，不复制原句。
 输出时序按 Execute 型的 Done/Busy/CommandAborted/Error 或 Enable 型的
 Valid/Busy/Error 核对。扩展一栏回答项目是否增加、删减或改变标准可观察面。
 
-### 5.1 逐字段 I/O 底稿
+### 5.1 原有 21 项逐字段 I/O 底稿
 
 属性：`B` 为合规基础字段，`E` 为扩展/可选字段。`—` 表示实现无对应字段；
 `outputs.*` 指 `MotionOutputs`。数组/引用数据类型按一个字段列出，其内部结构在
@@ -221,22 +221,20 @@ Valid/Busy/Error 核对。扩展一栏回答项目是否增加、删减或改变
 | `MC_MovePath` §9.42 | 标准 PathData/BufferMode 面不完整，仅 table 指针 | 执行已选择路径 | Standby→Moving→Standby | Busy/Active→Done | ⚠️ 只提交线性 waypoint，非完整路径元素 |
 | `MC_GroupSetOverride` §9.43 | 只有 VelFactor；缺 AccFactor 等 v2 面 | 修改组动态比例，零值暂停 | Moving 保持 Moving；零值驻留 | 当前同周期 Done | ⚠️ 子集；零值恢复修复见 KB-058/067 |
 
-## 6. 47 个无同名门面的 B 级缺失证据
+## 6. 28 个无同名门面的 B 级缺失证据
 
 下表按接口/状态族压缩，但逐项列名；“无同名”由 `core/fb/*.h` 类声明检索
 确认。没有类就不存在可核对的 B 级 I/O、输出时序或 Notes 状态机，底层方法不抵扣。
 
 | 接口与状态族 | 缺失 FB（逐项） | B 级接口/状态影响 |
 |---|---|---|
-| 建组/配置 Execute、Done/Busy/Error | `MC_UngroupAllAxes`、`MC_GroupReadConfiguration`、`MC_ReadAxisGroupInfo` | 无批量解组、配置数组和轴组信息输出；Disabled 配置流程不完整 |
+| 建组/配置 Execute、Done/Busy/Error | `MC_UngroupAllAxes` | 无批量解组；Disabled 配置流程仍不完整 |
 | 电源/回零 Execute 型 | `MC_GroupPower` | 无 Enable/EnablePositive/EnableNegative 等组电源面；Disabled/Standby 前置链不可标准化 |
-| 变换 Set/Read 引用型 | `MC_SetCartesianTransform`、`MC_SetCoordinateTransform`、`MC_ReadKinTransform`、`MC_ReadCoordinateTransform`、`MC_ReadDHParameters`、`MC_ReadJointInfo` | 无标准 Transform/DH/Joint 引用 I/O；不能核对配置时状态限制与 Valid 时序 |
-| 组位置/运动回读 Enable 型 | `MC_GroupSetPosition`、`MC_GroupReadPosition`、`MC_GroupReadVelocity`、`MC_GroupReadAcceleration`、`MC_GroupReadMotionState`、`MC_GroupReadCommandInfo` | v2 Position 无同名门面（只有两个旧/自定义近似）；其余缺 Position/Source/运动位/CommandID 输出；诊断面断裂 |
-| 参数/动力学 Execute 或 Enable 型 | `MC_GroupReadParameter`、`MC_GroupWriteParameter`、`MC_GroupWriteReferenceDynamics`、`MC_GroupReadReferenceDynamics`、`MC_GroupWriteDefaultDynamics`、`MC_GroupReadDefaultDynamics` | 缺 ParameterNumber、Value、Dynamics 引用和 Done/Valid 时序；动态配置 Notes 无入口 |
+| 变换 Set/Read 引用型 | `MC_SetCartesianTransform`、`MC_SetCoordinateTransform`、`MC_ReadKinTransform`、`MC_ReadCoordinateTransform` | 无标准 Transform 引用 I/O；不能核对配置时状态限制与 Valid 时序 |
+| 组位置 Execute 型 | `MC_GroupSetPosition` | 无标准组位置写入门面 |
 | 独立错误回读 Enable 型 | `MC_GroupReadError` | 缺 ErrorID/Axis/记录选择等标准输出；ReadStatus 合并字段不能替代 |
-| 组软件限位读写 | `MC_GroupReadSWLimits`、`MC_GroupWriteSWLimits` | 缺 MC_GROUP_SWLIMITS 数据 I/O；无法验证写入允许态和读回 Valid |
 | 运动控制 Execute 型 | `MC_GroupHalt`、`MC_GroupWaitTime` | 缺 Halt 的 Moving→Stopping→Standby 行为及 Wait 的缓冲队列行为 |
-| 点动及动态 | `MC_GroupJog`、`MC_GroupJogVector`、`MC_GroupWriteJoggingDynamics`、`MC_GroupReadJoggingDynamics` | 缺方向/向量/坐标/动态输入；无 Jog 状态与 Enabled/Busy 生命周期 |
+| 点动 | `MC_GroupJog`、`MC_GroupJogVector` | 缺方向/向量/坐标输入；无 Jog 状态与 Enabled/Busy 生命周期 |
 | 刚体动力学 | `MC_GroupReadRigidBodyDynamic`、`MC_GroupWriteRigidBodyDynamic` | 缺 RigidBody 引用和读写时序；无载荷动力学配置状态约束 |
 | 工具管理 | `MC_GroupWriteToolData`、`MC_GroupReadToolData`、`MC_GroupSelectTool`、`MC_GroupReadTool` | 缺 ToolID/ToolData/选中工具输出；底层单一 tool transform 不支持工具库 Notes |
 | 载荷管理 | `MC_GroupWritePayloadData`、`MC_GroupReadPayloadData`、`MC_GroupSelectPayload`、`MC_GroupReadPayload` | 缺 PayloadID/PayloadData/选中载荷输出；无选择状态与输出时序 |
@@ -250,7 +248,7 @@ Valid/Busy/Error 核对。扩展一栏回答项目是否增加、删减或改变
 | 1 | `MC_AddAxisToGroup` | 保留 | ⚠️ 同名，缺 IdentInGroup |
 | 2 | `MC_RemoveAxisFromGroup` | 保留 | ⚠️ 同名，按 AxisRef 删除 |
 | 3 | `MC_UngroupAllAxes` | 保留 | ❌ |
-| 4 | `MC_GroupReadConfiguration` | 保留 | ❌ |
+| 4 | `MC_GroupReadConfiguration` | 保留 | ⚠️ ACS 真实成员槽可读；无 virtual AXIS_REF，非 ACS 不支持 |
 | 5 | `MC_GroupEnable` | 保留 | ✅ |
 | 6 | `MC_GroupDisable` | 保留 | ✅ |
 | 7 | `MC_GroupHome` | 保留 | ⚠️ 启动即 Done |
@@ -261,9 +259,9 @@ Valid/Busy/Error 核对。扩展一栏回答项目是否增加、删减或改变
 | 12 | `MC_ReadCartesianTransform` | 保留 | ⚠️ 自定义合并回读 |
 | 13 | `MC_ReadCoordinateTransform` | 保留 | ❌ |
 | 14 | `MC_GroupSetPosition` | 保留 | ❌ |
-| 15 | `MC_GroupReadActualPosition` | 改名/改型为 v2 `MC_GroupReadPosition(Source)` | ⚠️ 旧名门面存在 |
-| 16 | `MC_GroupReadActualVelocity` | 改名/改型为 v2 `MC_GroupReadVelocity(Source)` | ❌ |
-| 17 | `MC_GroupReadActualAcceleration` | 改名/改型为 v2 `MC_GroupReadAcceleration(Source)` | ❌ |
+| 15 | `MC_GroupReadActualPosition` | 改名/改型为 v2 `MC_GroupReadPosition(Source)` | ⚠️ v2 Source 门面及旧名兼容门面存在；`mcSetValue` 不支持 |
+| 16 | `MC_GroupReadActualVelocity` | 改名/改型为 v2 `MC_GroupReadVelocity(Source)` | ⚠️ v2 ACS Source 门面存在；非 ACS 与 set source 不支持 |
+| 17 | `MC_GroupReadActualAcceleration` | 改名/改型为 v2 `MC_GroupReadAcceleration(Source)` | ⚠️ v2 ACS Source 门面存在；非 ACS 与 set source 不支持 |
 | 18 | `MC_GroupStop` | 保留 | ✅ |
 | 19 | `MC_GroupHalt` | 保留 | ❌ |
 | 20 | `MC_GroupInterrupt` | 保留 | ⚠️ 项目扩展状态 |
@@ -299,7 +297,7 @@ Valid/Busy/Error 核对。扩展一栏回答项目是否增加、删减或改变
 | Supported Buffer Modes | 逐模式 Yes/No | 语义文档只声明子集，未填官方表 | ⚠️ |
 | Supported Transition Modes | 逐模式 Yes/No | 仅 None/MaxCornerDeviation 子集，未填官方表 | ⚠️ |
 | Short FB overview | 每个 FB Yes/No 与短注 | 本文 68 行可作审计底稿，尚非供应商签署表 | ⚠️ |
-| Per-FB interface table | B/E/O 等接口逐字段选择与支持 | 本文 §5.1 已形成 21 项字段底稿，§6 对 47 项以无门面证明；官方签署表未生成 | ⚠️ 审计完成，行政表缺失 |
+| Per-FB interface table | B/E/O 等接口逐字段选择与支持 | 本文 §4 已逐项判定 40 个同名门面，§5.1 保留原有 21 项字段底稿，§6 对 28 项以无门面证明；官方签署表未生成 | ⚠️ 审计完成，行政表缺失 |
 | 标识使用 | 满足程序后才可用合规标识 | 当前不满足 | ❌ 禁止声明/使用 |
 | v2 SRCI 关系附录 | 信息性映射 | 项目无 SRCI 层 | N/A，不计合规 |
 
@@ -311,8 +309,8 @@ v2；因此上表对缺失门面的判定同时适用于 v1。三个 v1 专项�
 | v1 条款 / FB | 当前判定 |
 |---|---|
 | §5.10 `MC_GroupReadActualPosition` | ⚠️ `FbGroupReadActualPosition` 同名语义近似，但 C++ 输出类型/生命周期仍非合规声明 |
-| §5.11 `MC_GroupReadActualVelocity` | ❌ 缺失 |
-| §5.12 `MC_GroupReadActualAcceleration` | ❌ 缺失 |
+| §5.11 `MC_GroupReadActualVelocity` | ⚠️ v2 ACS Source 门面可承接 actual；非 ACS 与 set source 不支持 |
+| §5.12 `MC_GroupReadActualAcceleration` | ⚠️ v2 ACS Source 门面可承接 actual；非 ACS 与 set source 不支持 |
 
 v1 §3 状态图、§3.3 Input Execution Mode、§7 blending/buffering 不是因为 v2
 新增功能就可跳过；当前证据只锁定已实现运动子集。附录 1 的供应商声明、支持数据
@@ -324,7 +322,7 @@ v1 §3 状态图、§3.3 Input Execution Mode、§7 blending/buffering 不是因
 | 条款 | 审计结果 |
 |---|---|
 | v2 附录 1；v1 附录 1 | ❌ 未提供填妥的供应商声明、支持数据类型、BufferMode、TransitionMode 和逐 FB Yes/No 合规表 |
-| v2 附录 1 各 FB 接口表；v1 附录 A | ⚠️ 本文 §5.1 已完成现有 21 项逐字段 B/E 映射，§6 完成 47 项无门面证明；官方供应商签署表未生成 |
+| v2 附录 1 各 FB 接口表；v1 附录 A | ⚠️ 本文 §4 已逐项判定 40 个同名门面，§5.1 保留原有 21 项逐字段 B/E 映射，§6 完成 28 项无门面证明；官方供应商签署表未生成 |
 | v2 附录 2；v1 附录 1.6 | 不适用当前实现审计；未获完整合规前不得使用 PLCopen 合规标识 |
 | v2 附录 3（PLCopen 与 SRCI） | 信息性关系已审阅；项目没有 SRCI 通讯层，不作为当前 Part 4 FB 合规证据 |
 
@@ -334,8 +332,8 @@ v1 §3 状态图、§3.3 Input Execution Mode、§7 blending/buffering 不是因
 |---|---|---|---|
 | D4-01 | 高 | v2 FB 总数被记为 63，原文两处均为 68 | 修正所有矩阵、manifest 与计划的分母；以 68 项机读源生成表 |
 | D4-02 | 高 | 现有 `part4-coverage.md` 仅 30 项且已失效 | 不得再作完成证据；由本审计或后续机读矩阵取代 |
-| D4-03 | 高 | 68 项中 47 项无同名公开门面；另有已实现项仍属接口/语义子集 | 建立 68 项唯一机读清单，逐项实现或正式声明不支持 |
-| D4-04 | 高 | v2 三个 Source 型回读被旧名/自创 CommandPosition 形态替代或缺失 | 实现 v2 `ReadPosition/Velocity/Acceleration`，保留旧门面仅作兼容层 |
+| D4-03 | 高 | P4-B1 已关闭 19 个无门面缺口；68 项中仍有 28 项无同名公开门面，另有已实现项仍属接口/语义子集 | 继续维护 68 项唯一清单，逐项实现或正式声明不支持 |
+| D4-04 | 高 | P4-B1 已提供 v2 三个 Source 型回读；`mcSetValue` 与非 ACS 高阶回读仍开放 | 保留旧 Position 门面仅作兼容层，后续单独裁决未支持 Source/坐标系 |
 | D4-05 | 高 | Add/Remove 缺标准 IdentInGroup 接口 | 明确成员标识模型并补配置回读/UngroupAllAxes |
 | D4-06 | 高 | 变换、同步、动态坐标、跟踪的标准门面大面积缺失 | 底层能力不得替代标准 FB；按 §9.10/§10 独立验收 |
 | D4-07 | 高 | 工具、载荷、刚体动力学整族缺失 | 先定义数据引用/所有权/更新时机，再实现 §9.48-9.57 |
@@ -349,9 +347,9 @@ v1 §3 状态图、§3.3 Input Execution Mode、§7 blending/buffering 不是因
 ## 12. 可核验结论
 
 1. v2 权威分母是 **68**，不是 63；v1 分母是 **39**。
-2. 当前同名公开门面 21 个；其中不少仅为子集或接口偏差，另有两个 v1 风格
+2. 当前同名公开门面 40 个；其中不少仅为子集或接口偏差，另有两个 v1 风格
    Position 回读门面。不能把底层 API、组合调用或另一个 FB 的输出计作实现。
 3. 当前最强证据集中在组基本管理、六种 Move、Stop、Interrupt/Continue、
-   PathSelect/MovePath、SetKinTransform 与部分坐标回读；参数/诊断、同步/跟踪、
+   PathSelect/MovePath、SetKinTransform、部分坐标回读与 P4-B1 参数/诊断子集；同步/跟踪、
    Jog、工具/载荷/刚体整族仍是明确缺口。
-4. 本轮只登记，不修改任何运行时代码；所有行为变更仍须语义矩阵先行。
+4. 本轮在批准的 P4-B1 语义矩阵内实现 19 个门面；其余行为变更仍须语义矩阵先行。

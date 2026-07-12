@@ -27,6 +27,124 @@ struct GroupPosition
     std::size_t size = 0;
 };
 
+struct IdentInGroup
+{
+    std::size_t index = 0;
+};
+
+struct DHParameter
+{
+    double theta = 0.0;
+    double d = 0.0;
+    double a = 0.0;
+    double alpha = 0.0;
+};
+
+struct JointInfo
+{
+    double zero_position = 0.0;
+    bool direction_clockwise = false;
+};
+
+template <typename T> struct GroupArray
+{
+    std::array<T, GroupPosition::MaxAxes> value{};
+    std::size_t count = 0;
+};
+
+using DHParameterArray = GroupArray<DHParameter>;
+using JointInfoArray = GroupArray<JointInfo>;
+
+struct GroupKinematicsInfo
+{
+    bool serial = false;
+    std::size_t count = 0;
+    std::array<DHParameter, GroupPosition::MaxAxes> dh{};
+    std::array<JointInfo, GroupPosition::MaxAxes> joint{};
+};
+
+enum class GroupValueSource
+{
+    commanded,
+    actual,
+    set,
+};
+
+enum class GroupParameter
+{
+    dynamics_mode,
+    transition_reference_point,
+};
+
+enum class DynamicsMode
+{
+    absolute,
+    percentage,
+};
+
+enum class TransitionReferencePoint
+{
+    start_point,
+    end_point,
+};
+
+struct PathDynamics
+{
+    double velocity = 1.0;
+    double acceleration = 1.0;
+    double deceleration = 1.0;
+    double jerk = 1.0;
+};
+
+struct JoggingDynamics
+{
+    PathDynamics path{};
+    std::size_t size = 0;
+    std::array<double, GroupPosition::MaxAxes> axis_velocity{};
+    std::array<double, GroupPosition::MaxAxes> axis_acceleration{};
+    std::array<double, GroupPosition::MaxAxes> axis_deceleration{};
+    std::array<double, GroupPosition::MaxAxes> axis_jerk{};
+};
+
+struct GroupSWLimit
+{
+    double minimum = 0.0;
+    double maximum = 0.0;
+    bool minimum_enabled = false;
+    bool maximum_enabled = false;
+};
+
+using GroupSWLimits = GroupArray<GroupSWLimit>;
+
+enum class GroupCommandState
+{
+    accepted,
+    active,
+};
+
+struct GroupMotionState
+{
+    bool tracking = false;
+    bool in_sync = true;
+    bool in_position = true;
+    bool standstill = true;
+    bool constant_velocity = false;
+    bool accelerating = false;
+    bool decelerating = false;
+    std::uint32_t active_command_id = 0;
+};
+
+struct GroupCommandInfo
+{
+    GroupCommandState state = GroupCommandState::accepted;
+    std::int64_t elapsed_cycles = 0;
+    std::int64_t remaining_cycles = 0;
+    double remaining_distance = 0.0;
+    double progress = 0.0;
+    std::uint16_t info_id = 0;
+    std::uint16_t warning_id = 0;
+};
+
 // MC_CIRC_MODE: v1 supports only the three-point BORDER construction; CENTER
 // and RADIUS report rt::ErrorCode::unsupported (approved circular matrix).
 enum class CircMode
@@ -158,6 +276,7 @@ struct GroupCommand
     // the command's deterministic start point. Not a user input.
     geom::ArcSegment arc{};
     CartesianSegment cart{};
+    bool use_default_dynamics = false;
 };
 
 class AxisGroup
@@ -210,6 +329,156 @@ public:
     const AxisModel *member(std::size_t index) const
     {
         return index < axes_.size() ? axes_[index] : nullptr;
+    }
+
+    std::size_t member_index(const AxisModel &axis) const
+    {
+        return find(axis);
+    }
+
+    rt::ErrorCode bind_kinematics_info(const GroupKinematicsInfo &info)
+    {
+        if(status_ != GroupStatus::disabled || kinematics_info_frozen_ ||
+           !info.serial || info.count == 0 || info.count != axes_.size()) {
+            return rt::ErrorCode::precondition_failed;
+        }
+        for(std::size_t i = 0; i < info.count; ++i) {
+            const DHParameter &dh = info.dh[i];
+            if(!std::isfinite(dh.theta) || !std::isfinite(dh.d) ||
+               !std::isfinite(dh.a) || !std::isfinite(dh.alpha) ||
+               !std::isfinite(info.joint[i].zero_position)) {
+                return rt::ErrorCode::invalid_argument;
+            }
+        }
+        kinematics_info_ = info;
+        kinematics_info_bound_ = true;
+        return rt::ErrorCode::ok;
+    }
+
+    rt::Result<GroupKinematicsInfo> kinematics_info() const
+    {
+        if(!kinematics_info_bound_ || !kinematics_info_.serial ||
+           kinematics_info_.count != axes_.size()) {
+            return rt::Result<GroupKinematicsInfo>::failure(
+                rt::ErrorCode::precondition_failed);
+        }
+        return rt::Result<GroupKinematicsInfo>::success(kinematics_info_);
+    }
+
+    rt::Result<double> read_group_parameter(GroupParameter parameter) const
+    {
+        if(parameter == GroupParameter::dynamics_mode) {
+            return rt::Result<double>::success(static_cast<double>(dynamics_mode_));
+        }
+        if(parameter == GroupParameter::transition_reference_point) {
+            return rt::Result<double>::success(
+                static_cast<double>(transition_reference_point_));
+        }
+        return rt::Result<double>::failure(rt::ErrorCode::unsupported);
+    }
+
+    rt::ErrorCode write_group_parameter(GroupParameter parameter, double value)
+    {
+        if(!std::isfinite(value)) return rt::ErrorCode::invalid_argument;
+        if(!configuration_writable()) return rt::ErrorCode::precondition_failed;
+        if(parameter == GroupParameter::dynamics_mode) {
+            if(value == static_cast<double>(DynamicsMode::absolute)) {
+                dynamics_mode_ = DynamicsMode::absolute;
+                return rt::ErrorCode::ok;
+            }
+            if(value == static_cast<double>(DynamicsMode::percentage)) {
+                dynamics_mode_ = DynamicsMode::percentage;
+                return rt::ErrorCode::ok;
+            }
+            return rt::ErrorCode::invalid_argument;
+        }
+        if(parameter == GroupParameter::transition_reference_point) {
+            if(value == static_cast<double>(TransitionReferencePoint::end_point)) {
+                transition_reference_point_ = TransitionReferencePoint::end_point;
+                return rt::ErrorCode::ok;
+            }
+            if(value == static_cast<double>(TransitionReferencePoint::start_point)) {
+                return rt::ErrorCode::unsupported;
+            }
+            return rt::ErrorCode::invalid_argument;
+        }
+        return rt::ErrorCode::unsupported;
+    }
+
+    const PathDynamics &reference_dynamics() const { return reference_dynamics_; }
+    const PathDynamics &default_dynamics() const { return default_dynamics_; }
+    const JoggingDynamics &jogging_dynamics() const { return jogging_dynamics_; }
+
+    rt::ErrorCode write_reference_dynamics(const PathDynamics &update)
+    {
+        return update_path_dynamics(reference_dynamics_, update);
+    }
+
+    rt::ErrorCode write_default_dynamics(const PathDynamics &update)
+    {
+        return update_path_dynamics(default_dynamics_, update);
+    }
+
+    rt::ErrorCode write_jogging_dynamics(const JoggingDynamics &update)
+    {
+        if(update.size != axes_.size()) return rt::ErrorCode::invalid_argument;
+        if(!configuration_writable()) return rt::ErrorCode::precondition_failed;
+        JoggingDynamics next = jogging_dynamics_;
+        const rt::ErrorCode path = apply_path_update(next.path, update.path);
+        if(path != rt::ErrorCode::ok) return path;
+        next.size = update.size;
+        for(std::size_t i = 0; i < update.size; ++i) {
+            const double values[4] = {update.axis_velocity[i],
+                                      update.axis_acceleration[i],
+                                      update.axis_deceleration[i],
+                                      update.axis_jerk[i]};
+            for(double value : values) {
+                if(!std::isfinite(value)) return rt::ErrorCode::invalid_argument;
+            }
+            if(update.axis_velocity[i] > 0.0) next.axis_velocity[i] = update.axis_velocity[i];
+            if(update.axis_acceleration[i] > 0.0)
+                next.axis_acceleration[i] = update.axis_acceleration[i];
+            if(update.axis_deceleration[i] > 0.0)
+                next.axis_deceleration[i] = update.axis_deceleration[i];
+            if(update.axis_jerk[i] > 0.0) next.axis_jerk[i] = update.axis_jerk[i];
+        }
+        jogging_dynamics_ = next;
+        return rt::ErrorCode::ok;
+    }
+
+    rt::Result<GroupSWLimits> group_sw_limits() const
+    {
+        GroupSWLimits result{};
+        result.count = axes_.size();
+        for(std::size_t i = 0; i < axes_.size(); ++i) {
+            const MotionLimits &limits = axes_[i]->limits_;
+            result.value[i] = {limits.min_position, limits.max_position,
+                               limits.min_position_enabled,
+                               limits.max_position_enabled};
+        }
+        return rt::Result<GroupSWLimits>::success(result);
+    }
+
+    rt::ErrorCode write_group_sw_limits(const GroupSWLimits &limits)
+    {
+        if(limits.count != axes_.size()) return rt::ErrorCode::invalid_argument;
+        if(!configuration_writable()) return rt::ErrorCode::precondition_failed;
+        for(std::size_t i = 0; i < limits.count; ++i) {
+            const GroupSWLimit &entry = limits.value[i];
+            if(!std::isfinite(entry.minimum) || !std::isfinite(entry.maximum) ||
+               entry.minimum > entry.maximum) {
+                return rt::ErrorCode::invalid_argument;
+            }
+        }
+        for(std::size_t i = 0; i < limits.count; ++i) {
+            MotionLimits next = axes_[i]->limits_;
+            next.min_position = limits.value[i].minimum;
+            next.max_position = limits.value[i].maximum;
+            next.min_position_enabled = limits.value[i].minimum_enabled;
+            next.max_position_enabled = limits.value[i].maximum_enabled;
+            axes_[i]->limits_ = next;
+        }
+        return rt::ErrorCode::ok;
     }
 
     bool contains(const AxisModel &axis) const
@@ -265,6 +534,7 @@ public:
             }
         }
         status_ = GroupStatus::standby;
+        kinematics_info_frozen_ = true;
         return rt::ErrorCode::ok;
     }
 
@@ -1074,6 +1344,10 @@ public:
 
     rt::Result<std::uint32_t> submit_linear(GroupCommand command)
     {
+        const rt::ErrorCode dynamics = resolve_dynamics(command);
+        if(dynamics != rt::ErrorCode::ok) {
+            return rt::Result<std::uint32_t>::failure(dynamics);
+        }
         if(status_ == GroupStatus::interrupted) {
             if(command.buffer_mode != BufferMode::aborting) {
                 return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
@@ -1172,6 +1446,12 @@ public:
         }
         command.arc = geom::ArcSegment{};
 
+        const GroupCommand normalized = normalize(command);
+        const rt::ErrorCode limited = preflight_member_targets(normalized.target);
+        if(limited != rt::ErrorCode::ok) {
+            return rt::Result<std::uint32_t>::failure(limited);
+        }
+
         if(command.buffer_mode == BufferMode::aborting) {
             // Y7 (KB-051): capture the pre-takeover velocity vector before
             // abort_motion() destroys it. Only plain linear motions qualify
@@ -1181,7 +1461,7 @@ public:
             }
             abort_motion();
         }
-        command = normalize(command);
+        command = normalized;
 
         if(blending_buffer) {
             return submit_blend(command);
@@ -1210,6 +1490,10 @@ public:
     // explicit error before any motion state is touched.
     rt::Result<std::uint32_t> submit_circular(GroupCommand command)
     {
+        const rt::ErrorCode dynamics = resolve_dynamics(command);
+        if(dynamics != rt::ErrorCode::ok) {
+            return rt::Result<std::uint32_t>::failure(dynamics);
+        }
         if(status_ == GroupStatus::interrupted) {
             if(command.buffer_mode != BufferMode::aborting) {
                 return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
@@ -1303,6 +1587,11 @@ public:
             command.relative = false;
         }
 
+        const rt::ErrorCode limited = preflight_member_targets(command.target);
+        if(limited != rt::ErrorCode::ok) {
+            return rt::Result<std::uint32_t>::failure(limited);
+        }
+
         const geom::Vec3 plane_start{start_point[0], start_point[1], 0.0};
         const geom::Vec3 plane_aux{command.aux.value[0], command.aux.value[1], 0.0};
         const geom::Vec3 plane_finish{command.target.value[0], command.target.value[1], 0.0};
@@ -1374,6 +1663,133 @@ public:
     std::uint32_t last_blend_degraded_command() const
     {
         return last_blend_degraded_id_;
+    }
+
+    GroupMotionState motion_state() const
+    {
+        GroupMotionState result{};
+        if(status_ == GroupStatus::disabled || status_ == GroupStatus::errorstop) {
+            result.in_position = false;
+            result.standstill = false;
+            return result;
+        }
+        double velocity = 0.0;
+        double acceleration = 0.0;
+        if(direct_active_) {
+            result.active_command_id = direct_command_id_;
+            result.in_position = false;
+            result.standstill = false;
+            for(std::size_t i = 0; i < axes_.size(); ++i) {
+                const AxisSnapshot &snapshot = axes_[i]->snapshot();
+                if(std::fabs(snapshot.command_velocity) > std::fabs(velocity)) {
+                    velocity = snapshot.command_velocity;
+                }
+                if(std::fabs(snapshot.command_acceleration) >
+                   std::fabs(acceleration)) {
+                    acceleration = snapshot.command_acceleration;
+                }
+            }
+        } else if(window_active_ && !window_.empty()) {
+            result.active_command_id = window_[window_index_].command_id;
+            result.in_position = false;
+            result.standstill = false;
+            double position = 0.0;
+            window_live_state(position, velocity, acceleration);
+        } else if(active_) {
+            result.active_command_id = active_command_.command_id;
+            result.in_position = false;
+            result.standstill = false;
+            const otg::State1D state = otg::sample(
+                active_profile_, rt::CycleTick::from_cycles(active_tick_));
+            velocity = state.velocity;
+            acceleration = state.acceleration;
+        }
+        constexpr double MotionTolerance = 1e-12;
+        if(result.active_command_id != 0) {
+            result.accelerating = acceleration > MotionTolerance;
+            result.decelerating = acceleration < -MotionTolerance;
+            result.constant_velocity = !result.accelerating &&
+                                       !result.decelerating &&
+                                       std::fabs(velocity) > MotionTolerance;
+        }
+        return result;
+    }
+
+    double path_derivative(bool acceleration) const
+    {
+        if(window_active_ && !window_.empty()) {
+            double position = 0.0;
+            double velocity = 0.0;
+            double accel = 0.0;
+            window_live_state(position, velocity, accel);
+            return acceleration ? accel : velocity;
+        }
+        if(active_) {
+            const otg::State1D state = otg::sample(
+                active_profile_, rt::CycleTick::from_cycles(active_tick_));
+            return acceleration ? state.acceleration : state.velocity;
+        }
+        return 0.0;
+    }
+
+    rt::Result<GroupCommandInfo> command_info(std::uint32_t command_id) const
+    {
+        if(command_id == 0 || cart_window_active_) {
+            return rt::Result<GroupCommandInfo>::failure(
+                command_id == 0 ? rt::ErrorCode::out_of_range
+                                : rt::ErrorCode::unsupported);
+        }
+        if(direct_active_ && command_id == direct_command_id_) {
+            GroupCommandInfo result{};
+            result.state = GroupCommandState::active;
+            return rt::Result<GroupCommandInfo>::success(result);
+        }
+        if(window_active_) {
+            for(std::size_t i = window_index_; i < window_.size(); ++i) {
+                if(window_[i].command_id != command_id) continue;
+                GroupCommandInfo result{};
+                result.state = i == window_index_ ? GroupCommandState::active
+                                                  : GroupCommandState::accepted;
+                if(i == window_index_) {
+                    result.elapsed_cycles = window_tick_;
+                    result.remaining_cycles =
+                        window_[i].profile.duration_cycles() - window_tick_;
+                    double position = 0.0;
+                    double velocity = 0.0;
+                    double acceleration = 0.0;
+                    window_live_state(position, velocity, acceleration);
+                    const double length = window_[i].line_length();
+                    result.remaining_distance = length > position
+                                                    ? length - position
+                                                    : 0.0;
+                    result.progress = length > 0.0 ? position / length : 1.0;
+                }
+                return rt::Result<GroupCommandInfo>::success(result);
+            }
+        }
+        if(active_ && active_command_.command_id == command_id) {
+            GroupCommandInfo result{};
+            result.state = GroupCommandState::active;
+            result.elapsed_cycles = active_tick_;
+            result.remaining_cycles = active_duration_ - active_tick_;
+            const otg::State1D state = otg::sample(
+                active_profile_, rt::CycleTick::from_cycles(active_tick_));
+            result.remaining_distance = active_path_length_ > state.position
+                                            ? active_path_length_ - state.position
+                                            : 0.0;
+            result.progress = active_path_length_ > 0.0
+                                  ? state.position / active_path_length_
+                                  : 1.0;
+            return rt::Result<GroupCommandInfo>::success(result);
+        }
+        for(std::size_t i = 0; i < queue_.size(); ++i) {
+            if(queue_[i].command_id == command_id) {
+                GroupCommandInfo result{};
+                result.state = GroupCommandState::accepted;
+                return rt::Result<GroupCommandInfo>::success(result);
+            }
+        }
+        return rt::Result<GroupCommandInfo>::failure(rt::ErrorCode::out_of_range);
     }
 
     void cycle()
@@ -1503,6 +1919,88 @@ public:
     }
 
 private:
+    rt::ErrorCode preflight_member_targets(const GroupPosition &target) const
+    {
+        if(target.size != axes_.size()) return rt::ErrorCode::invalid_argument;
+        for(std::size_t i = 0; i < axes_.size(); ++i) {
+            if(!axes_[i]->target_inside_limits(target.value[i])) {
+                return rt::ErrorCode::out_of_range;
+            }
+        }
+        return rt::ErrorCode::ok;
+    }
+
+    bool configuration_writable() const
+    {
+        if(status_ != GroupStatus::disabled && status_ != GroupStatus::standby) {
+            return false;
+        }
+        if(active_ || direct_active_ || window_active_ || cart_window_active_ ||
+           !queue_.empty()) {
+            return false;
+        }
+        for(std::size_t i = 0; i < axes_.size(); ++i) {
+            if(axes_[i]->status() == AxisStatus::synchronized_motion ||
+               axes_[i]->has_standalone_motion()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    static rt::ErrorCode apply_path_update(PathDynamics &target,
+                                           const PathDynamics &update)
+    {
+        const double values[4] = {update.velocity, update.acceleration,
+                                  update.deceleration, update.jerk};
+        for(double value : values) {
+            if(!std::isfinite(value)) return rt::ErrorCode::invalid_argument;
+        }
+        if(update.velocity > 0.0) target.velocity = update.velocity;
+        if(update.acceleration > 0.0) target.acceleration = update.acceleration;
+        if(update.deceleration > 0.0) target.deceleration = update.deceleration;
+        if(update.jerk > 0.0) target.jerk = update.jerk;
+        return rt::ErrorCode::ok;
+    }
+
+    rt::ErrorCode update_path_dynamics(PathDynamics &target,
+                                       const PathDynamics &update)
+    {
+        if(!configuration_writable()) return rt::ErrorCode::precondition_failed;
+        PathDynamics next = target;
+        const rt::ErrorCode result = apply_path_update(next, update);
+        if(result == rt::ErrorCode::ok) target = next;
+        return result;
+    }
+
+    rt::ErrorCode resolve_dynamics(GroupCommand &command) const
+    {
+        if(command.use_default_dynamics) {
+            command.velocity = default_dynamics_.velocity;
+            command.acceleration = default_dynamics_.acceleration;
+            command.deceleration = default_dynamics_.deceleration;
+            command.jerk = default_dynamics_.jerk;
+            return rt::ErrorCode::ok;
+        }
+        if(dynamics_mode_ == DynamicsMode::percentage) {
+            if(!std::isfinite(command.velocity) || !std::isfinite(command.acceleration) ||
+               !std::isfinite(command.deceleration) || !std::isfinite(command.jerk) ||
+               command.velocity < 0.0 || command.velocity > 100.0 ||
+               command.acceleration < 0.0 || command.acceleration > 100.0 ||
+               command.deceleration < 0.0 || command.deceleration > 100.0 ||
+               command.jerk < 0.0 || command.jerk > 100.0) {
+                return rt::ErrorCode::invalid_argument;
+            }
+            command.velocity = reference_dynamics_.velocity * command.velocity / 100.0;
+            command.acceleration =
+                reference_dynamics_.acceleration * command.acceleration / 100.0;
+            command.deceleration =
+                reference_dynamics_.deceleration * command.deceleration / 100.0;
+            command.jerk = reference_dynamics_.jerk * command.jerk / 100.0;
+        }
+        return rt::ErrorCode::ok;
+    }
+
     void abort_direct_members()
     {
         for(std::size_t i = 0; i < axes_.size(); ++i) {
@@ -2930,7 +3428,7 @@ private:
         command.coord_system = CoordSystem::acs;
         command.path_kind = GroupPathKind::cartesian_linear;
         command.cart = segment;
-        return rt::ErrorCode::ok;
+        return preflight_member_targets(command.target);
     }
 
     geom::Vec3 cartesian_point_at(const CartesianSegment &segment,
@@ -4240,6 +4738,15 @@ private:
     bool interrupted_window_ = false;
     bool direct_active_ = false;
     bool direct_stopping_ = false;
+    GroupKinematicsInfo kinematics_info_{};
+    PathDynamics reference_dynamics_{};
+    PathDynamics default_dynamics_{};
+    JoggingDynamics jogging_dynamics_{};
+    DynamicsMode dynamics_mode_ = DynamicsMode::absolute;
+    TransitionReferencePoint transition_reference_point_ =
+        TransitionReferencePoint::end_point;
+    bool kinematics_info_bound_ = false;
+    bool kinematics_info_frozen_ = false;
 };
 
 } // namespace plcopen::core::axis

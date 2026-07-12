@@ -103,4 +103,6 @@
 
 - `KB-072`：Part 5 P5-B 补齐此前缺失的六个 C++ 公开门面：StepBlock 只以独立实际 torque/velocity 连续保持判定堵转，DistanceCoded 只消费宿主定长唯一距离码表，HomeAbsolute 只消费宿主长寿命绝对位置槽，Flying Switch/Pulse 只在 standalone base motion 上被动捕获并整体平移活动剖面及排队绝对目标，AbortPassive 只撤销当前被动回零 owner。Flying 不改变活动命令 ID、速度、相对距离或物理剩余行程；平移越软限位/非有限目标进入 ErrorStop。**边界**：StepBlock 软件仿真不证明真机械堵转安全；不解析厂商绝对编码器协议、多圈状态或距离码格式；旧五块名称/I/O/语义偏差、标准派生类型和逐 I/O 声明仍开放，因此 11/11 有门面不等于 Part 5 合规。规格 `doc/compliance/part5-p5b-semantics.md`，验收 `plcopen_core_part5_homing_tests` 与 10 万周期零分配守卫；无既有回放声明变更。
 
+- `KB-073`：Part 4 P4-B1 交付 19 个管理与回读 C++ 门面（配置/运动学信息 4、运动回读 5、参数/动态 8、软件限位 2），以固定容量状态承载 DH/Joint、Reference/Default/Jogging Dynamics 与最多 8 轴 SWLimits。`mcDynamicsMode=percentage` 只影响之后提交的新命令；显式 Default 直接替代四阶输入；组 SWLimits 整表原子写入成员轴唯一限位状态，入组期间轴级外部写入拒绝。**边界**：无 virtual AXIS_REF、`mcSetValue`、start-point transition、非 ACS 速度/加速度或 Cartesian-window 逐命令信息；标准 E 级接口、ST 引脚与供应商声明未闭合。出口仅为 Part 4 40/68 有同名门面、28 项无同名入口，仍不合规。规格 `doc/compliance/part4-p4b1-semantics.md`；验收 `plcopen_core_part4_p4b1_{tests,fuzz}`、10 万周期零分配与 18 回放零差异。
+
 ---

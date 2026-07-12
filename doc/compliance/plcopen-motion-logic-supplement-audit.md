@@ -55,7 +55,7 @@ Motion FB，也不能用 C++ 内部的滤波器、规划器或状态机替代语
 |------|-------------|------|------|
 | 标签机 | FIFO、触发后相对运动、缓冲命令时序 | ⚠️ | `FbMoveRelative`、队列/BufferMode 可用；缺应用 FIFO、示例程序及 ST MC 完整调用面 |
 | 仓储（Part 1） | X/Y/Z/Lifter 多轴顺序、Done/Busy 联锁 | ⚠️ | 单轴门面可组合；未交付该应用程序和时序回放 |
-| 仓储（Part 4） | 组、线性路径、corner-distance blending | ⚠️ | `AxisGroup`、`FbMoveLinear*` 与部分 TransitionMode 已有；Part 4 全面审计仍是 21/68 同名门面 |
+| 仓储（Part 4） | 组、线性路径、corner-distance blending | ⚠️ | `AxisGroup`、`FbMoveLinear*` 与部分 TransitionMode 已有；P4-B1 后 Part 4 为 40/68 同名门面 |
 | 时间图 | 命令交接必须与 Busy/Active/Done 一致 | ⚠️ | 单项生命周期已有测试；没有针对官方两个示例的端到端 oracle |
 
 ## 4. OOP Motion 示例与库（46 页 + XML）
@@ -73,7 +73,7 @@ Motion FB，也不能用 C++ 内部的滤波器、规划器或状态机替代语
 | 单轴 Motion | MoveAbsolute/Relative/Additive/Velocity/Stop/Halt/Profile 等 | ⚠️ | C++ 运行能力广泛存在；OOP 公共接口缺失，Part 1 的 D-01～D-20 仍适用 |
 | 多轴同步 | Gear/Cam/Phasing/CombineAxes | ⚠️ | `core/fb/sync.h` 有经典门面；OOP command/property 合同缺失 |
 | Cam table | Select 与 table interface | ⚠️ | `CamTableView`/`FbCamTableSelect` 可用；不是 `itfCamTable` |
-| Part 4 OOP 扩展 | group command、position/velocity/acceleration/path/group 接口 | ❌/⚠️ | 有 AxisGroup 和部分经典 Part 4 门面；无文档所述接口族，且 47/68 标准 FB 无同名入口 |
+| Part 4 OOP 扩展 | group command、position/velocity/acceleration/path/group 接口 | ❌/⚠️ | 有 AxisGroup 和部分经典 Part 4 门面；无文档所述 OOP 接口族，且 28/68 标准 FB 无同名入口 |
 | 示例工程 | 仓储、标签、gear/cam 的 classic→OOP 对照 | ❌ | 未包含可构建/可运行的等价示例和端到端测试 |
 
 ## 5. Logic 指南
