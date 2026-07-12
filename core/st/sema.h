@@ -197,6 +197,12 @@ private:
             info.constant = decl.is_constant;
             info.slot = static_cast<std::uint16_t>(result_.vars.size());
             if(decl.init != kNoExpr) {
+                if(decl.type == Type::axis_ref) {
+                    diag(DiagCode::sema_operand_type_invalid, decl.line,
+                         decl.column, decl.name);
+                    result_.vars.push_back(static_cast<VarInfo &&>(info));
+                    continue;
+                }
                 if(check_expr(decl.init, want(decl.type))) {
                     const ExprInfo &init = result_.exprs[
                         static_cast<std::size_t>(decl.init)];
@@ -318,6 +324,11 @@ private:
         }
         info.slot = result_.vars[static_cast<std::size_t>(var)].slot;
         info.type = result_.vars[static_cast<std::size_t>(var)].type;
+        if(info.type == Type::axis_ref) {
+            diag(DiagCode::sema_operand_type_invalid, stmt.line, stmt.column,
+                 stmt.target);
+            return;
+        }
         check_expr(stmt.value, want(info.type));
     }
 

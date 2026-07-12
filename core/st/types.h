@@ -33,9 +33,10 @@ enum class Type : std::uint8_t
     word = 13,  // 16-bit bit string
     dword = 14, // 32-bit bit string
     lword = 15, // 64-bit bit string
+    axis_ref = 16, // opaque host-bound AxisModel handle (L2a)
 };
 
-inline constexpr int kTypeCount = 16;
+inline constexpr int kTypeCount = 17;
 
 constexpr bool is_signed_int(Type type)
 {
@@ -123,10 +124,19 @@ enum class FbType : std::uint8_t
     ctu = 7,
     ctd = 8,
     ctud = 9,
-    // ctud is the 10th block; SR/RS counted separately => 10 block kinds.
+    mc_power = 10,
+    mc_home = 11,
+    mc_stop = 12,
+    mc_halt = 13,
+    mc_move_absolute = 14,
+    mc_move_relative = 15,
+    mc_move_additive = 16,
+    mc_move_velocity = 17,
+    mc_set_override = 18,
+    mc_reset = 19,
 };
 
-inline constexpr int kFbTypeCount = 10;
+inline constexpr int kFbTypeCount = 20;
 
 namespace detail
 {
@@ -259,6 +269,7 @@ constexpr const char *to_string(Type type)
     case Type::word: return "WORD";
     case Type::dword: return "DWORD";
     case Type::lword: return "LWORD";
+    case Type::axis_ref: return "AXIS_REF";
     }
     return "?";
 }
@@ -276,6 +287,16 @@ constexpr const char *to_string(FbType type)
     case FbType::ctu: return "CTU";
     case FbType::ctd: return "CTD";
     case FbType::ctud: return "CTUD";
+    case FbType::mc_power: return "MC_Power";
+    case FbType::mc_home: return "MC_Home";
+    case FbType::mc_stop: return "MC_Stop";
+    case FbType::mc_halt: return "MC_Halt";
+    case FbType::mc_move_absolute: return "MC_MoveAbsolute";
+    case FbType::mc_move_relative: return "MC_MoveRelative";
+    case FbType::mc_move_additive: return "MC_MoveAdditive";
+    case FbType::mc_move_velocity: return "MC_MoveVelocity";
+    case FbType::mc_set_override: return "MC_SetOverride";
+    case FbType::mc_reset: return "MC_Reset";
     }
     return "?";
 }

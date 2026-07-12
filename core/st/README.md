@@ -1,6 +1,6 @@
-# core/st — IEC 61131-3 ST 语言层（批次 ST-L0+ST-L1a，批次编号非 core 分层编号）
+# core/st — IEC 61131-3 ST 语言层（ST-L0/L1a/L2a）
 
-st 语言层是外圈消费面，与 adapters 平行（L6 之上）：只消费 `fb/basic.h` 与
+st 语言层是外圈消费面，与 adapters 平行（L6 之上）：消费 `fb/basic.h`、`fb/motion.h` 与
 `rt/error.h`，不被生产层反向引用（阶梯全貌见 [core/README.md](../README.md)）。
 
 L 系列批次 ST-L0：ST 逻辑子集 + 确定性字节码 VM + 容错前端。normative 规格
@@ -44,14 +44,15 @@ while(running) {
 // 只读符号表：vm.find("counter") → value_i64/value_f64/value_bool
 ```
 
-## 范围备忘（ST-L0 + ST-L1a）
+## 范围备忘（ST-L0 + ST-L1a + ST-L2a）
 
 单 PROGRAM；16 标量类型（6 L0 型 + 全宽度有符号/无符号 + 位串四型，
 KB-070）；IF/CASE/FOR/WHILE/REPEAT/EXIT/CONTINUE/RETURN；`basic.h` 十
 IEC FB（命名/非正式两种调用形态，RTC 排除）；无损加宽白名单 + 210 格
 `<SRC>_TO_<DST>` 转换矩阵（[st-l1a-conversions.yaml](../../doc/compliance/st-l1a-conversions.yaml)
 三方比对入 CTest）；TIME 乘除、`**` 幂（永不折叠）、VAR CONSTANT、
-`TYPE#` 字面量。无复合类型（ST-L1b）、无用户 POU 与 MC_* 绑定（ST-L2）、
+`TYPE#` 字面量；AXIS_REF 宿主绑定与首批十个单轴 MC_* 门面。无复合类型
+（ST-L1b）、无用户 POU（ST-L2b）、无组 FB 绑定（ST-L2c）、
 无进程映像（ST-L3）、无标准函数库（ST-L4）、无任务语法（ST-L5）、
 无 SFC（ST-L6）。
 完整不做清单见两份矩阵 §6/§8。

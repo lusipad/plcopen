@@ -3,7 +3,7 @@
 > 本页是"现在在哪"的唯一入口，每个批次收口时更新。术语见
 > [CONTEXT.md](CONTEXT.md)；边界细节见
 > [已知边界注册表](doc/compliance/known-boundaries.md)。
-> 最后更新：**2026-07-12**。
+> 最后更新：**2026-07-13**。
 
 ## 一句话
 
@@ -15,7 +15,8 @@
 双域已落地**（ADR-0007：规划域产帧、RT 域仅消费承诺轨迹，TSAN 零
 报告）。S0 纯软件面仅剩 PyPI 发布（Trusted Publishing 作业已备，
 publisher 注册与 tag 为人专属）；S1-S3 另依赖硬件、用户和日历时间。**L 系列语言层已启动（2026-07-11 维护者拍板）**，
-批次 ST-L0（KB-069）与 ST-L1a（标量宇宙 + 转换矩阵机读化，KB-070）均已交付。
+批次 ST-L0（KB-069）、ST-L1a（标量宇宙 + 转换矩阵机读化，KB-070）与
+ST-L2a-Bind 首批十个单轴 MC 块（KB-071）均已交付。
 
 ## 历史刻度（处于哪一步）
 
@@ -43,12 +44,12 @@ sink 门面，生产层无反向引用）。分层健康度见
 | L7 adapters | **外圈消费面之一**（绕过 L6，只消费 axis/state.h + rt/error.h）：Servo 窄接口 + ServoSim + 桥接（ADR-0004）、CiA402 状态机、CSP/CSV/CST bumpless 骨架、Feetech STS 总线（语义矩阵已批准 2026-07-12，S2 实现已排期） | KB-040 |
 | 支撑库 kin | 阶梯旁支撑库（依赖 geom/rt，被 L5 消费）：kinematics 插件 ABI + 合规 harness、龙门/SCARA 解析解、球腕 6R（Pieper + 8 分支 seed 选支、奇异 margin） | KB-037/041 |
 | 支撑库 stream | 阶梯旁支撑库（依赖 otg/rt，被 L5 消费）：B9 轨迹流滤波（OTG 在线重解、断流看门狗、solve_fixed_time rendezvous 跟踪律）、多关节聚合 | KB-035 |
-| st 语言层（批次 ST-L0+ST-L1a，批次编号非 core 分层编号） | **外圈消费面之一**（与 L7 adapters 平行、居 L6 之上，纯 sink：只消费 fb/basic.h + rt/error.h，生产层无反向引用）。IEC 61131-3 ST：容错前端 + 确定性字节码 VM（指令预算看门狗、加载期全静态布局、scan 零分配）、basic.h 十 FB 绑定（命名/非正式两形态）、16 标量类型宇宙 + 无损加宽白名单 + 210 格转换矩阵机读化（round-half-even/TRUNC/conversion_invalid fault）、TIME 乘除、** 幂、VAR CONSTANT、类型化字面量；一致性矩阵×2 + 转换三方比对 + fuzz + 双锚点哈希门 | KB-069/070 |
+| st 语言层（批次 ST-L0+ST-L1a+ST-L2a） | **外圈消费面之一**（与 L7 adapters 平行、居 L6 之上，纯 sink：消费 fb/basic.h、fb/motion.h 与 rt/error.h，生产层无反向引用）。IEC 61131-3 ST：容错前端 + 确定性字节码 VM、16 标量类型与转换矩阵、AXIS_REF 宿主绑定、首批十个单轴 MC_* ST 门面；PinTable 由 Part 1 B3 YAML 生成。未承载引脚语义与 BufferMode 3/4/6 保持显式边界，不宣称完整合规 | KB-069/070/071 |
 | 工具面 | pyplcopen（单轴/流/PoseArmSim，三平台 wheel 远端绿，PyPI 发布作业已备待 publisher 注册，CycleConfig SI 换算）、18 份回放黄金语料、28 关节 @1kHz 预算基准 + 笛卡尔 IK 预算门、参考 executor demo（canonical `planning → committed trajectory → RT` 双域，ADR-0007，TSAN 零报告）、周期级 trace、**文档站已上线**（http://lusipad.com/plcopen/ ）、Conan recipe（vcpkg port 未发布，根目录 `vcpkg.json` 仅为 port 清单草稿）、ErrorCode 诊断文本 | — |
 
 ## 质量门禁现状
 
-- 测试：56 项 CTest（含 st 语言层 8 项与转换矩阵三方比对）；当前提交在 WSL 复现的 gcovr 8.6/Linux CI 口径为 90.1%（8868/9840，达到 90% 门槛），远端 workflow 结果仍待复验；Windows `coverage.ps1` 的独立 Debug 全模块口径为 87.88%（21958/24985，通过其 50% 门），两者不混用
+- 测试：57 项 CTest（含 st L2a）；本地 Debug 57/57 通过。既有 WSL gcovr 8.6/Linux CI 口径为 90.1%（8868/9840，达到 90% 门槛），本批远端 workflow 仍待复验；Windows `coverage.ps1` 独立口径与 Linux 门不混用
 - 回放：18 语料逐周期比对；声明变更零例外流程运行中
 - 分层：2026-07-12 include 图审计 **0 违规**（L0-L4 零 PLCopen 语义引用、无循环依赖、L4 不引 L3），见 [架构审查报告](doc/design/architecture-review-2026-07.md)
 - RT：静态扫描 26 文件（含 st 语言层 vm/bind）+ 冻结窗口分配断言；DoD §5.3 的周期耗时对比通过（新核 = 旧线 9.3%）；分配 soak 以周期等效口径关闭（25.92 亿周期零分配，2026-07-11），墙钟 72h/抖动证据归 B7 真机报告

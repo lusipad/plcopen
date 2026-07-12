@@ -6,6 +6,12 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- L 系列批次 L2a-Bind（KB-071）：`AXIS_REF` 宿主绑定 + 首批十个单轴
+  `MC_*` ST 门面；PinTable 由 Part 1 B3 YAML 唯一事实源生成，未绑定轴走
+  FB Error。MoveAbsolute 与 C++ 逐周期等价、规划域→committed frame→RT
+  冒烟、MC scan 零分配及扩展语料 10 万 fuzz 通过；未承载的官方引脚语义
+  与 BufferMode 3/4/6 保持显式未通过，不提升既有合规声明。
+
 - L2a-Spec 建立 Part 1 v2.0 附录 B3 的机读 I/O 事实源：43 个 FB、236 个
   B 级引脚、302 个 E 级引脚，生成附录式声明模板并在 Windows/Linux CI
   校验计数、唯一性与生成物同步；Supported 栏保持空白，直至绑定与 D-01～D-20

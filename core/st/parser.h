@@ -300,8 +300,23 @@ private:
                 {"ton", FbType::ton},       {"tof", FbType::tof},
                 {"tp", FbType::tp},         {"ctu", FbType::ctu},
                 {"ctd", FbType::ctd},       {"ctud", FbType::ctud},
+                {"mc_power", FbType::mc_power},
+                {"mc_home", FbType::mc_home},
+                {"mc_stop", FbType::mc_stop},
+                {"mc_halt", FbType::mc_halt},
+                {"mc_moveabsolute", FbType::mc_move_absolute},
+                {"mc_moverelative", FbType::mc_move_relative},
+                {"mc_moveadditive", FbType::mc_move_additive},
+                {"mc_movevelocity", FbType::mc_move_velocity},
+                {"mc_setoverride", FbType::mc_set_override},
+                {"mc_reset", FbType::mc_reset},
             };
             const std::string lower = lower_copy(current_.text);
+            if(lower == "axis_ref") {
+                decl.type = Type::axis_ref;
+                bump();
+                return true;
+            }
             for(const auto &entry : kFbNames) {
                 if(lower == entry.lower) {
                     decl.is_fb = true;

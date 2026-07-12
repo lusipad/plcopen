@@ -56,6 +56,10 @@ const char *const kFragments[] = {
     "CONSTANT", "CONTINUE", "**", "INT#5", "BYTE#16#FF", "LREAL#1.5",
     "SINT#-129", "ULINT#", "INT_TO_REAL", "LREAL_TO_DINT", "TRUNC_INT",
     "BOOL_TO_BYTE", "WORD_TO_UINT", "TIME_TO_LINT", "XXX_TO_YYY",
+    "AXIS_REF", "MC_Power", "MC_Home", "MC_Stop", "MC_Halt",
+    "MC_MoveAbsolute", "MC_MoveRelative", "MC_MoveAdditive",
+    "MC_MoveVelocity", "MC_SetOverride", "MC_Reset", "Axis", "Execute",
+    "BufferMode", "Direction", "ErrorID",
     "1__2", "x", "y", "zz_9", "TRUE", "FALSE", "32768", "-32769",
     "9999999999999999999999", "0.0", "(*", "*)", "//", "\n", "\t", "\"",
     "'", "#", "%", "@", "\x01", "\xFF", "\x80",
@@ -68,12 +72,13 @@ std::string structured_program(Rng &rng)
     static const char *const kTypes[] = {
         "BOOL", "INT",   "DINT",  "REAL", "LREAL", "TIME",  "TON",
         "CTU",  "SINT",  "LINT",  "USINT", "UINT", "UDINT", "ULINT",
-        "BYTE", "WORD",  "DWORD", "LWORD"};
+        "BYTE", "WORD",  "DWORD", "LWORD", "AXIS_REF", "MC_Power",
+        "MC_MoveAbsolute"};
     for(int i = 0; i < vars; ++i) {
         source += "v";
         source += std::to_string(i);
         source += " : ";
-        source += kTypes[rng.below(8)];
+        source += kTypes[rng.below(sizeof(kTypes) / sizeof(kTypes[0]))];
         source += ";\n";
     }
     source += "END_VAR\n";

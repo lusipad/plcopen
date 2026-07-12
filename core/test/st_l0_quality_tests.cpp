@@ -12,6 +12,7 @@
 #include <string>
 
 #include "st/st.h"
+#include "axis/state.h"
 
 namespace
 {
@@ -227,6 +228,40 @@ void zero_allocation_scan()
     }
 }
 
+void zero_allocation_mc_scan()
+{
+    const st::CompileResult compiled = st::compile(
+        "PROGRAM mc\nVAR AxisX : AXIS_REF; Power : MC_Power; "
+        "Move : MC_MoveAbsolute; END_VAR\n"
+        "Power(Axis := AxisX, Enable := TRUE);\n"
+        "Move(Axis := AxisX, Execute := TRUE, ContinuousUpdate := FALSE, "
+        "Position := 1.0, Velocity := 1.0, Acceleration := 1.0, "
+        "Deceleration := 1.0, Jerk := 1.0, Direction := 0, "
+        "BufferMode := 0);\nEND_PROGRAM\n");
+    check(compiled.ok, "MC alloc program compiles");
+    if(!compiled.ok) return;
+    alignas(8) unsigned char buffer[4096]{};
+    st::Instance instance;
+    axis::AxisModel axis;
+    check(instance.load(compiled.program, buffer, sizeof(buffer), 1000000) ==
+              rt::ErrorCode::ok,
+          "MC alloc program loads");
+    check(instance.bind_axis("AxisX", &axis) == rt::ErrorCode::ok,
+          "MC alloc axis binds");
+    g_frozen_allocations = 0;
+    g_frozen = true;
+    for(int i = 0; i < 1000; ++i) {
+        if(instance.scan(256) != st::ScanError::ok) {
+            g_frozen = false;
+            fail("frozen MC scan errored");
+            return;
+        }
+        axis.cycle();
+    }
+    g_frozen = false;
+    check(g_frozen_allocations == 0, "MC scan allocated");
+}
+
 void interpreter_throughput()
 {
     // A tight arithmetic loop: roughly 10 instructions per iteration; run
@@ -263,6 +298,7 @@ int main()
 {
     determinism();
     zero_allocation_scan();
+    zero_allocation_mc_scan();
     interpreter_throughput();
     if(failures) {
         std::printf("%d failure(s)\n", failures);

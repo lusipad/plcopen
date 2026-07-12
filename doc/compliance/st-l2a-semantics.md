@@ -102,3 +102,20 @@
 ---
 
 *草案创建并按官方 B3 重写、预批准：2026-07-12。*
+
+## 8. L2a-Bind 实现记录（已完成，2026-07-13）
+
+- `AXIS_REF` 声明、拒绝面与 `Instance::bind_axis` 生命周期已实现；首个
+  scan 前允许覆盖绑定，运行后拒绝重绑定。
+- 首批十块的 ST 引脚元数据由 `plcopen-motion-part1-io.yml` 生成，编译器
+  不维护第二套手写 PinTable；43 FB / 236 B / 302 E 总计门保持不变。
+- `MC_Power/Home/Stop/Halt/MoveAbsolute/MoveRelative/MoveAdditive/`
+  `MoveVelocity/SetOverride/Reset` 已接入既有 C++ 门面；未绑定句柄通过
+  FB Error 返回，不令 scan fault。
+- 当前 C++ 轴层只表达 aborting、buffered、blending_low、blending_high；
+  ST 编码 0/1/2/5 映射这四项，3/4/6 明确报 `invalid_argument`，不得宣称
+  blending_previous/next/cnc 已实现。
+- 官方引脚已暴露但现有 C++ 门面尚无承载语义：MoveAbsolute/Relative/
+  Additive 的 `ContinuousUpdate`，SetOverride 的 `AccFactor/JerkFactor/Busy`，
+  以及 Power 的分方向使能。声明生成必须继续把对应语义项标为未通过，
+  不得因引脚存在提升合规状态。

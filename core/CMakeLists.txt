@@ -177,6 +177,11 @@ if(BUILD_TESTING AND PLCOPEN_BUILD_CORE_TESTS)
     target_link_libraries(plcopen_core_st_l1a_conversion_tests PRIVATE plcopen::core)
     plcopen_core_rt_compile_options(plcopen_core_st_l1a_conversion_tests)
     add_test(NAME plcopen_core_st_l1a_conversion_tests COMMAND plcopen_core_st_l1a_conversion_tests)
+
+    add_executable(plcopen_core_st_l2a_tests test/st_l2a_tests.cpp)
+    target_link_libraries(plcopen_core_st_l2a_tests PRIVATE plcopen::core)
+    plcopen_core_rt_compile_options(plcopen_core_st_l2a_tests)
+    add_test(NAME plcopen_core_st_l2a_tests COMMAND plcopen_core_st_l2a_tests)
     add_test(NAME plcopen_core_st_l1a_matrix_check
              COMMAND ${CMAKE_COMMAND}
                      -DEXE=$<TARGET_FILE:plcopen_core_st_l1a_conversion_tests>

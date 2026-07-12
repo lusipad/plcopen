@@ -5,6 +5,7 @@
 #include <string_view>
 
 #include "fb/basic.h"
+#include "fb/motion.h"
 #include "st/types.h"
 
 // FB pin metadata (approved st-l0-semantics 3.9/3.10): per-block explicit
@@ -21,6 +22,8 @@ struct PinDesc
     Type type = Type::bool_;
     bool is_input = false;
 };
+
+#include "st/generated/mc_pins.h"
 
 namespace detail
 {
@@ -103,6 +106,22 @@ constexpr PinTable pin_table(FbType type)
     case FbType::ctu: return {detail::kPinsCtu, 5};
     case FbType::ctd: return {detail::kPinsCtd, 5};
     case FbType::ctud: return {detail::kPinsCtud, 8};
+    case FbType::mc_power:
+        return {generated::kPinsMC_Power, 8};
+    case FbType::mc_home: return {generated::kPinsMC_Home, 10};
+    case FbType::mc_stop: return {generated::kPinsMC_Stop, 9};
+    case FbType::mc_halt: return {generated::kPinsMC_Halt, 11};
+    case FbType::mc_move_absolute:
+        return {generated::kPinsMC_MoveAbsolute, 16};
+    case FbType::mc_move_relative:
+        return {generated::kPinsMC_MoveRelative, 15};
+    case FbType::mc_move_additive:
+        return {generated::kPinsMC_MoveAdditive, 15};
+    case FbType::mc_move_velocity:
+        return {generated::kPinsMC_MoveVelocity, 15};
+    case FbType::mc_set_override:
+        return {generated::kPinsMC_SetOverride, 9};
+    case FbType::mc_reset: return {generated::kPinsMC_Reset, 6};
     }
     return {};
 }
@@ -122,6 +141,16 @@ inline std::size_t fb_size(FbType type)
     case FbType::ctu: return sizeof(fb::CTU);
     case FbType::ctd: return sizeof(fb::CTD);
     case FbType::ctud: return sizeof(fb::CTUD);
+    case FbType::mc_power: return sizeof(fb::FbPower);
+    case FbType::mc_home: return sizeof(fb::FbHome);
+    case FbType::mc_stop: return sizeof(fb::FbStop);
+    case FbType::mc_halt: return sizeof(fb::FbHalt);
+    case FbType::mc_move_absolute: return sizeof(fb::FbMoveAbsolute);
+    case FbType::mc_move_relative: return sizeof(fb::FbMoveRelative);
+    case FbType::mc_move_additive: return sizeof(fb::FbMoveAdditive);
+    case FbType::mc_move_velocity: return sizeof(fb::FbMoveVelocity);
+    case FbType::mc_set_override: return sizeof(fb::FbSetOverride);
+    case FbType::mc_reset: return sizeof(fb::FbReset);
     }
     return 0;
 }

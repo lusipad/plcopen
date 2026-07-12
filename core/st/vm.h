@@ -16,6 +16,11 @@
 #include "st/bytecode.h"
 #include "st/types.h"
 
+namespace plcopen::core::axis
+{
+class AxisModel;
+}
+
 namespace plcopen::core::st
 {
 
@@ -78,7 +83,40 @@ public:
         }
         program_ = &program;
         fault_ = ScanError::ok;
+        scan_started_ = false;
         return rt::ErrorCode::ok;
+    }
+
+    rt::ErrorCode bind_axis(const char *name, axis::AxisModel *axis)
+    {
+        if(program_ == nullptr || name == nullptr || axis == nullptr) {
+            return rt::ErrorCode::invalid_argument;
+        }
+        if(scan_started_ && fault_ == ScanError::ok) {
+            return rt::ErrorCode::precondition_failed;
+        }
+        for(const VarInfo &var : program_->vars) {
+            if(var.type != Type::axis_ref) {
+                continue;
+            }
+            const char *candidate = name;
+            std::size_t index = 0;
+            while(candidate[index] != '\0' && index < var.lower.size()) {
+                char c = candidate[index];
+                if(c >= 'A' && c <= 'Z') {
+                    c = static_cast<char>(c - 'A' + 'a');
+                }
+                if(c != var.lower[index]) {
+                    break;
+                }
+                ++index;
+            }
+            if(index == var.lower.size() && candidate[index] == '\0') {
+                slots_[var.slot] = reinterpret_cast<std::uintptr_t>(axis);
+                return rt::ErrorCode::ok;
+            }
+        }
+        return rt::ErrorCode::invalid_argument;
     }
 
     // Clears a latched fault; variable and FB state keep their values
@@ -104,6 +142,7 @@ public:
         if(fault_ != ScanError::ok) {
             return fault_;
         }
+        scan_started_ = true;
         const std::uint8_t *code = program_->code.data();
         const std::size_t size = program_->code.size();
         const std::uint64_t *constants = program_->constants.data();
@@ -826,6 +865,7 @@ private:
     unsigned char *fb_area_ = nullptr;
     std::uint64_t *stack_ = nullptr;
     ScanError fault_ = ScanError::ok;
+    bool scan_started_ = false;
 };
 
 } // namespace plcopen::core::st
