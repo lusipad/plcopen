@@ -186,7 +186,7 @@ Part 4 线性/圆弧/blending/前瞻、坐标系栈、kinematics（龙门/SCARA/
 | ST 编译器 MVP | ~~≥5 个用户要求 + 有合作者~~ **2026-07-07 维护者解锁**（AI 吞吐使成本论据反转；完整语言层 = "扎实的 plcopen"的组成部分） | L 系列进行中：ST-L0/ST-L1a 已交付（KB-069/070） |
 | SFC / LD / FBD 语言层 | SFC 执行语义随 L 系列批次 ST-L6（批次编号，非 core 分层 L6 fb）；LD/FBD 图形层仍随层 4 编辑器 | SFC 已随 ST 解锁；LD/FBD 未解锁 |
 | PLCopen Part 6（液压） | 1 个流体动力行业用户需求 | 未解锁 |
-| PLCopen Safety FB 族 | 有认证语境的集成方合作（无认证的安全 FB 不做） | 未解锁 |
+| PLCopen Safety FB 族 | 有认证语境的集成方合作（无认证的安全 FB 不做） | 未解锁；P#8 已仅锁定 [STO/SS1 集成责任边界](doc/compliance/sto-ss1-integration-boundary.md)，不实现任何 SF 能力 |
 | PLCopen XML / TC6 | 随 LD/FBD 编辑器 | 未解锁 |
 | Modbus 适配器 | 有正在使用库的项目提集成需求 | 未解锁 |
 | OPC UA | 1 个工业客户深度集成承诺 | 未解锁 |

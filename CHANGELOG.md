@@ -6,6 +6,11 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- 商用门板 P#8 新增 STO/SS1 集成安全边界：以 IEC 61800-5-2 官方公开
+  条目和 PLCopen Safe Motion 审计区分安全域、普通运动域与 CiA402 域，
+  钉死请求/确认、restart inhibit、集成商责任、验收清单和禁止宣传词。
+  本批仅关闭集成文档责任，不实现 STO/SS1，不形成 SIL/PL 或 Safety 声明。
+
 - Feetech STS S2（KB-074）交付无 IO、固定容量的协议 0 adapter：帧编解码与
   流重同步、每周期一次同步写读、Servo 窄接口、寄存器映像 Sim、M 周期
   失联冻结。黄金向量、符号幅值、端到端 SI 往返、10 万解析 fuzz 与冻结

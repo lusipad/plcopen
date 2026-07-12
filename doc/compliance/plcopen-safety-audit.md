@@ -129,7 +129,7 @@
 
 | 功能族 | 要求（自述） | 判定 | 仓库证据 |
 |--------|-------------|------|----------|
-| STO / SBC | 安全切断转矩与安全制动控制 | ❌缺失 | CiA402 skeleton 无安全通道；ROADMAP 仅计划 STO/SS1 边界文档（`ROADMAP.md:74`） |
+| STO / SBC | 安全切断转矩与安全制动控制 | ❌缺失 | CiA402 skeleton 无安全通道；P#8 仅锁定集成边界，不实现安全功能（`sto-ss1-integration-boundary.md`） |
 | SS1 / SS2 | 受监控减速后进入 STO 或 SOS | ❌缺失 | `FbStop` 是普通规划器命令且已存在 Part 1 D-04，不是安全监控 |
 | SOS | 安全保持静止并监测位置漂移 | ❌缺失 | 无独立安全传感器/监控通道 |
 | SLS / SSM | 安全限速与安全速度监视 | ❌缺失 | 普通 `max_velocity`/override 不具安全完整性（`core/axis/state.h:370-389,486-533`） |
@@ -172,9 +172,9 @@
 | S-05 | 安全外围 I/O、双通道、EDM、测试脉冲与安全通信全缺失 | Part 1/2 | 需要认证硬件与通信栈边界 |
 | S-06 | Part 3 的 6 个新增/修订 FB 与安全诊断网关全缺失 | Part 3 | 依赖 S-02/S-03 |
 | S-07 | Part 4 的 11 个压力机安全 FB 全缺失 | Part 4 | 需压力机领域集成方与适用标准认证 |
-| S-08 | STO/SS1/SS2/SOS/SLS 等 safe motion monitor/control 全缺失 | Safe Motion | ROADMAP 当前只允许先写 STO/SS1 集成边界 |
+| S-08 | STO/SS1/SS2/SOS/SLS 等 safe motion monitor/control 全缺失 | Safe Motion | P#8 已锁定 STO/SS1 集成边界；实现和认证仍硬门控 |
 | S-09 | 七类安全网络/profile 映射全缺失 | Safe Motion §5 | 不得把普通 EtherCAT/CiA402 适配称为安全通信 |
-| S-10 | 普通运动与安全状态的组合架构及两套机器示例未实现 | Logic+Motion+Safety | 可先形成“不做什么/责任边界”文档，不实现 SF 逻辑 |
+| S-10 | 普通运动与安全状态的组合架构及两套机器示例未实现 | Logic+Motion+Safety | P#8 已形成“不做什么/责任边界”；机器示例和 SF 逻辑仍缺失 |
 
 ## 8. 完成度统计
 
