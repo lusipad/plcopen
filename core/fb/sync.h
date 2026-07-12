@@ -402,7 +402,8 @@ private:
 class PhasingFb
 {
 public:
-    axis::AxisModel *axis_ref = nullptr;
+    axis::AxisModel *master_ref = nullptr;
+    axis::AxisModel *slave_ref = nullptr;
     double phase_shift = 0.0;
     double velocity = 0.0;
     bool execute = false;
@@ -427,7 +428,7 @@ protected:
             start();
             return;
         }
-        if(started_ && outputs.busy && axis_ref != nullptr && !axis_ref->phasing_active()) {
+        if(started_ && outputs.busy && slave_ref != nullptr && !slave_ref->phasing_active()) {
             outputs.done = true;
             outputs.busy = false;
             outputs.active = false;
@@ -439,21 +440,22 @@ private:
     {
         clear(outputs);
         started_ = false;
-        if(axis_ref == nullptr) {
+        if(master_ref == nullptr || slave_ref == nullptr || master_ref == slave_ref ||
+           !slave_ref->gear_engaged_with(master_ref)) {
             outputs.error = true;
             outputs.error_id = rt::ErrorCode::invalid_argument;
             return;
         }
         const rt::ErrorCode requested = relative_
-                                            ? axis_ref->phasing_relative(phase_shift, velocity)
-                                            : axis_ref->phasing_absolute(phase_shift, velocity);
+                                            ? slave_ref->phasing_relative(phase_shift, velocity)
+                                            : slave_ref->phasing_absolute(phase_shift, velocity);
         if(requested != rt::ErrorCode::ok) {
             outputs.error = true;
             outputs.error_id = requested;
             return;
         }
         started_ = true;
-        if(axis_ref->phasing_active()) {
+        if(slave_ref->phasing_active()) {
             outputs.busy = true;
             outputs.active = true;
         } else {

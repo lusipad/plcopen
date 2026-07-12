@@ -586,7 +586,7 @@
 
 | 条款 | 要求（自述） | 判定 | 证据/说明 |
 |------|-------------|------|----------|
-| 4.8-io | B 级 Master、Slave、Execute、PhaseShift、Done、Error | ❌缺失 | 只有单一 `axis_ref`，缺 Master（`core/fb/sync.h:402-409`）；见 D-15 |
+| 4.8-io | B 级 Master、Slave、Execute、PhaseShift、Done、Error | ✅符合 | `master_ref/slave_ref` 显式暴露，并验证已接合 gear 关系（`core/fb/sync.h`; `core/axis/state.h`） |
 | 4.8-n1 | 对主轴位置施加绝对 phase offset 并保持 | ✅符合 | `core/axis/state.h:1049-1063`; `core/test/r3_sync_tests.cpp:494-520` |
 | 4.8-n2 | 过渡受完整动力学输入控制 | ⚠️偏差(KB-021 已声明) | 仅 phase_shift/velocity（`core/fb/sync.h:405-408`） |
 | 4.8-state | 仅作用于已接合 gear 关系 | ⚠️偏差(KB-014/021 已声明) | `core/axis/state.h:1051-1053` |
@@ -597,7 +597,7 @@
 
 | 条款 | 要求（自述） | 判定 | 证据/说明 |
 |------|-------------|------|----------|
-| 4.9-io | B 级 Master、Slave、Execute、PhaseShift、Done、Error | ❌缺失 | 同 4.8，缺 Master（`core/fb/sync.h:402-409,483-494`）；见 D-15 |
+| 4.9-io | B 级 Master、Slave、Execute、PhaseShift、Done、Error | ✅符合 | 同 4.8；错误 master、自引用和未接合关系原子拒绝 |
 | 4.9-n1 | phase shift 累加到当前 offset 并保持 | ✅符合 | `core/axis/state.h:1066-1071`; `core/test/r3_sync_tests.cpp:521-548` |
 | 4.9-n2 | 过渡受完整动力学输入控制 | ⚠️偏差(KB-021 已声明) | 仅 velocity（`core/fb/sync.h:405-408`） |
 | 4.9-state | 仅作用于已接合 gear 关系 | ⚠️偏差(KB-014/021 已声明) | `core/axis/state.h:1051-1053` |
@@ -827,15 +827,18 @@ MoveAdditive 仅在 DiscreteMotion 中使用最近命令终点，在 ContinuousM
 
 **修复方向**：保存脱离瞬间从轴速度，以持续速度命令接管，并按非法状态规则报错。
 
-### 🔴 D-15：PhasingAbsolute/Relative 缺 B 级 Master（§4.8/§4.9）
+### ✅ D-15：PhasingAbsolute/Relative 已补齐 B 级 Master/Slave（§4.8/§4.9）
 
 **规格要求**：两个 Phasing FB 都必须显式接收 Master 与 Slave。
 
-**我们的行为**：`PhasingFb` 只有单一 `axis_ref`（`core/fb/sync.h:402-409`）。
+**当前行为**：两个 FB 均显式接受 `master_ref/slave_ref`，并验证 Slave 当前
+engaged Gear 的 master 与输入 Master 完全一致；错误 master、自引用、空引用
+均在 phase 状态变化前原子拒绝。
 
-**影响面**：公开接口无法表达规范的主从关系，只能隐式依赖从轴已有同步上下文。
+**剩余边界**：Acceleration/Deceleration/Jerk/BufferMode 等 E 级输入和 D-01
+输出生命周期不在本批；见 [P1-A3 矩阵](part1-phasing-axis-references-semantics.md)。
 
-**修复方向**：增加 Master 引用并校验其与当前同步关系一致；不匹配时显式报错。
+**证据**：`core/test/r3_sync_tests.cpp` 的正常双引用、错误 master 与自引用测试。
 
 ### 🔴 D-16：轴错误被活动/缓冲 FB 误报为 CommandAborted（§2.2.2）
 

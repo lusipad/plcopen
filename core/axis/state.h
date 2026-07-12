@@ -1124,6 +1124,12 @@ public:
         return phasing_active_;
     }
 
+    bool gear_engaged_with(const AxisModel *master) const
+    {
+        return master != nullptr && sync_kind_ == SyncKind::gear &&
+               sync_phase_ == SyncPhase::engaged && sync_gear_.master == master;
+    }
+
     rt::ErrorCode phasing_absolute(double phase, double velocity)
     {
         if(sync_kind_ != SyncKind::gear || sync_phase_ != SyncPhase::engaged ||

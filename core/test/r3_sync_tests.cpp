@@ -499,7 +499,8 @@ int check_phasing()
     }
 
     fb::FbPhasingRelative early;
-    early.axis_ref = &pair.slave;
+    early.master_ref = &pair.master;
+    early.slave_ref = &pair.slave;
     early.phase_shift = 1.0;
     early.execute = true;
     early.call();
@@ -519,7 +520,8 @@ int check_phasing()
     }
 
     fb::FbPhasingRelative relative;
-    relative.axis_ref = &pair.slave;
+    relative.master_ref = &pair.master;
+    relative.slave_ref = &pair.slave;
     relative.phase_shift = 1.25;
     relative.velocity = 0.25;
     relative.execute = true;
@@ -549,7 +551,8 @@ int check_phasing()
     }
 
     fb::FbPhasingAbsolute absolute;
-    absolute.axis_ref = &pair.slave;
+    absolute.master_ref = &pair.master;
+    absolute.slave_ref = &pair.slave;
     absolute.phase_shift = -0.5;
     absolute.velocity = 0.5;
     absolute.execute = true;
@@ -563,7 +566,8 @@ int check_phasing()
     }
 
     fb::FbPhasingAbsolute direct;
-    direct.axis_ref = &pair.slave;
+    direct.master_ref = &pair.master;
+    direct.slave_ref = &pair.slave;
     direct.phase_shift = 2.0;
     direct.velocity = 0.0;
     direct.execute = true;
@@ -576,13 +580,39 @@ int check_phasing()
     }
 
     fb::FbPhasingAbsolute invalid;
-    invalid.axis_ref = &pair.slave;
+    invalid.master_ref = &pair.master;
+    invalid.slave_ref = &pair.slave;
     invalid.phase_shift = 1.0;
     invalid.velocity = -1.0;
     invalid.execute = true;
     invalid.call();
     if(!invalid.outputs.error || invalid.outputs.error_id != rt::ErrorCode::invalid_argument) {
         return fail("phasing rejects negative velocity");
+    }
+
+    axis::AxisModel wrong_master;
+    wrong_master.set_power(true);
+    const double phase_before = pair.slave.gear_phase_offset();
+    fb::FbPhasingAbsolute mismatch;
+    mismatch.master_ref = &wrong_master;
+    mismatch.slave_ref = &pair.slave;
+    mismatch.phase_shift = 7.0;
+    mismatch.execute = true;
+    mismatch.call();
+    if(!mismatch.outputs.error || mismatch.outputs.error_id != rt::ErrorCode::invalid_argument ||
+       !near(pair.slave.gear_phase_offset(), phase_before, 1e-12)) {
+        return fail("phasing rejects mismatched master atomically");
+    }
+
+    fb::FbPhasingRelative self;
+    self.master_ref = &pair.slave;
+    self.slave_ref = &pair.slave;
+    self.phase_shift = 1.0;
+    self.execute = true;
+    self.call();
+    if(!self.outputs.error || self.outputs.error_id != rt::ErrorCode::invalid_argument ||
+       !near(pair.slave.gear_phase_offset(), phase_before, 1e-12)) {
+        return fail("phasing rejects self reference atomically");
     }
 
     return 0;
@@ -991,23 +1021,23 @@ int check_sync_fb_error_paths()
         }
     }
 
-    // FbPhasingAbsolute: null axis
+    // FbPhasingAbsolute: null refs
     {
         fb::FbPhasingAbsolute phase;
         phase.execute = true;
         phase.call();
         if(!phase.outputs.error || phase.outputs.error_id != rt::ErrorCode::invalid_argument) {
-            return fail("phasing absolute null axis");
+            return fail("phasing absolute null refs");
         }
     }
 
-    // FbPhasingRelative: null axis
+    // FbPhasingRelative: null refs
     {
         fb::FbPhasingRelative phase;
         phase.execute = true;
         phase.call();
         if(!phase.outputs.error || phase.outputs.error_id != rt::ErrorCode::invalid_argument) {
-            return fail("phasing relative null axis");
+            return fail("phasing relative null refs");
         }
     }
 
