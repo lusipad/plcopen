@@ -145,6 +145,16 @@
 | PLCopen voting membership 申报 | S2 | 认证前置 |
 | 开源资助申请签署（NLnet/STF 类） | S0-S1 | 材料 AI 起草，提交属人 |
 | 灯塔触达与合同签署 | S2 | 关系型工作 |
+| GitHub org 迁移 / Sponsors 开通 | 采纳 | 治理与资金信号（各半小时） |
+| R 系列设备采购（¥1000） | R1/R2 | 飞特舵机 + SO-ARM 臂；维护者 2026-07-12 已确认 |
+| Beckhoff/CODESYS 对拍 EULA 核验 | E6 商业对手部分 | 多数商业 EULA 禁止发布 benchmark |
+| PLCopen voting membership 申报 | S2/#3 | 会费 + 6-12 月周期 |
+
+**AI 能力边界总图见 [master-plan.md](master-plan.md)**（2026-07-12）：
+所有剩余工作按"AI 全自主 / AI 起草人拍板 / 人专属 / 谁都买不到"四栏
+分类；核心结论——软件存货约 15-16 L0 当量（数月量级），**存货耗尽
+那天，项目速度 = 人的速度**；🔴 栏按杠杆排序：台架采购 > ADR-0006
+许可证核验 > R 系列设备 > P0 四件账号/申请。
 
 ### 0.7 季度 KPI（复盘时看这张表）
 
