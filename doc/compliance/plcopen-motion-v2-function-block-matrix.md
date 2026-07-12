@@ -15,7 +15,7 @@ its per-family acceptance evidence is the `plcopen_core_r3_*` CTest suites plus 
 [doc/archive/r3-migration-matrix.md](../archive/r3-migration-matrix.md). Rows are not
 rewritten in place so the v0.x completion audit stays traceable.
 
-Machine-readable function-block coverage is maintained in [plcopen-motion-v2-function-blocks.yml](plcopen-motion-v2-function-blocks.yml); the generated Markdown table is [generated/plcopen-motion-v2-function-blocks.md](generated/plcopen-motion-v2-function-blocks.md).
+Machine-readable function-block coverage is maintained in [plcopen-motion-v2-function-blocks.yml](plcopen-motion-v2-function-blocks.yml); the generated Markdown table is [generated/plcopen-motion-v2-function-blocks.md](generated/plcopen-motion-v2-function-blocks.md). The normative Part 1 Appendix B3 I/O names, directions, and B/E levels are maintained separately in [plcopen-motion-part1-io.yml](plcopen-motion-part1-io.yml) and generate [generated/plcopen-motion-part1-io.md](generated/plcopen-motion-part1-io.md).
 
 Status values:
 

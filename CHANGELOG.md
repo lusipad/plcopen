@@ -6,6 +6,11 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- L2a-Spec 建立 Part 1 v2.0 附录 B3 的机读 I/O 事实源：43 个 FB、236 个
+  B 级引脚、302 个 E 级引脚，生成附录式声明模板并在 Windows/Linux CI
+  校验计数、唯一性与生成物同步；Supported 栏保持空白，直至绑定与 D-01～D-20
+  对应语义门禁实际通过。
+
 - P1-A4 补齐 `MC_DigitalCamSwitch` 的 B 级多轨接口：调用方持有的定长
   `CamSwitchTable<8>`、`TrackNumber` 0..3、同轨窗口 OR、`InOperation`
   电平输出，以及换表、换轴、禁用和全表校验失败时的原子输出清理。
