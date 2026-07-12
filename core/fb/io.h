@@ -6,6 +6,7 @@
 #include "axis/state.h"
 #include "fb/motion.h"
 #include "rt/error.h"
+#include "rt/static_vector.h"
 
 namespace plcopen::core::fb
 {
@@ -139,99 +140,141 @@ private:
     bool last_execute_ = false;
 };
 
-// MC_DigitalCamSwitch: drives one digital output while the axis position is
-// inside [on_position, off_position]. period > 0 wraps the position into the
-// period; a window with on > off then crosses the cycle boundary. Disabling or
-// changing the controlled output clears the previously driven channel.
+struct CamSwitchAction
+{
+    std::size_t track_number = 0;
+    double on_position = 0.0;
+    double off_position = 0.0;
+    double period = 0.0;
+};
+
+struct CamSwitchTableView
+{
+    const CamSwitchAction *data = nullptr;
+    std::size_t size = 0;
+};
+
+template <std::size_t Capacity> class CamSwitchTable
+{
+public:
+    rt::ErrorCode push(const CamSwitchAction &action)
+    {
+        return actions_.push_back(action);
+    }
+
+    void clear()
+    {
+        actions_.clear();
+    }
+
+    CamSwitchTableView view() const
+    {
+        return {actions_.data(), actions_.size()};
+    }
+
+private:
+    rt::StaticVector<CamSwitchAction, Capacity> actions_{};
+};
+
 class FbDigitalCamSwitch
 {
 public:
     axis::AxisModel *axis_ref = nullptr;
-    std::size_t output_number = 0;
-    double on_position = 0.0;
-    double off_position = 0.0;
-    double period = 0.0;
+    CamSwitchTableView switches{};
     bool enable = false;
-    bool valid = false;
+    bool in_operation = false;
     bool error = false;
     rt::ErrorCode error_id = rt::ErrorCode::ok;
-    bool value = false;
 
     void call()
     {
         if(!enable) {
-            release_output();
-            valid = false;
+            release_outputs();
+            in_operation = false;
             error = false;
             error_id = rt::ErrorCode::ok;
-            value = false;
             return;
         }
-        if(axis_ref == nullptr) {
+        if(axis_ref == nullptr || switches.data == nullptr || switches.size == 0 ||
+           switches.size > MaxActions) {
             fail(rt::ErrorCode::invalid_argument);
             return;
-        }
-        if(!std::isfinite(on_position) || !std::isfinite(off_position)) {
-            fail(rt::ErrorCode::invalid_argument);
-            return;
-        }
-        if(!std::isfinite(period) || period < 0.0 ||
-           (period == 0.0 && on_position > off_position)) {
-            fail(rt::ErrorCode::invalid_argument);
-            return;
-        }
-        if(output_number >= axis::AxisModel::DigitalOutputCount) {
-            fail(rt::ErrorCode::unsupported);
-            return;
-        }
-        if(controlling_ && controlled_output_ != output_number) {
-            axis_ref->set_digital_output(controlled_output_, false);
         }
 
-        value = inside_window(axis_ref->snapshot().command_position);
-        axis_ref->set_digital_output(output_number, value);
-        controlled_output_ = output_number;
-        controlling_ = true;
-        valid = true;
+        bool levels[axis::AxisModel::DigitalOutputCount]{};
+        bool tracks[axis::AxisModel::DigitalOutputCount]{};
+        const double position = axis_ref->snapshot().command_position;
+        for(std::size_t index = 0; index < switches.size; ++index) {
+            const CamSwitchAction &action = switches.data[index];
+            if(action.track_number >= axis::AxisModel::DigitalOutputCount) {
+                fail(rt::ErrorCode::unsupported);
+                return;
+            }
+            if(!std::isfinite(action.on_position) || !std::isfinite(action.off_position) ||
+               !std::isfinite(action.period) || action.period < 0.0 ||
+               (action.period == 0.0 && action.on_position > action.off_position)) {
+                fail(rt::ErrorCode::invalid_argument);
+                return;
+            }
+            tracks[action.track_number] = true;
+            levels[action.track_number] =
+                levels[action.track_number] || inside_window(position, action);
+        }
+
+        release_outputs();
+        for(std::size_t track = 0; track < axis::AxisModel::DigitalOutputCount; ++track) {
+            if(tracks[track]) {
+                axis_ref->set_digital_output(track, levels[track]);
+            }
+            controlled_tracks_[track] = tracks[track];
+        }
+        controlled_axis_ = axis_ref;
+        in_operation = true;
         error = false;
         error_id = rt::ErrorCode::ok;
     }
 
 private:
-    bool inside_window(double position) const
+    static constexpr std::size_t MaxActions = 8;
+
+    static bool inside_window(double position, const CamSwitchAction &action)
     {
-        if(period > 0.0) {
-            double wrapped = std::fmod(position, period);
+        if(action.period > 0.0) {
+            double wrapped = std::fmod(position, action.period);
             if(wrapped < 0.0) {
-                wrapped += period;
+                wrapped += action.period;
             }
-            if(on_position <= off_position) {
-                return wrapped >= on_position && wrapped <= off_position;
+            if(action.on_position <= action.off_position) {
+                return wrapped >= action.on_position && wrapped <= action.off_position;
             }
-            return wrapped >= on_position || wrapped <= off_position;
+            return wrapped >= action.on_position || wrapped <= action.off_position;
         }
-        return position >= on_position && position <= off_position;
+        return position >= action.on_position && position <= action.off_position;
     }
 
-    void release_output()
+    void release_outputs()
     {
-        if(controlling_ && axis_ref != nullptr) {
-            axis_ref->set_digital_output(controlled_output_, false);
+        if(controlled_axis_ != nullptr) {
+            for(std::size_t track = 0; track < axis::AxisModel::DigitalOutputCount; ++track) {
+                if(controlled_tracks_[track]) {
+                    controlled_axis_->set_digital_output(track, false);
+                }
+                controlled_tracks_[track] = false;
+            }
         }
-        controlling_ = false;
+        controlled_axis_ = nullptr;
     }
 
     void fail(rt::ErrorCode code)
     {
-        release_output();
-        valid = false;
+        release_outputs();
+        in_operation = false;
         error = true;
         error_id = code;
-        value = false;
     }
 
-    std::size_t controlled_output_ = 0;
-    bool controlling_ = false;
+    axis::AxisModel *controlled_axis_ = nullptr;
+    bool controlled_tracks_[axis::AxisModel::DigitalOutputCount]{};
 };
 
 // MC_ReadAxisInfo: diagnostic snapshot. The rewrite core is a simulation until

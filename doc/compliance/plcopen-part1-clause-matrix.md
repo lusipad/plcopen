@@ -489,12 +489,12 @@
 
 | 条款 | 要求（自述） | 判定 | 证据/说明 |
 |------|-------------|------|----------|
-| 3.32-io | B 级 Axis、Switches、Enable、InOperation、Error | ❌缺失 | 无 `Switches` 多轨结构，仅单通道窗口（`core/fb/io.h:146-158`）；见 D-13 |
-| 3.32-n1 | 一个 FB 按 switch pattern 驱动多个 track/output | 🔴违规 | 仅控制一个 output（`core/fb/io.h:187-214`）；见 D-13 |
-| 3.32-n2 | Enable 关闭时停用受控输出 | ✅符合 | `core/fb/io.h:162-168,216-222` |
-| 3.32-state | 不改变轴运动状态 | ✅符合 | 仅读位置并写数字输出（`core/fb/io.h:191-195`） |
-| 3.32-out | InOperation 应表示 tracks 已启用 | ⚠️偏差 | 实现用 `valid/value`，无 `in_operation`（`core/fb/io.h:155,158,195`） |
-| 3.32-v | 单窗口、周期折返、直接写单输出 | ⚠️偏差(KB-005 已声明) | `known-boundaries.md:16`; `core/test/r3_io_tests.cpp:80-145` |
+| 3.32-io | B 级 Axis、Switches、Enable、InOperation、Error | ✅符合 | 定长 `CamSwitchTable` view 与完整电平输出（`core/fb/io.h`）；P1-A4 矩阵 |
+| 3.32-n1 | 一个 FB 按 switch pattern 驱动多个 track/output | ✅符合 | 最多 8 项、4 个轨道；同轨多项 OR 合并（`core/fb/io.h`; `core/test/r3_io_tests.cpp`） |
+| 3.32-n2 | Enable 关闭时停用受控输出 | ✅符合 | 关闭、换表、换轴或错误均清理旧受控轨道（`core/fb/io.h`） |
+| 3.32-state | 不改变轴运动状态 | ✅符合 | 仅读 command position 并写数字输出（`core/fb/io.h`） |
+| 3.32-out | InOperation 应表示 tracks 已启用 | ✅符合 | 全表验证并完成全部轨道写入后置 TRUE；错误时 FALSE（`core/fb/io.h`） |
+| 3.32-v | 固定 8 项、4 个软件数字输出轨道、可选周期窗口 | ⚠️偏差(KB-005 已声明) | `known-boundaries.md`; P1-A4 不含 E 级补偿与硬件 compare offload |
 
 ## §3.33 MC_TouchProbe — normative
 
@@ -640,7 +640,7 @@
 | 项目 | 要求（自述） | 判定 | 证据/说明 |
 |------|-------------|------|----------|
 | B-1 | 供应商填写所支持的数据类型表 | ❌缺失 | 仓库没有按附录 B 模板形成的正式供应商数据类型声明；现有 `plcopen-motion-v2-function-blocks.yml` 只覆盖 FB 清单 |
-| B-2 | 供应商填写支持的 FB 及每项 B/E/V I/O | ⚠️偏差 | 机读清单与本矩阵已有接口证据，但不是附录 B 的提交表，且 D-05/D-12/D-13/D-15 等 B 级缺口尚存（`doc/compliance/plcopen-motion-v2-function-blocks.yml`） |
+| B-2 | 供应商填写支持的 FB 及每项 B/E/V I/O | ⚠️偏差 | D-05/D-12/D-13/D-15 已关闭；机读清单与本矩阵已有接口证据，但仍不是附录 B 的提交表，其他 B 级接口缺口由 L2a 批次统一处理（`doc/compliance/plcopen-motion-v2-function-blocks.yml`） |
 | B-3 | 产品只对已声明并通过审核的范围主张合规 | ❌缺失 | `plcopen-conformance-audit.md` 已明确当前无 PLCopen 认证程序、无可核验官方 listing |
 | B-4 | 矩阵中的厂商扩展应在 V 栏单独申报 | ⚠️偏差 | §3/§4 已逐 FB 登记 V 扩展，但尚未转换为附录 B 正式表格 |
 
@@ -803,18 +803,19 @@ MoveAdditive 仅在 DiscreteMotion 中使用最近命令终点，在 ContinuousM
 
 **修复方向**：规格先行重建 Enable 型接口；内部可保留百分比但必须在边界换算。
 
-### 🔴 D-13：MC_DigitalCamSwitch 缺 B 级 Switches 多轨模型（§3.32）
+### ✅ D-13：MC_DigitalCamSwitch 已补齐 B 级 Switches 多轨模型（§3.32）
 
 **规格要求**：Switches 是 B 级输入，需表达 track 编号及成组开关位置，一个 FB
 可驱动多个轨道/输出。
 
-**我们的行为**：只有 `output_number + on_position + off_position` 单窗口
-（`core/fb/io.h:146-235`）。
+**当前行为**：`CamSwitchTable<8>` 提供调用方持有的定长表，支持 0..3 轨道、
+同轨多窗口 OR、全表原子验证及 `InOperation` 电平输出。
 
-**影响面**：无法宣称 §3.32 B 级接口合规，也不能表达多 track pattern。
+**剩余边界**：固定表容量与软件数字输出映射保留在 KB-005；E 级补偿、
+滞环、方向及硬件 compare offload 不在本批。
 
-**修复方向**：先定义定长 Switches 数据结构及轨道到输出映射，再保留当前单窗口
-作为一项简化构造器。
+**关闭证据**：`doc/compliance/part1-digital-cam-switch-semantics.md`；
+`core/test/r3_io_tests.cpp`。
 
 ### 🔴 D-14：CamOut/GearOut 脱同步后的状态与速度错误（§4.4/§4.6）
 

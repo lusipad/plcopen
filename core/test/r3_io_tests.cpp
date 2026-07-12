@@ -84,28 +84,32 @@ int check_digital_cam_switch()
 
     fb::FbDigitalCamSwitch cam_switch;
     cam_switch.axis_ref = &axis;
-    cam_switch.output_number = 1;
-    cam_switch.on_position = -1.0;
-    cam_switch.off_position = 1.0;
+    fb::CamSwitchTable<8> switches;
+    switches.push({1, -1.0, 1.0, 0.0});
+    switches.push({1, 2.0, 4.0, 0.0});
+    switches.push({3, -0.5, 0.5, 0.0});
+    cam_switch.switches = switches.view();
     cam_switch.enable = true;
     cam_switch.call();
-    if(!cam_switch.valid || !cam_switch.value || !axis.digital_output(1).value()) {
+    if(!cam_switch.in_operation || !axis.digital_output(1).value()) {
         return fail("cam switch drives output inside window");
     }
 
     axis.set_position(3.0);
     cam_switch.call();
-    if(cam_switch.value || axis.digital_output(1).value()) {
-        return fail("cam switch clears output outside window");
+    if(!axis.digital_output(1).value() || axis.digital_output(3).value()) {
+        return fail("cam switch combines windows and tracks independently");
     }
 
     // Channel change clears the previously controlled output.
     axis.set_position(0.0);
     cam_switch.call();
-    if(!cam_switch.value || !axis.digital_output(1).value()) {
+    if(!axis.digital_output(1).value()) {
         return fail("cam switch re-enters window");
     }
-    cam_switch.output_number = 2;
+    fb::CamSwitchTable<8> replacement;
+    replacement.push({2, -1.0, 1.0, 0.0});
+    cam_switch.switches = replacement.view();
     cam_switch.call();
     if(axis.digital_output(1).value() || !axis.digital_output(2).value()) {
         return fail("cam switch channel change clears old output");
@@ -114,31 +118,30 @@ int check_digital_cam_switch()
     // Disable clears the controlled output.
     cam_switch.enable = false;
     cam_switch.call();
-    if(cam_switch.valid || cam_switch.value || axis.digital_output(2).value()) {
+    if(cam_switch.in_operation || axis.digital_output(2).value()) {
         return fail("cam switch disable clears output");
     }
 
     // Periodic window crossing the cycle boundary.
     fb::FbDigitalCamSwitch periodic;
     periodic.axis_ref = &axis;
-    periodic.output_number = 1;
-    periodic.on_position = 3.5;
-    periodic.off_position = 0.5;
-    periodic.period = 4.0;
+    fb::CamSwitchTable<8> periodic_switches;
+    periodic_switches.push({1, 3.5, 0.5, 4.0});
+    periodic.switches = periodic_switches.view();
     periodic.enable = true;
     axis.set_position(3.75);
     periodic.call();
-    if(!periodic.valid || !periodic.value) {
+    if(!periodic.in_operation || !axis.digital_output(1).value()) {
         return fail("periodic cam switch on before boundary");
     }
     axis.set_position(1.0);
     periodic.call();
-    if(periodic.value) {
+    if(axis.digital_output(1).value()) {
         return fail("periodic cam switch off inside gap");
     }
     axis.set_position(4.25);
     periodic.call();
-    if(!periodic.value) {
+    if(!axis.digital_output(1).value()) {
         return fail("periodic cam switch on after wrap");
     }
 
@@ -146,33 +149,66 @@ int check_digital_cam_switch()
     // non-periodic inverted window are explicit errors.
     fb::FbDigitalCamSwitch invalid;
     invalid.axis_ref = &axis;
-    invalid.output_number = 1;
-    invalid.on_position = NAN;
-    invalid.off_position = 1.0;
+    fb::CamSwitchTable<8> invalid_switches;
+    invalid_switches.push({1, NAN, 1.0, 0.0});
+    invalid.switches = invalid_switches.view();
     invalid.enable = true;
     invalid.call();
     if(!invalid.error || invalid.error_id != rt::ErrorCode::invalid_argument) {
         return fail("cam switch rejects non-finite position");
     }
-    invalid.on_position = 0.0;
-    invalid.period = -1.0;
+    invalid_switches.clear();
+    invalid_switches.push({1, 0.0, 1.0, -1.0});
     invalid.call();
     if(!invalid.error) {
         return fail("cam switch rejects negative period");
     }
-    invalid.period = 0.0;
-    invalid.on_position = 2.0;
-    invalid.off_position = 1.0;
+    invalid_switches.clear();
+    invalid_switches.push({1, 2.0, 1.0, 0.0});
     invalid.call();
     if(!invalid.error) {
         return fail("cam switch rejects inverted non-periodic window");
     }
-    invalid.on_position = 0.0;
-    invalid.off_position = 1.0;
-    invalid.output_number = 99;
+    invalid_switches.clear();
+    invalid_switches.push({99, 0.0, 1.0, 0.0});
     invalid.call();
     if(!invalid.error || invalid.error_id != rt::ErrorCode::unsupported) {
         return fail("cam switch rejects unsupported channel");
+    }
+    invalid_switches.clear();
+    invalid.switches = invalid_switches.view();
+    invalid.call();
+    if(!invalid.error || invalid.error_id != rt::ErrorCode::invalid_argument) {
+        return fail("cam switch rejects empty table");
+    }
+
+    axis.set_position(0.0);
+    fb::CamSwitchTable<8> partly_invalid;
+    partly_invalid.push({0, -1.0, 1.0, 0.0});
+    partly_invalid.push({4, -1.0, 1.0, 0.0});
+    invalid.switches = partly_invalid.view();
+    invalid.call();
+    if(!invalid.error || axis.digital_output(0).value()) {
+        return fail("cam switch validates table before writing outputs");
+    }
+
+    fb::CamSwitchTable<9> capacity_switches;
+    for(std::size_t track = 0; track < 8; ++track) {
+        capacity_switches.push({track % axis::AxisModel::DigitalOutputCount,
+                                -1.0,
+                                1.0,
+                                0.0});
+    }
+    invalid.switches = capacity_switches.view();
+    invalid.call();
+    if(!invalid.in_operation) {
+        return fail("cam switch accepts eight actions");
+    }
+    capacity_switches.push({0, -1.0, 1.0, 0.0});
+    invalid.switches = capacity_switches.view();
+    invalid.call();
+    if(!invalid.error || invalid.error_id != rt::ErrorCode::invalid_argument) {
+        return fail("cam switch rejects more than eight actions");
     }
 
     return 0;
@@ -404,14 +440,13 @@ int check_io_error_paths()
     {
         fb::FbDigitalCamSwitch cs;
         cs.axis_ref = &axis;
-        cs.output_number = 0;
-        cs.on_position = 1.0;
-        cs.off_position = 3.0;
-        cs.period = 4.0;
+        fb::CamSwitchTable<8> switches;
+        switches.push({0, 1.0, 3.0, 4.0});
+        cs.switches = switches.view();
         cs.enable = true;
         axis.set_position(-2.5);
         cs.call();
-        if(!cs.valid || !cs.value) {
+        if(!cs.in_operation || !axis.digital_output(0).value()) {
             return fail("cam switch negative position wraps into window");
         }
     }

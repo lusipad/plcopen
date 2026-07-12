@@ -6,6 +6,10 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- P1-A4 补齐 `MC_DigitalCamSwitch` 的 B 级多轨接口：调用方持有的定长
+  `CamSwitchTable<8>`、`TrackNumber` 0..3、同轨窗口 OR、`InOperation`
+  电平输出，以及换表、换轴、禁用和全表校验失败时的原子输出清理。
+
 - L 系列批次 L1a（KB-070）：标量类型宇宙 + 转换矩阵机读化。10 新标量
   （全宽度有符号/无符号 + 位串四型）、无损加宽白名单（规范槽位形式下
   运行期零成本）、210 格 `<SRC>_TO_<DST>` 全声明（conv.h 单一事实源，

@@ -67,7 +67,7 @@
 | `FbPositionProfile` / `FbVelocityProfile` / `FbAccelerationProfile` | 同名（`fb/profile.h`） | 表为调用方持有的 `axis::ProfileSegment` 定长数组（≤8 段，替代 `mNext` 链表）；`TimeScale` 缩放后的有效时长在提交首段前校验为至少 1 周期且可表示，速度/加速度剖面同时静态校验整表并以终段持续保持表示 `Done`；PositionProfile 仅在最后命令 ID 完成时 `Done`，active/pending 保持 `Busy`，接管报 `CommandAborted`；`ContinuousUpdate` 仅支持单段剖面；加速度整形不建模（加速度缩放仅作用于限值输入） |
 | `FbTouchProbe` / `FbAbortTrigger` | 同名（`fb/probe.h`） | 触发源即数字输入组 `AxisModel::set_digital_input`（固定 4 通道，替代 Servo 数字输入通道）；上升沿捕获、`WindowOnly` 门控、按通道独立、解除空闲通道非错误等边界一致；Servo 锁存位置回读不承接（记录 capture 周期的 actual position） |
 | `FbReadDigitalInput` / `FbReadDigitalOutput` / `FbWriteDigitalOutput` | 同名（`fb/io.h`） | 通道即 `AxisModel` 数字 IO 组（输入/输出各固定 4 通道）；不支持通道报 `unsupported` |
-| `FbDigitalCamSwitch` | `fb::FbDigitalCamSwitch` | 位置窗驱动一路数字输出；周期窗支持跨界（`on > off`）；换通道/禁用清旧输出；非周期反向窗显式报错 |
+| `FbDigitalCamSwitch` | `fb::FbDigitalCamSwitch` | 旧 `output_number/on_position/off_position/period/valid/value` 已移除；改用调用方持有的 `CamSwitchTable<8>` 赋给 `switches`，单窗口迁移为一项 `{track, on, off, period}`；输出用 `in_operation/error/error_id`，轨道电平从轴数字输出读取 |
 | `FbReadAxisInfo` | `fb::FbReadAxisInfo` | 诊断位经 `AxisModel::set_axis_info_inputs` 适配器注入（默认仿真就绪态）；limit switch 输出合并适配器位与软限位越界状态 |
 | `FbReadMotionState` | `fb::FbReadMotionState` | 方向/加减速相位由所选源速度与命令加速度导出；源为类型化枚举（旧 `SOURCE_ILLEGAL` 错误不再可表示） |
 | `FbEmergencyStop`（项目扩展） | `fb::FbEmergencyStop` | 驱动 errorstop，经 `FbReset` 恢复 |
