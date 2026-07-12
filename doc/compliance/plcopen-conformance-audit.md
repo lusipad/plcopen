@@ -74,14 +74,14 @@ FB 清单**，而规格 v2.0 实际定义 **68 个**——我们在漏掉 38 个
 
 | 技术面 | 内容 | 我们的状态 |
 |--------|------|-----------|
-| **Motion Control**（TC2） | Part 1/3/4/5/6 + **OOP 运动库** + PackAL 映射 | 🏠 主场（本审计对象） |
-| **Safety**（TC5） | Safety Part 1-4 + **SafeMotion** | ⛔ VISION 门控（无认证语境不做，SIL 永久非目标） |
-| **OPC UA**（TC4） | Client FB、**IEC 61131-3 信息模型**、Server/Client 架构 | ⛔ 门控——**但触发条件需修**（见 §5） |
-| **XML 交换 / TC6** | PLCopen XML v2.01 + XSD（**已成 IEC 61131-10**） | ⛔ 门控（随编辑器） |
+| **Motion Control**（TC2） | Part 1/3/4/5/6 + **OOP 运动库** + 应用示例 | ✅ 官方资料全文已审计；OOP 接口族未实现（M-01~M-03） |
+| **Safety**（TC5） | Safety Part 1-4 + **SafeMotion** | ✅ [全文已审计](plcopen-safety-audit.md)；S-01~S-10，仍为 VISION 硬门控 |
+| **OPC UA**（TC4） | Client FB、**IEC 61131-3 信息模型**、NodeSet/NodeIds、架构 | ✅ [全文已审计](plcopen-opcua-audit.md)；现行 FB 0/28、模型 0/13，触发条件仍待裁 |
+| **XML 交换 / TC6** | PLCopen XML v2.01 + XSD + IEC 61131-10 组件 | ✅ [全文已审计](plcopen-xml-tc6-audit.md)；交换基础设施 0/4，仍随编辑器门控 |
 | **编码与质量指南** | Coding Guidelines v1.0、**Software Quality Metrics v1.0**、**Creating compliant FB libraries v1.0** | ✅ **全文已审计**；G-01~G-03 登记生命周期、64 条规则门与结构度量缺口 |
 | **语言层规范** | ST/SFC/LD/FBD 语言指南、**Annex A-E 文本语言规范方法** | ✅ **Annex A-E 已审计**；现有 ST 子集差距见 G-05，图形语言仍不在实现范围 |
-| **OOP** | OOP Guidelines、OOP 运动控制库 | ✅ **Guidelines 已审计**；语言能力仍整体缺失（G-04），OOP 运动库 zip 不在本轮 12 份清单 |
-| PackML/OMAC | PackML 状态图映射 | ⛔ 未考虑 |
+| **OOP** | OOP Guidelines、OOP 运动控制库 | ✅ Guidelines、接口文档与示例库均已审计；语言能力及 6 接口/34 方法合同缺失（G-04、M-01） |
+| PackML/OMAC | PackML 状态图映射 | ✅ 已审计；无 PackML 状态模型、SFC 映射或 OEE 合同（L-04） |
 
 **"Creating PLCopen compliant FB libraries"已读**：是 **FB 设计约定
 指南**（边沿触发 vs 电平控制、`Execute`↔`Done` / `Enable`↔`Valid` 配对、
@@ -125,6 +125,10 @@ Client FB**——**它骑在语言层上，而我们正在做语言层**。L2（
 | 8 | **OOP 裁决**（排期/门控/永不） | 🔴 人 | **待裁** |
 | 9 | **OPC UA 触发条件修正** | 🔴 人 | **待裁** |
 | 10 | 向 PLCopen 确认提交合规声明是否需会员资格 | 🔴 人 | 中（#3 落地前） |
+| 11 | Safety Part 1-4、SafeMotion 全文对照 | ✅ 已审计 | S-01~S-10；维持认证语境硬门控 |
+| 12 | OPC UA Client FB / Information Model / NodeSet 全文对照 | ✅ 已审计 | U-01~U-11；实现仍门控 |
+| 13 | XML v2.01 / IEC 61131-10 schema 全文对照 | ✅ 已审计 | X-01~X-12；实现仍门控 |
+| 14 | Motion OOP/应用示例、Annex F、PackML/结构化指南对照 | ✅ 已审计 | M-01~M-03、L-01~L-05 |
 
 ---
 

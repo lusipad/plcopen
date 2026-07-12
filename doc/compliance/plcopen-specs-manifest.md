@@ -44,15 +44,15 @@ tools/fetch-plcopen-specs.sh --verify   # 只校验本地已有文件
 | `guide_oop` | PLCopen OOP Guidelines | 1.0 | 27 | `70d6977342bc3a8a` | ✅ 全文完成（OOP 能力缺失，G-04） |
 | `annex_a_e` | Annex A-E: specification method for textual languages | — | 24 | `8b2798805c4b78bc2` | ✅ 全文完成（Annex A-E 覆盖与实现依赖参数，G-05） |
 
-### 后续官方技术资料（待审计）
+### 扩展官方技术资料（已审计）
 
 | 领域 | 已取回资料 | 文件/页数 | 审计状态 |
 |------|------------|-----------|----------|
-| Motion 补充 | Annex F、Motion Application Examples、OOP Motion Examples + Library | 4 个文件 / 96 页 | ⏳ 待审计 |
-| Safety | Safety Part 1-4、SafeMotion、Logic/Motion Safety | 6 份 / 493 页 | ⏳ 待审计（实现范围仍受 VISION 门控） |
-| OPC UA | Client FB、Information Model、NodeSet、NodeIds、Client Architecture、Use Cases | 6 个文件 / 140 页 | ⏳ 待审计（实现范围仍受 VISION 门控） |
-| XML / TC6 | XML v2.01 Technical、XSD 文档与文件、IEC 61131-10 组件 | 4 个文件 / 420 页 | ⏳ 待审计（实现范围仍受 VISION 门控） |
-| Logic 指南 | PackML 映射、程序结构化、软件评价 | 3 份 / 10 页 | ⏳ 待审计 |
+| Motion 补充 | Annex F、Motion Application Examples、OOP Motion Examples + Library | 4 个文件 / 96 页 | ✅ 全文完成（[Motion/Logic 补充审计](plcopen-motion-logic-supplement-audit.md)，M-01~M-03、L-01~L-05） |
+| Safety | Safety Part 1-4、SafeMotion、Logic/Motion Safety | 6 份 / 493 页 | ✅ 全文完成（[Safety 审计](plcopen-safety-audit.md)，S-01~S-10；实现仍受 VISION 门控） |
+| OPC UA | Client FB、Information Model、NodeSet、NodeIds、Client Architecture、Use Cases | 6 个文件 / 140 页 | ✅ 全文完成（[OPC UA 审计](plcopen-opcua-audit.md)，U-01~U-11；实现仍受 VISION 门控） |
+| XML / TC6 | XML v2.01 Technical、XSD 文档与文件、IEC 61131-10 组件 | 4 个文件 / 420 页 | ✅ 全文完成（[XML/TC6 审计](plcopen-xml-tc6-audit.md)，X-01~X-12；实现仍受 VISION 门控） |
+| Logic 指南 | PackML 映射、程序结构化、软件评价 | 3 份 / 10 页 | ✅ 全文完成（见 Motion/Logic 补充审计） |
 
 未取回：重复旧版、翻译/本地化版本、入门宣传、演示文稿、会员与认证表单；
 这些资料不作为本仓库技术合规判定的规范依据。

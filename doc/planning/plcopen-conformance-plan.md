@@ -81,6 +81,19 @@ v2.0（`MC_SetDynCoordTransform`/`MC_GroupTransformPosition`）——**声明变
 审计产物：[plcopen-guides-audit.md](../compliance/plcopen-guides-audit.md)。
 G-01~G-05 是后续实现/门禁批次，不再把“尚未阅读指南”作为待办。
 
+### ✅ P-OFFICIAL：其余官方技术资料对照（审计完成）
+
+- Motion/OOP/Annex F/PackML：M-01~M-03、L-01~L-05；底层运动能力不等于
+  官方 OOP 接口或示例兼容。
+- Safety Part 1-4 + SafeMotion：S-01~S-10；所有 SF 与安全网络能力缺失，
+  维持认证集成方硬门控。
+- OPC UA Client FB + Information Model：U-01~U-11；现行 28 个 FB 与
+  13 个模型类型均未实现。
+- XML v2.01 / IEC 61131-10：X-01~X-12；无 parser/writer、XSD 校验、
+  namespace/version 或 round-trip。
+
+上述是审计完成，不代表对应实现进入当前里程碑。
+
 ---
 
 ## 排序（为什么这样排）
