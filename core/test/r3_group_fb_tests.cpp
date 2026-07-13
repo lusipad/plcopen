@@ -1,5 +1,6 @@
 #include <cmath>
 #include <cstdio>
+#include <limits>
 #include <type_traits>
 
 #include "axis/group.h"
@@ -252,6 +253,641 @@ int check_group_status_reflects_member_sync()
         return fail("group status returns to standby after sync out");
     }
 
+    return 0;
+}
+
+struct GroupSnapshot
+{
+    axis::GroupStatus status{};
+    double group_override = 0.0;
+    double workpiece_frame[6]{};
+    double tool_transform[6]{};
+    geom::Vec3 tool_offset{};
+    axis::AxisSnapshot member[2]{};
+};
+
+GroupSnapshot snapshot_group(const axis::AxisGroup &group)
+{
+    GroupSnapshot snapshot{};
+    snapshot.status = group.status();
+    snapshot.group_override = group.group_override();
+    group.workpiece_frame_rpy(snapshot.workpiece_frame);
+    group.tool_transform_rpy(snapshot.tool_transform);
+    snapshot.tool_offset = group.tool_offset();
+    for(std::size_t i = 0; i < group.member_count() && i < 2; ++i) {
+        snapshot.member[i] = group.member(i)->snapshot();
+    }
+    return snapshot;
+}
+
+bool same_group_snapshot(const GroupSnapshot &lhs, const GroupSnapshot &rhs)
+{
+    if(lhs.status != rhs.status || lhs.group_override != rhs.group_override ||
+       lhs.tool_offset.x != rhs.tool_offset.x || lhs.tool_offset.y != rhs.tool_offset.y ||
+       lhs.tool_offset.z != rhs.tool_offset.z) {
+        return false;
+    }
+    for(int i = 0; i < 6; ++i) {
+        if(lhs.workpiece_frame[i] != rhs.workpiece_frame[i] ||
+           lhs.tool_transform[i] != rhs.tool_transform[i]) {
+            return false;
+        }
+    }
+    for(int i = 0; i < 2; ++i) {
+        if(lhs.member[i].status != rhs.member[i].status ||
+           lhs.member[i].active_command_id != rhs.member[i].active_command_id ||
+           lhs.member[i].command_position != rhs.member[i].command_position ||
+           lhs.member[i].actual_position != rhs.member[i].actual_position) {
+            return false;
+        }
+    }
+    return true;
+}
+
+axis::GroupCommand valid_group_command()
+{
+    axis::GroupCommand command{};
+    command.target.size = 2;
+    command.target.value[0] = 1.0;
+    command.target.value[1] = 2.0;
+    command.aux.size = 2;
+    command.aux.value[0] = 0.0;
+    command.aux.value[1] = 1.0;
+    command.velocity = 0.5;
+    command.acceleration = 0.5;
+    command.deceleration = 0.5;
+    command.jerk = 0.5;
+    return command;
+}
+
+class CountOnlyKinematics final : public kin::Kinematics
+{
+public:
+    CountOnlyKinematics(std::size_t joints, std::size_t cartesian)
+        : joints_(joints), cartesian_(cartesian)
+    {
+    }
+
+    std::size_t joint_count() const override
+    {
+        return joints_;
+    }
+
+    std::size_t cartesian_count() const override
+    {
+        return cartesian_;
+    }
+
+    rt::ErrorCode forward(const double *, std::size_t, geom::Vec3 &) const override
+    {
+        return rt::ErrorCode::ok;
+    }
+
+    rt::ErrorCode inverse(geom::Vec3, const double *, std::size_t, double *) const override
+    {
+        return rt::ErrorCode::ok;
+    }
+
+    double singularity_margin(const double *, std::size_t) const override
+    {
+        return 1.0;
+    }
+
+private:
+    std::size_t joints_ = 0;
+    std::size_t cartesian_ = 0;
+};
+
+class CountOnlyPoseKinematics final : public kin::PoseKinematics
+{
+public:
+    explicit CountOnlyPoseKinematics(std::size_t joints)
+        : joints_(joints)
+    {
+    }
+
+    std::size_t joint_count() const override
+    {
+        return joints_;
+    }
+
+    void forward(const double *, kin::Pose6 &) const override
+    {
+    }
+
+    rt::ErrorCode inverse(const kin::Pose6 &, const double *, double, double *) const override
+    {
+        return rt::ErrorCode::ok;
+    }
+
+    double singularity_margin(const double *) const override
+    {
+        return 1.0;
+    }
+
+private:
+    std::size_t joints_ = 0;
+};
+
+int check_group_configuration_rejections_are_atomic()
+{
+    axis::AxisModel x;
+    axis::AxisModel y;
+    x.set_power(true);
+    y.set_power(true);
+    axis::AxisGroup group;
+    group.add_axis(x);
+    group.add_axis(y);
+    group.enable();
+    if(group.set_workpiece_frame_rpy(1.0, 2.0, 3.0, 0.1, 0.2, 0.3) !=
+           rt::ErrorCode::ok ||
+       group.set_tool_transform_rpy(4.0, 5.0, 6.0, 0.4, 0.5, 0.6) !=
+           rt::ErrorCode::ok ||
+       group.set_tool_offset(0.7, 0.8, 0.9) != rt::ErrorCode::ok ||
+       group.set_group_override(0.75) != rt::ErrorCode::ok) {
+        return fail("configuration rejection setup");
+    }
+
+    const double nan = std::numeric_limits<double>::quiet_NaN();
+    const GroupSnapshot before = snapshot_group(group);
+    for(int field = 0; field < 6; ++field) {
+        double value[6] = {1.0, 2.0, 3.0, 0.1, 0.2, 0.3};
+        value[field] = nan;
+        if(group.set_workpiece_frame_rpy(value[0], value[1], value[2], value[3], value[4],
+                                         value[5]) != rt::ErrorCode::invalid_argument ||
+           !same_group_snapshot(before, snapshot_group(group))) {
+            return fail("workpiece frame rejects each nonfinite field atomically");
+        }
+    }
+    for(int field = 0; field < 6; ++field) {
+        double value[6] = {4.0, 5.0, 6.0, 0.4, 0.5, 0.6};
+        value[field] = nan;
+        if(group.set_tool_transform_rpy(value[0], value[1], value[2], value[3], value[4],
+                                        value[5]) != rt::ErrorCode::invalid_argument ||
+           !same_group_snapshot(before, snapshot_group(group))) {
+            return fail("tool transform rejects each nonfinite field atomically");
+        }
+    }
+    for(int field = 0; field < 3; ++field) {
+        double value[3] = {0.7, 0.8, 0.9};
+        value[field] = nan;
+        if(group.set_tool_offset(value[0], value[1], value[2]) !=
+               rt::ErrorCode::invalid_argument ||
+           !same_group_snapshot(before, snapshot_group(group))) {
+            return fail("tool offset rejects each nonfinite field atomically");
+        }
+    }
+
+    if(group.set_cartesian_velocity_limit(nan) != rt::ErrorCode::invalid_argument ||
+       !same_group_snapshot(before, snapshot_group(group)) ||
+       group.set_cartesian_velocity_limit(-1.0) != rt::ErrorCode::invalid_argument ||
+       !same_group_snapshot(before, snapshot_group(group)) ||
+       group.set_kinematics(nullptr, nan) != rt::ErrorCode::invalid_argument ||
+       !same_group_snapshot(before, snapshot_group(group)) ||
+       group.set_kinematics(nullptr, -1.0) != rt::ErrorCode::invalid_argument ||
+       !same_group_snapshot(before, snapshot_group(group)) ||
+       group.set_pose_kinematics(nullptr, nan, 1.0) != rt::ErrorCode::invalid_argument ||
+       !same_group_snapshot(before, snapshot_group(group)) ||
+       group.set_pose_kinematics(nullptr, -1.0, 1.0) != rt::ErrorCode::invalid_argument ||
+       !same_group_snapshot(before, snapshot_group(group)) ||
+       group.set_pose_kinematics(nullptr, 0.0, nan) != rt::ErrorCode::invalid_argument ||
+       !same_group_snapshot(before, snapshot_group(group)) ||
+       group.set_pose_kinematics(nullptr, 0.0, 0.0) != rt::ErrorCode::invalid_argument ||
+       !same_group_snapshot(before, snapshot_group(group)) ||
+       group.set_window_depth(1) != rt::ErrorCode::invalid_argument ||
+       !same_group_snapshot(before, snapshot_group(group)) ||
+       group.set_window_depth(65) != rt::ErrorCode::invalid_argument ||
+       !same_group_snapshot(before, snapshot_group(group)) ||
+       group.set_group_override(nan) != rt::ErrorCode::invalid_argument ||
+       !same_group_snapshot(before, snapshot_group(group)) ||
+       group.set_group_override(-0.1) != rt::ErrorCode::invalid_argument ||
+       !same_group_snapshot(before, snapshot_group(group)) ||
+       group.set_group_override(1.1) != rt::ErrorCode::invalid_argument ||
+       !same_group_snapshot(before, snapshot_group(group))) {
+        return fail("scalar configuration rejects invalid input atomically");
+    }
+    return 0;
+}
+
+int check_group_enable_rejections_are_atomic()
+{
+    axis::AxisModel unpowered;
+    axis::AxisGroup empty;
+    if(empty.enable() != rt::ErrorCode::invalid_argument ||
+       empty.status() != axis::GroupStatus::disabled || empty.member_count() != 0) {
+        return fail("empty group enable rejection is atomic");
+    }
+    if(empty.add_axis(unpowered) != rt::ErrorCode::ok ||
+       empty.enable() != rt::ErrorCode::invalid_argument ||
+       empty.status() != axis::GroupStatus::disabled || empty.member_count() != 1 ||
+       unpowered.group_owner() != &empty) {
+        return fail("unpowered group enable rejection is atomic");
+    }
+    unpowered.set_power(true);
+    if(empty.enable() != rt::ErrorCode::ok ||
+       empty.enable() != rt::ErrorCode::invalid_argument ||
+       empty.status() != axis::GroupStatus::standby || empty.member_count() != 1) {
+        return fail("enabled group rejects repeated enable atomically");
+    }
+    axis::AxisModel late_member;
+    if(empty.add_axis(late_member) != rt::ErrorCode::invalid_argument ||
+       empty.status() != axis::GroupStatus::standby || empty.member_count() != 1 ||
+       late_member.group_owner() != nullptr) {
+        return fail("enabled group rejects late member atomically");
+    }
+    return 0;
+}
+
+int check_group_domain_rejection_is_atomic()
+{
+    axis::AxisModel foreign_domain;
+    axis::AxisGroup domain_group(1);
+    if(domain_group.add_axis(foreign_domain) != rt::ErrorCode::invalid_argument ||
+       domain_group.member_count() != 0 || foreign_domain.group_owner() != nullptr) {
+        return fail("domain mismatch add rejection is atomic");
+    }
+    return 0;
+}
+
+int check_group_ownership_rejections_are_atomic()
+{
+    axis::AxisModel owned;
+    axis::AxisGroup owner;
+    axis::AxisGroup contender;
+    if(owner.add_axis(owned) != rt::ErrorCode::ok ||
+       contender.add_axis(owned) != rt::ErrorCode::out_of_range ||
+       owner.member_count() != 1 || contender.member_count() != 0 ||
+       owned.group_owner() != &owner) {
+        return fail("foreign owner add rejection is atomic");
+    }
+    axis::AxisModel absent;
+    if(owner.remove_axis(absent) != rt::ErrorCode::out_of_range ||
+       owner.member_count() != 1 || owned.group_owner() != &owner ||
+       absent.group_owner() != nullptr) {
+        return fail("absent member removal rejection is atomic");
+    }
+    return 0;
+}
+
+int check_group_capacity_rejection_is_atomic()
+{
+    static axis::AxisModel axes[axis::AxisGroup::MaxAxes + 1];
+    axis::AxisGroup group;
+    for(std::size_t i = 0; i < axis::AxisGroup::MaxAxes; ++i) {
+        if(group.add_axis(axes[i]) != rt::ErrorCode::ok) {
+            return fail("group capacity setup");
+        }
+    }
+    if(group.add_axis(axes[axis::AxisGroup::MaxAxes]) != rt::ErrorCode::capacity_exceeded ||
+       group.member_count() != axis::AxisGroup::MaxAxes ||
+       axes[axis::AxisGroup::MaxAxes].group_owner() != nullptr) {
+        return fail("group capacity rejection is atomic");
+    }
+    return 0;
+}
+
+int check_disabled_group_rejections_are_atomic()
+{
+    axis::AxisModel x;
+    axis::AxisModel y;
+    x.set_power(true);
+    y.set_power(true);
+    axis::AxisGroup group;
+    group.add_axis(x);
+    group.add_axis(y);
+    const GroupSnapshot before = snapshot_group(group);
+    axis::GroupPosition target{};
+    target.size = 2;
+    target.value[0] = 1.0;
+    target.value[1] = 2.0;
+
+    if(group.set_workpiece_frame_rpy(1.0, 2.0, 3.0, 0.1, 0.2, 0.3) !=
+           rt::ErrorCode::invalid_argument ||
+       !same_group_snapshot(before, snapshot_group(group)) ||
+       group.set_tool_transform_rpy(4.0, 5.0, 6.0, 0.4, 0.5, 0.6) !=
+           rt::ErrorCode::invalid_argument ||
+       !same_group_snapshot(before, snapshot_group(group)) ||
+       group.set_pose_kinematics(nullptr, 0.0, 1.0) != rt::ErrorCode::invalid_argument ||
+       !same_group_snapshot(before, snapshot_group(group)) ||
+       group.set_tool_offset(0.7, 0.8, 0.9) != rt::ErrorCode::invalid_argument ||
+       !same_group_snapshot(before, snapshot_group(group)) ||
+       group.set_cartesian_velocity_limit(1.0) != rt::ErrorCode::invalid_argument ||
+       !same_group_snapshot(before, snapshot_group(group)) ||
+       group.set_kinematics(nullptr) != rt::ErrorCode::invalid_argument ||
+       !same_group_snapshot(before, snapshot_group(group)) ||
+       group.set_window_depth(2) != rt::ErrorCode::invalid_argument ||
+       !same_group_snapshot(before, snapshot_group(group)) ||
+       group.set_group_override(0.5) != rt::ErrorCode::invalid_argument ||
+       !same_group_snapshot(before, snapshot_group(group)) ||
+       group.stop() != rt::ErrorCode::invalid_argument ||
+       !same_group_snapshot(before, snapshot_group(group))) {
+        return fail("disabled group rejects configuration atomically");
+    }
+
+    const rt::Result<std::uint32_t> direct =
+        group.submit_direct(target, false, 0.5, 0.5, 0.5, 0.5);
+    const rt::Result<std::uint32_t> linear = group.submit_linear(valid_group_command());
+    const rt::Result<std::uint32_t> circular = group.submit_circular(valid_group_command());
+    if(direct || linear || circular || direct.error() != rt::ErrorCode::invalid_argument ||
+       linear.error() != rt::ErrorCode::invalid_argument ||
+       circular.error() != rt::ErrorCode::invalid_argument ||
+       !same_group_snapshot(before, snapshot_group(group))) {
+        return fail("disabled group rejects submits atomically");
+    }
+    return 0;
+}
+
+int check_group_stop_rejections_are_atomic()
+{
+    axis::AxisModel x;
+    axis::AxisModel y;
+    x.set_power(true);
+    y.set_power(true);
+    axis::AxisGroup group;
+    group.add_axis(x);
+    group.add_axis(y);
+    group.enable();
+    const GroupSnapshot before = snapshot_group(group);
+    const double nan = std::numeric_limits<double>::quiet_NaN();
+    if(group.continue_motion() != rt::ErrorCode::invalid_argument ||
+       !same_group_snapshot(before, snapshot_group(group))) {
+        return fail("standby group rejects continue atomically");
+    }
+    if(group.stop(nan, 1.0) != rt::ErrorCode::invalid_argument ||
+       !same_group_snapshot(before, snapshot_group(group)) ||
+       group.stop(0.0, 1.0) != rt::ErrorCode::invalid_argument ||
+       !same_group_snapshot(before, snapshot_group(group)) ||
+       group.stop(1.0, nan) != rt::ErrorCode::invalid_argument ||
+       !same_group_snapshot(before, snapshot_group(group)) ||
+       group.stop(1.0, 0.0) != rt::ErrorCode::invalid_argument ||
+       !same_group_snapshot(before, snapshot_group(group))) {
+        return fail("group stop rejects each invalid dynamic atomically");
+    }
+    return 0;
+}
+
+int check_errorstop_group_stop_rejection_is_atomic()
+{
+    axis::AxisModel x;
+    x.set_power(true);
+    axis::AxisGroup group;
+    group.add_axis(x);
+    group.enable();
+    x.trigger_error();
+    group.cycle();
+    if(group.status() != axis::GroupStatus::errorstop) {
+        return fail("errorstop stop rejection setup");
+    }
+    const GroupSnapshot before = snapshot_group(group);
+    if(group.stop() != rt::ErrorCode::invalid_argument ||
+       !same_group_snapshot(before, snapshot_group(group))) {
+        return fail("errorstop group rejects stop atomically");
+    }
+    return 0;
+}
+
+int check_moving_group_configuration_rejections_are_atomic()
+{
+    axis::AxisModel x;
+    axis::AxisModel y;
+    x.set_power(true);
+    y.set_power(true);
+    axis::AxisGroup group;
+    group.add_axis(x);
+    group.add_axis(y);
+    group.enable();
+    const rt::Result<std::uint32_t> accepted = group.submit_linear(valid_group_command());
+    if(!accepted || group.status() != axis::GroupStatus::moving) {
+        return fail("moving configuration rejection setup");
+    }
+    const GroupSnapshot before = snapshot_group(group);
+    if(group.set_workpiece_frame_rpy(1.0, 2.0, 3.0, 0.1, 0.2, 0.3) !=
+           rt::ErrorCode::invalid_argument ||
+       !same_group_snapshot(before, snapshot_group(group)) ||
+       group.set_tool_transform_rpy(4.0, 5.0, 6.0, 0.4, 0.5, 0.6) !=
+           rt::ErrorCode::invalid_argument ||
+       !same_group_snapshot(before, snapshot_group(group)) ||
+       group.set_pose_kinematics(nullptr, 0.0, 1.0) != rt::ErrorCode::invalid_argument ||
+       !same_group_snapshot(before, snapshot_group(group)) ||
+       group.set_tool_offset(0.7, 0.8, 0.9) != rt::ErrorCode::invalid_argument ||
+       !same_group_snapshot(before, snapshot_group(group)) ||
+       group.set_cartesian_velocity_limit(1.0) != rt::ErrorCode::invalid_argument ||
+       !same_group_snapshot(before, snapshot_group(group)) ||
+       group.set_kinematics(nullptr) != rt::ErrorCode::invalid_argument ||
+       !same_group_snapshot(before, snapshot_group(group)) ||
+       group.set_window_depth(2) != rt::ErrorCode::invalid_argument ||
+       !same_group_snapshot(before, snapshot_group(group))) {
+        return fail("moving group rejects configuration atomically");
+    }
+    const double nan = std::numeric_limits<double>::quiet_NaN();
+    if(group.interrupt(nan, 1.0) != rt::ErrorCode::invalid_argument ||
+       !same_group_snapshot(before, snapshot_group(group)) ||
+       group.interrupt(0.0, 1.0) != rt::ErrorCode::invalid_argument ||
+       !same_group_snapshot(before, snapshot_group(group)) ||
+       group.interrupt(1.0, nan) != rt::ErrorCode::invalid_argument ||
+       !same_group_snapshot(before, snapshot_group(group)) ||
+       group.interrupt(1.0, 0.0) != rt::ErrorCode::invalid_argument ||
+       !same_group_snapshot(before, snapshot_group(group))) {
+        return fail("moving group interrupt rejects each invalid dynamic atomically");
+    }
+    return 0;
+}
+
+int check_kinematics_contract_rejections_are_atomic()
+{
+    axis::AxisModel x;
+    axis::AxisModel y;
+    x.set_power(true);
+    y.set_power(true);
+    axis::AxisGroup group;
+    group.add_axis(x);
+    group.add_axis(y);
+    group.enable();
+    group.set_workpiece_frame_rpy(1.0, 2.0, 3.0, 0.1, 0.2, 0.3);
+    const GroupSnapshot before = snapshot_group(group);
+    CountOnlyKinematics wrong_joints(3, 3);
+    CountOnlyKinematics mismatched_spaces(2, 3);
+    CountOnlyKinematics too_few_cartesian(1, 1);
+    CountOnlyKinematics too_many_cartesian(4, 4);
+    const kin::Kinematics *invalid[] = {
+        &wrong_joints, &mismatched_spaces, &too_few_cartesian, &too_many_cartesian};
+    for(const kin::Kinematics *plugin : invalid) {
+        if(group.set_kinematics(plugin) != rt::ErrorCode::invalid_argument ||
+           !same_group_snapshot(before, snapshot_group(group))) {
+            return fail("kinematics contract rejection is atomic");
+        }
+    }
+    CountOnlyPoseKinematics six_joint_pose(6);
+    CountOnlyPoseKinematics wrong_joint_pose(5);
+    if(group.set_pose_kinematics(&six_joint_pose, 0.0, 1.0) !=
+           rt::ErrorCode::invalid_argument ||
+       !same_group_snapshot(before, snapshot_group(group)) ||
+       group.set_pose_kinematics(&wrong_joint_pose, 0.0, 1.0) !=
+           rt::ErrorCode::invalid_argument ||
+       !same_group_snapshot(before, snapshot_group(group))) {
+        return fail("pose kinematics contract rejection is atomic");
+    }
+    return 0;
+}
+
+int check_pose_kinematics_contract_rejections_are_atomic()
+{
+    static axis::AxisModel axes[6];
+    axis::AxisGroup group;
+    for(axis::AxisModel &member : axes) {
+        member.set_power(true);
+        if(group.add_axis(member) != rt::ErrorCode::ok) {
+            return fail("pose kinematics contract setup members");
+        }
+    }
+    if(group.enable() != rt::ErrorCode::ok) {
+        return fail("pose kinematics contract setup enable");
+    }
+    CountOnlyPoseKinematics wrong_joint_pose(5);
+    if(group.set_pose_kinematics(&wrong_joint_pose, 0.0, 1.0) !=
+           rt::ErrorCode::invalid_argument ||
+       group.status() != axis::GroupStatus::standby) {
+        return fail("pose plugin rejects wrong joint count atomically");
+    }
+    CountOnlyPoseKinematics pose(6);
+    if(group.set_pose_kinematics(&pose, 0.0, 1.0) != rt::ErrorCode::ok) {
+        return fail("pose kinematics contract setup plugin");
+    }
+    CountOnlyKinematics translational(6, 6);
+    if(group.set_kinematics(&translational) != rt::ErrorCode::invalid_argument ||
+       group.status() != axis::GroupStatus::standby) {
+        return fail("pose and translational plugins stay mutually exclusive");
+    }
+    return 0;
+}
+
+int check_direct_motion_rejections_are_atomic()
+{
+    axis::AxisModel x;
+    axis::AxisModel y;
+    x.set_power(true);
+    y.set_power(true);
+    axis::AxisGroup group;
+    group.add_axis(x);
+    group.add_axis(y);
+    group.enable();
+    axis::GroupPosition target{};
+    target.size = 2;
+    target.value[0] = 1.0;
+    target.value[1] = 2.0;
+    const rt::Result<std::uint32_t> accepted =
+        group.submit_direct(target, false, 0.5, 0.5, 0.5, 0.5);
+    if(!accepted || group.status() != axis::GroupStatus::moving ||
+       !group.direct_motion_active()) {
+        return fail("direct motion rejection setup");
+    }
+    const GroupSnapshot before = snapshot_group(group);
+    const rt::Result<std::uint32_t> linear = group.submit_linear(valid_group_command());
+    const rt::Result<std::uint32_t> circular = group.submit_circular(valid_group_command());
+    if(group.set_group_override(0.5) != rt::ErrorCode::unsupported ||
+       !same_group_snapshot(before, snapshot_group(group)) || linear || circular ||
+       linear.error() != rt::ErrorCode::invalid_argument ||
+       circular.error() != rt::ErrorCode::invalid_argument ||
+       group.group_home() != rt::ErrorCode::invalid_argument ||
+       !same_group_snapshot(before, snapshot_group(group)) ||
+       !group.direct_motion_active()) {
+        return fail("direct motion rejects conflicting public APIs atomically");
+    }
+    return 0;
+}
+
+int check_group_submit_rejections_are_atomic()
+{
+    axis::AxisModel x;
+    axis::AxisModel y;
+    x.set_power(true);
+    y.set_power(true);
+    axis::AxisGroup group;
+    group.add_axis(x);
+    group.add_axis(y);
+    group.enable();
+    const GroupSnapshot before = snapshot_group(group);
+    const double nan = std::numeric_limits<double>::quiet_NaN();
+
+    axis::GroupPosition direct_target{};
+    direct_target.size = 2;
+    direct_target.value[0] = 1.0;
+    direct_target.value[1] = 2.0;
+    for(int scenario = 0; scenario < 10; ++scenario) {
+        axis::GroupPosition target = direct_target;
+        double velocity = 0.5;
+        double acceleration = 0.5;
+        double deceleration = 0.5;
+        double jerk = 0.5;
+        switch(scenario) {
+        case 0: target.size = 1; break;
+        case 1: velocity = 0.0; break;
+        case 2: velocity = nan; break;
+        case 3: acceleration = 0.0; break;
+        case 4: acceleration = nan; break;
+        case 5: deceleration = 0.0; break;
+        case 6: deceleration = nan; break;
+        case 7: jerk = 0.0; break;
+        case 8: jerk = nan; break;
+        default: target.value[1] = nan; break;
+        }
+        const rt::Result<std::uint32_t> rejected =
+            group.submit_direct(target, false, velocity, acceleration, deceleration, jerk);
+        if(rejected || rejected.error() != rt::ErrorCode::invalid_argument ||
+           !same_group_snapshot(before, snapshot_group(group))) {
+            return fail("direct submit rejects each invalid field atomically");
+        }
+    }
+
+    for(int scenario = 0; scenario < 11; ++scenario) {
+        axis::GroupCommand command = valid_group_command();
+        switch(scenario) {
+        case 0: command.target.size = 1; break;
+        case 1: command.velocity = 0.0; break;
+        case 2: command.velocity = nan; break;
+        case 3: command.acceleration = 0.0; break;
+        case 4: command.acceleration = nan; break;
+        case 5: command.deceleration = 0.0; break;
+        case 6: command.deceleration = nan; break;
+        case 7: command.jerk = 0.0; break;
+        case 8: command.jerk = nan; break;
+        case 9: command.target.value[0] = nan; break;
+        default: command.target.value[1] = nan; break;
+        }
+        const rt::Result<std::uint32_t> rejected = group.submit_linear(command);
+        if(rejected || rejected.error() != rt::ErrorCode::invalid_argument ||
+           !same_group_snapshot(before, snapshot_group(group))) {
+            return fail("linear submit rejects each invalid field atomically");
+        }
+    }
+
+    for(int scenario = 0; scenario < 15; ++scenario) {
+        axis::GroupCommand command = valid_group_command();
+        switch(scenario) {
+        case 0: command.target.size = 1; break;
+        case 1: command.aux.size = 1; break;
+        case 2: command.velocity = 0.0; break;
+        case 3: command.velocity = nan; break;
+        case 4: command.acceleration = 0.0; break;
+        case 5: command.acceleration = nan; break;
+        case 6: command.deceleration = 0.0; break;
+        case 7: command.deceleration = nan; break;
+        case 8: command.jerk = 0.0; break;
+        case 9: command.jerk = nan; break;
+        case 10: command.target.value[0] = nan; break;
+        case 11: command.target.value[1] = nan; break;
+        case 12: command.aux.value[0] = nan; break;
+        case 13: command.aux.value[1] = nan; break;
+        default: command.circ_mode = axis::CircMode::center; break;
+        }
+        const rt::Result<std::uint32_t> rejected = group.submit_circular(command);
+        const rt::ErrorCode expected = scenario == 14 ? rt::ErrorCode::unsupported
+                                                      : rt::ErrorCode::invalid_argument;
+        if(rejected || rejected.error() != expected ||
+           !same_group_snapshot(before, snapshot_group(group))) {
+            return fail("circular submit rejects each invalid field atomically");
+        }
+    }
     return 0;
 }
 
@@ -739,7 +1375,20 @@ int check_group_fb_error_paths()
 
 int main()
 {
-    if(check_add_remove() != 0 || check_group_reset() != 0 ||
+    if(check_group_configuration_rejections_are_atomic() != 0 ||
+       check_group_enable_rejections_are_atomic() != 0 ||
+       check_group_domain_rejection_is_atomic() != 0 ||
+       check_group_ownership_rejections_are_atomic() != 0 ||
+       check_group_capacity_rejection_is_atomic() != 0 ||
+       check_disabled_group_rejections_are_atomic() != 0 ||
+       check_group_stop_rejections_are_atomic() != 0 ||
+       check_errorstop_group_stop_rejection_is_atomic() != 0 ||
+       check_moving_group_configuration_rejections_are_atomic() != 0 ||
+       check_kinematics_contract_rejections_are_atomic() != 0 ||
+       check_pose_kinematics_contract_rejections_are_atomic() != 0 ||
+       check_direct_motion_rejections_are_atomic() != 0 ||
+       check_group_submit_rejections_are_atomic() != 0 || check_add_remove() != 0 ||
+       check_group_reset() != 0 ||
        check_group_read_status_and_positions() != 0 ||
        check_group_status_reflects_member_sync() != 0 ||
        check_group_motion_rejects_active_standalone_member() != 0 ||

@@ -82,6 +82,52 @@ int check_scara_semantics()
        !(scara.singularity_margin(healthy, 3) > 1.0)) {
         return fail("scara singularity margin");
     }
+    const kin::Scara planar(0.4, 0.3, false);
+    const double planar_joints[2] = {0.2, -0.4};
+    const double planar_seed[2] = {0.0, -1.0};
+    double planar_out[2] = {};
+    geom::Vec3 pose{};
+    if(planar.joint_count() != 2 || planar.cartesian_count() != 2 ||
+       planar.forward(planar_joints, 3, pose) != rt::ErrorCode::invalid_argument ||
+       planar.forward(planar_joints, 2, pose) != rt::ErrorCode::ok || pose.z != 0.0 ||
+       planar.inverse({NAN, 0.0, 0.0}, planar_seed, 2, planar_out) !=
+           rt::ErrorCode::invalid_argument ||
+       planar.inverse({0.4, 0.1, 0.0}, planar_seed, 3, planar_out) !=
+           rt::ErrorCode::invalid_argument ||
+       scara.inverse({0.4, 0.1, NAN}, seed, 3, joints) !=
+           rt::ErrorCode::invalid_argument ||
+       planar.singularity_margin(planar_joints, 3) != 0.0) {
+        return fail("scara public boundary validation");
+    }
+    const double wrapped[2] = {0.0, 4.0};
+    if(!(planar.singularity_margin(wrapped, 2) > 0.0)) {
+        return fail("scara folded-angle normalization");
+    }
+    return 0;
+}
+
+int check_gantry_boundaries()
+{
+    const double scale[2] = {2.0, -0.5};
+    const double offset[2] = {1.0, -1.0};
+    const kin::CartesianGantry gantry(2, scale, offset);
+    const double joints[2] = {2.0, 4.0};
+    double solved[2] = {};
+    geom::Vec3 pose{};
+    if(gantry.forward(joints, 3, pose) != rt::ErrorCode::invalid_argument ||
+       gantry.inverse({}, nullptr, 3, solved) != rt::ErrorCode::invalid_argument ||
+       gantry.forward(joints, 2, pose) != rt::ErrorCode::ok || pose.z != 0.0 ||
+       gantry.inverse(pose, nullptr, 2, solved) != rt::ErrorCode::ok ||
+       !near(solved[0], joints[0], 1e-12) || !near(solved[1], joints[1], 1e-12)) {
+        return fail("two-axis gantry boundaries");
+    }
+    const double bad_scale[2] = {1.0, 0.0};
+    const kin::CartesianGantry singular(2, bad_scale, offset);
+    if(singular.inverse({}, nullptr, 2, solved) != rt::ErrorCode::invalid_argument ||
+       gantry.inverse({0.0, NAN, 0.0}, nullptr, 2, solved) !=
+           rt::ErrorCode::invalid_argument) {
+        return fail("gantry invalid inverse input");
+    }
     return 0;
 }
 
@@ -289,7 +335,7 @@ int main()
     if(check_gantry_conformance() != 0 || check_scara_conformance() != 0 ||
        check_scara_semantics() != 0 || check_identity_gantry_equivalence() != 0 ||
        check_scaled_gantry_oracle() != 0 || check_scara_group_endpoint() != 0 ||
-       check_rejections() != 0) {
+       check_rejections() != 0 || check_gantry_boundaries() != 0) {
         return 1;
     }
     std::printf("PASS kinematics tests\n");

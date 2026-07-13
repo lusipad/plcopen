@@ -129,6 +129,15 @@ int main()
     if(values[0] != 1 || values[2] != 3) {
         return fail("static vector indexing");
     }
+    const rt::StaticVector<int, 3> &const_values = values;
+    if(const_values.data()[1] != 2 || values.data()[1] != 2 ||
+       values.pop_back() != rt::ErrorCode::ok || values.size() != 2 || values.full()) {
+        return fail("static vector pop and data access");
+    }
+    values.clear();
+    if(!values.empty() || values.pop_back() != rt::ErrorCode::out_of_range) {
+        return fail("static vector clear and underflow");
+    }
 
     rt::SpscQueue<int, 3> queue;
     int out = 0;

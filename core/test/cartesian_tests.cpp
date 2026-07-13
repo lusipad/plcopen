@@ -842,8 +842,24 @@ int check_cartesian_window()
         for(int tick = 0; tick < 40; ++tick) {
             rig.group.cycle();
         }
-        if(rig.group.stop(0.002, 0.002) != rt::ErrorCode::ok) {
+        if(rig.group.interrupt(0.002, 0.002) != rt::ErrorCode::unsupported ||
+           rig.group.status() != axis::GroupStatus::moving) {
+            return fail("cartesian window rejects interrupt");
+        }
+        if(rig.group.stop(std::nan(""), 0.002) != rt::ErrorCode::invalid_argument ||
+           rig.group.stop(0.0, 0.002) != rt::ErrorCode::invalid_argument ||
+           rig.group.stop(0.002, std::nan("")) != rt::ErrorCode::invalid_argument ||
+           rig.group.stop(0.002, 0.0) != rt::ErrorCode::invalid_argument ||
+           rig.group.status() != axis::GroupStatus::moving) {
+            return fail("cartesian window rejects invalid stop dynamics");
+        }
+        if(rig.group.stop(0.002, 0.002) != rt::ErrorCode::ok ||
+           rig.group.status() != axis::GroupStatus::stopping) {
             return fail("stop request");
+        }
+        if(rig.group.stop(0.002, 0.002) != rt::ErrorCode::ok ||
+           rig.group.status() != axis::GroupStatus::stopping) {
+            return fail("cartesian window stop is idempotent");
         }
         for(long tick = 0; tick < 200000; ++tick) {
             rig.group.cycle();

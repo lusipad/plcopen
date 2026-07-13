@@ -5,6 +5,7 @@
 
 #include "axis/group.h"
 #include "fb/group.h"
+#include "kin/scara.h"
 
 namespace
 {
@@ -309,6 +310,215 @@ int check_motion_state_and_command_info()
     return 0;
 }
 
+axis::GroupCommand state_query_command(double x,
+                                       double y,
+                                       axis::BufferMode mode = axis::BufferMode::aborting)
+{
+    axis::GroupCommand command{};
+    command.target.size = 2;
+    command.target.value[0] = x;
+    command.target.value[1] = y;
+    command.velocity = 0.02;
+    command.acceleration = 0.001;
+    command.deceleration = 0.001;
+    command.jerk = 0.001;
+    command.buffer_mode = mode;
+    return command;
+}
+
+int check_direct_motion_public_state()
+{
+    axis::AxisModel axes[2];
+    axis::AxisGroup group;
+    for(axis::AxisModel &member : axes) {
+        member.set_power(true);
+        group.add_axis(member);
+    }
+    group.enable();
+    axis::GroupPosition target{};
+    target.size = 2;
+    target.value[0] = 1.0;
+    target.value[1] = -2.0;
+    const rt::Result<std::uint32_t> submitted =
+        group.submit_direct(target, false, 1.0, 1.0, 1.0, 1.0);
+    if(!submitted) return fail("direct state: submit");
+
+    const axis::GroupMotionState initial = group.motion_state();
+    const rt::Result<axis::GroupCommandInfo> info = group.command_info(submitted.value());
+    if(initial.active_command_id != submitted.value() || initial.in_position ||
+       initial.standstill || !info || info.value().state != axis::GroupCommandState::active ||
+       info.value().elapsed_cycles != 0 || info.value().remaining_cycles != 0 ||
+       group.path_derivative(false) != 0.0 || group.path_derivative(true) != 0.0) {
+        return fail("direct state: public active contract");
+    }
+
+    bool accelerating = false;
+    bool decelerating = false;
+    bool constant_velocity = false;
+    for(int tick = 0; tick < 100000 && group.status() != axis::GroupStatus::standby; ++tick) {
+        axes[0].cycle();
+        axes[1].cycle();
+        const axis::GroupMotionState state = group.motion_state();
+        if(state.active_command_id == submitted.value()) {
+            accelerating = accelerating || state.accelerating;
+            decelerating = decelerating || state.decelerating;
+            constant_velocity = constant_velocity || state.constant_velocity;
+        }
+        group.cycle();
+    }
+    const rt::ErrorCode expired = group.command_info(submitted.value()).error();
+    if(!accelerating || !decelerating || expired != rt::ErrorCode::out_of_range) {
+        return fail("direct state: phases and expiry");
+    }
+    std::printf("  PASS direct_motion_public_state\n");
+    return 0;
+}
+
+axis::GroupCommand window_query_command(double x, double y)
+{
+    axis::GroupCommand command =
+        state_query_command(x, y, axis::BufferMode::blending_high);
+    command.transition_mode = axis::TransitionMode::max_corner_deviation;
+    command.transition_parameter = 0.03;
+    return command;
+}
+
+int check_window_public_state()
+{
+    axis::AxisModel axes[2];
+    axis::AxisGroup group;
+    for(axis::AxisModel &member : axes) {
+        member.set_power(true);
+        group.add_axis(member);
+    }
+    group.enable();
+    const rt::Result<std::uint32_t> first =
+        group.submit_linear(state_query_command(1.0, 0.0));
+    if(!first) return fail("window state: first submit");
+    for(int tick = 0; tick < 5; ++tick) group.cycle();
+    constexpr double Turn = 0.3490658503988659;
+    const double target[5][2] = {{2.0, 0.0},
+                                 {2.0 + std::cos(Turn), std::sin(Turn)},
+                                 {3.0 + std::cos(Turn), std::sin(Turn)},
+                                 {3.0 + 2.0 * std::cos(Turn), 2.0 * std::sin(Turn)},
+                                 {4.0 + 2.0 * std::cos(Turn), 2.0 * std::sin(Turn)}};
+    std::uint32_t last_id = 0;
+    for(int i = 0; i < 5; ++i) {
+        const rt::Result<std::uint32_t> submitted =
+            group.submit_linear(window_query_command(target[i][0], target[i][1]));
+        if(!submitted || group.last_blend_degraded_command() == submitted.value()) {
+            return fail("window state: successors submit");
+        }
+        last_id = submitted.value();
+    }
+
+    const axis::GroupMotionState state = group.motion_state();
+    const rt::Result<axis::GroupCommandInfo> active = group.command_info(first.value());
+    const rt::Result<axis::GroupCommandInfo> queued_info = group.command_info(last_id);
+    const rt::Result<axis::GroupCommandInfo> missing = group.command_info(0xffffffffu);
+    if(state.active_command_id != first.value() || state.in_position || state.standstill ||
+       !active || active.value().state != axis::GroupCommandState::active ||
+       active.value().remaining_cycles <= 0 || active.value().remaining_distance <= 0.0 ||
+       active.value().progress <= 0.0 || !queued_info ||
+       queued_info.value().state != axis::GroupCommandState::accepted ||
+       queued_info.value().elapsed_cycles != 0 || queued_info.value().remaining_cycles != 0 ||
+       missing.error() != rt::ErrorCode::out_of_range || group.path_derivative(false) <= 0.0) {
+        return fail("window state: public query contract");
+    }
+    const double acceleration = group.path_derivative(true);
+    if(!std::isfinite(acceleration)) {
+        return fail("window state: acceleration derivative finite");
+    }
+    std::printf("  PASS window_public_state\n");
+    return 0;
+}
+
+int settle_state_query_group(axis::AxisGroup &group)
+{
+    for(int tick = 0; tick < 100000; ++tick) {
+        group.cycle();
+        if(group.status() == axis::GroupStatus::standby) return 0;
+    }
+    return 1;
+}
+
+axis::GroupCommand cartesian_state_command(double x, double y, double z)
+{
+    axis::GroupCommand command{};
+    command.target.size = 3;
+    command.target.value[0] = x;
+    command.target.value[1] = y;
+    command.target.value[2] = z;
+    command.velocity = 0.01;
+    command.acceleration = 0.002;
+    command.deceleration = 0.002;
+    command.jerk = 0.002;
+    command.coord_system = axis::CoordSystem::mcs;
+    return command;
+}
+
+int check_cartesian_window_command_info_contract()
+{
+    static const kin::Scara scara(0.4, 0.3, true);
+    axis::AxisModel axes[3];
+    axis::AxisGroup group;
+    for(axis::AxisModel &member : axes) {
+        member.set_power(true);
+        group.add_axis(member);
+    }
+    group.enable();
+    if(group.set_kinematics(&scara) != rt::ErrorCode::ok ||
+       !group.submit_linear(cartesian_state_command(0.35, 0.25, 0.1)) ||
+       settle_state_query_group(group) != 0) {
+        return fail("cart window info: setup");
+    }
+
+    axis::GroupCommand first = cartesian_state_command(0.30, 0.30, 0.12);
+    first.interpolation_space = axis::InterpolationSpace::cartesian;
+    const rt::Result<std::uint32_t> first_id = group.submit_linear(first);
+    if(!first_id) return fail("cart window info: first segment");
+    for(int tick = 0; tick < 5; ++tick) group.cycle();
+    axis::GroupCommand successor = cartesian_state_command(0.24, 0.34, 0.14);
+    successor.interpolation_space = axis::InterpolationSpace::cartesian;
+    successor.buffer_mode = axis::BufferMode::blending_low;
+    successor.transition_mode = axis::TransitionMode::max_corner_deviation;
+    successor.transition_parameter = 0.02;
+    const rt::Result<std::uint32_t> successor_id = group.submit_linear(successor);
+    if(!successor_id || group.command_info(first_id.value()).error() !=
+                            rt::ErrorCode::unsupported ||
+       group.command_info(successor_id.value()).error() != rt::ErrorCode::unsupported) {
+        return fail("cart window info: unsupported contract");
+    }
+    std::printf("  PASS cartesian_window_command_info_contract\n");
+    return 0;
+}
+
+int check_invalid_public_state_queries()
+{
+    axis::AxisGroup disabled;
+    const axis::GroupMotionState disabled_state = disabled.motion_state();
+    if(disabled_state.in_position || disabled_state.standstill ||
+       disabled.path_derivative(false) != 0.0 || disabled.path_derivative(true) != 0.0 ||
+       disabled.command_info(0).error() != rt::ErrorCode::out_of_range) {
+        return fail("state query: disabled and zero ID");
+    }
+
+    axis::AxisModel member;
+    member.set_power(true);
+    axis::AxisGroup error_group;
+    error_group.add_axis(member);
+    error_group.enable();
+    member.trigger_error();
+    error_group.cycle();
+    const axis::GroupMotionState error_state = error_group.motion_state();
+    if(error_group.status() != axis::GroupStatus::errorstop || error_state.in_position ||
+       error_state.standstill || error_state.active_command_id != 0) {
+        return fail("state query: errorstop contract");
+    }
+    std::printf("  PASS invalid_public_state_queries\n");
+    return 0;
+}
+
 int check_parameters_and_dynamics()
 {
     axis::AxisModel axes[2];
@@ -605,6 +815,10 @@ int main()
     failures += check_kinematics_metadata_capacities();
     failures += check_position_velocity_acceleration_readback();
     failures += check_motion_state_and_command_info();
+    failures += check_direct_motion_public_state();
+    failures += check_window_public_state();
+    failures += check_cartesian_window_command_info_contract();
+    failures += check_invalid_public_state_queries();
     failures += check_parameters_and_dynamics();
     failures += check_group_sw_limits_transaction();
     failures += check_dynamics_partial_updates_and_capacity();

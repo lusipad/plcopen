@@ -366,6 +366,148 @@ void remaining_blocks_compile_contract()
     check(compiled.ok, "remaining first-ten MC blocks compile with all pins");
 }
 
+void basic_binding_dispatch_contract()
+{
+    alignas(8) unsigned char storage[256]{};
+
+    st::fb_init(st::FbType::r_trig, storage, 1000000);
+    st::fb_store(st::FbType::r_trig, storage, 0, 1);
+    st::fb_cycle(st::FbType::r_trig, storage);
+    check(st::fb_load(st::FbType::r_trig, storage, 1) == 1,
+          "R_TRIG binding dispatch");
+
+    st::fb_init(st::FbType::f_trig, storage, 1000000);
+    st::fb_store(st::FbType::f_trig, storage, 0, 1);
+    st::fb_cycle(st::FbType::f_trig, storage);
+    st::fb_store(st::FbType::f_trig, storage, 0, 0);
+    st::fb_cycle(st::FbType::f_trig, storage);
+    check(st::fb_load(st::FbType::f_trig, storage, 1) == 1,
+          "F_TRIG binding dispatch");
+
+    st::fb_init(st::FbType::sr, storage, 1000000);
+    st::fb_store(st::FbType::sr, storage, 0, 1);
+    st::fb_store(st::FbType::sr, storage, 1, 0);
+    st::fb_cycle(st::FbType::sr, storage);
+    check(st::fb_load(st::FbType::sr, storage, 2) == 1,
+          "SR binding dispatch");
+
+    st::fb_init(st::FbType::rs, storage, 1000000);
+    st::fb_store(st::FbType::rs, storage, 0, 1);
+    st::fb_store(st::FbType::rs, storage, 1, 1);
+    st::fb_cycle(st::FbType::rs, storage);
+    check(st::fb_load(st::FbType::rs, storage, 2) == 0,
+          "RS reset dominance through binding");
+
+    st::fb_init(st::FbType::ton, storage, 1000000);
+    st::fb_store(st::FbType::ton, storage, 0, 1);
+    st::fb_store(st::FbType::ton, storage, 1, 2000000);
+    st::fb_cycle(st::FbType::ton, storage);
+    check(st::fb_load(st::FbType::ton, storage, 2) == 0 &&
+              st::fb_load(st::FbType::ton, storage, 3) == 1000000,
+          "TON binding preserves nanoseconds");
+
+    st::fb_init(st::FbType::tof, storage, 1000000);
+    st::fb_store(st::FbType::tof, storage, 0, 1);
+    st::fb_store(st::FbType::tof, storage, 1, 2000000);
+    st::fb_cycle(st::FbType::tof, storage);
+    st::fb_store(st::FbType::tof, storage, 0, 0);
+    st::fb_cycle(st::FbType::tof, storage);
+    check(st::fb_load(st::FbType::tof, storage, 2) == 1 &&
+              st::fb_load(st::FbType::tof, storage, 3) == 1000000,
+          "TOF binding preserves nanoseconds");
+
+    st::fb_init(st::FbType::tp, storage, 1000000);
+    st::fb_store(st::FbType::tp, storage, 1, 2000000);
+    st::fb_store(st::FbType::tp, storage, 0, 1);
+    st::fb_cycle(st::FbType::tp, storage);
+    check(st::fb_load(st::FbType::tp, storage, 2) == 1 &&
+              st::fb_load(st::FbType::tp, storage, 3) == 1000000,
+          "TP binding preserves nanoseconds");
+
+    st::fb_init(st::FbType::ctu, storage, 1000000);
+    st::fb_store(st::FbType::ctu, storage, 2, 1);
+    st::fb_store(st::FbType::ctu, storage, 0, 0);
+    st::fb_cycle(st::FbType::ctu, storage);
+    st::fb_store(st::FbType::ctu, storage, 0, 1);
+    st::fb_cycle(st::FbType::ctu, storage);
+    check(st::fb_load(st::FbType::ctu, storage, 3) == 1 &&
+              st::fb_load(st::FbType::ctu, storage, 4) == 1,
+          "CTU binding inputs and outputs");
+
+    st::fb_init(st::FbType::ctd, storage, 1000000);
+    st::fb_store(st::FbType::ctd, storage, 2, 2);
+    st::fb_store(st::FbType::ctd, storage, 1, 1);
+    st::fb_cycle(st::FbType::ctd, storage);
+    st::fb_store(st::FbType::ctd, storage, 1, 0);
+    st::fb_store(st::FbType::ctd, storage, 0, 1);
+    st::fb_cycle(st::FbType::ctd, storage);
+    check(st::fb_load(st::FbType::ctd, storage, 4) == 1,
+          "CTD binding inputs and outputs");
+
+    st::fb_init(st::FbType::ctud, storage, 1000000);
+    st::fb_store(st::FbType::ctud, storage, 4, 2);
+    st::fb_store(st::FbType::ctud, storage, 3, 1);
+    st::fb_cycle(st::FbType::ctud, storage);
+    st::fb_store(st::FbType::ctud, storage, 3, 0);
+    st::fb_store(st::FbType::ctud, storage, 2, 1);
+    st::fb_cycle(st::FbType::ctud, storage);
+    check(st::fb_load(st::FbType::ctud, storage, 5) == 0 &&
+              st::fb_load(st::FbType::ctud, storage, 6) == 1 &&
+              st::fb_load(st::FbType::ctud, storage, 7) == 0,
+          "CTUD binding reset and outputs");
+}
+
+void remaining_blocks_runtime_contract()
+{
+    const char *source =
+        "PROGRAM p\nVAR\n"
+        "AxisX : AXIS_REF; Rel : MC_MoveRelative; Add : MC_MoveAdditive; "
+        "Vel : MC_MoveVelocity; Override : MC_SetOverride; Reset : MC_Reset;\n"
+        "RelError : BOOL; AddError : BOOL; VelError : BOOL; "
+        "OverrideError : BOOL; ResetError : BOOL; ResetCode : DINT;\nEND_VAR\n"
+        "Rel(Axis := AxisX, Execute := FALSE, ContinuousUpdate := TRUE, "
+        "Distance := 1.0, Velocity := 2.0, Acceleration := 3.0, "
+        "Deceleration := 4.0, Jerk := 5.0, BufferMode := 2);\n"
+        "Add(Axis := AxisX, Execute := FALSE, ContinuousUpdate := TRUE, "
+        "Distance := 1.0, Velocity := 2.0, Acceleration := 3.0, "
+        "Deceleration := 4.0, Jerk := 5.0, BufferMode := 5);\n"
+        "Vel(Axis := AxisX, Execute := FALSE, ContinuousUpdate := TRUE, "
+        "Velocity := 2.0, Acceleration := 3.0, Deceleration := 4.0, "
+        "Jerk := 5.0, Direction := -1, BufferMode := 1);\n"
+        "Override(Axis := AxisX, Enable := FALSE, VelFactor := 0.5, "
+        "AccFactor := 0.5, JerkFactor := 0.5);\n"
+        "Reset(Axis := AxisX, Execute := FALSE);\n"
+        "RelError := Rel.Error; AddError := Add.Error; VelError := Vel.Error; "
+        "OverrideError := Override.Error; ResetError := Reset.Error; "
+        "ResetCode := Reset.ErrorID;\nEND_PROGRAM\n";
+    const st::CompileResult compiled = st::compile(source);
+    check(compiled.ok, "remaining MC runtime program compiles");
+    if(!compiled.ok) return;
+
+    alignas(8) unsigned char storage[4096]{};
+    st::Instance instance;
+    axis::AxisModel axis;
+    axis.set_power(true);
+    check(instance.load(compiled.program, storage, sizeof(storage), 1000000) ==
+              rt::ErrorCode::ok,
+          "remaining MC runtime program loads");
+    check(instance.bind_axis("AxisX", &axis) == rt::ErrorCode::ok,
+          "remaining MC runtime axis binds");
+    check(instance.scan(512) == st::ScanError::ok,
+          "remaining MC runtime program scans");
+    const char *outputs[] = {
+        "RelError", "AddError", "VelError", "OverrideError", "ResetError"};
+    for(const char *name : outputs) {
+        const int index = instance.find(name);
+        check(index >= 0 && instance.value_i64(static_cast<std::size_t>(index)) == 0,
+              "remaining MC idle call has no error");
+    }
+    const int reset_code = instance.find("ResetCode");
+    check(reset_code >= 0 &&
+              instance.value_i64(static_cast<std::size_t>(reset_code)) == 0,
+          "MC_Reset ErrorID output");
+}
+
 void executor_domain_smoke()
 {
     const st::CompileResult compiled = st::compile(
@@ -430,6 +572,8 @@ int main()
     mc_execute_blocks_contract();
     mc_move_absolute_contract();
     remaining_blocks_compile_contract();
+    basic_binding_dispatch_contract();
+    remaining_blocks_runtime_contract();
     executor_domain_smoke();
     if(failures == 0) {
         std::printf("PASS st_l2a_tests\n");

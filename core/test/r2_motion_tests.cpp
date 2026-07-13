@@ -34,6 +34,11 @@ int check_line_geometry()
     if(geom::make_line({1.0, 1.0, 1.0}, {1.0, 1.0, 1.0})) {
         return fail("zero line rejected");
     }
+    if(geom::norm(geom::normalize({})) != 0.0 ||
+       geom::make_line({0.0, 0.0, 0.0}, {NAN, 0.0, 0.0}).error() !=
+           rt::ErrorCode::invalid_argument) {
+        return fail("line non-finite boundary");
+    }
     return 0;
 }
 
@@ -104,6 +109,28 @@ int check_spline_and_blending()
     if(geom::norm(d2_start) > 1e-9 || geom::norm(d2_finish) > 1e-9) {
         return fail("blend junction curvature zero");
     }
+    if(geom::make_cubic_bezier({}, {}, {}, {}).error() != rt::ErrorCode::invalid_argument ||
+       geom::make_quadratic_blend({}, {0.5, 1.0, 0.0}, {1.0, 0.0, 0.0}, 0.0).error() !=
+           rt::ErrorCode::invalid_argument ||
+       geom::make_quadratic_blend({}, {}, {}, 1.0).error() !=
+           rt::ErrorCode::invalid_argument ||
+       geom::make_quadratic_blend({}, {0.5, 1.0, 0.0}, {1.0, 0.0, 0.0}, 0.1).error() !=
+           rt::ErrorCode::out_of_range ||
+       geom::make_quintic_blend({}, {1.0, 0.0, 0.0}, {2.0, 1.0, 0.0}, NAN).error() !=
+           rt::ErrorCode::invalid_argument ||
+       geom::make_quintic_blend({}, {}, {1.0, 0.0, 0.0}, 1.0).error() !=
+           rt::ErrorCode::invalid_argument) {
+        return fail("curve construction boundary errors");
+    }
+
+    geom::ArcLengthTable<4> table;
+    if(table.total_length() != 0.0 || table.parameter_at_length(1.0) != 0.0 ||
+       table.build(geom::as_path_segment(spline.value())) != rt::ErrorCode::ok ||
+       table.size() != 4 || !near(table.total_length(), spline.value().length, 1e-12) ||
+       table.parameter_at_length(-1.0) != 0.0 ||
+       table.parameter_at_length(spline.value().length + 1.0) != 1.0) {
+        return fail("arc-length table public boundaries");
+    }
 
     // Collinear pass-through and reflex degradation are explicit outcomes.
     const geom::LineSegment straight_on =
@@ -144,11 +171,36 @@ int check_path_buffer_and_lookahead()
     if(!near(p.x, 1.0, 1e-12) || !near(p.y, 0.5, 1e-12)) {
         return fail("path sample");
     }
+    const geom::Vec3 beyond = path.sample(3.0);
+    if(!near(beyond.x, 1.0, 1e-12) || !near(beyond.y, 1.0, 1e-12)) {
+        return fail("path sample clamps to finish");
+    }
 
     const rt::Result<plan::LookAheadPlan<2>> speeds = plan::compute_lookahead(path, 2.0, 1.0, 2);
     if(!speeds || speeds.value().entry_speed.size() != 2 || speeds.value().entry_speed[0] != 0.0 ||
        speeds.value().exit_speed[1] != 0.0) {
         return fail("lookahead boundary speeds");
+    }
+
+    plan::PathBuffer<2> empty;
+    const geom::Vec3 empty_sample = empty.sample(1.0);
+    if(!empty.empty() || empty.full() || empty.size() != 0 || empty.total_length() != 0.0 ||
+       empty_sample.x != 0.0 || empty_sample.y != 0.0 || empty_sample.z != 0.0) {
+        return fail("empty path state");
+    }
+    if(plan::compute_lookahead(empty, 2.0, 1.0, 2).value().entry_speed.size() != 0 ||
+       plan::compute_lookahead(path, 0.0, 1.0, 2).error() != rt::ErrorCode::invalid_argument ||
+       plan::compute_lookahead(path, 2.0, 0.0, 2).error() != rt::ErrorCode::invalid_argument ||
+       plan::compute_lookahead(path, 2.0, 1.0, 0).error() != rt::ErrorCode::invalid_argument) {
+        return fail("lookahead boundary validation");
+    }
+    const rt::Result<plan::LookAheadPlan<2>> one = plan::compute_lookahead(path, 10.0, 1.0, 1);
+    if(!one || one.value().entry_speed.size() != 1 || one.value().exit_speed[0] != 0.0) {
+        return fail("lookahead window truncation");
+    }
+    if(path.consume_front() != rt::ErrorCode::ok || path.size() != 1 ||
+       !near(path.sample(0.5).x, 1.0, 1e-12) || !near(path.sample(0.5).y, 0.5, 1e-12)) {
+        return fail("path consume front");
     }
 
     const plan::BlendDecision blend =
@@ -178,6 +230,28 @@ int check_sampler()
         path, profile.value(), rt::CycleTick::from_cycles(profile.value().duration_cycles()));
     if(!near(finish.x, 4.0, 1e-9) || !near(finish.y, 0.0, 1e-12)) {
         return fail("profiled path finish");
+    }
+
+    exec::CommittedPath<2> empty;
+    const geom::Vec3 empty_sample = empty.sample_arclength(1.0);
+    if(empty.size() != 0 || empty.total_length() != 0.0 || empty_sample.x != 0.0 ||
+       empty_sample.y != 0.0 || empty_sample.z != 0.0) {
+        return fail("empty committed path");
+    }
+    const geom::LineSegment second =
+        geom::make_line({4.0, 0.0, 0.0}, {4.0, 2.0, 0.0}).value();
+    if(empty.push(geom::as_path_segment(line)) != rt::ErrorCode::ok ||
+       empty.push(geom::as_path_segment(second)) != rt::ErrorCode::ok ||
+       empty.push(geom::as_path_segment(line)) != rt::ErrorCode::capacity_exceeded) {
+        return fail("committed path capacity");
+    }
+    const geom::Vec3 first_half = empty.sample_arclength(2.0);
+    const geom::Vec3 second_half = empty.sample_arclength(5.0);
+    const geom::Vec3 clamped = empty.sample_arclength(10.0);
+    if(!near(first_half.x, 2.0, 1e-12) || !near(second_half.x, 4.0, 1e-12) ||
+       !near(second_half.y, 1.0, 1e-12) || !near(clamped.x, 4.0, 1e-12) ||
+       !near(clamped.y, 2.0, 1e-12)) {
+        return fail("committed path multi-segment sampling");
     }
     return 0;
 }

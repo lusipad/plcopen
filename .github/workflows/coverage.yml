@@ -19,3 +19,11 @@ jobs:
 
       - name: Run coverage gate (E4)
         run: cmake -P cmake/coverage_gate.cmake
+
+      - name: Upload coverage summaries
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: linux-coverage-summaries
+          path: out/coverage-linux
+          retention-days: 30

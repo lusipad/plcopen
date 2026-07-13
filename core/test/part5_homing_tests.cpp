@@ -735,6 +735,49 @@ int check_search_validation_errors()
     return 0;
 }
 
+int check_search_validation_matrix()
+{
+    const double nan = std::numeric_limits<double>::quiet_NaN();
+    double fb::HomingSearchFb::*const positive[] = {
+        &fb::HomingSearchFb::velocity,
+        &fb::HomingSearchFb::acceleration,
+        &fb::HomingSearchFb::deceleration,
+        &fb::HomingSearchFb::jerk,
+    };
+    double fb::HomingSearchFb::*const finite[] = {
+        &fb::HomingSearchFb::set_position,
+        &fb::HomingSearchFb::offset,
+        &fb::HomingSearchFb::direction,
+    };
+    const auto rejects = [](double fb::HomingSearchFb::*member, double value) {
+        axis::AxisModel axis;
+        axis.set_power(true);
+        const axis::AxisSnapshot before = axis.snapshot();
+        fb::FbStepRefPulse step;
+        step.axis_ref = &axis;
+        step.execute = true;
+        step.*member = value;
+        step.call();
+        return step.outputs.error &&
+               step.outputs.error_id == rt::ErrorCode::invalid_argument &&
+               !step.outputs.busy && !step.outputs.active &&
+               same_snapshot(before, axis.snapshot());
+    };
+    for(double fb::HomingSearchFb::*member : positive) {
+        if(!rejects(member, nan) || !rejects(member, 0.0)) {
+            return fail("search validation matrix is atomic");
+        }
+    }
+    for(double fb::HomingSearchFb::*member : finite) {
+        if(!rejects(member, nan)) return fail("search validation matrix is atomic");
+    }
+    if(!rejects(&fb::HomingSearchFb::direction, 0.0)) {
+        return fail("search validation matrix is atomic");
+    }
+    std::printf("  PASS search_validation_matrix\n");
+    return 0;
+}
+
 int check_search_start_errors()
 {
     axis::AxisModel escape_axis;
@@ -1613,6 +1656,69 @@ int check_step_block_invalid_inputs_atomic()
     return 0;
 }
 
+int check_step_block_validation_matrix()
+{
+    const double nan = std::numeric_limits<double>::quiet_NaN();
+    double fb::FbStepBlock::*const positive[] = {
+        &fb::FbStepBlock::velocity,
+        &fb::FbStepBlock::acceleration,
+        &fb::FbStepBlock::deceleration,
+        &fb::FbStepBlock::jerk,
+    };
+    double fb::FbStepBlock::*const nonnegative[] = {
+        &fb::FbStepBlock::detection_velocity_limit,
+        &fb::FbStepBlock::torque_limit,
+        &fb::FbStepBlock::distance_limit,
+    };
+    const auto rejects_double = [](double fb::FbStepBlock::*member, double value) {
+        axis::AxisModel axis;
+        axis.set_power(true);
+        const axis::AxisSnapshot before = axis.snapshot();
+        fb::FbStepBlock step;
+        step.axis_ref = &axis;
+        step.execute = true;
+        step.*member = value;
+        step.call();
+        return step.outputs.error &&
+               step.outputs.error_id == rt::ErrorCode::invalid_argument &&
+               !step.outputs.busy && !step.outputs.active &&
+               same_snapshot(before, axis.snapshot());
+    };
+    const auto rejects_integer = [](std::int64_t fb::FbStepBlock::*member) {
+        axis::AxisModel axis;
+        axis.set_power(true);
+        const axis::AxisSnapshot before = axis.snapshot();
+        fb::FbStepBlock step;
+        step.axis_ref = &axis;
+        step.execute = true;
+        step.*member = -1;
+        step.call();
+        return step.outputs.error &&
+               step.outputs.error_id == rt::ErrorCode::invalid_argument &&
+               !step.outputs.busy && !step.outputs.active &&
+               same_snapshot(before, axis.snapshot());
+    };
+    for(double fb::FbStepBlock::*member : positive) {
+        if(!rejects_double(member, nan) || !rejects_double(member, 0.0)) {
+            return fail("step_block: validation matrix is atomic");
+        }
+    }
+    if(!rejects_double(&fb::FbStepBlock::set_position, nan)) {
+        return fail("step_block: validation matrix is atomic");
+    }
+    for(double fb::FbStepBlock::*member : nonnegative) {
+        if(!rejects_double(member, nan) || !rejects_double(member, -1.0)) {
+            return fail("step_block: validation matrix is atomic");
+        }
+    }
+    if(!rejects_integer(&fb::FbStepBlock::detection_velocity_cycles) ||
+       !rejects_integer(&fb::FbStepBlock::time_limit)) {
+        return fail("step_block: validation matrix is atomic");
+    }
+    std::printf("  PASS step_block_validation_matrix\n");
+    return 0;
+}
+
 int check_step_block_limits()
 {
     {
@@ -1738,6 +1844,64 @@ int check_step_distance_coded_rejects_map_ambiguity()
         return fail("distance_coded: ambiguous map rejected");
     }
     std::printf("  PASS step_distance_coded_rejects_map_ambiguity\n");
+    return 0;
+}
+
+int check_step_distance_coded_map_validation_matrix()
+{
+    enum class InvalidMap
+    {
+        missing,
+        empty,
+        over_capacity,
+        tolerance_nonfinite,
+        tolerance_negative,
+        distance_nonfinite,
+        position_nonfinite,
+        distance_zero,
+    };
+    const InvalidMap cases[] = {
+        InvalidMap::missing,
+        InvalidMap::empty,
+        InvalidMap::over_capacity,
+        InvalidMap::tolerance_nonfinite,
+        InvalidMap::tolerance_negative,
+        InvalidMap::distance_nonfinite,
+        InvalidMap::position_nonfinite,
+        InvalidMap::distance_zero,
+    };
+    const double nan = std::numeric_limits<double>::quiet_NaN();
+    for(InvalidMap invalid : cases) {
+        fb::DistanceCodeMap map;
+        map.count = 1;
+        map.entries[0] = {1.0, 10.0};
+        switch(invalid) {
+        case InvalidMap::missing: break;
+        case InvalidMap::empty: map.count = 0; break;
+        case InvalidMap::over_capacity: map.count = fb::DistanceCodeMap::Capacity + 1; break;
+        case InvalidMap::tolerance_nonfinite: map.tolerance = nan; break;
+        case InvalidMap::tolerance_negative: map.tolerance = -1.0; break;
+        case InvalidMap::distance_nonfinite: map.entries[0].signed_distance = nan; break;
+        case InvalidMap::position_nonfinite: map.entries[0].second_mark_position = nan; break;
+        case InvalidMap::distance_zero: map.entries[0].signed_distance = 0.0; break;
+        }
+
+        axis::AxisModel axis;
+        axis.set_power(true);
+        const axis::AxisSnapshot before = axis.snapshot();
+        fb::FbStepDistanceCoded step;
+        step.axis_ref = &axis;
+        step.code_map = invalid == InvalidMap::missing ? nullptr : &map;
+        step.execute = true;
+        step.call();
+        if(!step.outputs.error ||
+           step.outputs.error_id != rt::ErrorCode::invalid_argument ||
+           step.outputs.busy || step.outputs.active ||
+           !same_snapshot(before, axis.snapshot())) {
+            return fail("distance_coded: invalid map is atomic");
+        }
+    }
+    std::printf("  PASS step_distance_coded_map_validation_matrix\n");
     return 0;
 }
 
@@ -2004,6 +2168,58 @@ int check_flying_rejections_and_takeover()
     return 0;
 }
 
+int check_passive_homing_validation_matrix()
+{
+    const double nan = std::numeric_limits<double>::quiet_NaN();
+    const auto rejects_double = [](double fb::PassiveHomingFb::*member, double value) {
+        axis::AxisModel axis;
+        axis.set_power(true);
+        const axis::AxisSnapshot before = axis.snapshot();
+        fb::FbStepReferenceFlyingRefPulse step;
+        step.axis_ref = &axis;
+        step.execute = true;
+        step.*member = value;
+        step.call();
+        return step.outputs.error &&
+               step.outputs.error_id == rt::ErrorCode::invalid_argument &&
+               !step.outputs.busy && !step.outputs.active &&
+               same_snapshot(before, axis.snapshot());
+    };
+    if(!rejects_double(&fb::PassiveHomingFb::set_position, nan) ||
+       !rejects_double(&fb::PassiveHomingFb::distance_limit, nan) ||
+       !rejects_double(&fb::PassiveHomingFb::distance_limit, -1.0)) {
+        return fail("passive homing validation matrix is atomic");
+    }
+    {
+        axis::AxisModel axis;
+        axis.set_power(true);
+        const axis::AxisSnapshot before = axis.snapshot();
+        fb::FbStepReferenceFlyingRefPulse step;
+        step.axis_ref = &axis;
+        step.execute = true;
+        step.time_limit = -1;
+        step.call();
+        if(!step.outputs.error || !same_snapshot(before, axis.snapshot())) {
+            return fail("passive homing validation matrix is atomic");
+        }
+    }
+    {
+        axis::AxisModel axis;
+        axis.set_power(true);
+        const axis::AxisSnapshot before = axis.snapshot();
+        fb::FbStepReferenceFlyingRefPulse step;
+        step.axis_ref = &axis;
+        step.execute = true;
+        step.trigger_input = axis::AxisModel::DigitalInputCount;
+        step.call();
+        if(!step.outputs.error || !same_snapshot(before, axis.snapshot())) {
+            return fail("passive homing validation matrix is atomic");
+        }
+    }
+    std::printf("  PASS passive_homing_validation_matrix\n");
+    return 0;
+}
+
 int check_flying_initial_level_and_soft_limit()
 {
     axis::AxisModel axis;
@@ -2079,6 +2295,7 @@ int main()
     failures += check_step_abs_switch_basic();
     failures += check_step_abs_switch_escape();
     failures += check_search_validation_errors();
+    failures += check_search_validation_matrix();
     failures += check_search_start_errors();
     failures += check_search_step_group_guard();
     failures += check_search_axis_error_and_reset();
@@ -2099,10 +2316,12 @@ int main()
     failures += check_step_block_feedback_hold_and_position();
     failures += check_step_block_zero_hold_and_bridge();
     failures += check_step_block_invalid_inputs_atomic();
+    failures += check_step_block_validation_matrix();
     failures += check_step_block_limits();
     failures += check_step_block_takeover();
     failures += check_step_distance_coded_unique_match();
     failures += check_step_distance_coded_rejects_map_ambiguity();
+    failures += check_step_distance_coded_map_validation_matrix();
     failures += check_step_distance_coded_reverse_and_no_match();
     failures += check_home_absolute_source_contract();
     failures += check_home_absolute_rejects_missing_and_nonfinite();
@@ -2110,6 +2329,7 @@ int main()
     failures += check_flying_switch_preserves_motion();
     failures += check_flying_pulse_and_abort();
     failures += check_flying_rejections_and_takeover();
+    failures += check_passive_homing_validation_matrix();
     failures += check_flying_initial_level_and_soft_limit();
     std::printf("---\n%d failures\n", failures);
     return failures;

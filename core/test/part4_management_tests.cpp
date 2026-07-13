@@ -1,5 +1,6 @@
 #include <cmath>
 #include <cstdio>
+#include <limits>
 
 #include "axis/group.h"
 #include "axis/state.h"
@@ -1061,6 +1062,104 @@ int check_continue_rejects_non_interrupted()
     return 0;
 }
 
+int check_management_state_and_argument_matrix()
+{
+    {
+        axis::AxisGroup group;
+        if(group.interrupt(0.5, 0.5) != rt::ErrorCode::invalid_argument ||
+           group.continue_motion() != rt::ErrorCode::invalid_argument ||
+           group.set_group_override(0.5) != rt::ErrorCode::invalid_argument ||
+           group.set_group_override(std::numeric_limits<double>::quiet_NaN()) !=
+               rt::ErrorCode::invalid_argument) {
+            return fail("management rejects disabled group");
+        }
+    }
+
+    {
+        axis::AxisModel axes[2];
+        axis::AxisGroup group;
+        init_group(group, axes, 2);
+
+        axis::GroupCommand command{};
+        command.target.size = 2;
+        command.target.value[0] = 200.0;
+        command.target.value[1] = 100.0;
+        command.velocity = 0.1;
+        command.acceleration = 0.01;
+        command.deceleration = 0.01;
+        command.jerk = 0.005;
+        if(!group.submit_linear(command)) {
+            return fail("management matrix motion setup");
+        }
+        for(int cycle = 0; cycle < 100; ++cycle) {
+            group.cycle();
+            for(auto &member : axes) { member.cycle(); }
+        }
+
+        struct InvalidInterrupt
+        {
+            double deceleration;
+            double jerk;
+        };
+        const InvalidInterrupt invalid_interrupts[] = {
+            {0.0, 0.5},
+            {-1.0, 0.5},
+            {std::numeric_limits<double>::infinity(), 0.5},
+            {0.5, 0.0},
+            {0.5, -1.0},
+            {0.5, std::numeric_limits<double>::quiet_NaN()},
+        };
+        for(const InvalidInterrupt &entry : invalid_interrupts) {
+            if(group.interrupt(entry.deceleration, entry.jerk) !=
+                   rt::ErrorCode::invalid_argument ||
+               group.status() != axis::GroupStatus::moving) {
+                return fail("interrupt rejects invalid dynamics atomically");
+            }
+        }
+        if(group.set_group_override(1.0) != rt::ErrorCode::ok ||
+           group.group_override() != 1.0 ||
+           group.set_group_override(std::numeric_limits<double>::infinity()) !=
+               rt::ErrorCode::invalid_argument ||
+           group.group_override() != 1.0 ||
+           group.continue_motion() != rt::ErrorCode::invalid_argument) {
+            return fail("management moving state contract");
+        }
+
+        if(group.interrupt(0.01, 0.005) != rt::ErrorCode::ok ||
+           group.status() != axis::GroupStatus::stopping ||
+           group.interrupt(0.01, 0.005) != rt::ErrorCode::invalid_argument ||
+           group.continue_motion() != rt::ErrorCode::invalid_argument) {
+            return fail("management stopping state contract");
+        }
+        run_group(group, axes, 2, 20000);
+        if(group.status() != axis::GroupStatus::interrupted ||
+           group.interrupt(0.01, 0.005) != rt::ErrorCode::invalid_argument ||
+           group.set_group_override(0.5) != rt::ErrorCode::ok ||
+           !near(group.group_override(), 0.5, 1e-12) ||
+           group.continue_motion() != rt::ErrorCode::ok ||
+           group.status() != axis::GroupStatus::moving) {
+            return fail("management interrupted state contract");
+        }
+    }
+
+    {
+        axis::AxisModel axes[2];
+        axis::AxisGroup group;
+        init_group(group, axes, 2);
+        axes[0].trigger_error();
+        group.cycle();
+        if(group.status() != axis::GroupStatus::errorstop ||
+           group.interrupt(0.5, 0.5) != rt::ErrorCode::invalid_argument ||
+           group.continue_motion() != rt::ErrorCode::invalid_argument ||
+           group.set_group_override(0.5) != rt::ErrorCode::invalid_argument) {
+            return fail("management rejects errorstop group");
+        }
+    }
+
+    std::printf("  PASS management_state_and_argument_matrix\n");
+    return 0;
+}
+
 int check_management_fbs_reject_null_group()
 {
     fb::FbGroupHome home;
@@ -1442,6 +1541,7 @@ int main()
     failures += check_interrupt_continue_basic();
     failures += check_interrupt_rejects_non_moving();
     failures += check_continue_rejects_non_interrupted();
+    failures += check_management_state_and_argument_matrix();
     failures += check_management_fbs_reject_null_group();
     failures += check_move_direct_reports_group_errorstop();
     failures += check_interrupt_reports_group_errorstop();

@@ -1,5 +1,6 @@
 #include <cmath>
 #include <cstdio>
+#include <limits>
 
 #include "axis/state.h"
 #include "fb/parameter.h"
@@ -112,6 +113,84 @@ int check_parameter_registry()
        axis.read_parameter(axis::AxisParameter::max_position_lag).error() !=
            rt::ErrorCode::unsupported) {
         return fail("position lag parameters unsupported");
+    }
+
+    return 0;
+}
+
+int check_numeric_parameter_write_contract()
+{
+    axis::AxisModel axis;
+    axis::MotionLimits limits{};
+    limits.max_velocity = 10.0;
+    limits.max_acceleration = 11.0;
+    limits.max_deceleration = 12.0;
+    limits.max_jerk = 13.0;
+    limits.min_position = -3.0;
+    limits.max_position = 7.5;
+    limits.min_position_enabled = true;
+    limits.max_position_enabled = true;
+    if(axis.configure_limits(limits) != rt::ErrorCode::ok) {
+        return fail("write contract limits setup");
+    }
+
+    const double non_finite[] = {
+        std::numeric_limits<double>::quiet_NaN(),
+        std::numeric_limits<double>::infinity(),
+        -std::numeric_limits<double>::infinity(),
+    };
+    for(double value : non_finite) {
+        if(axis.write_parameter(axis::AxisParameter::max_velocity_appl, value) !=
+           rt::ErrorCode::invalid_argument) {
+            return fail("write contract rejects non-finite");
+        }
+    }
+
+    struct PositiveParameter
+    {
+        axis::AxisParameter parameter;
+        double value;
+    };
+    const PositiveParameter positive_parameters[] = {
+        {axis::AxisParameter::max_velocity_system, 20.0},
+        {axis::AxisParameter::max_velocity_appl, 21.0},
+        {axis::AxisParameter::max_acceleration_system, 22.0},
+        {axis::AxisParameter::max_acceleration_appl, 23.0},
+        {axis::AxisParameter::max_deceleration_system, 24.0},
+        {axis::AxisParameter::max_deceleration_appl, 25.0},
+        {axis::AxisParameter::max_jerk_system, 26.0},
+        {axis::AxisParameter::max_jerk_appl, 27.0},
+    };
+    for(const PositiveParameter &entry : positive_parameters) {
+        if(axis.write_parameter(entry.parameter, 0.0) != rt::ErrorCode::invalid_argument ||
+           axis.write_parameter(entry.parameter, -1.0) != rt::ErrorCode::invalid_argument ||
+           axis.write_parameter(entry.parameter, entry.value) != rt::ErrorCode::ok) {
+            return fail("write contract requires positive dynamics");
+        }
+        const rt::Result<double> stored = axis.read_parameter(entry.parameter);
+        if(!stored || !near(stored.value(), entry.value, 1e-12)) {
+            return fail("write contract stores dynamics");
+        }
+    }
+
+    if(axis.write_parameter(axis::AxisParameter::sw_limit_pos, -4.0) !=
+           rt::ErrorCode::invalid_argument ||
+       axis.write_parameter(axis::AxisParameter::sw_limit_neg, 8.0) !=
+           rt::ErrorCode::invalid_argument) {
+        return fail("write contract rejects crossed limits");
+    }
+    if(axis.write_parameter(axis::AxisParameter::sw_limit_pos, 8.0) != rt::ErrorCode::ok ||
+       axis.write_parameter(axis::AxisParameter::sw_limit_neg, -4.0) != rt::ErrorCode::ok ||
+       !near(axis.read_parameter(axis::AxisParameter::sw_limit_pos).value(), 8.0, 1e-12) ||
+       !near(axis.read_parameter(axis::AxisParameter::sw_limit_neg).value(), -4.0, 1e-12)) {
+        return fail("write contract stores ordered limits");
+    }
+
+    if(axis.write_parameter(axis::AxisParameter::commanded_position, 1.0) !=
+           rt::ErrorCode::unsupported ||
+       axis.write_parameter(axis::AxisParameter::enable_limit_pos, 1.0) !=
+           rt::ErrorCode::unsupported) {
+        return fail("write contract rejects unsupported parameters");
     }
 
     return 0;
@@ -480,7 +559,8 @@ int check_fb_error_paths()
 
 int main()
 {
-    if(check_parameter_registry() != 0 || check_parameter_facades() != 0 ||
+    if(check_parameter_registry() != 0 || check_numeric_parameter_write_contract() != 0 ||
+       check_parameter_facades() != 0 ||
        check_state_read_facades() != 0 || check_set_position() != 0 ||
        check_fb_error_paths() != 0) {
         return 1;

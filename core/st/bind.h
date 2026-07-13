@@ -77,6 +77,18 @@ inline bool direction(std::int64_t value, axis::Direction &direction)
 }
 
 template <typename Block>
+inline void store_axis_execute(Block &block, std::uint8_t pin,
+                               std::int64_t value)
+{
+    if(pin == 0) {
+        block.axis_ref = reinterpret_cast<axis::AxisModel *>(
+            static_cast<std::uintptr_t>(value));
+    } else if(pin == 1) {
+        block.execute = value != 0;
+    }
+}
+
+template <typename Block>
 inline void store_move_common(Block &block, std::uint8_t pin,
                               std::int64_t value, std::uint8_t value_pin,
                               bool has_direction)
@@ -104,18 +116,6 @@ inline void store_move_common(Block &block, std::uint8_t pin,
         if(!direction(value, block.direction)) block.axis_ref = nullptr;
     } else if(pin == value_pin + (has_direction ? 6 : 5)) {
         if(!buffer_mode(value, block.buffer_mode)) block.axis_ref = nullptr;
-    }
-}
-
-template <typename Block>
-inline void store_axis_execute(Block &block, std::uint8_t pin,
-                               std::int64_t value)
-{
-    if(pin == 0) {
-        block.axis_ref = reinterpret_cast<axis::AxisModel *>(
-            static_cast<std::uintptr_t>(value));
-    } else if(pin == 1) {
-        block.execute = value != 0;
     }
 }
 

@@ -316,6 +316,70 @@ int check_arc_curvature_verification()
     return 0;
 }
 
+int check_public_boundaries()
+{
+    plan::ToppVelocityProfile vp{};
+    vp.grid_points = 3;
+    vp.ds = 1.0;
+    vp.sdot_sq[0] = 0.0;
+    vp.sdot_sq[1] = 4.0;
+    vp.sdot_sq[2] = 0.0;
+    if(vp.sdot_at(-1) != 0.0 || vp.sdot_at(3) != 0.0 ||
+       !near(vp.interpolate_sdot(0.5), 1.0, 1e-12) ||
+       vp.interpolate_sdot(-1.0) != 0.0 || vp.interpolate_sdot(3.0) != 0.0) {
+        return fail("public_boundaries: velocity profile sampling");
+    }
+    plan::ToppVelocityProfile invalid{};
+    if(invalid.interpolate_sdot(0.0) != 0.0) {
+        return fail("public_boundaries: invalid velocity profile");
+    }
+
+    const geom::PathSegment empty{};
+    const plan::ToppAxisLimits limits[3] = {{1.0, 2.0}, {1.0, 2.0}, {1.0, 2.0}};
+    const auto grid_line = geom::make_line({0.0, 0.0, 0.0}, {1.0, 0.0, 0.0});
+    if(!grid_line) {
+        return fail("public_boundaries: grid fixture");
+    }
+    if(plan::topp_executor_detail::solve_topp_profile_l1(empty, limits, 1).error() !=
+           rt::ErrorCode::invalid_argument ||
+       plan::topp_executor_detail::solve_topp_profile_l1(
+           geom::as_path_segment(grid_line.value()), limits,
+           plan::ToppVelocityProfile::MaxGrid).error() !=
+           rt::ErrorCode::invalid_argument) {
+        return fail("public_boundaries: grid validation");
+    }
+    const auto zero = plan::plan_topp_profiled(empty, limits);
+    if(!zero || zero.value().quantized_cycles != 0 || !zero.value().curvature_verified) {
+        return fail("public_boundaries: empty path");
+    }
+
+    const otg::Limits1D scalar = plan::effective_scalar_limits(empty, limits);
+    const plan::ToppJerkAxisLimits jerk_limits[3] = {
+        {1.0, 2.0, 3.0}, {1.0, 2.0, 3.0}, {1.0, 2.0, 3.0}};
+    const otg::Limits1D jerk_scalar = plan::effective_scalar_limits(empty, jerk_limits);
+    if(!near(scalar.max_velocity, 1.0, 1e-12) ||
+       !near(scalar.max_acceleration, 1.0, 1e-12) ||
+       !near(jerk_scalar.max_velocity, 1.0, 1e-12) ||
+       !near(jerk_scalar.max_jerk, 10.0, 1e-12)) {
+        return fail("public_boundaries: scalar limit fallback");
+    }
+
+    const auto line = geom::make_line({0.0, 0.0, 0.0}, {2.0, 0.0, 0.0});
+    const auto profile = otg::plan_time_optimal(
+        {0.0, 0.0, 0.0}, {2.0, 0.0, 0.0}, {2.0, 2.0, 2.0, 2.0});
+    if(!line || !profile) {
+        return fail("public_boundaries: fixture planning");
+    }
+    const geom::PathSegment path = geom::as_path_segment(line.value());
+    const plan::ToppAxisLimits tight[3] = {
+        {0.01, 2.0}, {0.0, 2.0}, {0.0, 2.0}};
+    if(!plan::verify_joint_limits(otg::Profile1D{}, path, tight) ||
+       plan::verify_joint_limits(profile.value(), path, tight, 64, 1.0)) {
+        return fail("public_boundaries: joint limit verification");
+    }
+    return 0;
+}
+
 } // namespace
 
 int main()
@@ -329,6 +393,7 @@ int main()
     failures += check_jerk_aware_pipeline();
     failures += check_velocity_profile_storage();
     failures += check_arc_curvature_verification();
+    failures += check_public_boundaries();
 
     std::printf("\n=== %d failures ===\n", failures);
     return failures > 0 ? 1 : 0;

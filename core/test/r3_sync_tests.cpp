@@ -87,7 +87,7 @@ int check_cam_table_view()
 
     const exec::CamPoint ramp[] = {{0.0, 0.0}, {1.0, 10.0}};
     exec::CamTableView clamped{ramp, 2, false};
-    if(!clamped.valid() || !clamped.sample(0.5) ||
+    if(!clamped.valid() || clamped.sample(NAN) || !clamped.sample(0.5) ||
        !near(clamped.sample(0.5).value(), 5.0, 1e-12) ||
        !near(clamped.sample(2.0).value(), 10.0, 1e-12) ||
        !near(clamped.sample(-1.0).value(), 0.0, 1e-12)) {
@@ -110,6 +110,32 @@ int check_cam_table_view()
     }
     if(!table.view().valid() || table.view().size != 2 || !table.view().periodic) {
         return fail("cam table view export");
+    }
+
+    exec::CamTable<2> bounded;
+    if(bounded.push({0.0, 0.0}) != rt::ErrorCode::ok ||
+       bounded.push({0.0, 1.0}) != rt::ErrorCode::invalid_argument ||
+       bounded.push({1.0, 1.0}) != rt::ErrorCode::ok ||
+       bounded.push({2.0, 2.0}) != rt::ErrorCode::capacity_exceeded) {
+        return fail("cam table equality and capacity");
+    }
+
+    exec::CamSpline spline;
+    if(spline.valid() || spline.sample(0.0) || spline.sample(NAN)) {
+        return fail("cam spline rejects unbuilt and non-finite samples");
+    }
+    if(spline.build(clamped) != rt::ErrorCode::ok || !spline.valid() ||
+       !near(spline.sample(-1.0).value(), 0.0, 1e-12) ||
+       !near(spline.sample(2.0).value(), 10.0, 1e-12) ||
+       !near(spline.sample_derivative(-1.0, 1).value(), 0.0, 1e-12) ||
+       !near(spline.sample_derivative(2.0, 2).value(), 0.0, 1e-12)) {
+        return fail("cam spline endpoint behavior");
+    }
+    const exec::CamPoint periodic_points[] = {{0.0, 0.0}, {0.5, 1.0}, {1.0, 0.0}};
+    const exec::CamTableView periodic_spline{periodic_points, 3, true};
+    if(spline.build(periodic_spline) != rt::ErrorCode::ok ||
+       !near(spline.sample(-0.25).value(), spline.sample(0.75).value(), 1e-12)) {
+        return fail("cam spline periodic negative wrap");
     }
 
     return 0;
@@ -1078,6 +1104,188 @@ int check_sync_fb_error_paths()
     return 0;
 }
 
+int check_axis_sync_input_validation()
+{
+    axis::AxisModel master;
+    axis::AxisModel other_master;
+    axis::AxisModel slave;
+
+    axis::GearInCommand gear{};
+    gear.master = &master;
+    const auto gear_rejected = [&](const axis::GearInCommand &candidate) {
+        return slave.gear_in(candidate).error() == rt::ErrorCode::invalid_argument &&
+               slave.sync_phase() == axis::SyncPhase::idle;
+    };
+    axis::GearInCommand invalid_gear = gear;
+    invalid_gear.master = &slave;
+    if(!gear_rejected(invalid_gear)) return fail("gear rejects self master");
+    invalid_gear = gear;
+    invalid_gear.ratio_numerator = NAN;
+    if(!gear_rejected(invalid_gear)) return fail("gear rejects non-finite numerator");
+    invalid_gear = gear;
+    invalid_gear.ratio_denominator = NAN;
+    if(!gear_rejected(invalid_gear)) return fail("gear rejects non-finite denominator");
+    invalid_gear = gear;
+    invalid_gear.master_sync_position = NAN;
+    if(!gear_rejected(invalid_gear)) return fail("gear rejects non-finite master sync");
+    invalid_gear = gear;
+    invalid_gear.slave_sync_position = NAN;
+    if(!gear_rejected(invalid_gear)) return fail("gear rejects non-finite slave sync");
+    invalid_gear = gear;
+    invalid_gear.master_start_distance = -1.0;
+    if(!gear_rejected(invalid_gear)) return fail("gear rejects negative start distance");
+    invalid_gear = gear;
+    invalid_gear.approach_velocity = -1.0;
+    if(!gear_rejected(invalid_gear)) return fail("gear rejects negative approach velocity");
+
+    const exec::CamPoint points[] = {{0.0, 0.0}, {1.0, 1.0}};
+    axis::CamInCommand cam{};
+    cam.master = &master;
+    cam.table = exec::CamTableView{points, 2, false};
+    const auto cam_rejected = [&](const axis::CamInCommand &candidate) {
+        return slave.cam_in(candidate).error() == rt::ErrorCode::invalid_argument &&
+               slave.sync_phase() == axis::SyncPhase::idle;
+    };
+    axis::CamInCommand invalid_cam = cam;
+    invalid_cam.master = &slave;
+    if(!cam_rejected(invalid_cam)) return fail("cam rejects self master");
+    invalid_cam = cam;
+    invalid_cam.table = {};
+    if(!cam_rejected(invalid_cam)) return fail("cam rejects invalid table");
+    invalid_cam = cam;
+    invalid_cam.master_offset = NAN;
+    if(!cam_rejected(invalid_cam)) return fail("cam rejects non-finite master offset");
+    invalid_cam = cam;
+    invalid_cam.master_scaling = 0.0;
+    if(!cam_rejected(invalid_cam)) return fail("cam rejects zero master scaling");
+    invalid_cam = cam;
+    invalid_cam.slave_offset = NAN;
+    if(!cam_rejected(invalid_cam)) return fail("cam rejects non-finite slave offset");
+    invalid_cam = cam;
+    invalid_cam.slave_scaling = NAN;
+    if(!cam_rejected(invalid_cam)) return fail("cam rejects non-finite slave scaling");
+    invalid_cam = cam;
+    invalid_cam.master_sync_position = NAN;
+    if(!cam_rejected(invalid_cam)) return fail("cam rejects non-finite master sync");
+    invalid_cam = cam;
+    invalid_cam.master_start_distance = -1.0;
+    if(!cam_rejected(invalid_cam)) return fail("cam rejects negative start distance");
+    invalid_cam = cam;
+    invalid_cam.approach_velocity = -1.0;
+    if(!cam_rejected(invalid_cam)) return fail("cam rejects negative approach velocity");
+    const exec::CamPoint bad_periodic_points[] = {{0.0, 0.0}, {1.0, 1.0}};
+    invalid_cam = cam;
+    invalid_cam.table = exec::CamTableView{bad_periodic_points, 2, true};
+    invalid_cam.interpolation = exec::CamInterpolation::spline;
+    if(!cam_rejected(invalid_cam)) return fail("cam rejects invalid periodic spline");
+
+    axis::CombineAxesCommand combine{};
+    combine.master1 = &master;
+    combine.master2 = &other_master;
+    const auto combine_rejected = [&](const axis::CombineAxesCommand &candidate) {
+        return slave.combine_in(candidate).error() == rt::ErrorCode::invalid_argument &&
+               slave.sync_phase() == axis::SyncPhase::idle;
+    };
+    axis::CombineAxesCommand invalid_combine = combine;
+    invalid_combine.master1 = &slave;
+    if(!combine_rejected(invalid_combine)) return fail("combine rejects self master1");
+    invalid_combine = combine;
+    invalid_combine.master2 = &slave;
+    if(!combine_rejected(invalid_combine)) return fail("combine rejects self master2");
+    invalid_combine = combine;
+    invalid_combine.ratio_numerator_m1 = NAN;
+    if(!combine_rejected(invalid_combine)) return fail("combine rejects m1 numerator");
+    invalid_combine = combine;
+    invalid_combine.ratio_denominator_m1 = 0.0;
+    if(!combine_rejected(invalid_combine)) return fail("combine rejects m1 denominator");
+    invalid_combine = combine;
+    invalid_combine.ratio_numerator_m2 = NAN;
+    if(!combine_rejected(invalid_combine)) return fail("combine rejects m2 numerator");
+    invalid_combine = combine;
+    invalid_combine.ratio_denominator_m2 = 0.0;
+    if(!combine_rejected(invalid_combine)) return fail("combine rejects m2 denominator");
+
+    return 0;
+}
+
+int check_cam_switch_validation()
+{
+    SyncPair pair;
+    if(pair.setup() != rt::ErrorCode::ok) return fail("cam switch setup");
+    const exec::CamPoint points[] = {{0.0, 0.0}, {1.0, 1.0}};
+    axis::CamInCommand engaged{};
+    engaged.master = &pair.master;
+    engaged.table = exec::CamTableView{points, 2, false};
+    if(!pair.slave.cam_in(engaged) || pair.slave.sync_phase() != axis::SyncPhase::engaged) {
+        return fail("cam switch engage");
+    }
+
+    axis::CamInCommand candidate = engaged;
+    candidate.master = nullptr;
+    if(pair.slave.cam_switch(candidate, 0.0) != rt::ErrorCode::invalid_argument)
+        return fail("cam switch rejects different master");
+    candidate = engaged;
+    candidate.table = {};
+    if(pair.slave.cam_switch(candidate, 0.0) != rt::ErrorCode::invalid_argument)
+        return fail("cam switch rejects invalid table");
+    candidate = engaged;
+    if(pair.slave.cam_switch(candidate, NAN) != rt::ErrorCode::invalid_argument ||
+       pair.slave.cam_switch(candidate, -1.0) != rt::ErrorCode::invalid_argument)
+        return fail("cam switch rejects invalid tolerance");
+    candidate.master_start_distance = 1.0;
+    if(pair.slave.cam_switch(candidate, 0.0) != rt::ErrorCode::invalid_argument)
+        return fail("cam switch rejects start distance");
+    candidate = engaged;
+    candidate.master_offset = NAN;
+    if(pair.slave.cam_switch(candidate, 0.0) != rt::ErrorCode::invalid_argument)
+        return fail("cam switch rejects master offset");
+    candidate = engaged;
+    candidate.master_scaling = 0.0;
+    if(pair.slave.cam_switch(candidate, 0.0) != rt::ErrorCode::invalid_argument)
+        return fail("cam switch rejects master scaling");
+    candidate = engaged;
+    candidate.slave_offset = NAN;
+    if(pair.slave.cam_switch(candidate, 0.0) != rt::ErrorCode::invalid_argument)
+        return fail("cam switch rejects slave offset");
+    candidate = engaged;
+    candidate.slave_scaling = NAN;
+    if(pair.slave.cam_switch(candidate, 0.0) != rt::ErrorCode::invalid_argument)
+        return fail("cam switch rejects slave scaling");
+    candidate = engaged;
+    candidate.slave_offset = 1.0;
+    if(pair.slave.cam_switch(candidate, 0.5) != rt::ErrorCode::invalid_argument)
+        return fail("cam switch rejects discontinuity");
+    if(pair.slave.cam_switch(engaged, 0.0) != rt::ErrorCode::ok)
+        return fail("cam switch accepts equivalent table");
+    return 0;
+}
+
+int check_shift_coordinates_with_queue()
+{
+    axis::AxisModel axis;
+    if(axis.set_power(true) != rt::ErrorCode::ok) return fail("shift queue power");
+    axis::AxisCommand first = make_move(2.0, 1.0);
+    if(!axis.submit(first)) return fail("shift queue first move");
+    axis.cycle();
+    axis::AxisCommand second = make_move(4.0, 1.0);
+    second.buffer_mode = axis::BufferMode::buffered;
+    if(!axis.submit(second)) return fail("shift queue buffered move");
+    const axis::AxisSnapshot before = axis.snapshot();
+    if(axis.shift_coordinates(10.0) != rt::ErrorCode::ok ||
+       !near(axis.snapshot().command_position, before.command_position + 10.0, 1e-12) ||
+       !near(axis.snapshot().actual_position, before.actual_position + 10.0, 1e-12)) {
+        return fail("shift queue translates current coordinates");
+    }
+    for(int cycle = 0; cycle < 10000; ++cycle) {
+        axis.cycle();
+    }
+    if(axis.snapshot().active_command_id != 0 || axis.status() != axis::AxisStatus::standstill ||
+       !near(axis.snapshot().command_position, 14.0, 1e-6)) {
+        return fail("shift queue translates buffered absolute target");
+    }
+    return 0;
+}
+
 } // namespace
 
 int main()
@@ -1087,7 +1295,9 @@ int main()
        check_gear_preconditions() != 0 || check_gear_in_pos() != 0 || check_phasing() != 0 ||
        check_cam_follow() != 0 || check_cam_scaling_and_periodic() != 0 ||
        check_cam_start_distance() != 0 || check_combine_axes() != 0 ||
-       check_sync_command_interactions() != 0 || check_sync_fb_error_paths() != 0) {
+       check_sync_command_interactions() != 0 || check_sync_fb_error_paths() != 0 ||
+       check_axis_sync_input_validation() != 0 || check_cam_switch_validation() != 0 ||
+       check_shift_coordinates_with_queue() != 0) {
         return 1;
     }
     std::printf("PASS r3 sync tests\n");

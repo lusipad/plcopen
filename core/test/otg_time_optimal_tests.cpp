@@ -171,6 +171,114 @@ int check_validation()
     return 0;
 }
 
+int check_public_input_contracts()
+{
+    const otg::State1D from{0.0, 0.0, 0.0};
+    const otg::Target1D to{1.0, 0.0, 0.0};
+    const otg::Limits1D limits{3.0, 2.0, 2.0, 2.5};
+    const auto plan_invalid = [&](otg::State1D candidate_from,
+                                  otg::Target1D candidate_to,
+                                  otg::Limits1D candidate_limits) {
+        return otg::plan_time_optimal(candidate_from, candidate_to,
+                                      candidate_limits).error() ==
+               rt::ErrorCode::invalid_argument;
+    };
+
+    otg::State1D invalid_from = from;
+    invalid_from.position = NAN;
+    if(!plan_invalid(invalid_from, to, limits)) return fail("NaN entry position rejected");
+    invalid_from = from;
+    invalid_from.velocity = INFINITY;
+    if(!plan_invalid(invalid_from, to, limits)) return fail("Inf entry velocity rejected");
+    invalid_from = from;
+    invalid_from.acceleration = NAN;
+    if(!plan_invalid(invalid_from, to, limits)) return fail("NaN entry acceleration rejected");
+
+    otg::Target1D invalid_to = to;
+    invalid_to.position = INFINITY;
+    if(!plan_invalid(from, invalid_to, limits)) return fail("Inf target position rejected");
+    invalid_to = to;
+    invalid_to.velocity = NAN;
+    if(!plan_invalid(from, invalid_to, limits)) return fail("NaN target velocity rejected");
+    invalid_to = to;
+    invalid_to.acceleration = INFINITY;
+    if(!plan_invalid(from, invalid_to, limits)) return fail("Inf target acceleration rejected");
+
+    otg::Limits1D invalid_limits = limits;
+    invalid_limits.max_velocity = NAN;
+    if(!plan_invalid(from, to, invalid_limits)) return fail("NaN velocity limit rejected");
+    invalid_limits = limits;
+    invalid_limits.max_acceleration = INFINITY;
+    if(!plan_invalid(from, to, invalid_limits)) return fail("Inf acceleration limit rejected");
+    invalid_limits = limits;
+    invalid_limits.max_deceleration = NAN;
+    if(!plan_invalid(from, to, invalid_limits)) return fail("NaN deceleration limit rejected");
+    invalid_limits = limits;
+    invalid_limits.max_jerk = INFINITY;
+    if(!plan_invalid(from, to, invalid_limits)) return fail("Inf jerk limit rejected");
+    invalid_limits = limits;
+    invalid_limits.max_acceleration = 0.0;
+    if(!plan_invalid(from, to, invalid_limits)) return fail("zero acceleration limit rejected");
+    invalid_limits = limits;
+    invalid_limits.max_deceleration = -1.0;
+    if(!plan_invalid(from, to, invalid_limits)) return fail("negative deceleration limit rejected");
+    invalid_limits = limits;
+    invalid_limits.max_jerk = 0.0;
+    if(!plan_invalid(from, to, invalid_limits)) return fail("zero jerk limit rejected");
+
+    const auto fixed_invalid = [&](otg::State1D candidate_from,
+                                   otg::Target1D candidate_to,
+                                   otg::Limits1D candidate_limits,
+                                   std::int64_t cycles) {
+        return otg::solve_fixed_time(candidate_from, candidate_to,
+                                     candidate_limits, cycles).error() ==
+               rt::ErrorCode::invalid_argument;
+    };
+    if(!fixed_invalid(from, to, limits, 0) ||
+       !fixed_invalid(from, to, limits, -1)) {
+        return fail("fixed-time rejects non-positive duration");
+    }
+    invalid_from = from;
+    invalid_from.position = NAN;
+    if(!fixed_invalid(invalid_from, to, limits, 10))
+        return fail("fixed-time rejects non-finite entry");
+    invalid_to = to;
+    invalid_to.velocity = INFINITY;
+    if(!fixed_invalid(from, invalid_to, limits, 10))
+        return fail("fixed-time rejects non-finite target");
+    invalid_limits = limits;
+    invalid_limits.max_velocity = 0.0;
+    if(!fixed_invalid(from, to, invalid_limits, 10))
+        return fail("fixed-time rejects invalid limits");
+    if(otg::solve_fixed_time(from, {1.0, 0.0, 5.0}, limits, 100).error() !=
+       rt::ErrorCode::infeasible) {
+        return fail("fixed-time propagates infeasible target state");
+    }
+
+    const auto verify_fixed_from_optimal = [&](const char *name,
+                                               otg::State1D dynamic_from,
+                                               otg::Target1D dynamic_to) {
+        const rt::Result<otg::Profile1D> optimal =
+            otg::plan_time_optimal(dynamic_from, dynamic_to, limits);
+        if(!optimal) return fail(name);
+        const std::int64_t cycles = optimal.value().duration_cycles() + 8;
+        const rt::Result<otg::Profile1D> fixed =
+            otg::solve_fixed_time(dynamic_from, dynamic_to, limits, cycles);
+        if(!fixed || fixed.value().duration_cycles() != cycles)
+            return fail(name);
+        return verify_profile(name, fixed.value(), dynamic_from, dynamic_to, limits);
+    };
+    if(verify_fixed_from_optimal("fixed zero-distance velocity reversal",
+                                 {2.0, 1.0, 0.0}, {2.0, -1.0, 0.0}) != 0 ||
+       verify_fixed_from_optimal("fixed zero-distance acceleration transition",
+                                 {2.0, 0.0, 1.0}, {2.0, 0.0, -1.0}) != 0 ||
+       verify_fixed_from_optimal("fixed target opposes displacement",
+                                 {0.0, 1.0, 0.0}, {-2.0, -1.0, 0.0}) != 0) {
+        return 1;
+    }
+    return 0;
+}
+
 int check_nonzero_target_accel_cases()
 {
     const otg::Limits1D limits{3.0, 2.0, 2.0, 2.5};
@@ -905,6 +1013,7 @@ int main(int argc, char **argv)
     const int iterations = parse_iterations(argc, argv);
     const int quality_iterations = iterations / 5 > 1000 ? 1000 : (iterations / 5 < 1 ? 1 : iterations / 5);
     if(check_fixed_cases() != 0 || check_validation() != 0 ||
+       check_public_input_contracts() != 0 ||
        check_nonzero_target_accel_cases() != 0 || check_pin_boundary_cases() != 0 ||
        check_fixed_time_basic() != 0 ||
        check_fixed_time_short_profile() != 0 ||

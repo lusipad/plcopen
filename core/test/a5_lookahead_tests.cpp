@@ -108,6 +108,21 @@ int run_to_standstill(axis::AxisGroup &group, int limit = 100000)
     return -1;
 }
 
+bool wait_for_path_motion(Rig &rig, int limit = 100000)
+{
+    const double start_x = rig.x.snapshot().command_position;
+    const double start_y = rig.y.snapshot().command_position;
+    for(int i = 0; i < limit; ++i) {
+        rig.group.cycle();
+        const double dx = rig.x.snapshot().command_position - start_x;
+        const double dy = rig.y.snapshot().command_position - start_y;
+        if(std::sqrt(dx * dx + dy * dy) > 1e-12) {
+            return true;
+        }
+    }
+    return false;
+}
+
 int check_dense_window()
 {
     const Zigzag zig;
@@ -347,12 +362,16 @@ int check_stop_on_window()
             return fail("stop window setup");
         }
     }
-    for(int i = 0; i < 60; ++i) {
-        rig.group.cycle();
+    if(!wait_for_path_motion(rig)) {
+        return fail("stop window reaches moving path state");
     }
     if(rig.group.stop(0.0005, 0.0005) != rt::ErrorCode::ok ||
        rig.group.status() != axis::GroupStatus::stopping) {
         return fail("stop on window enters stopping");
+    }
+    if(rig.group.stop(0.0005, 0.0005) != rt::ErrorCode::ok ||
+       rig.group.status() != axis::GroupStatus::stopping) {
+        return fail("stop on window is idempotent");
     }
     if(run_to_standstill(rig.group) < 0) {
         return fail("stop on window reaches standstill");
@@ -573,6 +592,97 @@ int check_arc_window_boundaries()
     return 0;
 }
 
+int check_arc_window_rejection_contract()
+{
+    {
+        Rig rig;
+        if(!rig.group.submit_linear(make_move(1.0, 0.0))) {
+            return fail("queued arc rejection active setup");
+        }
+        axis::GroupCommand queued = make_move(2.0, 0.0);
+        queued.buffer_mode = axis::BufferMode::buffered;
+        if(!rig.group.submit_linear(queued)) {
+            return fail("queued arc rejection queue setup");
+        }
+        const rt::Result<std::uint32_t> rejected =
+            rig.group.submit_circular(make_arc_blend(2.0, 0.0, 2.0, 1.0, 1.0, true));
+        if(rejected || rejected.error() != rt::ErrorCode::unsupported ||
+           rig.group.status() != axis::GroupStatus::moving) {
+            return fail("arc blend rejects ordinary queued successor");
+        }
+    }
+
+    {
+        Rig rig;
+        if(rig.group.set_window_depth(2) != rt::ErrorCode::ok ||
+           !rig.group.submit_linear(make_move(1.0, 0.0))) {
+            return fail("arc capacity setup");
+        }
+        const rt::Result<std::uint32_t> first =
+            rig.group.submit_circular(make_arc_blend(1.0, 0.0, 1.0, 1.0, 1.0, true));
+        if(!first || rig.group.last_blend_degraded_command() == first.value()) {
+            return fail("arc capacity first window member");
+        }
+
+        axis::GroupCommand second{};
+        second.target.size = 2;
+        second.aux.size = 2;
+        second.aux.value[0] = 2.0 + std::cos(Pi / 4.0);
+        second.aux.value[1] = 1.0 + std::sin(Pi / 4.0);
+        second.target.value[0] = 2.0;
+        second.target.value[1] = 2.0;
+        second.velocity = 0.02;
+        second.acceleration = 0.001;
+        second.deceleration = 0.001;
+        second.jerk = 0.001;
+        second.buffer_mode = axis::BufferMode::blending_high;
+        second.path_choice = axis::CircPathChoice::counter_clockwise;
+        const rt::Result<std::uint32_t> rejected = rig.group.submit_circular(second);
+        if(rejected || rejected.error() != rt::ErrorCode::capacity_exceeded) {
+            return fail("arc window reports configured capacity");
+        }
+        if(run_to_standstill(rig.group) < 0 ||
+           !near(rig.x.snapshot().command_position, 2.0, 1e-9) ||
+           !near(rig.y.snapshot().command_position, 1.0, 1e-9)) {
+            return fail("arc capacity rejection preserves committed window");
+        }
+    }
+
+    return 0;
+}
+
+int check_window_interrupt_continue()
+{
+    Rig rig;
+    if(!rig.group.submit_linear(make_move(1.0, 0.0)) ||
+       !rig.group.submit_linear(make_blend(2.0, 0.5)) ||
+       !rig.group.submit_linear(make_blend(3.0, 0.0)) ||
+       !wait_for_path_motion(rig)) {
+        return fail("window interrupt setup");
+    }
+
+    const axis::GroupMotionState before = rig.group.motion_state();
+    if(before.active_command_id == 0 || rig.group.interrupt(0.001, 0.001) != rt::ErrorCode::ok) {
+        return fail("window interrupt accepted");
+    }
+    for(int cycle = 0; cycle < 100000 &&
+                       rig.group.status() != axis::GroupStatus::interrupted;
+        ++cycle) {
+        rig.group.cycle();
+    }
+    if(rig.group.status() != axis::GroupStatus::interrupted ||
+       rig.group.continue_motion() != rt::ErrorCode::ok ||
+       rig.group.status() != axis::GroupStatus::moving) {
+        return fail("window continue resumes");
+    }
+    if(run_to_standstill(rig.group) < 0 ||
+       !near(rig.x.snapshot().command_position, 3.0, 1e-9) ||
+       !near(rig.y.snapshot().command_position, 0.0, 1e-9)) {
+        return fail("window continue reaches committed finish");
+    }
+    return 0;
+}
+
 // Look-ahead v2 jerk correction (approved v2 spec, KB-039): the reachable
 // speed is never above the trapezoid value, the jerk-limited ramp to it fits
 // the distance, and the correction bites in jerk-dominated regimes.
@@ -622,7 +732,9 @@ int main()
        check_window_depth_config() != 0 ||
        check_reflex_inside_window() != 0 || check_stop_on_window() != 0 ||
        check_line_arc_line_window() != 0 || check_arc_centripetal_clamp() != 0 ||
-       check_arc_window_boundaries() != 0 || check_jerk_reachable_speed() != 0) {
+       check_arc_window_boundaries() != 0 || check_arc_window_rejection_contract() != 0 ||
+       check_window_interrupt_continue() != 0 ||
+       check_jerk_reachable_speed() != 0) {
         return 1;
     }
     std::printf("PASS a5 lookahead tests\n");

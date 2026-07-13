@@ -1,4 +1,5 @@
-# E4 coverage gate: build with gcov, run tests, gate on ≥90% line coverage.
+# E4 coverage gate: build with gcov, gate full-core line coverage, and report
+# production motion stack branch coverage against its 85% activation target.
 #
 # Usage: cmake -P cmake/coverage_gate.cmake
 # Requires: g++ with gcov support, gcovr (pip install gcovr)
@@ -8,12 +9,19 @@ cmake_minimum_required(VERSION 3.21)
 get_filename_component(ROOT "${CMAKE_CURRENT_LIST_DIR}/.." ABSOLUTE)
 
 set(BUILD "${ROOT}/build/coverage")
-set(THRESHOLD 90)
+set(REPORT_DIR "${ROOT}/out/coverage-linux")
+set(LINE_THRESHOLD 90)
+set(BRANCH_TARGET 85)
 
 find_program(GCOVR gcovr)
 if(NOT GCOVR)
     message(FATAL_ERROR "coverage-gate: gcovr not found (pip install gcovr)")
 endif()
+
+# Start from a clean instrumentation build so stale .gcda files cannot skew the gate.
+file(REMOVE_RECURSE "${BUILD}")
+file(REMOVE_RECURSE "${REPORT_DIR}")
+file(MAKE_DIRECTORY "${REPORT_DIR}")
 
 # Configure with coverage flags
 message(STATUS "coverage-gate: configuring...")
@@ -24,31 +32,40 @@ execute_process(
         -DCMAKE_CXX_FLAGS=--coverage
         -DPLCOPEN_BUILD_TESTS=ON
         -DPLCOPEN_BUILD_DEMOS=OFF
-    RESULT_VARIABLE rc OUTPUT_QUIET ERROR_QUIET)
+    RESULT_VARIABLE rc
+    OUTPUT_VARIABLE command_stdout
+    ERROR_VARIABLE command_stderr)
 if(NOT rc EQUAL 0)
-    message(FATAL_ERROR "coverage-gate: configure failed")
+    message(STATUS "${command_stdout}")
+    message(FATAL_ERROR "coverage-gate: configure failed\n${command_stderr}")
 endif()
 
 # Build
 message(STATUS "coverage-gate: building...")
 execute_process(
     COMMAND "${CMAKE_COMMAND}" --build "${BUILD}" --parallel
-    RESULT_VARIABLE rc OUTPUT_QUIET ERROR_QUIET)
+    RESULT_VARIABLE rc
+    OUTPUT_VARIABLE command_stdout
+    ERROR_VARIABLE command_stderr)
 if(NOT rc EQUAL 0)
-    message(FATAL_ERROR "coverage-gate: build failed")
+    message(STATUS "${command_stdout}")
+    message(FATAL_ERROR "coverage-gate: build failed\n${command_stderr}")
 endif()
 
 # Run tests
 message(STATUS "coverage-gate: running tests...")
 execute_process(
     COMMAND "${CMAKE_CTEST_COMMAND}" --test-dir "${BUILD}" --output-on-failure
-    RESULT_VARIABLE rc OUTPUT_QUIET ERROR_QUIET)
+    RESULT_VARIABLE rc
+    OUTPUT_VARIABLE command_stdout
+    ERROR_VARIABLE command_stderr)
 if(NOT rc EQUAL 0)
-    message(FATAL_ERROR "coverage-gate: tests failed")
+    message(STATUS "${command_stdout}")
+    message(FATAL_ERROR "coverage-gate: tests failed\n${command_stderr}")
 endif()
 
-# Run gcovr with fail-under threshold
-message(STATUS "coverage-gate: computing coverage...")
+# Keep the all-core line gate and branch trend transparent, including ST and adapters.
+message(STATUS "coverage-gate: computing full-core coverage...")
 execute_process(
     COMMAND ${GCOVR}
         --root "${ROOT}"
@@ -57,12 +74,37 @@ execute_process(
         --exclude "core/test/"
         --exclude "core/bench/"
         --exclude "core/demo/"
-        --fail-under-line ${THRESHOLD}
+        --json-summary "${REPORT_DIR}/core-summary.json"
+        --fail-under-line ${LINE_THRESHOLD}
         --print-summary
-    RESULT_VARIABLE rc)
+    WORKING_DIRECTORY "${ROOT}"
+    RESULT_VARIABLE line_rc)
 
-if(NOT rc EQUAL 0)
-    message(FATAL_ERROR "coverage-gate: line coverage < ${THRESHOLD}%")
+if(NOT line_rc EQUAL 0)
+    message(FATAL_ERROR "coverage-gate: full-core line coverage < ${LINE_THRESHOLD}%")
 endif()
 
-message(STATUS "coverage-gate: PASSED (>= ${THRESHOLD}% line coverage)")
+# This fixed scope is the production motion stack (L0-L6 plus kin/stream).
+# ST and adapters are outer sink consumers and remain visible in the all-core report above.
+message(STATUS "coverage-gate: computing production-motion-stack branch coverage...")
+execute_process(
+    COMMAND ${GCOVR}
+        --root "${ROOT}"
+        "${BUILD}"
+        --filter "core/(rt|otg|geom|plan|exec|axis|fb|kin|stream)/"
+        --exclude "core/test/"
+        --exclude "core/bench/"
+        --exclude "core/demo/"
+        --exclude-unreachable-branches
+        --exclude-throw-branches
+        --json-summary "${REPORT_DIR}/motion-stack-summary.json"
+        --print-summary
+    WORKING_DIRECTORY "${ROOT}"
+    RESULT_VARIABLE branch_rc)
+
+if(NOT branch_rc EQUAL 0)
+    message(FATAL_ERROR "coverage-gate: production motion stack report failed")
+endif()
+
+message(STATUS
+    "coverage-gate: PASSED (full-core line >= ${LINE_THRESHOLD}%; production motion stack branch target ${BRANCH_TARGET}% is not active yet)")

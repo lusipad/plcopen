@@ -53,7 +53,7 @@ sink 门面，生产层无反向引用）。分层健康度见
 
 ## 质量门禁现状
 
-- 测试：61 项 CTest（含 st L2a、P4-B1 与 Feetech 专项/fuzz）；本地 Debug 61/61 通过。既有 WSL gcovr 8.6/Linux CI 口径为 90.1%（8868/9840，达到 90% 门槛），本批远端 workflow 仍待复验；Windows `coverage.ps1` 独立口径与 Linux 门不混用
+- 测试：61 项 CTest（含 st L2a、P4-B1 与 Feetech 专项/fuzz）；本地 Debug 61/61 通过。WSL gcovr 8.6 干净全量实测：全 `core/` line 91.0%（14097/15494，90% 硬门通过）、branch 78.8%；固定生产运动栈 branch 78.4%（5510/7024），85% 目标未达，当前只报告并上传 artifact，不制造已知必红 workflow，P#5 未关闭。口径与盲区见 [分支覆盖基线](doc/compliance/branch-coverage-baseline.md)；Windows `coverage.ps1` 独立口径不混用
 - 回放：18 语料逐周期比对；声明变更零例外流程运行中
 - 分层：2026-07-12 include 图审计 **0 违规**（L0-L4 零 PLCopen 语义引用、无循环依赖、L4 不引 L3），见 [架构审查报告](doc/design/architecture-review-2026-07.md)
 - RT：静态扫描 27 文件（含 st vm/bind 与 Feetech adapter）+ 冻结窗口分配断言；DoD §5.3 的周期耗时对比通过（新核 = 旧线 9.3%）；分配 soak 以周期等效口径关闭（25.92 亿周期零分配，2026-07-11），墙钟 72h/抖动证据归 B7 真机报告

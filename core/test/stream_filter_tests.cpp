@@ -88,14 +88,57 @@ stream::StreamTarget velocity_target(double position, double velocity, std::int6
 
 int check_invalid_inputs()
 {
-    stream::StreamFilter1D filter;
-    stream::StreamFilterConfig config = test_config(20, 40);
-    config.limits.max_velocity = 0.0;
-    if(filter.configure(config) != rt::ErrorCode::invalid_argument) {
-        return fail("invalid limits rejected");
+    const double non_finite[] = {
+        std::numeric_limits<double>::quiet_NaN(),
+        std::numeric_limits<double>::infinity(),
+        -std::numeric_limits<double>::infinity(),
+    };
+    for(double value : non_finite) {
+        stream::StreamFilterConfig configs[6] = {
+            test_config(20, 40), test_config(20, 40), test_config(20, 40),
+            test_config(20, 40), test_config(20, 40), test_config(20, 40),
+        };
+        configs[0].limits.max_velocity = value;
+        configs[1].limits.max_acceleration = value;
+        configs[2].limits.max_deceleration = value;
+        configs[3].limits.max_jerk = value;
+        configs[4].position_envelope_enabled = true;
+        configs[4].min_position = value;
+        configs[5].position_envelope_enabled = true;
+        configs[5].max_position = value;
+        for(const stream::StreamFilterConfig &candidate : configs) {
+            stream::StreamFilter1D probe;
+            if(probe.configure(candidate) != rt::ErrorCode::invalid_argument) {
+                return fail("non-finite config rejected");
+            }
+        }
     }
 
-    config = test_config(20, 40);
+    stream::StreamFilterConfig invalid_configs[10] = {
+        test_config(20, 40), test_config(20, 40), test_config(20, 40),
+        test_config(20, 40), test_config(20, 40), test_config(20, 40),
+        test_config(20, 40), test_config(20, 40), test_config(20, 40),
+        test_config(20, 40),
+    };
+    invalid_configs[0].limits.max_velocity = 0.0;
+    invalid_configs[1].limits.max_acceleration = 0.0;
+    invalid_configs[2].limits.max_deceleration = 0.0;
+    invalid_configs[3].limits.max_jerk = 0.0;
+    invalid_configs[4].limits.max_velocity = -1.0;
+    invalid_configs[5].limits.max_acceleration = -1.0;
+    invalid_configs[6].limits.max_deceleration = -1.0;
+    invalid_configs[7].limits.max_jerk = -1.0;
+    invalid_configs[8].timeout_cycles = 0;
+    invalid_configs[9].extrapolation_cycles = -1;
+    for(const stream::StreamFilterConfig &candidate : invalid_configs) {
+        stream::StreamFilter1D probe;
+        if(probe.configure(candidate) != rt::ErrorCode::invalid_argument) {
+            return fail("invalid config field rejected");
+        }
+    }
+
+    stream::StreamFilter1D filter;
+    stream::StreamFilterConfig config = test_config(20, 40);
     config.position_envelope_enabled = true;
     config.min_position = 1.0;
     config.max_position = -1.0;
@@ -106,7 +149,7 @@ int check_invalid_inputs()
     if(filter.configure(test_config(20, 40)) != rt::ErrorCode::ok) {
         return fail("invalid input setup");
     }
-    const double nan = std::numeric_limits<double>::quiet_NaN();
+    const double nan = non_finite[0];
     if(filter.reset({nan, 0.0, 0.0}) != rt::ErrorCode::invalid_argument ||
        filter.reset({0.0, 0.0, 0.0}) != rt::ErrorCode::ok ||
        filter.push_target(position_target(nan, 1)) != rt::ErrorCode::invalid_argument) {

@@ -6,6 +6,12 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- P#5 分支覆盖首测固定 Linux 生产运动栈口径（L0-L6 + `kin/stream`），
+  与全 `core/` 90% 行门独立计算并上传 JSON summary；首批公共合同补测恢复
+  全 `core/` line 91.0%，生产运动栈 branch 由 73.4% 提升至 78.4%。85%
+  目标尚未达到，因此固定范围报告与 artifact 已接入、硬门暂不激活；P#5
+  与商用指标 #5 保持开放。
+
 - 商用门板 P#8 新增 STO/SS1 集成安全边界：以 IEC 61800-5-2 官方公开
   条目和 PLCopen Safe Motion 审计区分安全域、普通运动域与 CiA402 域，
   钉死请求/确认、restart inhibit、集成商责任、验收清单和禁止宣传词。
