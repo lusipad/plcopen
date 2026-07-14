@@ -59,6 +59,17 @@ int check_arc_geometry()
     if(geom::make_arc({0.0, 0.0, 0.0}, {1.0, 1.0, 0.0}, {2.0, 2.0, 0.0})) {
         return fail("collinear arc rejected");
     }
+    if(geom::make_arc({NAN, 0.0, 0.0}, {1.0, 1.0, 0.0}, {2.0, 0.0, 0.0}) ||
+       geom::make_arc({1e308, 0.0, 0.0}, {0.0, 1e308, 0.0},
+                      {-1e308, 0.0, 0.0})) {
+        return fail("non-finite arc rejected");
+    }
+
+    const rt::Result<geom::ArcSegment> clockwise =
+        geom::make_arc({1.0, 0.0, 0.0}, {0.0, -1.0, 0.0}, {-1.0, 0.0, 0.0});
+    if(!clockwise || geom::tangent(clockwise.value(), 0.0).y >= 0.0) {
+        return fail("clockwise arc tangent direction");
+    }
 
     geom::ArcLengthTable<8> table;
     if(table.build(geom::as_path_segment(arc.value())) != rt::ErrorCode::ok ||
@@ -110,7 +121,13 @@ int check_spline_and_blending()
         return fail("blend junction curvature zero");
     }
     if(geom::make_cubic_bezier({}, {}, {}, {}).error() != rt::ErrorCode::invalid_argument ||
+       geom::make_cubic_bezier({}, {NAN, 0.0, 0.0}, {}, {}).error() !=
+           rt::ErrorCode::invalid_argument ||
        geom::make_quadratic_blend({}, {0.5, 1.0, 0.0}, {1.0, 0.0, 0.0}, 0.0).error() !=
+           rt::ErrorCode::invalid_argument ||
+       geom::make_quadratic_blend({}, {0.5, 1.0, 0.0}, {1.0, 0.0, 0.0}, NAN).error() !=
+           rt::ErrorCode::invalid_argument ||
+       geom::make_quadratic_blend({}, {NAN, 0.0, 0.0}, {1.0, 0.0, 0.0}, 1.0).error() !=
            rt::ErrorCode::invalid_argument ||
        geom::make_quadratic_blend({}, {}, {}, 1.0).error() !=
            rt::ErrorCode::invalid_argument ||
@@ -118,7 +135,13 @@ int check_spline_and_blending()
            rt::ErrorCode::out_of_range ||
        geom::make_quintic_blend({}, {1.0, 0.0, 0.0}, {2.0, 1.0, 0.0}, NAN).error() !=
            rt::ErrorCode::invalid_argument ||
+       geom::make_quintic_blend({}, {1.0, 0.0, 0.0}, {2.0, 1.0, 0.0}, 0.0).error() !=
+           rt::ErrorCode::invalid_argument ||
+       geom::make_quintic_blend({}, {1.0, 0.0, 0.0}, {2.0, 1.0, 0.0}, INFINITY).error() !=
+           rt::ErrorCode::invalid_argument ||
        geom::make_quintic_blend({}, {}, {1.0, 0.0, 0.0}, 1.0).error() !=
+           rt::ErrorCode::invalid_argument ||
+       geom::make_quintic_blend({}, {1.0, 0.0, 0.0}, {1.0, 0.0, 0.0}, 1.0).error() !=
            rt::ErrorCode::invalid_argument) {
         return fail("curve construction boundary errors");
     }
@@ -146,6 +169,44 @@ int check_spline_and_blending()
         geom::as_path_segment(before), geom::as_path_segment(reverse), 0.1);
     if(reflex.enabled || reflex.passthrough || !reflex.degraded_to_buffered) {
         return fail("reflex degrades to buffered");
+    }
+
+    const geom::QuadraticBlendSegment quadratic =
+        geom::make_quadratic_blend({0.0, 0.0, 0.0}, {0.5, 0.1, 0.0},
+                                   {1.0, 0.0, 0.0}, 0.1)
+            .value();
+    const geom::PathSegment quadratic_path = geom::as_path_segment(quadratic);
+    const geom::Vec3 quadratic_mid = quadratic_path.sample(quadratic.length * 0.5);
+    const geom::Vec3 quadratic_tangent = quadratic_path.tangent(quadratic.length * 0.5);
+    const geom::Vec3 quadratic_d1 = quadratic_path.path_derivative(quadratic.length * 0.5);
+    const geom::Vec3 quadratic_d2 = quadratic_path.path_second_derivative(quadratic.length * 0.5);
+    const geom::Vec3 quadratic_d3 = quadratic_path.path_third_derivative(quadratic.length * 0.5);
+    if(!near(quadratic_path.length(), quadratic.length, 1e-12) ||
+       !near(quadratic_mid.x, 0.5, 1e-12) || quadratic_mid.y <= 0.0 ||
+       geom::norm(quadratic_tangent) <= 0.0 || geom::norm(quadratic_d1) <= 0.0 ||
+       !std::isfinite(geom::norm(quadratic_d2)) || !std::isfinite(geom::norm(quadratic_d3))) {
+        return fail("quadratic path dispatch");
+    }
+
+    const geom::PathSegment cubic_path = geom::as_path_segment(spline.value());
+    const geom::PathSegment quintic_path = blend.curve;
+    if(cubic_path.length() <= 0.0 || geom::norm(cubic_path.tangent(0.5)) <= 0.0 ||
+       !std::isfinite(geom::norm(cubic_path.path_derivative(0.5))) ||
+       !std::isfinite(geom::norm(cubic_path.path_second_derivative(0.5))) ||
+       !std::isfinite(geom::norm(cubic_path.path_third_derivative(0.5))) ||
+       quintic_path.length() <= 0.0 || geom::norm(quintic_path.tangent(0.5)) <= 0.0 ||
+       !std::isfinite(geom::norm(quintic_path.path_derivative(0.5))) ||
+       !std::isfinite(geom::norm(quintic_path.path_second_derivative(0.5))) ||
+       !std::isfinite(geom::norm(quintic_path.path_third_derivative(0.5)))) {
+        return fail("cubic and quintic path dispatch");
+    }
+
+    geom::QuinticBlendSegment stationary{};
+    stationary.length = 1.0;
+    if(geom::norm(geom::path_derivative(stationary, 0.5)) != 0.0 ||
+       geom::norm(geom::path_second_derivative(stationary, 0.5)) != 0.0 ||
+       geom::norm(geom::path_third_derivative(stationary, 0.5)) != 0.0) {
+        return fail("stationary quintic derivative boundaries");
     }
     return 0;
 }
@@ -282,13 +343,110 @@ int check_sync_primitives()
     return 0;
 }
 
+int check_profile_storage_and_envelope_boundaries()
+{
+    using namespace plcopen::core;
+    rt::StaticVector<int, 2> values;
+    if(!values.empty() || values.full() || values.capacity() != 2 ||
+       values.pop_back() != rt::ErrorCode::out_of_range ||
+       values.push_back(3) != rt::ErrorCode::ok ||
+       values.push_back(5) != rt::ErrorCode::ok || !values.full() ||
+       values.push_back(7) != rt::ErrorCode::capacity_exceeded ||
+       values[0] != 3 || values.data()[1] != 5) {
+        return fail("static vector storage boundaries");
+    }
+    const rt::StaticVector<int, 2> &constant_values = values;
+    if(constant_values.data()[0] != 3 || constant_values[1] != 5 ||
+       values.pop_back() != rt::ErrorCode::ok) {
+        return fail("static vector const and pop boundaries");
+    }
+    values.clear();
+    if(!values.empty()) return fail("static vector clear");
+
+    const otg::State1D start{1.0, 0.0, 0.0};
+    const otg::Target1D finish{2.0, 0.0, 0.0};
+    const otg::Segment1D segment = otg::make_quintic_segment(start, finish, 10);
+    otg::Profile1D profile;
+    for(std::size_t index = 0; index < otg::Profile1D::MaxSegments; ++index) {
+        if(profile.add_segment(segment) != rt::ErrorCode::ok) {
+            return fail("profile fills segment capacity");
+        }
+    }
+    if(profile.add_segment(segment) != rt::ErrorCode::capacity_exceeded ||
+       profile.segment_count() != otg::Profile1D::MaxSegments ||
+       profile.duration_cycles() != 160 ||
+       profile.translate(NAN) != rt::ErrorCode::invalid_argument ||
+       profile.translate(4.0) != rt::ErrorCode::ok ||
+       !near(profile.segment(0).start.position, 5.0, 1e-12) ||
+       !near(profile.segment(0).finish.position, 6.0, 1e-12)) {
+        return fail("profile capacity and translation boundaries");
+    }
+    otg::Profile1D empty;
+    if(otg::sample(empty, rt::CycleTick::from_cycles(3)).position != 0.0 ||
+       !near(otg::sample(profile, rt::CycleTick::from_cycles(-1)).position, 5.0, 1e-12) ||
+       !near(otg::sample(profile, rt::CycleTick::from_cycles(1000)).position, 6.0, 1e-12)) {
+        return fail("profile sample boundaries");
+    }
+
+    const otg::Limits1D limits{1.0, 1.0, 1.0, 1.0};
+    otg::Segment1D invalid = segment;
+    invalid.c1 = 2.0;
+    if(otg::within_limits(invalid, limits)) return fail("profile velocity envelope");
+    invalid = segment;
+    invalid.c2 = 1.0;
+    if(otg::within_limits(invalid, limits)) return fail("profile acceleration envelope");
+    invalid = segment;
+    invalid.c2 = -1.0;
+    if(otg::within_limits(invalid, limits)) return fail("profile deceleration envelope");
+    invalid = segment;
+    invalid.c3 = 1.0;
+    if(otg::within_limits(invalid, limits)) return fail("profile jerk envelope");
+    if(otg::state_within_limits({0.0, 2.0, 0.0}, limits) ||
+       otg::state_within_limits({0.0, 0.0, 2.0}, limits) ||
+       otg::state_within_limits({0.0, 0.0, -2.0}, limits)) {
+        return fail("state envelope boundaries");
+    }
+    return 0;
+}
+
+int check_planning_numeric_boundary_matrix()
+{
+    using namespace plcopen::core;
+    if(!near(geom::normalize_sweep(-7.0, 1.0), 5.5663706143591725, 1e-12) ||
+       !near(geom::normalize_sweep(7.0, -1.0), -5.5663706143591725, 1e-12)) {
+        return fail("arc sweep multi-turn normalization");
+    }
+    if(plan::jerk_reachable_speed(0.5, 0.0, 1.0, 1.0) != 0.5 ||
+       plan::jerk_reachable_speed(0.5, 1.0, 0.0, 1.0) != 0.5 ||
+       plan::jerk_reachable_speed(0.5, 1.0, 1.0, 0.0) != 0.5) {
+        return fail("jerk reachability invalid dynamics");
+    }
+    const geom::LineSegment line =
+        geom::make_line({0.0, 0.0, 0.0}, {1.0, 0.0, 0.0}).value();
+    plan::PathBuffer<2> path;
+    path.push(geom::as_path_segment(line));
+    if(plan::compute_lookahead(path, -1.0, 1.0, 1).error() !=
+           rt::ErrorCode::invalid_argument ||
+       plan::compute_lookahead(path, 1.0, -1.0, 1).error() !=
+           rt::ErrorCode::invalid_argument ||
+       plan::decide_blend(geom::as_path_segment(line), geom::as_path_segment(line), -1.0)
+           .enabled ||
+       plan::decide_blend(geom::as_path_segment(line), geom::as_path_segment(line), NAN)
+           .enabled) {
+        return fail("planning numeric rejection matrix");
+    }
+    return 0;
+}
+
 } // namespace
 
 int main()
 {
     if(check_line_geometry() != 0 || check_arc_geometry() != 0 ||
        check_spline_and_blending() != 0 || check_path_buffer_and_lookahead() != 0 ||
-       check_sampler() != 0 || check_sync_primitives() != 0) {
+       check_sampler() != 0 || check_sync_primitives() != 0 ||
+       check_profile_storage_and_envelope_boundaries() != 0 ||
+       check_planning_numeric_boundary_matrix() != 0) {
         return 1;
     }
     std::printf("PASS r2 motion tests\n");

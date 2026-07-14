@@ -925,6 +925,100 @@ int check_profile_scaled_duration_rejections()
     return 0;
 }
 
+int check_profile_header_validation_matrix()
+{
+    const double nan = std::numeric_limits<double>::quiet_NaN();
+    axis::ProfileSegment segment{};
+    segment.target = 1.0;
+    segment.velocity = 0.2;
+    segment.acceleration = 0.1;
+    segment.deceleration = 0.1;
+    segment.jerk = 0.05;
+    segment.duration_cycles = 10;
+    for(int condition = 0; condition < 7; ++condition) {
+        axis::AxisModel axis;
+        axis.set_power(true);
+        const axis::AxisSnapshot before = axis.snapshot();
+        fb::FbPositionProfile profile;
+        profile.axis_ref = condition == 0 ? nullptr : &axis;
+        profile.segments = condition == 1 ? nullptr : &segment;
+        profile.segment_count = condition == 2 ? 0 : 1;
+        profile.time_scale = condition == 3 ? nan : (condition == 4 ? 0.0 : 1.0);
+        profile.position_scale = condition == 5 ? nan : 1.0;
+        profile.position_offset = condition == 6 ? nan : 0.0;
+        profile.execute = true;
+        profile.call();
+        if(!profile.outputs.error || profile.outputs.command_accepted ||
+           !same_snapshot(axis.snapshot(), before)) {
+            return fail("position profile header validation matrix");
+        }
+    }
+    for(int condition = 0; condition < 4; ++condition) {
+        axis::AxisModel axis;
+        axis.set_power(true);
+        const axis::AxisSnapshot before = axis.snapshot();
+        fb::FbVelocityProfile profile;
+        profile.axis_ref = &axis;
+        profile.segments = &segment;
+        profile.segment_count = 1;
+        profile.velocity_scale = condition == 0 ? nan : 1.0;
+        profile.velocity_offset = condition == 1 ? nan : 0.0;
+        profile.time_scale = condition == 2 ? nan : (condition == 3 ? 0.0 : 1.0);
+        profile.execute = true;
+        profile.call();
+        if(!profile.outputs.error || profile.outputs.command_accepted ||
+           !same_snapshot(axis.snapshot(), before)) {
+            return fail("velocity profile header validation matrix");
+        }
+    }
+    for(int condition = 0; condition < 4; ++condition) {
+        axis::AxisModel axis;
+        axis.set_power(true);
+        const axis::AxisSnapshot before = axis.snapshot();
+        fb::FbAccelerationProfile profile;
+        profile.axis_ref = &axis;
+        profile.segments = &segment;
+        profile.segment_count = 1;
+        profile.acceleration_scale = condition == 0 ? nan : 1.0;
+        profile.acceleration_offset = condition == 1 ? nan : 0.0;
+        profile.time_scale = condition == 2 ? nan : (condition == 3 ? 0.0 : 1.0);
+        profile.execute = true;
+        profile.call();
+        if(!profile.outputs.error || profile.outputs.command_accepted ||
+           !same_snapshot(axis.snapshot(), before)) {
+            return fail("acceleration profile header validation matrix");
+        }
+    }
+    for(int condition = 0; condition < 9; ++condition) {
+        axis::AxisModel axis;
+        axis.set_power(true);
+        const axis::AxisSnapshot before = axis.snapshot();
+        axis::ProfileSegment invalid = segment;
+        switch(condition) {
+        case 0: invalid.target = nan; break;
+        case 1: invalid.target = 0.0; break;
+        case 2: invalid.acceleration = nan; break;
+        case 3: invalid.acceleration = 0.0; break;
+        case 4: invalid.deceleration = nan; break;
+        case 5: invalid.deceleration = 0.0; break;
+        case 6: invalid.jerk = nan; break;
+        case 7: invalid.jerk = 0.0; break;
+        default: invalid.target = -0.0; break;
+        }
+        fb::FbVelocityProfile profile;
+        profile.axis_ref = &axis;
+        profile.segments = &invalid;
+        profile.segment_count = 1;
+        profile.execute = true;
+        profile.call();
+        if(!profile.outputs.error || profile.outputs.command_accepted ||
+           !same_snapshot(axis.snapshot(), before)) {
+            return fail("velocity profile segment validation matrix");
+        }
+    }
+    return 0;
+}
+
 } // namespace
 
 int main()
@@ -942,7 +1036,8 @@ int main()
        check_position_profile_step_direct_takeover() != 0 ||
        check_position_profile_invalid_update() != 0 ||
        check_velocity_profile_submit_rejections() != 0 ||
-       check_velocity_profile_atomic_rejection() != 0) {
+       check_velocity_profile_atomic_rejection() != 0 ||
+       check_profile_header_validation_matrix() != 0) {
         return 1;
     }
     std::printf("PASS r3 profile tests\n");

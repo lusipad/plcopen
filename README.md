@@ -12,6 +12,7 @@
 **项目现状看一页就够：[STATUS.md](STATUS.md)** ·
 术语表：[CONTEXT.md](CONTEXT.md) ·
 行为边界：[已知边界注册表](doc/compliance/known-boundaries.md)
+· 商用八项：[证据总账](doc/compliance/commercial-gate-evidence.md)
 
 ---
 
@@ -32,13 +33,37 @@ plcopen 是一个 **C++17 header-only 运动控制内核**：实时基础设施�
 - **具身智能与机器人生态的建造者**（LeRobot/VLA 一系）——学习策略
   输出意图，谁把它变成平滑、受限、可复现的关节轨迹？plcopen 的定位
   是**学习栈下面的工业级确定性执行底座**（串行总线舵机 adapter
-  语义矩阵已批准，实现批次已排；方向见
+  纯软件协议层已交付，真机验证仍待硬件；方向见
   [具身智能战略](doc/planning/embodied-strategy.md)）。
 
 **不适合你**，如果你要：PLC 编程 IDE 与图形语言编辑器（看 Beremiz）、
 IEC 61131-3 全语言成熟编译器（看 MatIEC——我们的 ST 层是**运动导向
-子集**，按批次演进，L0+L1a 已交付）、入门教学 PLC（看 OpenPLC）、
+子集**，按批次演进，L0+L1a+L2a 已交付）、入门教学 PLC（看 OpenPLC）、
 商业整机平台（CODESYS / TwinCAT）。定位对比见 [VISION.md](VISION.md)。
+
+---
+
+## 全景进度
+
+> 以下是当前能力快照，不等同于“商用级”完成度。详细现状以
+> [STATUS.md](STATUS.md) 为准，当前承诺与顺序以 [ROADMAP.md](ROADMAP.md)
+> 为准，完整剩余依赖见[主计划](doc/planning/master-plan.md)。
+
+| 领域 | 状态 | 当前结论 |
+|------|------|----------|
+| 新核重写 R0-R4 | ✅ 完成 | `core/` 已成为默认消费面，旧线进入 P0-only 冻结期 |
+| Phase B 纯软件 | ✅ 完成 | 坐标系、运动学、轨迹流、cam、前瞻、适配器骨架全部落地 |
+| 核心算法 | 🟢 主体完成 | jerk-limited OTG、固定时长求解、TOPP、oracle、周期执行均已实现 |
+| PLCopen Part 1 | 🟡 部分合规 | 43/43 有门面，但还有 16 个 D 条款开放，不能宣称合规 |
+| PLCopen Part 4 | 🟡 进行中 | 40/68 有同名门面，剩 28 项；P4-B2/B3 尚未完成 |
+| PLCopen Part 5 | 🟡 门面齐全 | 11/11 有门面，但旧五块接口、派生类型及真机语义仍未闭合 |
+| PLCopen Part 6 | ⛔ 未解锁 | 等流体动力行业真实需求 |
+| ST 语言层 | 🟡 进行中 | L0、L1a、L2a 已交付；完整 POU、复合类型、任务、SFC、调试面尚未完成 |
+| Python/文档/包 | 🟢 大体完成 | 文档站和三平台 wheel 已有；PyPI 正式发布被账号动作阻塞 |
+| EtherCAT | 🔴 未开工 | 最大剩余软件块，也是实时台架和实际部署的前置 |
+| 真机/人形/孪生 | 🟠 设计或局部实现 | Feetech 纯软件层完成；真机、MuJoCo、完整 H/F/T 轨尚未闭环 |
+| 用户采纳 | 🔴 尚未形成 | 灯塔用户、现场案例、外部贡献者和有效下载信号仍不足 |
+| 商用认证 | 🔴 未启动 | PLCopen membership、提交、审核均未开始 |
 
 ---
 
@@ -147,6 +172,7 @@ D-01~D-20 生命周期问题 16 项开放（D-05/D-12/D-13/D-15 已关）——�
 | 长期方向与战略 | [VISION.md](VISION.md) · [具身智能战略](doc/planning/embodied-strategy.md) |
 | 怎么构建 | [BUILD_README.md](BUILD_README.md) · [BUILD_LINUX.md](BUILD_LINUX.md) |
 | 从 v0.x 迁移 | [doc/migration-v0-to-v1.md](doc/migration-v0-to-v1.md) |
+| 生产集成与运维 | [文档站生产指南](docs/index.md) · [运维手册](docs/operations.md) |
 | 版本变化 | [CHANGELOG.md](CHANGELOG.md) |
 | AI/人协作规范与工程技能 | [CLAUDE.md](CLAUDE.md) · [AGENTS.md](AGENTS.md) · `.claude/skills/` |
 

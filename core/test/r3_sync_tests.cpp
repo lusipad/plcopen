@@ -644,6 +644,107 @@ int check_phasing()
     return 0;
 }
 
+int check_cam_law_and_table_validation_matrix()
+{
+    exec::CamPoint points[64]{};
+    const double nan = std::numeric_limits<double>::quiet_NaN();
+    if(exec::generate_cam_law(exec::CamLaw::cycloidal, 1.0, 1.0, nullptr, 8) !=
+           rt::ErrorCode::invalid_argument ||
+       exec::generate_cam_law(exec::CamLaw::cycloidal, 1.0, 1.0, points, 7) !=
+           rt::ErrorCode::invalid_argument ||
+       exec::generate_cam_law(exec::CamLaw::cycloidal, 1.0, 1.0, points, 65) !=
+           rt::ErrorCode::invalid_argument ||
+       exec::generate_cam_law(exec::CamLaw::cycloidal, nan, 1.0, points, 8) !=
+           rt::ErrorCode::invalid_argument ||
+       exec::generate_cam_law(exec::CamLaw::cycloidal, 0.0, 1.0, points, 8) !=
+           rt::ErrorCode::invalid_argument ||
+       exec::generate_cam_law(exec::CamLaw::cycloidal, -1.0, 1.0, points, 8) !=
+           rt::ErrorCode::invalid_argument ||
+       exec::generate_cam_law(exec::CamLaw::cycloidal, 1.0, nan, points, 8) !=
+           rt::ErrorCode::invalid_argument) {
+        return fail("cam law generation validation matrix");
+    }
+    for(exec::CamLaw law : {exec::CamLaw::cycloidal, exec::CamLaw::modified_sine,
+                            exec::CamLaw::poly345}) {
+        if(exec::generate_cam_law(law, 2.0, -3.0, points, 8) != rt::ErrorCode::ok ||
+           points[0].master != 0.0 || points[7].master != 2.0 ||
+           !near(points[7].slave, -3.0, 1e-12)) {
+            return fail("cam law generation contract");
+        }
+    }
+    if(exec::cam_law_value(exec::CamLaw::cycloidal, -1.0) != 0.0 ||
+       !near(exec::cam_law_value(exec::CamLaw::poly345, 2.0), 1.0, 1e-12)) {
+        return fail("cam law clamps domain");
+    }
+
+    const exec::CamPoint invalid_master[] = {{nan, 0.0}, {1.0, 1.0}};
+    const exec::CamPoint invalid_slave[] = {{0.0, nan}, {1.0, 1.0}};
+    const exec::CamPoint decreasing[] = {{1.0, 0.0}, {0.0, 1.0}};
+    if(exec::CamTableView{invalid_master, 2, false}.valid() ||
+       exec::CamTableView{invalid_slave, 2, false}.valid() ||
+       exec::CamTableView{decreasing, 2, false}.valid()) {
+        return fail("cam table field validation matrix");
+    }
+
+    exec::CamSpline spline;
+    const exec::CamPoint mismatch[] = {{0.0, 0.0}, {0.5, 1.0}, {1.0, 2.0}};
+    exec::CamPoint oversized[exec::CamSpline::MaxPoints + 1]{};
+    for(std::size_t index = 0; index < exec::CamSpline::MaxPoints + 1; ++index) {
+        oversized[index] = {static_cast<double>(index), 0.0};
+    }
+    if(spline.build(exec::CamTableView{}) != rt::ErrorCode::invalid_argument ||
+       spline.build(exec::CamTableView{oversized, exec::CamSpline::MaxPoints + 1, false}) !=
+           rt::ErrorCode::invalid_argument ||
+       spline.build(exec::CamTableView{mismatch, 3, true}) !=
+           rt::ErrorCode::invalid_argument) {
+        return fail("cam spline build validation matrix");
+    }
+    return 0;
+}
+
+int check_gear_approach_velocity_caps_both_directions()
+{
+    for(int direction : {1, -1}) {
+        axis::AxisModel master;
+        axis::AxisModel slave;
+        master.set_power(true);
+        slave.set_power(true);
+        axis::GearInCommand gear{};
+        gear.master = &master;
+        gear.position_sync = true;
+        gear.master_sync_position = 2.0 * direction;
+        gear.slave_sync_position = 4.0 * direction;
+        gear.master_start_distance = 1.0;
+        gear.approach_velocity = 0.01;
+        if(!slave.gear_in(gear) ||
+           !master.submit(make_move(3.0 * direction, 0.05))) {
+            return fail("gear approach cap setup");
+        }
+        double previous = slave.snapshot().command_position;
+        bool moved = false;
+        for(int cycle = 0; cycle < 400 &&
+                           slave.sync_phase() != axis::SyncPhase::engaged;
+            ++cycle) {
+            master.cycle();
+            slave.cycle();
+            const double current = slave.snapshot().command_position;
+            const double step = current - previous;
+            if(slave.sync_phase() == axis::SyncPhase::approaching &&
+               std::fabs(step) > gear.approach_velocity + 1e-12) {
+                return fail("gear approach velocity cap");
+            }
+            if(std::fabs(step) > 1e-12) moved = true;
+            previous = current;
+        }
+        if(!moved || slave.sync_phase() != axis::SyncPhase::engaged ||
+           (direction > 0 && slave.snapshot().command_position <= 0.0) ||
+           (direction < 0 && slave.snapshot().command_position >= 0.0)) {
+            return fail("gear approach cap direction");
+        }
+    }
+    return 0;
+}
+
 int check_cam_follow()
 {
     static SyncPair pair;
@@ -1104,6 +1205,86 @@ int check_sync_fb_error_paths()
     return 0;
 }
 
+int check_sync_fb_short_circuit_matrix()
+{
+    {
+        fb::FbGearIn gear;
+        gear.execute = true;
+        gear.continuous_update = true;
+        gear.call();
+        gear.call();
+        if(!gear.outputs.error) return fail("gear update without tracked command");
+    }
+    {
+        fb::FbCamIn cam;
+        cam.execute = true;
+        cam.continuous_update = true;
+        cam.call();
+        cam.call();
+        if(!cam.outputs.error) return fail("cam update without tracked command");
+    }
+    {
+        fb::FbCombineAxes combine;
+        combine.execute = true;
+        combine.continuous_update = true;
+        combine.call();
+        combine.call();
+        if(!combine.outputs.error) return fail("combine update without tracked command");
+    }
+
+    SyncPair pair;
+    if(pair.setup() != rt::ErrorCode::ok) return fail("sync short circuit setup");
+    fb::FbGearIn gear;
+    gear.master_ref = &pair.master;
+    gear.slave_ref = &pair.slave;
+    gear.execute = true;
+    gear.continuous_update = true;
+    gear.call();
+    pair.cycle();
+    gear.call();
+    if(!gear.in_sync) return fail("sync short circuit gear engaged");
+    gear.slave_ref = nullptr;
+    gear.call();
+    if(!gear.outputs.busy || !gear.outputs.active) {
+        return fail("sync observation ignores missing facade ref");
+    }
+
+    fb::FbPhasingAbsolute phase;
+    phase.execute = true;
+    phase.master_ref = &pair.master;
+    phase.call();
+    if(!phase.outputs.error) return fail("phasing missing slave");
+    phase.execute = false;
+    phase.call();
+    phase.execute = true;
+    phase.master_ref = &pair.master;
+    phase.slave_ref = &pair.master;
+    phase.call();
+    if(!phase.outputs.error) return fail("phasing rejects identical axes");
+    phase.execute = false;
+    phase.call();
+    axis::AxisModel unrelated;
+    unrelated.set_power(true);
+    phase.execute = true;
+    phase.master_ref = &pair.master;
+    phase.slave_ref = &unrelated;
+    phase.call();
+    if(!phase.outputs.error) return fail("phasing requires engaged gear pair");
+
+    fb::FbGearOut out;
+    out.axis_ref = &unrelated;
+    out.execute = true;
+    out.call();
+    if(!out.error || out.outputs.error_id != rt::ErrorCode::invalid_argument) {
+        return fail("gear out propagates idle sync rejection");
+    }
+    out.call();
+    out.execute = false;
+    out.call();
+    if(out.done || out.error || out.outputs.error) return fail("gear out reset after error");
+    return 0;
+}
+
 int check_axis_sync_input_validation()
 {
     axis::AxisModel master;
@@ -1286,18 +1467,185 @@ int check_shift_coordinates_with_queue()
     return 0;
 }
 
+int check_shift_coordinates_rejection_matrix()
+{
+    {
+        axis::AxisModel model;
+        model.set_power(true);
+        axis::AxisCommand move = make_move(4.0, 1.0);
+        if(!model.submit(move) ||
+           !model.submit_superimposed(1.0, 0.2, 0.1, 0.1, 0.05)) {
+            return fail("shift superimposed setup");
+        }
+        const axis::AxisSnapshot before = model.snapshot();
+        if(model.shift_coordinates(1.0) != rt::ErrorCode::precondition_failed ||
+           !near(model.snapshot().command_position, before.command_position, 1e-12)) {
+            return fail("shift rejects active superimposed motion");
+        }
+        if(model.shift_coordinates(NAN) != rt::ErrorCode::precondition_failed) {
+            return fail("shift rejects nonfinite delta");
+        }
+    }
+    {
+        axis::AxisModel members[2];
+        axis::AxisGroup group;
+        for(auto &member : members) {
+            member.set_power(true);
+            group.add_axis(member);
+        }
+        group.enable();
+        axis::GroupCommand move{};
+        move.target.size = 2;
+        move.target.value[0] = 2.0;
+        move.target.value[1] = 1.0;
+        move.velocity = 0.2;
+        move.acceleration = 0.1;
+        move.deceleration = 0.1;
+        move.jerk = 0.05;
+        if(!group.submit_linear(move)) return fail("shift group setup");
+        const double before = members[0].snapshot().command_position;
+        if(members[0].shift_coordinates(1.0) != rt::ErrorCode::precondition_failed ||
+           members[0].snapshot().command_position != before) {
+            return fail("shift rejects active group member");
+        }
+    }
+    {
+        axis::MotionLimits limits{};
+        limits.min_position = -1.0;
+        limits.max_position = 1.0;
+        limits.min_position_enabled = true;
+        limits.max_position_enabled = true;
+        axis::AxisModel model;
+        if(model.configure_limits(limits) != rt::ErrorCode::ok ||
+           model.set_power(true) != rt::ErrorCode::ok ||
+           !model.submit(make_move(0.8, 0.2))) {
+            return fail("shift limit setup");
+        }
+        axis::AxisCommand queued = make_move(0.9, 0.2);
+        queued.buffer_mode = axis::BufferMode::buffered;
+        if(!model.submit(queued)) return fail("shift queued limit setup");
+        const axis::AxisSnapshot before = model.snapshot();
+        if(model.shift_coordinates(0.5) != rt::ErrorCode::invalid_argument ||
+           model.snapshot().active_command_id != before.active_command_id ||
+           model.snapshot().command_position != before.command_position) {
+            return fail("shift rejects queued absolute limit atomically");
+        }
+    }
+    return 0;
+}
+
+int check_sync_update_and_feedback_validation()
+{
+    const double nan = NAN;
+    axis::AxisModel master1;
+    axis::AxisModel master2;
+    axis::AxisModel slave;
+    master1.set_power(true);
+    master2.set_power(true);
+    slave.set_power(true);
+
+    axis::GearInCommand gear{};
+    gear.master = &master1;
+    for(int field = 0; field < 8; ++field) {
+        axis::GearInCommand invalid = gear;
+        switch(field) {
+        case 0: invalid.ratio_numerator = nan; break;
+        case 1: invalid.ratio_denominator = nan; break;
+        case 2: invalid.ratio_denominator = 0.0; break;
+        case 3: invalid.master_sync_position = nan; break;
+        case 4: invalid.slave_sync_position = nan; break;
+        case 5: invalid.master_start_distance = nan; break;
+        case 6: invalid.master_start_distance = -1.0; break;
+        default: invalid.approach_velocity = nan; break;
+        }
+        if(slave.gear_in(invalid).error() != rt::ErrorCode::invalid_argument) {
+            return fail("gear rejects each invalid sync field");
+        }
+    }
+
+    axis::CombineAxesCommand combine{};
+    combine.master1 = &master1;
+    combine.master2 = &master2;
+    for(int field = 0; field < 6; ++field) {
+        axis::CombineAxesCommand invalid = combine;
+        switch(field) {
+        case 0: invalid.ratio_numerator_m1 = nan; break;
+        case 1: invalid.ratio_denominator_m1 = nan; break;
+        case 2: invalid.ratio_denominator_m1 = 0.0; break;
+        case 3: invalid.ratio_numerator_m2 = nan; break;
+        case 4: invalid.ratio_denominator_m2 = nan; break;
+        default: invalid.ratio_denominator_m2 = 0.0; break;
+        }
+        if(slave.combine_in(invalid).error() != rt::ErrorCode::invalid_argument) {
+            return fail("combine rejects each invalid ratio field");
+        }
+    }
+
+    if(!slave.gear_in(gear)) return fail("gear update validation setup");
+    if(slave.gear_update(nan, 1.0) != rt::ErrorCode::invalid_argument ||
+       slave.gear_update(1.0, nan) != rt::ErrorCode::invalid_argument ||
+       slave.gear_update(1.0, 0.0) != rt::ErrorCode::invalid_argument ||
+       slave.gear_update(2.0, 1.0) != rt::ErrorCode::ok) {
+        return fail("gear update validates each ratio field");
+    }
+    slave.sync_out();
+
+    const exec::CamPoint points[] = {{0.0, 0.0}, {1.0, 1.0}};
+    axis::CamInCommand cam{};
+    cam.master = &master1;
+    cam.table = exec::CamTableView{points, 2, false};
+    if(!slave.cam_in(cam)) return fail("cam update validation setup");
+    const double cam_values[][4] = {
+        {nan, 1.0, 0.0, 1.0}, {0.0, nan, 0.0, 1.0}, {0.0, 0.0, 0.0, 1.0},
+        {0.0, 1.0, nan, 1.0}, {0.0, 1.0, 0.0, nan}};
+    for(const auto &values : cam_values) {
+        if(slave.cam_update(values[0], values[1], values[2], values[3]) !=
+           rt::ErrorCode::invalid_argument) {
+            return fail("cam update validates each scaling field");
+        }
+    }
+    slave.sync_out();
+
+    if(!slave.combine_in(combine)) return fail("combine update validation setup");
+    for(int field = 0; field < 6; ++field) {
+        double values[4] = {1.0, 1.0, 1.0, 1.0};
+        if(field < 4) values[field] = nan;
+        if(field == 4) values[1] = 0.0;
+        if(field == 5) values[3] = 0.0;
+        if(slave.combine_update(axis::CombineMode::add_axes, values[0], values[1],
+                                values[2], values[3]) != rt::ErrorCode::invalid_argument) {
+            return fail("combine update validates each ratio field");
+        }
+    }
+
+    for(int field = 0; field < 4; ++field) {
+        double values[4] = {1.0, 2.0, 3.0, 4.0};
+        values[field] = nan;
+        if(slave.set_actual_feedback(values[0], values[1], values[2], values[3]) !=
+           rt::ErrorCode::invalid_argument) {
+            return fail("feedback rejects each nonfinite field");
+        }
+    }
+    return 0;
+}
+
 } // namespace
 
 int main()
 {
-    if(check_cam_table_view() != 0 || check_gear_follow_and_out() != 0 ||
+    if(check_cam_table_view() != 0 || check_cam_law_and_table_validation_matrix() != 0 ||
+       check_gear_follow_and_out() != 0 ||
        check_gear_sources_and_update() != 0 || check_gear_buffer_modes() != 0 ||
-       check_gear_preconditions() != 0 || check_gear_in_pos() != 0 || check_phasing() != 0 ||
+        check_gear_preconditions() != 0 || check_gear_in_pos() != 0 ||
+        check_gear_approach_velocity_caps_both_directions() != 0 || check_phasing() != 0 ||
        check_cam_follow() != 0 || check_cam_scaling_and_periodic() != 0 ||
        check_cam_start_distance() != 0 || check_combine_axes() != 0 ||
        check_sync_command_interactions() != 0 || check_sync_fb_error_paths() != 0 ||
+       check_sync_fb_short_circuit_matrix() != 0 ||
        check_axis_sync_input_validation() != 0 || check_cam_switch_validation() != 0 ||
-       check_shift_coordinates_with_queue() != 0) {
+       check_shift_coordinates_with_queue() != 0 ||
+       check_shift_coordinates_rejection_matrix() != 0 ||
+       check_sync_update_and_feedback_validation() != 0) {
         return 1;
     }
     std::printf("PASS r3 sync tests\n");

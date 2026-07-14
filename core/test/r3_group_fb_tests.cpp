@@ -85,6 +85,10 @@ int check_add_remove()
     if(!remove_y.outputs.done || group.member_count() != 1) {
         return fail("remove from disabled group");
     }
+    remove_y.call();
+    if(!remove_y.outputs.done || remove_y.outputs.error) {
+        return fail("remove non-rising keeps outputs");
+    }
 
     group.add_axis(y);
     group.enable();
@@ -140,6 +144,10 @@ int check_group_reset()
        group.status() != axis::GroupStatus::standby ||
        x.status() != axis::AxisStatus::standstill) {
         return fail("group reset clears member errors");
+    }
+    reset.call();
+    if(!reset.outputs.done || reset.outputs.error) {
+        return fail("group reset non-rising keeps outputs");
     }
 
     return 0;
@@ -465,6 +473,92 @@ int check_group_configuration_rejections_are_atomic()
        group.set_group_override(1.1) != rt::ErrorCode::invalid_argument ||
        !same_group_snapshot(before, snapshot_group(group))) {
         return fail("scalar configuration rejects invalid input atomically");
+    }
+    return 0;
+}
+
+int check_group_parameter_and_dynamics_validation()
+{
+    axis::AxisModel x;
+    axis::AxisModel y;
+    axis::AxisGroup group;
+    if(group.add_axis(x) != rt::ErrorCode::ok || group.add_axis(y) != rt::ErrorCode::ok) {
+        return fail("group parameter setup");
+    }
+
+    const double nan = std::numeric_limits<double>::quiet_NaN();
+    if(group.write_group_parameter(axis::GroupParameter::dynamics_mode, nan) !=
+           rt::ErrorCode::invalid_argument ||
+       group.write_group_parameter(axis::GroupParameter::dynamics_mode, 7.0) !=
+           rt::ErrorCode::invalid_argument ||
+       group.write_group_parameter(axis::GroupParameter::transition_reference_point,
+                                   static_cast<double>(axis::TransitionReferencePoint::start_point)) !=
+           rt::ErrorCode::unsupported ||
+       group.write_group_parameter(axis::GroupParameter::transition_reference_point, 7.0) !=
+           rt::ErrorCode::invalid_argument ||
+       group.write_group_parameter(static_cast<axis::GroupParameter>(99), 0.0) !=
+           rt::ErrorCode::unsupported) {
+        return fail("group parameter rejects unsupported values");
+    }
+
+    axis::PathDynamics update{};
+    for(int field = 0; field < 4; ++field) {
+        update = {};
+        double *values[] = {&update.velocity, &update.acceleration, &update.deceleration,
+                            &update.jerk};
+        *values[field] = nan;
+        if(group.write_reference_dynamics(update) != rt::ErrorCode::invalid_argument ||
+           group.write_default_dynamics(update) != rt::ErrorCode::invalid_argument) {
+            return fail("group dynamics rejects each nonfinite field");
+        }
+    }
+
+    axis::JoggingDynamics jogging{};
+    jogging.size = 2;
+    for(int field = 0; field < 4; ++field) {
+        jogging = {};
+        jogging.size = 2;
+        double *values[] = {&jogging.axis_velocity[1], &jogging.axis_acceleration[1],
+                            &jogging.axis_deceleration[1], &jogging.axis_jerk[1]};
+        *values[field] = nan;
+        if(group.write_jogging_dynamics(jogging) != rt::ErrorCode::invalid_argument) {
+            return fail("group jogging rejects each nonfinite axis field");
+        }
+    }
+
+    axis::GroupSWLimits limits{};
+    limits.count = 2;
+    limits.value[0] = {-1.0, 1.0, true, true};
+    limits.value[1] = {-2.0, 2.0, true, true};
+    for(int field = 0; field < 2; ++field) {
+        axis::GroupSWLimits invalid = limits;
+        if(field == 0) invalid.value[1].minimum = nan;
+        if(field == 1) invalid.value[1].maximum = nan;
+        if(group.write_group_sw_limits(invalid) != rt::ErrorCode::invalid_argument) {
+            return fail("group limits reject each nonfinite bound");
+        }
+    }
+    axis::GroupSWLimits crossed = limits;
+    crossed.value[1].minimum = 3.0;
+    if(group.write_group_sw_limits(crossed) != rt::ErrorCode::invalid_argument ||
+       group.write_group_sw_limits(limits) != rt::ErrorCode::ok) {
+        return fail("group limits validate ranges");
+    }
+
+    if(group.write_group_parameter(axis::GroupParameter::dynamics_mode,
+                                   static_cast<double>(axis::DynamicsMode::percentage)) !=
+       rt::ErrorCode::ok) {
+        return fail("group percentage dynamics setup");
+    }
+    for(int field = 0; field < 8; ++field) {
+        axis::GroupCommand command = valid_group_command();
+        double *values[] = {&command.velocity, &command.acceleration, &command.deceleration,
+                            &command.jerk};
+        *values[field / 2] = field % 2 == 0 ? nan : 101.0;
+        const rt::Result<std::uint32_t> rejected = group.submit_linear(command);
+        if(rejected || rejected.error() != rt::ErrorCode::invalid_argument) {
+            return fail("group percentage dynamics rejects each invalid field");
+        }
     }
     return 0;
 }
@@ -1371,11 +1465,215 @@ int check_group_fb_error_paths()
     return 0;
 }
 
+int check_group_configuration_fb_matrix()
+{
+    axis::AxisModel x;
+    axis::AxisModel y;
+    axis::AxisGroup group;
+    group.add_axis(x);
+    group.add_axis(y);
+
+    fb::FbGroupWriteParameter write_parameter;
+    write_parameter.execute = true;
+    write_parameter.call();
+    if(!write_parameter.outputs.error) return fail("write parameter null group");
+    write_parameter.execute = false;
+    write_parameter.call();
+    if(write_parameter.outputs.done || write_parameter.outputs.error) {
+        return fail("write parameter falling edge clears");
+    }
+
+    fb::FbGroupWriteReferenceDynamics write_reference;
+    write_reference.execute = true;
+    write_reference.call();
+    if(!write_reference.outputs.error) return fail("write reference null group");
+
+    fb::FbGroupWriteDefaultDynamics write_default;
+    write_default.execute = true;
+    write_default.call();
+    if(!write_default.outputs.error) return fail("write default null group");
+
+    fb::FbGroupWriteJoggingDynamics write_jogging;
+    write_jogging.execute = true;
+    write_jogging.call();
+    if(!write_jogging.outputs.error) return fail("write jogging null group");
+
+    fb::FbGroupWriteSWLimits write_limits;
+    write_limits.execute = true;
+    write_limits.call();
+    if(!write_limits.outputs.error) return fail("write limits null group");
+
+    fb::FbGroupReadReferenceDynamics read_reference;
+    read_reference.enable = true;
+    read_reference.call();
+    if(!read_reference.error) return fail("read reference null group");
+    read_reference.group_ref = &group;
+    read_reference.call();
+    if(!read_reference.valid || read_reference.value.velocity != 1.0) {
+        return fail("read reference dynamics");
+    }
+
+    fb::FbGroupReadDefaultDynamics read_default;
+    read_default.group_ref = &group;
+    read_default.enable = true;
+    read_default.call();
+    if(!read_default.valid || read_default.value.acceleration != 1.0) {
+        return fail("read default dynamics");
+    }
+
+    fb::FbGroupReadJoggingDynamics read_jogging;
+    read_jogging.group_ref = &group;
+    read_jogging.enable = true;
+    read_jogging.call();
+    if(!read_jogging.valid) return fail("read jogging dynamics");
+
+    fb::FbGroupReadSWLimits read_limits;
+    read_limits.group_ref = &group;
+    read_limits.enable = true;
+    read_limits.call();
+    if(!read_limits.valid || read_limits.limit_values.count != 2) {
+        return fail("read group limits");
+    }
+    return 0;
+}
+
+int check_group_readback_fb_matrix()
+{
+    axis::AxisModel x;
+    axis::AxisModel y;
+    x.set_power(true);
+    y.set_power(true);
+    axis::AxisGroup group;
+    group.add_axis(x);
+    group.add_axis(y);
+
+    fb::FbGroupReadConfiguration configuration;
+    configuration.enable = true;
+    configuration.call();
+    if(!configuration.error) return fail("group configuration null group");
+    configuration.group_ref = &group;
+    configuration.ident.index = 2;
+    configuration.call();
+    if(!configuration.error || configuration.error_id != rt::ErrorCode::out_of_range) {
+        return fail("group configuration index range");
+    }
+    configuration.ident.index = 0;
+    configuration.coord_system = axis::CoordSystem::mcs;
+    configuration.call();
+    if(!configuration.error || configuration.error_id != rt::ErrorCode::unsupported) {
+        return fail("group configuration coordinate system");
+    }
+    configuration.coord_system = axis::CoordSystem::acs;
+    configuration.call();
+    if(!configuration.valid || configuration.axis_ref != &x) {
+        return fail("group configuration valid read");
+    }
+
+    fb::FbReadAxisGroupInfo axis_info;
+    axis_info.enable = true;
+    axis_info.call();
+    if(!axis_info.error || axis_info.error_id != rt::ErrorCode::invalid_argument) {
+        return fail("axis group info null axis");
+    }
+    axis::AxisModel standalone;
+    axis_info.axis_ref = &standalone;
+    axis_info.call();
+    if(!axis_info.error || axis_info.error_id != rt::ErrorCode::precondition_failed) {
+        return fail("axis group info unowned axis");
+    }
+    axis_info.axis_ref = &y;
+    axis_info.call();
+    if(!axis_info.valid || axis_info.group_ref != &group || axis_info.ident.index != 1) {
+        return fail("axis group info valid read");
+    }
+
+    fb::FbReadDHParameters dh;
+    dh.enable = true;
+    dh.group_ref = &group;
+    dh.call();
+    if(!dh.error || dh.error_id != rt::ErrorCode::precondition_failed) {
+        return fail("dh read requires metadata");
+    }
+    fb::FbReadJointInfo joints;
+    joints.enable = true;
+    joints.group_ref = &group;
+    joints.call();
+    if(!joints.error || joints.error_id != rt::ErrorCode::precondition_failed) {
+        return fail("joint read requires metadata");
+    }
+
+    fb::FbGroupReadPosition position;
+    position.enable = true;
+    position.group_ref = &group;
+    position.source = axis::GroupValueSource::set;
+    position.call();
+    if(!position.error || position.error_id != rt::ErrorCode::unsupported) {
+        return fail("group set position unsupported");
+    }
+
+    fb::FbGroupReadVelocity velocity;
+    velocity.enable = true;
+    velocity.call();
+    if(!velocity.error || velocity.error_id != rt::ErrorCode::invalid_argument) {
+        return fail("group velocity null group");
+    }
+    velocity.group_ref = &group;
+    velocity.coord_system = axis::CoordSystem::mcs;
+    velocity.call();
+    if(!velocity.error || velocity.error_id != rt::ErrorCode::unsupported) {
+        return fail("group velocity coordinate system");
+    }
+    velocity.coord_system = axis::CoordSystem::acs;
+    velocity.source = axis::GroupValueSource::set;
+    velocity.call();
+    if(!velocity.error || velocity.error_id != rt::ErrorCode::unsupported) {
+        return fail("group velocity set source");
+    }
+    velocity.source = axis::GroupValueSource::actual;
+    velocity.call();
+    if(!velocity.valid || velocity.value.size != 2) {
+        return fail("group velocity valid read");
+    }
+
+    fb::FbGroupReadAcceleration acceleration;
+    acceleration.enable = true;
+    acceleration.group_ref = &group;
+    acceleration.source = axis::GroupValueSource::commanded;
+    acceleration.call();
+    if(!acceleration.valid || acceleration.value.size != 2) {
+        return fail("group acceleration command read");
+    }
+
+    fb::FbGroupReadMotionState motion;
+    motion.enable = true;
+    motion.call();
+    if(!motion.error || motion.error_id != rt::ErrorCode::invalid_argument) {
+        return fail("group motion state null group");
+    }
+    motion.group_ref = &group;
+    motion.call();
+    if(!motion.error || motion.error_id != rt::ErrorCode::precondition_failed) {
+        return fail("group motion state disabled");
+    }
+    group.enable();
+    motion.call();
+    if(!motion.valid || !motion.standstill) return fail("group motion state standby");
+
+    fb::FbGroupReadCommandInfo command_info;
+    command_info.enable = true;
+    command_info.group_ref = &group;
+    command_info.command_id = 0;
+    command_info.call();
+    if(!command_info.error) return fail("group command info unknown id");
+    return 0;
+}
+
 } // namespace
 
 int main()
 {
     if(check_group_configuration_rejections_are_atomic() != 0 ||
+       check_group_parameter_and_dynamics_validation() != 0 ||
        check_group_enable_rejections_are_atomic() != 0 ||
        check_group_domain_rejection_is_atomic() != 0 ||
        check_group_ownership_rejections_are_atomic() != 0 ||
@@ -1396,7 +1694,8 @@ int main()
        check_active_group_rejects_member_sync() != 0 ||
        check_active_group_rejects_member_replan() != 0 ||
        check_direct_member_command_ids_do_not_alias_axis_commands() != 0 ||
-       check_group_fb_error_paths() != 0) {
+       check_group_fb_error_paths() != 0 || check_group_configuration_fb_matrix() != 0 ||
+       check_group_readback_fb_matrix() != 0) {
         return 1;
     }
     std::printf("PASS r3 group fb tests\n");

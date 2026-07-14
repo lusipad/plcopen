@@ -14,6 +14,14 @@ in your controller, or put it under your learning stack.**
 | IEC 61131-3 ST | `compile()` → bytecode VM → cyclic `scan()` | [core/st/README.md](https://github.com/lusipad/plcopen/blob/main/core/st/README.md) |
 | Algorithm white-box | Compliance matrices, oracles, known boundaries | [Algorithm guide](getting-started/algorithms.md) |
 
+## Production guides
+
+- [Function-block reference](references/fb-reference.md)
+- [Real-time integration](guides/realtime-integration.md)
+- [Motion tuning](guides/tuning.md)
+- [TwinCAT / CODESYS migration](guides/twinCAT-codesys-migration.md)
+- [Operations](operations.md)
+
 Two audiences share one kernel: **industrial controller developers** write
 machine logic as IEC 61131-3 ST programs (built-in runtime) or C++ / Python
 `MC_*` function-block calls; **embodied-AI builders** feed jittery intent

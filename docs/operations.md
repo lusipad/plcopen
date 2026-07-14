@@ -1,0 +1,41 @@
+# 运维手册
+
+## 故障处置总则
+
+先停止提交新命令，保留最后一个错误码和轴/组快照，再判断是否允许
+`FbReset` 或需要宿主安全系统接管。`FbReset` 只清除可复位错误，不替代
+STO/SS1，也不证明驱动器已经安全。
+
+## 错误码表
+
+| `ErrorCode` | 常见原因 | 处置 |
+|-------------|----------|------|
+| `invalid_argument` | 空引用、NaN/Inf、零或负动力学参数、无效组合 | 修正输入；确认 Execute 上升沿只提交一次 |
+| `out_of_range` | 超出固定数组、软限位或表点范围 | 检查维数、目标和固定容量；不要扩大 RT 容器 |
+| `capacity_exceeded` | 队列、窗口或固定表已满 | 降低连续段数/窗口深度，等待已承诺段完成 |
+| `infeasible` | 动力学约束下没有可行 OTG/TOPP 解 | 增加可用周期或放宽合法动力学限值，保留原轨迹 |
+| `precondition_failed` | 轴未上电、组非 standby、所有权/同步状态不满足 | 读取状态快照，按生命周期解除 owner 或先停止 |
+| `unsupported` | 当前矩阵明确未实现，如 CENTER/RADIUS 圆弧、EtherCAT | 不重试同一输入；切换到已声明支持的路径或宿主实现 |
+
+## 典型现象
+
+| 现象 | 首查项 | 不要做 |
+|------|--------|----------|
+| 命令一直 `busy` | 是否在 buffered 队列、组是否被窗口承诺 | 不要在 RT 线程强行改目标 |
+| `command_aborted` | 是否有 aborting 接管、GroupStop 或掉电 | 不要把它当作规划失败 |
+| blending 变 buffered | `last_blend_degraded_command()` 和提交时机 | 不要盲目增大公差掩盖反折/过迟提交 |
+| cam 换表拒绝 | 当前 master 相位、新旧 slave 位置差和 tolerance | 不要忽略位置连续性门 |
+| stream 进入 stopped | timeout/extrapolation 配置、生产者心跳 | 不要在断流时直接写零目标 |
+| 组进入 errorstop | `last_cartesian_error()`、成员掉电/错误快照 | 不要只重置组而不检查驱动器 |
+
+## 事故记录
+
+每次现场事件至少记录：版本/tag、周期配置、轴/组配置、输入命令、错误码
+文本（`rt::to_string`）、最后 100 个快照、是否触发安全系统，以及回放
+语料 ID。修复后先在 ServoSim 和黄金回放复现，再安排真机验证。
+
+## 安全边界
+
+普通运动错误处理不能宣称 STO、SS1、SIL 或 PL。安全相关动作必须走已验证
+的外部安全系统；项目责任矩阵见
+[STO/SS1 integration boundary](https://github.com/lusipad/plcopen/blob/main/doc/compliance/sto-ss1-integration-boundary.md)。

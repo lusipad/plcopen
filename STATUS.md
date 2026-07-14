@@ -3,7 +3,7 @@
 > 本页是"现在在哪"的唯一入口，每个批次收口时更新。术语见
 > [CONTEXT.md](CONTEXT.md)；边界细节见
 > [已知边界注册表](doc/compliance/known-boundaries.md)。
-> 最后更新：**2026-07-13**。
+> 最后更新：**2026-07-15**。
 
 ## 一句话
 
@@ -21,6 +21,8 @@ ST-L2a-Bind 首批十个单轴 MC 块（KB-071）均已交付；Part 5 P5-B 六�
 Feetech STS S2 纯软件协议层（KB-074）已交付。Part 4 为 40/68 有同名
 门面，Part 5 为 11/11 有门面，均仍不合规；Feetech 4.8 未核，不进真机。
 商用门板 P#8 的 STO/SS1 集成责任与宣传边界已锁定，但安全实现/认证未解锁。
+P#5 分支覆盖门、P#2 轨迹精度软件证据和 P#7 文档主体也已关闭；八项硬指标
+当前关闭 4/8，统一证据见[商用级八项证据总账](doc/compliance/commercial-gate-evidence.md)。
 
 ## 历史刻度（处于哪一步）
 
@@ -53,7 +55,7 @@ sink 门面，生产层无反向引用）。分层健康度见
 
 ## 质量门禁现状
 
-- 测试：61 项 CTest（含 st L2a、P4-B1 与 Feetech 专项/fuzz）；本地 Debug 61/61 通过。WSL gcovr 8.6 干净全量实测：全 `core/` line 91.0%（14097/15494，90% 硬门通过）、branch 78.8%；固定生产运动栈 branch 78.4%（5510/7024），85% 目标未达，当前只报告并上传 artifact，不制造已知必红 workflow，P#5 未关闭。口径与盲区见 [分支覆盖基线](doc/compliance/branch-coverage-baseline.md)；Windows `coverage.ps1` 独立口径不混用
+- 测试：63 项 CTest（含商用精度、状态转换矩阵、st L2a、P4-B1 与 Feetech 专项/fuzz）；本地 Debug 门禁结果见本批验证。P#2 聚合门实测 Bezier 稳速波动 0.0775%、圆弧约 7.6e-12%、cam 相位 0 拍、blending 公差利用率 100%。WSL gcovr 8.6 干净全量实测：全 `core/` 90% 行硬门通过；固定生产运动栈 branch **85.0%（6004/7062，精确值 85.006%）**，`--fail-under-branch 85` 已启用，P#5 关闭。P#7 五页指南与运维手册已接入文档站，`mkdocs build --strict` 通过。精度总账见[商用证据](doc/compliance/commercial-gate-evidence.md)，覆盖口径见[分支覆盖基线](doc/compliance/branch-coverage-baseline.md)
 - 回放：18 语料逐周期比对；声明变更零例外流程运行中
 - 分层：2026-07-12 include 图审计 **0 违规**（L0-L4 零 PLCopen 语义引用、无循环依赖、L4 不引 L3），见 [架构审查报告](doc/design/architecture-review-2026-07.md)
 - RT：静态扫描 27 文件（含 st vm/bind 与 Feetech adapter）+ 冻结窗口分配断言；DoD §5.3 的周期耗时对比通过（新核 = 旧线 9.3%）；分配 soak 以周期等效口径关闭（25.92 亿周期零分配，2026-07-11），墙钟 72h/抖动证据归 B7 真机报告
@@ -70,6 +72,7 @@ sink 门面，生产层无反向引用）。分层健康度见
 | **KB-051 组接管速度断崖** | **已修复（Y7，2026-07-08）**：linear 组级 aborting 接管速度连续；circular/笛卡尔接管扩展仍按 KB-051 适用范围声明另批 |
 | Part 4 管理/路径表/变换 FB | **已交付**（GroupHome/MoveDirect/GroupSetOverride/GroupInterrupt·Continue + PathSelect/MovePath/SetKinTransform/ReadCartesianTransform，验收测试已接入 CTest） |
 | Part 5 回零 FB | **11/11 C++ 门面已交付、标准合规未闭合**：P5-B 六块按批准矩阵有软件测试；旧五块名称/I/O/部分语义、派生类型和硬件真实性仍开放 |
+| ST-L1b1 枚举/子范围 | **语义矩阵草案已起草，待维护者批准**：显式枚举转换、子范围 `range_violation` fault、重复枚举值/CASE 规则仍属待裁决；批准前不实现 |
 | Y2 epsilon 政策 | **已声明化**（KB-057：段时长钳零 + 复验，整数量化天然覆盖） |
 | Y2 Ruckig 对照 | **人工门控**（ADR-0003：需先审查上游许可证，不进 R1） |
 

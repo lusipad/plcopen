@@ -6,11 +6,24 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
-- P#5 分支覆盖首测固定 Linux 生产运动栈口径（L0-L6 + `kin/stream`），
-  与全 `core/` 90% 行门独立计算并上传 JSON summary；首批公共合同补测恢复
-  全 `core/` line 91.0%，生产运动栈 branch 由 73.4% 提升至 78.4%。85%
-  目标尚未达到，因此固定范围报告与 artifact 已接入、硬门暂不激活；P#5
-  与商用指标 #5 保持开放。
+- 起草 ST-L1b1 枚举与子范围语义矩阵，锁定待裁决的显式转换、运行时
+  `range_violation`、CASE 与容量验收口径；本批仅送审规格，未改编译器或 VM。
+
+- P#7 补齐生产文档四件套与运维手册：新增 FB 参考、ADR-0007 实时集成、
+  运动调优、TwinCAT/CODESYS 概念迁移和错误码处置指南，并接入 MkDocs
+  导航；文档明确当前 Part 1/4/5、EtherCAT、STO/SS1 与真机验证边界。
+
+- P#2 新增商用轨迹精度聚合门与八项证据总账：C2 五次 Bezier blending
+  曲线稳速波动 0.0775%、圆弧约 7.6e-12%、spline cam 相位 0 拍，
+  blending 偏差 0.05 不超过用户公差 0.05。测试先暴露 33 点弧长表的
+  0.2314% 超门，KB-075 将其增至 65 点；声明升级
+  `core-group-cartesian-window` 黄金语料，样本数与端点不变。
+
+- P#5 固定 Linux 生产运动栈口径（L0-L6 + `kin/stream`），以公开 API
+  合同测试将 branch 从 73.4% 提升至 85.0%（6004/7062，精确 85.006%）；
+  同提交启用 `--fail-under-branch 85`。补盲覆盖 Axis/Group、Cartesian、
+  homing、fixed-time OTG、stream、profile、kinematics、cam 与 Part 4 门面，
+  未增加文件/行排除；同时修复配置 NaN 绕过等真实边界缺陷，P#5 关闭。
 
 - 商用门板 P#8 新增 STO/SS1 集成安全边界：以 IEC 61800-5-2 官方公开
   条目和 PLCopen Safe Motion 审计区分安全域、普通运动域与 CiA402 域，

@@ -93,6 +93,13 @@ if(BUILD_TESTING AND PLCOPEN_BUILD_CORE_TESTS)
     plcopen_core_rt_compile_options(plcopen_core_r3_group_fb_tests)
     add_test(NAME plcopen_core_r3_group_fb_tests COMMAND plcopen_core_r3_group_fb_tests)
 
+    add_executable(plcopen_core_state_transition_matrix_tests
+                   test/state_transition_matrix_tests.cpp)
+    target_link_libraries(plcopen_core_state_transition_matrix_tests PRIVATE plcopen::core)
+    plcopen_core_rt_compile_options(plcopen_core_state_transition_matrix_tests)
+    add_test(NAME plcopen_core_state_transition_matrix_tests
+             COMMAND plcopen_core_state_transition_matrix_tests)
+
     add_executable(plcopen_core_r3_io_tests test/r3_io_tests.cpp)
     target_link_libraries(plcopen_core_r3_io_tests PRIVATE plcopen::core)
     plcopen_core_rt_compile_options(plcopen_core_r3_io_tests)
@@ -238,6 +245,13 @@ if(BUILD_TESTING AND PLCOPEN_BUILD_CORE_TESTS)
     target_link_libraries(plcopen_core_cam_tests PRIVATE plcopen::core)
     plcopen_core_rt_compile_options(plcopen_core_cam_tests)
     add_test(NAME plcopen_core_cam_tests COMMAND plcopen_core_cam_tests)
+
+    add_executable(plcopen_core_commercial_precision_tests
+                   test/commercial_precision_tests.cpp)
+    target_link_libraries(plcopen_core_commercial_precision_tests PRIVATE plcopen::core)
+    plcopen_core_rt_compile_options(plcopen_core_commercial_precision_tests)
+    add_test(NAME plcopen_core_commercial_precision_tests
+             COMMAND plcopen_core_commercial_precision_tests)
 
     add_executable(plcopen_core_kinematics_tests test/kinematics_tests.cpp)
     target_link_libraries(plcopen_core_kinematics_tests PRIVATE plcopen::core)

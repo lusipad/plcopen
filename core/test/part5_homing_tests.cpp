@@ -1967,6 +1967,209 @@ int check_step_distance_coded_reverse_and_no_match()
     return 0;
 }
 
+int check_step_distance_coded_cancel_and_takeover()
+{
+    fb::DistanceCodeMap map;
+    map.entries[0] = {1.0, 10.0};
+    map.count = 1;
+
+    axis::AxisModel cancelled_axis;
+    cancelled_axis.set_power(true);
+    fb::FbStepDistanceCoded cancelled;
+    cancelled.axis_ref = &cancelled_axis;
+    cancelled.code_map = &map;
+    cancelled.execute = true;
+    cancelled.call();
+    const std::uint32_t cancelled_command =
+        cancelled_axis.snapshot().active_command_id;
+    if(cancelled_command == 0 || cancelled_axis.probe_command_id(0) == 0) {
+        return fail("distance_coded: cancel setup");
+    }
+    cancelled.execute = false;
+    cancelled.call();
+    if(cancelled.outputs.busy || cancelled.outputs.active || cancelled.outputs.done ||
+       cancelled.outputs.command_aborted || cancelled.outputs.error ||
+       cancelled_axis.probe_command_id(0) != 0 ||
+       cancelled_axis.snapshot().active_command_id != cancelled_command) {
+        return fail("distance_coded: cancel releases probe only");
+    }
+
+    axis::AxisModel takeover_axis;
+    takeover_axis.set_power(true);
+    fb::FbStepDistanceCoded taken_over;
+    taken_over.axis_ref = &takeover_axis;
+    taken_over.code_map = &map;
+    taken_over.execute = true;
+    taken_over.call();
+    const rt::Result<std::uint32_t> takeover = submit_takeover(takeover_axis, 5.0);
+    if(!takeover) return fail("distance_coded: takeover setup");
+    taken_over.call();
+    if(!taken_over.outputs.command_aborted || taken_over.outputs.busy ||
+       taken_over.outputs.active || taken_over.outputs.error ||
+       takeover_axis.probe_command_id(0) != 0 ||
+       takeover_axis.snapshot().active_command_id != takeover.value()) {
+        return fail("distance_coded: takeover releases ownership");
+    }
+    std::printf("  PASS step_distance_coded_cancel_and_takeover\n");
+    return 0;
+}
+
+int check_step_distance_coded_input_validation_matrix()
+{
+    fb::DistanceCodeMap map;
+    map.entries[0] = {1.0, 10.0};
+    map.count = 1;
+    const double nan = std::numeric_limits<double>::quiet_NaN();
+    const auto rejects_double = [&](double fb::FbStepDistanceCoded::*member,
+                                    double value) {
+        axis::AxisModel axis;
+        axis.set_power(true);
+        const axis::AxisSnapshot before = axis.snapshot();
+        fb::FbStepDistanceCoded step;
+        step.axis_ref = &axis;
+        step.code_map = &map;
+        step.execute = true;
+        step.*member = value;
+        step.call();
+        return step.outputs.error &&
+               step.outputs.error_id == rt::ErrorCode::invalid_argument &&
+               !step.outputs.busy && !step.outputs.active &&
+               same_snapshot(before, axis.snapshot());
+    };
+    double fb::FbStepDistanceCoded::*positive_fields[] = {
+        &fb::FbStepDistanceCoded::velocity,
+        &fb::FbStepDistanceCoded::acceleration,
+        &fb::FbStepDistanceCoded::deceleration,
+        &fb::FbStepDistanceCoded::jerk,
+    };
+    for(const auto member : positive_fields) {
+        if(!rejects_double(member, 0.0) || !rejects_double(member, nan)) {
+            return fail("distance_coded: positive input matrix");
+        }
+    }
+    if(!rejects_double(&fb::FbStepDistanceCoded::torque_limit, -1.0) ||
+       !rejects_double(&fb::FbStepDistanceCoded::torque_limit, nan) ||
+       !rejects_double(&fb::FbStepDistanceCoded::distance_limit, -1.0) ||
+       !rejects_double(&fb::FbStepDistanceCoded::distance_limit, nan)) {
+        return fail("distance_coded: nonnegative input matrix");
+    }
+    {
+        axis::AxisModel axis;
+        axis.set_power(true);
+        const axis::AxisSnapshot before = axis.snapshot();
+        fb::FbStepDistanceCoded step;
+        step.axis_ref = &axis;
+        step.code_map = &map;
+        step.execute = true;
+        step.time_limit = -1;
+        step.call();
+        if(!step.outputs.error || !same_snapshot(before, axis.snapshot())) {
+            return fail("distance_coded: negative time rejected");
+        }
+    }
+    {
+        axis::AxisModel axis;
+        axis.set_power(true);
+        const axis::AxisSnapshot before = axis.snapshot();
+        fb::FbStepDistanceCoded step;
+        step.axis_ref = &axis;
+        step.code_map = &map;
+        step.execute = true;
+        step.trigger_input = axis::AxisModel::DigitalInputCount;
+        step.call();
+        if(!step.outputs.error || !same_snapshot(before, axis.snapshot())) {
+            return fail("distance_coded: trigger range rejected");
+        }
+    }
+    {
+        axis::AxisModel axis;
+        axis.set_power(true);
+        axis.trigger_error();
+        fb::FbStepDistanceCoded step;
+        step.axis_ref = &axis;
+        step.code_map = &map;
+        step.execute = true;
+        step.call();
+        if(!step.outputs.error || axis.probe_command_id(0) != 0) {
+            return fail("distance_coded: errorstop rejected");
+        }
+    }
+    {
+        axis::AxisModel members[2];
+        axis::AxisGroup group;
+        for(auto &member : members) {
+            member.set_power(true);
+            group.add_axis(member);
+        }
+        group.enable();
+        axis::GroupCommand motion{};
+        motion.target.size = 2;
+        motion.target.value[0] = 1.0;
+        motion.target.value[1] = 1.0;
+        motion.velocity = 0.2;
+        motion.acceleration = 0.1;
+        motion.deceleration = 0.1;
+        motion.jerk = 0.1;
+        group.submit_linear(motion);
+        fb::FbStepDistanceCoded step;
+        step.axis_ref = &members[0];
+        step.code_map = &map;
+        step.execute = true;
+        step.call();
+        if(!step.outputs.error || members[0].probe_command_id(0) != 0) {
+            return fail("distance_coded: active group member rejected");
+        }
+    }
+    std::printf("  PASS step_distance_coded_input_validation_matrix\n");
+    return 0;
+}
+
+int check_distance_coded_and_passive_limits()
+{
+    fb::DistanceCodeMap map;
+    map.entries[0] = {1.0, 10.0};
+    map.count = 1;
+    for(int mode = 0; mode < 2; ++mode) {
+        axis::AxisModel axis;
+        axis.set_power(true);
+        fb::FbStepDistanceCoded step;
+        step.axis_ref = &axis;
+        step.code_map = &map;
+        step.velocity = 0.2;
+        step.time_limit = mode == 0 ? 1 : 0;
+        step.distance_limit = mode == 1 ? 1e-6 : 0.0;
+        step.execute = true;
+        step.call();
+        for(int cycle = 0; cycle < 100 && !step.outputs.error; ++cycle) {
+            axis.cycle();
+            step.call();
+        }
+        if(!step.outputs.error || step.outputs.error_id != rt::ErrorCode::out_of_range ||
+           axis.probe_command_id(0) != 0) {
+            return fail("distance coded enforces time and distance limits");
+        }
+    }
+    for(int mode = 0; mode < 2; ++mode) {
+        axis::AxisModel axis;
+        axis.set_power(true);
+        if(!submit_takeover(axis, 10.0)) return fail("passive limit motion setup");
+        fb::FbStepReferenceFlyingRefPulse step;
+        step.axis_ref = &axis;
+        step.time_limit = mode == 0 ? 1 : 0;
+        step.distance_limit = mode == 1 ? 1e-6 : 0.0;
+        step.execute = true;
+        step.call();
+        for(int cycle = 0; cycle < 100 && !step.outputs.error; ++cycle) {
+            axis.cycle();
+            step.call();
+        }
+        if(!step.outputs.error || step.outputs.error_id != rt::ErrorCode::out_of_range) {
+            return fail("passive homing enforces time and distance limits");
+        }
+    }
+    return 0;
+}
+
 int check_home_absolute_source_contract()
 {
     axis::AxisModel axis;
@@ -2168,6 +2371,99 @@ int check_flying_rejections_and_takeover()
     return 0;
 }
 
+int check_flying_directional_edge_matrix()
+{
+    struct EdgeCase
+    {
+        axis::SwitchMode mode;
+        double target;
+        bool capture_on_rising;
+    };
+    const EdgeCase cases[] = {
+        {axis::SwitchMode::edge_positive, 10.0, true},
+        {axis::SwitchMode::edge_positive, -10.0, false},
+        {axis::SwitchMode::edge_negative, -10.0, true},
+        {axis::SwitchMode::edge_negative, 10.0, false},
+    };
+    for(const EdgeCase &edge : cases) {
+        axis::AxisModel axis;
+        axis.set_power(true);
+        const rt::Result<std::uint32_t> motion = submit_takeover(axis, edge.target);
+        if(!motion) return fail("flying_switch: directional motion setup");
+        axis.cycle();
+        if((edge.target > 0.0 && axis.snapshot().actual_velocity <= 0.0) ||
+           (edge.target < 0.0 && axis.snapshot().actual_velocity >= 0.0)) {
+            return fail("flying_switch: directional velocity setup");
+        }
+
+        fb::FbStepReferenceFlyingSwitch flying;
+        flying.axis_ref = &axis;
+        flying.execute = true;
+        flying.switch_mode = edge.mode;
+        flying.set_position = axis.snapshot().actual_position;
+        flying.call();
+        axis.set_digital_input(0, true);
+        axis.cycle();
+        flying.call();
+        if(!edge.capture_on_rising) {
+            if(flying.outputs.done || !flying.outputs.busy) {
+                return fail("flying_switch: directional rising ignored");
+            }
+            axis.set_digital_input(0, false);
+            axis.cycle();
+            flying.call();
+        }
+        if(!flying.outputs.done || flying.outputs.error ||
+           flying.outputs.command_aborted ||
+           axis.snapshot().active_command_id != motion.value()) {
+            return fail("flying_switch: directional edge capture");
+        }
+    }
+    std::printf("  PASS flying_directional_edge_matrix\n");
+    return 0;
+}
+
+int check_flying_level_and_falling_modes()
+{
+    const axis::SwitchMode modes[] = {
+        axis::SwitchMode::on,
+        axis::SwitchMode::off,
+        axis::SwitchMode::falling_edge,
+    };
+    for(axis::SwitchMode mode : modes) {
+        axis::AxisModel axis;
+        axis.set_power(true);
+        if(mode != axis::SwitchMode::on) axis.set_digital_input(0, true);
+        const rt::Result<std::uint32_t> motion = submit_takeover(axis, 10.0);
+        if(!motion) return fail("flying_switch: level mode motion setup");
+        axis.cycle();
+        fb::FbStepReferenceFlyingSwitch flying;
+        flying.axis_ref = &axis;
+        flying.execute = true;
+        flying.switch_mode = mode;
+        flying.set_position = axis.snapshot().actual_position;
+        flying.call();
+        if(mode == axis::SwitchMode::on) {
+            if(flying.outputs.done) return fail("flying_switch: on waits for high");
+            axis.set_digital_input(0, true);
+        } else {
+            if(mode == axis::SwitchMode::falling_edge && flying.outputs.done) {
+                return fail("flying_switch: falling waits for edge");
+            }
+            axis.set_digital_input(0, false);
+        }
+        axis.cycle();
+        flying.call();
+        if(!flying.outputs.done || flying.outputs.error ||
+           flying.outputs.command_aborted ||
+           axis.snapshot().active_command_id != motion.value()) {
+            return fail("flying_switch: level mode capture");
+        }
+    }
+    std::printf("  PASS flying_level_and_falling_modes\n");
+    return 0;
+}
+
 int check_passive_homing_validation_matrix()
 {
     const double nan = std::numeric_limits<double>::quiet_NaN();
@@ -2323,12 +2619,17 @@ int main()
     failures += check_step_distance_coded_rejects_map_ambiguity();
     failures += check_step_distance_coded_map_validation_matrix();
     failures += check_step_distance_coded_reverse_and_no_match();
+    failures += check_step_distance_coded_cancel_and_takeover();
+    failures += check_step_distance_coded_input_validation_matrix();
+    failures += check_distance_coded_and_passive_limits();
     failures += check_home_absolute_source_contract();
     failures += check_home_absolute_rejects_missing_and_nonfinite();
     failures += check_home_absolute_zero_and_active_motion();
     failures += check_flying_switch_preserves_motion();
     failures += check_flying_pulse_and_abort();
     failures += check_flying_rejections_and_takeover();
+    failures += check_flying_directional_edge_matrix();
+    failures += check_flying_level_and_falling_modes();
     failures += check_passive_homing_validation_matrix();
     failures += check_flying_initial_level_and_soft_limit();
     std::printf("---\n%d failures\n", failures);

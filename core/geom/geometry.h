@@ -141,7 +141,7 @@ struct QuadraticBlendSegment
 // table so the spatial speed stays continuous across the junctions.
 struct QuinticBlendSegment
 {
-    static constexpr std::size_t TableSize = 33;
+    static constexpr std::size_t TableSize = 65;
     Vec3 p0{};
     Vec3 p1{};
     Vec3 p2{};
@@ -359,7 +359,7 @@ inline rt::Result<QuadraticBlendSegment> make_quadratic_blend(Vec3 start,
                                                               Vec3 finish,
                                                               double tolerance)
 {
-    if(tolerance <= 0.0) {
+    if(tolerance <= 0.0 || !std::isfinite(tolerance)) {
         return rt::Result<QuadraticBlendSegment>::failure(rt::ErrorCode::invalid_argument);
     }
 

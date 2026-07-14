@@ -342,7 +342,10 @@ public:
     rt::ErrorCode configure_limits(MotionLimits limits)
     {
         if(group_owner_ != nullptr) return rt::ErrorCode::precondition_failed;
-        if(snapshot_.powered || limits.max_velocity <= 0.0 ||
+        if(snapshot_.powered || !std::isfinite(limits.max_velocity) ||
+           !std::isfinite(limits.max_acceleration) ||
+           !std::isfinite(limits.max_deceleration) || !std::isfinite(limits.max_jerk) ||
+           limits.max_velocity <= 0.0 ||
            limits.max_acceleration <= 0.0 ||
            limits.max_deceleration <= 0.0 || limits.max_jerk <= 0.0) {
             return rt::ErrorCode::invalid_argument;

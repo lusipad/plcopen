@@ -29,6 +29,108 @@ bool near(double lhs, double rhs, double tolerance)
     return std::fabs(lhs - rhs) <= tolerance;
 }
 
+class VerifyProbe final : public kin::Kinematics
+{
+public:
+    std::size_t joints = 2;
+    std::size_t cartesian = 2;
+    rt::ErrorCode forward_result = rt::ErrorCode::ok;
+    rt::ErrorCode inverse_result = rt::ErrorCode::ok;
+    double inverse_offset = 0.0;
+    mutable int forward_calls = 0;
+    mutable int inverse_calls = 0;
+    int fail_forward_after = 0;
+    int fail_inverse_after = 0;
+    int jump_inverse_after = 0;
+
+    std::size_t joint_count() const override { return joints; }
+    std::size_t cartesian_count() const override { return cartesian; }
+    rt::ErrorCode forward(const double *q, std::size_t count,
+                          geom::Vec3 &point) const override
+    {
+        ++forward_calls;
+        if(fail_forward_after > 0 && forward_calls >= fail_forward_after) {
+            return rt::ErrorCode::out_of_range;
+        }
+        if(forward_result != rt::ErrorCode::ok) return forward_result;
+        point = {q[0], count > 1 ? q[1] : 0.0, 0.0};
+        return rt::ErrorCode::ok;
+    }
+    rt::ErrorCode inverse(geom::Vec3 point, const double *, std::size_t count,
+                          double *q) const override
+    {
+        ++inverse_calls;
+        if(fail_inverse_after > 0 && inverse_calls >= fail_inverse_after) {
+            return rt::ErrorCode::out_of_range;
+        }
+        if(inverse_result != rt::ErrorCode::ok) return inverse_result;
+        q[0] = point.x + inverse_offset +
+               (jump_inverse_after > 0 && inverse_calls >= jump_inverse_after ? 1.0 : 0.0);
+        if(count > 1) q[1] = point.y;
+        return rt::ErrorCode::ok;
+    }
+    double singularity_margin(const double *, std::size_t) const override { return 1.0; }
+};
+
+int check_verify_failure_contracts()
+{
+    const kin::VerifyRange ranges[2] = {{-1.0, 1.0}, {-1.0, 1.0}};
+    kin::VerifyReport report{};
+    VerifyProbe probe;
+    for(std::size_t joints : {std::size_t{0}, std::size_t{9}}) {
+        probe.joints = joints;
+        if(kin::verify_kinematics(probe, ranges, 1, 1e-9, report) !=
+           rt::ErrorCode::invalid_argument) {
+            return fail("verify rejects joint dimensions");
+        }
+    }
+    probe.joints = 2;
+    for(std::size_t cartesian : {std::size_t{1}, std::size_t{4}}) {
+        probe.cartesian = cartesian;
+        if(kin::verify_kinematics(probe, ranges, 1, 1e-9, report) !=
+           rt::ErrorCode::invalid_argument) {
+            return fail("verify rejects Cartesian dimensions");
+        }
+    }
+    probe.cartesian = 2;
+    probe.forward_result = rt::ErrorCode::out_of_range;
+    if(kin::verify_kinematics(probe, ranges, 1, 1e-9, report) !=
+       rt::ErrorCode::out_of_range) {
+        return fail("verify propagates forward failure");
+    }
+    probe.forward_result = rt::ErrorCode::ok;
+    probe.inverse_result = rt::ErrorCode::precondition_failed;
+    if(kin::verify_kinematics(probe, ranges, 1, 1e-9, report) !=
+       rt::ErrorCode::precondition_failed) {
+        return fail("verify propagates inverse failure");
+    }
+    probe.inverse_result = rt::ErrorCode::ok;
+    probe.inverse_offset = 0.5;
+    if(kin::verify_kinematics(probe, ranges, 1, 1e-9, report) !=
+       rt::ErrorCode::infeasible) {
+        return fail("verify rejects round-trip error");
+    }
+    probe = VerifyProbe{};
+    probe.fail_forward_after = 2;
+    if(kin::verify_kinematics(probe, ranges, 1, 1e-9, report) !=
+       rt::ErrorCode::infeasible) {
+        return fail("verify rejects walk forward failure");
+    }
+    probe = VerifyProbe{};
+    probe.fail_inverse_after = 2;
+    if(kin::verify_kinematics(probe, ranges, 1, 1e-9, report) !=
+       rt::ErrorCode::infeasible) {
+        return fail("verify rejects walk inverse failure");
+    }
+    probe = VerifyProbe{};
+    probe.jump_inverse_after = 2;
+    if(kin::verify_kinematics(probe, ranges, 1, 1e-9, report) !=
+       rt::ErrorCode::precondition_failed) {
+        return fail("verify rejects walk branch jump");
+    }
+    return 0;
+}
+
 int check_gantry_conformance()
 {
     const double scale[3] = {2.0, -0.5, 1.25};
@@ -335,7 +437,8 @@ int main()
     if(check_gantry_conformance() != 0 || check_scara_conformance() != 0 ||
        check_scara_semantics() != 0 || check_identity_gantry_equivalence() != 0 ||
        check_scaled_gantry_oracle() != 0 || check_scara_group_endpoint() != 0 ||
-       check_rejections() != 0 || check_gantry_boundaries() != 0) {
+       check_rejections() != 0 || check_gantry_boundaries() != 0 ||
+       check_verify_failure_contracts() != 0) {
         return 1;
     }
     std::printf("PASS kinematics tests\n");

@@ -675,6 +675,9 @@ int check_cartesian_window()
         if(rig.group.set_kinematics(&scara) != rt::ErrorCode::ok) {
             return fail("window setup");
         }
+        if(rig.group.set_cartesian_velocity_limit(0.009) != rt::ErrorCode::ok) {
+            return fail("window Cartesian velocity limit");
+        }
         const double first[3] = {pts[0].x, pts[0].y, pts[0].z};
         axis::GroupCommand approach = command_for(3, first);
         approach.coord_system = axis::CoordSystem::mcs;
@@ -802,6 +805,45 @@ int check_cartesian_window()
         if(scara.forward(joints, 3, point) != rt::ErrorCode::ok ||
            geom::norm(point - c) > 1e-8) {
             return fail("sharp endpoint");
+        }
+    }
+
+    // PCS commands use the same Cartesian window machinery after the
+    // workpiece transform is resolved at submit time.
+    {
+        static TriRig rig;
+        if(rig.group.set_kinematics(&scara) != rt::ErrorCode::ok ||
+           rig.group.set_workpiece_frame(0.02, -0.01, 0.0, 0.0) != rt::ErrorCode::ok) {
+            return fail("PCS window setup");
+        }
+        const double a[3] = {0.40, 0.10, 0.10};
+        const double b[3] = {0.38, 0.18, 0.12};
+        const double c[3] = {0.32, 0.24, 0.14};
+        axis::GroupCommand approach = command_for(3, a);
+        approach.coord_system = axis::CoordSystem::pcs;
+        if(!rig.group.submit_linear(approach) || settle(rig.group) != 0) {
+            return fail("PCS window approach");
+        }
+        axis::GroupCommand first = command_for(3, b);
+        first.coord_system = axis::CoordSystem::pcs;
+        first.interpolation_space = axis::InterpolationSpace::cartesian;
+        if(!rig.group.submit_linear(first)) return fail("PCS window first leg");
+        for(int tick = 0; tick < 5; ++tick) rig.group.cycle();
+        axis::GroupCommand blend = command_for(3, c);
+        blend.coord_system = axis::CoordSystem::pcs;
+        blend.interpolation_space = axis::InterpolationSpace::cartesian;
+        blend.buffer_mode = axis::BufferMode::blending_low;
+        blend.transition_mode = axis::TransitionMode::max_corner_deviation;
+        blend.transition_parameter = 0.01;
+        if(!rig.group.submit_linear(blend) || settle(rig.group) != 0) {
+            return fail("PCS window blend");
+        }
+        const double joints[3] = {rig.position(0), rig.position(1), rig.position(2)};
+        geom::Vec3 reached{};
+        const geom::Vec3 expected{c[0] + 0.02, c[1] - 0.01, c[2]};
+        if(scara.forward(joints, 3, reached) != rt::ErrorCode::ok ||
+           geom::norm(reached - expected) > 1e-8) {
+            return fail("PCS window endpoint");
         }
     }
 
@@ -1089,6 +1131,58 @@ int check_scara_cartesian_arc()
         }
     }
     return fail("cart arc settle");
+}
+
+int check_buffered_scara_cartesian_arc()
+{
+    static const kin::Scara scara(0.4, 0.3, true);
+    static TriRig rig;
+    if(rig.group.set_kinematics(&scara) != rt::ErrorCode::ok) {
+        return fail("buffered cart arc setup");
+    }
+    const geom::Vec3 p0{0.42, 0.12, 0.10};
+    const geom::Vec3 start{0.36, 0.22, 0.14};
+    const geom::Vec3 via{0.29, 0.31, 0.18};
+    const geom::Vec3 finish{0.20, 0.36, 0.22};
+    const double approach[3] = {p0.x, p0.y, p0.z};
+    axis::GroupCommand initial = command_for(3, approach);
+    initial.coord_system = axis::CoordSystem::mcs;
+    if(!rig.group.submit_linear(initial) || settle(rig.group) != 0) {
+        return fail("buffered cart arc approach");
+    }
+    const double line_target[3] = {start.x, start.y, start.z};
+    axis::GroupCommand line = command_for(3, line_target);
+    line.coord_system = axis::CoordSystem::mcs;
+    line.interpolation_space = axis::InterpolationSpace::cartesian;
+    if(!rig.group.submit_linear(line)) return fail("buffered cart arc active line");
+
+    axis::GroupCommand arc{};
+    arc.target.size = 3;
+    arc.aux.size = 3;
+    arc.target.value[0] = finish.x;
+    arc.target.value[1] = finish.y;
+    arc.target.value[2] = finish.z;
+    arc.aux.value[0] = via.x;
+    arc.aux.value[1] = via.y;
+    arc.aux.value[2] = via.z;
+    arc.velocity = 0.01;
+    arc.acceleration = 0.002;
+    arc.deceleration = 0.002;
+    arc.jerk = 0.002;
+    arc.buffer_mode = axis::BufferMode::buffered;
+    arc.coord_system = axis::CoordSystem::mcs;
+    arc.interpolation_space = axis::InterpolationSpace::cartesian;
+    arc.path_choice = derived_choice(start, via, finish);
+    if(!rig.group.submit_circular(arc) || settle(rig.group) != 0) {
+        return fail("buffered cart arc queued execution");
+    }
+    const double joints[3] = {rig.position(0), rig.position(1), rig.position(2)};
+    geom::Vec3 reached{};
+    if(scara.forward(joints, 3, reached) != rt::ErrorCode::ok ||
+       geom::norm(reached - finish) > 1e-8) {
+        return fail("buffered cart arc endpoint");
+    }
+    return 0;
 }
 
 // Cartesian v2-B on the pose pipeline: position rides the circle, the
@@ -1644,6 +1738,7 @@ int main()
     failures += check_cartesian_window();
     failures += check_pose_cartesian_blend();
     failures += check_scara_cartesian_arc();
+    failures += check_buffered_scara_cartesian_arc();
     failures += check_pose_cartesian_arc();
     failures += check_cartesian_arc_rejections();
     failures += check_wrist_singularity_pass();

@@ -98,13 +98,14 @@ execute_process(
         --exclude-unreachable-branches
         --exclude-throw-branches
         --json-summary "${REPORT_DIR}/motion-stack-summary.json"
+        --fail-under-branch ${BRANCH_TARGET}
         --print-summary
     WORKING_DIRECTORY "${ROOT}"
     RESULT_VARIABLE branch_rc)
 
 if(NOT branch_rc EQUAL 0)
-    message(FATAL_ERROR "coverage-gate: production motion stack report failed")
+    message(FATAL_ERROR "coverage-gate: production motion stack branch coverage < ${BRANCH_TARGET}%")
 endif()
 
 message(STATUS
-    "coverage-gate: PASSED (full-core line >= ${LINE_THRESHOLD}%; production motion stack branch target ${BRANCH_TARGET}% is not active yet)")
+    "coverage-gate: PASSED (full-core line >= ${LINE_THRESHOLD}%; production motion stack branch >= ${BRANCH_TARGET}%)")

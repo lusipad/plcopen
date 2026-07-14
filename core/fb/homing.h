@@ -976,7 +976,7 @@ protected:
         outputs.active = true;
     }
 
-    void observe(bool condition)
+    void observe(bool condition, bool use_current_position = false)
     {
         if(axis_ref == nullptr || owner_id_ == 0) return;
         if(axis_ref->passive_homing_aborted_id() == owner_id_) {
@@ -996,8 +996,11 @@ protected:
             owner_id_ = 0;
             return;
         }
-        if(!condition || !axis_ref->probe_captured(trigger_input)) return;
-        const double captured = axis_ref->probe_recorded_position(trigger_input);
+        if(!condition ||
+           (!use_current_position && !axis_ref->probe_captured(trigger_input))) return;
+        const double captured = use_current_position
+                                    ? snapshot.actual_position
+                                    : axis_ref->probe_recorded_position(trigger_input);
         const double delta = set_position - captured;
         const rt::ErrorCode shifted = axis_ref->shift_coordinates(delta);
         if(shifted != rt::ErrorCode::ok ||
@@ -1079,7 +1082,7 @@ public:
             condition = actual_velocity < 0.0 ? rising : falling;
             break;
         }
-        observe(condition);
+        observe(condition, true);
     }
 
 private:

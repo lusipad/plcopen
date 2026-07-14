@@ -455,6 +455,127 @@ int check_unrepresentable_tracking_horizon()
     return 0;
 }
 
+int check_replan_normalizes_takeover_state()
+{
+    stream::StreamFilterConfig config{};
+    config.limits = {1.0, 1.0, 1.0, 1.0};
+    config.timeout_cycles = 1000000;
+
+    const otg::State1D inputs[] = {
+        {0.0, 2.0, 0.0},
+        {0.0, -2.0, 0.0},
+        {0.0, 0.0, 2.0},
+        {0.0, 0.0, -2.0},
+    };
+    const otg::State1D normalized[] = {
+        {0.0, 1.0, 0.0},
+        {0.0, -1.0, 0.0},
+        {0.0, 0.0, 1.0},
+        {0.0, 0.0, -1.0},
+    };
+
+    for(std::size_t i = 0; i < 4; ++i) {
+        stream::StreamFilter1D filter;
+        stream::StreamFilter1D reference;
+        if(filter.configure(config) != rt::ErrorCode::ok ||
+           reference.configure(config) != rt::ErrorCode::ok ||
+           filter.reset(inputs[i]) != rt::ErrorCode::ok ||
+           reference.reset(normalized[i]) != rt::ErrorCode::ok ||
+           filter.push_target(position_target(3.0, 1)) != rt::ErrorCode::ok ||
+           reference.push_target(position_target(3.0, 1)) != rt::ErrorCode::ok) {
+            return fail("takeover normalization setup");
+        }
+        for(int cycle = 0; cycle < 8; ++cycle) {
+            const otg::State1D actual = filter.cycle();
+            const otg::State1D expected = reference.cycle();
+            if(!near(actual.position, expected.position, 1e-12) ||
+               !near(actual.velocity, expected.velocity, 1e-12) ||
+               !near(actual.acceleration, expected.acceleration, 1e-12)) {
+                return fail("takeover state is normalized before replan");
+            }
+        }
+    }
+    return 0;
+}
+
+int check_unrepresentable_target_projection()
+{
+    const double largest = std::numeric_limits<double>::max();
+    stream::StreamFilterConfig config{};
+    config.limits = {largest, largest, largest, largest};
+    config.timeout_cycles = 1000000;
+
+    stream::StreamFilter1D filter;
+    if(filter.configure(config) != rt::ErrorCode::ok ||
+       filter.reset({0.0, 0.0, 0.0}) != rt::ErrorCode::ok ||
+       filter.push_target(velocity_target(largest, largest, 0)) != rt::ErrorCode::ok) {
+        return fail("unrepresentable projection setup");
+    }
+    for(int cycle = 0; cycle < 4; ++cycle) {
+        const otg::State1D state = filter.cycle();
+        if(!std::isfinite(state.position) || !std::isfinite(state.velocity) ||
+           !std::isfinite(state.acceleration)) {
+            return fail("unrepresentable projection keeps finite output");
+        }
+    }
+    return 0;
+}
+
+int check_extreme_deceleration_envelope_fallback()
+{
+    stream::StreamFilterConfig config{};
+    config.limits = {1.0, 1.0, std::numeric_limits<double>::denorm_min(), 1.0};
+    config.timeout_cycles = 1000000;
+    config.position_envelope_enabled = true;
+    config.min_position = -2.0;
+    config.max_position = 2.0;
+
+    for(int sign = -1; sign <= 1; sign += 2) {
+        stream::StreamFilter1D filter;
+        if(filter.configure(config) != rt::ErrorCode::ok ||
+           filter.reset({0.0, 0.0, 0.0}) != rt::ErrorCode::ok ||
+           filter.push_target(velocity_target(0.0, 0.5 * static_cast<double>(sign), 1)) !=
+               rt::ErrorCode::ok) {
+            return fail("extreme deceleration setup");
+        }
+        for(int cycle = 0; cycle < 4; ++cycle) {
+            const otg::State1D state = filter.cycle();
+            if(!std::isfinite(state.position) || !std::isfinite(state.velocity) ||
+               !std::isfinite(state.acceleration) || state.position < config.min_position ||
+               state.position > config.max_position) {
+                return fail("extreme deceleration keeps envelope");
+            }
+        }
+    }
+    return 0;
+}
+
+int check_target_line_behind_takeover_state()
+{
+    stream::StreamFilterConfig config{};
+    config.limits = {1.0, 1.0, 1.0, 1.0};
+    config.timeout_cycles = 1000000;
+
+    for(int sign = -1; sign <= 1; sign += 2) {
+        const double direction = static_cast<double>(sign);
+        stream::StreamFilter1D filter;
+        if(filter.configure(config) != rt::ErrorCode::ok ||
+           filter.reset({10.0 * direction, 0.0, 0.0}) != rt::ErrorCode::ok ||
+           filter.push_target(velocity_target(0.0, 0.1 * direction, 1)) !=
+               rt::ErrorCode::ok) {
+            return fail("target line behind setup");
+        }
+        otg::State1D state{};
+        for(int cycle = 0; cycle < 8; ++cycle) {
+            state = filter.cycle();
+        }
+        if(!std::isfinite(state.position) || state.velocity * direction >= 0.0) {
+            return fail("target line behind becomes stationary target");
+        }
+    }
+    return 0;
+}
+
 int check_running_configure_is_atomic()
 {
     stream::StreamFilterConfig config{};
@@ -910,6 +1031,10 @@ int main()
        check_moving_target_envelope() != 0 ||
        check_quintic_fast_path_coast() != 0 ||
        check_unrepresentable_tracking_horizon() != 0 ||
+       check_replan_normalizes_takeover_state() != 0 ||
+       check_unrepresentable_target_projection() != 0 ||
+       check_extreme_deceleration_envelope_fallback() != 0 ||
+       check_target_line_behind_takeover_state() != 0 ||
        check_running_configure_is_atomic() != 0 || check_idle_hold() != 0 ||
        check_step_target() != 0 ||
        check_ramp_phase_lag(true, "ramp lag explicit velocity") != 0 ||

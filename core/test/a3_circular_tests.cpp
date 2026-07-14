@@ -574,6 +574,53 @@ int check_fb_lifecycle()
     return 0;
 }
 
+int check_group_motion_facades_reject_null_group()
+{
+    fb::FbMoveLinearAbsolute linear;
+    linear.execute = true;
+    linear.call();
+    if(!linear.outputs.error ||
+       linear.outputs.error_id != rt::ErrorCode::invalid_argument) {
+        return fail("linear facade rejects null group");
+    }
+    fb::FbMoveCircularAbsolute circular;
+    circular.execute = true;
+    circular.call();
+    if(!circular.outputs.error ||
+       circular.outputs.error_id != rt::ErrorCode::invalid_argument) {
+        return fail("circular facade rejects null group");
+    }
+    return 0;
+}
+
+int check_interrupted_group_rejects_buffered_arc()
+{
+    Rig rig;
+    axis::GroupCommand move{};
+    move.target.size = 2;
+    move.target.value[0] = 10.0;
+    move.target.value[1] = 0.0;
+    move.velocity = 0.2;
+    if(!rig.group.submit_linear(move)) return fail("interrupted arc motion setup");
+    for(int cycle = 0; cycle < 10; ++cycle) rig.group.cycle();
+    if(rig.group.interrupt(0.1, 0.05) != rt::ErrorCode::ok) {
+        return fail("interrupted arc request");
+    }
+    for(int cycle = 0; cycle < 10000 &&
+                        rig.group.status() != axis::GroupStatus::interrupted;
+        ++cycle) {
+        rig.group.cycle();
+    }
+    axis::GroupCommand arc = make_quarter_arc(2);
+    arc.buffer_mode = axis::BufferMode::buffered;
+    const rt::Result<std::uint32_t> rejected = rig.group.submit_circular(arc);
+    if(rejected || rejected.error() != rt::ErrorCode::invalid_argument ||
+       rig.group.status() != axis::GroupStatus::interrupted) {
+        return fail("interrupted group rejects buffered arc atomically");
+    }
+    return 0;
+}
+
 } // namespace
 
 int main()
@@ -581,7 +628,9 @@ int main()
     if(check_quarter_arc_radius_and_endpoint() != 0 || check_cruise_speed_ripple() != 0 ||
        check_third_axis_linear_following() != 0 || check_degenerate_geometry_errors() != 0 ||
        check_mode_and_pathchoice_contract() != 0 || check_buffer_modes_and_relative() != 0 ||
-       check_group_stop_stays_on_arc() != 0 || check_fb_lifecycle() != 0) {
+       check_group_stop_stays_on_arc() != 0 || check_fb_lifecycle() != 0 ||
+       check_group_motion_facades_reject_null_group() != 0 ||
+       check_interrupted_group_rejects_buffered_arc() != 0) {
         return 1;
     }
     std::printf("PASS a3 circular tests\n");

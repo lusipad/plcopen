@@ -28,6 +28,62 @@ int iterations(int argc, char **argv)
     return count > 0 ? count : 1;
 }
 
+void exercise_group_state_machine(int count)
+{
+    using namespace plcopen::core;
+    axis::AxisModel axes[2];
+    axis::AxisGroup group;
+    for(auto &member : axes) {
+        member.set_power(true);
+        group.add_axis(member);
+    }
+    group.enable();
+
+    for(int i = 0; i < count; ++i) {
+        const int action = i % 20;
+        if(action == 0 || action == 1) {
+            axis::GroupCommand command{};
+            command.target.size = 2;
+            command.target.value[0] = action == 0 ? 2.0 : -1.0;
+            command.target.value[1] = action == 0 ? 1.0 : 2.0;
+            command.velocity = 0.25;
+            command.acceleration = 0.05;
+            command.deceleration = 0.05;
+            command.jerk = 0.01;
+            command.buffer_mode = action == 0 ? axis::BufferMode::aborting
+                                               : axis::BufferMode::buffered;
+            group.submit_linear(command);
+        } else if(action == 2) {
+            group.set_group_override(0.5);
+        } else if(action == 3) {
+            group.set_group_override(0.0);
+        } else if(action == 4) {
+            group.set_group_override(1.0);
+        } else if(action == 5) {
+            group.interrupt(0.05, 0.01);
+        } else if(action == 8) {
+            group.continue_motion();
+        } else if(action == 10) {
+            group.stop(0.05, 0.01);
+        } else if(action == 12) {
+            axes[0].trigger_error();
+        } else if(action == 14) {
+            group.reset();
+        } else if(action == 16) {
+            group.disable();
+        } else if(action == 17) {
+            group.enable();
+        } else if(action == 18) {
+            group.command_info(static_cast<std::uint32_t>(i + 1));
+        } else if(action == 19) {
+            group.set_window_depth(2 + static_cast<std::size_t>(i % 8));
+        }
+        group.cycle();
+        axes[0].cycle();
+        axes[1].cycle();
+    }
+}
+
 } // namespace
 
 int main(int argc, char **argv)
@@ -50,6 +106,7 @@ int main(int argc, char **argv)
     limits.group_ref = &group;
     Lcg random{};
     const int count = iterations(argc, argv);
+    exercise_group_state_machine(count);
     for(int i = 0; i < count; ++i) {
         const unsigned int bits = random.next();
         configuration.enable = (bits & 1u) != 0;

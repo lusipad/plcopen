@@ -785,6 +785,100 @@ int check_set_kin_transform_both_null_plugins()
     return 0;
 }
 
+int check_path_select_dynamics_field_matrix()
+{
+    axis::AxisModel axes[2];
+    axis::AxisGroup group;
+    init_group(group, axes, 2);
+    const double invalid_values[] = {
+        std::numeric_limits<double>::quiet_NaN(),
+        std::numeric_limits<double>::infinity(),
+        0.0,
+        -1.0,
+    };
+
+    for(int field = 0; field < 4; ++field) {
+        for(double invalid_value : invalid_values) {
+            fb::PathTable table;
+            table.waypoints[0] = make_wp(1.0, 1.0);
+            table.waypoints[1] = make_wp(2.0, 2.0);
+            table.count = 2;
+            double *values[] = {&table.waypoints[1].velocity,
+                                &table.waypoints[1].acceleration,
+                                &table.waypoints[1].deceleration,
+                                &table.waypoints[1].jerk};
+            *values[field] = invalid_value;
+
+            fb::FbPathSelect select;
+            select.group_ref = &group;
+            select.table = &table;
+            select.execute = true;
+            select.call();
+            if(!select.outputs.error || select.outputs.done || table.handle != 0) {
+                return fail("path_select dynamics field matrix");
+            }
+        }
+    }
+
+    for(int waypoint = 0; waypoint < 2; ++waypoint) {
+        for(int axis_index = 0; axis_index < 2; ++axis_index) {
+            fb::PathTable table;
+            table.waypoints[0] = make_wp(1.0, 1.0);
+            table.waypoints[1] = make_wp(2.0, 2.0);
+            table.count = 2;
+            table.waypoints[waypoint].target.value[axis_index] =
+                std::numeric_limits<double>::quiet_NaN();
+
+            fb::FbPathSelect select;
+            select.group_ref = &group;
+            select.table = &table;
+            select.execute = true;
+            select.call();
+            if(!select.outputs.error || table.handle != 0) {
+                return fail("path_select target field matrix");
+            }
+        }
+    }
+
+    fb::PathTable transition;
+    transition.waypoints[0] = make_wp(1.0, 1.0);
+    transition.waypoints[1] = make_wp(2.0, 2.0);
+    transition.count = 2;
+    transition.waypoints[0].transition_parameter =
+        std::numeric_limits<double>::quiet_NaN();
+    fb::FbPathSelect select;
+    select.group_ref = &group;
+    select.table = &transition;
+    select.execute = true;
+    select.call();
+    if(!select.outputs.error || transition.handle != 0) {
+        return fail("path_select transition nan");
+    }
+    return 0;
+}
+
+int check_set_kin_transform_rejects_invalid_margin()
+{
+    axis::AxisModel axes[2];
+    axis::AxisGroup group;
+    init_group(group, axes, 2);
+    const double scale[2] = {1.0, 1.0};
+    const double offset[2] = {0.0, 0.0};
+    kin::CartesianGantry gantry(2, scale, offset);
+    fb::FbSetKinTransform transform;
+    transform.group_ref = &group;
+    transform.kinematics_plugin = &gantry;
+    transform.min_singularity_margin = -1.0;
+    transform.execute = true;
+    transform.call();
+    if(!transform.outputs.error ||
+       transform.outputs.error_id != rt::ErrorCode::invalid_argument ||
+       transform.outputs.done) {
+        return fail("set_kin_transform rejects invalid margin");
+    }
+    return 0;
+}
+
 // --- FbReadCartesianTransform ---
 
 int check_read_cartesian_transform_basic()
@@ -888,6 +982,7 @@ int main()
     failures += check_path_select_rejects_zero_velocity();
     failures += check_path_select_rejects_negative_accel();
     failures += check_path_select_rejects_inf_transition();
+    failures += check_path_select_dynamics_field_matrix();
     failures += check_path_select_rejects_null_group();
     failures += check_path_select_rejects_null_table();
 
@@ -901,6 +996,7 @@ int main()
     failures += check_set_kin_transform_kinematics();
     failures += check_set_kin_transform_rejects_null_group();
     failures += check_set_kin_transform_both_null_plugins();
+    failures += check_set_kin_transform_rejects_invalid_margin();
 
     failures += check_read_cartesian_transform_basic();
     failures += check_read_cartesian_transform_disable_clears();

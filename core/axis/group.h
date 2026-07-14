@@ -900,6 +900,28 @@ public:
             return rt::ErrorCode::ok;
         }
         if(window_active_ && !window_stop_) {
+            if(factor == 0.0) {
+                const rt::ErrorCode paused = interrupt(active_command_.deceleration,
+                                                        active_command_.jerk);
+                if(paused != rt::ErrorCode::ok) {
+                    group_override_ = previous;
+                    return paused;
+                }
+                window_override_paused_ = true;
+                status_ = GroupStatus::moving;
+                return rt::ErrorCode::ok;
+            }
+            if(window_override_paused_) {
+                window_override_paused_ = false;
+                status_ = GroupStatus::interrupted;
+                group_override_ = 1.0;
+                const rt::ErrorCode resumed = continue_motion();
+                if(resumed != rt::ErrorCode::ok || status_ != GroupStatus::moving) {
+                    group_override_ = factor;
+                    return resumed;
+                }
+                return set_group_override(factor);
+            }
             if(previous > 0.0) {
                 for(std::size_t s = window_index_ + 1; s < window_.size(); ++s) {
                     window_[s].limits.max_velocity =
@@ -4403,13 +4425,20 @@ private:
 
     void window_cycle()
     {
+        if(window_override_paused_ && !window_stop_) {
+            return;
+        }
         ++window_tick_;
         if(window_stop_) {
             const otg::State1D st = otg::sample(window_stop_profile_,
                                                 rt::CycleTick::from_cycles(window_tick_));
             sample_window_arclength(window_stop_origin_ + st.position);
             if(window_tick_ >= window_stop_profile_.duration_cycles()) {
-                if(interrupting_) {
+                if(window_override_paused_) {
+                    interrupting_ = false;
+                    window_stop_ = false;
+                    status_ = GroupStatus::moving;
+                } else if(interrupting_) {
                     interrupting_ = false;
                     window_stop_ = false;
                     status_ = GroupStatus::interrupted;
@@ -4578,6 +4607,7 @@ private:
     {
         window_active_ = false;
         window_stop_ = false;
+        window_override_paused_ = false;
         window_in_curve_ = false;
         window_index_ = 0;
         window_tick_ = 0;
@@ -4731,6 +4761,7 @@ private:
     bool window_active_ = false;
     bool window_in_curve_ = false;
     bool window_stop_ = false;
+    bool window_override_paused_ = false;
     bool active_ = false;
     bool override_paused_ = false;
     bool interrupting_ = false;

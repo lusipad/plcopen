@@ -250,6 +250,30 @@ int check_public_input_contracts()
     invalid_limits.max_velocity = 0.0;
     if(!fixed_invalid(from, to, invalid_limits, 10))
         return fail("fixed-time rejects invalid limits");
+    for(int field = 0; field < 3; ++field) {
+        invalid_from = from;
+        double *values[] = {&invalid_from.position, &invalid_from.velocity,
+                            &invalid_from.acceleration};
+        *values[field] = NAN;
+        if(!fixed_invalid(invalid_from, to, limits, 10))
+            return fail("fixed-time rejects each non-finite entry field");
+        invalid_to = to;
+        double *targets[] = {&invalid_to.position, &invalid_to.velocity,
+                             &invalid_to.acceleration};
+        *targets[field] = NAN;
+        if(!fixed_invalid(from, invalid_to, limits, 10))
+            return fail("fixed-time rejects each non-finite target field");
+    }
+    for(int field = 0; field < 4; ++field) {
+        invalid_limits = limits;
+        double *values[] = {&invalid_limits.max_velocity,
+                            &invalid_limits.max_acceleration,
+                            &invalid_limits.max_deceleration,
+                            &invalid_limits.max_jerk};
+        *values[field] = 0.0;
+        if(!fixed_invalid(from, to, invalid_limits, 10))
+            return fail("fixed-time rejects each non-positive limit");
+    }
     if(otg::solve_fixed_time(from, {1.0, 0.0, 5.0}, limits, 100).error() !=
        rt::ErrorCode::infeasible) {
         return fail("fixed-time propagates infeasible target state");
@@ -732,6 +756,93 @@ int check_fixed_time_basic()
         if(!opt) return fail("opt plan failed");
         if(verify_ft("ft-reverse", from, to, limits,
                      opt.value().duration_cycles() + 10) != 0)
+            return 1;
+    }
+
+    // Long fixed-time rendezvous with nonzero endpoint accelerations. The
+    // direct quintic and short-profile candidates cannot satisfy this state;
+    // the cruise/ramp construction must preserve the full endpoint contract.
+    {
+        const otg::Limits1D multiphase_limits{
+            2.256943205184573, 3.7310100034320794,
+            3.7310100034320794, 0.98312819876087354};
+        const otg::State1D from{-1.1324699777161484,
+                                -0.54192425874882288,
+                                2.3156714872936544};
+        const otg::Target1D to{5.3495609122731835,
+                               1.9703988783284589,
+                               1.6895544973892977};
+        if(verify_ft("ft-multiphase-rendezvous", from, to,
+                     multiphase_limits, 262) != 0)
+            return 1;
+    }
+
+    // Zero-cruise fallback: every sign-correct cruise candidate fails, while
+    // the pure ramp chain plus exact correction satisfies the short rendezvous.
+    {
+        const otg::Limits1D zero_cruise_limits{
+            6.2804649130637928, 1.6357425016773797,
+            1.6357425016773797, 1.3780019888403898};
+        const otg::State1D from{9.4186027187090247,
+                                -2.1716399927411132,
+                                -1.412106117258801};
+        const otg::Target1D to{-23.430258653713537,
+                               -6.1681080710883558,
+                               0.34985703444682148};
+        if(verify_ft("ft-zero-cruise-rendezvous", from, to,
+                     zero_cruise_limits, 43) != 0)
+            return 1;
+    }
+
+    // Overshoot-and-return fallback: reaching the endpoint state at the
+    // requested cycle requires an initial cruise opposite the net distance.
+    {
+        const otg::Limits1D overshoot_limits{
+            5.9524489239437006, 2.2826188759581529,
+            2.2826188759581529, 2.4943457967591187};
+        const otg::State1D from{-12.332406727840597,
+                                4.2023361494014031,
+                                1.5400203272720856};
+        const otg::Target1D to{14.303979387476415,
+                               5.8051131478075595,
+                               -0.43131590912157608};
+        if(verify_ft("ft-overshoot-return-rendezvous", from, to,
+                     overshoot_limits, 39) != 0)
+            return 1;
+    }
+
+    struct FixedCandidateCase {
+        const char *name;
+        otg::State1D from;
+        otg::Target1D to;
+        otg::Limits1D limits;
+        std::int64_t cycles;
+    };
+    const FixedCandidateCase candidate_cases[] = {
+        {"ft-zeroing-direct-quintic",
+         {1.1231679423373153, 1.2196521868312959, 0.36289031978639591},
+         {4.6689710449242643, -0.98730353729434384, 0.13738251377307598},
+         {4.5734543241336088, 0.41333147742713217,
+          0.41333147742713217, 1.1443204312678237}, 11},
+        {"ft-three-cubic",
+         {-9.7945857654614805, -2.6720573932407441, 1.4600276351608086},
+         {-6.8343913305067954, 0.33167569628736077, 0.40320085098393943},
+         {3.6665111682038907, 2.1813911778738833,
+          2.1813911778738833, 0.44963412353164689}, 10},
+        {"ft-four-cubic",
+         {9.3100031500447322, 0.62685514812410159, 2.0123917090292278},
+         {-7.8520831267531737, -1.9414647376680245, -0.67383615099008221},
+         {2.9565309028714752, 2.0943401326440818,
+          2.0943401326440818, 1.0110346705156408}, 18},
+        {"ft-quintic-cubic",
+         {-7.8268870769583483, -1.8799089638906255, 0.87846122864310427},
+         {8.4005031185803158, -2.8123516069621166, 0.11767404731308657},
+         {4.7571491007438285, 1.8114664985205005,
+          1.8114664985205005, 1.2681774382764308}, 12},
+    };
+    for(const FixedCandidateCase &candidate : candidate_cases) {
+        if(verify_ft(candidate.name, candidate.from, candidate.to,
+                     candidate.limits, candidate.cycles) != 0)
             return 1;
     }
 

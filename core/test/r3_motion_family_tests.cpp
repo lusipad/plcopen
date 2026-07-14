@@ -339,10 +339,19 @@ int check_superimposed_boundaries()
     axis::AxisModel axis;
     axis.set_power(true);
 
-    // Superimposed rejects unpowered/invalid input at the model level.
-    if(axis.submit_superimposed(2.0, 0.0, 1.0, 1.0, 1.0).error() !=
-       rt::ErrorCode::invalid_argument) {
-        return fail("superimposed rejects non-positive velocity");
+    const double nan = std::numeric_limits<double>::quiet_NaN();
+    const double invalid[][5] = {
+        {nan, 1.0, 1.0, 1.0, 1.0}, {2.0, nan, 1.0, 1.0, 1.0},
+        {2.0, 0.0, 1.0, 1.0, 1.0}, {2.0, 1.0, nan, 1.0, 1.0},
+        {2.0, 1.0, 0.0, 1.0, 1.0}, {2.0, 1.0, 1.0, nan, 1.0},
+        {2.0, 1.0, 1.0, 0.0, 1.0}, {2.0, 1.0, 1.0, 1.0, nan},
+        {2.0, 1.0, 1.0, 1.0, 0.0}};
+    for(const auto &value : invalid) {
+        if(axis.submit_superimposed(value[0], value[1], value[2], value[3], value[4])
+               .error() != rt::ErrorCode::invalid_argument ||
+           axis.superimposed_active()) {
+            return fail("superimposed rejects each invalid field atomically");
+        }
     }
 
     // An aborting base command clears the running superimposed offset.

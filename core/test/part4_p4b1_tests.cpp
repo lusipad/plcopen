@@ -134,6 +134,81 @@ int check_kinematics_metadata_contract()
     return 0;
 }
 
+int check_configuration_read_error_matrix()
+{
+    axis::AxisModel axis;
+    axis::AxisGroup group;
+    group.add_axis(axis);
+
+    fb::FbReadDHParameters dh;
+    dh.enable = true;
+    dh.call();
+    if(!dh.error || dh.error_id != rt::ErrorCode::invalid_argument) {
+        return fail("configuration errors: null DH group");
+    }
+    dh.group_ref = &group;
+    dh.call();
+    if(!dh.error || dh.error_id != rt::ErrorCode::precondition_failed) {
+        return fail("configuration errors: unbound DH metadata");
+    }
+
+    fb::FbReadJointInfo joint;
+    joint.enable = true;
+    joint.call();
+    if(!joint.error || joint.error_id != rt::ErrorCode::invalid_argument) {
+        return fail("configuration errors: null joint group");
+    }
+    joint.group_ref = &group;
+    joint.call();
+    if(!joint.error || joint.error_id != rt::ErrorCode::precondition_failed) {
+        return fail("configuration errors: unbound joint metadata");
+    }
+
+    fb::FbGroupReadParameter parameter;
+    parameter.enable = true;
+    parameter.call();
+    if(!parameter.error || parameter.error_id != rt::ErrorCode::invalid_argument) {
+        return fail("configuration errors: null parameter group");
+    }
+    parameter.group_ref = &group;
+    parameter.parameter = static_cast<axis::GroupParameter>(99);
+    parameter.call();
+    if(!parameter.error || parameter.error_id != rt::ErrorCode::unsupported) {
+        return fail("configuration errors: unsupported parameter");
+    }
+
+    fb::FbGroupReadCommandInfo command;
+    command.enable = true;
+    command.call();
+    if(!command.error || command.error_id != rt::ErrorCode::invalid_argument) {
+        return fail("configuration errors: null command group");
+    }
+    command.group_ref = &group;
+    command.command_id = 999;
+    command.call();
+    if(!command.error || command.error_id != rt::ErrorCode::out_of_range) {
+        return fail("configuration errors: unknown command");
+    }
+
+    fb::FbGroupReadMotionState motion;
+    motion.group_ref = &group;
+    motion.enable = true;
+    motion.call();
+    if(!motion.error || motion.error_id != rt::ErrorCode::precondition_failed) {
+        return fail("configuration errors: disabled motion state");
+    }
+    axis.set_power(true);
+    group.enable();
+    axis.trigger_error();
+    group.cycle();
+    motion.call();
+    if(!motion.error || motion.error_id != rt::ErrorCode::precondition_failed) {
+        return fail("configuration errors: errorstop motion state");
+    }
+    std::printf("  PASS configuration_read_error_matrix\n");
+    return 0;
+}
+
 int check_kinematics_metadata_capacities()
 {
     const std::size_t counts[] = {3, 6, 8};
@@ -680,6 +755,27 @@ int check_group_sw_limits_transaction()
     return 0;
 }
 
+int check_group_sw_limits_read_lifecycle()
+{
+    fb::FbGroupReadSWLimits read;
+    read.call();
+    if(read.valid || read.error || read.limit_values.count != 0) {
+        return fail("sw_limits: disabled read clears outputs");
+    }
+    read.enable = true;
+    read.call();
+    if(!read.error || read.error_id != rt::ErrorCode::invalid_argument ||
+       read.valid || read.limit_values.count != 0) {
+        return fail("sw_limits: null group rejected");
+    }
+    read.enable = false;
+    read.call();
+    if(read.valid || read.error || read.error_id != rt::ErrorCode::ok) {
+        return fail("sw_limits: disable clears error");
+    }
+    return 0;
+}
+
 int check_dynamics_partial_updates_and_capacity()
 {
     axis::AxisModel axes[8];
@@ -812,6 +908,7 @@ int main()
     failures += check_public_facades_compile();
     failures += check_configuration_and_owner_readback();
     failures += check_kinematics_metadata_contract();
+    failures += check_configuration_read_error_matrix();
     failures += check_kinematics_metadata_capacities();
     failures += check_position_velocity_acceleration_readback();
     failures += check_motion_state_and_command_info();
@@ -821,6 +918,7 @@ int main()
     failures += check_invalid_public_state_queries();
     failures += check_parameters_and_dynamics();
     failures += check_group_sw_limits_transaction();
+    failures += check_group_sw_limits_read_lifecycle();
     failures += check_dynamics_partial_updates_and_capacity();
     failures += check_default_dynamics_and_invalid_limits();
     std::printf("---\n%d failures\n", failures);

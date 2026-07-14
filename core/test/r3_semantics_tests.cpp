@@ -94,6 +94,26 @@ int check_basic_fb_contracts()
     if(tof.q || tof.et != 20) {
         return fail("tof drops");
     }
+    tof.cycle();
+    if(tof.q || tof.et != 20) {
+        return fail("tof expired state holds");
+    }
+
+    TOF initially_off;
+    initially_off.pt = 20;
+    initially_off.cycle();
+    if(!initially_off.q || initially_off.et != 0) {
+        return fail("tof initial off-delay contract");
+    }
+    initially_off.in = true;
+    initially_off.cycle();
+    initially_off.in = false;
+    initially_off.cycle();
+    initially_off.in = true;
+    initially_off.cycle();
+    if(!initially_off.q || initially_off.et != 0) {
+        return fail("tof input reassertion resets delay");
+    }
 
     CTUD counter;
     counter.pv = 2;
@@ -152,6 +172,33 @@ int check_base_latches()
     if(!execute.error || execute.error_id != rt::ErrorCode::out_of_range || execute.busy) {
         return fail("execute error");
     }
+    execute.cycle(false, fb::ExecuteStep::busy);
+    execute.cycle(true, fb::ExecuteStep::aborted);
+    if(!execute.command_aborted || execute.busy || execute.active) {
+        return fail("execute aborted");
+    }
+    execute.cycle(false, fb::ExecuteStep::busy);
+    execute.cycle(true, fb::ExecuteStep::error);
+    if(!execute.error || execute.error_id != rt::ErrorCode::invalid_argument) {
+        return fail("execute default error id");
+    }
+    execute.cycle(true, fb::ExecuteStep::done);
+    if(!execute.error || execute.done) {
+        return fail("execute terminal holds while high");
+    }
+    fb::ExecuteLatch busy_reentry;
+    busy_reentry.cycle(true, fb::ExecuteStep::busy);
+    busy_reentry.cycle(true, fb::ExecuteStep::done);
+    if(!busy_reentry.done || busy_reentry.busy || busy_reentry.active) {
+        return fail("execute busy state observes completion");
+    }
+    fb::ExecuteLatch active_reentry;
+    active_reentry.cycle(true, fb::ExecuteStep::busy);
+    active_reentry.busy = false;
+    active_reentry.cycle(true, fb::ExecuteStep::aborted);
+    if(!active_reentry.command_aborted || active_reentry.active) {
+        return fail("execute active state observes abort");
+    }
 
     fb::ReadInfoLatch read;
     read.cycle(true, false, rt::ErrorCode::invalid_argument);
@@ -162,6 +209,18 @@ int check_base_latches()
     if(read.error || read.valid) {
         return fail("read-info disable clears");
     }
+    read.cycle(true, true);
+    if(!read.valid || read.busy || read.error || read.error_id != rt::ErrorCode::ok) {
+        return fail("read-info valid");
+    }
+    read.cycle(true, false);
+    if(read.valid || read.error) {
+        return fail("read-info pending source");
+    }
+    read.cycle(true, true, rt::ErrorCode::invalid_argument);
+    if(read.valid || !read.error) {
+        return fail("read-info source valid cannot mask error");
+    }
 
     fb::StartSyncPulse pulse;
     pulse.complete(true);
@@ -171,6 +230,15 @@ int check_base_latches()
     pulse.complete(true);
     if(pulse.start_sync) {
         return fail("start-sync one cycle");
+    }
+    pulse.reset();
+    pulse.complete(false);
+    if(pulse.start_sync) {
+        return fail("start-sync inactive");
+    }
+    pulse.complete(true);
+    if(!pulse.start_sync) {
+        return fail("start-sync reset rearms");
     }
 
     return 0;
@@ -731,6 +799,136 @@ int check_basic_fb_edge_cases()
     return 0;
 }
 
+int check_basic_fb_priority_and_saturation_matrix()
+{
+    using namespace plcopen::core;
+    fb::SR sr;
+    sr.set = true;
+    sr.reset = true;
+    sr.cycle();
+    if(!sr.q) return fail("sr set priority");
+    sr.set = false;
+    sr.cycle();
+    if(sr.q) return fail("sr reset clears");
+
+    fb::RS rs;
+    rs.set = true;
+    rs.reset = true;
+    rs.cycle();
+    if(rs.q) return fail("rs reset priority");
+    rs.reset = false;
+    rs.cycle();
+    if(!rs.q) return fail("rs set latches");
+
+    for(int initial = 0; initial <= 1; ++initial) {
+        for(int set = 0; set <= 1; ++set) {
+            for(int reset = 0; reset <= 1; ++reset) {
+                fb::SR truth_sr;
+                truth_sr.q = initial != 0;
+                truth_sr.set = set != 0;
+                truth_sr.reset = reset != 0;
+                truth_sr.cycle();
+                const bool expected_sr = truth_sr.set || (initial != 0 && !truth_sr.reset);
+                fb::RS truth_rs;
+                truth_rs.q = initial != 0;
+                truth_rs.set = set != 0;
+                truth_rs.reset = reset != 0;
+                truth_rs.cycle();
+                const bool expected_rs = ((initial != 0) || truth_rs.set) && !truth_rs.reset;
+                if(truth_sr.q != expected_sr || truth_rs.q != expected_rs) {
+                    return fail("sr rs exhaustive truth table");
+                }
+            }
+        }
+    }
+
+    fb::TP pulse;
+    pulse.pt = 3;
+    pulse.in = true;
+    pulse.cycle();
+    pulse.in = false;
+    pulse.cycle();
+    pulse.in = true;
+    pulse.cycle();
+    pulse.in = false;
+    pulse.cycle();
+    if(pulse.q || pulse.et != 3) return fail("tp reaches duration");
+    pulse.pt = 0;
+    pulse.cycle();
+    if(pulse.q || pulse.et != 0) return fail("tp zero duration resets");
+
+    fb::CTU up;
+    up.pv = 1;
+    up.cycle();
+    up.cv = std::numeric_limits<std::int64_t>::max();
+    up.cu = true;
+    up.cycle();
+    if(up.cv != std::numeric_limits<std::int64_t>::max() || !up.q) {
+        return fail("ctu saturates");
+    }
+    up.reset = true;
+    up.cycle();
+    if(up.cv != 0) return fail("ctu reset priority");
+
+    fb::CTD down;
+    down.pv = 2;
+    down.load = true;
+    down.cycle();
+    down.load = false;
+    down.cd = true;
+    down.cycle();
+    down.cd = false;
+    down.cycle();
+    down.cd = true;
+    down.cycle();
+    if(down.cv != 0 || !down.q) return fail("ctd reaches zero");
+    down.cd = false;
+    down.cycle();
+    down.cd = true;
+    down.cycle();
+    if(down.cv != 0) return fail("ctd saturates at zero");
+
+    fb::CTUD both;
+    both.pv = 2;
+    both.cycle();
+    both.cv = 1;
+    both.cu = true;
+    both.cd = true;
+    both.cycle();
+    if(both.cv != 1) return fail("ctud simultaneous edges cancel");
+    both.reset = true;
+    both.load = true;
+    both.cycle();
+    if(both.cv != 0) return fail("ctud reset beats load");
+    both.reset = false;
+    both.load = false;
+    both.cv = std::numeric_limits<std::int64_t>::max();
+    both.cu = false;
+    both.cd = false;
+    both.cycle();
+    both.cu = true;
+    both.cycle();
+    if(both.cv != std::numeric_limits<std::int64_t>::max()) {
+        return fail("ctud saturates at maximum");
+    }
+    both.cu = false;
+    both.cd = false;
+    both.cv = 0;
+    both.cycle();
+    both.cd = true;
+    both.cycle();
+    if(both.cv != 0) return fail("ctud saturates at zero");
+
+    fb::RTC rtc;
+    rtc.enable = true;
+    rtc.pdt = 4;
+    rtc.cycle();
+    rtc.enable = false;
+    rtc.cycle();
+    if(rtc.q || rtc.dt != 0) return fail("rtc disable resets");
+    return 0;
+}
+
 int check_cycle_config_and_error_text()
 {
     using namespace plcopen::core::rt;
@@ -799,6 +997,7 @@ int main()
        check_group_linear_contract() != 0 || check_motion_facades() != 0 ||
        check_move_absolute_direction() != 0 ||
        check_cyclic_power_keeps_motion() != 0 || check_basic_fb_edge_cases() != 0 ||
+       check_basic_fb_priority_and_saturation_matrix() != 0 ||
        check_cycle_config_and_error_text() != 0) {
         return 1;
     }

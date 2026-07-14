@@ -683,6 +683,107 @@ int check_window_interrupt_continue()
     return 0;
 }
 
+int check_window_override_pause_resume()
+{
+    Rig rig;
+    if(!rig.group.submit_linear(make_move(1.0, 0.0)) ||
+       !rig.group.submit_linear(make_blend(2.0, 0.5)) ||
+       !rig.group.submit_linear(make_blend(3.0, 0.0)) ||
+       !wait_for_path_motion(rig)) {
+        return fail("window override setup");
+    }
+    if(rig.group.motion_state().active_command_id == 0 ||
+       rig.group.set_group_override(0.0) != rt::ErrorCode::ok) {
+        return fail("window override pauses");
+    }
+    int stable_cycles = 0;
+    double previous_x = rig.x.snapshot().command_position;
+    double previous_y = rig.y.snapshot().command_position;
+    for(int cycle = 0; cycle < 2000 && stable_cycles < 20; ++cycle) {
+        rig.group.cycle();
+        const double current_x = rig.x.snapshot().command_position;
+        const double current_y = rig.y.snapshot().command_position;
+        stable_cycles = near(current_x, previous_x, 1e-12) &&
+                                near(current_y, previous_y, 1e-12)
+                            ? stable_cycles + 1 : 0;
+        previous_x = current_x;
+        previous_y = current_y;
+    }
+    if(stable_cycles < 20) return fail("window override reaches pause");
+    const double paused_x = rig.x.snapshot().command_position;
+    const double paused_y = rig.y.snapshot().command_position;
+    const std::uint32_t paused_command_id =
+        rig.group.motion_state().active_command_id;
+    for(int cycle = 0; cycle < 20; ++cycle) rig.group.cycle();
+    if(!near(rig.x.snapshot().command_position, paused_x, 1e-12) ||
+       !near(rig.y.snapshot().command_position, paused_y, 1e-12) ||
+       rig.group.status() != axis::GroupStatus::moving ||
+       paused_command_id == 0 ||
+       rig.group.motion_state().active_command_id != paused_command_id) {
+        return fail("window override remains paused");
+    }
+    const rt::ErrorCode resumed = rig.group.set_group_override(0.5);
+    if(resumed != rt::ErrorCode::ok) return fail("window override resume result");
+    if(rig.group.group_override() != 0.5) return fail("window override resume factor");
+    if(rig.group.status() != axis::GroupStatus::moving) {
+        return fail("window override resume status");
+    }
+    if(rig.group.motion_state().active_command_id != paused_command_id) {
+        return fail("window override resume command");
+    }
+    if(run_to_standstill(rig.group) < 0 ||
+       !near(rig.x.snapshot().command_position, 3.0, 1e-9) ||
+       !near(rig.y.snapshot().command_position, 0.0, 1e-9)) {
+        return fail("window override reaches committed finish");
+    }
+    return 0;
+}
+
+int check_arc_window_override_pause_resume()
+{
+    Rig rig;
+    if(!rig.group.submit_linear(make_move(1.0, 0.0))) {
+        return fail("arc override approach");
+    }
+    for(int cycle = 0; cycle < 5; ++cycle) rig.group.cycle();
+    if(!rig.group.submit_circular(make_arc_blend(1.0, 0.0, 1.0, 1.0, 1.0, true)) ||
+       !rig.group.submit_linear(make_blend(2.0, 2.5))) {
+        return fail("arc override window setup");
+    }
+    bool inside_arc = false;
+    for(int cycle = 0; cycle < 100000; ++cycle) {
+        rig.group.cycle();
+        const double x = rig.x.snapshot().command_position;
+        const double y = rig.y.snapshot().command_position;
+        if(x > 1.1 && y > 0.0 && y < 0.9) {
+            inside_arc = true;
+            break;
+        }
+    }
+    if(!inside_arc || rig.group.set_group_override(0.0) != rt::ErrorCode::ok) {
+        return fail("arc override pauses inside curve");
+    }
+    int stable = 0;
+    double previous_x = rig.x.snapshot().command_position;
+    double previous_y = rig.y.snapshot().command_position;
+    for(int cycle = 0; cycle < 5000 && stable < 20; ++cycle) {
+        rig.group.cycle();
+        const double x = rig.x.snapshot().command_position;
+        const double y = rig.y.snapshot().command_position;
+        stable = near(x, previous_x, 1e-12) && near(y, previous_y, 1e-12)
+                     ? stable + 1 : 0;
+        previous_x = x;
+        previous_y = y;
+    }
+    if(stable < 20 || rig.group.set_group_override(0.5) != rt::ErrorCode::ok ||
+       run_to_standstill(rig.group) < 0 ||
+       !near(rig.x.snapshot().command_position, 2.0, 1e-9) ||
+       !near(rig.y.snapshot().command_position, 2.5, 1e-9)) {
+        return fail("arc override resumes committed finish");
+    }
+    return 0;
+}
+
 // Look-ahead v2 jerk correction (approved v2 spec, KB-039): the reachable
 // speed is never above the trapezoid value, the jerk-limited ramp to it fits
 // the distance, and the correction bites in jerk-dominated regimes.
@@ -732,9 +833,11 @@ int main()
        check_window_depth_config() != 0 ||
        check_reflex_inside_window() != 0 || check_stop_on_window() != 0 ||
        check_line_arc_line_window() != 0 || check_arc_centripetal_clamp() != 0 ||
-       check_arc_window_boundaries() != 0 || check_arc_window_rejection_contract() != 0 ||
-       check_window_interrupt_continue() != 0 ||
-       check_jerk_reachable_speed() != 0) {
+        check_arc_window_boundaries() != 0 || check_arc_window_rejection_contract() != 0 ||
+        check_window_interrupt_continue() != 0 ||
+        check_window_override_pause_resume() != 0 ||
+        check_arc_window_override_pause_resume() != 0 ||
+        check_jerk_reachable_speed() != 0) {
         return 1;
     }
     std::printf("PASS a5 lookahead tests\n");

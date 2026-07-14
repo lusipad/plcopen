@@ -8,6 +8,7 @@
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
+#include <limits>
 
 #include "axis/group.h"
 #include "axis/state.h"
@@ -481,6 +482,37 @@ int check_rejections()
     return 0;
 }
 
+int check_frame_numeric_boundaries()
+{
+    const double nan = std::numeric_limits<double>::quiet_NaN();
+    for(int field = 0; field < 4; ++field) {
+        double values[4] = {1.0, 2.0, 3.0, 0.5};
+        values[field] = nan;
+        if(geom::make_frame(values[0], values[1], values[2], values[3])) {
+            return fail("frame rejects each nonfinite field");
+        }
+    }
+
+    double identity[3][3] = {{1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 0.0, 1.0}};
+    double malformed_high[3][3] = {{3.0, 0.0, 0.0}, {0.0, 3.0, 0.0}, {0.0, 0.0, 3.0}};
+    double malformed_low[3][3] = {{-3.0, 0.0, 0.0}, {0.0, -3.0, 0.0}, {0.0, 0.0, -3.0}};
+    double zero[3][3] = {};
+    double axis[3]{};
+    double angle = 0.0;
+    geom::relative_axis_angle(identity, identity, axis, angle);
+    if(angle != 0.0 || axis[2] != 1.0) return fail("frame zero rotation boundary");
+    geom::relative_axis_angle(identity, malformed_high, axis, angle);
+    if(angle != 0.0) return fail("frame cosine upper clamp");
+    geom::relative_axis_angle(identity, malformed_low, axis, angle);
+    if(!near(angle, Pi, 1e-12)) return fail("frame cosine lower clamp");
+    geom::relative_axis_angle(identity, zero, axis, angle);
+    if(!std::isfinite(angle) || !std::isfinite(axis[0]) || !std::isfinite(axis[1]) ||
+       !std::isfinite(axis[2])) {
+        return fail("frame degenerate rotation stays finite");
+    }
+    return 0;
+}
+
 } // namespace
 
 int main()
@@ -494,6 +526,7 @@ int main()
     failures += check_config_echo();
     failures += check_fb_face();
     failures += check_rejections();
+    failures += check_frame_numeric_boundaries();
     if(failures == 0) {
         std::printf("readback tests passed\n");
     }
