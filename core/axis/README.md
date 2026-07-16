@@ -30,6 +30,11 @@ Responsibilities:
   submit-side conversion slot for slot (pose groups report the TCP pose with
   the declared gimbal convention; translational groups the TCP point);
   configuration getters echo the original set values.
+- P4-B2 tool/payload and jogging (KB-076): each group owns fixed 16-slot stores;
+  selected tool transforms are snapshotted per command and feed the real flange-to-TCP
+  pipeline, while payload values remain configuration data until rigid-body dynamics lands.
+  ACS/MCS/PCS jogging is a fixed-state continuous session with jerk/acceleration envelopes,
+  soft-limit checks, analytic inverse kinematics, and controlled release/GroupStop.
 - Cartesian in-segment interpolation (KB-044, approved matrix): opt-in
   `interpolation_space = cartesian` on MCS/PCS linear segments of
   plugin/pose groups — per-cycle analytic inverse on a precomputed
@@ -92,6 +97,15 @@ Synchronization semantics carried from the v0.x tests:
 - A non-aborting motion command on a synchronized axis is rejected (no defined completion
   point); an aborting command or `sync_out` disengages.
 - `clear_synchronized` (used by group abort/disable) also disengages the axis's own sync.
+- P4-B3 group-path synchronization owns a standalone slave without adding a second public
+  setpoint writer. `SyncAxisToGroup` maps the ACS path odometer through its ratio; a constrained
+  entry remains `approaching` until position and velocity converge, then uses position-locking.
+- `SyncGroupToAxis` samples a fixed PathData waypoint table from the master-axis position. The
+  rewrite slice supports ACS, periodic/non-periodic lookup, TuC path metrics, and Aborting
+  ownership; GroupStop and a new group command abort the tracked synchronization.
+- Dynamic PCS tracking stores only group-level pending/active reference frames, not a transform
+  per queued command. Conveyor, rotary, and master-group transforms are consumed every cycle,
+  and a completed PCS command keeps its PCS pose while the reference continues moving.
 
 B9 stream session (approved trajectory-stream matrix, decisions #9/#10):
 

@@ -789,4 +789,275 @@ public:
     }
 };
 
+class FbGroupWriteToolData : public GroupConfigWriteFb
+{
+public:
+    std::size_t tool_number = 0;
+    axis::ToolData tool_data{};
+    void call()
+    {
+        if(!rising_edge()) return;
+        finish(group_ref == nullptr ? rt::ErrorCode::invalid_argument
+                                    : group_ref->write_tool_data(tool_number, tool_data));
+    }
+};
+
+class FbGroupReadToolData : public GroupConfigReadFb
+{
+public:
+    std::size_t tool_number = 0;
+    axis::ToolData tool_data{};
+    void call()
+    {
+        tool_data = {};
+        if(!begin()) return;
+        const rt::Result<axis::ToolData> result = group_ref->read_tool_data(tool_number);
+        if(!result) return fail(result.error());
+        tool_data = result.value();
+        succeed();
+    }
+};
+
+class FbGroupSelectTool : public GroupConfigWriteFb
+{
+public:
+    std::size_t tool_number = 0;
+    void call()
+    {
+        if(!rising_edge()) return;
+        finish(group_ref == nullptr ? rt::ErrorCode::invalid_argument
+                                    : group_ref->select_tool(tool_number));
+    }
+};
+
+class FbGroupReadTool : public GroupConfigReadFb
+{
+public:
+    axis::SelectionSource source = axis::SelectionSource::active;
+    std::size_t tool_number = 0;
+    void call()
+    {
+        tool_number = 0;
+        if(!begin()) return;
+        if(source != axis::SelectionSource::active &&
+           source != axis::SelectionSource::selected) {
+            return fail(rt::ErrorCode::unsupported);
+        }
+        tool_number = group_ref->read_tool(source);
+        succeed();
+    }
+};
+
+class FbGroupWritePayloadData : public GroupConfigWriteFb
+{
+public:
+    std::size_t payload_number = 0;
+    axis::PayloadData payload_data{};
+    void call()
+    {
+        if(!rising_edge()) return;
+        finish(group_ref == nullptr
+                   ? rt::ErrorCode::invalid_argument
+                   : group_ref->write_payload_data(payload_number, payload_data));
+    }
+};
+
+class FbGroupReadPayloadData : public GroupConfigReadFb
+{
+public:
+    std::size_t payload_number = 0;
+    axis::PayloadData payload_data{};
+    void call()
+    {
+        payload_data = {};
+        if(!begin()) return;
+        const rt::Result<axis::PayloadData> result =
+            group_ref->read_payload_data(payload_number);
+        if(!result) return fail(result.error());
+        payload_data = result.value();
+        succeed();
+    }
+};
+
+class FbGroupSelectPayload : public GroupConfigWriteFb
+{
+public:
+    std::size_t payload_number = 0;
+    void call()
+    {
+        if(!rising_edge()) return;
+        finish(group_ref == nullptr ? rt::ErrorCode::invalid_argument
+                                    : group_ref->select_payload(payload_number));
+    }
+};
+
+class FbGroupReadPayload : public GroupConfigReadFb
+{
+public:
+    axis::SelectionSource source = axis::SelectionSource::active;
+    std::size_t payload_number = 0;
+    void call()
+    {
+        payload_number = 0;
+        if(!begin()) return;
+        if(source != axis::SelectionSource::active &&
+           source != axis::SelectionSource::selected) {
+            return fail(rt::ErrorCode::unsupported);
+        }
+        payload_number = group_ref->read_payload(source);
+        succeed();
+    }
+};
+
+class FbGroupWriteRigidBodyDynamic : public GroupConfigWriteFb
+{
+public:
+    std::size_t rigid_body_count = 0;
+    std::array<axis::RigidBodyDynamic, axis::AxisGroup::RigidBodyCapacity>
+        rigid_body_dynamic{};
+
+    void call()
+    {
+        if(!rising_edge()) return;
+        if(group_ref == nullptr) return finish(rt::ErrorCode::invalid_argument);
+        axis::RigidBodyDynamics data{};
+        data.count = rigid_body_count;
+        data.value = rigid_body_dynamic;
+        finish(group_ref->write_rigid_body_dynamics(data));
+    }
+};
+
+class FbGroupReadRigidBodyDynamic : public GroupConfigReadFb
+{
+public:
+    std::size_t rigid_body_count = 0;
+    std::array<axis::RigidBodyDynamic, axis::AxisGroup::RigidBodyCapacity>
+        rigid_body_dynamic{};
+
+    void call()
+    {
+        rigid_body_count = 0;
+        rigid_body_dynamic = {};
+        if(!begin()) return;
+        const rt::Result<axis::RigidBodyDynamics> result =
+            group_ref->rigid_body_dynamics();
+        if(!result) return fail(result.error());
+        rigid_body_count = result.value().count;
+        rigid_body_dynamic = result.value().value;
+        succeed();
+    }
+};
+
+class GroupJogFb
+{
+public:
+    axis::AxisGroup *group_ref = nullptr;
+    bool enable = false;
+    axis::CoordSystem coord_system = axis::CoordSystem::acs;
+    bool enabled = false;
+    bool active = false;
+    bool command_aborted = false;
+    bool error = false;
+    rt::ErrorCode error_id = rt::ErrorCode::ok;
+
+protected:
+    void apply(const axis::GroupPosition &direction)
+    {
+        command_aborted = false;
+        if(!enable) {
+            if(last_enable_ && group_ref != nullptr && command_id_ != 0) {
+                group_ref->release_jog(command_id_);
+            }
+            last_enable_ = false;
+            command_id_ = 0;
+            enabled = false;
+            active = false;
+            error = false;
+            error_id = rt::ErrorCode::ok;
+            return;
+        }
+        if(group_ref == nullptr) return fail(rt::ErrorCode::invalid_argument);
+        if(last_enable_ && group_ref->jog_command_aborted(command_id_)) {
+            enabled = false;
+            active = false;
+            command_aborted = true;
+            error = false;
+            error_id = rt::ErrorCode::ok;
+            return;
+        }
+        if(!last_enable_) {
+            const rt::Result<std::uint32_t> started =
+                group_ref->begin_jog(coord_system, direction);
+            if(!started) return fail(started.error());
+            command_id_ = started.value();
+        } else {
+            const rt::ErrorCode updated = group_ref->update_jog(command_id_, direction);
+            if(updated != rt::ErrorCode::ok) return fail(updated);
+        }
+        last_enable_ = true;
+        enabled = true;
+        active = group_ref->jog_command_active(command_id_) &&
+                 group_ref->status() != axis::GroupStatus::standby;
+        command_aborted = group_ref->jog_command_aborted(command_id_);
+        error_id = group_ref->jog_error();
+        error = error_id != rt::ErrorCode::ok;
+        if(command_aborted) {
+            enabled = false;
+            active = false;
+        }
+    }
+
+private:
+    void fail(rt::ErrorCode code)
+    {
+        last_enable_ = true;
+        enabled = false;
+        active = false;
+        error = true;
+        error_id = code;
+    }
+
+    std::uint32_t command_id_ = 0;
+    bool last_enable_ = false;
+};
+
+class FbGroupJog : public GroupJogFb
+{
+public:
+    axis::JogBooleanArray jog_positive{};
+    axis::JogBooleanArray jog_negative{};
+
+    void call()
+    {
+        axis::GroupPosition direction{};
+        direction.size = jog_positive.count;
+        if(jog_positive.count != jog_negative.count) {
+            direction.size = 0;
+        } else {
+            for(std::size_t i = 0; i < direction.size; ++i) {
+                direction.value[i] = jog_positive.value[i] == jog_negative.value[i]
+                                         ? 0.0
+                                         : (jog_positive.value[i] ? 1.0 : -1.0);
+            }
+        }
+        apply(direction);
+    }
+};
+
+class FbGroupJogVector : public GroupJogFb
+{
+public:
+    axis::GroupPosition direction{};
+
+    FbGroupJogVector()
+    {
+        coord_system = axis::CoordSystem::mcs;
+    }
+
+    void call()
+    {
+        apply(direction);
+    }
+};
+
 } // namespace plcopen::core::fb

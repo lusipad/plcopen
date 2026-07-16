@@ -4,7 +4,7 @@
 > **自编清单**，而 Part 4 **v2.0 规格实际定义 68 个 FB**——本表漏了
 > 38 个，并在残缺清单上错误宣布了"零留白"。
 >
-> **当前同名门面：40/68 ≈ 59%，28 项无同名入口**；另保留两个旧名/自定义
+> **当前同名门面：57/68 ≈ 84%，11 项无同名入口**；另保留两个旧名/自定义
 > 回读门面，不计入 v2 同名覆盖。完整清单见
 > **[plcopen-part4-clause-audit.md](plcopen-part4-clause-audit.md)**。
 > 本表保留为历史记录（其对 30 个 FB 的实现映射仍准确），**不得再
@@ -73,8 +73,8 @@
 
 | # | 标准 FB | 状态 | 实现 | 说明 |
 |---|---------|------|------|------|
-| 29 | MC_TrackConveyorBelt | **Y1 计划** | — | 软件极致计划 Y1 批次 |
-| 30 | MC_TrackRotaryTable | **Y1 计划** | — | 软件极致计划 Y1 批次 |
+| 29 | MC_TrackConveyorBelt | **已承接** | `FbTrackConveyorBelt` (`core/fb/tracking.h`) | 动态 PCS 与持续保持 |
+| 30 | MC_TrackRotaryTable | **已承接** | `FbTrackRotaryTable` (`core/fb/tracking.h`) | 绕转台 Z 轴动态 PCS |
 
 ## 汇总
 

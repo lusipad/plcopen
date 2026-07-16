@@ -218,6 +218,31 @@ int main(int argc, char **argv)
     read_limits.group_ref = &read_group;
     read_limits.enable = true;
 
+    static axis::AxisModel jog_axes[2];
+    static axis::AxisGroup jog_group;
+    for(auto &axis : jog_axes) {
+        axis.set_power(true);
+        jog_group.add_axis(axis);
+    }
+    jog_group.enable();
+    axis::JoggingDynamics jog_dynamics{};
+    jog_dynamics.size = 2;
+    jog_dynamics.path = {0.01, 0.001, 0.001, 0.0001};
+    for(std::size_t i = 0; i < 2; ++i) {
+        jog_dynamics.axis_velocity[i] = 0.001;
+        jog_dynamics.axis_acceleration[i] = 0.0001;
+        jog_dynamics.axis_deceleration[i] = 0.0001;
+        jog_dynamics.axis_jerk[i] = 0.00001;
+    }
+    jog_group.write_jogging_dynamics(jog_dynamics);
+    fb::FbGroupJog jog;
+    jog.group_ref = &jog_group;
+    jog.enable = true;
+    jog.jog_positive.count = 2;
+    jog.jog_negative.count = 2;
+    jog.jog_positive.value[0] = true;
+    jog.call();
+
     const std::uint8_t feetech_ids[] = {1, 2};
     adapters::FeetechBus feetech;
     adapters::FeetechSim feetech_sim;
@@ -236,6 +261,8 @@ int main(int argc, char **argv)
         slave.cycle();
         group.cycle();
         circle_group.cycle();
+        jog_group.cycle();
+        jog.call();
         homing_axis.cycle();
         step_block.call();
         flying.call();

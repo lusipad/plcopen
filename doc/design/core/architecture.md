@@ -203,7 +203,7 @@
 B 级 I/O 齐备 22/43（2026-07-12 审计时点 C++ 字段面；P1-A 已补 4 项
 结构缺口，其余命名/形态缺口归 L2a 引脚层）、条款级问题 D-01~D-20 中
 D-05/D-12/D-13/D-15 已关、16 项开放——**不宣称合规**；
-Part 4 同名门面 40/68；Part 5 C++ 门面 11/11，但仍为部分覆盖。逐条审计公开于
+Part 4 同名门面 50/68；Part 5 C++ 门面 11/11，但仍为部分覆盖。逐条审计公开于
 [`doc/compliance/`](../../compliance/)（入口：
 [Part 1 条款矩阵](../../compliance/plcopen-part1-clause-matrix.md)、
 [Part 4 覆盖](../../compliance/part4-coverage.md)、

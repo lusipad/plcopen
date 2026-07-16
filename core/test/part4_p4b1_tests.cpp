@@ -171,7 +171,8 @@ int check_configuration_read_error_matrix()
         return fail("configuration errors: null parameter group");
     }
     parameter.group_ref = &group;
-    parameter.parameter = static_cast<axis::GroupParameter>(99);
+    parameter.parameter = static_cast<axis::GroupParameter>( // NOLINT(clang-analyzer-optin.core.EnumCastOutOfRange)
+        99);
     parameter.call();
     if(!parameter.error || parameter.error_id != rt::ErrorCode::unsupported) {
         return fail("configuration errors: unsupported parameter");
@@ -219,7 +220,9 @@ int check_kinematics_metadata_capacities()
         axis::GroupKinematicsInfo info{};
         info.serial = true;
         info.count = count;
-        for(std::size_t i = 0; i < count; ++i) {
+        for(std::size_t i = 0;
+            i < count && i < axis::GroupPosition::MaxAxes;
+            ++i) {
             info.dh[i] = {static_cast<double>(i), 1.0, 2.0, 3.0};
             info.joint[i] = {static_cast<double>(i), (i % 2) != 0};
         }

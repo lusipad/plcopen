@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -165,6 +166,100 @@ public:
         }
         observe_group();
     }
+};
+
+class FbSyncGroupToAxis
+{
+public:
+    FbSyncGroupToAxis()
+    {
+        tuc_numerator.fill(1);
+        tuc_denominator.fill(1);
+    }
+
+    axis::AxisModel *master_ref = nullptr;
+    axis::AxisGroup *group_ref = nullptr;
+    PathTable *path_data = nullptr;
+    bool execute = false;
+    axis::PathMode mode = axis::PathMode::non_periodic;
+    std::array<int, axis::AxisGroup::MaxAxes> tuc_numerator{};
+    std::array<int, axis::AxisGroup::MaxAxes> tuc_denominator{};
+    double acceleration = 0.0;
+    double deceleration = 0.0;
+    double jerk = 0.0;
+    axis::CoordSystem coord_system = axis::CoordSystem::acs;
+    axis::BufferMode buffer_mode = axis::BufferMode::aborting;
+    MotionOutputs outputs{};
+    bool in_sync = false;
+
+    void call()
+    {
+        const bool rising = execute && !last_execute_;
+        last_execute_ = execute;
+        if(!execute) {
+            clear(outputs);
+            in_sync = false;
+            tracked_command_id_ = 0;
+            return;
+        }
+        if(rising) {
+            submit();
+        }
+        observe();
+    }
+
+private:
+    void submit()
+    {
+        clear(outputs);
+        if(master_ref == nullptr || group_ref == nullptr || path_data == nullptr ||
+           path_data->handle == 0 || path_data->axis_count != group_ref->member_count() ||
+           !std::isfinite(acceleration) || !std::isfinite(deceleration) ||
+           !std::isfinite(jerk) || acceleration < 0.0 || deceleration < 0.0 || jerk < 0.0) {
+            outputs.error = true;
+            outputs.error_id = rt::ErrorCode::invalid_argument;
+            return;
+        }
+        for(std::size_t i = 0; i < path_data->count; ++i) {
+            sync_path_[i] = path_data->waypoints[i].target;
+        }
+        const rt::Result<std::uint32_t> accepted = group_ref->sync_group_to_axis(
+            *master_ref, sync_path_.data(), path_data->count, mode, tuc_numerator,
+            tuc_denominator, coord_system, buffer_mode);
+        if(!accepted) {
+            outputs.error = true;
+            outputs.error_id = accepted.error();
+            return;
+        }
+        tracked_command_id_ = accepted.value();
+        outputs.command_id = tracked_command_id_;
+        outputs.command_accepted = true;
+        outputs.busy = true;
+        outputs.active = true;
+        in_sync = true;
+    }
+
+    void observe()
+    {
+        if(tracked_command_id_ == 0 || group_ref == nullptr) return;
+        if(group_ref->group_to_axis_sync_active(tracked_command_id_)) {
+            outputs.busy = true;
+            outputs.active = true;
+            in_sync = true;
+            return;
+        }
+        if(group_ref->group_to_axis_sync_aborted(tracked_command_id_)) {
+            outputs.command_aborted = true;
+        }
+        outputs.busy = false;
+        outputs.active = false;
+        in_sync = false;
+        tracked_command_id_ = 0;
+    }
+
+    std::array<axis::GroupPosition, PathTable::MaxWaypoints> sync_path_{};
+    bool last_execute_ = false;
+    std::uint32_t tracked_command_id_ = 0;
 };
 
 // MC_SetKinTransform: FB facade for set_pose_kinematics / set_kinematics.

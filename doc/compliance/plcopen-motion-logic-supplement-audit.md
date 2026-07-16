@@ -55,7 +55,7 @@ Motion FB，也不能用 C++ 内部的滤波器、规划器或状态机替代语
 |------|-------------|------|------|
 | 标签机 | FIFO、触发后相对运动、缓冲命令时序 | ⚠️ | `FbMoveRelative`、队列/BufferMode 可用；缺应用 FIFO、示例程序及 ST MC 完整调用面 |
 | 仓储（Part 1） | X/Y/Z/Lifter 多轴顺序、Done/Busy 联锁 | ⚠️ | 单轴门面可组合；未交付该应用程序和时序回放 |
-| 仓储（Part 4） | 组、线性路径、corner-distance blending | ⚠️ | `AxisGroup`、`FbMoveLinear*` 与部分 TransitionMode 已有；P4-B1 后 Part 4 为 40/68 同名门面 |
+| 仓储（Part 4） | 组、线性路径、corner-distance blending | ⚠️ | `AxisGroup`、`FbMoveLinear*` 与部分 TransitionMode 已有；P4-B2 后 Part 4 为 50/68 同名门面 |
 | 时间图 | 命令交接必须与 Busy/Active/Done 一致 | ⚠️ | 单项生命周期已有测试；没有针对官方两个示例的端到端 oracle |
 
 ## 4. OOP Motion 示例与库（46 页 + XML）

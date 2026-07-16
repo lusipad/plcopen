@@ -108,6 +108,32 @@ private:
     axis::SyncPhase last_phase_ = axis::SyncPhase::idle;
 };
 
+class FbSyncAxisToGroup : public SyncExecuteFb
+{
+public:
+    axis::AxisGroup *group_ref = nullptr;
+    double ratio_numerator = 1.0;
+    double ratio_denominator = 1.0;
+    double acceleration = 0.0;
+    double deceleration = 0.0;
+    double jerk = 0.0;
+    axis::BufferMode buffer_mode = axis::BufferMode::aborting;
+
+    void call()
+    {
+        if(rising_edge()) {
+            if(group_ref == nullptr || slave_ref == nullptr) {
+                accept(rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument));
+            } else {
+                accept(group_ref->sync_axis_to_group(
+                    *slave_ref, ratio_numerator, ratio_denominator, acceleration,
+                    deceleration, jerk, buffer_mode));
+            }
+        }
+        observe_sync();
+    }
+};
+
 class FbGearIn : public SyncExecuteFb
 {
 public:

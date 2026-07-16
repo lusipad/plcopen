@@ -109,4 +109,7 @@
 
 - `KB-075`：商用门板 P#2 轨迹精度软件证据：新增聚合门 `plcopen_core_commercial_precision_tests`，以公开 API 断言 C2 五次 Bezier blending 曲线稳速波动 0.077475%（<0.1%）、圆弧恒速平台波动约 7.6e-12%、spline cam 同拍相位误差 0 周期（<1 周期）及 blending 偏差 0.05 ≤ 用户公差 0.05。测试先暴露 `QuinticBlendSegment` 33 点弧长表波动 0.231434% 超门，固定表增至 65 点后通过；周期采样仍为有界查表，不新增分配或系统调用。**声明变更**：`core-group-cartesian-window` 384 样本和末端三轴逐位不变，中段 102 样本更新，最大位置差 3.08987480019951e-05；其余 17 份黄金语料逐位不变。这里的“样条”只指生产路径已有的 C2 五次 Bezier 过渡曲线，不声明任意 spline 路径 API；cam C2 三次样条单列为同步证据。总账见 `doc/compliance/commercial-gate-evidence.md`。
 
+- `KB-076`：Part 4 P4-B2 交付工具/载荷 8 项与 Jog 2 项。每个 `AxisGroup` 持有固定 16 槽 Tool/Payload 库，0 号为不可改的恒等工具/零载荷；命令提交时快照 selected/active 编号与工具逆变换，活动及排队轨迹不被之后选择回撤，工具真实进入 flange→TCP 解算。载荷保存质心位姿、质量和三主惯量，但在 P4-B3 刚体动力学前不改变轨迹/限速/力矩。GroupJog/Vector 消费专用路径+轴四阶 Dynamics，支持 ACS/MCS/PCS、6D 向量连续更新、冲突槽停车、软限位、IK 错误、Aborting 接管及松键/GroupStop 受控停车；全局 Override、inching 距离和 Tool ExecutionMode 等 E 级分支仍未承载。验收 `plcopen_core_part4_p4b2_{tests,fuzz}`、10 万随机输入、10 万冻结周期零分配和 18 回放零差异；Part 4 口径升为 50/68 同名门面、18 项无同名入口，仍不合规。
+- `KB-077`：Part 4 P4-B3 交付 7 个同名门面。`MC_SyncAxisToGroup` 以组 ACS 路径里程为主值，首次同步后采用规范允许的 position-locking，单轴命令终止从轴同步；`MC_SyncGroupToAxis` 消费既有固定容量 PathData，支持 non-periodic/periodic 与 TuC 路径度量，GroupStop 或新组运动接管。动态组坐标、输送带与转台跟踪逐周期更新 PCS，Aborting PCS 运动在活动期消费实时帧，完成后继续保持同一 PCS 位姿；同一 PCS 的新变换会中止旧跟踪。刚体动力学为 base + 8 links 固定容量，非法字段整体拒绝且保留旧版本。buffered 动态 PCS、speed-locking 和 vendor-specific 多 PCS 仍显式不支持；这不是 PLCopen 认证或 Beckhoff 黑盒性能等同。验收 `plcopen_core_part4_p4b3_{tests,fuzz}`、Windows/ARM64/QEMU、clang-tidy 与冻结周期零分配；Part 4 口径升为 57/68，仍不合规。
+
 ---

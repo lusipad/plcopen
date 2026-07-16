@@ -6,6 +6,18 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- Part 4 P4-B3（KB-077）新增 7 个同步、刚体动力学与跟踪门面：组路径里程
+  position-locking 从轴、PathData 主轴驱动组路径、动态组坐标、输送带/转台
+  PCS 跟踪，以及 base + 8 links 的原子刚体动态读写。动态 PCS 在运动完成后
+  继续保持同一产品位姿；同坐标系接管、单轴/组停止与非法输入有确定错误合同。
+  Windows、ARM64/QEMU、clang-tidy、确定性 fuzz 与冻结周期零分配均纳入门禁。
+
+- Part 4 P4-B2（KB-076）交付十个工具、载荷与点动门面：每组固定 16 槽
+  数据库与 active/selected 命令快照，选中工具真实接入 flange→TCP；
+  ACS/MCS/PCS Jog 消费专用四阶 Dynamics，支持按钮冲突、连续向量更新、
+  Pose 旋转、软限位、接管和受控停车。10 万 fuzz 与 10 万冻结周期零分配
+  通过；载荷尚不参与刚体动力学，E 级 Jog/Tool 分支仍未合规。
+
 - 起草 ST-L1b1 枚举与子范围语义矩阵，锁定待裁决的显式转换、运行时
   `range_violation`、CASE 与容量验收口径；本批仅送审规格，未改编译器或 VM。
 

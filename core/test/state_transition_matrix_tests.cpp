@@ -286,7 +286,7 @@ int check_axis_property_sequences()
 {
     Lcg random{};
     for(int scenario = 0; scenario < 2000; ++scenario) {
-        axis::AxisModel model(static_cast<std::uint32_t>(random.next() % 3));
+        axis::AxisModel model(static_cast<int>(random.next() % 3));
         axis::MotionLimits limits{};
         limits.max_velocity = 0.01 + std::fabs(random.signed_value());
         limits.max_acceleration = 0.01 + std::fabs(random.signed_value());
@@ -356,7 +356,7 @@ int check_group_property_sequences()
 {
     Lcg random{};
     for(int scenario = 0; scenario < 1200; ++scenario) {
-        const std::uint32_t domain = random.next() % 3;
+        const int domain = static_cast<int>(random.next() % 3);
         axis::AxisModel members[axis::AxisGroup::MaxAxes] = {
             axis::AxisModel(domain), axis::AxisModel(domain), axis::AxisModel(domain),
             axis::AxisModel(domain), axis::AxisModel(domain), axis::AxisModel(domain),
@@ -639,7 +639,7 @@ int check_group_member_lifecycle_matrix()
 
 int check_group_capacity_matrix()
 {
-    static axis::AxisModel members[axis::AxisGroup::MaxAxes + 1];
+    axis::AxisModel members[axis::AxisGroup::MaxAxes + 1];
     axis::AxisGroup group;
     for(std::size_t index = 0; index < axis::AxisGroup::MaxAxes; ++index) {
         if(group.add_axis(members[index]) != rt::ErrorCode::ok) {
@@ -844,7 +844,10 @@ int check_axis_public_validation_matrix()
         axis::AxisCommand invalid = valid;
         if(field == 0) invalid.buffer_mode = axis::BufferMode::buffered;
         if(field == 1) invalid.kind = axis::CommandKind::move_velocity;
-        if(field == 2) invalid.direction = static_cast<axis::Direction>(99);
+        if(field == 2) {
+            invalid.direction = static_cast<axis::Direction>( // NOLINT(clang-analyzer-optin.core.EnumCastOutOfRange)
+                99);
+        }
         if(field == 3) invalid.velocity = 0.0;
         if(field == 4) invalid.acceleration = 0.0;
         if(field == 5) invalid.deceleration = 0.0;

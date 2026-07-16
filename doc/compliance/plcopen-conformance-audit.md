@@ -12,7 +12,7 @@
 | Part | 规格版本 | 规格 FB 数 | 我们实现 | 覆盖率 | 旧声明 | 判定 |
 |------|---------|-----------|---------|--------|--------|------|
 | Part 1 | v2.0 (2011) | **43** | **43 个门面** | 名称面 100%，条款不合规 | "45/45" | 🔴 D-01~D-20 表明不能以数量宣称合规 |
-| Part 4 | v2.0 (2026-05) | **68** | **40 个同名门面** | **约 59%** | "零留白" | 🟡 P4-B1 后仍有 28 项无同名入口，且已有门面多为部分覆盖 |
+| Part 4 | v2.0 (2026-05) | **68** | **57 个同名门面** | **约 84%** | "零留白" | 🟡 P4-B3 后仍有 11 项无同名入口，且已有门面多为部分覆盖 |
 | Part 5 | v2.0 (2011) | **11** | **11 个有门面、均仍部分覆盖** | 不计算合规率 | "已交付" | 🟡 门面齐备；接口、派生类型、硬件证据与正式声明未闭合 |
 | **合计** | — | **122** | 不做简单相加 | — | — | 接口/条款符合度不能由 FB 名称数量替代 |
 
@@ -21,7 +21,7 @@ FB 清单**，而规格 v2.0 实际定义 **68 个**——我们在漏掉 38 个
 上宣布了"零留白"。**这是 KB-051 教训（"测试只看得见写它的人想到的
 东西"）在合规面上的重演。**
 
-### Part 4 v2.0 缺失清单（28 个无同名入口，按性质分组）
+### Part 4 v2.0 缺失清单（18 个无同名入口，按性质分组）
 
 > 本节的旧分组保留为规划摘要；权威 68 项逐 FB 账见
 > [Part 4 条款审计](plcopen-part4-clause-audit.md)。两个旧名/自定义回读门面
@@ -30,11 +30,11 @@ FB 清单**，而规格 v2.0 实际定义 **68 个**——我们在漏掉 38 个
 | 组 | FB | 性质/成本 |
 |----|-----|----------|
 | **组参数/动态/SW限位/回读/运动学信息**（19） | P4-B1 已新增同名 C++ 门面 | ⚠️ 已从无门面清单移出；`mcSetValue`、非 ACS 高阶回读、start-point、virtual AXIS_REF 与部分 E 级仍未支持（KB-073） |
-| **工具与负载**（8） | `GroupRead/WriteToolData`、`GroupSelectTool`、`GroupReadTool`、`GroupRead/WritePayloadData`、`GroupSelectPayload`、`GroupReadPayload` | 🟡 需新数据结构（机器人必需，底层仅有 tool_offset） |
-| **同步**（3） | `MC_SyncAxisToGroup`、`MC_SyncGroupToAxis`、`MC_SetDynCoordTransform` | 🔴 **真新功能** |
-| **点动**（2） | `MC_GroupJog`、`MC_GroupJogVector` | 🟡 新功能，不难 |
-| **刚体动力学**（2） | `MC_GroupRead/WriteRigidBodyDynamic` | 🔴 与 H3 动力学前馈同族 |
-| **跟踪**（2） | `MC_TrackConveyorBelt`、`MC_TrackRotaryTable` | 🔴 Y1 已知（机器人拾取最后一块） |
+| **工具与负载**（8） | `GroupRead/WriteToolData`、`GroupSelectTool`、`GroupReadTool`、`GroupRead/WritePayloadData`、`GroupSelectPayload`、`GroupReadPayload` | ✅ P4-B2：固定容量库与 active/selected 快照；工具真实进入 TCP，载荷待 P4-B3 动力学消费 |
+| **同步**（3） | `MC_SyncAxisToGroup`、`MC_SyncGroupToAxis`、`MC_SetDynCoordTransform` | ✅ P4-B3：组里程 position-locking、PathData 主轴驱动、动态组坐标 |
+| **点动**（2） | `MC_GroupJog`、`MC_GroupJogVector` | ✅ P4-B2：ACS/MCS/PCS 持续点动、受控停车、接管与软限位 |
+| **刚体动力学**（2） | `MC_GroupRead/WriteRigidBodyDynamic` | ✅ P4-B3：base + 8 links 固定容量、整体校验后原子提交 |
+| **跟踪**（2） | `MC_TrackConveyorBelt`、`MC_TrackRotaryTable` | ✅ P4-B3：逐周期 PCS 更新、运动中跟随与完成后持续保持 |
 | **杂项**（6） | `MC_GroupHalt`、`MC_GroupPower`、`MC_GroupWaitTime`、`MC_GroupSetPosition`、`MC_GroupTransformPosition`、`MC_GroupReadError`、`MC_UngroupAllAxes` | 🟢 多为薄门面 |
 
 **额外发现**：我们的 `FbSetKinTransform` / `FbReadCartesianTransform`

@@ -496,7 +496,10 @@ int check_group_parameter_and_dynamics_validation()
            rt::ErrorCode::unsupported ||
        group.write_group_parameter(axis::GroupParameter::transition_reference_point, 7.0) !=
            rt::ErrorCode::invalid_argument ||
-       group.write_group_parameter(static_cast<axis::GroupParameter>(99), 0.0) !=
+       group.write_group_parameter(
+           static_cast<axis::GroupParameter>( // NOLINT(clang-analyzer-optin.core.EnumCastOutOfRange)
+               99),
+           0.0) !=
            rt::ErrorCode::unsupported) {
         return fail("group parameter rejects unsupported values");
     }
@@ -625,7 +628,7 @@ int check_group_ownership_rejections_are_atomic()
 
 int check_group_capacity_rejection_is_atomic()
 {
-    static axis::AxisModel axes[axis::AxisGroup::MaxAxes + 1];
+    axis::AxisModel axes[axis::AxisGroup::MaxAxes + 1];
     axis::AxisGroup group;
     for(std::size_t i = 0; i < axis::AxisGroup::MaxAxes; ++i) {
         if(group.add_axis(axes[i]) != rt::ErrorCode::ok) {
@@ -826,7 +829,7 @@ int check_kinematics_contract_rejections_are_atomic()
 
 int check_pose_kinematics_contract_rejections_are_atomic()
 {
-    static axis::AxisModel axes[6];
+    axis::AxisModel axes[6];
     axis::AxisGroup group;
     for(axis::AxisModel &member : axes) {
         member.set_power(true);

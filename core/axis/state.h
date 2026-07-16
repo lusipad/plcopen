@@ -169,6 +169,7 @@ enum class SyncKind
     gear,
     cam,
     combine,
+    group_path,
 };
 
 enum class SyncPhase
@@ -1591,11 +1592,18 @@ public:
 private:
     void set_synchronized_position(double position)
     {
+        set_synchronized_state(position, 0.0, 0.0);
+    }
+
+    void set_synchronized_state(double position, double velocity, double acceleration)
+    {
         snapshot_.status = AxisStatus::synchronized_motion;
         snapshot_.command_position = position;
         snapshot_.actual_position = position;
-        snapshot_.command_velocity = 0.0;
-        snapshot_.actual_velocity = 0.0;
+        snapshot_.command_velocity = velocity;
+        snapshot_.actual_velocity = velocity;
+        snapshot_.command_acceleration = acceleration;
+        snapshot_.actual_acceleration = acceleration;
     }
 
     void clear_synchronized()
@@ -1756,6 +1764,9 @@ private:
     {
         if(sync_kind_ == SyncKind::none) {
             return false;
+        }
+        if(sync_kind_ == SyncKind::group_path) {
+            return true;
         }
         if(sync_phase_ == SyncPhase::queued) {
             if(active_) {

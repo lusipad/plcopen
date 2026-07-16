@@ -54,6 +54,7 @@ template <typename T> struct GroupArray
 
 using DHParameterArray = GroupArray<DHParameter>;
 using JointInfoArray = GroupArray<JointInfo>;
+using JogBooleanArray = GroupArray<bool>;
 
 struct GroupKinematicsInfo
 {
@@ -104,6 +105,41 @@ struct JoggingDynamics
     std::array<double, GroupPosition::MaxAxes> axis_acceleration{};
     std::array<double, GroupPosition::MaxAxes> axis_deceleration{};
     std::array<double, GroupPosition::MaxAxes> axis_jerk{};
+};
+
+struct ToolData
+{
+    std::array<double, 6> value{};
+};
+
+struct PayloadData
+{
+    ToolData center{};
+    double mass = 0.0;
+    double ix = 0.0;
+    double iy = 0.0;
+    double iz = 0.0;
+};
+
+struct RigidBodyDynamic
+{
+    ToolData center_of_gravity{};
+    double mass = 0.0;
+    double ix = 0.0;
+    double iy = 0.0;
+    double iz = 0.0;
+};
+
+struct RigidBodyDynamics
+{
+    std::array<RigidBodyDynamic, GroupPosition::MaxAxes + 1> value{};
+    std::size_t count = 0;
+};
+
+enum class SelectionSource
+{
+    active,
+    selected,
 };
 
 struct GroupSWLimit
@@ -168,6 +204,20 @@ enum class GroupPathKind
     linear,
     circular,
     cartesian_linear,
+};
+
+enum class PathMode
+{
+    non_periodic,
+    periodic,
+};
+
+enum class TrackingKind
+{
+    none,
+    dynamic_group,
+    conveyor,
+    rotary,
 };
 
 // MC_TRANSITION_MODE (approved blending matrix): v1 implements None and
@@ -277,6 +327,10 @@ struct GroupCommand
     geom::ArcSegment arc{};
     CartesianSegment cart{};
     bool use_default_dynamics = false;
+    std::size_t tool_number = 0;
+    std::size_t payload_number = 0;
+    geom::RigidTransform tool_inverse{};
+    bool dynamic_pcs = false;
 };
 
 class AxisGroup
@@ -284,6 +338,10 @@ class AxisGroup
 public:
     static constexpr std::size_t MaxAxes = GroupPosition::MaxAxes;
     static constexpr std::size_t QueueCapacity = 8;
+    static constexpr std::size_t ToolCapacity = 16;
+    static constexpr std::size_t PayloadCapacity = 16;
+    static constexpr std::size_t RigidBodyCapacity = MaxAxes + 1;
+    static constexpr std::size_t SyncPathCapacity = 32;
 
     explicit AxisGroup(int domain_id = 0)
         : domain_id_(domain_id)
@@ -294,6 +352,10 @@ public:
     // them on group destruction so an outliving axis never retains owner state.
     ~AxisGroup()
     {
+        if(path_sync_slave_ != nullptr &&
+           path_sync_slave_->sync_kind_ == SyncKind::group_path) {
+            path_sync_slave_->clear_synchronized();
+        }
         for(std::size_t i = 0; i < axes_.size(); ++i) {
             if(axes_[i]->group_owner() == this) {
                 axes_[i]->set_group_owner(nullptr);
@@ -324,6 +386,194 @@ public:
     double connector_tube_radius() const
     {
         return connector_.tube_radius();
+    }
+
+    double path_odometer() const
+    {
+        return path_odometer_;
+    }
+
+    rt::Result<std::uint32_t> sync_axis_to_group(AxisModel &slave,
+                                                 double ratio_numerator,
+                                                 double ratio_denominator,
+                                                 double acceleration,
+                                                 double deceleration,
+                                                 double jerk,
+                                                 BufferMode buffer_mode)
+    {
+        if(status_ == GroupStatus::disabled || status_ == GroupStatus::errorstop ||
+           slave.group_owner() != nullptr || !slave.powered() ||
+           !std::isfinite(ratio_numerator) || !std::isfinite(ratio_denominator) ||
+           ratio_denominator == 0.0 || !std::isfinite(acceleration) ||
+           !std::isfinite(deceleration) || !std::isfinite(jerk) || acceleration < 0.0 ||
+           deceleration < 0.0 || jerk < 0.0) {
+            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
+        }
+        if(path_sync_slave_ != nullptr && path_sync_slave_ != &slave &&
+           path_sync_slave_->sync_kind_ == SyncKind::group_path) {
+            path_sync_slave_->clear_synchronized();
+        }
+        const rt::Result<std::uint32_t> begun =
+            slave.begin_sync(SyncKind::group_path, buffer_mode);
+        if(!begun) return begun;
+        const bool position_locked = acceleration == 0.0 && deceleration == 0.0 && jerk == 0.0;
+        slave.sync_phase_ = position_locked ? SyncPhase::engaged : SyncPhase::approaching;
+        path_sync_slave_ = &slave;
+        path_sync_id_ = begun.value();
+        path_sync_origin_ = path_odometer_;
+        path_sync_slave_origin_ = slave.snapshot().command_position;
+        path_sync_ratio_ = ratio_numerator / ratio_denominator;
+        path_sync_acceleration_ = acceleration;
+        path_sync_deceleration_ = deceleration;
+        path_sync_jerk_ = jerk;
+        path_sync_velocity_ = slave.snapshot().command_velocity;
+        path_sync_acceleration_state_ = slave.snapshot().command_acceleration;
+        path_sync_in_sync_ = position_locked;
+        return begun;
+    }
+
+    rt::Result<std::uint32_t> sync_group_to_axis(
+        AxisModel &master,
+        const GroupPosition *waypoints,
+        std::size_t count,
+        PathMode mode,
+        const std::array<int, MaxAxes> &tuc_numerator,
+        const std::array<int, MaxAxes> &tuc_denominator,
+        CoordSystem coord_system,
+        BufferMode buffer_mode)
+    {
+        if(status_ == GroupStatus::disabled || status_ == GroupStatus::errorstop ||
+           waypoints == nullptr || count < 2 || count > SyncPathCapacity ||
+           !master.powered() || master.group_owner() == this ||
+           coord_system != CoordSystem::acs || buffer_mode != BufferMode::aborting) {
+            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
+        }
+        for(std::size_t axis_index = 0; axis_index < axes_.size(); ++axis_index) {
+            if(tuc_numerator[axis_index] == 0 || tuc_denominator[axis_index] == 0) {
+                return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
+            }
+        }
+        group_sync_cumulative_[0] = 0.0;
+        for(std::size_t point = 0; point < count; ++point) {
+            if(waypoints[point].size != axes_.size() || !finite(waypoints[point])) {
+                return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
+            }
+            group_sync_waypoints_[point] = waypoints[point];
+            if(point == 0) continue;
+            double squared_length = 0.0;
+            for(std::size_t axis_index = 0; axis_index < axes_.size(); ++axis_index) {
+                const double conversion = static_cast<double>(tuc_numerator[axis_index]) /
+                                          static_cast<double>(tuc_denominator[axis_index]);
+                const double delta = (waypoints[point].value[axis_index] -
+                                      waypoints[point - 1].value[axis_index]) *
+                                     conversion;
+                squared_length += delta * delta;
+            }
+            const double length = std::sqrt(squared_length);
+            if(length <= 0.0 || !std::isfinite(length)) {
+                return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
+            }
+            group_sync_cumulative_[point] = group_sync_cumulative_[point - 1] + length;
+        }
+        abort_motion();
+        group_sync_master_ = &master;
+        group_sync_master_origin_ = master.snapshot().command_position;
+        group_sync_count_ = count;
+        group_sync_mode_ = mode;
+        group_sync_id_ = next_command_id_++;
+        group_sync_active_ = true;
+        group_sync_previous_ = group_sync_waypoints_[0];
+        status_ = GroupStatus::moving;
+        return rt::Result<std::uint32_t>::success(group_sync_id_);
+    }
+
+    bool group_to_axis_sync_active(std::uint32_t command_id) const
+    {
+        return group_sync_active_ && command_id != 0 && command_id == group_sync_id_;
+    }
+
+    bool group_to_axis_sync_aborted(std::uint32_t command_id) const
+    {
+        return command_id != 0 && command_id == last_aborted_group_sync_id_;
+    }
+
+    rt::Result<std::uint32_t> set_dynamic_coord_transform(
+        AxisGroup &master,
+        const ToolData &transform,
+        CoordSystem coord_system,
+        BufferMode buffer_mode)
+    {
+        if(&master == this || !valid_tracking_pose(transform)) {
+            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
+        }
+        const rt::Result<std::uint32_t> begun =
+            begin_tracking(TrackingKind::dynamic_group, coord_system, buffer_mode);
+        if(!begun) return begun;
+        tracking_master_group_ = &master;
+        tracking_transform_ = transform;
+        return begun;
+    }
+
+    rt::Result<std::uint32_t> track_conveyor(AxisModel &conveyor,
+                                             const ToolData &origin,
+                                             const ToolData &initial_object,
+                                             CoordSystem coord_system,
+                                             BufferMode buffer_mode)
+    {
+        if(!conveyor.powered() || !valid_tracking_pose(origin) ||
+           !valid_tracking_pose(initial_object)) {
+            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
+        }
+        const rt::Result<std::uint32_t> begun =
+            begin_tracking(TrackingKind::conveyor, coord_system, buffer_mode);
+        if(!begun) return begun;
+        tracking_master_axis_ = &conveyor;
+        tracking_master_origin_ = conveyor.snapshot().actual_position;
+        tracking_origin_ = origin;
+        tracking_transform_ = initial_object;
+        return begun;
+    }
+
+    rt::Result<std::uint32_t> track_rotary_table(AxisModel &rotary,
+                                                 const ToolData &origin,
+                                                 const ToolData &initial_object,
+                                                 CoordSystem coord_system,
+                                                 BufferMode buffer_mode)
+    {
+        if(!rotary.powered() || !valid_tracking_pose(origin) ||
+           !valid_tracking_pose(initial_object)) {
+            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
+        }
+        const rt::Result<std::uint32_t> begun =
+            begin_tracking(TrackingKind::rotary, coord_system, buffer_mode);
+        if(!begun) return begun;
+        tracking_master_axis_ = &rotary;
+        tracking_master_origin_ = rotary.snapshot().actual_position;
+        tracking_origin_ = origin;
+        tracking_transform_ = initial_object;
+        return begun;
+    }
+
+    bool tracking_command_busy(std::uint32_t command_id) const
+    {
+        return tracking_kind_ != TrackingKind::none && command_id != 0 &&
+               command_id == tracking_command_id_;
+    }
+
+    bool tracking_command_active(std::uint32_t command_id) const
+    {
+        return tracking_command_busy(command_id) && tracking_motion_seen_;
+    }
+
+    bool tracking_command_aborted(std::uint32_t command_id) const
+    {
+        return command_id != 0 && command_id == last_aborted_tracking_id_;
+    }
+
+    rt::ErrorCode tracking_command_error(std::uint32_t command_id) const
+    {
+        return tracking_command_busy(command_id) ? tracking_error_
+                                                 : rt::ErrorCode::ok;
     }
 
     const AxisModel *member(std::size_t index) const
@@ -408,6 +658,216 @@ public:
     const PathDynamics &reference_dynamics() const { return reference_dynamics_; }
     const PathDynamics &default_dynamics() const { return default_dynamics_; }
     const JoggingDynamics &jogging_dynamics() const { return jogging_dynamics_; }
+
+    rt::ErrorCode write_tool_data(std::size_t number, const ToolData &data)
+    {
+        if(number == 0) return rt::ErrorCode::precondition_failed;
+        if(number >= ToolCapacity) return rt::ErrorCode::out_of_range;
+        if(!configuration_writable()) return rt::ErrorCode::precondition_failed;
+        for(double value : data.value) {
+            if(!std::isfinite(value)) return rt::ErrorCode::invalid_argument;
+        }
+        tools_[number] = data;
+        tool_defined_[number] = true;
+        return rt::ErrorCode::ok;
+    }
+
+    rt::Result<ToolData> read_tool_data(std::size_t number) const
+    {
+        if(number >= ToolCapacity || !tool_defined_[number]) {
+            return rt::Result<ToolData>::failure(rt::ErrorCode::out_of_range);
+        }
+        return rt::Result<ToolData>::success(tools_[number]);
+    }
+
+    rt::ErrorCode select_tool(std::size_t number)
+    {
+        if(status_ != GroupStatus::disabled && status_ != GroupStatus::standby &&
+           status_ != GroupStatus::moving) {
+            return rt::ErrorCode::precondition_failed;
+        }
+        if(number >= ToolCapacity || !tool_defined_[number]) {
+            return rt::ErrorCode::out_of_range;
+        }
+        selected_tool_ = number;
+        numbered_tool_mode_ = true;
+        apply_selected_tool();
+        return rt::ErrorCode::ok;
+    }
+
+    std::size_t read_tool(SelectionSource source) const
+    {
+        return source == SelectionSource::active &&
+                       (status_ == GroupStatus::moving || status_ == GroupStatus::stopping ||
+                        status_ == GroupStatus::interrupted)
+                   ? active_tool_
+                   : selected_tool_;
+    }
+
+    rt::ErrorCode write_payload_data(std::size_t number, const PayloadData &data)
+    {
+        if(number == 0) return rt::ErrorCode::precondition_failed;
+        if(number >= PayloadCapacity) return rt::ErrorCode::out_of_range;
+        if(!configuration_writable()) return rt::ErrorCode::precondition_failed;
+        for(double value : data.center.value) {
+            if(!std::isfinite(value)) return rt::ErrorCode::invalid_argument;
+        }
+        if(!std::isfinite(data.mass) || !std::isfinite(data.ix) ||
+           !std::isfinite(data.iy) || !std::isfinite(data.iz) || data.mass < 0.0 ||
+           data.ix < 0.0 || data.iy < 0.0 || data.iz < 0.0) {
+            return rt::ErrorCode::invalid_argument;
+        }
+        payloads_[number] = data;
+        payload_defined_[number] = true;
+        return rt::ErrorCode::ok;
+    }
+
+    rt::Result<PayloadData> read_payload_data(std::size_t number) const
+    {
+        if(number >= PayloadCapacity || !payload_defined_[number]) {
+            return rt::Result<PayloadData>::failure(rt::ErrorCode::out_of_range);
+        }
+        return rt::Result<PayloadData>::success(payloads_[number]);
+    }
+
+    rt::ErrorCode write_rigid_body_dynamics(const RigidBodyDynamics &data)
+    {
+        if(data.count == 0) return rt::ErrorCode::invalid_argument;
+        if(data.count > RigidBodyCapacity) return rt::ErrorCode::out_of_range;
+        if(!configuration_writable()) return rt::ErrorCode::precondition_failed;
+        for(std::size_t index = 0; index < data.count; ++index) {
+            const RigidBodyDynamic &body = data.value[index];
+            for(double value : body.center_of_gravity.value) {
+                if(!std::isfinite(value)) return rt::ErrorCode::invalid_argument;
+            }
+            if(!std::isfinite(body.mass) || !std::isfinite(body.ix) ||
+               !std::isfinite(body.iy) || !std::isfinite(body.iz) ||
+               body.mass < 0.0 || body.ix < 0.0 || body.iy < 0.0 || body.iz < 0.0) {
+                return rt::ErrorCode::invalid_argument;
+            }
+        }
+        rigid_body_dynamics_ = data;
+        rigid_body_dynamics_defined_ = true;
+        return rt::ErrorCode::ok;
+    }
+
+    rt::Result<RigidBodyDynamics> rigid_body_dynamics() const
+    {
+        if(!rigid_body_dynamics_defined_) {
+            return rt::Result<RigidBodyDynamics>::failure(
+                rt::ErrorCode::precondition_failed);
+        }
+        return rt::Result<RigidBodyDynamics>::success(rigid_body_dynamics_);
+    }
+
+    rt::ErrorCode select_payload(std::size_t number)
+    {
+        if(status_ != GroupStatus::disabled && status_ != GroupStatus::standby &&
+           status_ != GroupStatus::moving) {
+            return rt::ErrorCode::precondition_failed;
+        }
+        if(number >= PayloadCapacity || !payload_defined_[number]) {
+            return rt::ErrorCode::out_of_range;
+        }
+        selected_payload_ = number;
+        return rt::ErrorCode::ok;
+    }
+
+    std::size_t read_payload(SelectionSource source) const
+    {
+        return source == SelectionSource::active &&
+                       (status_ == GroupStatus::moving || status_ == GroupStatus::stopping ||
+                        status_ == GroupStatus::interrupted)
+                   ? active_payload_
+                   : selected_payload_;
+    }
+
+    rt::Result<std::uint32_t> begin_jog(CoordSystem coord_system,
+                                        const GroupPosition &direction)
+    {
+        const rt::ErrorCode valid = validate_jog(coord_system, direction);
+        if(valid != rt::ErrorCode::ok) {
+            return rt::Result<std::uint32_t>::failure(valid);
+        }
+        if(status_ != GroupStatus::standby && status_ != GroupStatus::moving &&
+           status_ != GroupStatus::stopping) {
+            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::precondition_failed);
+        }
+        if(jog_active_) {
+            last_aborted_jog_id_ = jog_command_id_;
+        }
+        abort_motion();
+        jog_command_id_ = next_command_id_++;
+        jog_coord_system_ = coord_system;
+        jog_direction_ = direction;
+        jog_releasing_ = false;
+        jog_error_ = rt::ErrorCode::ok;
+        jog_stop_deceleration_ = 0.0;
+        jog_stop_jerk_ = 0.0;
+        jog_active_ = true;
+        snapshot_selections();
+        snapshot_active_tool_transform();
+        for(std::size_t i = 0; i < axes_.size(); ++i) {
+            jog_position_[i] = axes_[i]->snapshot().command_position;
+            jog_velocity_[i] = axes_[i]->snapshot().command_velocity;
+            jog_acceleration_[i] = axes_[i]->snapshot().command_acceleration;
+        }
+        if(coord_system != CoordSystem::acs) {
+            GroupPosition current{};
+            const rt::ErrorCode read =
+                read_cartesian(coord_system, PositionSource::command, current);
+            if(read != rt::ErrorCode::ok) {
+                jog_active_ = false;
+                return rt::Result<std::uint32_t>::failure(read);
+            }
+            jog_cartesian_position_ = current;
+            jog_tool_offset_ = tool_offset_;
+            jog_pose_tool_inverse_ = pose_tool_inverse_;
+            jog_cart_velocity_.fill(0.0);
+            jog_cart_acceleration_.fill(0.0);
+        }
+        status_ = any_direction(direction) ? GroupStatus::moving
+                                           : GroupStatus::standby;
+        return rt::Result<std::uint32_t>::success(jog_command_id_);
+    }
+
+    rt::ErrorCode update_jog(std::uint32_t command_id, const GroupPosition &direction)
+    {
+        if(!jog_active_ || command_id == 0 || command_id != jog_command_id_) {
+            return rt::ErrorCode::precondition_failed;
+        }
+        if(jog_error_ != rt::ErrorCode::ok) return jog_error_;
+        const rt::ErrorCode valid = validate_jog(jog_coord_system_, direction);
+        if(valid != rt::ErrorCode::ok) return valid;
+        jog_direction_ = direction;
+        jog_releasing_ = false;
+        if(any_direction(direction)) status_ = GroupStatus::moving;
+        return rt::ErrorCode::ok;
+    }
+
+    rt::ErrorCode release_jog(std::uint32_t command_id)
+    {
+        if(!jog_active_ || command_id == 0 || command_id != jog_command_id_) {
+            return rt::ErrorCode::precondition_failed;
+        }
+        jog_direction_ = {};
+        jog_direction_.size = jog_coord_system_ == CoordSystem::acs ? axes_.size() : 6;
+        jog_releasing_ = true;
+        status_ = GroupStatus::stopping;
+        return rt::ErrorCode::ok;
+    }
+
+    bool jog_command_active(std::uint32_t command_id) const
+    {
+        return jog_active_ && command_id != 0 && command_id == jog_command_id_;
+    }
+
+    bool jog_command_aborted(std::uint32_t command_id) const
+    {
+        return command_id != 0 && command_id == last_aborted_jog_id_;
+    }
+
+    rt::ErrorCode jog_error() const { return jog_error_; }
 
     rt::ErrorCode write_reference_dynamics(const PathDynamics &update)
     {
@@ -545,6 +1005,13 @@ public:
             abort_direct_members();
         }
         abort_motion();
+        if(path_sync_slave_ != nullptr &&
+           path_sync_slave_->sync_kind_ == SyncKind::group_path) {
+            path_sync_slave_->clear_synchronized();
+        }
+        path_sync_slave_ = nullptr;
+        path_sync_id_ = 0;
+        cancel_tracking();
         status_ = GroupStatus::disabled;
         for(std::size_t i = 0; i < axes_.size(); ++i) {
             axes_[i]->clear_synchronized();
@@ -566,8 +1033,19 @@ public:
            jerk <= 0.0) {
             return rt::ErrorCode::invalid_argument;
         }
+        if(group_sync_active_) {
+            abort_motion();
+            status_ = GroupStatus::standby;
+            return rt::ErrorCode::ok;
+        }
         if(status_ != GroupStatus::moving) {
             return rt::ErrorCode::ok;
+        }
+        if(jog_active_) {
+            jog_stop_deceleration_ = deceleration;
+            jog_stop_jerk_ = jerk;
+            last_aborted_jog_id_ = jog_command_id_;
+            return release_jog(jog_command_id_);
         }
         if(direct_active_) {
             return stop_direct_members(deceleration, jerk);
@@ -1042,6 +1520,8 @@ public:
         if(!members_ready_for_group_motion()) {
             return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
         }
+        snapshot_selections();
+        snapshot_active_tool_transform();
 
         std::array<AxisCommand, MaxAxes> direct_commands{};
         for(std::size_t i = 0; i < axes_.size(); ++i) {
@@ -1137,6 +1617,7 @@ public:
            !std::isfinite(pitch) || !std::isfinite(yaw)) {
             return rt::ErrorCode::invalid_argument;
         }
+        cancel_tracking();
         workpiece_frame_ = geom::make_rpy_transform(x, y, z, roll, pitch, yaw);
         const double echo[6] = {x, y, z, roll, pitch, yaw};
         for(int i = 0; i < 6; ++i) {
@@ -1155,6 +1636,7 @@ public:
                                          double pitch,
                                          double yaw)
     {
+        if(numbered_tool_mode_) return rt::ErrorCode::precondition_failed;
         if(status_ != GroupStatus::standby || !queue_.empty() || !std::isfinite(x) ||
            !std::isfinite(y) || !std::isfinite(z) || !std::isfinite(roll) ||
            !std::isfinite(pitch) || !std::isfinite(yaw)) {
@@ -1262,7 +1744,10 @@ public:
                     pose.rotation[i][j] = flange.rotation[i][j];
                 }
             }
-            pose = geom::compose(pose, pose_tool_);
+            const geom::RigidTransform &tool = active_tool_transform_applies()
+                                                   ? active_pose_tool_
+                                                   : pose_tool_;
+            pose = geom::compose(pose, tool);
             if(cs == CoordSystem::pcs) {
                 pose = geom::compose(geom::invert(workpiece_frame_), pose);
             }
@@ -1292,7 +1777,8 @@ public:
         } else {
             point = cartesian_part(out);
         }
-        point = point + tool_offset_;
+        point = point + (active_tool_transform_applies() ? active_tool_offset_
+                                                         : tool_offset_);
         if(cs == CoordSystem::pcs) {
             point = geom::transform_point(geom::invert(workpiece_frame_), point);
         }
@@ -1302,6 +1788,7 @@ public:
 
     rt::ErrorCode set_tool_offset(double x, double y, double z)
     {
+        if(numbered_tool_mode_) return rt::ErrorCode::precondition_failed;
         if(status_ != GroupStatus::standby || !queue_.empty()) {
             return rt::ErrorCode::invalid_argument;
         }
@@ -1366,6 +1853,13 @@ public:
 
     rt::Result<std::uint32_t> submit_linear(GroupCommand command)
     {
+        pending_dynamic_pcs_ = false;
+        if(jog_active_ && command.buffer_mode != BufferMode::aborting) {
+            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported);
+        }
+        command.tool_number = selected_tool_;
+        command.payload_number = selected_payload_;
+        command.tool_inverse = pose_tool_inverse_;
         const rt::ErrorCode dynamics = resolve_dynamics(command);
         if(dynamics != rt::ErrorCode::ok) {
             return rt::Result<std::uint32_t>::failure(dynamics);
@@ -1396,6 +1890,14 @@ public:
         }
         if(!members_ready_for_group_motion()) {
             return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
+        }
+        if(tracking_kind_ != TrackingKind::none && command.coord_system == CoordSystem::pcs) {
+            if(command.buffer_mode != BufferMode::aborting) {
+                return rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported);
+            }
+            command.dynamic_pcs = true;
+            pending_dynamic_pcs_ = true;
+            pending_dynamic_reference_frame_ = workpiece_frame_;
         }
         // Cartesian-interpolation batch (approved matrix): resolve the
         // opt-in segment before the frame collapse — pre-validation either
@@ -1512,6 +2014,13 @@ public:
     // explicit error before any motion state is touched.
     rt::Result<std::uint32_t> submit_circular(GroupCommand command)
     {
+        pending_dynamic_pcs_ = false;
+        if(jog_active_ && command.buffer_mode != BufferMode::aborting) {
+            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported);
+        }
+        command.tool_number = selected_tool_;
+        command.payload_number = selected_payload_;
+        command.tool_inverse = pose_tool_inverse_;
         const rt::ErrorCode dynamics = resolve_dynamics(command);
         if(dynamics != rt::ErrorCode::ok) {
             return rt::Result<std::uint32_t>::failure(dynamics);
@@ -1539,6 +2048,14 @@ public:
         }
         if(!members_ready_for_group_motion()) {
             return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
+        }
+        if(tracking_kind_ != TrackingKind::none && command.coord_system == CoordSystem::pcs) {
+            if(command.buffer_mode != BufferMode::aborting) {
+                return rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported);
+            }
+            command.dynamic_pcs = true;
+            pending_dynamic_pcs_ = true;
+            pending_dynamic_reference_frame_ = workpiece_frame_;
         }
         if(command.circ_mode != CircMode::border) {
             // CENTER/RADIUS are declared unsupported in v1, not approximated.
@@ -1690,6 +2207,7 @@ public:
     GroupMotionState motion_state() const
     {
         GroupMotionState result{};
+        result.tracking = tracking_kind_ != TrackingKind::none;
         if(status_ == GroupStatus::disabled || status_ == GroupStatus::errorstop) {
             result.in_position = false;
             result.standstill = false;
@@ -1816,6 +2334,14 @@ public:
 
     void cycle()
     {
+        update_tracking_transform();
+        apply_tracking_hold();
+        update_path_odometer();
+        cycle_axis_to_group_sync();
+        if(group_sync_active_) {
+            cycle_group_to_axis_sync();
+            return;
+        }
         if(status_ == GroupStatus::errorstop || status_ == GroupStatus::disabled ||
            status_ == GroupStatus::interrupted) {
             return;
@@ -1831,6 +2357,11 @@ public:
                 status_ = GroupStatus::errorstop;
                 return;
             }
+        }
+
+        if(jog_active_) {
+            jog_cycle();
+            return;
         }
 
         if(direct_active_) {
@@ -1918,6 +2449,13 @@ public:
             }
         }
 
+        if(!apply_dynamic_tracking_to_active()) {
+            tracking_error_ = rt::ErrorCode::precondition_failed;
+            abort_motion();
+            status_ = GroupStatus::errorstop;
+            return;
+        }
+
         if(active_tick_ >= active_duration_) {
             finish_active();
         }
@@ -1941,6 +2479,631 @@ public:
     }
 
 private:
+    bool solve_tracking_tcp(const geom::RigidTransform &tcp)
+    {
+        double seed[MaxAxes] = {};
+        double solved[MaxAxes] = {};
+        for(std::size_t i = 0; i < axes_.size(); ++i) {
+            seed[i] = axes_[i]->snapshot().command_position;
+            solved[i] = seed[i];
+        }
+        rt::ErrorCode result = rt::ErrorCode::ok;
+        if(pose_kinematics_ != nullptr) {
+            const geom::RigidTransform flange =
+                geom::compose(tcp, active_pose_tool_inverse_);
+            kin::Pose6 pose{};
+            pose.position[0] = flange.translation.x;
+            pose.position[1] = flange.translation.y;
+            pose.position[2] = flange.translation.z;
+            for(int row = 0; row < 3; ++row) {
+                for(int column = 0; column < 3; ++column) {
+                    pose.rotation[row][column] = flange.rotation[row][column];
+                }
+            }
+            result = pose_kinematics_->inverse(
+                pose, seed, pose_max_joint_step_, solved);
+        } else {
+            const geom::Vec3 flange = tcp.translation - active_tool_offset_;
+            if(kinematics_ != nullptr) {
+                result = kinematics_->inverse(flange, seed, axes_.size(), solved);
+            } else {
+                if(axes_.size() > 0) solved[0] = flange.x;
+                if(axes_.size() > 1) solved[1] = flange.y;
+                if(axes_.size() > 2) solved[2] = flange.z;
+            }
+        }
+        if(result != rt::ErrorCode::ok) return false;
+        for(std::size_t i = 0; i < axes_.size(); ++i) {
+            const double previous_velocity = axes_[i]->snapshot().command_velocity;
+            const double velocity = solved[i] - seed[i];
+            axes_[i]->set_synchronized_state(
+                solved[i], velocity, velocity - previous_velocity);
+        }
+        return true;
+    }
+
+    bool current_tracking_tcp(geom::RigidTransform &tcp) const
+    {
+        double joints[MaxAxes] = {};
+        for(std::size_t i = 0; i < axes_.size(); ++i) {
+            joints[i] = axes_[i]->snapshot().command_position;
+        }
+        if(pose_kinematics_ != nullptr) {
+            kin::Pose6 flange{};
+            pose_kinematics_->forward(joints, flange);
+            geom::RigidTransform flange_transform{};
+            flange_transform.translation =
+                {flange.position[0], flange.position[1], flange.position[2]};
+            for(int row = 0; row < 3; ++row) {
+                for(int column = 0; column < 3; ++column) {
+                    flange_transform.rotation[row][column] = flange.rotation[row][column];
+                }
+            }
+            tcp = geom::compose(flange_transform, active_pose_tool_);
+            return true;
+        }
+        geom::Vec3 point{};
+        if(kinematics_ != nullptr) {
+            if(kinematics_->forward(joints, axes_.size(), point) != rt::ErrorCode::ok) {
+                return false;
+            }
+        } else {
+            if(axes_.size() > 0) point.x = joints[0];
+            if(axes_.size() > 1) point.y = joints[1];
+            if(axes_.size() > 2) point.z = joints[2];
+        }
+        tcp.translation = point + active_tool_offset_;
+        return true;
+    }
+
+    bool apply_dynamic_tracking_to_active()
+    {
+        if(!active_command_.dynamic_pcs) return true;
+        geom::RigidTransform base_tcp{};
+        if(!current_tracking_tcp(base_tcp)) return false;
+        const geom::RigidTransform delta = geom::compose(
+            workpiece_frame_, geom::invert(active_dynamic_reference_frame_));
+        const geom::RigidTransform tracked_tcp = geom::compose(delta, base_tcp);
+        if(!solve_tracking_tcp(tracked_tcp)) return false;
+        tracking_hold_pose_ =
+            geom::compose(geom::invert(workpiece_frame_), tracked_tcp);
+        tracking_following_ = true;
+        tracking_motion_seen_ = true;
+        return true;
+    }
+
+    void apply_tracking_hold()
+    {
+        if(!tracking_following_ || tracking_kind_ == TrackingKind::none || active_ ||
+           window_active_ || cart_window_active_ || direct_active_ || jog_active_ ||
+           group_sync_active_) {
+            return;
+        }
+        const geom::RigidTransform target =
+            geom::compose(workpiece_frame_, tracking_hold_pose_);
+        if(!solve_tracking_tcp(target)) {
+            tracking_error_ = rt::ErrorCode::precondition_failed;
+            status_ = GroupStatus::errorstop;
+        }
+    }
+
+    void update_path_odometer()
+    {
+        if(!path_odometer_initialized_) {
+            for(std::size_t i = 0; i < axes_.size(); ++i) {
+                path_odometer_position_[i] = axes_[i]->snapshot().command_position;
+            }
+            path_odometer_initialized_ = true;
+            return;
+        }
+        double squared_distance = 0.0;
+        for(std::size_t i = 0; i < axes_.size(); ++i) {
+            const double position = axes_[i]->snapshot().command_position;
+            const double delta = position - path_odometer_position_[i];
+            squared_distance += delta * delta;
+            path_odometer_position_[i] = position;
+        }
+        const double distance = std::sqrt(squared_distance);
+        path_odometer_acceleration_ = distance - path_odometer_velocity_;
+        path_odometer_velocity_ = distance;
+        path_odometer_ += distance;
+    }
+
+    static bool valid_tracking_pose(const ToolData &pose)
+    {
+        for(double value : pose.value) {
+            if(!std::isfinite(value)) return false;
+        }
+        return true;
+    }
+
+    static geom::RigidTransform tracking_pose(const ToolData &pose)
+    {
+        return geom::make_rpy_transform(pose.value[0], pose.value[1], pose.value[2],
+                                        pose.value[3], pose.value[4], pose.value[5]);
+    }
+
+    rt::Result<std::uint32_t> begin_tracking(TrackingKind kind,
+                                             CoordSystem coord_system,
+                                             BufferMode buffer_mode)
+    {
+        if(status_ == GroupStatus::disabled || status_ == GroupStatus::errorstop ||
+           coord_system != CoordSystem::pcs || buffer_mode != BufferMode::aborting) {
+            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
+        }
+        if(tracking_kind_ != TrackingKind::none) {
+            last_aborted_tracking_id_ = tracking_command_id_;
+        }
+        tracking_kind_ = kind;
+        tracking_command_id_ = next_command_id_++;
+        tracking_master_group_ = nullptr;
+        tracking_master_axis_ = nullptr;
+        tracking_motion_seen_ = status_ == GroupStatus::moving;
+        tracking_following_ = false;
+        tracking_error_ = rt::ErrorCode::ok;
+        return rt::Result<std::uint32_t>::success(tracking_command_id_);
+    }
+
+    void cancel_tracking()
+    {
+        if(tracking_kind_ == TrackingKind::none) return;
+        last_aborted_tracking_id_ = tracking_command_id_;
+        tracking_kind_ = TrackingKind::none;
+        tracking_command_id_ = 0;
+        tracking_master_group_ = nullptr;
+        tracking_master_axis_ = nullptr;
+        tracking_motion_seen_ = false;
+        tracking_following_ = false;
+        tracking_error_ = rt::ErrorCode::ok;
+    }
+
+    void set_tracking_frame(const geom::RigidTransform &frame)
+    {
+        workpiece_frame_ = frame;
+        workpiece_frame_rpy_[0] = frame.translation.x;
+        workpiece_frame_rpy_[1] = frame.translation.y;
+        workpiece_frame_rpy_[2] = frame.translation.z;
+        geom::extract_rpy(frame.rotation, workpiece_frame_rpy_[3],
+                          workpiece_frame_rpy_[4], workpiece_frame_rpy_[5]);
+    }
+
+    void update_tracking_transform()
+    {
+        if(tracking_kind_ == TrackingKind::none) return;
+        if(status_ == GroupStatus::moving) tracking_motion_seen_ = true;
+
+        if(tracking_kind_ == TrackingKind::dynamic_group) {
+            GroupPosition master_position{};
+            if(tracking_master_group_ == nullptr ||
+               tracking_master_group_->read_cartesian(
+                   CoordSystem::mcs, PositionSource::actual, master_position) !=
+                   rt::ErrorCode::ok ||
+               master_position.size < 3) {
+                tracking_error_ = rt::ErrorCode::precondition_failed;
+                return;
+            }
+            ToolData master_pose{};
+            for(std::size_t i = 0; i < 6 && i < master_position.size; ++i) {
+                master_pose.value[i] = master_position.value[i];
+            }
+            set_tracking_frame(
+                geom::compose(tracking_pose(master_pose), tracking_pose(tracking_transform_)));
+            return;
+        }
+
+        if(tracking_master_axis_ == nullptr || !tracking_master_axis_->powered() ||
+           tracking_master_axis_->status() == AxisStatus::errorstop) {
+            tracking_error_ = rt::ErrorCode::precondition_failed;
+            return;
+        }
+        const double delta = tracking_master_axis_->snapshot().actual_position -
+                             tracking_master_origin_;
+        const geom::RigidTransform origin = tracking_pose(tracking_origin_);
+        const geom::RigidTransform object = tracking_pose(tracking_transform_);
+        const geom::RigidTransform motion =
+            tracking_kind_ == TrackingKind::conveyor
+                ? geom::make_rpy_transform(delta, 0.0, 0.0, 0.0, 0.0, 0.0)
+                : geom::make_rpy_transform(0.0, 0.0, 0.0, 0.0, 0.0, delta);
+        set_tracking_frame(geom::compose(geom::compose(origin, motion), object));
+    }
+
+    static double move_towards(double current, double target, double maximum_step)
+    {
+        if(maximum_step <= 0.0) return target;
+        if(target > current + maximum_step) return current + maximum_step;
+        if(target < current - maximum_step) return current - maximum_step;
+        return target;
+    }
+
+    void cycle_axis_to_group_sync()
+    {
+        if(path_sync_slave_ == nullptr) return;
+        if(path_sync_slave_->sync_kind_ != SyncKind::group_path ||
+           path_sync_slave_->sync_id_ != path_sync_id_) {
+            path_sync_slave_ = nullptr;
+            path_sync_id_ = 0;
+            path_sync_in_sync_ = false;
+            return;
+        }
+
+        const double desired_position =
+            path_sync_slave_origin_ + (path_odometer_ - path_sync_origin_) * path_sync_ratio_;
+        const double desired_velocity = path_odometer_velocity_ * path_sync_ratio_;
+        if(path_sync_acceleration_ == 0.0 && path_sync_deceleration_ == 0.0 &&
+           path_sync_jerk_ == 0.0) {
+            path_sync_velocity_ = desired_velocity;
+            path_sync_acceleration_state_ = path_odometer_acceleration_ * path_sync_ratio_;
+            path_sync_in_sync_ = true;
+        } else if(!path_sync_in_sync_) {
+            const double position_error =
+                desired_position - path_sync_slave_->snapshot().command_position;
+            const double entry_velocity = desired_velocity + position_error;
+            const double acceleration_limit =
+                std::fabs(entry_velocity) >= std::fabs(path_sync_velocity_)
+                    ? path_sync_acceleration_
+                    : path_sync_deceleration_;
+            const double requested_acceleration = entry_velocity - path_sync_velocity_;
+            const double jerk_limited = move_towards(
+                path_sync_acceleration_state_, requested_acceleration, path_sync_jerk_);
+            path_sync_acceleration_state_ =
+                move_towards(0.0, jerk_limited, acceleration_limit);
+            path_sync_velocity_ += path_sync_acceleration_state_;
+            const bool velocity_reached =
+                std::fabs(path_sync_velocity_ - desired_velocity) <= 1e-12;
+            const bool position_reached =
+                std::fabs(position_error) <= std::fabs(path_sync_velocity_) + 1e-12;
+            path_sync_in_sync_ = velocity_reached && position_reached;
+            if(path_sync_in_sync_) {
+                path_sync_slave_->sync_phase_ = SyncPhase::engaged;
+            }
+        }
+
+        double position = desired_position;
+        if(!path_sync_in_sync_) {
+            position = path_sync_slave_->snapshot().command_position + path_sync_velocity_;
+        }
+        path_sync_slave_->snapshot_.active_command_id = path_sync_id_;
+        path_sync_slave_->set_synchronized_state(
+            position, path_sync_velocity_, path_sync_acceleration_state_);
+    }
+
+    void cycle_group_to_axis_sync()
+    {
+        if(group_sync_master_ == nullptr || !group_sync_master_->powered() ||
+           group_sync_master_->status() == AxisStatus::errorstop) {
+            last_aborted_group_sync_id_ = group_sync_id_;
+            group_sync_active_ = false;
+            status_ = GroupStatus::errorstop;
+            return;
+        }
+        for(std::size_t axis_index = 0; axis_index < axes_.size(); ++axis_index) {
+            if(!axes_[axis_index]->powered() ||
+               axes_[axis_index]->status() == AxisStatus::errorstop) {
+                last_aborted_group_sync_id_ = group_sync_id_;
+                group_sync_active_ = false;
+                status_ = GroupStatus::errorstop;
+                return;
+            }
+        }
+
+        const double total = group_sync_cumulative_[group_sync_count_ - 1];
+        double path_position =
+            group_sync_master_->snapshot().command_position - group_sync_master_origin_;
+        if(group_sync_mode_ == PathMode::periodic) {
+            path_position = std::fmod(path_position, total);
+            if(path_position < 0.0) path_position += total;
+        } else {
+            if(path_position < 0.0) path_position = 0.0;
+            if(path_position > total) path_position = total;
+        }
+
+        std::size_t segment = 1;
+        while(segment + 1 < group_sync_count_ &&
+              path_position > group_sync_cumulative_[segment]) {
+            ++segment;
+        }
+        const double begin = group_sync_cumulative_[segment - 1];
+        const double length = group_sync_cumulative_[segment] - begin;
+        const double ratio = length > 0.0 ? (path_position - begin) / length : 1.0;
+        for(std::size_t axis_index = 0; axis_index < axes_.size(); ++axis_index) {
+            const double position =
+                group_sync_waypoints_[segment - 1].value[axis_index] +
+                (group_sync_waypoints_[segment].value[axis_index] -
+                 group_sync_waypoints_[segment - 1].value[axis_index]) *
+                    ratio;
+            const double previous_velocity = axes_[axis_index]->snapshot().command_velocity;
+            const double velocity = position - group_sync_previous_.value[axis_index];
+            axes_[axis_index]->set_synchronized_state(
+                position, velocity, velocity - previous_velocity);
+            group_sync_previous_.value[axis_index] = position;
+        }
+    }
+
+    static bool any_direction(const GroupPosition &direction)
+    {
+        for(std::size_t i = 0; i < direction.size; ++i) {
+            if(direction.value[i] != 0.0) return true;
+        }
+        return false;
+    }
+
+    rt::ErrorCode validate_jog(CoordSystem coord_system,
+                               const GroupPosition &direction) const
+    {
+        if(axes_.empty() || direction.size == 0 || !finite(direction)) {
+            return rt::ErrorCode::invalid_argument;
+        }
+        if(jogging_dynamics_.size != axes_.size()) {
+            return rt::ErrorCode::precondition_failed;
+        }
+        const PathDynamics &path = jogging_dynamics_.path;
+        if(!std::isfinite(path.velocity) || !std::isfinite(path.acceleration) ||
+           !std::isfinite(path.deceleration) || !std::isfinite(path.jerk) ||
+           path.velocity <= 0.0 || path.acceleration <= 0.0 ||
+           path.deceleration <= 0.0 || path.jerk <= 0.0) {
+            return rt::ErrorCode::precondition_failed;
+        }
+        for(std::size_t i = 0; i < axes_.size(); ++i) {
+            if(!std::isfinite(jogging_dynamics_.axis_velocity[i]) ||
+               !std::isfinite(jogging_dynamics_.axis_acceleration[i]) ||
+               !std::isfinite(jogging_dynamics_.axis_deceleration[i]) ||
+               !std::isfinite(jogging_dynamics_.axis_jerk[i]) ||
+               jogging_dynamics_.axis_velocity[i] <= 0.0 ||
+               jogging_dynamics_.axis_acceleration[i] <= 0.0 ||
+               jogging_dynamics_.axis_deceleration[i] <= 0.0 ||
+               jogging_dynamics_.axis_jerk[i] <= 0.0) {
+                return rt::ErrorCode::precondition_failed;
+            }
+        }
+        if(coord_system == CoordSystem::acs) {
+            return direction.size == axes_.size() ? rt::ErrorCode::ok
+                                                  : rt::ErrorCode::invalid_argument;
+        }
+        if(coord_system != CoordSystem::mcs && coord_system != CoordSystem::pcs) {
+            return rt::ErrorCode::unsupported;
+        }
+        if(kinematics_ == nullptr && pose_kinematics_ == nullptr) {
+            return rt::ErrorCode::precondition_failed;
+        }
+        return direction.size >= 3 ? rt::ErrorCode::ok
+                                   : rt::ErrorCode::invalid_argument;
+    }
+
+    static double approach(double current, double target, double step)
+    {
+        if(current < target) return current + step > target ? target : current + step;
+        if(current > target) return current - step < target ? target : current - step;
+        return current;
+    }
+
+    void advance_jog_state(std::size_t index, double target_velocity)
+    {
+        const double acceleration_limit =
+            target_velocity == 0.0
+                ? (jog_stop_deceleration_ > 0.0 ? jog_stop_deceleration_
+                                                : jogging_dynamics_.axis_deceleration[index])
+                : jogging_dynamics_.axis_acceleration[index];
+        const double desired_acceleration =
+            target_velocity > jog_velocity_[index]
+                ? acceleration_limit
+                : (target_velocity < jog_velocity_[index] ? -acceleration_limit : 0.0);
+        jog_acceleration_[index] =
+            approach(jog_acceleration_[index], desired_acceleration,
+                     jog_stop_jerk_ > 0.0 && target_velocity == 0.0
+                         ? jog_stop_jerk_
+                         : jogging_dynamics_.axis_jerk[index]);
+        const double previous = jog_velocity_[index];
+        jog_velocity_[index] += jog_acceleration_[index];
+        if((target_velocity - previous) * (target_velocity - jog_velocity_[index]) <= 0.0) {
+            jog_velocity_[index] = target_velocity;
+            jog_acceleration_[index] = 0.0;
+        }
+    }
+
+    bool all_jog_stopped() const
+    {
+        for(std::size_t i = 0; i < axes_.size(); ++i) {
+            if(jog_velocity_[i] != 0.0 || jog_acceleration_[i] != 0.0) return false;
+        }
+        return true;
+    }
+
+    void advance_cart_jog_state(std::size_t index, double target_velocity)
+    {
+        const double acceleration_limit =
+            target_velocity == 0.0 && jog_stop_deceleration_ > 0.0
+                ? jog_stop_deceleration_
+                : (target_velocity == 0.0 ? jogging_dynamics_.path.deceleration
+                                          : jogging_dynamics_.path.acceleration);
+        const double desired = target_velocity > jog_cart_velocity_[index]
+                                   ? acceleration_limit
+                                   : (target_velocity < jog_cart_velocity_[index]
+                                          ? -acceleration_limit
+                                          : 0.0);
+        const double jerk = target_velocity == 0.0 && jog_stop_jerk_ > 0.0
+                                ? jog_stop_jerk_
+                                : jogging_dynamics_.path.jerk;
+        jog_cart_acceleration_[index] =
+            approach(jog_cart_acceleration_[index], desired, jerk);
+        const double previous = jog_cart_velocity_[index];
+        jog_cart_velocity_[index] += jog_cart_acceleration_[index];
+        if((target_velocity - previous) *
+               (target_velocity - jog_cart_velocity_[index]) <=
+           0.0) {
+            jog_cart_velocity_[index] = target_velocity;
+            jog_cart_acceleration_[index] = 0.0;
+        }
+    }
+
+    bool cart_jog_stopped() const
+    {
+        for(std::size_t i = 0; i < jog_cart_velocity_.size(); ++i) {
+            if(jog_cart_velocity_[i] != 0.0 || jog_cart_acceleration_[i] != 0.0) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    bool solve_jog_cartesian(GroupPosition &target)
+    {
+        double q[MaxAxes] = {};
+        const bool pcs = jog_coord_system_ == CoordSystem::pcs;
+        if(pose_kinematics_ != nullptr) {
+            geom::RigidTransform tcp = geom::make_rpy_transform(
+                target.value[0], target.value[1], target.value[2], target.value[3],
+                target.value[4], target.value[5]);
+            if(pcs) tcp = geom::compose(workpiece_frame_, tcp);
+            const geom::RigidTransform flange = geom::compose(tcp, jog_pose_tool_inverse_);
+            kin::Pose6 pose{};
+            pose.position[0] = flange.translation.x;
+            pose.position[1] = flange.translation.y;
+            pose.position[2] = flange.translation.z;
+            for(int row = 0; row < 3; ++row) {
+                for(int column = 0; column < 3; ++column) {
+                    pose.rotation[row][column] = flange.rotation[row][column];
+                }
+            }
+            const rt::ErrorCode solved = pose_kinematics_->inverse(
+                pose, jog_position_.data(), pose_max_joint_step_, q);
+            if(solved != rt::ErrorCode::ok ||
+               pose_kinematics_->singularity_margin(q) < pose_min_margin_) {
+                jog_error_ = solved == rt::ErrorCode::ok
+                                 ? rt::ErrorCode::precondition_failed
+                                 : solved;
+                return false;
+            }
+        } else {
+            geom::Vec3 point = cartesian_part(target);
+            if(pcs) point = geom::transform_point(workpiece_frame_, point);
+            point = point - jog_tool_offset_;
+            const rt::ErrorCode solved =
+                kinematics_->inverse(point, jog_position_.data(), axes_.size(), q);
+            if(solved != rt::ErrorCode::ok ||
+               kinematics_->singularity_margin(q, axes_.size()) <
+                   kinematics_min_margin_) {
+                jog_error_ = solved == rt::ErrorCode::ok
+                                 ? rt::ErrorCode::precondition_failed
+                                 : solved;
+                return false;
+            }
+        }
+        for(std::size_t i = 0; i < axes_.size(); ++i) {
+            if(!axes_[i]->target_inside_limits(q[i])) {
+                jog_error_ = rt::ErrorCode::out_of_range;
+                return false;
+            }
+            jog_position_[i] = q[i];
+        }
+        return true;
+    }
+
+    void jog_cycle()
+    {
+        if(jog_coord_system_ == CoordSystem::acs) {
+            for(std::size_t i = 0; i < axes_.size(); ++i) {
+                const double target = jog_direction_.value[i] *
+                                      jogging_dynamics_.axis_velocity[i];
+                advance_jog_state(i, target);
+                const double next = jog_position_[i] + jog_velocity_[i];
+                if(!axes_[i]->target_inside_limits(next)) {
+                    jog_error_ = rt::ErrorCode::out_of_range;
+                    for(std::size_t slot = 0; slot < jog_direction_.size; ++slot) {
+                        jog_direction_.value[slot] = 0.0;
+                    }
+                    jog_releasing_ = true;
+                    advance_jog_state(i, 0.0);
+                } else {
+                    jog_position_[i] = next;
+                }
+                axes_[i]->set_synchronized_state(jog_position_[i], jog_velocity_[i],
+                                                 jog_acceleration_[i]);
+            }
+        } else {
+            double linear_norm = 0.0;
+            double angular_norm = 0.0;
+            for(std::size_t i = 0; i < 3 && i < jog_direction_.size; ++i) {
+                linear_norm += jog_direction_.value[i] * jog_direction_.value[i];
+            }
+            for(std::size_t i = 3; i < 6 && i < jog_direction_.size; ++i) {
+                angular_norm += jog_direction_.value[i] * jog_direction_.value[i];
+            }
+            linear_norm = std::sqrt(linear_norm);
+            angular_norm = std::sqrt(angular_norm);
+            const double linear_scale = linear_norm > 1.0 ? 1.0 / linear_norm : 1.0;
+            const double angular_scale = angular_norm > 1.0 ? 1.0 / angular_norm : 1.0;
+            for(std::size_t i = 0; i < jog_cart_velocity_.size(); ++i) {
+                const double scale = i < 3 ? linear_scale : angular_scale;
+                const double component = i < jog_direction_.size
+                                             ? jog_direction_.value[i] * scale
+                                             : 0.0;
+                advance_cart_jog_state(i, component * jogging_dynamics_.path.velocity);
+            }
+            GroupPosition next = jog_cartesian_position_;
+            for(std::size_t i = 0; i < 6 && i < next.size; ++i) {
+                next.value[i] += jog_cart_velocity_[i];
+            }
+            if(!solve_jog_cartesian(next)) {
+                jog_direction_ = {};
+                jog_direction_.size = next.size;
+                jog_releasing_ = true;
+            } else {
+                jog_cartesian_position_ = next;
+            }
+            for(std::size_t i = 0; i < axes_.size(); ++i) {
+                const double previous_position = axes_[i]->snapshot().command_position;
+                const double previous_velocity = axes_[i]->snapshot().command_velocity;
+                const double velocity = jog_position_[i] - previous_position;
+                axes_[i]->set_synchronized_state(jog_position_[i], velocity,
+                                                 velocity - previous_velocity);
+            }
+        }
+        const bool stopped = jog_coord_system_ == CoordSystem::acs
+                                 ? all_jog_stopped()
+                                 : cart_jog_stopped();
+        if(jog_releasing_ && stopped) {
+            jog_active_ = false;
+            jog_releasing_ = false;
+            for(std::size_t i = 0; i < axes_.size(); ++i) axes_[i]->clear_synchronized();
+            status_ = GroupStatus::standby;
+            return;
+        }
+        status_ = any_direction(jog_direction_) || !stopped
+                      ? (jog_releasing_ ? GroupStatus::stopping : GroupStatus::moving)
+                      : GroupStatus::standby;
+    }
+
+    void apply_selected_tool()
+    {
+        const ToolData &tool = tools_[selected_tool_];
+        pose_tool_ = geom::make_rpy_transform(tool.value[0], tool.value[1], tool.value[2],
+                                              tool.value[3], tool.value[4], tool.value[5]);
+        pose_tool_inverse_ = geom::invert(pose_tool_);
+        tool_offset_ = {tool.value[0], tool.value[1], tool.value[2]};
+        for(std::size_t i = 0; i < tool.value.size(); ++i) {
+            tool_transform_rpy_[i] = tool.value[i];
+        }
+    }
+
+    void snapshot_selections()
+    {
+        active_tool_ = selected_tool_;
+        active_payload_ = selected_payload_;
+    }
+
+    void snapshot_active_tool_transform()
+    {
+        active_pose_tool_ = pose_tool_;
+        active_pose_tool_inverse_ = pose_tool_inverse_;
+        active_tool_offset_ = tool_offset_;
+    }
+
+    bool active_tool_transform_applies() const
+    {
+        return status_ == GroupStatus::moving || status_ == GroupStatus::stopping ||
+               status_ == GroupStatus::interrupted;
+    }
+
     rt::ErrorCode preflight_member_targets(const GroupPosition &target) const
     {
         if(target.size != axes_.size()) return rt::ErrorCode::invalid_argument;
@@ -1957,7 +3120,7 @@ private:
         if(status_ != GroupStatus::disabled && status_ != GroupStatus::standby) {
             return false;
         }
-        if(active_ || direct_active_ || window_active_ || cart_window_active_ ||
+        if(active_ || direct_active_ || window_active_ || cart_window_active_ || jog_active_ ||
            !queue_.empty()) {
             return false;
         }
@@ -2385,6 +3548,21 @@ private:
         }
         if(command.relative || !queue_.empty() || window_active_) {
             return rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported);
+        }
+        if(command.tool_number != active_tool_ ||
+           command.payload_number != active_payload_) {
+            last_blend_degraded_id_ = command.command_id;
+            command.buffer_mode = BufferMode::buffered;
+            command.transition_mode = TransitionMode::none;
+            command.transition_parameter = 0.0;
+            const rt::ErrorCode prepared = prepare_cartesian_linear(command);
+            if(prepared != rt::ErrorCode::ok) {
+                return rt::Result<std::uint32_t>::failure(prepared);
+            }
+            const rt::ErrorCode queued = queue_.push_back(command);
+            return queued == rt::ErrorCode::ok
+                       ? rt::Result<std::uint32_t>::success(command.command_id)
+                       : rt::Result<std::uint32_t>::failure(queued);
         }
         const bool extend = cart_window_active_;
         if(!extend) {
@@ -3508,7 +4686,7 @@ private:
             geom::RigidTransform tcp{};
             cartesian_pose_at(active_cart_, ratio, tcp);
             const geom::RigidTransform flange_target =
-                geom::compose(tcp, pose_tool_inverse_);
+                geom::compose(tcp, active_pose_tool_inverse_);
             kin::Pose6 pose{};
             pose.position[0] = flange_target.translation.x;
             pose.position[1] = flange_target.translation.y;
@@ -3577,7 +4755,19 @@ private:
 
     rt::ErrorCode start(GroupCommand command)
     {
+        active_tool_ = command.tool_number;
+        active_payload_ = command.payload_number;
+        active_pose_tool_inverse_ = command.tool_inverse;
+        active_pose_tool_ = geom::invert(command.tool_inverse);
+        active_tool_offset_ = {active_pose_tool_.translation.x,
+                               active_pose_tool_.translation.y,
+                               active_pose_tool_.translation.z};
         active_command_ = command;
+        if(command.dynamic_pcs && pending_dynamic_pcs_) {
+            active_dynamic_reference_frame_ = pending_dynamic_reference_frame_;
+        }
+        pending_dynamic_pcs_ = false;
+        if(!command.dynamic_pcs) tracking_following_ = false;
         active_tick_ = 0;
         connector_.deactivate();
         double longest = 0.0;
@@ -3688,6 +4878,17 @@ private:
 
     void abort_motion()
     {
+        if(group_sync_active_) {
+            last_aborted_group_sync_id_ = group_sync_id_;
+            group_sync_active_ = false;
+            group_sync_master_ = nullptr;
+            group_sync_id_ = 0;
+        }
+        if(jog_active_) {
+            last_aborted_jog_id_ = jog_command_id_;
+            jog_active_ = false;
+            jog_releasing_ = false;
+        }
         active_ = false;
         connector_.deactivate();
         direct_active_ = false;
@@ -3801,6 +5002,10 @@ private:
         // commands, or anything else is an explicit error.
         if(window_stop_ || !queue_.empty()) {
             return rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported);
+        }
+        if(command.tool_number != active_tool_ ||
+           command.payload_number != active_payload_) {
+            return degrade_blend(command);
         }
         if(!window_active_) {
             if(!active_ || active_kind_ != GroupPathKind::linear ||
@@ -4111,6 +5316,10 @@ private:
     {
         if(window_stop_ || !queue_.empty()) {
             return rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported);
+        }
+        if(command.tool_number != active_tool_ ||
+           command.payload_number != active_payload_) {
+            return degrade_blend(command);
         }
         if(!window_active_) {
             if(!active_ || active_kind_ != GroupPathKind::linear ||
@@ -4719,27 +5928,71 @@ private:
     std::int64_t window_tick_ = 0;
     double window_stop_origin_ = 0.0;
     double active_path_length_ = 0.0;
+    double path_odometer_ = 0.0;
+    double path_odometer_velocity_ = 0.0;
+    double path_odometer_acceleration_ = 0.0;
+    double path_sync_origin_ = 0.0;
+    double path_sync_slave_origin_ = 0.0;
+    double path_sync_ratio_ = 1.0;
+    double path_sync_acceleration_ = 0.0;
+    double path_sync_deceleration_ = 0.0;
+    double path_sync_jerk_ = 0.0;
+    double path_sync_velocity_ = 0.0;
+    double path_sync_acceleration_state_ = 0.0;
+    double tracking_master_origin_ = 0.0;
     std::int64_t active_tick_ = 0;
     std::int64_t active_duration_ = 1;
     double group_override_ = 1.0;
     double interrupt_ratio_ = 0.0;
+    double jog_stop_deceleration_ = 0.0;
+    double jog_stop_jerk_ = 0.0;
     geom::Vec3 tool_offset_{};
     otg::State1D window_seed_state_{};
     double workpiece_frame_rpy_[6] = {};
     double tool_transform_rpy_[6] = {};
     std::array<double, MaxAxes> active_start_{};
     std::array<double, MaxAxes> active_finish_{};
+    std::array<double, MaxAxes> path_odometer_position_{};
+    std::array<double, SyncPathCapacity> group_sync_cumulative_{};
+    std::array<GroupPosition, SyncPathCapacity> group_sync_waypoints_{};
+    std::array<double, MaxAxes> jog_position_{};
+    std::array<double, MaxAxes> jog_velocity_{};
+    std::array<double, MaxAxes> jog_acceleration_{};
+    std::array<double, 6> jog_cart_velocity_{};
+    std::array<double, 6> jog_cart_acceleration_{};
+    std::array<ToolData, ToolCapacity> tools_{};
+    std::array<PayloadData, PayloadCapacity> payloads_{};
+    std::array<bool, ToolCapacity> tool_defined_{{true}};
+    std::array<bool, PayloadCapacity> payload_defined_{{true}};
+    RigidBodyDynamics rigid_body_dynamics_{};
+    bool rigid_body_dynamics_defined_ = false;
     double cart_joints_[MaxAxes] = {};
     double cart_tail_joints_[MaxAxes] = {};
     double cart_window_joints_[MaxAxes] = {};
     GroupTakeoverConnector<MaxAxes> connector_{};
     rt::StaticVector<AxisModel *, MaxAxes> axes_{};
+    AxisModel *path_sync_slave_ = nullptr;
+    AxisModel *group_sync_master_ = nullptr;
+    AxisModel *tracking_master_axis_ = nullptr;
+    AxisGroup *tracking_master_group_ = nullptr;
     geom::RigidTransform workpiece_frame_{};
+    geom::RigidTransform tracking_hold_pose_{};
+    geom::RigidTransform pending_dynamic_reference_frame_{};
+    geom::RigidTransform active_dynamic_reference_frame_{};
     geom::RigidTransform pose_tool_{};
     geom::RigidTransform pose_tool_inverse_{};
+    geom::RigidTransform active_pose_tool_inverse_{};
+    geom::RigidTransform active_pose_tool_{};
+    geom::RigidTransform jog_pose_tool_inverse_{};
+    geom::Vec3 jog_tool_offset_{};
+    geom::Vec3 active_tool_offset_{};
     geom::ArcSegment active_arc_{};
     CartesianSegment active_cart_{};
     GroupCommand active_command_{};
+    ToolData tracking_origin_{};
+    ToolData tracking_transform_{};
+    GroupPosition jog_direction_{};
+    GroupPosition jog_cartesian_position_{};
     otg::Profile1D cart_halt_profile_{};
     otg::Profile1D window_stop_profile_{};
     otg::Profile1D active_profile_{};
@@ -4749,13 +6002,28 @@ private:
     int domain_id_ = 0;
     GroupStatus status_ = GroupStatus::disabled;
     GroupPathKind active_kind_ = GroupPathKind::linear;
+    CoordSystem jog_coord_system_ = CoordSystem::acs;
     rt::ErrorCode last_cartesian_error_ = rt::ErrorCode::ok;
+    rt::ErrorCode jog_error_ = rt::ErrorCode::ok;
+    rt::ErrorCode tracking_error_ = rt::ErrorCode::ok;
     std::uint32_t cart_window_last_id_ = 0;
     std::uint32_t last_blend_degraded_id_ = 0;
     std::uint32_t next_command_id_ = 1;
     std::uint32_t direct_command_id_ = 0;
     std::uint32_t last_completed_direct_id_ = 0;
     std::uint32_t last_aborted_direct_id_ = 0;
+    std::uint32_t jog_command_id_ = 0;
+    std::uint32_t last_aborted_jog_id_ = 0;
+    std::uint32_t path_sync_id_ = 0;
+    std::uint32_t group_sync_id_ = 0;
+    std::uint32_t last_aborted_group_sync_id_ = 0;
+    std::uint32_t tracking_command_id_ = 0;
+    std::uint32_t last_aborted_tracking_id_ = 0;
+    std::size_t selected_tool_ = 0;
+    std::size_t active_tool_ = 0;
+    std::size_t selected_payload_ = 0;
+    std::size_t active_payload_ = 0;
+    std::size_t group_sync_count_ = 0;
     bool cart_window_active_ = false;
     bool cart_window_stopping_ = false;
     bool window_active_ = false;
@@ -4769,6 +6037,19 @@ private:
     bool interrupted_window_ = false;
     bool direct_active_ = false;
     bool direct_stopping_ = false;
+    bool numbered_tool_mode_ = false;
+    bool jog_active_ = false;
+    bool jog_releasing_ = false;
+    bool path_odometer_initialized_ = false;
+    bool path_sync_in_sync_ = false;
+    bool group_sync_active_ = false;
+    bool tracking_motion_seen_ = false;
+    bool tracking_following_ = false;
+    bool pending_dynamic_pcs_ = false;
+    double group_sync_master_origin_ = 0.0;
+    GroupPosition group_sync_previous_{};
+    PathMode group_sync_mode_ = PathMode::non_periodic;
+    TrackingKind tracking_kind_ = TrackingKind::none;
     GroupKinematicsInfo kinematics_info_{};
     PathDynamics reference_dynamics_{};
     PathDynamics default_dynamics_{};

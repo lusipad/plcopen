@@ -76,13 +76,19 @@ inline bool direction(std::int64_t value, axis::Direction &direction)
     }
 }
 
+inline axis::AxisModel *axis_ref(std::int64_t value)
+{
+    // AXIS_REF is encoded as an integer VM handle at the ST/native boundary.
+    return reinterpret_cast<axis::AxisModel *>( // NOLINT(performance-no-int-to-ptr)
+        static_cast<std::uintptr_t>(value));
+}
+
 template <typename Block>
 inline void store_axis_execute(Block &block, std::uint8_t pin,
                                std::int64_t value)
 {
     if(pin == 0) {
-        block.axis_ref = reinterpret_cast<axis::AxisModel *>(
-            static_cast<std::uintptr_t>(value));
+        block.axis_ref = axis_ref(value);
     } else if(pin == 1) {
         block.execute = value != 0;
     }
@@ -270,8 +276,7 @@ inline void fb_store(FbType type, unsigned char *storage, std::uint8_t pin,
     case FbType::mc_power: {
         fb::FbPower *power = detail::block<fb::FbPower>(storage);
         if(pin == 0) {
-            power->axis_ref = reinterpret_cast<axis::AxisModel *>(
-                static_cast<std::uintptr_t>(value));
+            power->axis_ref = detail::axis_ref(value);
         } else if(pin == 1) {
             power->enable = value != 0;
         }
@@ -355,8 +360,7 @@ inline void fb_store(FbType type, unsigned char *storage, std::uint8_t pin,
     case FbType::mc_set_override: {
         fb::FbSetOverride &override =
             *detail::block<fb::FbSetOverride>(storage);
-        if(pin == 0) override.axis_ref = reinterpret_cast<axis::AxisModel *>(
-            static_cast<std::uintptr_t>(value));
+        if(pin == 0) override.axis_ref = detail::axis_ref(value);
         else if(pin == 1) override.enable = value != 0;
         else if(pin == 2) override.vel_factor = detail::bits_double(value);
         break;

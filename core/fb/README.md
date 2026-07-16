@@ -2,7 +2,7 @@
 
 `core/fb` is the R3 L6 PLCopen function-block contract layer.
 
-本层现有 75 个 `Fb*` 门面（约 4300 行），按头文件分组组织：共享
+本层现有 82 个 PLCopen 同名 `Fb*` 门面，按头文件分组组织：共享
 Execute/Enable 生命周期锁存与基础 IEC 块（`base.h`/`basic.h`），单轴与群组
 运动门面通过 `motion.h` 绑定 `core/axis` 命令契约。 `motion.h` also carries the A3 circular facades
 (`FbMoveCircularAbsolute/Relative`, BORDER-only, KB-030): CENTER/RADIUS circ modes and blending
@@ -60,7 +60,7 @@ fixed `AxisModel` IO banks and info bits. With it the v0.x public FB surface is 
 门面覆盖≠合规：诚实口径为 Part 1 门面 43/43 但 B 级 I/O 齐备 22/43
 （2026-07-12 审计时点 C++ 字段面；P1-A 已补 4 项结构缺口，其余命名/形态
 缺口归 L2a 引脚层）、条款级问题 D-01~D-20 中 16 项未清（D-05/D-12/D-13/
-D-15 已关；不能宣称合规），Part 4 同名门面 40/68，Part 5 11/11 有门面但
+D-15 已关；不能宣称合规），Part 4 同名门面 57/68，Part 5 11/11 有门面但
 旧五块接口/语义与派生类型仍部分覆盖——
 逐条审计公开于 [doc/compliance/](../../doc/compliance/)。硬件 `Servo` 窄接口
 已在 [core/adapters](../adapters/README.md) 交付（ADR-0004，含 CiA402 状态机
@@ -70,6 +70,12 @@ D-15 已关；不能宣称合规），Part 4 同名门面 40/68，Part 5 11/11 �
 (`FbAddAxisToGroup`, `FbRemoveAxisFromGroup`, `FbGroupReset`, `FbGroupReadStatus`,
 `FbGroupReadActualPosition`, `FbGroupReadCommandPosition`)：群组管理方法在
 触发周期内完成，done 随 execute 下降沿清除。
+P4-B2（KB-076）另提供工具/载荷固定容量库与 active/selected 回读，以及
+`FbGroupJog`/`FbGroupJogVector` 的 Enable 生命周期；Jog 消费专用 Dynamics，
+按 jerk/acc 包络持续驱动 ACS/MCS/PCS，并在松键、GroupStop 或接管时受控停车。
+P4-B3（KB-077）增加刚体动态整体读写、组里程到单轴同步、PathData 驱动轴组，
+以及动态坐标、输送带和转台跟踪。带 Dynamics 的轴到组同步先报告
+`approaching`，追上后才报告 `InSync`；首次同步后采用 position-locking。
 
 `homing.h` carries the Part 5 composable homing step FBs（`FbStepDirect`、
 `FbStepAbsSwitch`、`FbStepLimitSwitch`、`FbStepRefPulse`、`FbFinishHoming`，
@@ -80,9 +86,15 @@ Switch/RefPulse 与 AbortPassive；这些软件合同不替代真机堵转安全
 编码器协议或正式 Part 5 逐 I/O 合规声明。
 
 `path_table.h` carries the Part 4 path table and transform FBs（`FbPathSelect`、
-`FbMovePath`、`FbSetKinTransform`、`FbReadCartesianTransform`，已批矩阵
+`FbMovePath`、`FbSetKinTransform`、`FbReadCartesianTransform`、
+`FbSyncGroupToAxis`，已批矩阵
 2026-07-07）：调用方持有的定长 waypoint 表经校验后以句柄交给
 MC_MovePath 逐段执行。
+
+`tracking.h` carries `FbSetDynCoordTransform`、`FbTrackConveyorBelt` 与
+`FbTrackRotaryTable`。动态 PCS 在每个组周期消费主组位姿或输送带/转台增量；
+PCS 运动结束后仍保持同一 PCS 位姿。当前只支持 Aborting 动态 PCS，buffered
+动态 PCS 返回显式错误。
 
 Non-goals:
 

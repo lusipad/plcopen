@@ -43,7 +43,7 @@ struct StreamTarget
     std::int64_t timestamp_cycles = 0;
 };
 
-struct StreamFilterConfig
+struct StreamFilterConfig // NOLINT(clang-analyzer-optin.performance.Padding)
 {
     otg::Limits1D limits{};
     // Optional position envelope: out-of-range targets clamp to the boundary
@@ -813,23 +813,23 @@ private:
 
         if(quintic_active_) {
             if(profile_tick_ <= quintic_profile_.h) {
-                state_ = sample_quintic(quintic_profile_, profile_tick_);
+                commit_sample(sample_quintic(quintic_profile_, profile_tick_));
                 return;
             }
             const otg::State1D finish =
                 sample_quintic(quintic_profile_, quintic_profile_.h);
             if(finish.velocity != 0.0) {
-                state_.position += finish.velocity;
-                state_.velocity = finish.velocity;
-                state_.acceleration = 0.0;
+                commit_sample(
+                    {state_.position + finish.velocity, finish.velocity, 0.0});
             } else {
-                state_ = finish;
+                commit_sample(finish);
             }
             return;
         }
 
         if(profile_tick_ <= profile_.duration_cycles()) {
-            state_ = otg::sample(profile_, rt::CycleTick::from_cycles(profile_tick_));
+            commit_sample(
+                otg::sample(profile_, rt::CycleTick::from_cycles(profile_tick_)));
             return;
         }
         // Past the profile end: a nonzero end velocity coasts (the target
@@ -837,12 +837,25 @@ private:
         const otg::State1D finish =
             profile_.segment(profile_.segment_count() - 1).finish;
         if(finish.velocity != 0.0) {
-            state_.position += finish.velocity;
-            state_.velocity = finish.velocity;
-            state_.acceleration = 0.0;
+            commit_sample({state_.position + finish.velocity, finish.velocity, 0.0});
         } else {
-            state_ = finish;
+            commit_sample(finish);
         }
+    }
+
+    void commit_sample(otg::State1D candidate)
+    {
+        if(otg::is_finite(candidate)) {
+            state_ = candidate;
+            return;
+        }
+
+        // A planner may be representable while an architecture-specific
+        // floating-point sample overflows. Preserve the last finite output;
+        // the stream contract never publishes a non-finite state.
+        ++filter_faults_;
+        have_profile_ = false;
+        quintic_active_ = false;
     }
 
     std::int64_t now_ = 0;

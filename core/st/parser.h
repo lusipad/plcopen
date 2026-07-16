@@ -48,13 +48,21 @@ public:
 private:
     // --- token plumbing -------------------------------------------------
 
+    static DiagCode token_diag(const Token &token)
+    {
+        // Only lexer-created error/unsupported tokens reach this boundary;
+        // their payload is assigned from DiagCode in Lexer.
+        return static_cast<DiagCode>( // NOLINT(clang-analyzer-optin.core.EnumCastOutOfRange)
+            token.diag_payload);
+    }
+
     // Lexical errors surface as diagnostics immediately; the token stream
     // continues so parsing can recover.
     Token fetch()
     {
         Token token = lexer_.next();
         while(token.kind == TokenKind::error) {
-            diag(static_cast<DiagCode>(token.diag_payload), token);
+            diag(token_diag(token), token);
             token = lexer_.next();
         }
         return token;
@@ -93,7 +101,7 @@ private:
         if(at(TokenKind::unsupported_keyword)) {
             // Report the ownership code instead of a bare syntax error so
             // out-of-subset constructs are attributed to their batch.
-            diag(static_cast<DiagCode>(current_.diag_payload), current_);
+            diag(token_diag(current_), current_);
             bump();
             return false;
         }
@@ -194,7 +202,7 @@ private:
     void parse_program()
     {
         if(at(TokenKind::unsupported_keyword)) {
-            diag(static_cast<DiagCode>(current_.diag_payload), current_);
+            diag(token_diag(current_), current_);
             return;
         }
         if(!expect(TokenKind::kw_program, "PROGRAM")) {
@@ -222,7 +230,7 @@ private:
         const bool constant_block = eat(TokenKind::kw_constant);
         while(!at(TokenKind::kw_end_var) && !at(TokenKind::end_of_input)) {
             if(at(TokenKind::unsupported_keyword)) {
-                diag(static_cast<DiagCode>(current_.diag_payload), current_);
+                diag(token_diag(current_), current_);
                 bump();
                 recover_statement();
                 continue;
@@ -285,7 +293,7 @@ private:
         case TokenKind::kw_dword: decl.type = Type::dword; break;
         case TokenKind::kw_lword: decl.type = Type::lword; break;
         case TokenKind::unsupported_keyword:
-            diag(static_cast<DiagCode>(current_.diag_payload), current_);
+            diag(token_diag(current_), current_);
             bump();
             return false;
         case TokenKind::identifier: {
@@ -420,7 +428,7 @@ private:
         }
         case TokenKind::identifier: return parse_assign_or_call();
         case TokenKind::unsupported_keyword:
-            diag(static_cast<DiagCode>(current_.diag_payload), current_);
+            diag(token_diag(current_), current_);
             bump();
             recover_statement();
             return -2;
@@ -956,7 +964,7 @@ private:
             return result_.ast.add_expr(static_cast<Expr &&>(expr));
         }
         case TokenKind::unsupported_keyword:
-            diag(static_cast<DiagCode>(current_.diag_payload), current_);
+            diag(token_diag(current_), current_);
             bump();
             return kNoExpr;
         default:

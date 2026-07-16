@@ -2373,7 +2373,7 @@ int check_flying_rejections_and_takeover()
 
 int check_flying_directional_edge_matrix()
 {
-    struct EdgeCase
+    struct EdgeCase // NOLINT(clang-analyzer-optin.performance.Padding)
     {
         axis::SwitchMode mode;
         double target;
