@@ -59,7 +59,7 @@ sink 门面，生产层无反向引用）。分层健康度见
 
 ## 质量门禁现状
 
-- 测试：70 项 CTest（新增 Part 1 C4 专项；含商用精度、状态转换矩阵、st L2a、P4-B1/P4-B2/P4-B3/C3 与 Feetech 专项/fuzz）全绿。P#2 聚合门实测 Bezier 稳速波动 0.0775%、圆弧约 7.6e-12%、cam 相位 0 拍、blending 公差利用率 100%。本批 Windows line coverage **89.35%（36456/40800）**，高于 50% 门槛；独立 WSL 全 `core/` line **92.9%（15941/17151）**、固定生产运动栈 branch **85.0%（7111/8368）** 的既有口径保持。P#7 五页指南与运维手册已接入文档站，`mkdocs build --strict` 通过。精度总账见[商用证据](doc/compliance/commercial-gate-evidence.md)，覆盖口径见[分支覆盖基线](doc/compliance/branch-coverage-baseline.md)
+- 测试：70 项 CTest（新增 Part 1 C4 专项；含商用精度、状态转换矩阵、st L2a、P4-B1/P4-B2/P4-B3/C3 与 Feetech 专项/fuzz）全绿。P#2 聚合门实测 Bezier 稳速波动 0.0775%、圆弧约 7.6e-12%、cam 相位 0 拍、blending 公差利用率 100%。本批 Windows line coverage **89.36%（36270/40588）**，高于 50% 门槛；零分配守卫和延迟基准由未插桩 CTest 强制，不进入动态插桩重跑。独立 WSL 全 `core/` line **92.9%（15941/17151）**、固定生产运动栈 branch **85.0%（7111/8368）** 的既有口径保持。P#7 五页指南与运维手册已接入文档站，`mkdocs build --strict` 通过。精度总账见[商用证据](doc/compliance/commercial-gate-evidence.md)，覆盖口径见[分支覆盖基线](doc/compliance/branch-coverage-baseline.md)
 - 回放：18 语料逐周期比对；声明变更零例外流程运行中
 - 分层：2026-07-12 include 图审计 **0 违规**（L0-L4 零 PLCopen 语义引用、无循环依赖、L4 不引 L3），见 [架构审查报告](doc/design/architecture-review-2026-07.md)
 - RT：静态扫描 27 文件（含 st vm/bind 与 Feetech adapter）+ 冻结窗口分配断言；DoD §5.3 的周期耗时对比通过（新核 = 旧线 9.3%）；分配 soak 以周期等效口径关闭（25.92 亿周期零分配，2026-07-11），墙钟 72h/抖动证据归 B7 真机报告

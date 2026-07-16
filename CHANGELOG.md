@@ -14,7 +14,7 @@ All notable changes to this project will be documented in this file.
   Busy/错误锁存及 ContinuousUpdate 上升沿许可均按批准矩阵实现。新增
   `plcopen_core_part1_c4_tests`，Windows/Linux GCC/Linux Clang 全部
   70/70、ARM64/QEMU 63/63、clang-tidy、RT scan、Part 1 机读矩阵、
-  89.35% Windows 行覆盖和 18 份回放零差异；modulo、真实 torque
+  89.36% Windows 行覆盖和 18 份回放零差异；modulo、真实 torque
   feedback、BufferMode 3/4/6、正式 B/E/V 声明与 PLCopen 认证仍明确排除。
 
 - Part 4 C3 / P4-B4（KB-078）补齐最后 11 个同名 C++ 门面，使名称面达到

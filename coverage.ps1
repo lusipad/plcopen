@@ -83,11 +83,12 @@ function Get-CMakeGenerator {
 # Coverage runs every deterministic core executable (family test suites,
 # oracle/fuzz, replay regression, demos); a single suite badly understates
 # the surface now that acceptance tests are split per family.
-# Wall-clock-gated benchmarks are excluded: under dynamic coverage
-# instrumentation a latency gate measures the instrumentation, not the
-# budget (2026-07-11 CI instance: cartesian_ik 158us vs 50us gate). Those
-# gates stay enforced by the uninstrumented ctest step.
+# Wall-clock and allocation-budget gates are excluded: under dynamic coverage
+# instrumentation they measure the collector rather than the production
+# budget (VS 18.7 also makes the frozen-window allocation guard return nonzero).
+# Those gates stay enforced by the uninstrumented ctest step.
 $ExcludedFromCoverage = @(
+    "plcopen_core_a2_alloc_guard",
     "plcopen_core_benchmark"
 )
 

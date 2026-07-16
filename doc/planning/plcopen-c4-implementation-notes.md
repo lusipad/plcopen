@@ -35,13 +35,16 @@ Plan: [plcopen-c4-implementation-plan.md](plcopen-c4-implementation-plan.md)
   后改和 override 共同造成假阴性。
 - moving SetPosition 对无位置目标的 velocity/torque/acceleration owner 不再
   校验陈旧 `active_target_`，只平移公开坐标并保持物理速度。
+- 远端 Windows runner 升级到 VS Coverage 18.7 后，动态插桩会令零分配
+  守卫进程返回非零；该守卫与延迟基准同属插桩会改变被测量对象的预算门，
+  已从 coverage 重跑排除，仍由前序未插桩 CTest 强制执行。
 
 ## Verification
 
 - Windows Debug：70/70 CTest；
 - Linux GCC/Clang Release：各 70/70 CTest；
 - ARM64 交叉编译 + QEMU：63/63（排除 benchmark/jitter）；
-- Windows line coverage：89.35%（36456/40800，阈值 50%）；
+- Windows line coverage：89.36%（36270/40588，阈值 50%）；
 - clang-tidy error-level gate：全量通过；
 - RT scan 27 files、Part 1/2 49 rows、Part 1 I/O 43 FB/236 B/302 E；
 - 18 份 replay fixtures / 2409 samples 与 replay regression 零差异；
