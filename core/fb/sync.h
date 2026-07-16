@@ -42,13 +42,24 @@ protected:
     bool rising_edge()
     {
         const bool rising = execute && !last_execute_;
+        const bool falling = !execute && last_execute_;
         last_execute_ = execute;
-        if(!execute) {
+        if(rising) {
             clear(outputs);
             in_sync = false;
             start_sync = false;
             tracked_command_id_ = 0;
             last_phase_ = axis::SyncPhase::idle;
+            continuous_update_enabled_ = continuous_update;
+            terminal_low_cycle_ = false;
+        } else if(!execute && terminal_low_cycle_) {
+            clear(outputs);
+            tracked_command_id_ = 0;
+            terminal_low_cycle_ = false;
+        } else if(falling &&
+                  (outputs.done || outputs.command_aborted || outputs.error)) {
+            clear(outputs);
+            tracked_command_id_ = 0;
         }
         return rising;
     }
@@ -80,7 +91,18 @@ protected:
     void observe_sync()
     {
         start_sync = false;
-        if(!execute || tracked_command_id_ == 0 || slave_ref == nullptr) {
+        if(tracked_command_id_ == 0 || slave_ref == nullptr) {
+            return;
+        }
+        const rt::ErrorCode command_error = slave_ref->command_error(tracked_command_id_);
+        if(command_error != rt::ErrorCode::ok) {
+            outputs.error = true;
+            outputs.error_id = command_error;
+            outputs.command_aborted = false;
+            outputs.busy = false;
+            outputs.active = false;
+            in_sync = false;
+            terminal_low_cycle_ = !execute;
             return;
         }
         if(slave_ref->sync_command_id() != tracked_command_id_) {
@@ -88,7 +110,7 @@ protected:
             outputs.busy = false;
             outputs.active = false;
             in_sync = false;
-            tracked_command_id_ = 0;
+            terminal_low_cycle_ = !execute;
             return;
         }
 
@@ -103,8 +125,15 @@ protected:
 
     std::uint32_t tracked_command_id_ = 0;
 
+    bool continuous_update_allowed() const
+    {
+        return continuous_update_enabled_;
+    }
+
 private:
     bool last_execute_ = false;
+    bool continuous_update_enabled_ = false;
+    bool terminal_low_cycle_ = false;
     axis::SyncPhase last_phase_ = axis::SyncPhase::idle;
 };
 
@@ -141,6 +170,7 @@ public:
     double ratio_denominator = 1.0;
     axis::MasterValueSource master_value_source = axis::MasterValueSource::command;
     axis::BufferMode buffer_mode = axis::BufferMode::aborting;
+    bool in_gear = false;
 
     void call()
     {
@@ -150,6 +180,7 @@ public:
             update_gear_ratio();
         }
         observe_sync();
+        in_gear = in_sync;
     }
 
 protected:
@@ -168,7 +199,8 @@ protected:
 
     void update_gear_ratio()
     {
-        if(!execute || !continuous_update || tracked_command_id_ == 0 || slave_ref == nullptr) {
+        if(!execute || !continuous_update_allowed() || tracked_command_id_ == 0 ||
+           slave_ref == nullptr) {
             return;
         }
         const rt::ErrorCode updated = slave_ref->gear_update(ratio_numerator, ratio_denominator);
@@ -214,6 +246,7 @@ public:
             update_gear_ratio();
         }
         observe_sync();
+        in_gear = in_sync;
     }
 };
 
@@ -329,7 +362,7 @@ public:
     {
         if(rising_edge()) {
             submit();
-        } else if(execute && continuous_update && tracked_command_id_ != 0 &&
+        } else if(execute && continuous_update_allowed() && tracked_command_id_ != 0 &&
                   slave_ref != nullptr) {
             const rt::ErrorCode updated =
                 slave_ref->cam_update(master_offset, master_scaling, slave_offset, slave_scaling);
@@ -386,7 +419,7 @@ public:
     {
         if(rising_edge()) {
             submit();
-        } else if(execute && continuous_update && tracked_command_id_ != 0 &&
+        } else if(execute && continuous_update_allowed() && tracked_command_id_ != 0 &&
                   slave_ref != nullptr) {
             const rt::ErrorCode updated = slave_ref->combine_update(combine_mode,
                                                                     ratio_numerator_m1,
@@ -444,11 +477,21 @@ protected:
     void step()
     {
         const bool rising = execute && !last_execute_;
+        const bool falling = !execute && last_execute_;
         last_execute_ = execute;
-        if(!execute) {
+        if(rising) {
             clear(outputs);
             started_ = false;
+            terminal_low_cycle_ = false;
+        } else if(!execute && terminal_low_cycle_) {
+            clear(outputs);
+            started_ = false;
+            terminal_low_cycle_ = false;
             return;
+        } else if(falling &&
+                  (outputs.done || outputs.command_aborted || outputs.error)) {
+            clear(outputs);
+            started_ = false;
         }
         if(rising) {
             start();
@@ -458,6 +501,7 @@ protected:
             outputs.done = true;
             outputs.busy = false;
             outputs.active = false;
+            terminal_low_cycle_ = !execute;
         }
     }
 
@@ -492,6 +536,7 @@ private:
     bool relative_ = false;
     bool last_execute_ = false;
     bool started_ = false;
+    bool terminal_low_cycle_ = false;
 };
 
 class FbPhasingAbsolute : public PhasingFb

@@ -20,7 +20,7 @@
 
 | 条款 | 应用/模式（自述） | 判定 | 证据/说明 |
 |------|------------------|------|----------|
-| 2.1 | 基础轴上电、回零、运动、停止与错误复位顺序 | ⚠️部分支持 | Power/Home/Move/Halt/Stop/Reset 均有 FB，但 Home 仅普通轨迹置 homed，且 Stop、Execute 生命周期存在 D-01/D-04（`core/fb/motion.h:113-321`; Part 1 矩阵） |
+| 2.1 | 基础轴上电、回零、运动、停止与错误复位顺序 | ⚠️部分支持 | Power/Home/Move/Halt/Stop/Reset 均有 FB，C4 已关闭 Stop 与 Execute 生命周期缺口；Home 仍仅普通轨迹置 homed |
 | 2.2 | 标签机以虚拟主轴、gear/cam 与触发协调送料和工艺轴 | ⚠️部分支持 | Gear/Cam/TouchProbe/DigitalCamSwitch 基元存在；无成品标签机 UDFB，CamTable 为直接 view 且 DCS 仅单轨（KB-016；Part 1 D-13） |
 | 2.3 | 仓储搬运用绝对/相对及协调直线运动组织多轴路径 | ✅支持 | 单轴 MoveAbsolute/Relative 与组 MoveLinearAbsolute/Relative 均实现并有验收（`core/fb/motion.h:191-242,713-774`; `core/test/r3_group_fb_tests.cpp`） |
 | 2.4 | Jog 由正/反方向电平持续运动，释放后受控停止并处理互斥输入 | ❌缺失 | 无 `FbJog`/`MC_Jog`；可用 MoveVelocity+Halt 组合但没有指南接口与方向互斥生命周期（`core/fb/motion.h:256-309`） |
@@ -32,7 +32,7 @@
 | 2.10 | 三段 cam 将启动、循环、停止曲线连续缓冲连接 | ⚠️部分支持 | Cam 基元与 buffered 同步入口存在，但无三段 cam UDFB，且表切换/全部 blending 模式未覆盖（`core/fb/sync.h:288-341`; Part 1 附录 A） |
 | 2.11 | 定长切割把送料、夹持、切割与转台按位置同步组织 | ⚠️部分支持 | 单轴/组路径与 cam 基元可支撑运动部分；无该应用 UDFB、工艺 IO 编排或示例验收 |
 | 2.12 | 注册纠偏以 TouchProbe 捕获标记并用 Phasing 调整同步相位 | ⚠️部分支持 | TouchProbe 与 PhasingAbsolute/Relative 已实现；探针为软件采样固定四通道，Phasing 缺显式 Master 与完整动力学（`core/fb/probe.h`; `core/fb/sync.h:402-494`; KB-022；Part 1 D-15） |
-| 2.13 | 旋盖过程组合速度、扭矩回读、扭矩控制和角度/时间判定 | ⚠️部分支持 | MoveVelocity/ReadActualTorque/TorqueControl 存在；TorqueControl 缺持续所有权与 InTorque，未提供旋盖 UDFB（`core/fb/motion.h:256-285,544-575`; Part 1 D-02/D-09） |
+| 2.13 | 旋盖过程组合速度、扭矩回读、扭矩控制和角度/时间判定 | ⚠️部分支持 | MoveVelocity/ReadActualTorque/TorqueControl 已具持续 owner/InTorque；仍未提供旋盖 UDFB，InTorque 也不代表真实驱动反馈（KB-079） |
 | 2.14 | FlyingShear 按主轴窗口接近、同步、切割、返回并循环 | ❌缺失 | 无 `FbFlyingShear`/`FbCatchUp`；GearInPos/Cam 可作为基元，但完整序列、窗口输出与复位状态机不存在（`core/fb/sync.h:167-192,288-341`） |
 | 2.15 | 用 SFC 协调四轴同步、变速与水平定位序列 | ❌缺失 | ST L0 支持 IF/CASE/FOR/WHILE/REPEAT，不支持 SFC，也没有该四轴示例（`doc/compliance/st-l0-semantics.md`） |
 | 2.16 | 定长类型专用 Shift Register 支持 put/get、移位与旋转 | ❌缺失 | 运动内核与 ST 基本 FB 中均无 ShiftRegister UDFB（`core/st/basic.h`） |
@@ -45,7 +45,7 @@
 |------|------------------|------|----------|
 | 3.1 | 卷绕/放卷按半径、转矩或张力反馈维持表面速度/张力 | ❌缺失 | 无 winder/unwinder、卷径估算或张力控制模块；只有通用速度/扭矩基元 |
 | 3.2 | Dancer Control 用传感器与 PID 动态修正主从 gear 比 | ⚠️部分支持 | GearIn 支持 ContinuousUpdate 更新比率，但无 PID、DANCER_REF 或 PackAL FB（`core/fb/sync.h:111-164`; `core/test/r3_sync_tests.cpp:846-930`） |
-| 3.3 | CSV 卷绕轴由卷径换算表面速度并处理半径边界、方向和停机 | ❌缺失 | 无 `PS_Wind_csv` 或卷径换算/边界状态机；MoveVelocity 还不接受规范有符号速度（Part 1 D-07） |
+| 3.3 | CSV 卷绕轴由卷径换算表面速度并处理半径边界、方向和停机 | ❌缺失 | MoveVelocity 已接受有符号速度；仍无 `PS_Wind_csv`、卷径换算和卷绕边界状态机 |
 
 ## 结论与缺口登记
 

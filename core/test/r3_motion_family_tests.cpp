@@ -233,12 +233,13 @@ int check_move_continuous()
         return fail("continuous absolute accepted");
     }
 
-    for(int i = 0; i < 2000 && !continuous.outputs.done; ++i) {
+    for(int i = 0; i < 2000 && !continuous.in_end_velocity; ++i) {
         axis.cycle();
         continuous.call();
     }
-    if(!continuous.outputs.done || !continuous.outputs.busy || !continuous.outputs.active) {
-        return fail("continuous absolute done with busy held");
+    if(!continuous.in_end_velocity || continuous.outputs.done ||
+       !continuous.outputs.busy || !continuous.outputs.active) {
+        return fail("continuous absolute reports InEndVelocity while busy");
     }
     if(axis.status() != axis::AxisStatus::continuous_motion) {
         return fail("continuous absolute stays in continuous motion");
@@ -286,11 +287,12 @@ int check_move_continuous_relative_and_update()
     if(!relative.outputs.command_accepted) {
         return fail("continuous relative accepted");
     }
-    for(int i = 0; i < 2000 && !relative.outputs.done; ++i) {
+    for(int i = 0; i < 2000 && !relative.in_end_velocity; ++i) {
         axis.cycle();
         relative.call();
     }
-    if(!relative.outputs.done || !near(axis.snapshot().command_position, 3.0, 0.2)) {
+    if(!relative.in_end_velocity || relative.outputs.done ||
+       !near(axis.snapshot().command_position, 3.0, 0.2)) {
         return fail("continuous relative reaches start plus distance");
     }
 
@@ -308,15 +310,16 @@ int check_move_continuous_relative_and_update()
         updated_axis.cycle();
         updated.call();
     }
-    if(updated.outputs.done) {
+    if(updated.in_end_velocity) {
         return fail("continuous update still moving before target change");
     }
     updated.position = 7.0;
-    for(int i = 0; i < 4000 && !updated.outputs.done; ++i) {
+    for(int i = 0; i < 4000 && !updated.in_end_velocity; ++i) {
         updated_axis.cycle();
         updated.call();
     }
-    if(!updated.outputs.done || !near(updated_axis.snapshot().command_position, 7.0, 0.3)) {
+    if(!updated.in_end_velocity || updated.outputs.done ||
+       !near(updated_axis.snapshot().command_position, 7.0, 0.3)) {
         return fail("continuous update retargets active command");
     }
 
@@ -327,7 +330,7 @@ int check_move_continuous_relative_and_update()
     invalid.end_velocity = 0.0;
     invalid.execute = true;
     invalid.call();
-    if(!invalid.outputs.error || invalid.outputs.error_id != rt::ErrorCode::invalid_argument) {
+    if(!invalid.outputs.error || invalid.outputs.error_id != rt::ErrorCode::unsupported) {
         return fail("continuous rejects zero end velocity");
     }
 
@@ -976,9 +979,9 @@ int check_motion_invalid_updates()
     invalid_velocity.call();
     if(!invalid_velocity.outputs.error ||
        invalid_velocity.outputs.error_id != rt::ErrorCode::invalid_argument ||
-       invalid_velocity.outputs.command_aborted || !invalid_velocity.outputs.busy ||
-       !invalid_velocity.outputs.active) {
-        return fail("velocity invalid update reports error only");
+       invalid_velocity.outputs.command_aborted || invalid_velocity.outputs.busy ||
+       invalid_velocity.outputs.active) {
+        return fail("velocity invalid update terminates owning command");
     }
 
     axis::AxisModel invalid_continuous_axis;
@@ -995,9 +998,9 @@ int check_motion_invalid_updates()
     invalid_continuous.call();
     if(!invalid_continuous.outputs.error ||
        invalid_continuous.outputs.error_id != rt::ErrorCode::invalid_argument ||
-       invalid_continuous.outputs.command_aborted || !invalid_continuous.outputs.busy ||
-       !invalid_continuous.outputs.active) {
-        return fail("continuous invalid update reports error only");
+       invalid_continuous.outputs.command_aborted || invalid_continuous.outputs.busy ||
+       invalid_continuous.outputs.active) {
+        return fail("continuous invalid update terminates owning command");
     }
 
     return 0;

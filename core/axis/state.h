@@ -60,6 +60,7 @@ enum class CommandKind
     halt,
     stop,
     torque,
+    acceleration_profile,
 };
 
 enum class Direction
@@ -132,7 +133,8 @@ struct AxisCommand
     double deceleration = 1.0;
     double jerk = 1.0;
     Direction direction = Direction::current;
-    // Only used by the move_continuous_* kinds; must be positive there.
+    // Only used by the move_continuous_* kinds; it is a signed terminal
+    // velocity. Zero remains explicitly unsupported.
     double end_velocity = 0.0;
     // Minimum command time in cycles (profile-table segments). A position
     // command holds at its target until the duration elapses; a velocity
@@ -140,6 +142,7 @@ struct AxisCommand
     std::int64_t min_duration_cycles = 0;
     BufferMode buffer_mode = BufferMode::aborting;
     bool continuous_update = false;
+    bool lock_stopping = false;
     std::uint32_t command_id = 0;
 };
 
@@ -360,6 +363,9 @@ public:
         if(snapshot_.status == AxisStatus::errorstop && enabled) {
             return rt::ErrorCode::invalid_argument;
         }
+        if(enabled && !power_feedback_) {
+            return rt::ErrorCode::precondition_failed;
+        }
         // MC_Power is level-controlled and called every scan cycle; only a
         // real power transition may abort motion and reset the state.
         if(enabled == snapshot_.powered) {
@@ -372,9 +378,23 @@ public:
         return rt::ErrorCode::ok;
     }
 
+    // External power-stage feedback is separate from MC_Power's normal
+    // level-controlled disable. Losing feedback while enabled is an axis
+    // fault, not a user abort.
+    rt::ErrorCode set_power_feedback(bool available)
+    {
+        power_feedback_ = available;
+        if(available || !snapshot_.powered) {
+            return rt::ErrorCode::ok;
+        }
+        snapshot_.powered = false;
+        return trigger_error(rt::ErrorCode::precondition_failed);
+    }
+
     rt::ErrorCode set_position(double position)
     {
-        if(!std::isfinite(position) || is_moving()) {
+        if(!std::isfinite(position) || is_moving() ||
+           !target_inside_limits(position, true)) {
             return rt::ErrorCode::invalid_argument;
         }
         snapshot_.command_position = position;
@@ -434,15 +454,24 @@ public:
     rt::ErrorCode shift_coordinates(double delta)
     {
         // KB-072: flying homing shifts the complete absolute coordinate domain.
-        if(!std::isfinite(delta) || !active_ ||
+        const bool has_position_profile =
+            active_ && active_command_.kind != CommandKind::move_velocity &&
+            active_command_.kind != CommandKind::torque &&
+            active_command_.kind != CommandKind::acceleration_profile;
+        if(!std::isfinite(delta) ||
            sync_kind_ != SyncKind::none || stream_active_ ||
            superimposed_active_ || group_blocks_standalone_motion()) {
             return rt::ErrorCode::precondition_failed;
         }
         if(!std::isfinite(snapshot_.command_position + delta) ||
            !std::isfinite(snapshot_.actual_position + delta) ||
-           !std::isfinite(active_target_ + delta) ||
-           !target_inside_limits(active_target_ + delta, true)) {
+           !target_inside_limits(snapshot_.command_position + delta, true) ||
+           !target_inside_limits(snapshot_.actual_position + delta, true)) {
+            return rt::ErrorCode::invalid_argument;
+        }
+        if(has_position_profile &&
+           (!std::isfinite(active_target_ + delta) ||
+            !target_inside_limits(active_target_ + delta, true))) {
             return rt::ErrorCode::invalid_argument;
         }
         for(std::size_t i = 0; i < queue_.size(); ++i) {
@@ -453,16 +482,21 @@ public:
                 return rt::ErrorCode::invalid_argument;
             }
         }
-        if(active_profile_.translate(delta) != rt::ErrorCode::ok) {
+        if(has_position_profile &&
+           active_profile_.translate(delta) != rt::ErrorCode::ok) {
             return rt::ErrorCode::invalid_argument;
         }
         snapshot_.command_position += delta;
         snapshot_.actual_position += delta;
-        active_target_ += delta;
-        active_last_sample_ += delta;
-        if(active_command_.kind == CommandKind::move_absolute ||
-           active_command_.kind == CommandKind::move_continuous_absolute) {
-            active_command_.value += delta;
+        if(active_) {
+            if(has_position_profile) {
+                active_target_ += delta;
+                active_last_sample_ += delta;
+            }
+            if(active_command_.kind == CommandKind::move_absolute ||
+               active_command_.kind == CommandKind::move_continuous_absolute) {
+                active_command_.value += delta;
+            }
         }
         for(std::size_t i = 0; i < queue_.size(); ++i) {
             if(queue_[i].kind == CommandKind::move_absolute ||
@@ -647,11 +681,9 @@ public:
             return rt::ErrorCode::ok;
         }
 
-        const double direction =
-            active_target_ >= snapshot_.command_position ? 1.0 : -1.0;
         const double end_velocity =
             is_continuous_kind(active_command_.kind)
-                ? direction * active_command_.end_velocity * override_
+                ? active_command_.end_velocity * override_
                 : 0.0;
         if(continuous_holding_) {
             continuous_hold_velocity_ = end_velocity;
@@ -679,8 +711,17 @@ public:
         return rt::ErrorCode::ok;
     }
 
-    rt::ErrorCode trigger_error()
+    rt::ErrorCode trigger_error(rt::ErrorCode code = rt::ErrorCode::precondition_failed)
     {
+        if(snapshot_.active_command_id != 0) {
+            record_command_error(snapshot_.active_command_id, code);
+        }
+        for(std::size_t i = 0; i < queue_.size(); ++i) {
+            record_command_error(queue_[i].command_id, code);
+        }
+        if(sync_id_ != 0) record_command_error(sync_id_, code);
+        if(superimposed_id_ != 0) record_command_error(superimposed_id_, code);
+        if(stream_id_ != 0) record_command_error(stream_id_, code);
         abort_motion();
         snapshot_.error = true;
         snapshot_.status = AxisStatus::errorstop;
@@ -703,6 +744,56 @@ public:
             return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
         }
         return submit_impl(command);
+    }
+
+    rt::Result<std::uint32_t> submit_acceleration_profile(
+        const ProfileSegment *segments,
+        std::size_t segment_count,
+        double acceleration_scale,
+        double acceleration_offset,
+        double time_scale)
+    {
+        if(group_blocks_standalone_motion() || !snapshot_.powered ||
+           snapshot_.status == AxisStatus::errorstop || segments == nullptr ||
+           segment_count == 0 || segment_count > QueueCapacity ||
+           !std::isfinite(acceleration_scale) || !std::isfinite(acceleration_offset) ||
+           !std::isfinite(time_scale) || time_scale <= 0.0) {
+            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
+        }
+        for(std::size_t i = 0; i < segment_count; ++i) {
+            const double acceleration =
+                segments[i].target * acceleration_scale + acceleration_offset;
+            const double duration =
+                static_cast<double>(segments[i].duration_cycles) * time_scale;
+            if(!std::isfinite(acceleration) || segments[i].relative ||
+               segments[i].duration_cycles <= 0 || !std::isfinite(duration) ||
+               std::round(duration) < 1.0 ||
+               std::round(duration) >= std::ldexp(1.0, 63)) {
+                return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
+            }
+        }
+
+        abort_motion();
+        acceleration_segment_count_ = segment_count;
+        acceleration_segment_index_ = 0;
+        acceleration_segment_tick_ = 0;
+        acceleration_profile_completed_ = false;
+        for(std::size_t i = 0; i < segment_count; ++i) {
+            AxisCommand storage{};
+            storage.kind = CommandKind::acceleration_profile;
+            storage.value = segments[i].target * acceleration_scale + acceleration_offset;
+            storage.min_duration_cycles = static_cast<std::int64_t>(
+                std::llround(static_cast<double>(segments[i].duration_cycles) * time_scale));
+            queue_.push_back(storage);
+        }
+        active_ = true;
+        active_command_ = {};
+        active_command_.kind = CommandKind::acceleration_profile;
+        active_command_.command_id = next_command_id_++;
+        snapshot_.active_command_id = active_command_.command_id;
+        snapshot_.active_command_reached_target = false;
+        snapshot_.status = AxisStatus::continuous_motion;
+        return rt::Result<std::uint32_t>::success(active_command_.command_id);
     }
 
     // Validate an aborting position command followed by buffered position
@@ -828,6 +919,9 @@ private:
            command.deceleration <= 0.0 || command.jerk <= 0.0) {
             return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
         }
+        if(stop_lock_id_ != 0 && command.kind != CommandKind::stop) {
+            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::precondition_failed);
+        }
         if(command.kind == CommandKind::move_absolute &&
            !is_valid_direction(command.direction)) {
             return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
@@ -840,8 +934,8 @@ private:
            command.buffer_mode != BufferMode::aborting) {
             return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
         }
-        if(is_continuous_kind(command.kind) && command.end_velocity <= 0.0) {
-            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
+        if(is_continuous_kind(command.kind) && command.end_velocity == 0.0) {
+            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported);
         }
 
         if(command.command_id == 0) {
@@ -849,13 +943,24 @@ private:
         }
 
         if(command.kind == CommandKind::torque) {
+            abort_motion();
+            active_ = true;
+            active_command_ = command;
+            torque_command_id_ = command.command_id;
+            snapshot_.active_command_id = command.command_id;
             snapshot_.actual_torque = command.value;
+            snapshot_.status = AxisStatus::continuous_motion;
             return rt::Result<std::uint32_t>::success(command.command_id);
+        }
+        if(active_ && active_command_.kind == CommandKind::acceleration_profile &&
+           command.buffer_mode != BufferMode::aborting) {
+            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported);
         }
 
         // The additive target resolves against the endpoint that was committed
         // before an aborting takeover discards it.
         const double takeover_endpoint = queued_endpoint();
+        const AxisStatus takeover_status = snapshot_.status;
         // Aborting takeovers keep kinematic continuity: abort_motion() zeroes
         // the command velocity/acceleration, but the new command must plan
         // from the state the axis was actually in (KB-026).
@@ -868,7 +973,15 @@ private:
             snapshot_.actual_velocity = takeover_velocity;
             snapshot_.actual_acceleration = takeover_acceleration;
         }
-        command = normalize(command, takeover_endpoint);
+        if(command.buffer_mode == BufferMode::aborting) {
+            const double relative_base = snapshot_.command_position;
+            const double additive_base = takeover_status == AxisStatus::discrete_motion
+                                             ? takeover_endpoint
+                                             : snapshot_.command_position;
+            command = normalize(command, command.kind == CommandKind::move_additive
+                                             ? additive_base
+                                             : relative_base);
+        }
         if((command.kind == CommandKind::move_absolute ||
             command.kind == CommandKind::move_continuous_absolute ||
             command.kind == CommandKind::home) &&
@@ -1083,13 +1196,21 @@ public:
         if(sync_kind_ == SyncKind::none) {
             return rt::ErrorCode::invalid_argument;
         }
+        const double velocity = snapshot_.command_velocity;
         reset_sync();
         snapshot_.active_command_id = 0;
-        if(snapshot_.status == AxisStatus::synchronized_motion) {
+        if(velocity != 0.0 && snapshot_.powered) {
+            AxisCommand hold{};
+            hold.kind = CommandKind::move_velocity;
+            hold.value = velocity < 0.0 ? -1.0 : 1.0;
+            hold.velocity = std::fabs(velocity);
+            hold.command_id = next_command_id_++;
+            start(hold);
+        } else {
             snapshot_.status = snapshot_.powered ? AxisStatus::standstill : AxisStatus::disabled;
+            snapshot_.command_velocity = 0.0;
+            snapshot_.actual_velocity = 0.0;
         }
-        snapshot_.command_velocity = 0.0;
-        snapshot_.actual_velocity = 0.0;
         return rt::ErrorCode::ok;
     }
 
@@ -1529,6 +1650,96 @@ public:
         return false;
     }
 
+    rt::ErrorCode command_error(std::uint32_t command_id) const
+    {
+        if(command_id == 0) {
+            return rt::ErrorCode::ok;
+        }
+        for(std::size_t offset = 0; offset < command_error_count_; ++offset) {
+            const std::size_t index =
+                (command_error_cursor_ + CommandErrorCapacity - 1 - offset) %
+                CommandErrorCapacity;
+            if(command_errors_[index].command_id == command_id) {
+                return command_errors_[index].error;
+            }
+        }
+        return rt::ErrorCode::ok;
+    }
+
+    // A function-block-local runtime failure terminates only the owning
+    // command. The first buffered successor takes over from the live state.
+    rt::ErrorCode fail_command(std::uint32_t command_id, rt::ErrorCode code)
+    {
+        if(command_id == 0 || code == rt::ErrorCode::ok || !active_ ||
+           snapshot_.active_command_id != command_id) {
+            return rt::ErrorCode::invalid_argument;
+        }
+        record_command_error(command_id, code);
+        active_ = false;
+        continuous_holding_ = false;
+        override_braking_ = false;
+        override_paused_ = false;
+        blend_armed_ = false;
+        snapshot_.active_command_id = 0;
+        snapshot_.active_command_reached_target = false;
+        snapshot_.command_acceleration = 0.0;
+        snapshot_.actual_acceleration = 0.0;
+        snapshot_.status = snapshot_.powered ? AxisStatus::standstill : AxisStatus::disabled;
+        start_next_queued();
+        if(!active_) {
+            base_velocity_ = 0.0;
+            snapshot_.command_velocity = 0.0;
+            snapshot_.actual_velocity = 0.0;
+        }
+        return rt::ErrorCode::ok;
+    }
+
+    std::uint32_t torque_command_id() const
+    {
+        return torque_command_id_;
+    }
+
+    bool command_in_velocity(std::uint32_t command_id) const
+    {
+        return command_id != 0 && active_ &&
+               snapshot_.active_command_id == command_id &&
+               active_command_.kind == CommandKind::move_velocity &&
+               std::fabs(snapshot_.command_velocity -
+                         signed_velocity(active_command_)) <= 1e-12;
+    }
+
+    bool command_in_end_velocity(std::uint32_t command_id) const
+    {
+        return command_id != 0 && active_ &&
+               snapshot_.active_command_id == command_id &&
+               is_continuous_kind(active_command_.kind) &&
+               snapshot_.active_command_reached_target &&
+               std::fabs(snapshot_.command_velocity -
+                         continuous_hold_velocity_) <= 1e-12;
+    }
+
+    double command_torque() const
+    {
+        return snapshot_.actual_torque;
+    }
+
+    rt::ErrorCode release_stop(std::uint32_t command_id)
+    {
+        if(command_id == 0 || stop_lock_id_ != command_id) {
+            return rt::ErrorCode::invalid_argument;
+        }
+        if(active_ && snapshot_.active_command_id == command_id) {
+            stop_release_requested_ = true;
+            return rt::ErrorCode::ok;
+        }
+        stop_lock_id_ = 0;
+        stop_release_requested_ = false;
+        if(snapshot_.status == AxisStatus::stopping) {
+            snapshot_.status = snapshot_.powered ? AxisStatus::standstill : AxisStatus::disabled;
+        }
+        return rt::ErrorCode::ok;
+    }
+
     // ContinuousUpdate for the active velocity command (MC_MoveVelocity,
     // KB-009): the new signed direction and magnitude apply from the next
     // cycle; the override keeps scaling per cycle.
@@ -1563,8 +1774,7 @@ public:
 
         double end_velocity = 0.0;
         if(is_continuous_kind(active_command_.kind)) {
-            const double direction = target >= snapshot_.command_position ? 1.0 : -1.0;
-            end_velocity = direction * active_command_.end_velocity * override_;
+            end_velocity = active_command_.end_velocity * override_;
         }
         otg::Limits1D limits{active_command_.velocity * override_,
                              active_command_.acceleration,
@@ -1654,6 +1864,13 @@ private:
                                                    : snapshot.command_position;
     }
 
+    double master_velocity(const AxisModel &master, MasterValueSource source) const
+    {
+        const AxisSnapshot &snapshot = master.snapshot();
+        return source == MasterValueSource::actual ? snapshot.actual_velocity
+                                                   : snapshot.command_velocity;
+    }
+
     double sync_master_sync_position() const
     {
         return sync_kind_ == SyncKind::gear ? sync_gear_.master_sync_position
@@ -1729,6 +1946,25 @@ private:
             (sync_combine_.ratio_numerator_m2 / sync_combine_.ratio_denominator_m2);
         return rt::Result<double>::success(
             sync_combine_.mode == CombineMode::sub_axes ? master1 - master2 : master1 + master2);
+    }
+
+    double sync_engaged_velocity(double next_position) const
+    {
+        if(sync_kind_ == SyncKind::gear) {
+            return master_velocity(*sync_gear_.master, sync_gear_.source) *
+                   (sync_gear_.ratio_numerator / sync_gear_.ratio_denominator);
+        }
+        if(sync_kind_ == SyncKind::combine) {
+            const double master1 =
+                master_velocity(*sync_combine_.master1, sync_combine_.source_m1) *
+                (sync_combine_.ratio_numerator_m1 / sync_combine_.ratio_denominator_m1);
+            const double master2 =
+                master_velocity(*sync_combine_.master2, sync_combine_.source_m2) *
+                (sync_combine_.ratio_numerator_m2 / sync_combine_.ratio_denominator_m2);
+            return sync_combine_.mode == CombineMode::sub_axes ? master1 - master2
+                                                               : master1 + master2;
+        }
+        return next_position - snapshot_.command_position;
     }
 
     void enter_engaged()
@@ -1821,7 +2057,9 @@ private:
                 return true;
             }
             snapshot_.active_command_id = sync_id_;
-            set_synchronized_position(position.value());
+            const double velocity = sync_engaged_velocity(position.value());
+            set_synchronized_state(position.value(), velocity,
+                                   velocity - snapshot_.command_velocity);
             return true;
         }
         return true;
@@ -1873,14 +2111,12 @@ private:
 
     AxisCommand normalize(AxisCommand command, double takeover_endpoint) const
     {
-        if(command.kind == CommandKind::move_relative) {
-            command.value = queued_endpoint() + command.value;
-            command.kind = CommandKind::move_absolute;
-        } else if(command.kind == CommandKind::move_additive) {
+        if(command.kind == CommandKind::move_relative ||
+           command.kind == CommandKind::move_additive) {
             command.value = takeover_endpoint + command.value;
             command.kind = CommandKind::move_absolute;
         } else if(command.kind == CommandKind::move_continuous_relative) {
-            command.value = queued_endpoint() + command.value;
+            command.value = takeover_endpoint + command.value;
             command.kind = CommandKind::move_continuous_absolute;
         }
         return command;
@@ -1908,6 +2144,11 @@ private:
 
     rt::ErrorCode start(AxisCommand command)
     {
+        if(command.kind == CommandKind::move_relative ||
+           command.kind == CommandKind::move_additive ||
+           command.kind == CommandKind::move_continuous_relative) {
+            command = normalize(command, snapshot_.command_position);
+        }
         active_command_ = command;
         active_tick_ = 0;
         continuous_holding_ = false;
@@ -1922,6 +2163,10 @@ private:
         }
 
         if(command.kind == CommandKind::halt || command.kind == CommandKind::stop) {
+            if(command.kind == CommandKind::stop && command.lock_stopping) {
+                stop_lock_id_ = command.command_id;
+                stop_release_requested_ = false;
+            }
             // Controlled stop (MC_Halt/MC_Stop carry over the v0.x contract):
             // decelerate from the current state with the commanded
             // deceleration/jerk. The braking target is exempt from the
@@ -1968,8 +2213,7 @@ private:
 
         double target_velocity = 0.0;
         if(is_continuous_kind(command.kind)) {
-            const double direction = target >= snapshot_.command_position ? 1.0 : -1.0;
-            target_velocity = direction * command.end_velocity * override_;
+            target_velocity = command.end_velocity * override_;
         }
 
         active_target_ = target;
@@ -2004,8 +2248,45 @@ private:
             return;
         }
 
+        if(active_command_.kind == CommandKind::acceleration_profile) {
+            if(!acceleration_profile_completed_) {
+                const AxisCommand &segment = queue_[acceleration_segment_index_];
+                const double acceleration = segment.value;
+                snapshot_.command_acceleration = acceleration;
+                snapshot_.actual_acceleration = acceleration;
+                snapshot_.command_velocity += acceleration;
+                snapshot_.actual_velocity = snapshot_.command_velocity;
+                snapshot_.command_position += snapshot_.command_velocity;
+                snapshot_.actual_position = snapshot_.command_position;
+                base_velocity_ = snapshot_.command_velocity;
+                ++acceleration_segment_tick_;
+                if(acceleration_segment_tick_ >= segment.min_duration_cycles) {
+                    acceleration_segment_tick_ = 0;
+                    ++acceleration_segment_index_;
+                    if(acceleration_segment_index_ >= acceleration_segment_count_) {
+                        acceleration_profile_completed_ = true;
+                        snapshot_.active_command_reached_target = true;
+                        snapshot_.command_acceleration = 0.0;
+                        snapshot_.actual_acceleration = 0.0;
+                    }
+                }
+            } else {
+                snapshot_.command_position += snapshot_.command_velocity;
+                snapshot_.actual_position = snapshot_.command_position;
+            }
+            return;
+        }
+
         if(!override_braking_ &&
-           (active_command_.kind == CommandKind::move_velocity || continuous_holding_)) {
+           (active_command_.kind == CommandKind::move_velocity ||
+            active_command_.kind == CommandKind::torque || continuous_holding_)) {
+            if(active_command_.kind == CommandKind::torque) {
+                snapshot_.command_velocity = 0.0;
+                snapshot_.actual_velocity = 0.0;
+                snapshot_.command_acceleration = 0.0;
+                snapshot_.actual_acceleration = 0.0;
+                return;
+            }
             const double velocity = continuous_holding_ ? continuous_hold_velocity_
                                                         : signed_velocity(active_command_);
             base_velocity_ = velocity;
@@ -2130,6 +2411,10 @@ private:
 
     void finish_active()
     {
+        const bool locked_stop = active_command_.kind == CommandKind::stop &&
+                                 active_command_.lock_stopping &&
+                                 stop_lock_id_ == snapshot_.active_command_id &&
+                                 !stop_release_requested_;
         active_ = false;
         continuous_holding_ = false;
         base_velocity_ = 0.0;
@@ -2140,7 +2425,18 @@ private:
         snapshot_.actual_velocity = 0.0;
         snapshot_.command_acceleration = 0.0;
         snapshot_.actual_acceleration = 0.0;
-        snapshot_.status = snapshot_.powered ? AxisStatus::standstill : AxisStatus::disabled;
+        snapshot_.status = locked_stop
+                               ? AxisStatus::stopping
+                               : (snapshot_.powered ? AxisStatus::standstill
+                                                    : AxisStatus::disabled);
+        if(active_command_.kind == CommandKind::stop &&
+           active_command_.lock_stopping && !locked_stop) {
+            stop_lock_id_ = 0;
+            stop_release_requested_ = false;
+        }
+        if(locked_stop) {
+            return;
+        }
         start_next_queued();
     }
 
@@ -2173,6 +2469,10 @@ private:
         active_ = false;
         active_tick_ = 0;
         continuous_holding_ = false;
+        acceleration_profile_completed_ = false;
+        acceleration_segment_count_ = 0;
+        acceleration_segment_index_ = 0;
+        acceleration_segment_tick_ = 0;
         override_braking_ = false;
         override_paused_ = false;
         base_velocity_ = 0.0;
@@ -2184,6 +2484,10 @@ private:
         }
         stream_active_ = false;
         stream_id_ = 0;
+        torque_command_id_ = 0;
+        stop_lock_id_ = 0;
+        stop_release_requested_ = false;
+        snapshot_.actual_torque = 0.0;
         if(snapshot_.status == AxisStatus::synchronized_motion) {
             snapshot_.status = snapshot_.powered ? AxisStatus::standstill : AxisStatus::disabled;
         }
@@ -2237,6 +2541,28 @@ private:
         std::uint32_t command_id = 0;
     };
 
+    struct CommandError
+    {
+        std::uint32_t command_id = 0;
+        rt::ErrorCode error = rt::ErrorCode::ok;
+    };
+
+    // Active + full buffered queue + the independent sync/superimposed/stream
+    // owners must all retain axis-error attribution in the same cycle.
+    static constexpr std::size_t CommandErrorCapacity = QueueCapacity + 4;
+
+    void record_command_error(std::uint32_t command_id, rt::ErrorCode code)
+    {
+        if(command_id == 0 || code == rt::ErrorCode::ok) {
+            return;
+        }
+        command_errors_[command_error_cursor_] = {command_id, code};
+        command_error_cursor_ = (command_error_cursor_ + 1) % CommandErrorCapacity;
+        if(command_error_count_ < CommandErrorCapacity) {
+            ++command_error_count_;
+        }
+    }
+
     void *group_owner_ = nullptr;
     const GroupStatus *group_status_ = nullptr;
     double active_target_ = 0.0;
@@ -2252,6 +2578,12 @@ private:
     double phase_rate_ = 0.0;
     double approach_window_begin_ = 0.0;
     double approach_start_slave_ = 0.0;
+    std::size_t command_error_cursor_ = 0;
+    std::size_t command_error_count_ = 0;
+    std::size_t acceleration_segment_count_ = 0;
+    std::size_t acceleration_segment_index_ = 0;
+    std::int64_t acceleration_segment_tick_ = 0;
+    std::size_t passive_homing_input_ = 0;
     MotionLimits limits_{};
     GearInCommand sync_gear_{};
     CombineAxesCommand sync_combine_{};
@@ -2273,9 +2605,11 @@ private:
     SyncPhase sync_entry_phase_ = SyncPhase::idle;
     std::uint32_t sync_id_ = 0;
     std::uint32_t stream_id_ = 0;
+    std::uint32_t torque_command_id_ = 0;
+    std::uint32_t stop_lock_id_ = 0;
     std::uint32_t passive_homing_id_ = 0;
     std::uint32_t passive_homing_aborted_id_ = 0;
-    std::size_t passive_homing_input_ = 0;
+    std::array<CommandError, CommandErrorCapacity> command_errors_{};
     bool active_ = false;
     bool continuous_holding_ = false;
     bool override_braking_ = false;
@@ -2286,6 +2620,9 @@ private:
     bool phasing_active_ = false;
     bool stream_active_ = false;
     bool homing_limits_suspended_ = false;
+    bool stop_release_requested_ = false;
+    bool power_feedback_ = true;
+    bool acceleration_profile_completed_ = false;
     std::array<bool, DigitalInputCount> digital_input_{};
     std::array<bool, DigitalOutputCount> digital_output_{};
     AxisInfoInputs axis_info_{};

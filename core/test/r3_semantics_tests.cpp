@@ -505,8 +505,8 @@ int check_motion_facades()
     }
     torque.execute = false;
     torque.call();
-    if(torque.in_torque || !near(axis.snapshot().actual_torque, 0.0, 1e-12)) {
-        return fail("fb torque clears");
+    if(!torque.in_torque || !near(axis.snapshot().actual_torque, 3.0, 1e-12)) {
+        return fail("fb torque owner persists");
     }
 
     axis::AxisModel x;

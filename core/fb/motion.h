@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cmath>
 #include <cstdint>
 
 #include "axis/group.h"
@@ -34,11 +35,16 @@ public:
     MotionOutputs outputs{};
 
 protected:
-    bool rising_edge()
+    bool rising_edge(bool retain_active_on_falling = false)
     {
         const bool rising = execute && !last_execute_;
+        const bool falling = !execute && last_execute_;
         last_execute_ = execute;
-        if(!execute) {
+        if(rising || (!execute && terminal_low_cycle_)) {
+            clear(outputs);
+            tracked_command_id_ = 0;
+            terminal_low_cycle_ = false;
+        } else if(falling && terminal() && !retain_active_on_falling) {
             clear(outputs);
             tracked_command_id_ = 0;
         }
@@ -69,7 +75,7 @@ protected:
 
     void observe_axis()
     {
-        if(!execute || tracked_command_id_ == 0 || axis_ref == nullptr) {
+        if(tracked_command_id_ == 0 || axis_ref == nullptr) {
             return;
         }
         // Done holds while Execute stays high; a later takeover command must
@@ -78,6 +84,17 @@ protected:
             return;
         }
         const axis::AxisSnapshot &snapshot = axis_ref->snapshot();
+        const rt::ErrorCode command_error = axis_ref->command_error(tracked_command_id_);
+        if(command_error != rt::ErrorCode::ok) {
+            outputs.error = true;
+            outputs.error_id = command_error;
+            outputs.command_aborted = false;
+            outputs.done = false;
+            outputs.busy = false;
+            outputs.active = false;
+            terminal_observed();
+            return;
+        }
         if(snapshot.active_command_id == tracked_command_id_) {
             outputs.busy = true;
             outputs.active = true;
@@ -90,6 +107,7 @@ protected:
             outputs.done = true;
             outputs.busy = false;
             outputs.active = false;
+            terminal_observed();
             return;
         }
         // A command waiting in the buffered queue is busy, not aborted.
@@ -101,13 +119,31 @@ protected:
         outputs.command_aborted = true;
         outputs.busy = false;
         outputs.active = false;
-        tracked_command_id_ = 0;
+        terminal_observed();
     }
 
     std::uint32_t tracked_command_id_ = 0;
 
+    void fail_runtime(rt::ErrorCode code)
+    {
+        if(axis_ref != nullptr && tracked_command_id_ != 0) {
+            axis_ref->fail_command(tracked_command_id_, code);
+        }
+    }
+
+    void terminal_observed()
+    {
+        terminal_low_cycle_ = !execute;
+    }
+
 private:
+    bool terminal() const
+    {
+        return outputs.done || outputs.command_aborted || outputs.error;
+    }
+
     bool last_execute_ = false;
+    bool terminal_low_cycle_ = false;
 };
 
 class FbPower
@@ -228,6 +264,7 @@ protected:
         if(kind == axis::CommandKind::move_absolute) {
             command.direction = direction;
         }
+        command.lock_stopping = kind == axis::CommandKind::stop;
         command.buffer_mode = buffer_mode;
         accept(axis_ref->submit(command));
     }
@@ -265,32 +302,90 @@ class FbMoveVelocity : public FbMoveAbsolute
 {
 public:
     double direction = 1.0;
+    axis::Direction direction_mode = axis::Direction::current;
     bool continuous_update = false;
+    bool in_velocity = false;
 
     void call()
     {
         if(rising_edge()) {
-            last_velocity_ = velocity;
-            last_direction_ = direction;
-            submit(axis::CommandKind::move_velocity, direction);
-        } else if(execute && continuous_update && tracked_command_id_ != 0 &&
+            continuous_update_enabled_ = continuous_update;
+            submit_velocity();
+        } else if(execute && continuous_update_enabled_ && tracked_command_id_ != 0 &&
                   axis_ref != nullptr &&
                   (velocity != last_velocity_ || direction != last_direction_)) {
-            last_velocity_ = velocity;
-            last_direction_ = direction;
+            const double signed_direction = resolved_direction();
             const rt::ErrorCode updated =
-                axis_ref->update_active_velocity(tracked_command_id_, direction, velocity);
+                signed_direction == 0.0
+                    ? rt::ErrorCode::invalid_argument
+                    : axis_ref->update_active_velocity(tracked_command_id_, signed_direction,
+                                                       std::fabs(velocity));
             if(updated != rt::ErrorCode::ok) {
-                outputs.error = true;
-                outputs.error_id = updated;
+                fail_runtime(updated);
+            } else {
+                last_velocity_ = velocity;
+                last_direction_ = direction;
             }
         }
         observe_axis();
+        update_in_velocity();
     }
 
 private:
+    double resolved_direction() const
+    {
+        if(!std::isfinite(velocity) || velocity == 0.0 ||
+           !std::isfinite(direction) || direction == 0.0) {
+            return 0.0;
+        }
+        double mode = direction;
+        if(direction_mode == axis::Direction::positive) {
+            mode = 1.0;
+        } else if(direction_mode == axis::Direction::negative) {
+            mode = -1.0;
+        } else if(direction_mode == axis::Direction::shortest_way) {
+            return 0.0;
+        }
+        return (mode < 0.0 ? -1.0 : 1.0) * (velocity < 0.0 ? -1.0 : 1.0);
+    }
+
+    void submit_velocity()
+    {
+        if(direction_mode == axis::Direction::shortest_way) {
+            accept(rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported));
+            return;
+        }
+        const double signed_direction = resolved_direction();
+        if(axis_ref == nullptr || signed_direction == 0.0) {
+            accept(rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument));
+            return;
+        }
+        axis::AxisCommand command{};
+        command.kind = axis::CommandKind::move_velocity;
+        command.value = signed_direction;
+        command.velocity = std::fabs(velocity);
+        command.acceleration = acceleration;
+        command.deceleration = deceleration;
+        command.jerk = jerk;
+        command.buffer_mode = buffer_mode;
+        const rt::Result<std::uint32_t> accepted = axis_ref->submit(command);
+        if(accepted) {
+            last_velocity_ = velocity;
+            last_direction_ = direction;
+        }
+        accept(accepted);
+    }
+
+    void update_in_velocity()
+    {
+        in_velocity = false;
+        in_velocity = axis_ref != nullptr &&
+                      axis_ref->command_in_velocity(tracked_command_id_);
+    }
+
     double last_velocity_ = 0.0;
     double last_direction_ = 0.0;
+    bool continuous_update_enabled_ = false;
 };
 
 class FbHome : public FbMoveAbsolute
@@ -322,16 +417,25 @@ class FbStop : public FbMoveAbsolute
 public:
     void call()
     {
+        if(!execute && last_stop_execute_ && axis_ref != nullptr && stop_command_id_ != 0) {
+            axis_ref->release_stop(stop_command_id_);
+        }
+        last_stop_execute_ = execute;
         if(rising_edge()) {
             submit(axis::CommandKind::stop, 0.0);
+            stop_command_id_ = outputs.command_id;
         }
         observe_axis();
     }
+
+private:
+    std::uint32_t stop_command_id_ = 0;
+    bool last_stop_execute_ = false;
 };
 
-// MC_MoveContinuous*: done means "target reached, holding end velocity" — an
-// ongoing state rather than a completed command, so it is not latched and a
-// takeover reports CommandAborted even after done.
+// MC_MoveContinuous*: InEndVelocity is the persistent target state. The
+// command remains Busy/Active until takeover and never aliases that state to
+// the mutually exclusive Done output.
 class FbMoveContinuousAbsolute : public AxisExecuteFb
 {
 public:
@@ -342,16 +446,19 @@ public:
     double deceleration = 1.0;
     double jerk = 1.0;
     bool continuous_update = false;
+    bool in_end_velocity = false;
     axis::BufferMode buffer_mode = axis::BufferMode::aborting;
 
     void call()
     {
-        if(rising_edge()) {
+        if(rising_edge(true)) {
+            continuous_update_enabled_ = continuous_update;
             submit_continuous(axis::CommandKind::move_continuous_absolute, position);
         } else {
             update_target(position, position);
         }
         observe_continuous();
+        update_in_end_velocity();
     }
 
 protected:
@@ -377,7 +484,8 @@ protected:
 
     void update_target(double input_value, double absolute_value)
     {
-        if(!execute || !continuous_update || tracked_command_id_ == 0 || axis_ref == nullptr ||
+        if(!execute || !continuous_update_enabled_ || tracked_command_id_ == 0 ||
+           axis_ref == nullptr ||
            input_value == last_target_) {
             return;
         }
@@ -385,32 +493,50 @@ protected:
         const rt::ErrorCode updated =
             axis_ref->update_active_target(tracked_command_id_, absolute_value);
         if(updated != rt::ErrorCode::ok) {
-            outputs.error = true;
-            outputs.error_id = updated;
+            fail_runtime(updated);
         }
     }
 
     void observe_continuous()
     {
-        if(!execute || tracked_command_id_ == 0 || axis_ref == nullptr) {
+        if(tracked_command_id_ == 0 || axis_ref == nullptr) {
             return;
         }
         const axis::AxisSnapshot &snapshot = axis_ref->snapshot();
+        const rt::ErrorCode command_error = axis_ref->command_error(tracked_command_id_);
+        if(command_error != rt::ErrorCode::ok) {
+            outputs.error = true;
+            outputs.error_id = command_error;
+            outputs.command_aborted = false;
+            outputs.done = false;
+            outputs.busy = false;
+            outputs.active = false;
+            terminal_observed();
+            return;
+        }
         if(snapshot.active_command_id != tracked_command_id_) {
             outputs.command_aborted = true;
             outputs.done = false;
             outputs.busy = false;
             outputs.active = false;
-            tracked_command_id_ = 0;
+            terminal_observed();
             return;
         }
         outputs.busy = true;
         outputs.active = true;
-        outputs.done = snapshot.active_command_reached_target;
+        outputs.done = false;
+    }
+
+    void update_in_end_velocity()
+    {
+        in_end_velocity = false;
+        in_end_velocity = axis_ref != nullptr &&
+                          axis_ref->command_in_end_velocity(tracked_command_id_);
     }
 
     double start_position_ = 0.0;
     double last_target_ = 0.0;
+    bool continuous_update_enabled_ = false;
 };
 
 class FbMoveContinuousRelative : public FbMoveContinuousAbsolute
@@ -420,13 +546,15 @@ public:
 
     void call()
     {
-        if(rising_edge()) {
+        if(rising_edge(true)) {
+            continuous_update_enabled_ = continuous_update;
             submit_continuous(axis::CommandKind::move_continuous_relative, distance);
         } else {
             // ContinuousUpdate distances re-resolve from the original command start.
             update_target(distance, start_position_ + distance);
         }
         observe_continuous();
+        update_in_end_velocity();
     }
 };
 
@@ -446,11 +574,21 @@ public:
     void call()
     {
         const bool rising = execute && !last_execute_;
+        const bool falling = !execute && last_execute_;
         last_execute_ = execute;
-        if(!execute) {
+        if(rising) {
             clear(outputs);
             tracked_command_id_ = 0;
+            terminal_low_cycle_ = false;
+        } else if(!execute && terminal_low_cycle_) {
+            clear(outputs);
+            tracked_command_id_ = 0;
+            terminal_low_cycle_ = false;
             return;
+        } else if(falling &&
+                  (outputs.done || outputs.command_aborted || outputs.error)) {
+            clear(outputs);
+            tracked_command_id_ = 0;
         }
         if(rising) {
             submit();
@@ -498,16 +636,18 @@ private:
             outputs.done = true;
             outputs.busy = false;
             outputs.active = false;
+            terminal_low_cycle_ = !execute;
             return;
         }
         outputs.command_aborted = true;
         outputs.busy = false;
         outputs.active = false;
-        tracked_command_id_ = 0;
+        terminal_low_cycle_ = !execute;
     }
 
     std::uint32_t tracked_command_id_ = 0;
     bool last_execute_ = false;
+    bool terminal_low_cycle_ = false;
 };
 
 // MC_HaltSuperimposed: stops only the superimposed offset; the accumulated
@@ -557,31 +697,33 @@ public:
 
     void call()
     {
-        if(!execute) {
-            if(axis_ref != nullptr && in_torque) {
-                axis::AxisCommand clear_torque{};
-                clear_torque.kind = axis::CommandKind::torque;
-                clear_torque.value = 0.0;
-                axis_ref->submit(clear_torque);
+        if(rising_edge()) {
+            if(axis_ref == nullptr || !std::isfinite(torque)) {
+                accept(rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument));
+            } else {
+                axis::AxisCommand command{};
+                command.kind = axis::CommandKind::torque;
+                command.value = torque;
+                const rt::Result<std::uint32_t> accepted = axis_ref->submit(command);
+                if(accepted) {
+                    commanded_torque_ = torque;
+                }
+                accept(accepted);
             }
-            in_torque = false;
         }
-        if(!rising_edge()) {
-            return;
+        observe_axis();
+        in_torque = axis_ref != nullptr && tracked_command_id_ != 0 &&
+                    axis_ref->torque_command_id() == tracked_command_id_ &&
+                    std::fabs(axis_ref->command_torque() - commanded_torque_) <= 1e-12;
+        if(in_torque) {
+            outputs.done = false;
+            outputs.busy = true;
+            outputs.active = true;
         }
-        if(axis_ref == nullptr) {
-            accept(rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument));
-            return;
-        }
-        axis::AxisCommand command{};
-        command.kind = axis::CommandKind::torque;
-        command.value = torque;
-        accept(axis_ref->submit(command));
-        in_torque = !outputs.error;
-        outputs.done = in_torque;
-        outputs.busy = false;
-        outputs.active = false;
     }
+
+private:
+    double commanded_torque_ = 0.0;
 };
 
 class GroupExecuteFb

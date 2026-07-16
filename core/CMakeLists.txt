@@ -88,6 +88,11 @@ if(BUILD_TESTING AND PLCOPEN_BUILD_CORE_TESTS)
     plcopen_core_rt_compile_options(plcopen_core_r3_probe_tests)
     add_test(NAME plcopen_core_r3_probe_tests COMMAND plcopen_core_r3_probe_tests)
 
+    add_executable(plcopen_core_part1_c4_tests test/part1_c4_tests.cpp)
+    target_link_libraries(plcopen_core_part1_c4_tests PRIVATE plcopen::core)
+    plcopen_core_rt_compile_options(plcopen_core_part1_c4_tests)
+    add_test(NAME plcopen_core_part1_c4_tests COMMAND plcopen_core_part1_c4_tests)
+
     add_executable(plcopen_core_r3_group_fb_tests test/r3_group_fb_tests.cpp)
     target_link_libraries(plcopen_core_r3_group_fb_tests PRIVATE plcopen::core)
     plcopen_core_rt_compile_options(plcopen_core_r3_group_fb_tests)

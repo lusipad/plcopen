@@ -25,7 +25,7 @@
 | 章节 | 要求（自述） | 判定 | 仓库证据 |
 |------|-------------|------|----------|
 | §1 | 明确区分 Execute 边沿型与 Enable 电平型；Execute 配 Done，Enable 配 Valid | ✅ | P1-A2 已将 `MC_SetOverride` 改为 Enable/Enabled 电平型；其他 FB 按各自类别保持 |
-| §1 | 边沿型异步动作必须在后续周期保持可观察终态 | 🔴 | Execute 低后停止观察并清跟踪，见 Part 1 D-01；`core/fb/motion.h:35-105` |
+| §1 | 边沿型异步动作必须在后续周期保持可观察终态 | ✅ | C4/KB-079 统一 Axis/Profile/Probe/Sync/Phasing 的单拍 Execute 终态保留 |
 | §2 | 基础边沿模型应具 Dormant/Executing/Done/Error/Resetting 生命周期 | ⚠️ | `AxisExecuteFb` 具有 busy/done/error，但没有显式 resetting 状态；`core/fb/motion.h:35-105` |
 | §3 | 可中止模型应区分 Aborting 与 Aborted，并保证中止终态 | ⚠️ | 对外只有 `CommandAborted`，内部 takeover 无通用 aborting 状态；轴/组实现分散处理（`core/axis/state.h:707-721`; `core/axis/group.h`） |
 | §4 | Timeout 与单周期 TimeLimit 是不同合同；长动作应可跨周期分片 | ❌ | 公共运动 FB 没有统一 timeout/time-limit 输入或状态；仅 ST VM 有指令预算 watchdog（`core/st/vm.h:96-97`） |
@@ -35,8 +35,8 @@
 
 ### 已确认问题 G-01
 
-**G-01：FB 生命周期模型未统一。** Part 1 D-01/D-12 是直接违规；其余 FB
-仍缺统一的 resetting、timeout、time-limit 与 level-controlled 错误恢复合同。
+**G-01：FB 生命周期模型的核心缺口已关闭。** P1-A/C4 已关闭 D-01～D-20；
+resetting、timeout、time-limit 等指南扩展仍需按具体 FB 逐项声明。
 
 ---
 
@@ -234,7 +234,7 @@ Halstead、LOC 分布、耦合/内聚、注释比、成熟度和趋势均未采�
 | §2 | IEC 第三版 OOP 包括 class、method、interface、继承、动态绑定 | ❌ | ST lexer 将 L2 接口/POU 构造分类为 unsupported，当前无 OOP AST/VM（`core/st/lexer.h:128-152`） |
 | §3 | 经典 FB 与 OOP 接口可共存、渐进迁移 | ❌ | `core/st` 只能绑定经典 basic FB；无 interface/method/property adapter（`core/st/bind.h`） |
 | §3 | 模块与命令应通过统一 interface 解耦 | ⚠️(C++) / ❌(ST) | C++ 使用抽象/模板与小接口，但没有 PLCopen OOP 语言表面 |
-| §4 | 状态机、行为模型、错误处理可由组合或继承复用 | ⚠️ | C++ 有基类复用，却已出现 D-01/D-02 基类级错误；ST 无继承/组合语义 |
+| §4 | 状态机、行为模型、错误处理可由组合或继承复用 | ⚠️ | C++ 已通过 `AxisExecuteFb`/`EnableReadFb` 统一核心生命周期；ST 无继承/组合语义 |
 | §4 | 优先在合适场景使用组合，继承必须控制深度与封装泄漏 | ⚠️ | 无 DIT/CBO/LCOM 度量；C++ 多层 FB 继承用于复用接口（如 `FbMoveRelative : FbMoveAbsolute`）并暴露了多余输入 |
 | §4 | ABSTRACT/FINAL/可见性等关键字需有明确设计纪律 | ❌ | ST 不支持这些关键字；无语义矩阵 |
 | §4 | 动态分配必须结合确定性与控制周期风险裁决 | ✅原则/❌语言能力 | RT 路径明确禁分配（CLAUDE.md；RT scan），ST 也无动态分配；尚无 OOP 对象生命周期模型 |

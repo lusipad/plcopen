@@ -11,7 +11,7 @@ sprint 记录）在 [doc/archive/roadmap-history.md](doc/archive/roadmap-history
 
 1. **PLCopen / Beckhoff 能力对等收束**：按
    [收束计划](doc/planning/plcopen-beckhoff-parity-closure.md) 的 C0→C6
-   顺序执行；先恢复跨平台质量门，再关闭 Part 4、Part 1/2、Part 5。
+   顺序执行；C0～C4 已完成，当前进入 Part 5 的 C5 收口。
 2. **商用门板剩余项**：已关闭的软件门保持不回退；需要台架、部署或认证
    的证据不以软件模拟冒充。
 3. **L 系列语言层**：保留已交付 ST-L0/ST-L1a/ST-L2a，不与 PLCopen
@@ -81,6 +81,7 @@ ADR-0007、Pages 上线、soak 周期等效），剩 PyPI 人专属动作。
 | **P4-B2** | 工具/载荷 8 项 + 点动 2 项 | 0.8 L0 | **完成（KB-076）**：工具真实接入 TCP，载荷库与 ACS/MCS/PCS Jog 已交付；50/68 同名门面 |
 | **P4-B3** | 同步/刚体动力学/跟踪 | 0.7 L0 | **完成（KB-077）**：axis↔group 双向同步、刚体动态与动态 PCS 跟踪已交付；57/68 同名门面 |
 | **C3 / P4-B4** | 最后 11 个管理/变换/位置/Halt/Wait 门面 | 0.8 L0 | **完成（KB-078）**：68/68 同名门面；power-owner、queued transform/moving set-position 与非 Cartesian ref 仍为显式边界 |
+| **C4 / P1-P2** | D-01～D-20 生命周期、状态、错误与持续控制语义清零 | 1 L0 | **完成（KB-079）**：20/20 关闭；正式 B/E/V 供应商声明与 PLCopen 认证仍未完成 |
 
 **人专属待裁**：OOP（排期/门控/永不）· OPC UA 触发条件（现为死锁条件）
 · 向 PLCopen 确认提交是否需会员资格 · 合规声明提交动作。

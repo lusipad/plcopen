@@ -4,6 +4,7 @@
 #include <cstddef>
 
 #include "axis/state.h"
+#include "fb/base.h"
 #include "fb/motion.h"
 #include "rt/error.h"
 #include "rt/static_vector.h"
@@ -14,93 +15,61 @@ namespace plcopen::core::fb
 // Digital IO facades over the fixed AxisModel IO banks (the v0.x Servo
 // extension channels). Unsupported channels report rt::ErrorCode::unsupported.
 
-class FbReadDigitalInput
+class FbReadDigitalInput : public EnableReadFb
 {
 public:
     axis::AxisModel *axis_ref = nullptr;
     std::size_t input_number = 0;
-    bool enable = false;
-    bool valid = false;
-    bool error = false;
-    rt::ErrorCode error_id = rt::ErrorCode::ok;
     bool value = false;
 
     void call()
     {
-        if(!enable) {
-            valid = false;
-            error = false;
-            error_id = rt::ErrorCode::ok;
-            value = false;
+        if(!begin_enable()) {
+            if(!enable) value = false;
             return;
         }
         if(axis_ref == nullptr) {
-            fail(rt::ErrorCode::invalid_argument);
+            value = false;
+            fail_enable(rt::ErrorCode::invalid_argument);
             return;
         }
         const rt::Result<bool> read = axis_ref->digital_input(input_number);
         if(!read) {
-            fail(read.error());
+            value = false;
+            fail_enable(read.error());
             return;
         }
         value = read.value();
-        valid = true;
-        error = false;
-        error_id = rt::ErrorCode::ok;
-    }
-
-private:
-    void fail(rt::ErrorCode code)
-    {
-        valid = false;
-        error = true;
-        error_id = code;
-        value = false;
+        complete_enable();
     }
 };
 
-class FbReadDigitalOutput
+class FbReadDigitalOutput : public EnableReadFb
 {
 public:
     axis::AxisModel *axis_ref = nullptr;
     std::size_t output_number = 0;
-    bool enable = false;
-    bool valid = false;
-    bool error = false;
-    rt::ErrorCode error_id = rt::ErrorCode::ok;
     bool value = false;
 
     void call()
     {
-        if(!enable) {
-            valid = false;
-            error = false;
-            error_id = rt::ErrorCode::ok;
-            value = false;
+        if(!begin_enable()) {
+            if(!enable) value = false;
             return;
         }
         if(axis_ref == nullptr) {
-            fail(rt::ErrorCode::invalid_argument);
+            value = false;
+            fail_enable(rt::ErrorCode::invalid_argument);
             return;
         }
         const rt::Result<bool> read = axis_ref->digital_output(output_number);
         if(!read) {
-            fail(read.error());
+            value = false;
+            fail_enable(read.error());
             return;
         }
         value = read.value();
-        valid = true;
-        error = false;
-        error_id = rt::ErrorCode::ok;
-    }
-
-private:
-    void fail(rt::ErrorCode code)
-    {
-        valid = false;
-        error = true;
-        error_id = code;
-        value = false;
+        complete_enable();
     }
 };
 
@@ -280,14 +249,10 @@ private:
 // MC_ReadAxisInfo: diagnostic snapshot. The rewrite core is a simulation until
 // a hardware adapter feeds set_axis_info_inputs; limit switches fold together
 // the adapter bits and the software-limit trip state.
-class FbReadAxisInfo
+class FbReadAxisInfo : public EnableReadFb
 {
 public:
     axis::AxisModel *axis_ref = nullptr;
-    bool enable = false;
-    bool valid = false;
-    bool error = false;
-    rt::ErrorCode error_id = rt::ErrorCode::ok;
     bool simulation = false;
     bool communication_ready = false;
     bool ready_for_power_on = false;
@@ -300,14 +265,13 @@ public:
 
     void call()
     {
-        if(!enable) {
-            clear_all();
+        if(!begin_enable()) {
+            if(!enable) clear_values();
             return;
         }
         if(axis_ref == nullptr) {
-            clear_all();
-            error = true;
-            error_id = rt::ErrorCode::invalid_argument;
+            clear_values();
+            fail_enable(rt::ErrorCode::invalid_argument);
             return;
         }
         const axis::AxisSnapshot &snapshot = axis_ref->snapshot();
@@ -321,9 +285,7 @@ public:
         limit_switch_pos = info.limit_switch_pos || sw_limit_tripped(true);
         limit_switch_neg = info.limit_switch_neg || sw_limit_tripped(false);
         axis_warning = info.warning;
-        valid = true;
-        error = false;
-        error_id = rt::ErrorCode::ok;
+        complete_enable();
     }
 
 private:
@@ -346,11 +308,8 @@ private:
         return positive ? position > limit.value() : position < limit.value();
     }
 
-    void clear_all()
+    void clear_values()
     {
-        valid = false;
-        error = false;
-        error_id = rt::ErrorCode::ok;
         simulation = false;
         communication_ready = false;
         ready_for_power_on = false;
@@ -366,15 +325,11 @@ private:
 // MC_ReadMotionState: direction and motion phase derived from the selected
 // value source. The typed source enum makes the v0.x invalid-source error
 // unrepresentable.
-class FbReadMotionState
+class FbReadMotionState : public EnableReadFb
 {
 public:
     axis::AxisModel *axis_ref = nullptr;
     axis::MasterValueSource source = axis::MasterValueSource::command;
-    bool enable = false;
-    bool valid = false;
-    bool error = false;
-    rt::ErrorCode error_id = rt::ErrorCode::ok;
     bool direction_positive = false;
     bool direction_negative = false;
     bool accelerating = false;
@@ -383,14 +338,13 @@ public:
 
     void call()
     {
-        if(!enable) {
-            clear_all();
+        if(!begin_enable()) {
+            if(!enable) clear_values();
             return;
         }
         if(axis_ref == nullptr) {
-            clear_all();
-            error = true;
-            error_id = rt::ErrorCode::invalid_argument;
+            clear_values();
+            fail_enable(rt::ErrorCode::invalid_argument);
             return;
         }
         const axis::AxisSnapshot &snapshot = axis_ref->snapshot();
@@ -403,17 +357,12 @@ public:
         constant_velocity = velocity != 0.0 && acceleration == 0.0;
         accelerating = acceleration != 0.0 && velocity * acceleration > 0.0;
         decelerating = acceleration != 0.0 && velocity * acceleration < 0.0;
-        valid = true;
-        error = false;
-        error_id = rt::ErrorCode::ok;
+        complete_enable();
     }
 
 private:
-    void clear_all()
+    void clear_values()
     {
-        valid = false;
-        error = false;
-        error_id = rt::ErrorCode::ok;
         direction_positive = false;
         direction_negative = false;
         accelerating = false;

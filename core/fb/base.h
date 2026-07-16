@@ -96,6 +96,64 @@ public:
     }
 };
 
+class EnableReadFb
+{
+public:
+    bool enable = false;
+    bool valid = false;
+    bool busy = false;
+    bool error = false;
+    rt::ErrorCode error_id = rt::ErrorCode::ok;
+
+protected:
+    bool begin_enable()
+    {
+        if(!enable) {
+            valid = false;
+            busy = false;
+            error = false;
+            error_id = rt::ErrorCode::ok;
+            error_latched_ = false;
+            latched_error_ = rt::ErrorCode::ok;
+            return false;
+        }
+        if(error_latched_) {
+            valid = false;
+            busy = false;
+            error = true;
+            error_id = latched_error_;
+            return false;
+        }
+        valid = false;
+        busy = true;
+        error = false;
+        error_id = rt::ErrorCode::ok;
+        return true;
+    }
+
+    void complete_enable()
+    {
+        valid = true;
+        busy = false;
+        error = false;
+        error_id = rt::ErrorCode::ok;
+    }
+
+    void fail_enable(rt::ErrorCode code)
+    {
+        valid = false;
+        busy = false;
+        error = true;
+        error_id = code;
+        error_latched_ = true;
+        latched_error_ = code;
+    }
+
+private:
+    bool error_latched_ = false;
+    rt::ErrorCode latched_error_ = rt::ErrorCode::ok;
+};
+
 class StartSyncPulse
 {
 public:

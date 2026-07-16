@@ -30,8 +30,21 @@ protected:
     bool rising_edge()
     {
         const bool rising = execute && !last_execute_;
+        const bool falling = !execute && last_execute_;
         last_execute_ = execute;
-        if(!execute) {
+        if(rising) {
+            clear(outputs);
+            first_id_ = 0;
+            last_id_ = 0;
+            continuous_update_enabled_ = continuous_update;
+            terminal_low_cycle_ = false;
+        } else if(!execute && terminal_low_cycle_) {
+            clear(outputs);
+            first_id_ = 0;
+            last_id_ = 0;
+            terminal_low_cycle_ = false;
+        } else if(falling &&
+                  (outputs.done || outputs.command_aborted || outputs.error)) {
             clear(outputs);
             first_id_ = 0;
             last_id_ = 0;
@@ -106,8 +119,20 @@ protected:
     std::uint32_t first_id_ = 0;
     std::uint32_t last_id_ = 0;
 
+    bool continuous_update_allowed() const
+    {
+        return continuous_update_enabled_;
+    }
+
+    void terminal_observed()
+    {
+        terminal_low_cycle_ = !execute;
+    }
+
 private:
     bool last_execute_ = false;
+    bool continuous_update_enabled_ = false;
+    bool terminal_low_cycle_ = false;
 };
 
 class FbPositionProfile : public ProfileFbBase
@@ -188,7 +213,7 @@ private:
     {
         // ContinuousUpdate retargets single-segment profiles only; the linked
         // multi-segment case has no defined retarget point in the rewrite core.
-        if(!execute || !continuous_update || first_id_ == 0 || axis_ref == nullptr ||
+        if(!execute || !continuous_update_allowed() || first_id_ == 0 || axis_ref == nullptr ||
            segment_count != 1 || segments == nullptr || segments[0].target == last_target_) {
             return;
         }
@@ -206,14 +231,29 @@ private:
 
     void observe()
     {
-        if(!execute || first_id_ == 0 || axis_ref == nullptr || outputs.done) {
+        if(first_id_ == 0 || axis_ref == nullptr || outputs.done) {
             return;
         }
         const axis::AxisSnapshot &snapshot = axis_ref->snapshot();
+        for(std::uint64_t id = first_id_; id <= last_id_; ++id) {
+            const rt::ErrorCode command_error =
+                axis_ref->command_error(static_cast<std::uint32_t>(id));
+            if(command_error != rt::ErrorCode::ok) {
+                outputs.error = true;
+                outputs.error_id = command_error;
+                outputs.command_aborted = false;
+                outputs.done = false;
+                outputs.busy = false;
+                outputs.active = false;
+                terminal_observed();
+                return;
+            }
+        }
         if(snapshot.last_completed_command_id == last_id_) {
             outputs.done = true;
             outputs.busy = false;
             outputs.active = false;
+            terminal_observed();
             return;
         }
         if(tracked_active(snapshot.active_command_id) || tracked_pending(*axis_ref)) {
@@ -225,6 +265,7 @@ private:
         outputs.done = false;
         outputs.busy = false;
         outputs.active = false;
+        terminal_observed();
         first_id_ = 0;
         last_id_ = 0;
     }
@@ -312,7 +353,7 @@ protected:
                          double acceleration_scale,
                          double acceleration_offset)
     {
-        if(!execute || !continuous_update || first_id_ == 0 || axis_ref == nullptr ||
+        if(!execute || !continuous_update_allowed() || first_id_ == 0 || axis_ref == nullptr ||
            segment_count != 1 || segments == nullptr || segments[0].target == last_target_) {
             return;
         }
@@ -324,10 +365,24 @@ protected:
 
     void observe()
     {
-        if(!execute || first_id_ == 0 || axis_ref == nullptr) {
+        if(first_id_ == 0 || axis_ref == nullptr) {
             return;
         }
         const axis::AxisSnapshot &snapshot = axis_ref->snapshot();
+        for(std::uint64_t id = first_id_; id <= last_id_; ++id) {
+            const rt::ErrorCode command_error =
+                axis_ref->command_error(static_cast<std::uint32_t>(id));
+            if(command_error != rt::ErrorCode::ok) {
+                outputs.error = true;
+                outputs.error_id = command_error;
+                outputs.command_aborted = false;
+                outputs.done = false;
+                outputs.busy = false;
+                outputs.active = false;
+                terminal_observed();
+                return;
+            }
+        }
         if(tracked_active(snapshot.active_command_id)) {
             outputs.busy = true;
             outputs.active = true;
@@ -338,6 +393,7 @@ protected:
         outputs.done = false;
         outputs.busy = false;
         outputs.active = false;
+        terminal_observed();
         first_id_ = 0;
         last_id_ = 0;
     }
@@ -363,7 +419,7 @@ public:
     }
 };
 
-class FbAccelerationProfile : public VelocityProfileFbBase
+class FbAccelerationProfile : public ProfileFbBase
 {
 public:
     double acceleration_scale = 1.0;
@@ -372,11 +428,45 @@ public:
     void call()
     {
         if(rising_edge()) {
-            submit_segments(1.0, 0.0, acceleration_scale, acceleration_offset);
-        } else {
-            update_segments(1.0, 0.0, acceleration_scale, acceleration_offset);
+            if(!inputs_valid()) {
+                fail(rt::ErrorCode::invalid_argument);
+            } else {
+                const rt::Result<std::uint32_t> accepted =
+                    axis_ref->submit_acceleration_profile(
+                        segments, segment_count, acceleration_scale,
+                        acceleration_offset, time_scale);
+                if(!accepted) {
+                    fail(accepted.error());
+                } else {
+                    track(accepted.value(), accepted.value());
+                }
+            }
         }
-        observe();
+        if(first_id_ == 0 || axis_ref == nullptr) {
+            return;
+        }
+        const rt::ErrorCode command_error = axis_ref->command_error(first_id_);
+        if(command_error != rt::ErrorCode::ok) {
+            outputs.error = true;
+            outputs.error_id = command_error;
+            outputs.command_aborted = false;
+            outputs.busy = false;
+            outputs.active = false;
+            terminal_observed();
+            return;
+        }
+        const axis::AxisSnapshot &snapshot = axis_ref->snapshot();
+        if(snapshot.active_command_id == first_id_) {
+            outputs.busy = true;
+            outputs.active = true;
+            outputs.done = snapshot.active_command_reached_target;
+            return;
+        }
+        outputs.command_aborted = true;
+        outputs.done = false;
+        outputs.busy = false;
+        outputs.active = false;
+        terminal_observed();
     }
 };
 

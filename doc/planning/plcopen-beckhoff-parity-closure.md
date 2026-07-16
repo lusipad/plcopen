@@ -61,10 +61,12 @@ ST 绑定只能消费同一合同，不能形成第二套 FB 语义。
 
 ## 4. 当前基线
 
-- Part 4：50/68 有同名门面；P4-B2 已实现但尚在本地收口，18 项仍无同名入口。
-- Part 1：公共 FB 面已存在，但 D-01~D-20 尚有开放项，不能宣称合规。
+- Part 4：68/68 有同名门面；接口/语义仍按逐项矩阵声明部分覆盖。
+- Part 1：43/43 公共 FB 面与 D-01~D-20 语义缺陷均已关闭；B/E/V 正式
+  供应商声明和认证材料仍未闭合，因此不能宣称 PLCopen 合规。
 - Part 5：11/11 有 C++ 门面，接口与语义仍是部分覆盖。
-- 主线最新 Linux CI 的 ARM64 与 clang-tidy 失败必须先在 C0 关闭。
+- C0 的 Windows/Linux/ARM64、clang-tidy、RT、coverage 门已恢复并持续由
+  CI 复验。
 
 上述数字只描述 2026-07-16 的起点；权威逐项事实仍以
 `doc/compliance/` 下的 Part 1/4/5 审计矩阵为准。
@@ -75,6 +77,9 @@ ST 绑定只能消费同一合同，不能形成第二套 FB 语义。
   输送带和转台跟踪已进入默认 C++ 门面，Part 4 同名入口更新为 57/68。
 - C3 / P4-B4 已完成（KB-078）：最后 11 个管理、变换、位置、Halt/Wait
   门面已交付，Part 4 同名入口达到 68/68。
+- C4 / Part 1/2 语义清零已完成（KB-079）：D-01～D-20 全部关闭，覆盖
+  Execute 单拍终态、持续 Inxxx、Stop 锁、signed velocity、Torque owner、
+  加速度 profile、moving SetPosition、错误归因/接续与 Enable 生命周期。
 - 该关闭只表示计划定义的核心能力片和名称面完成；PLCopen 认证、Beckhoff
-  黑盒性能对拍、buffered 动态 PCS、power-owner 与非 Cartesian ref 仍不在
-  已完成声明内。
+  黑盒性能对拍、Part 1 的未声明 B/E/V 子集、buffered 动态 PCS、
+  power-owner 与非 Cartesian ref 仍不在已完成声明内。下一门为 C5。

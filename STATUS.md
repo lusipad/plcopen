@@ -22,7 +22,8 @@ Feetech STS S2 纯软件协议层（KB-074）已交付。Part 4 P4-B2 工具/载
 与 ACS/MCS/PCS 点动（KB-076）已交付；P4-B3 的 axis↔group 同步、刚体动力学
 与动态 PCS 跟踪（KB-077）已交付；C3 最后 11 个管理、变换、位置与
 Halt/Wait 门面（KB-078）已交付，达到 68/68 有同名门面；Part 5 为
-11/11 有门面，均仍不合规；Feetech 4.8 未核，不进真机。
+C4 Part 1/2 语义清零（KB-079）已交付，D-01～D-20 全部关闭；Part 5 为
+11/11 有门面，仍未合规；Feetech 4.8 未核，不进真机。
 商用门板 P#8 的 STO/SS1 集成责任与宣传边界已锁定，但安全实现/认证未解锁。
 P#5 分支覆盖门、P#2 轨迹精度软件证据和 P#7 文档主体也已关闭；八项硬指标
 当前关闭 4/8，统一证据见[商用级八项证据总账](doc/compliance/commercial-gate-evidence.md)。
@@ -34,7 +35,7 @@ P#5 分支覆盖门、P#2 轨迹精度软件证据和 P#7 文档主体也已关�
 | v0.x 旧线（fork 自 i5cnc） | 2026-04 → 07 | Part 1/2 FB 面 45/45 收口于 v0.11.0，冻结为回放/迁移基线 |
 | R0-R4 新核重写 | 2026-07 | `core/` L0-L7 阶梯 + kin/stream 支撑库全部落地，与旧线 DoD 对照 PASS |
 | Phase B 纯软件 | 2026-07 | 坐标系/kinematics/轨迹流/cam/前瞻 v2/adapters（KB-034~041） |
-| **← 现在** | 2026-07-16 | v1.0.0-alpha 已发布；当前转入 PLCopen / Beckhoff 核心能力对等收束，按 C0→C6 先恢复质量门、再关闭 Part 4 与 Part 1/2/5；唯一优先级声明见 [ROADMAP.md](ROADMAP.md) |
+| **← 现在** | 2026-07-16 | PLCopen / Beckhoff 收束已完成 C0～C4；Part 4 名称面 68/68、Part 1 D-01～D-20 清零，下一门为 Part 5 C5；唯一优先级声明见 [ROADMAP.md](ROADMAP.md) |
 
 ## 能力面（新核，默认消费面 `plcopen::plcopen`）
 
@@ -49,7 +50,7 @@ sink 门面，生产层无反向引用）。分层健康度见
 | L2/L3 geom·plan | 直线/三点圆弧/Bezier/刚体帧（平移+绕Z+完整 RPY 原语）；路径缓冲、公差带 blending、前瞻窗口（jerk 精确可达扫描） | KB-030/031/039 |
 | L4 exec | 周期采样、gear/cam 同步（C0 + C2 样条重建、在线换表、经典规律生成器）、叠加 | KB-038/046 |
 | L5 axis | 单轴全命令生命周期、组共享路径（2-8 轴）、前瞻窗口执行、坐标系栈（ACS/MCS/PCS + 工件帧/工具偏置）、kinematics 级联（消费支撑库 kin：龙门/SCARA）、位姿管线（RPY + 6R，TCP 工具变换）、笛卡尔/位姿回读（含 RPY 反演万向节约定）、段内笛卡尔插补（直线/圆弧/blending + 前瞻窗口，逐周期逆解 + 测地姿态，opt-in；腕奇异可穿越）、窗口深度可配、双空间限速、B9 流会话（消费支撑库 stream） | KB-035/036/037/041~050 |
-| L6 fb | **Part 1 v2.0：43 个 FB 均有门面，但 B 级 I/O 齐备仅 22/43（2026-07-12 审计时点 C++ 字段面口径；P1-A 已补 4 项结构缺口，其余命名/形态缺口归 L2a 引脚层），条款审计确认 D-01~D-20（D-05/D-12/D-13/D-15 已关，16 项开放），不能宣称合规**；**Part 4 v2.0：68/68 有同名门面**，另保留 2 个旧名/自定义 Position 回读兼容门面；P4-B1 仍有 `mcSetValue`、非 ACS 高阶回读、start-point 等边界，P4-B2 仍缺 E 级 Jog 距离/override、Tool ExecutionMode；P4-B3 支持固定容量刚体动态、组里程 position-locking、PathData 主轴驱动及动态 PCS 持续跟踪；C3 支持固定 6D Cartesian transform、Standby 原子 GroupSetPosition、独立组错误锁存、可接管 Halt 与整数周期 Wait，但 power-owner 仲裁、queued transform/moving set-position、非 Cartesian vendor ref、buffered 动态 PCS 等仍显式不支持；**Part 5 v2.0：11/11 有 C++ 公开门面，但旧五块名称/I/O/语义偏差、标准派生类型与正式声明仍开放，只能标部分覆盖，不能宣称合规**；Part 6 的 5 个 FB 全部门控未实现。35 个 PLCopen 官方技术文件（2047 页）已完成全文审计；Safety、OPC UA、XML/TC6 均仅登记缺口，未解锁实现 | 全文审计见 [总账](doc/compliance/plcopen-conformance-audit.md) 与各专项矩阵 |
+| L6 fb | **Part 1 v2.0：43 个 FB 均有门面；2026-07-12 的 B 级 I/O 字段审计基线为 22/43，P1-A 与 C4 已继续补齐结构/语义，但正式 B/E/V 供应商声明仍未闭合；C4（KB-079）已关闭 D-01～D-20，不能据此宣称官方合规**；**Part 4 v2.0：68/68 有同名门面**，另保留 2 个旧名/自定义 Position 回读兼容门面；P4-B1 仍有 `mcSetValue`、非 ACS 高阶回读、start-point 等边界，P4-B2 仍缺 E 级 Jog 距离/override、Tool ExecutionMode；P4-B3 支持固定容量刚体动态、组里程 position-locking、PathData 主轴驱动及动态 PCS 持续跟踪；C3 支持固定 6D Cartesian transform、Standby 原子 GroupSetPosition、独立组错误锁存、可接管 Halt 与整数周期 Wait，但 power-owner 仲裁、queued transform/moving set-position、非 Cartesian vendor ref、buffered 动态 PCS 等仍显式不支持；**Part 5 v2.0：11/11 有 C++ 公开门面，但旧五块名称/I/O/语义偏差、标准派生类型与正式声明仍开放，只能标部分覆盖，不能宣称合规**；Part 6 的 5 个 FB 全部门控未实现。35 个 PLCopen 官方技术文件（2047 页）已完成全文审计；Safety、OPC UA、XML/TC6 均仅登记缺口，未解锁实现 | 全文审计见 [总账](doc/compliance/plcopen-conformance-audit.md) 与各专项矩阵 |
 | L7 adapters | **外圈消费面之一**（绕过 L6，只消费 axis/state.h + rt/error.h）：Servo 窄接口 + ServoSim + 桥接（ADR-0004）、CiA402 状态机、CSP/CSV/CST bumpless 骨架、Feetech STS 协议 0 固定容量总线/Servo/Sim（无 IO；动态单位与 Status 位未核，不进真机） | KB-040/074 |
 | 支撑库 kin | 阶梯旁支撑库（依赖 geom/rt，被 L5 消费）：kinematics 插件 ABI + 合规 harness、龙门/SCARA 解析解、球腕 6R（Pieper + 8 分支 seed 选支、奇异 margin） | KB-037/041 |
 | 支撑库 stream | 阶梯旁支撑库（依赖 otg/rt，被 L5 消费）：B9 轨迹流滤波（OTG 在线重解、断流看门狗、solve_fixed_time rendezvous 跟踪律）、多关节聚合 | KB-035 |
@@ -58,7 +59,7 @@ sink 门面，生产层无反向引用）。分层健康度见
 
 ## 质量门禁现状
 
-- 测试：69 项 CTest（含商用精度、状态转换矩阵、st L2a、P4-B1/P4-B2/P4-B3/C3 与 Feetech 专项/fuzz）全绿。P#2 聚合门实测 Bezier 稳速波动 0.0775%、圆弧约 7.6e-12%、cam 相位 0 拍、blending 公差利用率 100%。本批 WSL gcovr 干净全量实测：全 `core/` line **92.9%（15941/17151）**；固定生产运动栈 branch **85.0%（7111/8368）**，`--fail-under-branch 85` 持续通过。P#7 五页指南与运维手册已接入文档站，`mkdocs build --strict` 通过。精度总账见[商用证据](doc/compliance/commercial-gate-evidence.md)，覆盖口径见[分支覆盖基线](doc/compliance/branch-coverage-baseline.md)
+- 测试：70 项 CTest（新增 Part 1 C4 专项；含商用精度、状态转换矩阵、st L2a、P4-B1/P4-B2/P4-B3/C3 与 Feetech 专项/fuzz）全绿。P#2 聚合门实测 Bezier 稳速波动 0.0775%、圆弧约 7.6e-12%、cam 相位 0 拍、blending 公差利用率 100%。本批 Windows line coverage **89.35%（36456/40800）**，高于 50% 门槛；独立 WSL 全 `core/` line **92.9%（15941/17151）**、固定生产运动栈 branch **85.0%（7111/8368）** 的既有口径保持。P#7 五页指南与运维手册已接入文档站，`mkdocs build --strict` 通过。精度总账见[商用证据](doc/compliance/commercial-gate-evidence.md)，覆盖口径见[分支覆盖基线](doc/compliance/branch-coverage-baseline.md)
 - 回放：18 语料逐周期比对；声明变更零例外流程运行中
 - 分层：2026-07-12 include 图审计 **0 违规**（L0-L4 零 PLCopen 语义引用、无循环依赖、L4 不引 L3），见 [架构审查报告](doc/design/architecture-review-2026-07.md)
 - RT：静态扫描 27 文件（含 st vm/bind 与 Feetech adapter）+ 冻结窗口分配断言；DoD §5.3 的周期耗时对比通过（新核 = 旧线 9.3%）；分配 soak 以周期等效口径关闭（25.92 亿周期零分配，2026-07-11），墙钟 72h/抖动证据归 B7 真机报告

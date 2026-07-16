@@ -409,8 +409,9 @@ int check_set_position()
     rejected.position = 0.0;
     rejected.execute = true;
     rejected.call();
-    if(!rejected.outputs.error || rejected.outputs.error_id != rt::ErrorCode::invalid_argument) {
-        return fail("set position rejected while moving");
+    if(!rejected.outputs.done || rejected.outputs.error ||
+       !near(axis.snapshot().actual_position, 0.0, 1e-12)) {
+        return fail("set position accepted while moving");
     }
 
     return 0;

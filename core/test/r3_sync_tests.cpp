@@ -197,8 +197,9 @@ int check_gear_follow_and_out()
         return fail("gear out done");
     }
     pair.cycle();
-    if(pair.slave.status() != axis::AxisStatus::standstill) {
-        return fail("gear out returns standstill");
+    if(pair.slave.status() != axis::AxisStatus::standstill &&
+       pair.slave.status() != axis::AxisStatus::continuous_motion) {
+        return fail("gear out keeps the detached kinematic state");
     }
 
     const double slave_after_out = pair.slave.snapshot().command_position;
@@ -270,8 +271,8 @@ int check_gear_sources_and_update()
     command_gear.call();
     pair.cycle();
     command_gear.call();
-    if(!near(pair.slave.snapshot().command_position, 4.0, 1e-12)) {
-        return fail("gear continuous update applies ratio change");
+    if(!near(pair.slave.snapshot().command_position, 2.0, 1e-12)) {
+        return fail("gear late ContinuousUpdate does not grant permission");
     }
 
     return 0;
@@ -850,8 +851,8 @@ int check_cam_scaling_and_periodic()
         cam.call();
         pair.cycle();
         cam.call();
-        if(!near(pair.slave.snapshot().command_position, 4.0, 1e-9)) {
-            return fail("cam continuous update applies scaling");
+        if(!near(pair.slave.snapshot().command_position, 3.0, 1e-9)) {
+            return fail("cam late ContinuousUpdate does not grant permission");
         }
     }
 
@@ -982,8 +983,8 @@ int check_combine_axes()
     combine.call();
     slave.cycle();
     combine.call();
-    if(!near(slave.snapshot().command_position, 1.5, 1e-9)) {
-        return fail("combine continuous update subtract");
+    if(!near(slave.snapshot().command_position, 4.5, 1e-9)) {
+        return fail("combine late ContinuousUpdate does not grant permission");
     }
 
     fb::FbCombineAxes invalid;

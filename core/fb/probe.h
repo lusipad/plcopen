@@ -28,12 +28,24 @@ public:
     void call()
     {
         const bool rising = execute && !last_execute_;
+        const bool falling = !execute && last_execute_;
         last_execute_ = execute;
-        if(!execute) {
+        if(rising) {
             clear(outputs);
             recorded_position = 0.0;
             tracked_command_id_ = 0;
+            terminal_low_cycle_ = false;
+        } else if(!execute && terminal_low_cycle_) {
+            clear(outputs);
+            recorded_position = 0.0;
+            tracked_command_id_ = 0;
+            terminal_low_cycle_ = false;
             return;
+        } else if(falling &&
+                  (outputs.done || outputs.command_aborted || outputs.error)) {
+            clear(outputs);
+            recorded_position = 0.0;
+            tracked_command_id_ = 0;
         }
         if(rising) {
             arm();
@@ -84,6 +96,7 @@ private:
             outputs.done = true;
             outputs.busy = false;
             outputs.active = false;
+            terminal_low_cycle_ = !execute;
             return;
         }
         outputs.busy = true;
@@ -92,6 +105,7 @@ private:
 
     std::uint32_t tracked_command_id_ = 0;
     bool last_execute_ = false;
+    bool terminal_low_cycle_ = false;
 };
 
 // MC_AbortTrigger: disarms the probe on the matching input; disarming an idle

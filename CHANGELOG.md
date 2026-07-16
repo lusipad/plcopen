@@ -6,6 +6,17 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- Part 1/2 C4（KB-079）关闭条款审计 D-01～D-20：Execute 单拍后终态
+  保持可观察，MoveVelocity/Continuous/Gear/Cam/Combine/Torque 提供持续
+  Inxxx，Stop 由 Execute 锁定 Stopping，有符号 Velocity/EndVelocity、
+  Relative/Additive 基准、moving SetPosition、Gear/Cam 脱同步、Torque
+  owner、时间-加速度 Profile、轴/命令错误归因与 buffered 接续、Enable
+  Busy/错误锁存及 ContinuousUpdate 上升沿许可均按批准矩阵实现。新增
+  `plcopen_core_part1_c4_tests`，Windows/Linux GCC/Linux Clang 全部
+  70/70、ARM64/QEMU 63/63、clang-tidy、RT scan、Part 1 机读矩阵、
+  89.35% Windows 行覆盖和 18 份回放零差异；modulo、真实 torque
+  feedback、BufferMode 3/4/6、正式 B/E/V 声明与 PLCopen 认证仍明确排除。
+
 - Part 4 C3 / P4-B4（KB-078）补齐最后 11 个同名 C++ 门面，使名称面达到
   68/68：原子批量解组、组电源、Cartesian/Coordinate transform 读写、
   kinematics 引用回读、Standby 组位置重设、独立组错误回读、可被新

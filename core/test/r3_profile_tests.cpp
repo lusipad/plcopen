@@ -377,7 +377,8 @@ int check_acceleration_profile()
     axis::ProfileSegment segments[2] = {};
     segments[0].target = 2.0;
     segments[0].duration_cycles = 20;
-    segments[1].target = 5.0;
+    segments[1].target = -1.0;
+    segments[1].duration_cycles = 10;
 
     fb::FbAccelerationProfile profile;
     profile.axis_ref = &axis;
@@ -396,29 +397,28 @@ int check_acceleration_profile()
         if(profile.outputs.error || profile.outputs.command_aborted) {
             return fail("acceleration profile ran clean");
         }
-        if(profile.outputs.done && near(axis.snapshot().command_velocity, 5.0, 1e-9)) {
+        if(profile.outputs.done && near(axis.snapshot().command_velocity, 90.0, 1e-9)) {
             break;
         }
     }
     if(!profile.outputs.done || axis.status() != axis::AxisStatus::continuous_motion ||
-       !near(axis.snapshot().command_velocity, 5.0, 1e-9)) {
+       !near(axis.snapshot().command_velocity, 90.0, 1e-9)) {
         return fail("acceleration profile final velocity");
     }
 
-    // A scaled-to-zero acceleration limit is rejected.
+    // Relative acceleration segments are not part of the approved C4 surface.
     axis::ProfileSegment bad_segment{};
     bad_segment.target = 1.0;
-    bad_segment.acceleration = 1.0;
+    bad_segment.duration_cycles = 1;
+    bad_segment.relative = true;
     fb::FbAccelerationProfile invalid;
     invalid.axis_ref = &axis;
     invalid.segments = &bad_segment;
     invalid.segment_count = 1;
-    invalid.acceleration_scale = 0.0;
-    invalid.acceleration_offset = 0.0;
     invalid.execute = true;
     invalid.call();
     if(!invalid.outputs.error || invalid.outputs.error_id != rt::ErrorCode::invalid_argument) {
-        return fail("acceleration profile rejects non-positive limit");
+        return fail("acceleration profile rejects relative segment");
     }
 
     return 0;
@@ -887,6 +887,7 @@ int check_profile_scaled_duration_rejections()
     acceleration_shortened[0].target = 1.0;
     acceleration_shortened[0].duration_cycles = 1;
     acceleration_shortened[1].target = 2.0;
+    acceleration_shortened[1].duration_cycles = 1;
     fb::FbAccelerationProfile shortened_acceleration;
     shortened_acceleration.axis_ref = &acceleration_shortened_axis;
     shortened_acceleration.segments = acceleration_shortened;
@@ -908,6 +909,7 @@ int check_profile_scaled_duration_rejections()
     overflow[0].target = 1.0;
     overflow[0].duration_cycles = std::numeric_limits<std::int64_t>::max();
     overflow[1].target = 2.0;
+    overflow[1].duration_cycles = 1;
     fb::FbAccelerationProfile acceleration;
     acceleration.axis_ref = &overflow_axis;
     acceleration.segments = overflow;

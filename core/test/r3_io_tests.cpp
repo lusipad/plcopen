@@ -396,6 +396,9 @@ int check_io_error_paths()
         if(!ro.error || ro.error_id != rt::ErrorCode::invalid_argument) {
             return fail("read digital output null axis");
         }
+        ro.enable = false;
+        ro.call();
+        ro.enable = true;
         ro.axis_ref = &axis;
         ro.output_number = 99;
         ro.call();
