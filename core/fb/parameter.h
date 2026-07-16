@@ -12,24 +12,28 @@ namespace plcopen::core::fb
 // rt::ErrorCode::unsupported; a missing axis reports invalid_argument.
 class FbReadParameter : public EnableReadFb
 {
-public:
+  public:
     axis::AxisModel *axis_ref = nullptr;
     axis::AxisParameter parameter_number = axis::AxisParameter::commanded_position;
     double value = 0.0;
 
     void call()
     {
-        if(!begin_enable()) {
-            if(!enable) value = 0.0;
+        if (!begin_enable())
+        {
+            if (!enable)
+                value = 0.0;
             return;
         }
-        if(axis_ref == nullptr) {
+        if (axis_ref == nullptr)
+        {
             value = 0.0;
             fail_enable(rt::ErrorCode::invalid_argument);
             return;
         }
         const rt::Result<double> read = axis_ref->read_parameter(parameter_number);
-        if(!read) {
+        if (!read)
+        {
             value = 0.0;
             fail_enable(read.error());
             return;
@@ -41,24 +45,28 @@ public:
 
 class FbReadBoolParameter : public EnableReadFb
 {
-public:
+  public:
     axis::AxisModel *axis_ref = nullptr;
     axis::AxisParameter parameter_number = axis::AxisParameter::enable_limit_pos;
     bool value = false;
 
     void call()
     {
-        if(!begin_enable()) {
-            if(!enable) value = false;
+        if (!begin_enable())
+        {
+            if (!enable)
+                value = false;
             return;
         }
-        if(axis_ref == nullptr) {
+        if (axis_ref == nullptr)
+        {
             value = false;
             fail_enable(rt::ErrorCode::invalid_argument);
             return;
         }
         const rt::Result<bool> read = axis_ref->read_bool_parameter(parameter_number);
-        if(!read) {
+        if (!read)
+        {
             value = false;
             fail_enable(read.error());
             return;
@@ -72,7 +80,7 @@ public:
 // applies within the triggering cycle; done clears on the falling edge.
 class FbWriteParameter
 {
-public:
+  public:
     axis::AxisModel *axis_ref = nullptr;
     axis::AxisParameter parameter_number = axis::AxisParameter::sw_limit_pos;
     double value = 0.0;
@@ -85,13 +93,15 @@ public:
     {
         const bool rising = execute && !last_execute_;
         last_execute_ = execute;
-        if(!execute) {
+        if (!execute)
+        {
             done = false;
             error = false;
             error_id = rt::ErrorCode::ok;
             return;
         }
-        if(!rising) {
+        if (!rising)
+        {
             return;
         }
         const rt::ErrorCode written = axis_ref == nullptr
@@ -102,13 +112,13 @@ public:
         error_id = written;
     }
 
-private:
+  private:
     bool last_execute_ = false;
 };
 
 class FbWriteBoolParameter
 {
-public:
+  public:
     axis::AxisModel *axis_ref = nullptr;
     axis::AxisParameter parameter_number = axis::AxisParameter::enable_limit_pos;
     bool value = false;
@@ -121,24 +131,26 @@ public:
     {
         const bool rising = execute && !last_execute_;
         last_execute_ = execute;
-        if(!execute) {
+        if (!execute)
+        {
             done = false;
             error = false;
             error_id = rt::ErrorCode::ok;
             return;
         }
-        if(!rising) {
+        if (!rising)
+        {
             return;
         }
-        const rt::ErrorCode written =
-            axis_ref == nullptr ? rt::ErrorCode::invalid_argument
-                                : axis_ref->write_bool_parameter(parameter_number, value);
+        const rt::ErrorCode written = axis_ref == nullptr
+                                          ? rt::ErrorCode::invalid_argument
+                                          : axis_ref->write_bool_parameter(parameter_number, value);
         done = written == rt::ErrorCode::ok;
         error = !done;
         error_id = written;
     }
 
-private:
+  private:
     bool last_execute_ = false;
 };
 
@@ -146,11 +158,11 @@ private:
 // for the five MC_Read* value blocks.
 class SnapshotValueReadFb : public EnableReadFb
 {
-public:
+  public:
     axis::AxisModel *axis_ref = nullptr;
     double value = 0.0;
 
-protected:
+  protected:
     enum class Field
     {
         actual_position,
@@ -162,17 +174,21 @@ protected:
 
     void read(Field field)
     {
-        if(!begin_enable()) {
-            if(!enable) value = 0.0;
+        if (!begin_enable())
+        {
+            if (!enable)
+                value = 0.0;
             return;
         }
-        if(axis_ref == nullptr) {
+        if (axis_ref == nullptr)
+        {
             value = 0.0;
             fail_enable(rt::ErrorCode::invalid_argument);
             return;
         }
         const axis::AxisSnapshot &snapshot = axis_ref->snapshot();
-        switch(field) {
+        switch (field)
+        {
         case Field::actual_position:
             value = snapshot.actual_position;
             break;
@@ -195,56 +211,42 @@ protected:
 
 class FbReadActualPosition : public SnapshotValueReadFb
 {
-public:
-    void call()
-    {
-        read(Field::actual_position);
-    }
+  public:
+    void call() { read(Field::actual_position); }
 };
 
 class FbReadActualVelocity : public SnapshotValueReadFb
 {
-public:
-    void call()
-    {
-        read(Field::actual_velocity);
-    }
+  public:
+    void call() { read(Field::actual_velocity); }
 };
 
 class FbReadActualTorque : public SnapshotValueReadFb
 {
-public:
-    void call()
-    {
-        read(Field::actual_torque);
-    }
+  public:
+    void call() { read(Field::actual_torque); }
 };
 
 class FbReadCommandPosition : public SnapshotValueReadFb
 {
-public:
-    void call()
-    {
-        read(Field::command_position);
-    }
+  public:
+    void call() { read(Field::command_position); }
 };
 
 class FbReadCommandVelocity : public SnapshotValueReadFb
 {
-public:
-    void call()
-    {
-        read(Field::command_velocity);
-    }
+  public:
+    void call() { read(Field::command_velocity); }
 };
 
 // MC_ReadStatus: one boolean per PLCopen axis state.
 class FbReadStatus : public EnableReadFb
 {
-public:
+  public:
     axis::AxisModel *axis_ref = nullptr;
     bool disabled = false;
     bool standstill = false;
+    bool homing = false;
     bool discrete_motion = false;
     bool continuous_motion = false;
     bool synchronized_motion = false;
@@ -254,16 +256,19 @@ public:
     void call()
     {
         clear_states();
-        if(!begin_enable()) {
+        if (!begin_enable())
+        {
             return;
         }
-        if(axis_ref == nullptr) {
+        if (axis_ref == nullptr)
+        {
             fail_enable(rt::ErrorCode::invalid_argument);
             return;
         }
         const axis::AxisStatus status = axis_ref->status();
         disabled = status == axis::AxisStatus::disabled;
         standstill = status == axis::AxisStatus::standstill;
+        homing = status == axis::AxisStatus::homing;
         discrete_motion = status == axis::AxisStatus::discrete_motion;
         continuous_motion = status == axis::AxisStatus::continuous_motion;
         synchronized_motion = status == axis::AxisStatus::synchronized_motion;
@@ -272,11 +277,12 @@ public:
         complete_enable();
     }
 
-private:
+  private:
     void clear_states()
     {
         disabled = false;
         standstill = false;
+        homing = false;
         discrete_motion = false;
         continuous_motion = false;
         synchronized_motion = false;
@@ -287,17 +293,20 @@ private:
 
 class FbReadAxisError : public EnableReadFb
 {
-public:
+  public:
     axis::AxisModel *axis_ref = nullptr;
     bool axis_error = false;
 
     void call()
     {
-        if(!begin_enable()) {
-            if(!enable) axis_error = false;
+        if (!begin_enable())
+        {
+            if (!enable)
+                axis_error = false;
             return;
         }
-        if(axis_ref == nullptr) {
+        if (axis_ref == nullptr)
+        {
             axis_error = false;
             fail_enable(rt::ErrorCode::invalid_argument);
             return;
@@ -311,16 +320,18 @@ public:
 // mode is based on actual position and therefore applies the requested delta.
 class FbSetPosition : public AxisExecuteFb
 {
-public:
+  public:
     double position = 0.0;
     bool relative = false;
 
     void call()
     {
-        if(!rising_edge()) {
+        if (!rising_edge())
+        {
             return;
         }
-        if(axis_ref == nullptr) {
+        if (axis_ref == nullptr)
+        {
             accept(rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument));
             return;
         }
@@ -329,10 +340,10 @@ public:
         const bool moving = before.status == axis::AxisStatus::discrete_motion ||
                             before.status == axis::AxisStatus::continuous_motion ||
                             before.status == axis::AxisStatus::stopping;
-        const rt::ErrorCode set = moving
-                                      ? axis_ref->shift_coordinates(delta)
-                                      : axis_ref->set_position(before.actual_position + delta);
-        if(set != rt::ErrorCode::ok) {
+        const rt::ErrorCode set = moving ? axis_ref->shift_coordinates(delta)
+                                         : axis_ref->set_position(before.actual_position + delta);
+        if (set != rt::ErrorCode::ok)
+        {
             accept(rt::Result<std::uint32_t>::failure(set));
             return;
         }

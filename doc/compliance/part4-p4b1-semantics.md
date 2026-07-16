@@ -17,7 +17,7 @@
 | 批次范围 | 只补下表 19 个 C++ 同名语义门面；不把底层字段存在等同于标准支持，不改 Part 4 68 项分母 |
 | 单写者 | Read FB 只观察快照；Write FB 只在批准状态写配置域，不从读 FB 或周期线程反向修改运动 |
 | RT | 配置、元数据和输出均固定容量（最多 8 轴）；call/cycle 无分配、无锁、无异常，不用有限差分伪造速度/加速度 |
-| 兼容 | `FbGroupReadActualPosition`/`FbGroupReadCommandPosition` 保留为兼容包装；新 v2 `FbGroupReadPosition` 以 Source 统一承接 |
+| 公共入口 | 新 v2 `FbGroupReadPosition` 以 Source 统一承接；C6（KB-081）删除旧 Position 回读包装，不建立兼容层 |
 | 运动输出 | 默认 absolute/end-point 配置下既有规划器、轨迹与回放 setpoint 逐位不变；显式启用 percentage/default/SWLimits 后只影响批准后提交的新命令，活动承诺不追改 |
 | 合规口径 | 19 项有门面后只减少“无同名入口”数量；逐 I/O、派生类型和其余 Part 4 缺口未闭合前不得声明合规 |
 
@@ -75,7 +75,7 @@
 
 | # | 指标 | 门槛 |
 |---|---|---|
-| 5.1 | 19 个公开类名与 B 级字段编译锚点 | 19/19；旧 Position 类仍可编译 |
+| 5.1 | 19 个公开类名与 B 级字段编译锚点 | 19/19；C6 后只允许 v2 Position Source 入口编译 |
 | 5.2 | Read 生命周期 | 每类覆盖 disabled/null/valid/Enable 下降；值输出无旧值泄漏 |
 | 5.3 | 配置与 owner 反查 | 1/8 轴、移除后槽位变化、未入组、越界、非 ACS virtual-axis 拒绝 |
 | 5.4 | DH/Joint | 2/3/6/8 轴定长回读；未绑定、非 serial、数量/有限性拒绝；绑定后冻结 |
@@ -102,8 +102,8 @@
 
 ## 7. 实现记录（KB-073）
 
-- 19 个标准名称均新增 C++ 门面；旧 Position 双门面保留兼容并复用 v2
-  Source 型实现。配置、DH/Joint 元数据、Dynamics 与 SWLimits 全为最多 8 轴
+- 19 个标准名称均新增 C++ 门面；Position 回读统一复用 v2 Source 型实现，
+  旧双门面已由 C6 删除。配置、DH/Joint 元数据、Dynamics 与 SWLimits 全为最多 8 轴
   的固定容量状态，读块同拍 Valid，写块上升沿同拍 Done/Error。
 - MotionState/CommandInfo 对普通、Direct 与 joint-window 命令提供真实同拍
   状态；Cartesian window 没有逐段 CommandID 存储，查询显式 unsupported。

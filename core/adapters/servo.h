@@ -28,6 +28,7 @@ struct ServoSetpoints
     double velocity = 0.0;
     double acceleration = 0.0;
     double torque = 0.0;
+    double torque_limit = 0.0;
 };
 
 struct ServoFeedback
@@ -44,7 +45,7 @@ struct ServoFeedback
 
 class Servo
 {
-public:
+  public:
     virtual ~Servo() = default;
     virtual void write_setpoints(const ServoSetpoints &setpoints) = 0;
     virtual void read_feedback(ServoFeedback &feedback) = 0;
@@ -60,14 +61,16 @@ inline ServoSetpoints make_setpoints(const axis::AxisSnapshot &snapshot)
     setpoints.velocity = snapshot.command_velocity;
     setpoints.acceleration = snapshot.command_acceleration;
     setpoints.torque = snapshot.actual_torque;
+    setpoints.torque_limit = snapshot.command_torque_limit;
     return setpoints;
 }
 
 inline void bridge_feedback(axis::AxisModel &axis, const ServoFeedback &feedback)
 {
-    axis.set_actual_feedback(feedback.position, feedback.velocity,
-                             feedback.acceleration, feedback.torque);
-    for(std::size_t i = 0; i < ServoFeedback::DigitalInputCount; ++i) {
+    axis.set_actual_feedback(feedback.position, feedback.velocity, feedback.acceleration,
+                             feedback.torque);
+    for (std::size_t i = 0; i < ServoFeedback::DigitalInputCount; ++i)
+    {
         axis.set_digital_input(i, feedback.digital_inputs[i]);
     }
     axis.set_axis_info_inputs(feedback.info);
@@ -79,11 +82,8 @@ inline void bridge_feedback(axis::AxisModel &axis, const ServoFeedback &feedback
 // object — the zero-modification promise of the adoption funnel.
 class ServoSim final : public Servo
 {
-public:
-    void write_setpoints(const ServoSetpoints &setpoints) override
-    {
-        state_ = setpoints;
-    }
+  public:
+    void write_setpoints(const ServoSetpoints &setpoints) override { state_ = setpoints; }
 
     void read_feedback(ServoFeedback &feedback) override
     {
@@ -91,7 +91,8 @@ public:
         feedback.velocity = state_.velocity;
         feedback.acceleration = state_.acceleration;
         feedback.torque = state_.torque;
-        for(std::size_t i = 0; i < ServoFeedback::DigitalInputCount; ++i) {
+        for (std::size_t i = 0; i < ServoFeedback::DigitalInputCount; ++i)
+        {
             feedback.digital_inputs[i] = digital_inputs_[i];
         }
         feedback.info = info_;
@@ -100,17 +101,15 @@ public:
     // Test-side controls.
     void set_digital_input(std::size_t input, bool level)
     {
-        if(input < ServoFeedback::DigitalInputCount) {
+        if (input < ServoFeedback::DigitalInputCount)
+        {
             digital_inputs_[input] = level;
         }
     }
 
-    void set_info(const axis::AxisModel::AxisInfoInputs &info)
-    {
-        info_ = info;
-    }
+    void set_info(const axis::AxisModel::AxisInfoInputs &info) { info_ = info; }
 
-private:
+  private:
     ServoSetpoints state_{};
     bool digital_inputs_[ServoFeedback::DigitalInputCount] = {};
     axis::AxisModel::AxisInfoInputs info_{};

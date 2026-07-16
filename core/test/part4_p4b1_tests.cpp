@@ -39,8 +39,6 @@ int check_public_facades_compile()
     static_assert(std::is_default_constructible<fb::FbGroupReadJoggingDynamics>::value);
     static_assert(std::is_default_constructible<fb::FbGroupReadSWLimits>::value);
     static_assert(std::is_default_constructible<fb::FbGroupWriteSWLimits>::value);
-    static_assert(std::is_default_constructible<fb::FbGroupReadActualPosition>::value);
-    static_assert(std::is_default_constructible<fb::FbGroupReadCommandPosition>::value);
     std::printf("  PASS public_facades_compile\n");
     return 0;
 }
@@ -51,8 +49,8 @@ int check_configuration_and_owner_readback()
     axis::AxisModel second;
     axis::AxisModel outside;
     axis::AxisGroup group;
-    if(group.add_axis(first) != rt::ErrorCode::ok ||
-       group.add_axis(second) != rt::ErrorCode::ok) {
+    if (group.add_axis(first) != rt::ErrorCode::ok || group.add_axis(second) != rt::ErrorCode::ok)
+    {
         return fail("configuration: setup");
     }
     fb::FbGroupReadConfiguration configuration;
@@ -60,19 +58,22 @@ int check_configuration_and_owner_readback()
     configuration.enable = true;
     configuration.ident.index = 1;
     configuration.call();
-    if(!configuration.valid || configuration.axis_ref != &second ||
-       configuration.axis_id != 1 || configuration.busy || configuration.error) {
+    if (!configuration.valid || configuration.axis_ref != &second || configuration.axis_id != 1 ||
+        configuration.busy || configuration.error)
+    {
         return fail("configuration: ACS slot read");
     }
     configuration.coord_system = axis::CoordSystem::mcs;
     configuration.call();
-    if(!configuration.error || configuration.valid || configuration.axis_ref != nullptr ||
-       configuration.error_id != rt::ErrorCode::unsupported) {
+    if (!configuration.error || configuration.valid || configuration.axis_ref != nullptr ||
+        configuration.error_id != rt::ErrorCode::unsupported)
+    {
         return fail("configuration: virtual axis rejected");
     }
     configuration.enable = false;
     configuration.call();
-    if(configuration.valid || configuration.error || configuration.axis_ref != nullptr) {
+    if (configuration.valid || configuration.error || configuration.axis_ref != nullptr)
+    {
         return fail("configuration: disabled clears");
     }
 
@@ -80,13 +81,15 @@ int check_configuration_and_owner_readback()
     owner.axis_ref = &first;
     owner.enable = true;
     owner.call();
-    if(!owner.valid || owner.group_ref != &group || owner.ident.index != 0) {
+    if (!owner.valid || owner.group_ref != &group || owner.ident.index != 0)
+    {
         return fail("axis_group_info: owner and slot");
     }
     owner.axis_ref = &outside;
     owner.call();
-    if(!owner.error || owner.error_id != rt::ErrorCode::precondition_failed ||
-       owner.group_ref != nullptr) {
+    if (!owner.error || owner.error_id != rt::ErrorCode::precondition_failed ||
+        owner.group_ref != nullptr)
+    {
         return fail("axis_group_info: outside rejected");
     }
     std::printf("  PASS configuration_and_owner_readback\n");
@@ -106,28 +109,32 @@ int check_kinematics_metadata_contract()
     info.dh[1] = {0.5, 0.6, 0.7, 0.8};
     info.joint[0] = {1.0, true};
     info.joint[1] = {-1.0, false};
-    if(group.bind_kinematics_info(info) != rt::ErrorCode::ok) {
+    if (group.bind_kinematics_info(info) != rt::ErrorCode::ok)
+    {
         return fail("kinematics_info: binds while disabled");
     }
     fb::FbReadDHParameters dh;
     dh.group_ref = &group;
     dh.enable = true;
     dh.call();
-    if(!dh.valid || dh.parameters.count != 2 || dh.parameters.value[1].alpha != 0.8) {
+    if (!dh.valid || dh.parameters.count != 2 || dh.parameters.value[1].alpha != 0.8)
+    {
         return fail("kinematics_info: DH read");
     }
     fb::FbReadJointInfo joint;
     joint.group_ref = &group;
     joint.enable = true;
     joint.call();
-    if(!joint.valid || joint.info.count != 2 || joint.info.value[0].zero_position != 1.0 ||
-       !joint.info.value[0].direction_clockwise) {
+    if (!joint.valid || joint.info.count != 2 || joint.info.value[0].zero_position != 1.0 ||
+        !joint.info.value[0].direction_clockwise)
+    {
         return fail("kinematics_info: joint read");
     }
     axes[0].set_power(true);
     axes[1].set_power(true);
-    if(group.enable() != rt::ErrorCode::ok ||
-       group.bind_kinematics_info(info) != rt::ErrorCode::precondition_failed) {
+    if (group.enable() != rt::ErrorCode::ok ||
+        group.bind_kinematics_info(info) != rt::ErrorCode::precondition_failed)
+    {
         return fail("kinematics_info: freezes after enable");
     }
     std::printf("  PASS kinematics_metadata_contract\n");
@@ -143,51 +150,60 @@ int check_configuration_read_error_matrix()
     fb::FbReadDHParameters dh;
     dh.enable = true;
     dh.call();
-    if(!dh.error || dh.error_id != rt::ErrorCode::invalid_argument) {
+    if (!dh.error || dh.error_id != rt::ErrorCode::invalid_argument)
+    {
         return fail("configuration errors: null DH group");
     }
     dh.group_ref = &group;
     dh.call();
-    if(!dh.error || dh.error_id != rt::ErrorCode::precondition_failed) {
+    if (!dh.error || dh.error_id != rt::ErrorCode::precondition_failed)
+    {
         return fail("configuration errors: unbound DH metadata");
     }
 
     fb::FbReadJointInfo joint;
     joint.enable = true;
     joint.call();
-    if(!joint.error || joint.error_id != rt::ErrorCode::invalid_argument) {
+    if (!joint.error || joint.error_id != rt::ErrorCode::invalid_argument)
+    {
         return fail("configuration errors: null joint group");
     }
     joint.group_ref = &group;
     joint.call();
-    if(!joint.error || joint.error_id != rt::ErrorCode::precondition_failed) {
+    if (!joint.error || joint.error_id != rt::ErrorCode::precondition_failed)
+    {
         return fail("configuration errors: unbound joint metadata");
     }
 
     fb::FbGroupReadParameter parameter;
     parameter.enable = true;
     parameter.call();
-    if(!parameter.error || parameter.error_id != rt::ErrorCode::invalid_argument) {
+    if (!parameter.error || parameter.error_id != rt::ErrorCode::invalid_argument)
+    {
         return fail("configuration errors: null parameter group");
     }
     parameter.group_ref = &group;
-    parameter.parameter = static_cast<axis::GroupParameter>( // NOLINT(clang-analyzer-optin.core.EnumCastOutOfRange)
-        99);
+    parameter.parameter =
+        static_cast<axis::GroupParameter>( // NOLINT(clang-analyzer-optin.core.EnumCastOutOfRange)
+            99);
     parameter.call();
-    if(!parameter.error || parameter.error_id != rt::ErrorCode::unsupported) {
+    if (!parameter.error || parameter.error_id != rt::ErrorCode::unsupported)
+    {
         return fail("configuration errors: unsupported parameter");
     }
 
     fb::FbGroupReadCommandInfo command;
     command.enable = true;
     command.call();
-    if(!command.error || command.error_id != rt::ErrorCode::invalid_argument) {
+    if (!command.error || command.error_id != rt::ErrorCode::invalid_argument)
+    {
         return fail("configuration errors: null command group");
     }
     command.group_ref = &group;
     command.command_id = 999;
     command.call();
-    if(!command.error || command.error_id != rt::ErrorCode::out_of_range) {
+    if (!command.error || command.error_id != rt::ErrorCode::out_of_range)
+    {
         return fail("configuration errors: unknown command");
     }
 
@@ -195,7 +211,8 @@ int check_configuration_read_error_matrix()
     motion.group_ref = &group;
     motion.enable = true;
     motion.call();
-    if(!motion.error || motion.error_id != rt::ErrorCode::precondition_failed) {
+    if (!motion.error || motion.error_id != rt::ErrorCode::precondition_failed)
+    {
         return fail("configuration errors: disabled motion state");
     }
     axis.set_power(true);
@@ -203,7 +220,8 @@ int check_configuration_read_error_matrix()
     axis.trigger_error();
     group.cycle();
     motion.call();
-    if(!motion.error || motion.error_id != rt::ErrorCode::precondition_failed) {
+    if (!motion.error || motion.error_id != rt::ErrorCode::precondition_failed)
+    {
         return fail("configuration errors: errorstop motion state");
     }
     std::printf("  PASS configuration_read_error_matrix\n");
@@ -213,28 +231,31 @@ int check_configuration_read_error_matrix()
 int check_kinematics_metadata_capacities()
 {
     const std::size_t counts[] = {3, 6, 8};
-    for(std::size_t count : counts) {
+    for (std::size_t count : counts)
+    {
         axis::AxisModel axes[8];
         axis::AxisGroup group;
-        for(std::size_t i = 0; i < count; ++i) group.add_axis(axes[i]);
+        for (std::size_t i = 0; i < count; ++i)
+            group.add_axis(axes[i]);
         axis::GroupKinematicsInfo info{};
         info.serial = true;
         info.count = count;
-        for(std::size_t i = 0;
-            i < count && i < axis::GroupPosition::MaxAxes;
-            ++i) {
+        for (std::size_t i = 0; i < count && i < axis::GroupPosition::MaxAxes; ++i)
+        {
             info.dh[i] = {static_cast<double>(i), 1.0, 2.0, 3.0};
             info.joint[i] = {static_cast<double>(i), (i % 2) != 0};
         }
-        if(group.bind_kinematics_info(info) != rt::ErrorCode::ok) {
+        if (group.bind_kinematics_info(info) != rt::ErrorCode::ok)
+        {
             return fail("kinematics_info: capacity bind");
         }
         fb::FbReadDHParameters read;
         read.group_ref = &group;
         read.enable = true;
         read.call();
-        if(!read.valid || read.parameters.count != count ||
-           read.parameters.value[count - 1].theta != static_cast<double>(count - 1)) {
+        if (!read.valid || read.parameters.count != count ||
+            read.parameters.value[count - 1].theta != static_cast<double>(count - 1))
+        {
             return fail("kinematics_info: capacity read");
         }
     }
@@ -246,7 +267,8 @@ int check_position_velocity_acceleration_readback()
 {
     axis::AxisModel axes[2];
     axis::AxisGroup group;
-    for(auto &member : axes) {
+    for (auto &member : axes)
+    {
         member.set_power(true);
         group.add_axis(member);
     }
@@ -259,14 +281,16 @@ int check_position_velocity_acceleration_readback()
     position.enable = true;
     position.source = axis::GroupValueSource::actual;
     position.call();
-    if(!position.valid || position.position.size != 2 ||
-       position.position.value[0] != 10.0 || position.position.value[1] != 11.0) {
+    if (!position.valid || position.position.size != 2 || position.position.value[0] != 10.0 ||
+        position.position.value[1] != 11.0)
+    {
         return fail("readback: actual position");
     }
     position.source = axis::GroupValueSource::set;
     position.call();
-    if(!position.error || position.error_id != rt::ErrorCode::unsupported ||
-       position.valid || position.position.size != 0) {
+    if (!position.error || position.error_id != rt::ErrorCode::unsupported || position.valid ||
+        position.position.size != 0)
+    {
         return fail("readback: set source rejected");
     }
 
@@ -275,14 +299,16 @@ int check_position_velocity_acceleration_readback()
     velocity.enable = true;
     velocity.source = axis::GroupValueSource::actual;
     velocity.call();
-    if(!velocity.valid || velocity.value.size != 2 || velocity.value.value[0] != 20.0 ||
-       velocity.value.value[1] != 21.0) {
+    if (!velocity.valid || velocity.value.size != 2 || velocity.value.value[0] != 20.0 ||
+        velocity.value.value[1] != 21.0)
+    {
         return fail("readback: actual velocity");
     }
     velocity.coord_system = axis::CoordSystem::mcs;
     velocity.call();
-    if(!velocity.error || velocity.error_id != rt::ErrorCode::unsupported ||
-       velocity.value.size != 0) {
+    if (!velocity.error || velocity.error_id != rt::ErrorCode::unsupported ||
+        velocity.value.size != 0)
+    {
         return fail("readback: MCS velocity rejected");
     }
 
@@ -291,13 +317,15 @@ int check_position_velocity_acceleration_readback()
     acceleration.enable = true;
     acceleration.source = axis::GroupValueSource::actual;
     acceleration.call();
-    if(!acceleration.valid || acceleration.value.value[0] != 30.0 ||
-       acceleration.value.value[1] != 31.0) {
+    if (!acceleration.valid || acceleration.value.value[0] != 30.0 ||
+        acceleration.value.value[1] != 31.0)
+    {
         return fail("readback: actual acceleration");
     }
     acceleration.enable = false;
     acceleration.call();
-    if(acceleration.valid || acceleration.error || acceleration.value.size != 0) {
+    if (acceleration.valid || acceleration.error || acceleration.value.size != 0)
+    {
         return fail("readback: disabled clears");
     }
     std::printf("  PASS position_velocity_acceleration_readback\n");
@@ -308,7 +336,8 @@ int check_motion_state_and_command_info()
 {
     axis::AxisModel axes[2];
     axis::AxisGroup group;
-    for(auto &member : axes) {
+    for (auto &member : axes)
+    {
         member.set_power(true);
         group.add_axis(member);
     }
@@ -317,8 +346,9 @@ int check_motion_state_and_command_info()
     state.group_ref = &group;
     state.enable = true;
     state.call();
-    if(!state.valid || !state.in_position || !state.standstill || !state.in_sync ||
-       state.active_command_id != 0) {
+    if (!state.valid || !state.in_position || !state.standstill || !state.in_sync ||
+        state.active_command_id != 0)
+    {
         return fail("motion_state: standby");
     }
 
@@ -331,17 +361,20 @@ int check_motion_state_and_command_info()
     command.deceleration = 0.1;
     command.jerk = 0.1;
     const rt::Result<std::uint32_t> submitted = group.submit_linear(command);
-    if(!submitted) return fail("command_info: submit");
+    if (!submitted)
+        return fail("command_info: submit");
     group.cycle();
     axis::GroupCommand queued = command;
     queued.target.value[0] = 12.0;
     queued.target.value[1] = 6.0;
     queued.buffer_mode = axis::BufferMode::buffered;
     const rt::Result<std::uint32_t> pending = group.submit_linear(queued);
-    if(!pending) return fail("command_info: queue submit");
+    if (!pending)
+        return fail("command_info: queue submit");
     state.call();
-    if(!state.valid || state.active_command_id != submitted.value() || state.standstill ||
-       state.in_position || (!state.accelerating && !state.constant_velocity)) {
+    if (!state.valid || state.active_command_id != submitted.value() || state.standstill ||
+        state.in_position || (!state.accelerating && !state.constant_velocity))
+    {
         return fail("motion_state: active command");
     }
     fb::FbGroupReadCommandInfo info;
@@ -349,16 +382,18 @@ int check_motion_state_and_command_info()
     info.enable = true;
     info.command_id = submitted.value();
     info.call();
-    if(!info.valid || info.info.state != axis::GroupCommandState::active ||
-       info.info.elapsed_cycles <= 0 || info.info.remaining_cycles <= 0 ||
-       info.info.remaining_distance <= 0.0 || info.info.progress <= 0.0 ||
-       info.info.progress >= 1.0) {
+    if (!info.valid || info.info.state != axis::GroupCommandState::active ||
+        info.info.elapsed_cycles <= 0 || info.info.remaining_cycles <= 0 ||
+        info.info.remaining_distance <= 0.0 || info.info.progress <= 0.0 ||
+        info.info.progress >= 1.0)
+    {
         return fail("command_info: active metrics");
     }
     info.command_id = pending.value();
     info.call();
-    if(!info.valid || info.info.state != axis::GroupCommandState::accepted ||
-       info.info.elapsed_cycles != 0 || info.info.progress != 0.0) {
+    if (!info.valid || info.info.state != axis::GroupCommandState::accepted ||
+        info.info.elapsed_cycles != 0 || info.info.progress != 0.0)
+    {
         return fail("command_info: queued accepted");
     }
     info.command_id = submitted.value();
@@ -372,24 +407,25 @@ int check_motion_state_and_command_info()
     acceleration.enable = true;
     acceleration.source = axis::GroupValueSource::commanded;
     acceleration.call();
-    if(!velocity.valid || !acceleration.valid || velocity.path_value <= 0.0 ||
-       acceleration.path_value <= 0.0) {
+    if (!velocity.valid || !acceleration.valid || velocity.path_value <= 0.0 ||
+        acceleration.path_value <= 0.0)
+    {
         return fail("readback: active path derivatives");
     }
-    for(int cycle = 0; cycle < 10000 && group.status() != axis::GroupStatus::standby;
-        ++cycle) {
+    for (int cycle = 0; cycle < 10000 && group.status() != axis::GroupStatus::standby; ++cycle)
+    {
         group.cycle();
     }
     info.call();
-    if(!info.error || info.error_id != rt::ErrorCode::out_of_range || info.valid) {
+    if (!info.error || info.error_id != rt::ErrorCode::out_of_range || info.valid)
+    {
         return fail("command_info: completed ID expires");
     }
     std::printf("  PASS motion_state_and_command_info\n");
     return 0;
 }
 
-axis::GroupCommand state_query_command(double x,
-                                       double y,
+axis::GroupCommand state_query_command(double x, double y,
                                        axis::BufferMode mode = axis::BufferMode::aborting)
 {
     axis::GroupCommand command{};
@@ -408,7 +444,8 @@ int check_direct_motion_public_state()
 {
     axis::AxisModel axes[2];
     axis::AxisGroup group;
-    for(axis::AxisModel &member : axes) {
+    for (axis::AxisModel &member : axes)
+    {
         member.set_power(true);
         group.add_axis(member);
     }
@@ -419,25 +456,29 @@ int check_direct_motion_public_state()
     target.value[1] = -2.0;
     const rt::Result<std::uint32_t> submitted =
         group.submit_direct(target, false, 1.0, 1.0, 1.0, 1.0);
-    if(!submitted) return fail("direct state: submit");
+    if (!submitted)
+        return fail("direct state: submit");
 
     const axis::GroupMotionState initial = group.motion_state();
     const rt::Result<axis::GroupCommandInfo> info = group.command_info(submitted.value());
-    if(initial.active_command_id != submitted.value() || initial.in_position ||
-       initial.standstill || !info || info.value().state != axis::GroupCommandState::active ||
-       info.value().elapsed_cycles != 0 || info.value().remaining_cycles != 0 ||
-       group.path_derivative(false) != 0.0 || group.path_derivative(true) != 0.0) {
+    if (initial.active_command_id != submitted.value() || initial.in_position ||
+        initial.standstill || !info || info.value().state != axis::GroupCommandState::active ||
+        info.value().elapsed_cycles != 0 || info.value().remaining_cycles != 0 ||
+        group.path_derivative(false) != 0.0 || group.path_derivative(true) != 0.0)
+    {
         return fail("direct state: public active contract");
     }
 
     bool accelerating = false;
     bool decelerating = false;
     bool constant_velocity = false;
-    for(int tick = 0; tick < 100000 && group.status() != axis::GroupStatus::standby; ++tick) {
+    for (int tick = 0; tick < 100000 && group.status() != axis::GroupStatus::standby; ++tick)
+    {
         axes[0].cycle();
         axes[1].cycle();
         const axis::GroupMotionState state = group.motion_state();
-        if(state.active_command_id == submitted.value()) {
+        if (state.active_command_id == submitted.value())
+        {
             accelerating = accelerating || state.accelerating;
             decelerating = decelerating || state.decelerating;
             constant_velocity = constant_velocity || state.constant_velocity;
@@ -445,7 +486,8 @@ int check_direct_motion_public_state()
         group.cycle();
     }
     const rt::ErrorCode expired = group.command_info(submitted.value()).error();
-    if(!accelerating || !decelerating || expired != rt::ErrorCode::out_of_range) {
+    if (!accelerating || !decelerating || expired != rt::ErrorCode::out_of_range)
+    {
         return fail("direct state: phases and expiry");
     }
     std::printf("  PASS direct_motion_public_state\n");
@@ -454,8 +496,7 @@ int check_direct_motion_public_state()
 
 axis::GroupCommand window_query_command(double x, double y)
 {
-    axis::GroupCommand command =
-        state_query_command(x, y, axis::BufferMode::blending_high);
+    axis::GroupCommand command = state_query_command(x, y, axis::BufferMode::blending_high);
     command.transition_mode = axis::TransitionMode::max_corner_deviation;
     command.transition_parameter = 0.03;
     return command;
@@ -465,15 +506,17 @@ int check_window_public_state()
 {
     axis::AxisModel axes[2];
     axis::AxisGroup group;
-    for(axis::AxisModel &member : axes) {
+    for (axis::AxisModel &member : axes)
+    {
         member.set_power(true);
         group.add_axis(member);
     }
     group.enable();
-    const rt::Result<std::uint32_t> first =
-        group.submit_linear(state_query_command(1.0, 0.0));
-    if(!first) return fail("window state: first submit");
-    for(int tick = 0; tick < 5; ++tick) group.cycle();
+    const rt::Result<std::uint32_t> first = group.submit_linear(state_query_command(1.0, 0.0));
+    if (!first)
+        return fail("window state: first submit");
+    for (int tick = 0; tick < 5; ++tick)
+        group.cycle();
     constexpr double Turn = 0.3490658503988659;
     const double target[5][2] = {{2.0, 0.0},
                                  {2.0 + std::cos(Turn), std::sin(Turn)},
@@ -481,10 +524,12 @@ int check_window_public_state()
                                  {3.0 + 2.0 * std::cos(Turn), 2.0 * std::sin(Turn)},
                                  {4.0 + 2.0 * std::cos(Turn), 2.0 * std::sin(Turn)}};
     std::uint32_t last_id = 0;
-    for(int i = 0; i < 5; ++i) {
+    for (int i = 0; i < 5; ++i)
+    {
         const rt::Result<std::uint32_t> submitted =
             group.submit_linear(window_query_command(target[i][0], target[i][1]));
-        if(!submitted || group.last_blend_degraded_command() == submitted.value()) {
+        if (!submitted || group.last_blend_degraded_command() == submitted.value())
+        {
             return fail("window state: successors submit");
         }
         last_id = submitted.value();
@@ -494,17 +539,19 @@ int check_window_public_state()
     const rt::Result<axis::GroupCommandInfo> active = group.command_info(first.value());
     const rt::Result<axis::GroupCommandInfo> queued_info = group.command_info(last_id);
     const rt::Result<axis::GroupCommandInfo> missing = group.command_info(0xffffffffu);
-    if(state.active_command_id != first.value() || state.in_position || state.standstill ||
-       !active || active.value().state != axis::GroupCommandState::active ||
-       active.value().remaining_cycles <= 0 || active.value().remaining_distance <= 0.0 ||
-       active.value().progress <= 0.0 || !queued_info ||
-       queued_info.value().state != axis::GroupCommandState::accepted ||
-       queued_info.value().elapsed_cycles != 0 || queued_info.value().remaining_cycles != 0 ||
-       missing.error() != rt::ErrorCode::out_of_range || group.path_derivative(false) <= 0.0) {
+    if (state.active_command_id != first.value() || state.in_position || state.standstill ||
+        !active || active.value().state != axis::GroupCommandState::active ||
+        active.value().remaining_cycles <= 0 || active.value().remaining_distance <= 0.0 ||
+        active.value().progress <= 0.0 || !queued_info ||
+        queued_info.value().state != axis::GroupCommandState::accepted ||
+        queued_info.value().elapsed_cycles != 0 || queued_info.value().remaining_cycles != 0 ||
+        missing.error() != rt::ErrorCode::out_of_range || group.path_derivative(false) <= 0.0)
+    {
         return fail("window state: public query contract");
     }
     const double acceleration = group.path_derivative(true);
-    if(!std::isfinite(acceleration)) {
+    if (!std::isfinite(acceleration))
+    {
         return fail("window state: acceleration derivative finite");
     }
     std::printf("  PASS window_public_state\n");
@@ -513,9 +560,11 @@ int check_window_public_state()
 
 int settle_state_query_group(axis::AxisGroup &group)
 {
-    for(int tick = 0; tick < 100000; ++tick) {
+    for (int tick = 0; tick < 100000; ++tick)
+    {
         group.cycle();
-        if(group.status() == axis::GroupStatus::standby) return 0;
+        if (group.status() == axis::GroupStatus::standby)
+            return 0;
     }
     return 1;
 }
@@ -540,31 +589,36 @@ int check_cartesian_window_command_info_contract()
     static const kin::Scara scara(0.4, 0.3, true);
     axis::AxisModel axes[3];
     axis::AxisGroup group;
-    for(axis::AxisModel &member : axes) {
+    for (axis::AxisModel &member : axes)
+    {
         member.set_power(true);
         group.add_axis(member);
     }
     group.enable();
-    if(group.set_kinematics(&scara) != rt::ErrorCode::ok ||
-       !group.submit_linear(cartesian_state_command(0.35, 0.25, 0.1)) ||
-       settle_state_query_group(group) != 0) {
+    if (group.set_kinematics(&scara) != rt::ErrorCode::ok ||
+        !group.submit_linear(cartesian_state_command(0.35, 0.25, 0.1)) ||
+        settle_state_query_group(group) != 0)
+    {
         return fail("cart window info: setup");
     }
 
     axis::GroupCommand first = cartesian_state_command(0.30, 0.30, 0.12);
     first.interpolation_space = axis::InterpolationSpace::cartesian;
     const rt::Result<std::uint32_t> first_id = group.submit_linear(first);
-    if(!first_id) return fail("cart window info: first segment");
-    for(int tick = 0; tick < 5; ++tick) group.cycle();
+    if (!first_id)
+        return fail("cart window info: first segment");
+    for (int tick = 0; tick < 5; ++tick)
+        group.cycle();
     axis::GroupCommand successor = cartesian_state_command(0.24, 0.34, 0.14);
     successor.interpolation_space = axis::InterpolationSpace::cartesian;
     successor.buffer_mode = axis::BufferMode::blending_low;
     successor.transition_mode = axis::TransitionMode::max_corner_deviation;
     successor.transition_parameter = 0.02;
     const rt::Result<std::uint32_t> successor_id = group.submit_linear(successor);
-    if(!successor_id || group.command_info(first_id.value()).error() !=
-                            rt::ErrorCode::unsupported ||
-       group.command_info(successor_id.value()).error() != rt::ErrorCode::unsupported) {
+    if (!successor_id ||
+        group.command_info(first_id.value()).error() != rt::ErrorCode::unsupported ||
+        group.command_info(successor_id.value()).error() != rt::ErrorCode::unsupported)
+    {
         return fail("cart window info: unsupported contract");
     }
     std::printf("  PASS cartesian_window_command_info_contract\n");
@@ -575,9 +629,10 @@ int check_invalid_public_state_queries()
 {
     axis::AxisGroup disabled;
     const axis::GroupMotionState disabled_state = disabled.motion_state();
-    if(disabled_state.in_position || disabled_state.standstill ||
-       disabled.path_derivative(false) != 0.0 || disabled.path_derivative(true) != 0.0 ||
-       disabled.command_info(0).error() != rt::ErrorCode::out_of_range) {
+    if (disabled_state.in_position || disabled_state.standstill ||
+        disabled.path_derivative(false) != 0.0 || disabled.path_derivative(true) != 0.0 ||
+        disabled.command_info(0).error() != rt::ErrorCode::out_of_range)
+    {
         return fail("state query: disabled and zero ID");
     }
 
@@ -589,8 +644,9 @@ int check_invalid_public_state_queries()
     member.trigger_error();
     error_group.cycle();
     const axis::GroupMotionState error_state = error_group.motion_state();
-    if(error_group.status() != axis::GroupStatus::errorstop || error_state.in_position ||
-       error_state.standstill || error_state.active_command_id != 0) {
+    if (error_group.status() != axis::GroupStatus::errorstop || error_state.in_position ||
+        error_state.standstill || error_state.active_command_id != 0)
+    {
         return fail("state query: errorstop contract");
     }
     std::printf("  PASS invalid_public_state_queries\n");
@@ -612,15 +668,17 @@ int check_parameters_and_dynamics()
     write_reference.deceleration = 2.0;
     write_reference.jerk = 2.0;
     write_reference.call();
-    if(!write_reference.outputs.done || write_reference.outputs.error) {
+    if (!write_reference.outputs.done || write_reference.outputs.error)
+    {
         return fail("dynamics: reference write");
     }
     fb::FbGroupReadReferenceDynamics read_reference;
     read_reference.group_ref = &group;
     read_reference.enable = true;
     read_reference.call();
-    if(!read_reference.valid || read_reference.value.velocity != 2.0 ||
-       read_reference.value.jerk != 2.0) {
+    if (!read_reference.valid || read_reference.value.velocity != 2.0 ||
+        read_reference.value.jerk != 2.0)
+    {
         return fail("dynamics: reference read");
     }
 
@@ -642,8 +700,9 @@ int check_parameters_and_dynamics()
     read_default.group_ref = &group;
     read_default.enable = true;
     read_default.call();
-    if(!write_default.outputs.done || !read_default.valid ||
-       read_default.value.velocity != 0.5 || read_reference.value.velocity != 2.0) {
+    if (!write_default.outputs.done || !read_default.valid || read_default.value.velocity != 0.5 ||
+        read_reference.value.velocity != 2.0)
+    {
         return fail("dynamics: independent default slot");
     }
 
@@ -653,14 +712,16 @@ int check_parameters_and_dynamics()
     parameter.parameter = axis::GroupParameter::dynamics_mode;
     parameter.value = static_cast<double>(axis::DynamicsMode::percentage);
     parameter.call();
-    if(!parameter.outputs.done) return fail("parameter: percentage write");
+    if (!parameter.outputs.done)
+        return fail("parameter: percentage write");
     fb::FbGroupReadParameter read_parameter;
     read_parameter.group_ref = &group;
     read_parameter.enable = true;
     read_parameter.parameter = axis::GroupParameter::dynamics_mode;
     read_parameter.call();
-    if(!read_parameter.valid ||
-       read_parameter.value != static_cast<double>(axis::DynamicsMode::percentage)) {
+    if (!read_parameter.valid ||
+        read_parameter.value != static_cast<double>(axis::DynamicsMode::percentage))
+    {
         return fail("parameter: percentage read");
     }
     parameter.execute = false;
@@ -669,12 +730,13 @@ int check_parameters_and_dynamics()
     parameter.parameter = axis::GroupParameter::transition_reference_point;
     parameter.value = static_cast<double>(axis::TransitionReferencePoint::start_point);
     parameter.call();
-    if(!parameter.outputs.error ||
-       parameter.outputs.error_id != rt::ErrorCode::unsupported) {
+    if (!parameter.outputs.error || parameter.outputs.error_id != rt::ErrorCode::unsupported)
+    {
         return fail("parameter: start point rejected");
     }
 
-    for(auto &member : axes) member.set_power(true);
+    for (auto &member : axes)
+        member.set_power(true);
     group.enable();
     axis::GroupCommand command{};
     command.target.size = 2;
@@ -685,13 +747,15 @@ int check_parameters_and_dynamics()
     command.deceleration = 50.0;
     command.jerk = 50.0;
     const rt::Result<std::uint32_t> submitted = group.submit_linear(command);
-    if(!submitted) return fail("dynamics: percentage submit");
+    if (!submitted)
+        return fail("dynamics: percentage submit");
     fb::FbGroupReadCommandInfo info;
     info.group_ref = &group;
     info.enable = true;
     info.command_id = submitted.value();
     info.call();
-    if(!info.valid || info.info.remaining_cycles <= 1) {
+    if (!info.valid || info.info.remaining_cycles <= 1)
+    {
         return fail("dynamics: percentage affects new command");
     }
     write_reference.execute = false;
@@ -699,8 +763,9 @@ int check_parameters_and_dynamics()
     write_reference.execute = true;
     write_reference.velocity = 3.0;
     write_reference.call();
-    if(!write_reference.outputs.error ||
-       write_reference.outputs.error_id != rt::ErrorCode::precondition_failed) {
+    if (!write_reference.outputs.error ||
+        write_reference.outputs.error_id != rt::ErrorCode::precondition_failed)
+    {
         return fail("dynamics: active write rejected");
     }
     std::printf("  PASS parameters_and_dynamics\n");
@@ -722,36 +787,40 @@ int check_group_sw_limits_transaction()
     write.execute = true;
     write.limit_values = limits;
     write.call();
-    if(!write.outputs.done || write.outputs.error) {
+    if (!write.outputs.done || write.outputs.error)
+    {
         return fail("sw_limits: transaction write");
     }
     fb::FbGroupReadSWLimits read;
     read.group_ref = &group;
     read.enable = true;
     read.call();
-    if(!read.valid || read.limit_values.count != 2 ||
-       read.limit_values.value[1].maximum != 2.0) {
+    if (!read.valid || read.limit_values.count != 2 || read.limit_values.value[1].maximum != 2.0)
+    {
         return fail("sw_limits: transaction read");
     }
     axis::MotionLimits external{};
     external.max_position_enabled = true;
     external.max_position = 5.0;
-    if(axes[0].configure_limits(external) != rt::ErrorCode::precondition_failed) {
+    if (axes[0].configure_limits(external) != rt::ErrorCode::precondition_failed)
+    {
         return fail("sw_limits: grouped external write rejected");
     }
-    for(auto &member : axes) member.set_power(true);
+    for (auto &member : axes)
+        member.set_power(true);
     group.enable();
     axis::GroupCommand command{};
     command.target.size = 2;
     command.target.value[0] = 0.5;
     command.target.value[1] = 3.0;
-    if(group.submit_linear(command).error() != rt::ErrorCode::out_of_range) {
+    if (group.submit_linear(command).error() != rt::ErrorCode::out_of_range)
+    {
         return fail("sw_limits: new command constrained");
     }
-    if(group.disable() != rt::ErrorCode::ok ||
-       group.remove_axis(axes[0]) != rt::ErrorCode::ok ||
-       axes[0].set_power(false) != rt::ErrorCode::ok ||
-       axes[0].configure_limits(external) != rt::ErrorCode::ok) {
+    if (group.disable() != rt::ErrorCode::ok || group.remove_axis(axes[0]) != rt::ErrorCode::ok ||
+        axes[0].set_power(false) != rt::ErrorCode::ok ||
+        axes[0].configure_limits(external) != rt::ErrorCode::ok)
+    {
         return fail("sw_limits: removed axis regains ownership");
     }
     std::printf("  PASS group_sw_limits_transaction\n");
@@ -762,18 +831,21 @@ int check_group_sw_limits_read_lifecycle()
 {
     fb::FbGroupReadSWLimits read;
     read.call();
-    if(read.valid || read.error || read.limit_values.count != 0) {
+    if (read.valid || read.error || read.limit_values.count != 0)
+    {
         return fail("sw_limits: disabled read clears outputs");
     }
     read.enable = true;
     read.call();
-    if(!read.error || read.error_id != rt::ErrorCode::invalid_argument ||
-       read.valid || read.limit_values.count != 0) {
+    if (!read.error || read.error_id != rt::ErrorCode::invalid_argument || read.valid ||
+        read.limit_values.count != 0)
+    {
         return fail("sw_limits: null group rejected");
     }
     read.enable = false;
     read.call();
-    if(read.valid || read.error || read.error_id != rt::ErrorCode::ok) {
+    if (read.valid || read.error || read.error_id != rt::ErrorCode::ok)
+    {
         return fail("sw_limits: disable clears error");
     }
     return 0;
@@ -783,14 +855,16 @@ int check_dynamics_partial_updates_and_capacity()
 {
     axis::AxisModel axes[8];
     axis::AxisGroup group;
-    for(auto &member : axes) group.add_axis(member);
+    for (auto &member : axes)
+        group.add_axis(member);
 
     fb::FbGroupWriteJoggingDynamics write;
     write.group_ref = &group;
     write.execute = true;
     write.value.size = 8;
     write.value.path = {4.0, 3.0, 2.0, 1.0};
-    for(std::size_t i = 0; i < 8; ++i) {
+    for (std::size_t i = 0; i < 8; ++i)
+    {
         write.value.axis_velocity[i] = static_cast<double>(i + 1);
         write.value.axis_acceleration[i] = 2.0;
         write.value.axis_deceleration[i] = 3.0;
@@ -801,15 +875,17 @@ int check_dynamics_partial_updates_and_capacity()
     read.group_ref = &group;
     read.enable = true;
     read.call();
-    if(!write.outputs.done || !read.valid || read.value.size != 8 ||
-       read.value.axis_velocity[7] != 8.0 || read.value.path.jerk != 1.0) {
+    if (!write.outputs.done || !read.valid || read.value.size != 8 ||
+        read.value.axis_velocity[7] != 8.0 || read.value.path.jerk != 1.0)
+    {
         return fail("dynamics: eight-axis jogging roundtrip");
     }
     write.execute = false;
     write.call();
     write.execute = true;
     write.value.path = {0.0, -1.0, 5.0, 0.0};
-    for(std::size_t i = 0; i < 8; ++i) {
+    for (std::size_t i = 0; i < 8; ++i)
+    {
         write.value.axis_velocity[i] = 0.0;
         write.value.axis_acceleration[i] = -1.0;
         write.value.axis_deceleration[i] = 0.0;
@@ -817,9 +893,10 @@ int check_dynamics_partial_updates_and_capacity()
     }
     write.call();
     read.call();
-    if(!write.outputs.done || read.value.path.velocity != 4.0 ||
-       read.value.path.acceleration != 3.0 || read.value.path.deceleration != 5.0 ||
-       read.value.axis_velocity[7] != 8.0) {
+    if (!write.outputs.done || read.value.path.velocity != 4.0 ||
+        read.value.path.acceleration != 3.0 || read.value.path.deceleration != 5.0 ||
+        read.value.axis_velocity[7] != 8.0)
+    {
         return fail("dynamics: zero and negative preserve old fields");
     }
     const axis::JoggingDynamics before = read.value;
@@ -829,9 +906,10 @@ int check_dynamics_partial_updates_and_capacity()
     write.value.axis_jerk[3] = std::numeric_limits<double>::quiet_NaN();
     write.call();
     read.call();
-    if(!write.outputs.error || write.outputs.error_id != rt::ErrorCode::invalid_argument ||
-       read.value.axis_jerk[3] != before.axis_jerk[3] ||
-       read.value.path.deceleration != before.path.deceleration) {
+    if (!write.outputs.error || write.outputs.error_id != rt::ErrorCode::invalid_argument ||
+        read.value.axis_jerk[3] != before.axis_jerk[3] ||
+        read.value.path.deceleration != before.path.deceleration)
+    {
         return fail("dynamics: invalid update atomic");
     }
     std::printf("  PASS dynamics_partial_updates_and_capacity\n");
@@ -852,7 +930,8 @@ int check_default_dynamics_and_invalid_limits()
     write_default.deceleration = 0.02;
     write_default.jerk = 0.02;
     write_default.call();
-    for(auto &member : axes) member.set_power(true);
+    for (auto &member : axes)
+        member.set_power(true);
     group.enable();
     axis::GroupCommand command{};
     command.target.size = 2;
@@ -869,10 +948,11 @@ int check_default_dynamics_and_invalid_limits()
     info.enable = true;
     info.command_id = submitted ? submitted.value() : 0;
     info.call();
-    const rt::Result<otg::Profile1D> expected = otg::plan_time_optimal(
-        {0.0, 0.0, 0.0}, {1.0, 0.0, 0.0}, {0.02, 0.02, 0.02, 0.02});
-    if(!submitted || !info.valid || !expected ||
-       info.info.remaining_cycles != expected.value().duration_cycles()) {
+    const rt::Result<otg::Profile1D> expected =
+        otg::plan_time_optimal({0.0, 0.0, 0.0}, {1.0, 0.0, 0.0}, {0.02, 0.02, 0.02, 0.02});
+    if (!submitted || !info.valid || !expected ||
+        info.info.remaining_cycles != expected.value().duration_cycles())
+    {
         return fail("dynamics: explicit default bypasses percentage scaling");
     }
 
@@ -893,9 +973,10 @@ int check_default_dynamics_and_invalid_limits()
     write.limit_values.value[1] = {2.0, -2.0, true, true};
     write.call();
     read.call();
-    if(!write.outputs.error || write.outputs.error_id != rt::ErrorCode::invalid_argument ||
-       read.limit_values.value[0].minimum != before.value[0].minimum ||
-       read.limit_values.value[0].minimum_enabled != before.value[0].minimum_enabled) {
+    if (!write.outputs.error || write.outputs.error_id != rt::ErrorCode::invalid_argument ||
+        read.limit_values.value[0].minimum != before.value[0].minimum ||
+        read.limit_values.value[0].minimum_enabled != before.value[0].minimum_enabled)
+    {
         return fail("sw_limits: invalid table atomic");
     }
     std::printf("  PASS default_dynamics_and_invalid_limits\n");

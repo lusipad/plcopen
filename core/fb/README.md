@@ -61,16 +61,17 @@ fixed `AxisModel` IO banks and info bits. With it the v0.x public FB surface is 
 （2026-07-12 审计时点 C++ 字段面；P1-A 已补 4 项结构缺口，其余命名/形态
 缺口归 L2a 引脚层）、条款级问题 D-01~D-20 中 16 项未清（D-05/D-12/D-13/
 D-15 已关；不能宣称合规），Part 4 同名门面 68/68（KB-078，接口/语义仍
-逐项部分覆盖），Part 5 11/11 有门面但
-旧五块接口/语义与派生类型仍部分覆盖——
+逐项部分覆盖），Part 5 11/11 已完成标准名称、派生类型、逐 I/O 和
+可软件验证语义收口（KB-080）——
 逐条审计公开于 [doc/compliance/](../../doc/compliance/)。硬件 `Servo` 窄接口
 已在 [core/adapters](../adapters/README.md) 交付（ADR-0004，含 CiA402 状态机
 与 CSP/CSV/CST 模式管理）。
 
 `group.h` carries the execute-based group administration facades
 (`FbAddAxisToGroup`, `FbRemoveAxisFromGroup`, `FbGroupReset`, `FbGroupReadStatus`,
-`FbGroupReadActualPosition`, `FbGroupReadCommandPosition`)：群组管理方法在
-触发周期内完成，done 随 execute 下降沿清除。
+`FbGroupReadPosition`)：群组管理方法在触发周期内完成，done 随 execute
+下降沿清除；位置回读通过标准 `Source` 输入选择 actual/command/set，
+其中 set 当前显式返回 `unsupported`，不保留旧名包装。
 P4-B2（KB-076）另提供工具/载荷固定容量库与 active/selected 回读，以及
 `FbGroupJog`/`FbGroupJogVector` 的 Enable 生命周期；Jog 消费专用 Dynamics，
 按 jerk/acc 包络持续驱动 ACS/MCS/PCS，并在松键、GroupStop 或接管时受控停车。
@@ -78,13 +79,14 @@ P4-B3（KB-077）增加刚体动态整体读写、组里程到单轴同步、Pat
 以及动态坐标、输送带和转台跟踪。带 Dynamics 的轴到组同步先报告
 `approaching`，追上后才报告 `InSync`；首次同步后采用 position-locking。
 
-`homing.h` carries the Part 5 composable homing step FBs（`FbStepDirect`、
-`FbStepAbsSwitch`、`FbStepLimitSwitch`、`FbStepRefPulse`、`FbFinishHoming`，
-已批矩阵 2026-07-07）：每个成功启动的 Step FB 清除 homed，只有
-MC_FinishHoming 置位；回零步骤期间软限位监控挂起、由 FinishHoming 恢复。
-P5-B（KB-072）另提供 StepBlock、DistanceCoded、HomeAbsolute、Flying
-Switch/RefPulse 与 AbortPassive；这些软件合同不替代真机堵转安全、厂商
-编码器协议或正式 Part 5 逐 I/O 合规声明。
+`homing.h` carries all 11 Part 5 FB facades: `FbStepAbsoluteSwitch`、
+`FbStepLimitSwitch`、`FbStepBlock`、`FbStepReferencePulse`、
+`FbStepDistanceCoded`、`FbHomeDirect`、`FbHomeAbsolute`、
+`FbFinishHoming`、两项 Flying 与 `FbAbortPassiveHoming`。主动 Step 保持
+Homing 状态，HomeDirect/HomeAbsolute/FinishHoming 完成最终状态转换；
+Flying 在线重标定保持绝对目标值不变。机读逐 I/O 声明见
+`doc/compliance/generated/plcopen-motion-part5-io.md`。这些软件合同不替代
+真机堵转安全、厂商编码器协议/时间戳、多圈真实性或 PLCopen 正式批准。
 
 `path_table.h` carries the Part 4 path table and transform FBs（`FbPathSelect`、
 `FbMovePath`、`FbSetKinTransform`、`FbReadCartesianTransform`、

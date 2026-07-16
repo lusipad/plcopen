@@ -9,8 +9,8 @@
 > 或可组合替代标准 FB。
 >
 > **结论：68 个 v2 FB 已有同名公开门面，但仍不能声明 Part 4 合规。**
-> v2 §1.3 与附录 1 的短表均列出 **68 个** FB；另保留 2 个旧名/自定义
-> Position 回读兼容门面。当前差距已从“缺门面”转为字段、数据引用、Notes
+> v2 §1.3 与附录 1 的短表均列出 **68 个** FB；C6 已删除 2 个旧名
+> Position 回读包装。当前差距已从“缺门面”转为字段、数据引用、Notes
 > 生命周期和 E 级组合的明确边界。
 
 ## 1. 审计方法与状态口径
@@ -42,14 +42,14 @@ v2 §2.1 将 v1 扩展为机器人动力学、工具/载荷、组参数、软件
 等待与更丰富回读；§2.2 同步 Part 1 v2 的接口约定。v1 的三项
 `MC_GroupReadActual{Position,Velocity,Acceleration}` 在 v2 改为带 Source 选择的
 `MC_GroupRead{Position,Velocity,Acceleration}`。P4-B1 已补三个 v2 Source 门面，
-其中 Position 保留两个旧名门面作兼容；`mcSetValue` 与非 ACS 高阶回读仍不支持。
+其中 Position 只保留 v2 Source 门面；`mcSetValue` 与非 ACS 高阶回读仍不支持。
 
 ### 2.2 v1 到 v2 的迁移账
 
 | 迁移类别 | 条款 | 当前情况 |
 |---|---|---|
 | 保留的 v1 FB | v2 §2.1、§9、§10 | ⚠️ 同名门面已齐；接口字段和 Notes 仍按逐项边界判定 |
-| 三个回读 FB 改型 | v2 §2.1、§9.14-9.16 | ⚠️ 三个 v2 Source 门面已存在；`mcSetValue` 与非 ACS 高阶回读仍缺，Position 旧名门面仅作兼容 |
+| 三个回读 FB 改型 | v2 §2.1、§9.14-9.16 | ⚠️ 三个 v2 Source 门面已存在；`mcSetValue` 与非 ACS 高阶回读仍缺；旧 Position 门面已删除 |
 | v2 新增管理/诊断 | v2 §9.5、§9.11-9.12、§9.17-9.24、§9.32-9.33 | ⚠️ P4-B1 与 C3 已关闭同名门面；`mcSetValue`、非 ACS 与部分 E 级仍缺 |
 | v2 新增机器人数据 | v2 §7-§8、§9.48-9.58 | ⚠️ P4-B2/B3 固定容量工具、载荷和刚体子集已实现；标准数据引用与动力学消费者仍有限 |
 | v2 新增运动 | v2 §9.9、§9.40、§9.44-9.47 | ⚠️ P4-B2/C3 已实现 GroupPower、Wait、Jog、JogVector 同名门面；组合范围见逐项边界 |
@@ -256,7 +256,7 @@ C3（KB-078）后，`core/fb/*.h` 已可检索到 v2 全部 68 个同名 C++ 门
 | 12 | `MC_ReadCartesianTransform` | 保留 | ⚠️ 自定义合并回读 |
 | 13 | `MC_ReadCoordinateTransform` | 保留 | ⚠️ C3 固定 6D 回读 |
 | 14 | `MC_GroupSetPosition` | 保留 | ⚠️ C3 Standby 原子子集 |
-| 15 | `MC_GroupReadActualPosition` | 改名/改型为 v2 `MC_GroupReadPosition(Source)` | ⚠️ v2 Source 门面及旧名兼容门面存在；`mcSetValue` 不支持 |
+| 15 | `MC_GroupReadActualPosition` | 改名/改型为 v2 `MC_GroupReadPosition(Source)` | ⚠️ 仅保留 v2 Source 门面；`mcSetValue` 不支持 |
 | 16 | `MC_GroupReadActualVelocity` | 改名/改型为 v2 `MC_GroupReadVelocity(Source)` | ⚠️ v2 ACS Source 门面存在；非 ACS 与 set source 不支持 |
 | 17 | `MC_GroupReadActualAcceleration` | 改名/改型为 v2 `MC_GroupReadAcceleration(Source)` | ⚠️ v2 ACS Source 门面存在；非 ACS 与 set source 不支持 |
 | 18 | `MC_GroupStop` | 保留 | ✅ |
@@ -305,7 +305,7 @@ v2；因此上表对缺失门面的判定同时适用于 v1。三个 v1 专项�
 
 | v1 条款 / FB | 当前判定 |
 |---|---|
-| §5.10 `MC_GroupReadActualPosition` | ⚠️ `FbGroupReadActualPosition` 同名语义近似，但 C++ 输出类型/生命周期仍非合规声明 |
+| §5.10 `MC_GroupReadActualPosition` | ⚠️ 由 v2 `FbGroupReadPosition(Source=actual)` 承接；不保留 v1 同名包装，C++ 输出类型/生命周期仍非合规声明 |
 | §5.11 `MC_GroupReadActualVelocity` | ⚠️ v2 ACS Source 门面可承接 actual；非 ACS 与 set source 不支持 |
 | §5.12 `MC_GroupReadActualAcceleration` | ⚠️ v2 ACS Source 门面可承接 actual；非 ACS 与 set source 不支持 |
 
@@ -330,7 +330,7 @@ v1 §3 状态图、§3.3 Input Execution Mode、§7 blending/buffering 不是因
 | D4-01 | 高 | v2 FB 总数被记为 63，原文两处均为 68 | 修正所有矩阵、manifest 与计划的分母；以 68 项机读源生成表 |
 | D4-02 | 高 | 现有 `part4-coverage.md` 仅 30 项且已失效 | 不得再作完成证据；由本审计或后续机读矩阵取代 |
 | D4-03 | 高 | P4-B1/P4-B2/P4-B3/C3 已关闭全部同名门面缺口；68 项均有公开门面，但多数仍属接口/语义子集 | 继续维护 68 项唯一清单，逐字段关闭或正式声明不支持 |
-| D4-04 | 高 | P4-B1 已提供 v2 三个 Source 型回读；`mcSetValue` 与非 ACS 高阶回读仍开放 | 保留旧 Position 门面仅作兼容层，后续单独裁决未支持 Source/坐标系 |
+| D4-04 | 高 | P4-B1 已提供 v2 三个 Source 型回读；`mcSetValue` 与非 ACS 高阶回读仍开放 | C6 已删除旧 Position 门面；继续逐项声明未支持 Source/坐标系 |
 | D4-05 | 高 | Add/Remove 缺标准 IdentInGroup 接口 | 明确成员标识模型并补配置回读/UngroupAllAxes |
 | D4-06 | 高 | 变换、同步、动态坐标、跟踪的标准门面大面积缺失 | 底层能力不得替代标准 FB；按 §9.10/§10 独立验收 |
 | D4-07 | 高 | 工具、载荷、刚体动力学整族缺失 | 先定义数据引用/所有权/更新时机，再实现 §9.48-9.57 |

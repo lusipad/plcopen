@@ -9,7 +9,7 @@
 
 | Gate | Workflow | 触发 | 证明对象 | Release blocking |
 |------|----------|------|----------|------------------|
-| Windows 主线 | `.github/workflows/windows-ci.yml` | `push`、`pull_request`、`workflow_dispatch` | RT scan、Part 1/2 matrix、replay fixture、完整 CTest（56 项，含 st 语言层与转换矩阵三方比对）、Windows coverage artifact（延迟门基准豁免插桩重跑，预算门仍在 CTest 强制）、installed/fetchcontent consumer | 是 |
+| Windows 主线 | `.github/workflows/windows-ci.yml` | `push`、`pull_request`、`workflow_dispatch` | RT scan、Part 1/2 与 Part 5 I/O matrix、replay fixture、完整 CTest（71 项，含 Part 5 C5、st 语言层与转换矩阵三方比对）、Windows coverage artifact（延迟门基准豁免插桩重跑，预算门仍在 CTest 强制）、installed/fetchcontent consumer | 是 |
 | Linux 主线 | `.github/workflows/linux-ci.yml` | `push`、`pull_request`、`workflow_dispatch` | gcc/clang Release 构建、RT scan、Part 1/2 matrix、replay fixture、完整 CTest（含两个 st 字节码锚点哈希的跨平台复验）、benchmark baseline、clang-tidy gate、ARM64/QEMU（matrix_check 经 CMAKE_CROSSCOMPILING_EMULATOR 执行）、Python binding、consumer smoke、API docs 生成 | 是 |
 | Coverage Gate | `.github/workflows/coverage.yml` | 每周一 `03:47 UTC`、`workflow_dispatch` | `cmake/coverage_gate.cmake` + gcovr 8.6；全 `core/` line >= 90% 为硬门；生产运动栈 `rt/otg/geom/plan/exec/axis/fb/kin/stream` branch 固定范围报告，85% 达标后启用硬门；上传两份 JSON summary，口径与首测见 `branch-coverage-baseline.md` | 周期质量门；发布前按需手动确认 |
 | Mutation Score Gate | `.github/workflows/mutation-score.yml` | 每周一 `03:17 UTC`、`workflow_dispatch` | `cmake/mutation_score_gate.cmake`，登记 mutation score 阈值（st 模块入抽查清单为计划补遗项） | 周期质量门；发布前按需手动确认 |

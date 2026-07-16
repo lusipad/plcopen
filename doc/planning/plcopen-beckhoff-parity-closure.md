@@ -1,7 +1,8 @@
 # PLCopen / Beckhoff 能力对等收束计划
 
-> 决策日期：2026-07-16。本文把“先收束 PLCopen，并与 Beckhoff 能力
-> 对等”转换成可验收的工程边界；执行优先级以根目录 `ROADMAP.md` 为准。
+> 决策日期：2026-07-16；完成日期：2026-07-17。本文把“先收束 PLCopen，
+> 并与 Beckhoff 能力对等”转换成可验收的工程边界；执行优先级以根目录
+> `ROADMAP.md` 为准。
 
 ## 1. 对等口径
 
@@ -27,7 +28,8 @@ C++ 公共 FB/API、逐周期状态机、错误合同和可重复验证证据。
 - 以轴数、品牌私有参数或 UI 数量做机械式数字对齐。
 
 ST 编译器不是本收束批的验收面；但 PLCopen 引脚合同继续保持机读化，后续
-ST 绑定只能消费同一合同，不能形成第二套 FB 语义。
+ST 绑定只能消费同一合同，不能形成第二套 FB 语义。项目是全新软件，不保留
+TwinCAT/CODESYS 或旧 C++ 公共门面的兼容包装。
 
 ## 2. “能力对等”的完成定义
 
@@ -59,7 +61,7 @@ ST 绑定只能消费同一合同，不能形成第二套 FB 语义。
 顺序是硬约束：先恢复证据门，再增加能力；任何新实现不得用降低门禁、扩大
 容差或把错误改成静默降级来换取通过。
 
-## 4. 当前基线
+## 4. 收束前基线（2026-07-16）
 
 - Part 4：68/68 有同名门面；接口/语义仍按逐项矩阵声明部分覆盖。
 - Part 1：43/43 公共 FB 面与 D-01~D-20 语义缺陷均已关闭；B/E/V 正式
@@ -80,6 +82,13 @@ ST 绑定只能消费同一合同，不能形成第二套 FB 语义。
 - C4 / Part 1/2 语义清零已完成（KB-079）：D-01～D-20 全部关闭，覆盖
   Execute 单拍终态、持续 Inxxx、Stop 锁、signed velocity、Torque owner、
   加速度 profile、moving SetPosition、错误归因/接续与 Enable 生命周期。
-- 该关闭只表示计划定义的核心能力片和名称面完成；PLCopen 认证、Beckhoff
-  黑盒性能对拍、Part 1 的未声明 B/E/V 子集、buffered 动态 PCS、
-  power-owner 与非 Cartesian ref 仍不在已完成声明内。下一门为 C5。
+- C5 / Part 5 已完成（KB-080）：11 个标准 FB、标准派生类型、45 B +
+  102 E 逐项机读声明和可软件验证语义闭合。
+- C6 / 对等验收已完成（KB-081）：能力按 implemented/partial/excluded
+  逐项登记，TwinCAT/CODESYS 指南改为能力迁移，旧 Position 回读包装删除。
+- 该关闭只表示计划定义的核心可编程运动能力与证据面完成；PLCopen 正式
+  批准、Beckhoff 黑盒性能对拍、真机实时/硬件真实性、Part 1/4 的正式
+  B/E/V 或 E/O 声明仍按矩阵标为 partial，不被软件收束冒充。
+
+最终总账见
+[`plcopen-beckhoff-parity-matrix.md`](../compliance/plcopen-beckhoff-parity-matrix.md)。

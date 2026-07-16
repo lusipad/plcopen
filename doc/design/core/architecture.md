@@ -203,7 +203,11 @@
 B 级 I/O 齐备 22/43 是 2026-07-12 的审计时点 C++ 字段面；P1-A 与 C4
 已继续补齐结构/语义，D-01～D-20 于 KB-079 全部关闭，但正式 B/E/V
 供应商声明仍未闭合，因而**不宣称合规**；Part 4 同名门面 68/68；
-Part 5 C++ 门面 11/11，但仍为部分覆盖。逐条审计公开于
+Part 5 C5 已完成 11/11 标准门面、45 B + 102 E 机读声明与可软件验证
+语义；硬件真实性和正式批准仍不属于软件证据。C6 的 Beckhoff 核心能力
+逐项状态见
+[`plcopen-beckhoff-parity-matrix.md`](../../compliance/plcopen-beckhoff-parity-matrix.md)。
+逐条 PLCopen 审计公开于
 [`doc/compliance/`](../../compliance/)（入口：
 [Part 1 条款矩阵](../../compliance/plcopen-part1-clause-matrix.md)、
 [Part 4 覆盖](../../compliance/part4-coverage.md)、

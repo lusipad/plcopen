@@ -11,9 +11,9 @@
 #include <cstdlib>
 #include <cstring>
 
+#include "adapters/feetech.h"
 #include "axis/group.h"
 #include "axis/state.h"
-#include "adapters/feetech.h"
 #include "fb/group.h"
 #include "fb/homing.h"
 
@@ -27,7 +27,8 @@ unsigned long long g_frozen_allocations = 0;
 
 void *operator new(std::size_t size)
 {
-    if(g_frozen) {
+    if (g_frozen)
+    {
         ++g_frozen_allocations;
     }
     return std::malloc(size ? size : 1);
@@ -35,31 +36,20 @@ void *operator new(std::size_t size)
 
 void *operator new[](std::size_t size)
 {
-    if(g_frozen) {
+    if (g_frozen)
+    {
         ++g_frozen_allocations;
     }
     return std::malloc(size ? size : 1);
 }
 
-void operator delete(void *pointer) noexcept
-{
-    std::free(pointer);
-}
+void operator delete(void *pointer) noexcept { std::free(pointer); }
 
-void operator delete[](void *pointer) noexcept
-{
-    std::free(pointer);
-}
+void operator delete[](void *pointer) noexcept { std::free(pointer); }
 
-void operator delete(void *pointer, std::size_t) noexcept
-{
-    std::free(pointer);
-}
+void operator delete(void *pointer, std::size_t) noexcept { std::free(pointer); }
 
-void operator delete[](void *pointer, std::size_t) noexcept
-{
-    std::free(pointer);
-}
+void operator delete[](void *pointer, std::size_t) noexcept { std::free(pointer); }
 
 namespace
 {
@@ -75,8 +65,10 @@ int fail(const char *name)
 long long parse_cycles(int argc, char **argv)
 {
     long long cycles = 20000;
-    for(int i = 1; i + 1 < argc; ++i) {
-        if(std::strcmp(argv[i], "--cycles") == 0) {
+    for (int i = 1; i + 1 < argc; ++i)
+    {
+        if (std::strcmp(argv[i], "--cycles") == 0)
+        {
             cycles = std::atoll(argv[i + 1]);
         }
     }
@@ -93,8 +85,8 @@ int main(int argc, char **argv)
 
     // Single-axis branch set: discrete profile + superimposed offset + armed
     // probe, gear-synchronized slave (the widest per-cycle set from R3).
-    axis::AxisModel master;
-    axis::AxisModel slave;
+    static axis::AxisModel master;
+    static axis::AxisModel slave;
     master.set_power(true);
     slave.set_power(true);
     {
@@ -116,11 +108,11 @@ int main(int argc, char **argv)
 
     // Group with a blended look-ahead window ending in a long circular arc:
     // covers the window line/curve sampling and the arc-length branch.
-    axis::AxisModel gx;
-    axis::AxisModel gy;
+    static axis::AxisModel gx;
+    static axis::AxisModel gy;
     gx.set_power(true);
     gy.set_power(true);
-    axis::AxisGroup group;
+    static axis::AxisGroup group;
     group.add_axis(gx);
     group.add_axis(gy);
     group.enable();
@@ -133,7 +125,8 @@ int main(int argc, char **argv)
         first.deceleration = 0.00002;
         first.jerk = 0.00002;
         group.submit_linear(first);
-        for(int i = 0; i < 5; ++i) {
+        for (int i = 0; i < 5; ++i)
+        {
             group.cycle();
         }
         axis::GroupCommand blend = first;
@@ -142,16 +135,17 @@ int main(int argc, char **argv)
         blend.buffer_mode = axis::BufferMode::blending_high;
         blend.transition_mode = axis::TransitionMode::max_corner_deviation;
         blend.transition_parameter = 0.05;
-        if(!group.submit_linear(blend)) {
+        if (!group.submit_linear(blend))
+        {
             return fail("setup window accepted");
         }
     }
 
-    axis::AxisModel cx;
-    axis::AxisModel cy;
+    static axis::AxisModel cx;
+    static axis::AxisModel cy;
     cx.set_power(true);
     cy.set_power(true);
-    axis::AxisGroup circle_group;
+    static axis::AxisGroup circle_group;
     circle_group.add_axis(cx);
     circle_group.add_axis(cy);
     circle_group.enable();
@@ -161,7 +155,8 @@ int main(int argc, char **argv)
         approach.target.value[0] = 1.0;
         approach.velocity = 0.5;
         circle_group.submit_linear(approach);
-        for(int i = 0; i < 100 && circle_group.status() != axis::GroupStatus::standby; ++i) {
+        for (int i = 0; i < 100 && circle_group.status() != axis::GroupStatus::standby; ++i)
+        {
             circle_group.cycle();
         }
         axis::GroupCommand arc{};
@@ -173,7 +168,8 @@ int main(int argc, char **argv)
         arc.target.value[1] = 1.0;
         arc.velocity = 1.0e-9; // stays inside the arc for the whole window
         arc.path_choice = axis::CircPathChoice::counter_clockwise;
-        if(!circle_group.submit_circular(arc)) {
+        if (!circle_group.submit_circular(arc))
+        {
             return fail("setup arc accepted");
         }
     }
@@ -181,7 +177,7 @@ int main(int argc, char **argv)
     // Warm up stdio before freezing (first printf may allocate its buffer).
     std::printf("a2 alloc guard: frozen window of %lld cycles\n", frozen_cycles);
 
-    axis::AxisModel homing_axis;
+    static axis::AxisModel homing_axis;
     homing_axis.set_power(true);
     fb::FbStepBlock step_block;
     step_block.axis_ref = &homing_axis;
@@ -192,12 +188,13 @@ int main(int argc, char **argv)
     fb::FbStepReferenceFlyingRefPulse flying;
     flying.axis_ref = &master;
     flying.execute = true;
-    flying.trigger_input = 1;
+    flying.reference_signal.input = 1;
     flying.call();
 
-    axis::AxisModel read_axes[2];
-    axis::AxisGroup read_group;
-    for(auto &axis : read_axes) {
+    static axis::AxisModel read_axes[2];
+    static axis::AxisGroup read_group;
+    for (auto &axis : read_axes)
+    {
         axis.set_power(true);
         read_group.add_axis(axis);
     }
@@ -220,7 +217,8 @@ int main(int argc, char **argv)
 
     static axis::AxisModel jog_axes[2];
     static axis::AxisGroup jog_group;
-    for(auto &axis : jog_axes) {
+    for (auto &axis : jog_axes)
+    {
         axis.set_power(true);
         jog_group.add_axis(axis);
     }
@@ -228,7 +226,8 @@ int main(int argc, char **argv)
     axis::JoggingDynamics jog_dynamics{};
     jog_dynamics.size = 2;
     jog_dynamics.path = {0.01, 0.001, 0.001, 0.0001};
-    for(std::size_t i = 0; i < 2; ++i) {
+    for (std::size_t i = 0; i < 2; ++i)
+    {
         jog_dynamics.axis_velocity[i] = 0.001;
         jog_dynamics.axis_acceleration[i] = 0.0001;
         jog_dynamics.axis_deceleration[i] = 0.0001;
@@ -256,7 +255,8 @@ int main(int argc, char **argv)
     // ---- Frozen window: any heap allocation is a defect -----------------
     g_frozen_allocations = 0;
     g_frozen = true;
-    for(long long i = 0; i < frozen_cycles; ++i) {
+    for (long long i = 0; i < frozen_cycles; ++i)
+    {
         master.cycle();
         slave.cycle();
         group.cycle();
@@ -272,18 +272,20 @@ int main(int argc, char **argv)
         read_motion.call();
         read_limits.call();
         adapters::ServoSetpoints feetech_setpoints{};
-        feetech_setpoints.position = static_cast<double>(i & 4095) *
-                                      adapters::FeetechConfig::RadiansPerCount;
+        feetech_setpoints.position =
+            static_cast<double>(i & 4095) * adapters::FeetechConfig::RadiansPerCount;
         feetech_servo.write_setpoints(feetech_setpoints);
         feetech.build_cycle(feetech_write, feetech_read);
         feetech_sim.exchange(feetech_write, feetech_read, feetech_responses, 2);
         feetech.begin_feedback_cycle();
-        for(const auto &response : feetech_responses) feetech.consume(response);
+        for (const auto &response : feetech_responses)
+            feetech.consume(response);
         feetech.end_feedback_cycle();
     }
     g_frozen = false;
 
-    if(g_frozen_allocations != 0) {
+    if (g_frozen_allocations != 0)
+    {
         std::printf("FAIL frozen cycle path allocated %llu time(s)\n", g_frozen_allocations);
         return 1;
     }
@@ -298,11 +300,11 @@ int main(int argc, char **argv)
     void *probe = ::operator new(sizeof(int));
     g_frozen = false;
     ::operator delete(probe);
-    if(g_frozen_allocations != 1) {
+    if (g_frozen_allocations != 1)
+    {
         return fail("allocation guard self-check");
     }
 
-    std::printf("PASS a2 alloc guard (%lld frozen cycles, zero allocations)\n",
-                frozen_cycles);
+    std::printf("PASS a2 alloc guard (%lld frozen cycles, zero allocations)\n", frozen_cycles);
     return 0;
 }

@@ -14,18 +14,19 @@ namespace plcopen::core::fb
 // within the triggering cycle; done clears on the falling edge.
 class GroupAdminFb
 {
-public:
+  public:
     axis::AxisGroup *group_ref = nullptr;
     axis::AxisModel *axis_ref = nullptr;
     bool execute = false;
     MotionOutputs outputs{};
 
-protected:
+  protected:
     bool rising_edge()
     {
         const bool rising = execute && !last_execute_;
         last_execute_ = execute;
-        if(!execute) {
+        if (!execute)
+        {
             clear(outputs);
         }
         return rising;
@@ -34,7 +35,8 @@ protected:
     void finish(rt::ErrorCode result)
     {
         clear(outputs);
-        if(result != rt::ErrorCode::ok) {
+        if (result != rt::ErrorCode::ok)
+        {
             outputs.error = true;
             outputs.error_id = result;
             return;
@@ -42,19 +44,21 @@ protected:
         outputs.done = true;
     }
 
-private:
+  private:
     bool last_execute_ = false;
 };
 
 class FbAddAxisToGroup : public GroupAdminFb
 {
-public:
+  public:
     void call()
     {
-        if(!rising_edge()) {
+        if (!rising_edge())
+        {
             return;
         }
-        if(group_ref == nullptr || axis_ref == nullptr) {
+        if (group_ref == nullptr || axis_ref == nullptr)
+        {
             finish(rt::ErrorCode::invalid_argument);
             return;
         }
@@ -64,13 +68,15 @@ public:
 
 class FbRemoveAxisFromGroup : public GroupAdminFb
 {
-public:
+  public:
     void call()
     {
-        if(!rising_edge()) {
+        if (!rising_edge())
+        {
             return;
         }
-        if(group_ref == nullptr || axis_ref == nullptr) {
+        if (group_ref == nullptr || axis_ref == nullptr)
+        {
             finish(rt::ErrorCode::invalid_argument);
             return;
         }
@@ -80,13 +86,15 @@ public:
 
 class FbGroupReset : public GroupAdminFb
 {
-public:
+  public:
     void call()
     {
-        if(!rising_edge()) {
+        if (!rising_edge())
+        {
             return;
         }
-        if(group_ref == nullptr) {
+        if (group_ref == nullptr)
+        {
             finish(rt::ErrorCode::invalid_argument);
             return;
         }
@@ -98,7 +106,7 @@ public:
 // synchronization so gear/cam slaves keep the v0.x observable group state.
 class FbGroupReadStatus
 {
-public:
+  public:
     axis::AxisGroup *group_ref = nullptr;
     bool enable = false;
     bool valid = false;
@@ -119,13 +127,15 @@ public:
         stopping = false;
         error_stop = false;
         interrupted = false;
-        if(!enable) {
+        if (!enable)
+        {
             valid = false;
             error = false;
             error_id = rt::ErrorCode::ok;
             return;
         }
-        if(group_ref == nullptr) {
+        if (group_ref == nullptr)
+        {
             valid = false;
             error = true;
             error_id = rt::ErrorCode::invalid_argument;
@@ -133,9 +143,11 @@ public:
         }
         const axis::GroupStatus status = group_ref->status();
         bool member_synchronized = false;
-        for(std::size_t i = 0; i < group_ref->member_count(); ++i) {
+        for (std::size_t i = 0; i < group_ref->member_count(); ++i)
+        {
             const axis::AxisModel *axis = group_ref->member(i);
-            if(axis != nullptr && axis->status() == axis::AxisStatus::synchronized_motion) {
+            if (axis != nullptr && axis->status() == axis::AxisStatus::synchronized_motion)
+            {
                 member_synchronized = true;
                 break;
             }
@@ -159,7 +171,7 @@ public:
 // read, byte-identical to the pre-batch behavior.
 class GroupPositionReadFb
 {
-public:
+  public:
     axis::AxisGroup *group_ref = nullptr;
     bool enable = false;
     axis::CoordSystem coord_system = axis::CoordSystem::acs;
@@ -169,31 +181,34 @@ public:
     rt::ErrorCode error_id = rt::ErrorCode::ok;
     axis::GroupPosition position{};
 
-protected:
+  protected:
     void read(bool actual)
     {
         gimbal_lock = false;
-        if(!enable) {
+        if (!enable)
+        {
             valid = false;
             error = false;
             error_id = rt::ErrorCode::ok;
             position = {};
             return;
         }
-        if(group_ref == nullptr) {
+        if (group_ref == nullptr)
+        {
             valid = false;
             error = true;
             error_id = rt::ErrorCode::invalid_argument;
             position = {};
             return;
         }
-        if(coord_system != axis::CoordSystem::acs) {
+        if (coord_system != axis::CoordSystem::acs)
+        {
             bool gimbal = false;
             const rt::ErrorCode code = group_ref->read_cartesian(
-                coord_system,
-                actual ? axis::PositionSource::actual : axis::PositionSource::command,
+                coord_system, actual ? axis::PositionSource::actual : axis::PositionSource::command,
                 position, &gimbal);
-            if(code != rt::ErrorCode::ok) {
+            if (code != rt::ErrorCode::ok)
+            {
                 valid = false;
                 error = true;
                 error_id = code;
@@ -207,7 +222,8 @@ protected:
             return;
         }
         position.size = group_ref->member_count();
-        for(std::size_t i = 0; i < position.size; ++i) {
+        for (std::size_t i = 0; i < position.size; ++i)
+        {
             const axis::AxisModel *axis = group_ref->member(i);
             const axis::AxisSnapshot &snapshot = axis->snapshot();
             position.value[i] = actual ? snapshot.actual_position : snapshot.command_position;
@@ -218,31 +234,15 @@ protected:
     }
 };
 
-class FbGroupReadActualPosition : public GroupPositionReadFb
-{
-public:
-    void call()
-    {
-        read(true);
-    }
-};
-
-class FbGroupReadCommandPosition : public GroupPositionReadFb
-{
-public:
-    void call()
-    {
-        read(false);
-    }
-};
-
 class FbUngroupAllAxes : public GroupAdminFb
 {
-public:
+  public:
     void call()
     {
-        if(!rising_edge()) return;
-        if(group_ref == nullptr) {
+        if (!rising_edge())
+            return;
+        if (group_ref == nullptr)
+        {
             finish(rt::ErrorCode::invalid_argument);
             return;
         }
@@ -252,7 +252,7 @@ public:
 
 class FbGroupPower
 {
-public:
+  public:
     axis::AxisGroup *group_ref = nullptr;
     bool enable = false;
     bool status = false;
@@ -262,7 +262,8 @@ public:
 
     void call()
     {
-        if(group_ref == nullptr) {
+        if (group_ref == nullptr)
+        {
             status = false;
             valid = false;
             error = true;
@@ -279,7 +280,7 @@ public:
 
 class FbGroupSetPosition : public GroupAdminFb
 {
-public:
+  public:
     axis::GroupPosition position{};
     bool relative = false;
     axis::CoordSystem coordinate_system = axis::CoordSystem::acs;
@@ -287,19 +288,21 @@ public:
 
     void call()
     {
-        if(!rising_edge()) return;
-        if(group_ref == nullptr) {
+        if (!rising_edge())
+            return;
+        if (group_ref == nullptr)
+        {
             finish(rt::ErrorCode::invalid_argument);
             return;
         }
-        finish(group_ref->set_group_position(
-            position, relative, coordinate_system, execution_mode));
+        finish(
+            group_ref->set_group_position(position, relative, coordinate_system, execution_mode));
     }
 };
 
 class FbGroupReadError
 {
-public:
+  public:
     axis::AxisGroup *group_ref = nullptr;
     bool enable = false;
     bool valid = false;
@@ -309,14 +312,16 @@ public:
 
     void call()
     {
-        if(!enable) {
+        if (!enable)
+        {
             valid = false;
             error = false;
             error_id = rt::ErrorCode::ok;
             group_error_id = rt::ErrorCode::ok;
             return;
         }
-        if(group_ref == nullptr) {
+        if (group_ref == nullptr)
+        {
             valid = false;
             error = true;
             error_id = rt::ErrorCode::invalid_argument;
@@ -332,7 +337,7 @@ public:
 
 class FbGroupReadConfiguration
 {
-public:
+  public:
     axis::AxisGroup *group_ref = nullptr;
     bool enable = false;
     axis::IdentInGroup ident{};
@@ -352,18 +357,22 @@ public:
         error_id = rt::ErrorCode::ok;
         axis_ref = nullptr;
         axis_id = 0;
-        if(!enable) return;
-        if(group_ref == nullptr) return fail(rt::ErrorCode::invalid_argument);
-        if(coord_system != axis::CoordSystem::acs) {
+        if (!enable)
+            return;
+        if (group_ref == nullptr)
+            return fail(rt::ErrorCode::invalid_argument);
+        if (coord_system != axis::CoordSystem::acs)
+        {
             return fail(rt::ErrorCode::unsupported);
         }
         axis_ref = group_ref->member(ident.index);
-        if(axis_ref == nullptr) return fail(rt::ErrorCode::out_of_range);
+        if (axis_ref == nullptr)
+            return fail(rt::ErrorCode::out_of_range);
         axis_id = ident.index;
         valid = true;
     }
 
-private:
+  private:
     void fail(rt::ErrorCode code)
     {
         error = true;
@@ -375,7 +384,7 @@ private:
 
 class FbReadAxisGroupInfo
 {
-public:
+  public:
     const axis::AxisModel *axis_ref = nullptr;
     bool enable = false;
     bool valid = false;
@@ -395,14 +404,17 @@ public:
         group_ref = nullptr;
         group_id = 0;
         ident = {};
-        if(!enable) return;
-        if(axis_ref == nullptr || axis_ref->group_owner() == nullptr) {
+        if (!enable)
+            return;
+        if (axis_ref == nullptr || axis_ref->group_owner() == nullptr)
+        {
             return fail(axis_ref == nullptr ? rt::ErrorCode::invalid_argument
                                             : rt::ErrorCode::precondition_failed);
         }
         group_ref = static_cast<axis::AxisGroup *>(axis_ref->group_owner());
         const std::size_t index = group_ref->member_index(*axis_ref);
-        if(index >= group_ref->member_count()) {
+        if (index >= group_ref->member_count())
+        {
             group_ref = nullptr;
             return fail(rt::ErrorCode::precondition_failed);
         }
@@ -410,7 +422,7 @@ public:
         valid = true;
     }
 
-private:
+  private:
     void fail(rt::ErrorCode code)
     {
         error = true;
@@ -420,7 +432,7 @@ private:
 
 class FbReadDHParameters
 {
-public:
+  public:
     axis::AxisGroup *group_ref = nullptr;
     bool enable = false;
     bool valid = false;
@@ -432,18 +444,22 @@ public:
     void call()
     {
         clear();
-        if(!enable) return;
-        if(group_ref == nullptr) return fail(rt::ErrorCode::invalid_argument);
+        if (!enable)
+            return;
+        if (group_ref == nullptr)
+            return fail(rt::ErrorCode::invalid_argument);
         const rt::Result<axis::GroupKinematicsInfo> info = group_ref->kinematics_info();
-        if(!info) return fail(info.error());
+        if (!info)
+            return fail(info.error());
         parameters.count = info.value().count;
-        for(std::size_t i = 0; i < parameters.count; ++i) {
+        for (std::size_t i = 0; i < parameters.count; ++i)
+        {
             parameters.value[i] = info.value().dh[i];
         }
         valid = true;
     }
 
-private:
+  private:
     void clear()
     {
         valid = false;
@@ -461,7 +477,7 @@ private:
 
 class FbReadJointInfo
 {
-public:
+  public:
     axis::AxisGroup *group_ref = nullptr;
     bool enable = false;
     bool valid = false;
@@ -473,19 +489,22 @@ public:
     void call()
     {
         clear();
-        if(!enable) return;
-        if(group_ref == nullptr) return fail(rt::ErrorCode::invalid_argument);
-        const rt::Result<axis::GroupKinematicsInfo> metadata =
-            group_ref->kinematics_info();
-        if(!metadata) return fail(metadata.error());
+        if (!enable)
+            return;
+        if (group_ref == nullptr)
+            return fail(rt::ErrorCode::invalid_argument);
+        const rt::Result<axis::GroupKinematicsInfo> metadata = group_ref->kinematics_info();
+        if (!metadata)
+            return fail(metadata.error());
         info.count = metadata.value().count;
-        for(std::size_t i = 0; i < info.count; ++i) {
+        for (std::size_t i = 0; i < info.count; ++i)
+        {
             info.value[i] = metadata.value().joint[i];
         }
         valid = true;
     }
 
-private:
+  private:
     void clear()
     {
         valid = false;
@@ -503,11 +522,12 @@ private:
 
 class FbGroupReadPosition : public GroupPositionReadFb
 {
-public:
+  public:
     axis::GroupValueSource source = axis::GroupValueSource::actual;
     void call()
     {
-        if(source == axis::GroupValueSource::set) {
+        if (source == axis::GroupValueSource::set)
+        {
             valid = false;
             error = enable;
             error_id = enable ? rt::ErrorCode::unsupported : rt::ErrorCode::ok;
@@ -520,7 +540,7 @@ public:
 
 class GroupDerivativeReadFb
 {
-public:
+  public:
     axis::AxisGroup *group_ref = nullptr;
     bool enable = false;
     axis::CoordSystem coord_system = axis::CoordSystem::acs;
@@ -532,7 +552,7 @@ public:
     axis::GroupPosition value{};
     double path_value = 0.0;
 
-protected:
+  protected:
     void read(bool acceleration)
     {
         valid = false;
@@ -541,28 +561,34 @@ protected:
         error_id = rt::ErrorCode::ok;
         value = {};
         path_value = 0.0;
-        if(!enable) return;
-        if(group_ref == nullptr) return fail(rt::ErrorCode::invalid_argument);
-        if(coord_system != axis::CoordSystem::acs ||
-           source == axis::GroupValueSource::set) {
+        if (!enable)
+            return;
+        if (group_ref == nullptr)
+            return fail(rt::ErrorCode::invalid_argument);
+        if (coord_system != axis::CoordSystem::acs || source == axis::GroupValueSource::set)
+        {
             return fail(rt::ErrorCode::unsupported);
         }
         value.size = group_ref->member_count();
-        for(std::size_t i = 0; i < value.size; ++i) {
+        for (std::size_t i = 0; i < value.size; ++i)
+        {
             const axis::AxisSnapshot &snapshot = group_ref->member(i)->snapshot();
-            if(source == axis::GroupValueSource::actual) {
-                value.value[i] = acceleration ? snapshot.actual_acceleration
-                                              : snapshot.actual_velocity;
-            } else {
-                value.value[i] = acceleration ? snapshot.command_acceleration
-                                              : snapshot.command_velocity;
+            if (source == axis::GroupValueSource::actual)
+            {
+                value.value[i] =
+                    acceleration ? snapshot.actual_acceleration : snapshot.actual_velocity;
+            }
+            else
+            {
+                value.value[i] =
+                    acceleration ? snapshot.command_acceleration : snapshot.command_velocity;
             }
         }
         path_value = group_ref->path_derivative(acceleration);
         valid = true;
     }
 
-private:
+  private:
     void fail(rt::ErrorCode code)
     {
         error = true;
@@ -572,19 +598,19 @@ private:
 
 class FbGroupReadVelocity : public GroupDerivativeReadFb
 {
-public:
+  public:
     void call() { read(false); }
 };
 
 class FbGroupReadAcceleration : public GroupDerivativeReadFb
 {
-public:
+  public:
     void call() { read(true); }
 };
 
 class FbGroupReadMotionState
 {
-public:
+  public:
     axis::AxisGroup *group_ref = nullptr;
     bool enable = false;
     bool valid = false;
@@ -614,15 +640,18 @@ public:
         accelerating = false;
         decelerating = false;
         active_command_id = 0;
-        if(!enable) return;
-        if(group_ref == nullptr) {
+        if (!enable)
+            return;
+        if (group_ref == nullptr)
+        {
             error = true;
             error_id = rt::ErrorCode::invalid_argument;
             return;
         }
         const axis::GroupMotionState state = group_ref->motion_state();
-        if(group_ref->status() == axis::GroupStatus::disabled ||
-           group_ref->status() == axis::GroupStatus::errorstop) {
+        if (group_ref->status() == axis::GroupStatus::disabled ||
+            group_ref->status() == axis::GroupStatus::errorstop)
+        {
             error = true;
             error_id = rt::ErrorCode::precondition_failed;
             return;
@@ -641,7 +670,7 @@ public:
 
 class FbGroupReadCommandInfo
 {
-public:
+  public:
     axis::AxisGroup *group_ref = nullptr;
     bool enable = false;
     std::uint32_t command_id = 0;
@@ -658,16 +687,18 @@ public:
         error = false;
         error_id = rt::ErrorCode::ok;
         info = {};
-        if(!enable) return;
-        if(group_ref == nullptr) return fail(rt::ErrorCode::invalid_argument);
-        const rt::Result<axis::GroupCommandInfo> result =
-            group_ref->command_info(command_id);
-        if(!result) return fail(result.error());
+        if (!enable)
+            return;
+        if (group_ref == nullptr)
+            return fail(rt::ErrorCode::invalid_argument);
+        const rt::Result<axis::GroupCommandInfo> result = group_ref->command_info(command_id);
+        if (!result)
+            return fail(result.error());
         info = result.value();
         valid = true;
     }
 
-private:
+  private:
     void fail(rt::ErrorCode code)
     {
         error = true;
@@ -676,36 +707,39 @@ private:
 };
 class GroupConfigWriteFb
 {
-public:
+  public:
     axis::AxisGroup *group_ref = nullptr;
     bool execute = false;
     MotionOutputs outputs{};
 
-protected:
+  protected:
     bool rising_edge()
     {
         const bool rising = execute && !last_execute_;
         last_execute_ = execute;
-        if(!execute) clear(outputs);
+        if (!execute)
+            clear(outputs);
         return rising;
     }
     void finish(rt::ErrorCode result)
     {
         clear(outputs);
-        if(result == rt::ErrorCode::ok) outputs.done = true;
-        else {
+        if (result == rt::ErrorCode::ok)
+            outputs.done = true;
+        else
+        {
             outputs.error = true;
             outputs.error_id = result;
         }
     }
 
-private:
+  private:
     bool last_execute_ = false;
 };
 
 class GroupConfigReadFb
 {
-public:
+  public:
     axis::AxisGroup *group_ref = nullptr;
     bool enable = false;
     bool valid = false;
@@ -713,15 +747,17 @@ public:
     bool error = false;
     rt::ErrorCode error_id = rt::ErrorCode::ok;
 
-protected:
+  protected:
     bool begin()
     {
         valid = false;
         busy = false;
         error = false;
         error_id = rt::ErrorCode::ok;
-        if(!enable) return false;
-        if(group_ref == nullptr) {
+        if (!enable)
+            return false;
+        if (group_ref == nullptr)
+        {
             fail(rt::ErrorCode::invalid_argument);
             return false;
         }
@@ -737,15 +773,17 @@ protected:
 
 class FbGroupReadParameter : public GroupConfigReadFb
 {
-public:
+  public:
     axis::GroupParameter parameter = axis::GroupParameter::dynamics_mode;
     double value = 0.0;
     void call()
     {
         value = 0.0;
-        if(!begin()) return;
+        if (!begin())
+            return;
         const rt::Result<double> result = group_ref->read_group_parameter(parameter);
-        if(!result) return fail(result.error());
+        if (!result)
+            return fail(result.error());
         value = result.value();
         succeed();
     }
@@ -753,12 +791,13 @@ public:
 
 class FbGroupWriteParameter : public GroupConfigWriteFb
 {
-public:
+  public:
     axis::GroupParameter parameter = axis::GroupParameter::dynamics_mode;
     double value = 0.0;
     void call()
     {
-        if(!rising_edge()) return;
+        if (!rising_edge())
+            return;
         finish(group_ref == nullptr ? rt::ErrorCode::invalid_argument
                                     : group_ref->write_group_parameter(parameter, value));
     }
@@ -766,25 +805,23 @@ public:
 
 class GroupPathDynamicsWriteFb : public GroupConfigWriteFb
 {
-public:
+  public:
     double velocity = 0.0;
     double acceleration = 0.0;
     double deceleration = 0.0;
     double jerk = 0.0;
 
-protected:
-    axis::PathDynamics update() const
-    {
-        return {velocity, acceleration, deceleration, jerk};
-    }
+  protected:
+    axis::PathDynamics update() const { return {velocity, acceleration, deceleration, jerk}; }
 };
 
 class FbGroupWriteReferenceDynamics : public GroupPathDynamicsWriteFb
 {
-public:
+  public:
     void call()
     {
-        if(!rising_edge()) return;
+        if (!rising_edge())
+            return;
         finish(group_ref == nullptr ? rt::ErrorCode::invalid_argument
                                     : group_ref->write_reference_dynamics(update()));
     }
@@ -792,10 +829,11 @@ public:
 
 class FbGroupWriteDefaultDynamics : public GroupPathDynamicsWriteFb
 {
-public:
+  public:
     void call()
     {
-        if(!rising_edge()) return;
+        if (!rising_edge())
+            return;
         finish(group_ref == nullptr ? rt::ErrorCode::invalid_argument
                                     : group_ref->write_default_dynamics(update()));
     }
@@ -803,17 +841,18 @@ public:
 
 class GroupPathDynamicsReadFb : public GroupConfigReadFb
 {
-public:
+  public:
     axis::PathDynamics value{};
 };
 
 class FbGroupReadReferenceDynamics : public GroupPathDynamicsReadFb
 {
-public:
+  public:
     void call()
     {
         value = {};
-        if(!begin()) return;
+        if (!begin())
+            return;
         value = group_ref->reference_dynamics();
         succeed();
     }
@@ -821,11 +860,12 @@ public:
 
 class FbGroupReadDefaultDynamics : public GroupPathDynamicsReadFb
 {
-public:
+  public:
     void call()
     {
         value = {};
-        if(!begin()) return;
+        if (!begin())
+            return;
         value = group_ref->default_dynamics();
         succeed();
     }
@@ -833,11 +873,12 @@ public:
 
 class FbGroupWriteJoggingDynamics : public GroupConfigWriteFb
 {
-public:
+  public:
     axis::JoggingDynamics value{};
     void call()
     {
-        if(!rising_edge()) return;
+        if (!rising_edge())
+            return;
         finish(group_ref == nullptr ? rt::ErrorCode::invalid_argument
                                     : group_ref->write_jogging_dynamics(value));
     }
@@ -845,12 +886,13 @@ public:
 
 class FbGroupReadJoggingDynamics : public GroupConfigReadFb
 {
-public:
+  public:
     axis::JoggingDynamics value{};
     void call()
     {
         value = {};
-        if(!begin()) return;
+        if (!begin())
+            return;
         value = group_ref->jogging_dynamics();
         succeed();
     }
@@ -858,14 +900,16 @@ public:
 
 class FbGroupReadSWLimits : public GroupConfigReadFb
 {
-public:
+  public:
     axis::GroupSWLimits limit_values{};
     void call()
     {
         limit_values = {};
-        if(!begin()) return;
+        if (!begin())
+            return;
         const rt::Result<axis::GroupSWLimits> result = group_ref->group_sw_limits();
-        if(!result) return fail(result.error());
+        if (!result)
+            return fail(result.error());
         limit_values = result.value();
         succeed();
     }
@@ -873,11 +917,12 @@ public:
 
 class FbGroupWriteSWLimits : public GroupConfigWriteFb
 {
-public:
+  public:
     axis::GroupSWLimits limit_values{};
     void call()
     {
-        if(!rising_edge()) return;
+        if (!rising_edge())
+            return;
         finish(group_ref == nullptr ? rt::ErrorCode::invalid_argument
                                     : group_ref->write_group_sw_limits(limit_values));
     }
@@ -885,12 +930,13 @@ public:
 
 class FbGroupWriteToolData : public GroupConfigWriteFb
 {
-public:
+  public:
     std::size_t tool_number = 0;
     axis::ToolData tool_data{};
     void call()
     {
-        if(!rising_edge()) return;
+        if (!rising_edge())
+            return;
         finish(group_ref == nullptr ? rt::ErrorCode::invalid_argument
                                     : group_ref->write_tool_data(tool_number, tool_data));
     }
@@ -898,15 +944,17 @@ public:
 
 class FbGroupReadToolData : public GroupConfigReadFb
 {
-public:
+  public:
     std::size_t tool_number = 0;
     axis::ToolData tool_data{};
     void call()
     {
         tool_data = {};
-        if(!begin()) return;
+        if (!begin())
+            return;
         const rt::Result<axis::ToolData> result = group_ref->read_tool_data(tool_number);
-        if(!result) return fail(result.error());
+        if (!result)
+            return fail(result.error());
         tool_data = result.value();
         succeed();
     }
@@ -914,11 +962,12 @@ public:
 
 class FbGroupSelectTool : public GroupConfigWriteFb
 {
-public:
+  public:
     std::size_t tool_number = 0;
     void call()
     {
-        if(!rising_edge()) return;
+        if (!rising_edge())
+            return;
         finish(group_ref == nullptr ? rt::ErrorCode::invalid_argument
                                     : group_ref->select_tool(tool_number));
     }
@@ -926,15 +975,16 @@ public:
 
 class FbGroupReadTool : public GroupConfigReadFb
 {
-public:
+  public:
     axis::SelectionSource source = axis::SelectionSource::active;
     std::size_t tool_number = 0;
     void call()
     {
         tool_number = 0;
-        if(!begin()) return;
-        if(source != axis::SelectionSource::active &&
-           source != axis::SelectionSource::selected) {
+        if (!begin())
+            return;
+        if (source != axis::SelectionSource::active && source != axis::SelectionSource::selected)
+        {
             return fail(rt::ErrorCode::unsupported);
         }
         tool_number = group_ref->read_tool(source);
@@ -944,30 +994,31 @@ public:
 
 class FbGroupWritePayloadData : public GroupConfigWriteFb
 {
-public:
+  public:
     std::size_t payload_number = 0;
     axis::PayloadData payload_data{};
     void call()
     {
-        if(!rising_edge()) return;
-        finish(group_ref == nullptr
-                   ? rt::ErrorCode::invalid_argument
-                   : group_ref->write_payload_data(payload_number, payload_data));
+        if (!rising_edge())
+            return;
+        finish(group_ref == nullptr ? rt::ErrorCode::invalid_argument
+                                    : group_ref->write_payload_data(payload_number, payload_data));
     }
 };
 
 class FbGroupReadPayloadData : public GroupConfigReadFb
 {
-public:
+  public:
     std::size_t payload_number = 0;
     axis::PayloadData payload_data{};
     void call()
     {
         payload_data = {};
-        if(!begin()) return;
-        const rt::Result<axis::PayloadData> result =
-            group_ref->read_payload_data(payload_number);
-        if(!result) return fail(result.error());
+        if (!begin())
+            return;
+        const rt::Result<axis::PayloadData> result = group_ref->read_payload_data(payload_number);
+        if (!result)
+            return fail(result.error());
         payload_data = result.value();
         succeed();
     }
@@ -975,11 +1026,12 @@ public:
 
 class FbGroupSelectPayload : public GroupConfigWriteFb
 {
-public:
+  public:
     std::size_t payload_number = 0;
     void call()
     {
-        if(!rising_edge()) return;
+        if (!rising_edge())
+            return;
         finish(group_ref == nullptr ? rt::ErrorCode::invalid_argument
                                     : group_ref->select_payload(payload_number));
     }
@@ -987,15 +1039,16 @@ public:
 
 class FbGroupReadPayload : public GroupConfigReadFb
 {
-public:
+  public:
     axis::SelectionSource source = axis::SelectionSource::active;
     std::size_t payload_number = 0;
     void call()
     {
         payload_number = 0;
-        if(!begin()) return;
-        if(source != axis::SelectionSource::active &&
-           source != axis::SelectionSource::selected) {
+        if (!begin())
+            return;
+        if (source != axis::SelectionSource::active && source != axis::SelectionSource::selected)
+        {
             return fail(rt::ErrorCode::unsupported);
         }
         payload_number = group_ref->read_payload(source);
@@ -1005,15 +1058,16 @@ public:
 
 class FbGroupWriteRigidBodyDynamic : public GroupConfigWriteFb
 {
-public:
+  public:
     std::size_t rigid_body_count = 0;
-    std::array<axis::RigidBodyDynamic, axis::AxisGroup::RigidBodyCapacity>
-        rigid_body_dynamic{};
+    std::array<axis::RigidBodyDynamic, axis::AxisGroup::RigidBodyCapacity> rigid_body_dynamic{};
 
     void call()
     {
-        if(!rising_edge()) return;
-        if(group_ref == nullptr) return finish(rt::ErrorCode::invalid_argument);
+        if (!rising_edge())
+            return;
+        if (group_ref == nullptr)
+            return finish(rt::ErrorCode::invalid_argument);
         axis::RigidBodyDynamics data{};
         data.count = rigid_body_count;
         data.value = rigid_body_dynamic;
@@ -1023,19 +1077,19 @@ public:
 
 class FbGroupReadRigidBodyDynamic : public GroupConfigReadFb
 {
-public:
+  public:
     std::size_t rigid_body_count = 0;
-    std::array<axis::RigidBodyDynamic, axis::AxisGroup::RigidBodyCapacity>
-        rigid_body_dynamic{};
+    std::array<axis::RigidBodyDynamic, axis::AxisGroup::RigidBodyCapacity> rigid_body_dynamic{};
 
     void call()
     {
         rigid_body_count = 0;
         rigid_body_dynamic = {};
-        if(!begin()) return;
-        const rt::Result<axis::RigidBodyDynamics> result =
-            group_ref->rigid_body_dynamics();
-        if(!result) return fail(result.error());
+        if (!begin())
+            return;
+        const rt::Result<axis::RigidBodyDynamics> result = group_ref->rigid_body_dynamics();
+        if (!result)
+            return fail(result.error());
         rigid_body_count = result.value().count;
         rigid_body_dynamic = result.value().value;
         succeed();
@@ -1044,7 +1098,7 @@ public:
 
 class GroupJogFb
 {
-public:
+  public:
     axis::AxisGroup *group_ref = nullptr;
     bool enable = false;
     axis::CoordSystem coord_system = axis::CoordSystem::acs;
@@ -1054,12 +1108,14 @@ public:
     bool error = false;
     rt::ErrorCode error_id = rt::ErrorCode::ok;
 
-protected:
+  protected:
     void apply(const axis::GroupPosition &direction)
     {
         command_aborted = false;
-        if(!enable) {
-            if(last_enable_ && group_ref != nullptr && command_id_ != 0) {
+        if (!enable)
+        {
+            if (last_enable_ && group_ref != nullptr && command_id_ != 0)
+            {
                 group_ref->release_jog(command_id_);
             }
             last_enable_ = false;
@@ -1070,8 +1126,10 @@ protected:
             error_id = rt::ErrorCode::ok;
             return;
         }
-        if(group_ref == nullptr) return fail(rt::ErrorCode::invalid_argument);
-        if(last_enable_ && group_ref->jog_command_aborted(command_id_)) {
+        if (group_ref == nullptr)
+            return fail(rt::ErrorCode::invalid_argument);
+        if (last_enable_ && group_ref->jog_command_aborted(command_id_))
+        {
             enabled = false;
             active = false;
             command_aborted = true;
@@ -1079,14 +1137,18 @@ protected:
             error_id = rt::ErrorCode::ok;
             return;
         }
-        if(!last_enable_) {
-            const rt::Result<std::uint32_t> started =
-                group_ref->begin_jog(coord_system, direction);
-            if(!started) return fail(started.error());
+        if (!last_enable_)
+        {
+            const rt::Result<std::uint32_t> started = group_ref->begin_jog(coord_system, direction);
+            if (!started)
+                return fail(started.error());
             command_id_ = started.value();
-        } else {
+        }
+        else
+        {
             const rt::ErrorCode updated = group_ref->update_jog(command_id_, direction);
-            if(updated != rt::ErrorCode::ok) return fail(updated);
+            if (updated != rt::ErrorCode::ok)
+                return fail(updated);
         }
         last_enable_ = true;
         enabled = true;
@@ -1095,13 +1157,14 @@ protected:
         command_aborted = group_ref->jog_command_aborted(command_id_);
         error_id = group_ref->jog_error();
         error = error_id != rt::ErrorCode::ok;
-        if(command_aborted) {
+        if (command_aborted)
+        {
             enabled = false;
             active = false;
         }
     }
 
-private:
+  private:
     void fail(rt::ErrorCode code)
     {
         last_enable_ = true;
@@ -1117,7 +1180,7 @@ private:
 
 class FbGroupJog : public GroupJogFb
 {
-public:
+  public:
     axis::JogBooleanArray jog_positive{};
     axis::JogBooleanArray jog_negative{};
 
@@ -1125,10 +1188,14 @@ public:
     {
         axis::GroupPosition direction{};
         direction.size = jog_positive.count;
-        if(jog_positive.count != jog_negative.count) {
+        if (jog_positive.count != jog_negative.count)
+        {
             direction.size = 0;
-        } else {
-            for(std::size_t i = 0; i < direction.size; ++i) {
+        }
+        else
+        {
+            for (std::size_t i = 0; i < direction.size; ++i)
+            {
                 direction.value[i] = jog_positive.value[i] == jog_negative.value[i]
                                          ? 0.0
                                          : (jog_positive.value[i] ? 1.0 : -1.0);
@@ -1140,18 +1207,12 @@ public:
 
 class FbGroupJogVector : public GroupJogFb
 {
-public:
+  public:
     axis::GroupPosition direction{};
 
-    FbGroupJogVector()
-    {
-        coord_system = axis::CoordSystem::mcs;
-    }
+    FbGroupJogVector() { coord_system = axis::CoordSystem::mcs; }
 
-    void call()
-    {
-        apply(direction);
-    }
+    void call() { apply(direction); }
 };
 
 } // namespace plcopen::core::fb

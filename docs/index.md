@@ -90,14 +90,15 @@ systems / kinematics / trajectory streaming) without platform lock-in.
  L0-L4 + kin/stream carry zero PLCopen semantics -- generic kernel
 ```
 
-**Compliance status (honest numbers)** — Part 1: facade 43/43 (75 `Fb*`
-facades), but B-grade I/O completeness was 22/43 at the 2026-07-12 audit
-(the P1-A batch has since closed the 4 structural gaps; the remaining
-naming/shape gaps move to the L2a pin layer), and 16 of the clause-level
-issues D-01..D-20 remain open (D-05/D-12/D-13/D-15 closed), so **no
-conformance claim is made**. Part 4: same-name facades 40/68. Part 5:
-homing 11/11 C++ facades with partial coverage. Per-clause audits are
-published in
+**Compliance status (honest numbers)** — Part 1: 43/43 facades and
+D-01..D-20 closed by C4; formal B/E/V supplier declarations remain open.
+Part 4: 68/68 same-name facades with explicit partial E/O and mode
+boundaries. Part 5: C5 closes 11/11 standard facades plus 45 B + 102 E
+machine-readable declarations and software-verifiable semantics. No
+PLCopen approval, hardware truth, or Beckhoff black-box performance claim
+is made. The C6 capability verdict is published in the
+[PLCopen / Beckhoff parity matrix](https://github.com/lusipad/plcopen/blob/main/doc/compliance/plcopen-beckhoff-parity-matrix.md);
+per-clause audits are published in
 [doc/compliance](https://github.com/lusipad/plcopen/tree/main/doc/compliance).
 
 ### Runtime shape (ADR-0007)

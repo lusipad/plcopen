@@ -51,21 +51,22 @@ profiles.
 Each PLCopen standard part has a compliance matrix — a table mapping every
 specified function block to its implementation status and test coverage.
 
-**Honest numbers first**: Part 1 facades are 43/43, but B-grade I/O
-completeness was 22/43 at the 2026-07-12 audit (P1-A has since closed the
-4 structural gaps; remaining naming/shape gaps move to the L2a pin layer)
-and 16 of the clause-level issues D-01..D-20 remain open
-(D-05/D-12/D-13/D-15 closed) — **no conformance claim is made**.
-Part 4 same-name facades: 40/68. Part 5 homing: 11/11 C++ facades, partial coverage.
+**Honest numbers first**: Part 1 has 43/43 facades and C4 closes
+D-01..D-20, while formal B/E/V supplier declarations remain open. Part 4
+has 68/68 same-name facades with explicit partial E/O and mode boundaries.
+Part 5 C5 closes 11/11 standard facades plus 45 B + 102 E machine-readable
+declarations and software-verifiable semantics. These are software facts,
+not PLCopen approval or hardware-performance claims.
 
 Start here:
 
-- [Part 1/2 FB matrix](https://github.com/lusipad/plcopen/blob/main/doc/compliance/plcopen-motion-v2-function-block-matrix.md) — 43/43 facades (B-grade I/O 22/43 at audit)
-- [Part 1 clause matrix](https://github.com/lusipad/plcopen/blob/main/doc/compliance/plcopen-part1-clause-matrix.md) — per-clause audit, issues D-01..D-20 (4 closed, 16 open)
-- [Part 4 coverage](https://github.com/lusipad/plcopen/blob/main/doc/compliance/plcopen-part4-clause-audit.md) — 40/68 same-name facades; per-FB gaps remain explicit
+- [Part 1/2 FB matrix](https://github.com/lusipad/plcopen/blob/main/doc/compliance/plcopen-motion-v2-function-block-matrix.md) — 43/43 facades
+- [Part 1 clause matrix](https://github.com/lusipad/plcopen/blob/main/doc/compliance/plcopen-part1-clause-matrix.md) — per-clause audit and C4 closure
+- [Part 4 coverage](https://github.com/lusipad/plcopen/blob/main/doc/compliance/plcopen-part4-clause-audit.md) — 68/68 same-name facades; per-FB boundaries remain explicit
 - [Part 4 linear matrix](https://github.com/lusipad/plcopen/blob/main/doc/compliance/plcopen-motion-part4-linear-matrix.md) — coordinated linear motion
 - [Part 4 circular matrix](https://github.com/lusipad/plcopen/blob/main/doc/compliance/plcopen-motion-part4-circular-matrix.md) — coordinated circular motion
-- [Part 5 homing semantics](https://github.com/lusipad/plcopen/blob/main/doc/compliance/part5-p5b-semantics.md) — 11/11 C++ facades; interfaces, derived types, and hardware evidence remain partial
+- [Part 5 homing semantics](https://github.com/lusipad/plcopen/blob/main/doc/compliance/part5-c5-semantics.md) — C5 standard contract and software boundaries
+- [PLCopen / Beckhoff parity](https://github.com/lusipad/plcopen/blob/main/doc/compliance/plcopen-beckhoff-parity-matrix.md) — C6 implemented/partial/excluded verdict
 - [Conformance audit](https://github.com/lusipad/plcopen/blob/main/doc/compliance/plcopen-conformance-audit.md) — cross-part audit summary
 
 ## Known Boundaries

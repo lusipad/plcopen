@@ -6,6 +6,21 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- Part 5 C5（KB-080）完成 11 个回零/在线参考 FB 的标准合同收口：只保留
+  标准名称，补齐 HomeDirection/SwitchMode/ReferenceSignalRef/BufferMode、
+  TorqueLimit 透传、Aborting/Buffered 排队生命周期、AbsoluteSwitch 限位
+  恢复、HomeDirect/HomeAbsolute 最终化、FinishHoming 相对 Distance 与
+  零距离中止活动 Homing。Flying 在线重标定保持活动和排队绝对目标值不变，
+  从新坐标连续重规划。新增 Part 5 机读 I/O 事实源与生成门：11 FB、
+  45 B、102 E，147 项均有支持值和边界；PLCopen 签署/Logo、真机械堵转
+  安全、驱动力矩限制、硬件时间戳及绝对编码器多圈真实性仍明确排除。
+
+- PLCopen / Beckhoff C6（KB-081）完成核心能力对等验收矩阵，逐项标记
+  `implemented` / `partial` / `excluded`，并把 TwinCAT/CODESYS 文档改为
+  无兼容层的能力迁移指南；删除旧
+  `FbGroupReadActualPosition` / `FbGroupReadCommandPosition` 包装，统一使用
+  v2 `FbGroupReadPosition(Source)`。
+
 - Part 1/2 C4（KB-079）关闭条款审计 D-01～D-20：Execute 单拍后终态
   保持可观察，MoveVelocity/Continuous/Gear/Cam/Combine/Torque 提供持续
   Inxxx，Stop 由 Execute 锁定 Stopping，有符号 Velocity/EndVelocity、
@@ -74,13 +89,6 @@ All notable changes to this project will be documented in this file.
   事务，percentage/default 真实影响后续新命令，SWLimits 在接管前约束最终
   ACS 目标；10 万 fuzz、10 万周期零分配和 18 回放零差异通过。Part 4
   同名门面升至 40/68，但不支持分支与正式接口声明仍开放，不构成合规声明。
-
-- Part 5 P5-B（KB-072）补齐六个 C++ 门面：独立实际反馈判定的 StepBlock、
-  显式定长码表驱动的 DistanceCoded、宿主绝对位置源驱动的 HomeAbsolute、
-  不改变在途命令的 Flying Switch/RefPulse 与只撤销被动会话的 AbortPassive。
-  活动剖面和排队绝对目标随坐标原子平移，软限位失败进入 ErrorStop；专项
-  测试、ServoSim 独立反馈冒烟及 10 万周期零分配通过。11/11 有公开门面，
-  但旧五块接口/语义与标准派生类型仍未闭合，不构成 Part 5 合规声明。
 
 - L 系列批次 L2a-Bind（KB-071）：`AXIS_REF` 宿主绑定 + 首批十个单轴
   `MC_*` ST 门面；PinTable 由 Part 1 B3 YAML 唯一事实源生成，未绑定轴走

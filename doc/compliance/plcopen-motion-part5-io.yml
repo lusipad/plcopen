@@ -1,0 +1,220 @@
+# Transcribed from PLCopen Motion Control Part 5 v2.0 clauses 5.2 to 5.14.
+# Support values describe the public C++ surface and its software-verifiable
+# behavior. Hardware truth and official approval remain explicit boundaries.
+schema: plcopen-motion-part5-io-v1
+source: plcopen_motion_control_part_5_version_2.0.pdf clauses 5.2-5.14 pages 31-37
+basic_types:
+  - {name: BOOL, support: Yes, mapping: 'bool'}
+  - {name: WORD, support: No, mapping: 'rt::ErrorCode strong enum replaces raw WORD'}
+  - {name: REAL, support: No, mapping: 'double replaces IEC REAL'}
+  - {name: ENUM, support: Yes, mapping: 'scoped C++ enum classes'}
+  - {name: TIME, support: No, mapping: 'std::int64_t scan cycles replaces IEC TIME'}
+derived_types:
+  - {name: AXIS_REF, support: Yes, mapping: 'axis::AxisModel pointer', boundary: 'host owns lifetime'}
+  - {name: MC_HOME_DIRECTION, support: Yes, mapping: 'axis::HomeDirection', boundary: 'four standard values'}
+  - {name: MC_SWITCH_MODE, support: Yes, mapping: 'axis::SwitchMode', boundary: 'six standard values'}
+  - {name: MC_REF_SIGNAL_REF, support: Yes, mapping: 'axis::ReferenceSignalRef', boundary: 'fixed digital channel without hardware timestamp'}
+  - {name: MC_BUFFER_MODE, support: Yes, mapping: 'axis::BufferMode', boundary: 'active steps support Aborting and Buffered while static and passive FBs support Aborting'}
+rows:
+  - number: '5.4'
+    name: 'MC_StepAbsoluteSwitch'
+    support: Yes
+    summary: 'software semantics complete and hardware timestamp plus drive torque enforcement are integration boundaries'
+    pins:
+      - {direction: in_out, class: B, name: Axis, support: Yes, evidence: 'FbStepAbsoluteSwitch.axis_ref'}
+      - {direction: input, class: B, name: Execute, support: Yes, evidence: 'execute rising-edge lifecycle'}
+      - {direction: input, class: E, name: Direction, support: Yes, evidence: 'direction supports four HomeDirection values'}
+      - {direction: input, class: E, name: SwitchMode, support: Yes, evidence: 'switch_mode supports six SwitchMode values'}
+      - {direction: input, class: E, name: ReferenceSignal, support: Yes, evidence: 'reference_signal fixed digital channel'}
+      - {direction: input, class: E, name: Velocity, support: Yes, evidence: 'velocity drives search command'}
+      - {direction: input, class: E, name: SetPosition, support: Yes, evidence: 'set_position plus set_position_enabled connection state'}
+      - {direction: input, class: E, name: TorqueLimit, support: Yes, evidence: 'torque_limit reaches servo setpoint and drive enforcement is external'}
+      - {direction: input, class: E, name: TimeLimit, support: Yes, evidence: 'time_limit counts active scan cycles'}
+      - {direction: input, class: E, name: DistanceLimit, support: Yes, evidence: 'distance_limit covers search and recovery travel'}
+      - {direction: input, class: E, name: BufferMode, support: Yes, evidence: 'Aborting and Buffered with blending rejected'}
+      - {direction: output, class: B, name: Done, support: Yes, evidence: 'outputs.done after final condition and positioning'}
+      - {direction: output, class: E, name: Busy, support: Yes, evidence: 'outputs.busy includes queued phase'}
+      - {direction: output, class: E, name: Active, support: Yes, evidence: 'outputs.active false while queued and true while owning axis'}
+      - {direction: output, class: E, name: CommandAborted, support: Yes, evidence: 'outputs.command_aborted on takeover'}
+      - {direction: output, class: B, name: Error, support: Yes, evidence: 'outputs.error for validation and runtime failure'}
+      - {direction: output, class: E, name: ErrorID, support: Yes, evidence: 'outputs.error_id uses rt::ErrorCode'}
+  - number: '5.5'
+    name: 'MC_StepLimitSwitch'
+    support: Yes
+    summary: 'positive and negative physical limit inputs are consumed directly and hardware safety remains external'
+    pins:
+      - {direction: in_out, class: B, name: Axis, support: Yes, evidence: 'FbStepLimitSwitch.axis_ref'}
+      - {direction: input, class: B, name: Execute, support: Yes, evidence: 'execute rising-edge lifecycle'}
+      - {direction: input, class: E, name: Direction, support: Yes, evidence: 'direction accepts positive or negative'}
+      - {direction: input, class: E, name: LimitSwitchMode, support: Yes, evidence: 'limit_switch_mode accepts on off rising falling'}
+      - {direction: input, class: E, name: Velocity, support: Yes, evidence: 'velocity drives search command'}
+      - {direction: input, class: E, name: SetPosition, support: Yes, evidence: 'set_position plus set_position_enabled connection state'}
+      - {direction: input, class: E, name: TorqueLimit, support: Yes, evidence: 'torque_limit reaches servo setpoint and drive enforcement is external'}
+      - {direction: input, class: E, name: TimeLimit, support: Yes, evidence: 'time_limit counts active scan cycles'}
+      - {direction: input, class: E, name: DistanceLimit, support: Yes, evidence: 'distance_limit covers escape and search travel'}
+      - {direction: input, class: E, name: BufferMode, support: Yes, evidence: 'Aborting and Buffered with blending rejected'}
+      - {direction: output, class: B, name: Done, support: Yes, evidence: 'outputs.done after final condition and positioning'}
+      - {direction: output, class: E, name: Busy, support: Yes, evidence: 'outputs.busy includes queued phase'}
+      - {direction: output, class: E, name: Active, support: Yes, evidence: 'outputs.active reflects axis ownership'}
+      - {direction: output, class: E, name: CommandAborted, support: Yes, evidence: 'outputs.command_aborted on takeover'}
+      - {direction: output, class: B, name: Error, support: Yes, evidence: 'outputs.error for validation and runtime failure'}
+      - {direction: output, class: E, name: ErrorID, support: Yes, evidence: 'outputs.error_id uses rt::ErrorCode'}
+  - number: '5.6'
+    name: 'MC_StepBlock'
+    support: Yes
+    summary: 'actual torque and velocity are evaluated in software and mechanical blocking safety requires real hardware validation'
+    pins:
+      - {direction: in_out, class: B, name: Axis, support: Yes, evidence: 'FbStepBlock.axis_ref'}
+      - {direction: input, class: B, name: Execute, support: Yes, evidence: 'execute rising-edge lifecycle'}
+      - {direction: input, class: E, name: Direction, support: Yes, evidence: 'direction accepts positive or negative'}
+      - {direction: input, class: E, name: Velocity, support: Yes, evidence: 'velocity drives block search'}
+      - {direction: input, class: E, name: SetPosition, support: Yes, evidence: 'set_position plus set_position_enabled connection state'}
+      - {direction: input, class: E, name: DetectionVelocityLimit, support: Yes, evidence: 'detection_velocity_limit compares actual velocity'}
+      - {direction: input, class: E, name: DetectionVelocityTime, support: Yes, evidence: 'detection_velocity_time counts consecutive scans'}
+      - {direction: input, class: E, name: TorqueLimit, support: Yes, evidence: 'torque_limit sets command ceiling and detection threshold'}
+      - {direction: input, class: E, name: TimeLimit, support: Yes, evidence: 'time_limit counts active scan cycles'}
+      - {direction: input, class: E, name: DistanceLimit, support: Yes, evidence: 'distance_limit measures active search travel'}
+      - {direction: input, class: E, name: BufferMode, support: Yes, evidence: 'Aborting and Buffered with blending rejected'}
+      - {direction: output, class: B, name: Done, support: Yes, evidence: 'outputs.done after sustained detection and halt'}
+      - {direction: output, class: E, name: Busy, support: Yes, evidence: 'outputs.busy includes queued phase'}
+      - {direction: output, class: E, name: Active, support: Yes, evidence: 'outputs.active reflects axis ownership'}
+      - {direction: output, class: E, name: CommandAborted, support: Yes, evidence: 'outputs.command_aborted on takeover'}
+      - {direction: output, class: B, name: Error, support: Yes, evidence: 'outputs.error for validation and runtime failure'}
+      - {direction: output, class: E, name: ErrorID, support: Yes, evidence: 'outputs.error_id uses rt::ErrorCode'}
+  - number: '5.7'
+    name: 'MC_StepReferencePulse'
+    support: Yes
+    summary: 'fixed digital probe capture is implemented and encoder timestamp precision is an adapter boundary'
+    pins:
+      - {direction: in_out, class: B, name: Axis, support: Yes, evidence: 'FbStepReferencePulse.axis_ref'}
+      - {direction: input, class: B, name: Execute, support: Yes, evidence: 'execute rising-edge lifecycle'}
+      - {direction: input, class: E, name: Direction, support: Yes, evidence: 'direction accepts positive or negative'}
+      - {direction: input, class: E, name: ReferenceSignal, support: Yes, evidence: 'reference_signal fixed digital probe channel'}
+      - {direction: input, class: E, name: Velocity, support: Yes, evidence: 'velocity drives pulse search'}
+      - {direction: input, class: E, name: SetPosition, support: Yes, evidence: 'set_position plus set_position_enabled connection state'}
+      - {direction: input, class: E, name: TorqueLimit, support: Yes, evidence: 'torque_limit reaches servo setpoint and drive enforcement is external'}
+      - {direction: input, class: E, name: TimeLimit, support: Yes, evidence: 'time_limit counts active scan cycles'}
+      - {direction: input, class: E, name: DistanceLimit, support: Yes, evidence: 'distance_limit measures active search travel'}
+      - {direction: input, class: E, name: BufferMode, support: Yes, evidence: 'Aborting and Buffered with blending rejected'}
+      - {direction: output, class: B, name: Done, support: Yes, evidence: 'outputs.done after capture halt and optional positioning'}
+      - {direction: output, class: E, name: Busy, support: Yes, evidence: 'outputs.busy includes queued phase'}
+      - {direction: output, class: E, name: Active, support: Yes, evidence: 'outputs.active reflects axis ownership'}
+      - {direction: output, class: E, name: CommandAborted, support: Yes, evidence: 'outputs.command_aborted on takeover'}
+      - {direction: output, class: B, name: Error, support: Yes, evidence: 'outputs.error for validation and runtime failure'}
+      - {direction: output, class: E, name: ErrorID, support: Yes, evidence: 'outputs.error_id uses rt::ErrorCode'}
+  - number: '5.8'
+    name: 'MC_StepDistanceCoded'
+    support: Yes
+    summary: 'host binds a fixed unique distance-code map and digital probe channel while vendor encoder protocol remains external'
+    pins:
+      - {direction: in_out, class: B, name: Axis, support: Yes, evidence: 'FbStepDistanceCoded.axis_ref plus host-bound map'}
+      - {direction: input, class: B, name: Execute, support: Yes, evidence: 'execute rising-edge lifecycle'}
+      - {direction: input, class: E, name: Direction, support: Yes, evidence: 'direction accepts positive or negative'}
+      - {direction: input, class: E, name: Velocity, support: Yes, evidence: 'velocity drives mark search'}
+      - {direction: input, class: E, name: TorqueLimit, support: Yes, evidence: 'torque_limit reaches servo setpoint and drive enforcement is external'}
+      - {direction: input, class: E, name: TimeLimit, support: Yes, evidence: 'time_limit counts active scan cycles'}
+      - {direction: input, class: E, name: DistanceLimit, support: Yes, evidence: 'distance_limit measures active mark-search travel'}
+      - {direction: input, class: E, name: BufferMode, support: Yes, evidence: 'Aborting and Buffered with blending rejected'}
+      - {direction: output, class: B, name: Done, support: Yes, evidence: 'outputs.done after unique map resolution and positioning'}
+      - {direction: output, class: E, name: Busy, support: Yes, evidence: 'outputs.busy includes queued phase'}
+      - {direction: output, class: E, name: Active, support: Yes, evidence: 'outputs.active reflects axis ownership'}
+      - {direction: output, class: E, name: CommandAborted, support: Yes, evidence: 'outputs.command_aborted on takeover'}
+      - {direction: output, class: B, name: Error, support: Yes, evidence: 'outputs.error for invalid ambiguous or missing code'}
+      - {direction: output, class: E, name: ErrorID, support: Yes, evidence: 'outputs.error_id uses rt::ErrorCode'}
+  - number: '5.9'
+    name: 'MC_HomeDirect'
+    support: Yes
+    summary: 'static coordinate assignment completes homing without motion and only Aborting is meaningful'
+    pins:
+      - {direction: in_out, class: B, name: Axis, support: Yes, evidence: 'FbHomeDirect.axis_ref'}
+      - {direction: input, class: B, name: Execute, support: Yes, evidence: 'execute rising-edge lifecycle'}
+      - {direction: input, class: E, name: SetPosition, support: Yes, evidence: 'set_position is applied atomically'}
+      - {direction: input, class: E, name: BufferMode, support: Yes, evidence: 'Aborting supported and other modes explicitly unsupported'}
+      - {direction: output, class: B, name: Done, support: Yes, evidence: 'outputs.done after coordinate assignment'}
+      - {direction: output, class: E, name: Busy, support: Yes, evidence: 'outputs.busy remains false for immediate completion'}
+      - {direction: output, class: E, name: Active, support: Yes, evidence: 'outputs.active remains false for static operation'}
+      - {direction: output, class: E, name: CommandAborted, support: Yes, evidence: 'outputs.command_aborted remains false for atomic static operation'}
+      - {direction: output, class: B, name: Error, support: Yes, evidence: 'outputs.error on invalid state or input'}
+      - {direction: output, class: E, name: ErrorID, support: Yes, evidence: 'outputs.error_id uses rt::ErrorCode'}
+  - number: '5.10'
+    name: 'MC_HomeAbsolute'
+    support: Yes
+    summary: 'host binds a stable absolute-position source associated with the axis while encoder protocol and multiturn truth remain external'
+    pins:
+      - {direction: in_out, class: B, name: Axis, support: Yes, evidence: 'FbHomeAbsolute.axis_ref plus bound absolute source'}
+      - {direction: input, class: B, name: Execute, support: Yes, evidence: 'execute rising-edge lifecycle'}
+      - {direction: input, class: E, name: BufferMode, support: Yes, evidence: 'Aborting supported and other modes explicitly unsupported'}
+      - {direction: output, class: B, name: Done, support: Yes, evidence: 'outputs.done after absolute coordinate assignment'}
+      - {direction: output, class: E, name: Busy, support: Yes, evidence: 'outputs.busy remains false for immediate completion'}
+      - {direction: output, class: E, name: Active, support: Yes, evidence: 'outputs.active remains false for static operation'}
+      - {direction: output, class: E, name: CommandAborted, support: Yes, evidence: 'outputs.command_aborted remains false for atomic static operation'}
+      - {direction: output, class: B, name: Error, support: Yes, evidence: 'outputs.error on missing source or invalid state'}
+      - {direction: output, class: E, name: ErrorID, support: Yes, evidence: 'outputs.error_id uses rt::ErrorCode'}
+  - number: '5.11'
+    name: 'MC_FinishHoming'
+    support: Yes
+    summary: 'zero distance finalizes Homing and nonzero distance is a relative queued or aborting move'
+    pins:
+      - {direction: in_out, class: B, name: Axis, support: Yes, evidence: 'FbFinishHoming.axis_ref'}
+      - {direction: input, class: B, name: Execute, support: Yes, evidence: 'execute rising-edge lifecycle'}
+      - {direction: input, class: B, name: Distance, support: Yes, evidence: 'distance submits move_relative or zero finalization'}
+      - {direction: input, class: E, name: Velocity, support: Yes, evidence: 'velocity configures relative move'}
+      - {direction: input, class: E, name: Acceleration, support: Yes, evidence: 'acceleration configures relative move'}
+      - {direction: input, class: E, name: Deceleration, support: Yes, evidence: 'deceleration configures relative move'}
+      - {direction: input, class: E, name: Jerk, support: Yes, evidence: 'jerk configures relative move'}
+      - {direction: input, class: E, name: BufferMode, support: Yes, evidence: 'Aborting and Buffered with blending rejected'}
+      - {direction: output, class: B, name: Done, support: Yes, evidence: 'outputs.done after Standstill finalization'}
+      - {direction: output, class: E, name: Busy, support: Yes, evidence: 'outputs.busy covers queued and active move'}
+      - {direction: output, class: E, name: Active, support: Yes, evidence: 'outputs.active false while queued and true while owning axis'}
+      - {direction: output, class: E, name: CommandAborted, support: Yes, evidence: 'outputs.command_aborted on takeover'}
+      - {direction: output, class: B, name: Error, support: Yes, evidence: 'outputs.error for atomic preflight and runtime failure'}
+      - {direction: output, class: E, name: ErrorID, support: Yes, evidence: 'outputs.error_id uses rt::ErrorCode'}
+  - number: '5.12'
+    name: 'MC_StepReferenceFlyingSwitch'
+    support: Yes
+    summary: 'online coordinate remap preserves active and queued absolute target values while synchronized and streamed owners are rejected'
+    pins:
+      - {direction: in_out, class: B, name: Axis, support: Yes, evidence: 'FbStepReferenceFlyingSwitch.axis_ref'}
+      - {direction: input, class: B, name: Execute, support: Yes, evidence: 'execute rising-edge lifecycle'}
+      - {direction: input, class: E, name: SwitchMode, support: Yes, evidence: 'switch_mode supports six SwitchMode values'}
+      - {direction: input, class: E, name: ReferenceSignal, support: Yes, evidence: 'reference_signal fixed digital channel'}
+      - {direction: input, class: E, name: SetPosition, support: Yes, evidence: 'set_position remaps current coordinate online'}
+      - {direction: input, class: E, name: TimeLimit, support: Yes, evidence: 'time_limit counts passive-owner scan cycles'}
+      - {direction: input, class: E, name: DistanceLimit, support: Yes, evidence: 'distance_limit measures actual travel'}
+      - {direction: input, class: E, name: BufferMode, support: Yes, evidence: 'Aborting supported and other modes explicitly unsupported'}
+      - {direction: output, class: B, name: Done, support: Yes, evidence: 'outputs.done after switch condition and remap'}
+      - {direction: output, class: E, name: Busy, support: Yes, evidence: 'outputs.busy while passive owner waits'}
+      - {direction: output, class: E, name: Active, support: Yes, evidence: 'outputs.active while passive owner is armed'}
+      - {direction: output, class: E, name: CommandAborted, support: Yes, evidence: 'outputs.command_aborted when another passive owner takes over'}
+      - {direction: output, class: B, name: Error, support: Yes, evidence: 'outputs.error for invalid owner limit or remap failure'}
+      - {direction: output, class: E, name: ErrorID, support: Yes, evidence: 'outputs.error_id uses rt::ErrorCode'}
+  - number: '5.13'
+    name: 'MC_StepReferenceFlyingRefPulse'
+    support: Yes
+    summary: 'digital probe capture remaps coordinates without replacing the active motion command and hardware capture precision is external'
+    pins:
+      - {direction: in_out, class: B, name: Axis, support: Yes, evidence: 'FbStepReferenceFlyingRefPulse.axis_ref'}
+      - {direction: input, class: B, name: Execute, support: Yes, evidence: 'execute rising-edge lifecycle'}
+      - {direction: input, class: E, name: ReferenceSignal, support: Yes, evidence: 'reference_signal fixed digital probe channel'}
+      - {direction: input, class: E, name: SetPosition, support: Yes, evidence: 'set_position remaps captured coordinate online'}
+      - {direction: input, class: E, name: TimeLimit, support: Yes, evidence: 'time_limit counts passive-owner scan cycles'}
+      - {direction: input, class: E, name: DistanceLimit, support: Yes, evidence: 'distance_limit measures actual travel'}
+      - {direction: input, class: E, name: BufferMode, support: Yes, evidence: 'Aborting supported and other modes explicitly unsupported'}
+      - {direction: output, class: B, name: Done, support: Yes, evidence: 'outputs.done after pulse capture and remap'}
+      - {direction: output, class: E, name: Busy, support: Yes, evidence: 'outputs.busy while passive owner waits'}
+      - {direction: output, class: E, name: Active, support: Yes, evidence: 'outputs.active while passive owner is armed'}
+      - {direction: output, class: E, name: CommandAborted, support: Yes, evidence: 'outputs.command_aborted when another passive owner takes over'}
+      - {direction: output, class: B, name: Error, support: Yes, evidence: 'outputs.error for invalid owner limit or remap failure'}
+      - {direction: output, class: E, name: ErrorID, support: Yes, evidence: 'outputs.error_id uses rt::ErrorCode'}
+  - number: '5.14'
+    name: 'MC_AbortPassiveHoming'
+    support: Yes
+    summary: 'aborts only the passive homing owner and leaves the underlying motion command running'
+    pins:
+      - {direction: in_out, class: B, name: Axis, support: Yes, evidence: 'FbAbortPassiveHoming.axis_ref'}
+      - {direction: input, class: B, name: Execute, support: Yes, evidence: 'execute rising-edge lifecycle'}
+      - {direction: output, class: B, name: Done, support: Yes, evidence: 'outputs.done after passive owner cancellation'}
+      - {direction: output, class: E, name: Busy, support: Yes, evidence: 'outputs.busy remains false for immediate cancellation'}
+      - {direction: output, class: E, name: CommandAborted, support: Yes, evidence: 'outputs.command_aborted remains false because this FB is the abort initiator'}
+      - {direction: output, class: B, name: Error, support: Yes, evidence: 'outputs.error when no passive owner exists'}
+      - {direction: output, class: E, name: ErrorID, support: Yes, evidence: 'outputs.error_id uses rt::ErrorCode'}

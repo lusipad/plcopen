@@ -4,15 +4,15 @@
 > **自编清单**，而 Part 4 **v2.0 规格实际定义 68 个 FB**——本表漏了
 > 38 个，并在残缺清单上错误宣布了"零留白"。
 >
-> **当前同名门面：68/68，名称面齐全但条款不合规**；另保留两个旧名/自定义
-> 回读门面，不计入 v2 同名覆盖。完整清单见
+> **当前同名门面：68/68，名称面齐全但条款不合规**；C6 已删除两个旧名
+> Position 回读包装，统一使用 v2 `MC_GroupReadPosition(Source)`。完整清单见
 > **[plcopen-part4-clause-audit.md](plcopen-part4-clause-audit.md)**。
 > 本表保留为历史记录（其对 30 个 FB 的实现映射仍准确），**不得再
 > 用于任何覆盖率声明**；重建工作见 P-Part4b 批次。
 >
 > 原终点标准（仍有效，但基准换为规格原文）：每个 Part 4 标准 FB 要么
 > 承接、要么显式声明不做——零留白。
-> 最后更新：2026-07-16（C3/KB-078 状态同步；30 项分母仍失效）。
+> 最后更新：2026-07-17（C6/KB-081 移除旧回读包装；30 项分母仍失效）。
 
 ## 对照表
 
@@ -27,8 +27,8 @@
 | 5 | MC_GroupDisable | **已承接** | `FbGroupDisable` (`core/fb/motion.h`) | |
 | 6 | MC_GroupReset | **已承接** | `FbGroupReset` (`core/fb/group.h`) | |
 | 7 | MC_GroupReadStatus | **已承接** | `FbGroupReadStatus` (`core/fb/group.h`) | |
-| 8 | MC_GroupReadActualPosition | **已承接** | `FbGroupReadActualPosition` (`core/fb/group.h`) | ACS/MCS/PCS 三坐标系 |
-| 9 | MC_GroupReadCommandPosition | **已承接** | `FbGroupReadCommandPosition` (`core/fb/group.h`) | 同上 |
+| 8 | MC_GroupReadActualPosition | **由 v2 入口承接** | `FbGroupReadPosition(Source=actual)` (`core/fb/group.h`) | ACS/MCS/PCS 三坐标系 |
+| 9 | MC_GroupReadCommandPosition | **由 v2 入口承接** | `FbGroupReadPosition(Source=command)` (`core/fb/group.h`) | 同上 |
 | 10 | MC_GroupReadError | **已承接** | `FbGroupReadError` (`core/fb/group.h`) | 独立回读组 ErrorStop 锁存；记录细分未承载 |
 | 11 | MC_GroupStop | **已承接** | `FbGroupStop` (`core/fb/motion.h`) | |
 | 12 | MC_GroupHome | **已承接** | `FbGroupHome` (`core/fb/management.h`) | 并行回零全成员 |

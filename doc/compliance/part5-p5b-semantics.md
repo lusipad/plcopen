@@ -1,6 +1,6 @@
 # Part 5 P5-B 六项缺口语义矩阵
 
-> 状态：**已批准**（2026-07-13，维护者批准全部条款）。
+> 状态：**历史批准，已由 C5/KB-080 收束替代**（2026-07-17）。
 > 依据：PLCopen Motion Control Part 5 v2.0 §3.3/3.5/3.7/3.9-3.11，
 > 条目级对照见 `plcopen-part5-part6-audit.md`。本批准取代已批准的
 > `part5-homing-semantics.md` 中“StepBlock 随扭矩批次”不做
@@ -10,7 +10,7 @@
 
 | 合同 | 保持 |
 |---|---|
-| 现有五块 | `FbStepAbsSwitch/LimitSwitch/RefPulse/StepDirect/FinishHoming` 行为与回放不变；标准名称/I/O 偏差仍按审计开放，不借 P5-B 掩盖 |
+| 现有五块 | 本批当时不改 `FbStepAbsoluteSwitch/LimitSwitch/ReferencePulse/HomeDirect/FinishHoming`；其后 C5 已完成标准合同收口 |
 | 单写者 | 主动 Step 的命令提交与 AxisModel 周期推进仍在规划域；被动 Flying 只观察 probe/反馈并做坐标重置，不提交、接管或改写在途命令 |
 | 探针 | 开关/参考脉冲捕获复用 KB-022 command-id 所有权；AbortPassive 只撤销当前被动回零 owner，不撤销后来 re-arm 的 probe |
 | 合规口径 | P5-B 出口仅表示 11 个标准名称都有公开门面；逐 I/O、派生类型、硬件真实性及旧五块偏差未闭合前仍不得声明 Part 5 合规 |
@@ -27,7 +27,7 @@
 | 2.5 | `MC_HomeAbsolute` | 宿主在绑定域提供绝对编码器读数槽 `bind_absolute_position(axis, source*)`；Execute 上升沿原子快照读数并调用无运动坐标建立，成功即 homed | 不把 ServoSim command/actual position 冒充独立绝对编码器 |
 | 2.6 | 绝对读数生命周期 | source 必须比 AxisModel/FB 长寿；运行中换 source 拒绝；非有限、未绑定、多圈圈数未解析均报错 | 与 AXIS_REF 生命周期同族；多圈管理保持硬件边界 |
 | 2.7 | Flying 共同状态 | AxisModel 提供每轴唯一 `PassiveHomingSession`：owner command id、probe id、起点/周期计数、SetPosition；Flying FB Execute 上升沿 arm probe，不改变当前 motion command/state | §3.9/3.10 明确不得启动或修改运动 |
-| 2.8 | 在途坐标重置 | 捕获时计算 `delta = SetPosition - captured_actual_position`，原子平移 command/actual 坐标与所有活动/排队绝对目标相同 delta；相对距离与速度/加速度不变 | 满足“SetPosition on the fly 且绝对运动目标不变”的物理合同 |
+| 2.8 | 在途坐标重置 | 本批曾按“物理剩余行程不变”平移活动/排队目标；C5 对照原文后修正为只重标定当前坐标、绝对目标数值不变并连续重规划 | 历史决策已被 KB-080 替代 |
 | 2.9 | Flying SwitchMode | 首批支持 on/off/rising/falling；positive/negative edge 由捕获拍 actual_velocity 符号选择，速度为零时报 `precondition_failed` | 与 §3.9 六模式逐项对应 |
 | 2.10 | `MC_AbortPassiveHoming` | Execute 上升沿终止当前 session 并撤销其 probe；有 session→Done，同拍已自然完成→Done，无 session→Error `precondition_failed`；不提交 Halt、不改轴状态 | 只终止被动捕获，不触碰运动 |
 | 2.11 | BufferMode | 主动 StepBlock/DistanceCoded 沿轴命令队列；HomeAbsolute/Flying/Abort 只接受 aborting(0)，其他编码 `unsupported` | 无运动的被动操作不存在可诚实排队的执行对象 |
@@ -48,7 +48,7 @@
 | Flying 捕获与外部接管同拍 | 以 AxisModel 周期内 probe 捕获顺序为准；捕获 command id 不再属于活动 session 时 CommandAborted，不做坐标重置 |
 | 第二个 Flying FB 抢占同一轴 | aborting 语义：旧 session CommandAborted，新 owner 接管 probe；不同轴互不影响 |
 | AbortPassive 误伤后来 re-arm probe | 禁止；command id 不匹配时不得 abort_trigger |
-| 坐标平移导致软限位/排队绝对目标非有限 | 捕获前预检；失败保持原坐标与目标并 ErrorStop |
+| 在线重标定导致当前坐标或重规划不可行 | 捕获前预检；失败保持原坐标与目标并 ErrorStop |
 | BufferMode/Direction/SwitchMode INT 超域 | FB Error `invalid_argument` |
 
 ## 4. 验收指标
@@ -59,7 +59,7 @@
 | 4.2 | StepBlock 独立实际反馈：硬接触、软接触抖动、保持时间 0/N、条件中断重计、超时/距离、接管 | ≥10 场景；不得用 command 值作 oracle |
 | 4.3 | DistanceCoded 两标记解码 | 正/反向各 ≥3 码；唯一/无匹配/歧义/容差边界全覆盖 |
 | 4.4 | HomeAbsolute | 独立 source 正/负/零、未绑定、NaN/Inf、运行中换源拒绝；零运动且成功置 homed | 全绿，command id 不变 |
-| 4.5 | Flying Switch/Pulse | MoveAbsolute 正反向与 MoveVelocity 各一；捕获前后 command id 不变、速度连续、最终物理目标不变、坐标只平移一次 | 逐周期断言，位置/目标 ≤1e-12 |
+| 4.5 | Flying Switch/Pulse | MoveAbsolute 正反向与 MoveVelocity 各一；捕获前后 command id 不变、速度连续、活动与排队绝对目标值不变、坐标只重标定一次 | 逐周期断言 |
 | 4.6 | AbortPassive | 空 session、活动 switch/pulse、自然完成竞态、replacement probe 所有权 | 全绿，零运动副作用 |
 | 4.7 | 既有五块与 18 回放 | 逐位不变 |
 | 4.8 | RT/质量 | 新周期路径静态扫描；冻结窗口 10 万周期零分配；fuzz 扩展六 FB/三派生类型 10 万输入零 crash |
@@ -73,7 +73,7 @@
 | 真机械堵转安全 | 软件只验证状态机；TorqueLimit 是否保护机构由驱动与集成商验证 |
 | 绝对编码器协议/多圈管理 | source 由 adapter/宿主提供；本批不解析厂商帧、不处理掉电圈数 |
 | 距离码厂商格式自动识别 | 只消费显式定长码表，不猜编码体系 |
-| PLCopen Part 5 合规声明/Logo | 人专属，且旧五块标准 I/O/语义偏差与派生类型未全部闭合前不得提交 |
+| PLCopen Part 5 合规声明/Logo | 人专属；C5 工程证据不等于官方批准 |
 | 组回零编排器 | 仍由用户组合 Step FB；不新增 GroupHome 语义 |
 
 ## 6. 实现记录（KB-072）
@@ -81,14 +81,13 @@
 - 六个此前缺失的标准名称均有 C++ 公开门面；StepBlock 使用 Servo 独立
   actual torque/velocity，DistanceCoded 使用定长宿主码表，HomeAbsolute
   使用绑定位置槽，Flying/Abort 使用每轴单一被动 owner。
-- Flying 捕获保持活动 command id、速度与相对行程不变，原子平移活动剖面、
-  command/actual 坐标及排队绝对目标；非有限或软限位失败保持坐标不变并
-  进入 ErrorStop。
+- Flying 的本批历史实现曾平移活动剖面和排队绝对目标；C5/KB-080 已改为
+  当前坐标重标定后保持绝对目标数值不变并连续重规划。
 - `plcopen_core_part5_homing_tests` 覆盖完成、拒绝、限值、接管与 ServoSim
   独立反馈；`plcopen_core_a2_alloc_guard --cycles 100000` 覆盖新增周期路径
   零分配。18 份既有回放不重录，本批无声明变更。
-- 出口口径固定为“11/11 有门面、仍部分覆盖且不合规”；旧五块标准 I/O/
-  语义、派生类型、逐 I/O 声明和真机证据继续开放。
+- 本批历史出口仅为“11/11 有门面”；标准名称、派生类型、逐 I/O 与软件
+  语义已由 C5/KB-080 关闭，硬件真实性和官方批准仍开放。
 
 ---
 

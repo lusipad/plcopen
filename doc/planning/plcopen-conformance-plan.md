@@ -9,8 +9,14 @@
 
 **审计结论回顾**：Part 1 = 43 个 FB 均有门面（2026-07-12 的 **B 级 I/O
 审计基线为 22/43**；C4/KB-079 已关闭 D-01～D-20，但正式声明仍未闭合）；
-Part 4 = 68/68 个同名门面、接口与语义仍逐项部分覆盖；Part 5 = 11/11 有 C++ 门面但仍部分覆盖。**认证的实质不是 FB 数量，是 B 级 I/O
-的齐备性**（附录 B3）。
+Part 4 = 68/68 个同名门面、接口与语义仍逐项部分覆盖；Part 5 =
+C5/KB-080 已关闭 11/11 标准门面、派生类型、45 B + 102 E I/O 与可软件
+验证语义。**认证的实质不是 FB 数量，是 B 级 I/O 的齐备性**（附录 B3）。
+
+> 2026-07-17 状态补记：C4 已关闭 D-01～D-20；C5/KB-080 已关闭 Part 5
+> 的标准名称、派生类型、45 B + 102 E I/O 与可软件验证语义；C6/KB-081
+> 已完成 Beckhoff 核心能力对等总账并删除旧 Position 回读包装。本文其余
+> 批次文字保留为合规工作拆解历史，正式供应商声明/批准仍未完成。
 
 ---
 
@@ -66,14 +72,15 @@ D-05/D-12/D-13/D-15 已关闭。**43/43 B 级 I/O 齐备与"具备提交合规�
 
 **同批修正**：`FbSetKinTransform`/`FbReadCartesianTransform` 命名对齐
 v2.0（`MC_SetDynCoordTransform`/`MC_GroupTransformPosition`）——**声明变更**；
-`FbGroupReadActualPosition`/`ReadCommandPosition` 并为 `MC_GroupReadPosition`
-（带 Source 输入）。
+Position 回读统一为 `MC_GroupReadPosition`（带 Source 输入）；C6 不保留
+旧 C++ 包装。
 
-### 🟢 P5-B：Part 5 缺口（≈0.5 L0）
+### ✅ P5-B / C5：Part 5 软件合同（已完成）
 
-补 6 项：`MC_StepBlock`、`MC_StepDistanceCoded`、`MC_HomeAbsolute`、
+已补 6 项：`MC_StepBlock`、`MC_StepDistanceCoded`、`MC_HomeAbsolute`、
 `MC_StepReferenceFlyingSwitch`、`MC_StepReferenceFlyingRefPulse`、
-`MC_AbortPassiveHoming`。
+`MC_AbortPassiveHoming`；C5 进一步关闭全部 11 个标准 FB、派生类型、
+45 B + 102 E 机读声明及可软件验证语义（KB-080）。
 
 ### ✅ P-GUIDE：PLCopen 指南对照（审计完成）
 

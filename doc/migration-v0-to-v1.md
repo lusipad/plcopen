@@ -72,7 +72,7 @@
 | `FbReadMotionState` | `fb::FbReadMotionState` | 方向/加减速相位由所选源速度与命令加速度导出；源为类型化枚举（旧 `SOURCE_ILLEGAL` 错误不再可表示） |
 | `FbEmergencyStop`（项目扩展） | `fb::FbEmergencyStop` | 驱动 errorstop，经 `FbReset` 恢复 |
 | `FbAddAxisToGroup` / `FbRemoveAxisFromGroup` / `FbGroupReset` | 同名（`fb/group.h`） | 薄门面包装 `AxisGroup::add_axis/remove_axis/reset`；移除仍要求组 disabled |
-| `FbGroupReadStatus` / `FbGroupReadActualPosition` / `FbGroupReadCommandPosition` | 同名 | Enable 型；`moving`/`standby` 合入成员级 gear/cam 同步状态（承接旧线可观察组状态） |
+| `FbGroupReadStatus` / 旧 Position 双回读 | `FbGroupReadStatus` / `FbGroupReadPosition(Source)` | Enable 型；Position 通过 Source 选择 actual/command，旧类名不保留 |
 
 已声明的行为边界（新核为最小语义层，回放仲裁外的变化以此为准；编号锚点见
 [README 已知边界](../README.md#已知边界)，测试与 PR 说明应引用这些编号）：
