@@ -12,7 +12,7 @@
 | Part | 规格版本 | 规格 FB 数 | 我们实现 | 覆盖率 | 旧声明 | 判定 |
 |------|---------|-----------|---------|--------|--------|------|
 | Part 1 | v2.0 (2011) | **43** | **43 个门面** | 名称面 100%，条款不合规 | "45/45" | 🔴 D-01~D-20 表明不能以数量宣称合规 |
-| Part 4 | v2.0 (2026-05) | **68** | **57 个同名门面** | **约 84%** | "零留白" | 🟡 P4-B3 后仍有 11 项无同名入口，且已有门面多为部分覆盖 |
+| Part 4 | v2.0 (2026-05) | **68** | **68 个同名门面** | 名称面 100%，条款不合规 | "零留白" | 🟡 C3 后门面齐全，但 B/E/O 接口与语义仍多为部分覆盖 |
 | Part 5 | v2.0 (2011) | **11** | **11 个有门面、均仍部分覆盖** | 不计算合规率 | "已交付" | 🟡 门面齐备；接口、派生类型、硬件证据与正式声明未闭合 |
 | **合计** | — | **122** | 不做简单相加 | — | — | 接口/条款符合度不能由 FB 名称数量替代 |
 
@@ -21,7 +21,7 @@ FB 清单**，而规格 v2.0 实际定义 **68 个**——我们在漏掉 38 个
 上宣布了"零留白"。**这是 KB-051 教训（"测试只看得见写它的人想到的
 东西"）在合规面上的重演。**
 
-### Part 4 v2.0 缺失清单（18 个无同名入口，按性质分组）
+### Part 4 v2.0 门面关闭记录（原 47 个缺口，现 68/68）
 
 > 本节的旧分组保留为规划摘要；权威 68 项逐 FB 账见
 > [Part 4 条款审计](plcopen-part4-clause-audit.md)。两个旧名/自定义回读门面
@@ -35,12 +35,11 @@ FB 清单**，而规格 v2.0 实际定义 **68 个**——我们在漏掉 38 个
 | **点动**（2） | `MC_GroupJog`、`MC_GroupJogVector` | ✅ P4-B2：ACS/MCS/PCS 持续点动、受控停车、接管与软限位 |
 | **刚体动力学**（2） | `MC_GroupRead/WriteRigidBodyDynamic` | ✅ P4-B3：base + 8 links 固定容量、整体校验后原子提交 |
 | **跟踪**（2） | `MC_TrackConveyorBelt`、`MC_TrackRotaryTable` | ✅ P4-B3：逐周期 PCS 更新、运动中跟随与完成后持续保持 |
-| **杂项**（6） | `MC_GroupHalt`、`MC_GroupPower`、`MC_GroupWaitTime`、`MC_GroupSetPosition`、`MC_GroupTransformPosition`、`MC_GroupReadError`、`MC_UngroupAllAxes` | 🟢 多为薄门面 |
+| **C3 最后 11 项** | UngroupAll/GroupPower、4 个 transform set/read、GroupSetPosition/ReadError/Halt/Wait/TransformPosition | ✅ KB-078：同名门面关闭；逐项边界见 Part 4 条款审计 §6 |
 
-**额外发现**：我们的 `FbSetKinTransform` / `FbReadCartesianTransform`
-**不在 Part 4 v2.0 的 FB 清单里**——那是 v1.0 名字或自创命名。v2.0 的
-对应面是 `MC_SetDynCoordTransform` / `MC_GroupTransformPosition` /
-`MC_ReadDHParameters`。**命名合规性需一并修正**。
+**命名复核**：`FbSetKinTransform` / `FbReadCartesianTransform` 分别对应
+v2 §9.10.1 / §9.10.5，属于 68 项清单。C3 补齐相邻的动态/坐标变换门面后，
+当前问题是插件指针、标准引用类型和输出字段的接口偏差，不再是名称缺失。
 
 ### Part 5 v2.0 缺失清单（6 项）
 

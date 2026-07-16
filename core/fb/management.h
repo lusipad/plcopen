@@ -270,4 +270,92 @@ public:
     }
 };
 
+class FbGroupHalt : public GroupExecuteFb
+{
+public:
+    double deceleration = 1.0;
+    double jerk = 1.0;
+
+    void call()
+    {
+        if(rising_edge()) {
+            if(group_ref == nullptr) {
+                accept(rt::Result<std::uint32_t>::failure(
+                    rt::ErrorCode::invalid_argument));
+            } else {
+                accept(group_ref->halt(deceleration, jerk));
+            }
+        }
+        observe();
+    }
+
+private:
+    void observe()
+    {
+        if(!execute || tracked_command_id_ == 0 || group_ref == nullptr ||
+           outputs.done || outputs.error) {
+            return;
+        }
+        if(group_ref->halt_command_aborted(tracked_command_id_)) {
+            outputs.command_aborted = true;
+            outputs.busy = false;
+            outputs.active = false;
+            tracked_command_id_ = 0;
+            return;
+        }
+        if(group_ref->halt_command_done(tracked_command_id_)) {
+            outputs.done = true;
+            outputs.busy = false;
+            outputs.active = false;
+            return;
+        }
+        outputs.busy = true;
+        outputs.active = group_ref->halt_command_active(tracked_command_id_);
+    }
+};
+
+class FbGroupWaitTime : public GroupExecuteFb
+{
+public:
+    std::int64_t duration_cycles = 0;
+    axis::BufferMode buffer_mode = axis::BufferMode::aborting;
+
+    void call()
+    {
+        if(rising_edge()) {
+            if(group_ref == nullptr) {
+                accept(rt::Result<std::uint32_t>::failure(
+                    rt::ErrorCode::invalid_argument));
+            } else {
+                accept(group_ref->submit_wait(duration_cycles, buffer_mode));
+            }
+        }
+        observe();
+    }
+
+private:
+    void observe()
+    {
+        if(!execute || tracked_command_id_ == 0 || group_ref == nullptr ||
+           outputs.done || outputs.error) {
+            return;
+        }
+        if(group_ref->wait_command_aborted(tracked_command_id_)) {
+            outputs.command_aborted = true;
+            outputs.busy = false;
+            outputs.active = false;
+            tracked_command_id_ = 0;
+            return;
+        }
+        if(group_ref->wait_command_done(tracked_command_id_)) {
+            outputs.done = true;
+            outputs.busy = false;
+            outputs.active = false;
+            return;
+        }
+        outputs.busy = group_ref->wait_command_busy(tracked_command_id_);
+        outputs.active = group_ref->wait_command_active(tracked_command_id_);
+    }
+};
+
 } // namespace plcopen::core::fb

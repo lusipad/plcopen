@@ -60,7 +60,8 @@ fixed `AxisModel` IO banks and info bits. With it the v0.x public FB surface is 
 门面覆盖≠合规：诚实口径为 Part 1 门面 43/43 但 B 级 I/O 齐备 22/43
 （2026-07-12 审计时点 C++ 字段面；P1-A 已补 4 项结构缺口，其余命名/形态
 缺口归 L2a 引脚层）、条款级问题 D-01~D-20 中 16 项未清（D-05/D-12/D-13/
-D-15 已关；不能宣称合规），Part 4 同名门面 57/68，Part 5 11/11 有门面但
+D-15 已关；不能宣称合规），Part 4 同名门面 68/68（KB-078，接口/语义仍
+逐项部分覆盖），Part 5 11/11 有门面但
 旧五块接口/语义与派生类型仍部分覆盖——
 逐条审计公开于 [doc/compliance/](../../doc/compliance/)。硬件 `Servo` 窄接口
 已在 [core/adapters](../adapters/README.md) 交付（ADR-0004，含 CiA402 状态机

@@ -236,6 +236,100 @@ public:
     }
 };
 
+class FbUngroupAllAxes : public GroupAdminFb
+{
+public:
+    void call()
+    {
+        if(!rising_edge()) return;
+        if(group_ref == nullptr) {
+            finish(rt::ErrorCode::invalid_argument);
+            return;
+        }
+        finish(group_ref->ungroup_all_axes());
+    }
+};
+
+class FbGroupPower
+{
+public:
+    axis::AxisGroup *group_ref = nullptr;
+    bool enable = false;
+    bool status = false;
+    bool valid = false;
+    bool error = false;
+    rt::ErrorCode error_id = rt::ErrorCode::ok;
+
+    void call()
+    {
+        if(group_ref == nullptr) {
+            status = false;
+            valid = false;
+            error = true;
+            error_id = rt::ErrorCode::invalid_argument;
+            return;
+        }
+        const rt::ErrorCode result = group_ref->set_group_power(enable);
+        status = group_ref->group_powered();
+        error = result != rt::ErrorCode::ok;
+        error_id = result;
+        valid = !error;
+    }
+};
+
+class FbGroupSetPosition : public GroupAdminFb
+{
+public:
+    axis::GroupPosition position{};
+    bool relative = false;
+    axis::CoordSystem coordinate_system = axis::CoordSystem::acs;
+    axis::ExecutionMode execution_mode = axis::ExecutionMode::immediately;
+
+    void call()
+    {
+        if(!rising_edge()) return;
+        if(group_ref == nullptr) {
+            finish(rt::ErrorCode::invalid_argument);
+            return;
+        }
+        finish(group_ref->set_group_position(
+            position, relative, coordinate_system, execution_mode));
+    }
+};
+
+class FbGroupReadError
+{
+public:
+    axis::AxisGroup *group_ref = nullptr;
+    bool enable = false;
+    bool valid = false;
+    bool error = false;
+    rt::ErrorCode error_id = rt::ErrorCode::ok;
+    rt::ErrorCode group_error_id = rt::ErrorCode::ok;
+
+    void call()
+    {
+        if(!enable) {
+            valid = false;
+            error = false;
+            error_id = rt::ErrorCode::ok;
+            group_error_id = rt::ErrorCode::ok;
+            return;
+        }
+        if(group_ref == nullptr) {
+            valid = false;
+            error = true;
+            error_id = rt::ErrorCode::invalid_argument;
+            group_error_id = rt::ErrorCode::ok;
+            return;
+        }
+        group_error_id = group_ref->group_error();
+        valid = true;
+        error = false;
+        error_id = rt::ErrorCode::ok;
+    }
+};
+
 class FbGroupReadConfiguration
 {
 public:

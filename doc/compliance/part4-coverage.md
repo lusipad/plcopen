@@ -4,7 +4,7 @@
 > **自编清单**，而 Part 4 **v2.0 规格实际定义 68 个 FB**——本表漏了
 > 38 个，并在残缺清单上错误宣布了"零留白"。
 >
-> **当前同名门面：57/68 ≈ 84%，11 项无同名入口**；另保留两个旧名/自定义
+> **当前同名门面：68/68，名称面齐全但条款不合规**；另保留两个旧名/自定义
 > 回读门面，不计入 v2 同名覆盖。完整清单见
 > **[plcopen-part4-clause-audit.md](plcopen-part4-clause-audit.md)**。
 > 本表保留为历史记录（其对 30 个 FB 的实现映射仍准确），**不得再
@@ -12,7 +12,7 @@
 >
 > 原终点标准（仍有效，但基准换为规格原文）：每个 Part 4 标准 FB 要么
 > 承接、要么显式声明不做——零留白。
-> 最后更新：2026-07-12（失效标注）。
+> 最后更新：2026-07-16（C3/KB-078 状态同步；30 项分母仍失效）。
 
 ## 对照表
 
@@ -22,14 +22,14 @@
 |---|---------|------|------|------|
 | 1 | MC_AddAxisToGroup | **已承接** | `FbAddAxisToGroup` (`core/fb/group.h`) | |
 | 2 | MC_RemoveAxisFromGroup | **已承接** | `FbRemoveAxisFromGroup` (`core/fb/group.h`) | |
-| 3 | MC_UngroupAllAxes | **v2 计划** | — | 便利 FB，逐轴 RemoveAxisFromGroup 可达同效果；v2 加入 |
+| 3 | MC_UngroupAllAxes | **已承接** | `FbUngroupAllAxes` (`core/fb/group.h`) | Disabled/Standby/ErrorStop 原子解绑 |
 | 4 | MC_GroupEnable | **已承接** | `FbGroupEnable` (`core/fb/motion.h`) | |
 | 5 | MC_GroupDisable | **已承接** | `FbGroupDisable` (`core/fb/motion.h`) | |
 | 6 | MC_GroupReset | **已承接** | `FbGroupReset` (`core/fb/group.h`) | |
 | 7 | MC_GroupReadStatus | **已承接** | `FbGroupReadStatus` (`core/fb/group.h`) | |
 | 8 | MC_GroupReadActualPosition | **已承接** | `FbGroupReadActualPosition` (`core/fb/group.h`) | ACS/MCS/PCS 三坐标系 |
 | 9 | MC_GroupReadCommandPosition | **已承接** | `FbGroupReadCommandPosition` (`core/fb/group.h`) | 同上 |
-| 10 | MC_GroupReadError | **已覆盖** | — | 错误信息已由 `FbGroupReadStatus` 输出（error/error_id/error_stop），不另设独立 FB——与单轴侧 `FbReadAxisError` 路径对称但组侧合并为一；如有需要 v2 可拆出 |
+| 10 | MC_GroupReadError | **已承接** | `FbGroupReadError` (`core/fb/group.h`) | 独立回读组 ErrorStop 锁存；记录细分未承载 |
 | 11 | MC_GroupStop | **已承接** | `FbGroupStop` (`core/fb/motion.h`) | |
 | 12 | MC_GroupHome | **已承接** | `FbGroupHome` (`core/fb/management.h`) | 并行回零全成员 |
 
@@ -40,7 +40,7 @@
 | 13 | MC_GroupSetOverride | **已承接** | `FbGroupSetOverride` (`core/fb/management.h`) | VelFactor ∈ [0,1]，factor=0 驻留 |
 | 14 | MC_GroupInterrupt | **已承接** | `FbGroupInterrupt` (`core/fb/management.h`) | 保留暂停点 |
 | 15 | MC_GroupContinue | **已承接** | `FbGroupContinue` (`core/fb/management.h`) | 从暂停点重启 |
-| 16 | MC_GroupHalt | **v2 计划** | — | 语义 = 减速到零后回 standby（不锁），与 GroupStop（锁在 stopping）区分；现状：GroupStop + GroupReset 可达同效果；v2 视用户需求补 |
+| 16 | MC_GroupHalt | **已承接** | `FbGroupHalt` (`core/fb/management.h`) | 原路径受控到零回 standby，新 Aborting 运动可接管 |
 
 ### 协调运动 FB
 
@@ -65,8 +65,8 @@
 | # | 标准 FB | 状态 | 实现 | 说明 |
 |---|---------|------|------|------|
 | 25 | MC_SetKinTransform | **已承接** | `FbSetKinTransform` (`core/fb/path_table.h`) | 运动学插件安装 |
-| 26 | MC_ReadKinTransform | **v2 计划** | — | 回读运动学配置；底层数据可用（`AxisGroup` 持有 kinematics_ 指针），缺 FB 门面；v2 补 |
-| 27 | MC_SetCartesianTransform | **v2 计划** | — | 底层 API 已全功能（`set_workpiece_frame_rpy`/`set_tool_transform_rpy`/`set_tool_offset`），缺 FB 门面；v2 补 |
+| 26 | MC_ReadKinTransform | **已承接** | `FbReadKinTransform` (`core/fb/path_table.h`) | vendor ref 适配为插件非拥有引用 |
+| 27 | MC_SetCartesianTransform | **已承接** | `FbSetCartesianTransform` (`core/fb/path_table.h`) | 固定 6D RPY immediate 子集 |
 | 28 | MC_ReadCartesianTransform | **已承接** | `FbReadCartesianTransform` (`core/fb/path_table.h`) | 帧回读 |
 
 ### 跟踪 FB
@@ -86,8 +86,8 @@
 | Y1 计划（显式远期） | 2 | 7% |
 | ~~留白~~ | ~~0~~ | ~~0%~~ |
 
-🔴 **上表分母错误**。以 Part 4 v2.0 原文为准的真实账：
-**规格 68 个 FB，21 个有同名门面（约 31%），47 个无同名入口**——
+🔴 **上表分母错误**。以 Part 4 v2.0 原文为准的当前真实账：
+**规格 68 个 FB，68 个有同名门面；接口和语义仍逐项部分覆盖**——
 见 [plcopen-part4-clause-audit.md](plcopen-part4-clause-audit.md)。
 
 ## 已知实现边界（与对照表交叉引用）

@@ -73,5 +73,8 @@ ST 绑定只能消费同一合同，不能形成第二套 FB 语义。
 
 - C2 / P4-B3 已完成（KB-077）：刚体动态、axis↔group 同步、动态坐标、
   输送带和转台跟踪已进入默认 C++ 门面，Part 4 同名入口更新为 57/68。
-- 该关闭只表示计划定义的核心能力片完成；PLCopen 认证、Beckhoff 黑盒性能
-  对拍、buffered 动态 PCS 和剩余 11 个同名入口仍不在已完成声明内。
+- C3 / P4-B4 已完成（KB-078）：最后 11 个管理、变换、位置、Halt/Wait
+  门面已交付，Part 4 同名入口达到 68/68。
+- 该关闭只表示计划定义的核心能力片和名称面完成；PLCopen 认证、Beckhoff
+  黑盒性能对拍、buffered 动态 PCS、power-owner 与非 Cartesian ref 仍不在
+  已完成声明内。

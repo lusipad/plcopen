@@ -6,6 +6,15 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- Part 4 C3 / P4-B4（KB-078）补齐最后 11 个同名 C++ 门面，使名称面达到
+  68/68：原子批量解组、组电源、Cartesian/Coordinate transform 读写、
+  kinematics 引用回读、Standby 组位置重设、独立组错误回读、可被新
+  Aborting 运动接管的 GroupHalt、整数周期 GroupWaitTime，以及
+  ACS/MCS/PCS 位置变换。Wait 支持 Aborting 零速后计时与 Buffered 后继，
+  全程无墙钟/堆分配；专项测试、2000 输入 fuzz、69 项 Debug 全测和 18 份
+  回放通过。power-owner 仲裁、queued transform、moving set-position、
+  非 Cartesian vendor ref 等仍显式不支持，不构成 PLCopen 合规声明。
+
 - Part 4 P4-B3（KB-077）新增 7 个同步、刚体动力学与跟踪门面：组路径里程
   position-locking 从轴、PathData 主轴驱动组路径、动态组坐标、输送带/转台
   PCS 跟踪，以及 base + 8 links 的原子刚体动态读写。动态 PCS 在运动完成后

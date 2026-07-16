@@ -341,4 +341,148 @@ public:
     }
 };
 
+class FbSetCoordinateTransform : public GroupExecuteFb
+{
+public:
+    axis::CoordSystem coordinate_system = axis::CoordSystem::pcs;
+    axis::ToolData transform{};
+    axis::ExecutionMode execution_mode = axis::ExecutionMode::immediately;
+
+    void call()
+    {
+        if(!rising_edge()) return;
+        if(group_ref == nullptr) {
+            accept(rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument));
+            return;
+        }
+        const rt::ErrorCode result = group_ref->set_coordinate_transform(
+            coordinate_system, transform, execution_mode);
+        if(result != rt::ErrorCode::ok) {
+            accept(rt::Result<std::uint32_t>::failure(result));
+            return;
+        }
+        accept(rt::Result<std::uint32_t>::success(1));
+        outputs.done = true;
+        outputs.busy = false;
+        outputs.active = false;
+    }
+};
+
+class FbSetCartesianTransform : public FbSetCoordinateTransform
+{
+};
+
+class FbReadKinTransform
+{
+public:
+    axis::AxisGroup *group_ref = nullptr;
+    bool enable = false;
+    bool valid = false;
+    bool error = false;
+    rt::ErrorCode error_id = rt::ErrorCode::ok;
+    const kin::Kinematics *kinematics_plugin = nullptr;
+    const kin::PoseKinematics *pose_plugin = nullptr;
+
+    void call()
+    {
+        if(!enable) {
+            valid = false;
+            error = false;
+            error_id = rt::ErrorCode::ok;
+            kinematics_plugin = nullptr;
+            pose_plugin = nullptr;
+            return;
+        }
+        if(group_ref == nullptr) {
+            valid = false;
+            error = true;
+            error_id = rt::ErrorCode::invalid_argument;
+            kinematics_plugin = nullptr;
+            pose_plugin = nullptr;
+            return;
+        }
+        kinematics_plugin = group_ref->kinematics_plugin();
+        pose_plugin = group_ref->pose_kinematics_plugin();
+        valid = true;
+        error = false;
+        error_id = rt::ErrorCode::ok;
+    }
+};
+
+class FbReadCoordinateTransform
+{
+public:
+    axis::AxisGroup *group_ref = nullptr;
+    bool enable = false;
+    axis::CoordSystem coordinate_system = axis::CoordSystem::pcs;
+    bool valid = false;
+    bool error = false;
+    rt::ErrorCode error_id = rt::ErrorCode::ok;
+    axis::ToolData transform{};
+
+    void call()
+    {
+        if(!enable) {
+            valid = false;
+            error = false;
+            error_id = rt::ErrorCode::ok;
+            transform = {};
+            return;
+        }
+        if(group_ref == nullptr) {
+            valid = false;
+            error = true;
+            error_id = rt::ErrorCode::invalid_argument;
+            return;
+        }
+        const rt::ErrorCode result =
+            group_ref->coordinate_transform(coordinate_system, transform);
+        valid = result == rt::ErrorCode::ok;
+        error = !valid;
+        error_id = result;
+    }
+};
+
+class FbGroupTransformPosition
+{
+public:
+    axis::AxisGroup *group_ref = nullptr;
+    bool enable = false;
+    axis::GroupPosition position{};
+    axis::CoordSystem source = axis::CoordSystem::acs;
+    axis::CoordSystem target = axis::CoordSystem::mcs;
+    bool valid = false;
+    bool busy = false;
+    bool error = false;
+    rt::ErrorCode error_id = rt::ErrorCode::ok;
+    axis::GroupPosition output_position{};
+    bool singular_position = false;
+
+    void call()
+    {
+        if(!enable) {
+            valid = false;
+            busy = false;
+            error = false;
+            error_id = rt::ErrorCode::ok;
+            output_position = {};
+            singular_position = false;
+            return;
+        }
+        if(group_ref == nullptr) {
+            valid = false;
+            busy = false;
+            error = true;
+            error_id = rt::ErrorCode::invalid_argument;
+            return;
+        }
+        const rt::ErrorCode result = group_ref->transform_position(
+            position, source, target, output_position, singular_position);
+        valid = result == rt::ErrorCode::ok;
+        busy = false;
+        error = !valid;
+        error_id = result;
+    }
+};
+
 } // namespace plcopen::core::fb
