@@ -235,6 +235,13 @@ if(BUILD_TESTING AND PLCOPEN_BUILD_CORE_TESTS)
     plcopen_core_rt_compile_options(plcopen_core_st_l5_tests)
     add_test(NAME plcopen_core_st_l5_tests COMMAND plcopen_core_st_l5_tests)
 
+    add_executable(plcopen_core_st_l5_frontend_tests
+                   test/st_l5_frontend_tests.cpp)
+    target_link_libraries(plcopen_core_st_l5_frontend_tests PRIVATE plcopen::core)
+    plcopen_core_rt_compile_options(plcopen_core_st_l5_frontend_tests)
+    add_test(NAME plcopen_core_st_l5_frontend_tests
+             COMMAND plcopen_core_st_l5_frontend_tests)
+
     add_executable(plcopen_core_st_l6_tests test/st_l6_tests.cpp)
     target_link_libraries(plcopen_core_st_l6_tests PRIVATE plcopen::core)
     plcopen_core_rt_compile_options(plcopen_core_st_l6_tests)
@@ -270,6 +277,12 @@ if(BUILD_TESTING AND PLCOPEN_BUILD_CORE_TESTS)
     add_test(NAME plcopen_core_st_fuzz_smoke COMMAND plcopen_core_st_fuzz --iterations 3000)
     add_test(NAME plcopen_core_st_l2b_fuzz_smoke
              COMMAND plcopen_core_st_fuzz --iterations 3000 --l2b)
+    add_test(NAME plcopen_core_st_l5_fuzz_smoke
+             COMMAND plcopen_core_st_fuzz --iterations 3000 --l5)
+    add_test(NAME plcopen_core_st_l6_fuzz_smoke
+             COMMAND plcopen_core_st_fuzz --iterations 3000 --l6)
+    add_test(NAME plcopen_core_st_l7_fuzz_smoke
+             COMMAND plcopen_core_st_fuzz --iterations 3000 --l7)
 
     add_executable(plcopen_core_stream_tests test/stream_filter_tests.cpp)
     target_link_libraries(plcopen_core_stream_tests PRIVATE plcopen::core)

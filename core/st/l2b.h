@@ -30,6 +30,7 @@ struct Var
 {
     std::string name;
     std::string lower;
+    std::string location;
     std::string type;
     std::string type_lower;
     std::string init;
@@ -44,6 +45,8 @@ struct Pou
     std::string return_type;
     std::vector<Var> vars;
     std::string body;
+    std::size_t body_source_offset = 0;
+    std::uint32_t body_line = 1;
 };
 
 struct TypeUnit
@@ -252,13 +255,17 @@ inline void parse_declarations(std::string_view block, VarKind kind,
         const std::string init = assign == std::string::npos
                                      ? std::string{}
                                      : trim(std::string_view(tail).substr(assign + 2));
-        for(const std::string &name : split_top(names, ',')) {
-            if(name.empty()) {
+        for(const std::string &raw_name : split_top(names, ',')) {
+            if(raw_name.empty()) {
                 continue;
             }
             Var var;
-            var.name = name;
-            var.lower = lower_copy(name);
+            const std::string lowered_name = lower_copy(raw_name);
+            const std::size_t located = lowered_name.find(" at ");
+            var.name = trim(std::string_view(raw_name).substr(0, located));
+            if(located != std::string::npos)
+                var.location = trim(std::string_view(raw_name).substr(located));
+            var.lower = lower_copy(var.name);
             var.type = type;
             var.type_lower = lower_copy(type);
             var.init = init;
@@ -368,14 +375,22 @@ inline bool parse_project(std::string_view source, Project &project,
             header = skip_space(source, header);
             if(header < source.size() && source[header] == ':') {
                 ++header;
-                const std::size_t line = source.find_first_of("\r\n", header);
+                std::size_t line = source.find_first_of("\r\n", header);
+                for(const std::string_view declaration :
+                    {std::string_view{"var"}, std::string_view{"var_input"},
+                     std::string_view{"var_output"},
+                     std::string_view{"var_in_out"},
+                     std::string_view{"var_temp"}}) {
+                    const std::size_t found = find_word(source, declaration,
+                                                        header);
+                    if(found != std::string_view::npos &&
+                       (line == std::string_view::npos || found < line))
+                        line = found;
+                }
                 pou.return_type = trim(source.substr(
                     header, (line == std::string_view::npos ? source.size() : line) - header));
                 header = line == std::string_view::npos ? source.size() : line;
             }
-        } else {
-            const std::size_t line = source.find_first_of("\r\n", header);
-            header = line == std::string_view::npos ? source.size() : line;
         }
         const std::size_t end = find_word(source, closer, header);
         if(end == std::string::npos || pou.name.empty()) {
@@ -386,6 +401,13 @@ inline bool parse_project(std::string_view source, Project &project,
             return false;
         }
         parse_unit_body(source.substr(header, end - header), pou);
+        const std::size_t relative_body =
+            source.substr(header, end - header).find(pou.body);
+        pou.body_source_offset = relative_body == std::string_view::npos
+                                     ? header
+                                     : header + relative_body;
+        for(std::size_t index = 0; index < pou.body_source_offset; ++index)
+            if(source[index] == '\n') ++pou.body_line;
         project.pous.push_back(static_cast<Pou &&>(pou));
         at = end + closer.size();
     }
@@ -1217,9 +1239,15 @@ struct Expansion
         return code;
     }
 
-    std::vector<std::string> statements(std::string_view body)
+    struct StatementSlice
     {
-        std::vector<std::string> result;
+        std::string text;
+        std::size_t begin = 0;
+    };
+
+    std::vector<StatementSlice> statements(std::string_view body)
+    {
+        std::vector<StatementSlice> result;
         int depth = 0;
         std::size_t begin = 0;
         for(std::size_t i = 0; i < body.size();) {
@@ -1236,13 +1264,42 @@ struct Expansion
                 continue;
             }
             if(body[i] == ';' && depth == 0) {
-                result.push_back(trim(body.substr(begin, i - begin + 1)));
+                result.push_back(
+                    {std::string(body.substr(begin, i - begin + 1)), begin});
                 begin = ++i;
             } else ++i;
         }
         const std::string tail = trim(body.substr(begin));
-        if(!tail.empty()) result.push_back(tail);
+        if(!tail.empty())
+            result.push_back({std::string(body.substr(begin)), begin});
         return result;
+    }
+
+    std::string debug_directive(const Pou &owner, std::size_t offset) const
+    {
+        std::uint32_t line = owner.body_line;
+        std::uint32_t column = 1;
+        std::size_t bounded = std::min(offset, owner.body.size());
+        while(bounded < owner.body.size() &&
+              (owner.body[bounded] == ' ' || owner.body[bounded] == '\t' ||
+               owner.body[bounded] == '\r' || owner.body[bounded] == '\n'))
+            ++bounded;
+        for(std::size_t index = 0; index < bounded; ++index) {
+            if(owner.body[index] == '\n') {
+                ++line;
+                column = 1;
+            } else {
+                ++column;
+            }
+        }
+        std::string path;
+        for(const Pou *pou : debug_stack_) {
+            if(!path.empty()) path.push_back('/');
+            path += pou->lower;
+        }
+        return "(*@DBG " + owner.lower + " " + path + " " +
+               std::to_string(line) + " " + std::to_string(column) + " " +
+               std::to_string(debug_stack_.size()) + "*)";
     }
 
     std::size_t if_separator(std::string_view text, std::size_t from,
@@ -1275,7 +1332,7 @@ struct Expansion
         const std::map<std::string, std::string> &symbols,
         const std::map<std::string, std::string> &types,
         const std::map<std::string, FbRef> &instances,
-        const std::string &done)
+        const std::string &done, std::size_t origin)
     {
         const std::size_t then_at = find_word(raw, "then", 2);
         if(then_at == std::string::npos) return raw;
@@ -1289,18 +1346,19 @@ struct Expansion
             transform_sequence(owner,
                 std::string_view(raw).substr(then_at + 4,
                                              split - then_at - 4),
-                symbols, types, instances, done);
+                symbols, types, instances, done, origin + then_at + 4);
         if(separator == "else") {
             std::string end_word;
             const std::size_t end = if_separator(raw, split + 4, end_word);
             result += " ELSE " + transform_sequence(
                 owner, std::string_view(raw).substr(split + 4,
                                                     end - split - 4),
-                symbols, types, instances, done);
+                symbols, types, instances, done, origin + split + 4);
         } else if(separator == "elsif") {
             const std::string nested = "IF " + raw.substr(split + 5);
             result += " ELSE " + transform_if(owner, nested, symbols, types,
-                                               instances, done);
+                                               instances, done,
+                                               origin + split + 5);
         }
         result += " END_IF;";
         return result;
@@ -1311,7 +1369,7 @@ struct Expansion
         const std::map<std::string, std::string> &symbols,
         const std::map<std::string, std::string> &types,
         const std::map<std::string, FbRef> &instances,
-        const std::string &done)
+        const std::string &done, std::size_t origin)
     {
         const std::string lower = lower_copy(raw);
         const std::size_t assign = lower.find(":=");
@@ -1338,7 +1396,7 @@ struct Expansion
         if(by != std::string::npos && by < do_at) result += " BY " + step.value;
         result += " DO " + transform_sequence(
             owner, std::string_view(raw).substr(do_at + 2, end - do_at - 2),
-            symbols, types, instances, done);
+            symbols, types, instances, done, origin + do_at + 2);
         if(!done.empty()) result += "IF " + done + " THEN EXIT; END_IF;";
         result += " END_FOR;";
         return result;
@@ -1349,7 +1407,7 @@ struct Expansion
         const std::map<std::string, std::string> &symbols,
         const std::map<std::string, std::string> &types,
         const std::map<std::string, FbRef> &instances,
-        const std::string &done)
+        const std::string &done, std::size_t origin)
     {
         const std::string lower = lower_copy(raw);
         const std::size_t do_at = find_word(lower, "do", 5);
@@ -1361,7 +1419,7 @@ struct Expansion
             "IF NOT (" + condition.value + ") THEN EXIT; END_IF;" +
             transform_sequence(owner,
                 std::string_view(raw).substr(do_at + 2, end - do_at - 2),
-                symbols, types, instances, done);
+                symbols, types, instances, done, origin + do_at + 2);
         if(!done.empty()) result += "IF " + done + " THEN EXIT; END_IF;";
         result += " END_WHILE;";
         return result;
@@ -1372,10 +1430,23 @@ struct Expansion
         const std::map<std::string, std::string> &symbols,
         const std::map<std::string, std::string> &types,
         const std::map<std::string, FbRef> &instances,
-        const std::string &done)
+        const std::string &done, std::size_t origin = 0)
     {
         std::string result;
-        for(std::string statement : statements(source)) {
+        for(StatementSlice slice : statements(source)) {
+            std::string statement = static_cast<std::string &&>(slice.text);
+            std::size_t leading = 0;
+            for(char value : statement) {
+                if(value == ' ' || value == '\t' || value == '\r' ||
+                   value == '\n') {
+                    result.push_back(value);
+                    ++leading;
+                } else {
+                    break;
+                }
+            }
+            const std::size_t statement_origin =
+                origin + slice.begin + leading;
             statement = replace_symbols(statement, symbols);
             const std::string raw = trim(statement);
             const std::string lower = lower_copy(raw);
@@ -1384,13 +1455,13 @@ struct Expansion
                 emitted = done + " := TRUE;";
             } else if(word_at(lower, 0, "if")) {
                 emitted = transform_if(owner, raw, symbols, types, instances,
-                                       done);
+                                       done, statement_origin);
             } else if(word_at(lower, 0, "for")) {
                 emitted = transform_for(owner, raw, symbols, types, instances,
-                                        done);
+                                        done, statement_origin);
             } else if(word_at(lower, 0, "while")) {
                 emitted = transform_while(owner, raw, symbols, types,
-                                          instances, done);
+                                          instances, done, statement_origin);
             } else {
                 std::size_t p = 0;
                 const std::string first = lower_copy(read_ident(raw, p));
@@ -1417,8 +1488,12 @@ struct Expansion
             }
             if(!done.empty() && lower != "return;" &&
                contains_word(owner.body, "return")) {
-                result += "IF NOT " + done + " THEN " + emitted + " END_IF;";
-            } else result += emitted;
+                result += "IF NOT " + done + " THEN " +
+                          debug_directive(owner, statement_origin) + emitted +
+                          " END_IF;";
+            } else {
+                result += debug_directive(owner, statement_origin) + emitted;
+            }
         }
         return result;
     }
@@ -1429,9 +1504,13 @@ struct Expansion
         const std::map<std::string, FbRef> &instances,
         const std::string &done)
     {
-        return transform_sequence(owner, owner.body, symbols, types,
-                                  instances, done);
+        debug_stack_.push_back(&owner);
+        std::string result = transform_sequence(owner, owner.body, symbols,
+                                                types, instances, done, 0);
+        debug_stack_.pop_back();
+        return result;
     }
+    std::vector<const Pou *> debug_stack_;
 };
 
 struct TypeLayout
@@ -1666,7 +1745,9 @@ inline bool instance_own_bytes(const Project &project, const Pou &pou,
 
 inline std::string declaration_text(const Var &var)
 {
-    std::string result = var.name + " : " + var.type;
+    std::string result = var.name;
+    if(!var.location.empty()) result += " " + var.location;
+    result += " : " + var.type;
     if(!var.init.empty()) result += " := " + var.init;
     result += ";";
     return result;
@@ -1948,7 +2029,20 @@ inline CompileResult compile_project(std::string_view source,
             transformed.push_back('\n');
         }
         transformed += "END_VAR\n" + body + "\nEND_PROGRAM\n";
-        CompileResult image = compile_single_program(transformed, options);
+        CompileOptions image_options = options;
+        image_options.debug_pou = program->lower;
+        image_options.debug_call_depth = 1;
+        image_options.debug_require_provenance = true;
+        std::uint32_t transformed_body_line = 1;
+        const std::size_t transformed_body = transformed.find(body);
+        if(transformed_body != std::string::npos)
+            for(std::size_t index = 0; index < transformed_body; ++index)
+                if(transformed[index] == '\n') ++transformed_body_line;
+        image_options.debug_line_offset =
+            static_cast<std::int32_t>(program->body_line) -
+            static_cast<std::int32_t>(transformed_body_line);
+        CompileResult image = compile_single_program_impl(
+            transformed, image_options, true);
         if(!image.ok) {
             result.diagnostics.insert(result.diagnostics.end(),
                                       image.diagnostics.begin(),
@@ -1956,6 +2050,59 @@ inline CompileResult compile_project(std::string_view source,
             return result;
         }
         image.program.program_name = program->lower;
+        if(options.debug_mode == DebugMode::enabled) {
+            const auto collect_calls = [&](auto &&self, const Pou &owner,
+                                           std::uint16_t owner_depth) -> void {
+                for(const Pou &callee : project.pous) {
+                    if(callee.kind != PouKind::function_) continue;
+                    std::size_t call = find_word(owner.body, callee.lower);
+                    while(call != std::string::npos) {
+                    const std::size_t open = skip_space(
+                        owner.body, call + callee.lower.size());
+                    if(open < owner.body.size() && owner.body[open] == '(') {
+                        DebugCallSite site;
+                        site.source_name = options.source_name;
+                        site.caller = owner.lower;
+                        site.callee = callee.lower;
+                        site.call_line = owner.body_line;
+                        for(std::size_t index = 0; index < call; ++index)
+                            if(owner.body[index] == '\n') ++site.call_line;
+                        site.callee_line = callee.body_line;
+                        site.callee_depth = static_cast<std::uint16_t>(
+                            owner_depth + 1U);
+                        const std::size_t next_line =
+                            owner.body.find('\n', open);
+                        site.return_line = site.call_line;
+                        if(next_line != std::string::npos) {
+                            site.return_line = owner.body_line;
+                            for(std::size_t index = 0;
+                                index <= next_line; ++index)
+                                if(owner.body[index] == '\n')
+                                    ++site.return_line;
+                        }
+                        image.program.debug_call_sites.push_back(
+                            static_cast<DebugCallSite &&>(site));
+                        self(self, callee,
+                             static_cast<std::uint16_t>(owner_depth + 1U));
+                    }
+                    call = find_word(owner.body, callee.lower, call + 1U);
+                    }
+                }
+            };
+            collect_calls(collect_calls, *program, 1);
+        }
+        for(LocatedVarInfo &located : image.program.process_image.variables) {
+            const Var *global = find_var(project.globals, located.lower);
+            located.shared = global != nullptr && !global->location.empty();
+        }
+        image.program.process_image.fingerprint = 0;
+        const std::string image_manifest = image.program.canonical_manifest();
+        std::uint64_t image_fingerprint = 1469598103934665603ULL;
+        for(unsigned char byte : image_manifest) {
+            image_fingerprint ^= byte;
+            image_fingerprint *= 1099511628211ULL;
+        }
+        image.program.process_image.fingerprint = image_fingerprint;
         for(VarInfo &var : image.program.vars) {
             for(const auto &alias : expansion.public_aliases) {
                 if(var.lower == lower_copy(alias.second)) {

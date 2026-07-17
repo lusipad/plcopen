@@ -20,6 +20,7 @@
 #include "st/binding_storage.h"
 #include "st/bind.h"
 #include "st/bytecode.h"
+#include "st/process_image.h"
 #include "st/types.h"
 
 namespace plcopen::core::axis
@@ -44,6 +45,8 @@ enum class ScanError : std::uint8_t
     string_capacity_exceeded,
     date_time_range_violation,
     alias_violation,
+    invalid_argument,
+    paused,
 };
 
 constexpr const char *to_string(ScanError error)
@@ -60,9 +63,19 @@ constexpr const char *to_string(ScanError error)
     case ScanError::string_capacity_exceeded: return "string_capacity_exceeded";
     case ScanError::date_time_range_violation: return "date_time_range_violation";
     case ScanError::alias_violation: return "alias_violation";
+    case ScanError::invalid_argument: return "invalid_argument";
+    case ScanError::paused: return "paused";
     }
     return "unknown";
 }
+
+enum class InstanceState : std::uint8_t
+{
+    idle = 0,
+    running,
+    complete,
+    faulted,
+};
 
 class Instance
 {
@@ -75,6 +88,13 @@ public:
 
     ~Instance() { unload(); }
 
+    rt::ErrorCode inject_utc_dt(std::int64_t value) noexcept
+    {
+        utc_dt_ns_ = value;
+        return rt::ErrorCode::ok;
+    }
+    std::int64_t utc_dt_ns() const noexcept { return utc_dt_ns_; }
+
     void unload() noexcept
     {
         if(program_ != nullptr && fb_area_ != nullptr) {
@@ -83,11 +103,22 @@ public:
             }
         }
         program_ = nullptr;
+        process_image_ = nullptr;
         vars_ = nullptr;
+        visible_vars_ = nullptr;
+        execution_vars_ = nullptr;
+        sfc_runtime_ = nullptr;
+        sfc_runner_ = nullptr;
         fb_area_ = nullptr;
         stack_ = nullptr;
         fault_ = ScanError::ok;
+        execution_state_ = InstanceState::idle;
+        pc_ = 0;
+        instruction_pc_ = 0;
+        sp_ = 0;
+        remaining_budget_ = 0;
         scan_started_ = false;
+        defer_process_image_publish_ = false;
         axis_targets_ = nullptr;
         group_targets_ = nullptr;
         path_tables_ = nullptr;
@@ -101,6 +132,10 @@ public:
         acceleration_profiles_ = nullptr;
         kin_transforms_ = nullptr;
         task_period_ns_ = 0;
+        debug_hooks_ = nullptr;
+        debug_mapping_ = 0;
+        last_debug_entry_ = nullptr;
+        last_debug_instruction_id_ = {};
     }
 
     // Load domain. The program object must outlive the instance; the buffer
@@ -123,12 +158,17 @@ public:
             return rt::ErrorCode::capacity_exceeded;
         }
         vars_ = buffer;
+        visible_vars_ = vars_;
+        execution_vars_ = vars_;
         fb_area_ = buffer + program.vars_bytes;
         stack_ = reinterpret_cast<std::uint64_t *>(fb_area_ + program.fb_bytes);
         std::memset(buffer, 0, program.required_bytes());
         unsigned char *binding_storage =
             buffer + program.binding_storage_offset();
         load_binding_storage(program, binding_storage);
+        sfc_runner_ = ::new(static_cast<void *>(
+            buffer + program.sfc_runner_storage_offset())) SfcRunnerStorage{};
+        sfc_runtime_ = buffer + program.sfc_storage_offset();
         if(program.initial_data.size() > program.vars_bytes) {
             return rt::ErrorCode::invalid_argument;
         }
@@ -154,9 +194,28 @@ public:
         }
         task_period_ns_ = task_period_ns;
         program_ = &program;
+        initialize_sfc_runtime();
         fault_ = ScanError::ok;
+        execution_state_ = InstanceState::idle;
+        pc_ = 0;
+        instruction_pc_ = 0;
+        sp_ = 0;
+        remaining_budget_ = 0;
         scan_started_ = false;
         return rt::ErrorCode::ok;
+    }
+
+    rt::ErrorCode load(const Program &program, unsigned char *buffer,
+                       std::size_t buffer_bytes, std::int64_t task_period_ns,
+                       ProcessImage *process_image)
+    {
+        if(process_image == nullptr || !process_image->supports(program)) {
+            return rt::ErrorCode::invalid_argument;
+        }
+        const rt::ErrorCode loaded =
+            load(program, buffer, buffer_bytes, task_period_ns);
+        if(loaded == rt::ErrorCode::ok) process_image_ = process_image;
+        return loaded;
     }
 
     rt::ErrorCode load(const Program &program, const char *program_name,
@@ -530,6 +589,7 @@ public:
     void reset()
     {
         fault_ = ScanError::ok;
+        abort();
     }
 
     ScanError fault() const
@@ -537,26 +597,252 @@ public:
         return fault_;
     }
 
+    InstanceState execution_state() const noexcept { return execution_state_; }
+    bool running() const noexcept
+    {
+        return execution_state_ == InstanceState::running;
+    }
+    bool complete() const noexcept
+    {
+        return execution_state_ == InstanceState::complete;
+    }
+
+    void defer_process_image_publish(bool defer) noexcept
+    {
+        defer_process_image_publish_ = defer;
+    }
+    std::int64_t remaining_budget() const noexcept
+    {
+        return remaining_budget_;
+    }
+    std::uint32_t instruction_offset() const noexcept
+    {
+        return static_cast<std::uint32_t>(instruction_pc_);
+    }
+    const char *program_name() const noexcept
+    {
+        return program_ == nullptr ? "" : program_->program_name.c_str();
+    }
+
+    void set_debug_hooks(RuntimeDebugHooks *hooks,
+                         std::size_t mapping) noexcept
+    {
+        debug_hooks_ = hooks;
+        debug_mapping_ = mapping;
+    }
+
+    const Program *program() const noexcept { return program_; }
+
+    const SourceMapEntry *last_debug_entry() const noexcept
+    {
+        return last_debug_entry_;
+    }
+    const InstructionId &last_debug_instruction_id() const noexcept
+    {
+        return last_debug_instruction_id_;
+    }
+
+    bool read_variable(std::uint32_t offset, std::uint32_t size,
+                       unsigned char *destination) const noexcept
+    {
+        if(destination == nullptr || visible_vars_ == nullptr ||
+           program_ == nullptr || offset > program_->vars_bytes ||
+           size > program_->vars_bytes - offset)
+            return false;
+        std::memcpy(destination, visible_vars_ + offset, size);
+        return true;
+    }
+
+    rt::ErrorCode sfc_step_active(const char *network_name,
+                                  const char *step_name,
+                                  bool &active) const noexcept
+    {
+        active = false;
+        if(program_ == nullptr || network_name == nullptr ||
+           step_name == nullptr || sfc_runtime_ == nullptr)
+            return rt::ErrorCode::invalid_argument;
+        for(const SfcNetworkInfo &network : program_->sfc_networks) {
+            if(!ascii_name_equal(network_name, network.lower)) continue;
+            for(std::size_t index = 0; index < network.steps.size(); ++index) {
+                if(ascii_name_equal(step_name, network.steps[index].lower)) {
+                    const std::uint32_t offset =
+                        running() && sfc_runner_->phase != SfcRunnerPhase::stage_vars
+                            ? network.shadow_active_offset
+                            : network.committed_active_offset;
+                    active = sfc_runtime_[offset + index] != 0;
+                    return rt::ErrorCode::ok;
+                }
+            }
+            return rt::ErrorCode::invalid_argument;
+        }
+        return rt::ErrorCode::invalid_argument;
+    }
+
+    bool debug_sfc_committed_step_active(std::size_t network,
+                                         std::size_t step) const noexcept
+    {
+        if(program_ == nullptr || sfc_runtime_ == nullptr ||
+           network >= program_->sfc_networks.size() ||
+           step >= program_->sfc_networks[network].steps.size())
+            return false;
+        return sfc_runtime_[program_->sfc_networks[network]
+                                .committed_active_offset + step] != 0;
+    }
+
+    rt::ErrorCode configure_sfc_trace(SfcTraceRecord *records,
+                                      std::size_t capacity) noexcept
+    {
+        if((records == nullptr) != (capacity == 0))
+            return rt::ErrorCode::invalid_argument;
+        if(running()) return rt::ErrorCode::invalid_argument;
+        sfc_runner_->trace = records;
+        sfc_runner_->trace_capacity = capacity;
+        sfc_runner_->trace_size = 0;
+        sfc_runner_->trace_dropped = 0;
+        sfc_runner_->trace_scan_begin_size = 0;
+        sfc_runner_->trace_scan_begin_dropped = 0;
+        return rt::ErrorCode::ok;
+    }
+
+    std::size_t sfc_trace_size() const noexcept { return sfc_runner_->trace_size; }
+    std::uint64_t sfc_trace_dropped() const noexcept
+    {
+        return sfc_runner_->trace_dropped;
+    }
+
+    rt::ErrorCode restart_sfc(const char *network_name) noexcept
+    {
+        if(program_ == nullptr || network_name == nullptr || running())
+            return rt::ErrorCode::invalid_argument;
+        for(const SfcNetworkInfo &network : program_->sfc_networks) {
+            if(!ascii_name_equal(network_name, network.lower)) continue;
+            reset_sfc_network(network);
+            return rt::ErrorCode::ok;
+        }
+        return rt::ErrorCode::invalid_argument;
+    }
+
+    std::uint32_t fault_sfc_network_index() const noexcept
+    {
+        return sfc_runner_->fault_network_index;
+    }
+    std::uint32_t fault_sfc_element_index() const noexcept
+    {
+        return sfc_runner_->fault_element_index;
+    }
+    TaskFaultElementKind fault_sfc_element_kind() const noexcept
+    {
+        return sfc_runner_->fault_element_kind;
+    }
+
+    ScanError begin(std::int64_t budget)
+    {
+        if(program_ == nullptr) return ScanError::not_loaded;
+        if(fault_ != ScanError::ok) return fault_;
+        if(execution_state_ == InstanceState::running)
+            return ScanError::invalid_argument;
+        if(process_image_ != nullptr)
+            process_image_->begin_scan(*program_, vars_);
+        if(!program_->sfc_networks.empty()) {
+            execution_vars_ = sfc_runtime_;
+        } else {
+            execution_vars_ = vars_;
+        }
+        scan_started_ = true;
+        execution_state_ = InstanceState::running;
+        pc_ = 0;
+        instruction_pc_ = 0;
+        sp_ = 0;
+        remaining_budget_ = budget;
+        sfc_runner_->active_region = nullptr;
+        sfc_runner_->phase = program_->sfc_networks.empty()
+            ? SfcRunnerPhase::none
+            : (program_->vars_bytes == 0 ? SfcRunnerPhase::base
+                                         : SfcRunnerPhase::stage_vars);
+        sfc_runner_->network_index = 0;
+        sfc_runner_->item_index = 0;
+        sfc_runner_->subitem_index = 0;
+        sfc_runner_->work_remaining = 0;
+        sfc_runner_->reducer = 0;
+        sfc_runner_->action_suppressed = false;
+        sfc_runner_->fault_network_index = invalid_sfc_index;
+        sfc_runner_->fault_element_index = invalid_sfc_index;
+        sfc_runner_->fault_element_kind = TaskFaultElementKind::none;
+        sfc_runner_->trace_scan_begin_size = sfc_runner_->trace_size;
+        sfc_runner_->trace_scan_begin_dropped = sfc_runner_->trace_dropped;
+        return ScanError::ok;
+    }
+
+    void abort() noexcept
+    {
+        if(execution_state_ == InstanceState::running) {
+            if(sfc_commit_started()) rollback_sfc_commit();
+            sfc_runner_->trace_size = sfc_runner_->trace_scan_begin_size;
+            sfc_runner_->trace_dropped = sfc_runner_->trace_scan_begin_dropped;
+        }
+        execution_state_ = InstanceState::idle;
+        pc_ = 0;
+        instruction_pc_ = 0;
+        sp_ = 0;
+        remaining_budget_ = 0;
+        execution_vars_ = vars_;
+        visible_vars_ = vars_;
+        sfc_runner_->active_region = nullptr;
+        sfc_runner_->phase = SfcRunnerPhase::none;
+        sfc_runner_->subitem_index = 0;
+        sfc_runner_->work_remaining = 0;
+        sfc_runner_->reducer = 0;
+        sfc_runner_->action_suppressed = false;
+    }
+
     // Cycle path. budget = number of instructions this scan may execute;
     // exact boundary: a program needing N instructions completes with
     // budget N and faults with budget N-1 (matrix 5.5).
     ScanError scan(std::int64_t budget)
     {
-        if(program_ == nullptr) {
-            return ScanError::not_loaded;
+        const ScanError started = begin(budget);
+        if(started != ScanError::ok) return started;
+        std::int64_t executed = 0;
+        return resume(std::numeric_limits<std::int64_t>::max(), executed);
+    }
+
+    // Cooperative execution slice. The slice counts bytecode instructions;
+    // weighted L4 operation costs continue to charge only the task budget.
+    ScanError resume(std::int64_t slice, std::int64_t &executed)
+    {
+        executed = 0;
+        if(program_ == nullptr) return ScanError::not_loaded;
+        if(fault_ != ScanError::ok) return fault_;
+        if(execution_state_ != InstanceState::running) {
+            return execution_state_ == InstanceState::complete
+                       ? ScanError::ok
+                       : ScanError::invalid_argument;
         }
-        if(fault_ != ScanError::ok) {
-            return fault_;
-        }
-        scan_started_ = true;
-        const std::uint8_t *code = program_->code.data();
-        const std::size_t size = program_->code.size();
-        const std::uint64_t *constants = program_->constants.data();
-        const std::size_t constant_count = program_->constants.size();
-        const std::int32_t stack_limit = program_->stack_slots;
-        std::size_t pc = 0;
-        std::int32_t sp = 0;
-        std::int64_t remaining = budget;
+        if(slice <= 0) return ScanError::ok;
+        const std::uint8_t *code = nullptr;
+        std::size_t size = 0;
+        const std::uint64_t *constants = nullptr;
+        std::size_t constant_count = 0;
+        std::int32_t stack_limit = 0;
+        const auto select_code = [&]() {
+            if(sfc_runner_->active_region != nullptr) {
+                code = sfc_runner_->active_region->code.data();
+                size = sfc_runner_->active_region->code.size();
+                constants = sfc_runner_->active_region->constants.data();
+                constant_count = sfc_runner_->active_region->constants.size();
+                stack_limit = sfc_runner_->active_region->stack_slots;
+            } else {
+                code = program_->code.data();
+                size = program_->code.size();
+                constants = program_->constants.data();
+                constant_count = program_->constants.size();
+                stack_limit = program_->stack_slots;
+            }
+        };
+        select_code();
+        std::size_t &pc = pc_;
+        std::int32_t &sp = sp_;
+        std::int64_t &remaining = remaining_budget_;
         const auto charge_operation = [&remaining](std::uint32_t cost) {
             const std::int64_t extra = cost > 1U
                 ? static_cast<std::int64_t>(cost - 1U)
@@ -569,16 +855,77 @@ public:
         };
 
         for(;;) {
+            if(executed >= slice) return ScanError::ok;
+            if(!program_->sfc_networks.empty() &&
+               sfc_runner_->phase != SfcRunnerPhase::none &&
+               sfc_runner_->phase != SfcRunnerPhase::base && sfc_runner_->active_region == nullptr) {
+                if(remaining <= 0)
+                    return latch(ScanError::budget_exceeded);
+                --remaining;
+                ++executed;
+                advance_sfc_runner();
+                if(sfc_runner_->active_region != nullptr) {
+                    pc = 0;
+                    sp = 0;
+                    select_code();
+                    continue;
+                }
+                if(sfc_runner_->phase == SfcRunnerPhase::none) {
+                    execution_state_ = InstanceState::complete;
+                    return ScanError::ok;
+                }
+                continue;
+            }
             if(remaining <= 0) {
                 return latch(ScanError::budget_exceeded);
             }
             --remaining;
+            ++executed;
             if(pc >= size) {
                 return latch(ScanError::invalid_bytecode);
             }
+            instruction_pc_ = pc;
             const Op op = static_cast<Op>(code[pc++]);
             switch(op) {
+            case Op::debug_probe: {
+                std::uint32_t probe = 0;
+                if(!rd32(code, size, pc, probe))
+                    return latch(ScanError::invalid_bytecode);
+                const SourceMap *map = sfc_runner_->active_region == nullptr
+                                           ? &program_->source_map
+                                           : &sfc_runner_->active_region->source_map;
+                if(probe >= map->entries.size())
+                    return latch(ScanError::invalid_bytecode);
+                last_debug_entry_ = &map->entries[probe];
+                last_debug_instruction_id_ = last_debug_entry_->instruction_id;
+                last_debug_instruction_id_.mapping = debug_mapping_;
+                last_debug_instruction_id_.offset =
+                    static_cast<std::uint32_t>(instruction_pc_);
+                if(debug_hooks_ != nullptr &&
+                   debug_hooks_->on_probe(
+                       debug_mapping_, map->entries[probe],
+                       static_cast<std::uint32_t>(instruction_pc_))) {
+                    pc = instruction_pc_;
+                    ++remaining;
+                    --executed;
+                    return ScanError::paused;
+                }
+                ++remaining;
+                --executed;
+                break;
+            }
             case Op::halt:
+                if(!program_->sfc_networks.empty()) {
+                    if(sfc_runner_->active_region != nullptr)
+                        finish_sfc_region();
+                    else if(sfc_runner_->phase == SfcRunnerPhase::base)
+                        begin_sfc_regions();
+                    continue;
+                } else if(process_image_ != nullptr) {
+                    process_image_->commit_scan(
+                        *program_, vars_, !defer_process_image_publish_);
+                }
+                execution_state_ = InstanceState::complete;
                 return ScanError::ok;
 
             case Op::push_const: {
@@ -686,7 +1033,8 @@ public:
                    count > program_->vars_bytes - source) {
                     return latch(ScanError::invalid_bytecode);
                 }
-                std::memmove(vars_ + destination, vars_ + source, count);
+                std::memmove(execution_vars_ + destination,
+                             execution_vars_ + source, count);
                 break;
             }
             case Op::string_copy:
@@ -721,7 +1069,7 @@ public:
                        src->size > program_->vars_bytes - source) {
                         return latch(ScanError::invalid_bytecode);
                     }
-                    source_bytes = vars_ + source;
+                    source_bytes = execution_vars_ + source;
                 } else {
                     if(source > program_->string_constants.size() ||
                        4U > program_->string_constants.size() - source) {
@@ -749,9 +1097,9 @@ public:
                 if(op == Op::string_copy && source == destination) {
                     break;
                 }
-                std::memset(vars_ + destination, 0,
+                std::memset(execution_vars_ + destination, 0,
                             static_cast<std::size_t>(dst->size));
-                std::memmove(vars_ + destination, source_bytes,
+                std::memmove(execution_vars_ + destination, source_bytes,
                              static_cast<std::size_t>(count));
                 break;
             }
@@ -799,7 +1147,7 @@ public:
                            descs[i]->size > program_->vars_bytes - offset) {
                             return latch(ScanError::invalid_bytecode);
                         }
-                        objects[i] = vars_ + offset;
+                        objects[i] = execution_vars_ + offset;
                     }
                 }
                 if(descs[0]->kind != descs[1]->kind || sp >= stack_limit) {
@@ -846,20 +1194,20 @@ public:
                 if(!charge_operation(desc->string.capacity)) {
                     return latch(ScanError::budget_exceeded);
                 }
-                if(!valid_string_object(vars_ + offset, *desc)) {
+                if(!valid_string_object(execution_vars_ + offset, *desc)) {
                     return latch(ScanError::invalid_bytecode);
                 }
                 const std::int64_t index = as_i64(stack_[sp - 1]);
-                const std::uint32_t length = read_le32(vars_ + offset);
+                const std::uint32_t length = read_le32(execution_vars_ + offset);
                 if(index < 1 || static_cast<std::uint64_t>(index) > length) {
                     return latch(ScanError::range_violation);
                 }
                 if(desc->kind == TypeKind::wstring) {
                     stack_[sp - 1] = read_le32(
-                        vars_ + offset + 4U +
+                        execution_vars_ + offset + 4U +
                         (static_cast<std::uint32_t>(index) - 1U) * 4U);
                 } else {
-                    stack_[sp - 1] = vars_[offset + 4U +
+                    stack_[sp - 1] = execution_vars_[offset + 4U +
                         static_cast<std::uint32_t>(index) - 1U];
                 }
                 break;
@@ -1291,7 +1639,7 @@ public:
                    desc->size > program_->vars_bytes - offset ||
                    !charge_operation(static_cast<std::uint32_t>(desc->size)) ||
                    !fb_store_object(info.type, fb_area_ + info.offset, pin,
-                                    vars_ + offset, type_id,
+                                    execution_vars_ + offset, type_id,
                                     static_cast<std::uint32_t>(desc->size))) {
                     return latch(ScanError::invalid_bytecode);
                 }
@@ -1379,7 +1727,7 @@ public:
                    desc->size > program_->vars_bytes - offset ||
                    !charge_operation(static_cast<std::uint32_t>(desc->size)) ||
                    !fb_load_object(info.type, fb_area_ + info.offset, pin,
-                                   vars_ + offset, type_id,
+                                   execution_vars_ + offset, type_id,
                                    static_cast<std::uint32_t>(desc->size))) {
                     return latch(ScanError::invalid_bytecode);
                 }
@@ -1751,8 +2099,8 @@ public:
                     return latch(ScanError::invalid_bytecode);
                 }
                 for(std::uint16_t item = 0; item < count; ++item) {
-                    std::memmove(vars_ + destinations[item],
-                                 vars_ + sources[item], bytes[item]);
+                    std::memmove(execution_vars_ + destinations[item],
+                                 execution_vars_ + sources[item], bytes[item]);
                 }
                 sp = index_base;
                 break;
@@ -1793,7 +2141,7 @@ public:
                        desc->size > program_->vars_bytes - offset) {
                         return latch(ScanError::invalid_bytecode);
                     }
-                    object = vars_ + offset;
+                    object = execution_vars_ + offset;
                 }
                 if(!valid_string_object(object, *desc) ||
                    !charge_operation(read_le32(object))) {
@@ -1802,6 +2150,470 @@ public:
                                      : ScanError::invalid_bytecode);
                 }
                 stack_[sp++] = read_le32(object);
+                break;
+            }
+            case Op::standard_scalar: {
+                if(pc + 3U > size) return latch(ScanError::invalid_bytecode);
+                const StandardFunction function =
+                    static_cast<StandardFunction>(code[pc++]);
+                const std::uint8_t argc = code[pc++];
+                const Type type = static_cast<Type>(code[pc++]);
+                if(argc == 0 || sp < argc ||
+                   function >= StandardFunction::count) {
+                    return latch(ScanError::invalid_bytecode);
+                }
+                if(!charge_operation(argc)) {
+                    return latch(ScanError::budget_exceeded);
+                }
+                const int base = sp - argc;
+                const bool floating = is_real_family(type);
+                auto real = [this](std::uint64_t raw) {
+                    return detail::bits_double(raw);
+                };
+                auto put_real = [this, type](double value) {
+                    if(type == Type::real) value = static_cast<float>(value);
+                    return detail::double_bits(value);
+                };
+                auto less = [floating, &real, type](std::uint64_t a,
+                                                    std::uint64_t b) {
+                    if(floating) return real(a) < real(b);
+                    if(is_unsigned_int(type) || is_bitstring(type)) return a < b;
+                    return static_cast<std::int64_t>(a) <
+                           static_cast<std::int64_t>(b);
+                };
+                auto equal = [floating, &real](std::uint64_t a,
+                                               std::uint64_t b) {
+                    return floating ? real(a) == real(b) : a == b;
+                };
+                std::uint64_t value = stack_[base];
+                if(function <= StandardFunction::atan) {
+                    if(function == StandardFunction::abs) {
+                        if(floating) value = put_real(std::fabs(real(value)));
+                        else if(static_cast<std::int64_t>(value) < 0)
+                            value = detail::canon(type, 0U - value);
+                    } else {
+                        const double x = real(value);
+                        double y = x;
+                        switch(function) {
+                        case StandardFunction::sqrt: y = std::sqrt(x); break;
+                        case StandardFunction::ln: y = std::log(x); break;
+                        case StandardFunction::log: y = std::log10(x); break;
+                        case StandardFunction::exp: y = std::exp(x); break;
+                        case StandardFunction::sin: y = std::sin(x); break;
+                        case StandardFunction::cos: y = std::cos(x); break;
+                        case StandardFunction::tan: y = std::tan(x); break;
+                        case StandardFunction::asin: y = std::asin(x); break;
+                        case StandardFunction::acos: y = std::acos(x); break;
+                        case StandardFunction::atan: y = std::atan(x); break;
+                        default: break;
+                        }
+                        value = put_real(y);
+                    }
+                } else if(function >= StandardFunction::add &&
+                          function <= StandardFunction::max) {
+                    if(function == StandardFunction::expt) {
+                        value = put_real(std::pow(real(stack_[base]),
+                                                  real(stack_[base + 1])));
+                    } else if(function == StandardFunction::min ||
+                              function == StandardFunction::max) {
+                        for(int i = base + 1; i < sp; ++i) {
+                            const bool take = function == StandardFunction::min
+                                ? less(stack_[i], value) : less(value, stack_[i]);
+                            if(take) value = stack_[i];
+                        }
+                    } else if(floating) {
+                        double y = real(value);
+                        if(function == StandardFunction::add ||
+                           function == StandardFunction::mul) {
+                            for(int i = base + 1; i < sp; ++i)
+                                y = function == StandardFunction::add
+                                    ? y + real(stack_[i]) : y * real(stack_[i]);
+                        } else {
+                            const double rhs = real(stack_[base + 1]);
+                            y = function == StandardFunction::sub ? y - rhs
+                              : function == StandardFunction::div ? y / rhs
+                              : std::fmod(y, rhs);
+                        }
+                        value = put_real(y);
+                    } else {
+                        auto apply = [type](std::uint64_t a, std::uint64_t b,
+                                           StandardFunction op) {
+                            if(op == StandardFunction::add) return detail::canon(type, a + b);
+                            if(op == StandardFunction::sub) return detail::canon(type, a - b);
+                            if(op == StandardFunction::mul) return detail::canon(type, a * b);
+                            if(is_unsigned_int(type)) {
+                                return detail::canon(type,
+                                    op == StandardFunction::div ? a / b : a % b);
+                            }
+                            const std::int64_t x = static_cast<std::int64_t>(a);
+                            const std::int64_t y = static_cast<std::int64_t>(b);
+                            if(x == std::numeric_limits<std::int64_t>::min() && y == -1)
+                                return detail::canon(type,
+                                    op == StandardFunction::div ? a : 0U);
+                            return detail::canon(type, static_cast<std::uint64_t>(op == StandardFunction::div ? x / y : x % y));
+                        };
+                        if((function == StandardFunction::div || function == StandardFunction::mod) && stack_[base + 1] == 0)
+                            return latch(ScanError::division_by_zero);
+                        for(int i = base + 1; i < sp; ++i)
+                            value = apply(value, stack_[i], function);
+                    }
+                } else if(function == StandardFunction::limit) {
+                    if(less(stack_[base + 2], stack_[base]))
+                        return latch(ScanError::invalid_argument);
+                    value = less(stack_[base + 1], stack_[base]) ? stack_[base]
+                          : less(stack_[base + 2], stack_[base + 1])
+                              ? stack_[base + 2] : stack_[base + 1];
+                } else if(function == StandardFunction::sel) {
+                    value = stack_[base] ? stack_[base + 2] : stack_[base + 1];
+                } else if(function == StandardFunction::mux) {
+                    const std::int64_t index = static_cast<std::int64_t>(stack_[base]);
+                    if(index < 0 || index >= argc - 1)
+                        return latch(ScanError::range_violation);
+                    value = stack_[base + 1 + static_cast<int>(index)];
+                } else if(function >= StandardFunction::gt &&
+                          function <= StandardFunction::ne) {
+                    bool result = true;
+                    for(int i = base; i + 1 < sp && result; ++i) {
+                        const bool lt = less(stack_[i], stack_[i + 1]);
+                        const bool eq = equal(stack_[i], stack_[i + 1]);
+                        switch(function) {
+                        case StandardFunction::gt: result = !lt && !eq; break;
+                        case StandardFunction::ge: result = !lt; break;
+                        case StandardFunction::eq: result = eq; break;
+                        case StandardFunction::le: result = lt || eq; break;
+                        case StandardFunction::lt: result = lt; break;
+                        case StandardFunction::ne: result = !eq; break;
+                        default: break;
+                        }
+                    }
+                    value = result ? 1U : 0U;
+                } else if(function >= StandardFunction::shl &&
+                          function <= StandardFunction::ror) {
+                    const std::int64_t count = static_cast<std::int64_t>(stack_[base + 1]);
+                    if(count < 0) return latch(ScanError::range_violation);
+                    const unsigned width = static_cast<unsigned>(width_bits(type));
+                    const std::uint64_t mask = width == 64 ? ~0ULL : ((1ULL << width) - 1U);
+                    const std::uint64_t input = stack_[base] & mask;
+                    if(function == StandardFunction::shl || function == StandardFunction::shr) {
+                        value = static_cast<std::uint64_t>(count) >= width ? 0U
+                            : function == StandardFunction::shl
+                                ? (input << count) & mask : input >> count;
+                    } else {
+                        const unsigned rotate = static_cast<unsigned>(count % width);
+                        value = rotate == 0 ? input
+                            : function == StandardFunction::rol
+                                ? ((input << rotate) | (input >> (width - rotate))) & mask
+                                : ((input >> rotate) | (input << (width - rotate))) & mask;
+                    }
+                } else {
+                    constexpr std::int64_t day = 86400000000000LL;
+                    const std::int64_t a = static_cast<std::int64_t>(stack_[base]);
+                    const std::int64_t b = static_cast<std::int64_t>(stack_[base + 1]);
+                    std::int64_t out = 0;
+                    auto add_overflow = [](std::int64_t x, std::int64_t y, std::int64_t &z) {
+                        if((y > 0 && x > std::numeric_limits<std::int64_t>::max() - y) ||
+                           (y < 0 && x < std::numeric_limits<std::int64_t>::min() - y)) return true;
+                        z = x + y; return false;
+                    };
+                    auto sub_overflow = [](std::int64_t x, std::int64_t y,
+                                           std::int64_t &z) {
+                        if((y > 0 && x < std::numeric_limits<std::int64_t>::min() + y) ||
+                           (y < 0 && x > std::numeric_limits<std::int64_t>::max() + y)) return true;
+                        z = x - y; return false;
+                    };
+                    auto mul_overflow = [](std::int64_t x, std::int64_t y,
+                                           std::int64_t &z) {
+                        if(x == 0 || y == 0) { z = 0; return false; }
+                        if((x == -1 && y == std::numeric_limits<std::int64_t>::min()) ||
+                           (y == -1 && x == std::numeric_limits<std::int64_t>::min())) return true;
+                        if(x > 0) {
+                            if((y > 0 && x > std::numeric_limits<std::int64_t>::max() / y) ||
+                               (y < 0 && y < std::numeric_limits<std::int64_t>::min() / x)) return true;
+                        } else {
+                            if((y > 0 && x < std::numeric_limits<std::int64_t>::min() / y) ||
+                               (y < 0 && x < std::numeric_limits<std::int64_t>::max() / y)) return true;
+                        }
+                        z = x * y; return false;
+                    };
+                    switch(function) {
+                    case StandardFunction::add_time:
+                    case StandardFunction::add_dt_time:
+                        if(add_overflow(a, b, out)) return latch(ScanError::date_time_range_violation);
+                        break;
+                    case StandardFunction::sub_time:
+                    case StandardFunction::sub_dt_dt:
+                        if(sub_overflow(a, b, out))
+                            return latch(ScanError::date_time_range_violation);
+                        break;
+                    case StandardFunction::add_tod_time:
+                        out = ((a + b % day) % day + day) % day; break;
+                    case StandardFunction::sub_tod_time:
+                        out = ((a - b % day) % day + day) % day; break;
+                    case StandardFunction::sub_date_date:
+                        { std::int64_t days = 0;
+                          if(sub_overflow(a, b, days) || mul_overflow(days, day, out))
+                              return latch(ScanError::date_time_range_violation); }
+                        break;
+                    case StandardFunction::multime:
+                        if(mul_overflow(a, b, out))
+                            return latch(ScanError::date_time_range_violation);
+                        break;
+                    case StandardFunction::divtime:
+                        if(b == 0) return latch(ScanError::division_by_zero);
+                        if(a == std::numeric_limits<std::int64_t>::min() && b == -1)
+                            return latch(ScanError::date_time_range_violation);
+                        out = a / b; break;
+                    case StandardFunction::concat_date_tod:
+                        { std::int64_t date_ns = 0;
+                          if(mul_overflow(a, day, date_ns) ||
+                             add_overflow(date_ns, b, out))
+                              return latch(ScanError::date_time_range_violation); }
+                        break;
+                    default: return latch(ScanError::invalid_bytecode);
+                    }
+                    value = static_cast<std::uint64_t>(out);
+                }
+                stack_[base] = value;
+                sp = base + 1;
+                break;
+            }
+            case Op::standard_string: {
+                if(pc + 10U > size) return latch(ScanError::invalid_bytecode);
+                const StandardFunction function = static_cast<StandardFunction>(code[pc++]);
+                const std::uint8_t argc = code[pc++];
+                std::uint32_t destination = 0;
+                std::uint32_t destination_id = 0;
+                if(argc == 0 || argc > 32 || !rd32(code, size, pc, destination) ||
+                   !rd32(code, size, pc, destination_id))
+                    return latch(ScanError::invalid_bytecode);
+                const unsigned char *objects[32] = {};
+                const TypeDesc *descs[32] = {};
+                bool string_arg[32] = {};
+                int scalar_count = 0;
+                std::uint32_t capacities[32] = {};
+                std::uint8_t string_count = 0;
+                for(std::uint8_t i = 0; i < argc; ++i) {
+                    if(pc >= size) return latch(ScanError::invalid_bytecode);
+                    string_arg[i] = code[pc++] != 0;
+                    if(!string_arg[i]) { ++scalar_count; continue; }
+                    if(pc >= size) return latch(ScanError::invalid_bytecode);
+                    const bool constant = code[pc++] != 0;
+                    std::uint32_t offset = 0, id = 0;
+                    if(!rd32(code, size, pc, offset) || !rd32(code, size, pc, id))
+                        return latch(ScanError::invalid_bytecode);
+                    descs[i] = program_->types.get(id);
+                    if(descs[i] == nullptr ||
+                       (descs[i]->kind != TypeKind::string && descs[i]->kind != TypeKind::wstring))
+                        return latch(ScanError::invalid_bytecode);
+                    capacities[string_count++] = static_cast<std::uint32_t>(
+                        descs[i]->string.capacity);
+                    if(constant) {
+                        if(offset > program_->string_constants.size() ||
+                           4U > program_->string_constants.size() - offset)
+                            return latch(ScanError::invalid_bytecode);
+                        objects[i] = program_->string_constants.data() + offset;
+                        const std::uint32_t units = read_le32(objects[i]);
+                        const std::uint64_t bytes = 4U + static_cast<std::uint64_t>(units) *
+                            (descs[i]->kind == TypeKind::wstring ? 4U : 1U);
+                        if(bytes > program_->string_constants.size() - offset)
+                            return latch(ScanError::invalid_bytecode);
+                    } else {
+                        if(offset > program_->vars_bytes || descs[i]->size > program_->vars_bytes - offset)
+                            return latch(ScanError::invalid_bytecode);
+                        objects[i] = execution_vars_ + offset;
+                    }
+                    if(!valid_string_object(objects[i], *descs[i]))
+                        return latch(ScanError::invalid_bytecode);
+                }
+                const TypeDesc *destination_desc =
+                    destination == std::numeric_limits<std::uint32_t>::max()
+                        ? nullptr : program_->types.get(destination_id);
+                if(destination != std::numeric_limits<std::uint32_t>::max() &&
+                   (destination_desc == nullptr ||
+                    (destination_desc->kind != TypeKind::string &&
+                     destination_desc->kind != TypeKind::wstring))) {
+                    return latch(ScanError::invalid_bytecode);
+                }
+                const std::uint32_t destination_capacity =
+                    destination_desc == nullptr ? 0U
+                        : static_cast<std::uint32_t>(
+                              destination_desc->string.capacity);
+                const std::uint32_t operation_cost = standard_string_cost(
+                    function, capacities, string_count, destination_capacity);
+                if(sp < scalar_count || !charge_operation(operation_cost))
+                    return latch(sp < scalar_count ? ScanError::invalid_bytecode
+                                                   : ScanError::budget_exceeded);
+                const int scalar_base = sp - scalar_count;
+                int scalar_at = 0;
+                auto scalar = [&](std::uint8_t argument) -> std::int64_t {
+                    int at = 0;
+                    for(std::uint8_t i = 0; i < argument; ++i)
+                        if(!string_arg[i]) ++at;
+                    return static_cast<std::int64_t>(stack_[scalar_base + at]);
+                };
+                auto scalar_length = [&](const unsigned char *object,
+                                         const TypeDesc &desc) {
+                    if(desc.kind == TypeKind::wstring) return read_le32(object);
+                    const std::uint32_t bytes = read_le32(object);
+                    std::uint32_t at = 0, count = 0, codepoint = 0;
+                    while(at < bytes && next_utf8(object + 4U, bytes, at, codepoint)) ++count;
+                    return count;
+                };
+                auto unit_at = [&](const unsigned char *object, const TypeDesc &desc,
+                                   std::uint32_t scalar_index) {
+                    if(desc.kind == TypeKind::wstring) return scalar_index * 4U;
+                    const std::uint32_t bytes = read_le32(object);
+                    std::uint32_t at = 0, count = 0, codepoint = 0;
+                    while(count < scalar_index && at < bytes) {
+                        next_utf8(object + 4U, bytes, at, codepoint); ++count;
+                    }
+                    return at;
+                };
+                if(function == StandardFunction::len || function == StandardFunction::find) {
+                    std::int64_t answer = 0;
+                    if(function == StandardFunction::len) {
+                        answer = scalar_length(objects[0], *descs[0]);
+                    } else {
+                        const std::uint32_t hay_units = read_le32(objects[0]);
+                        const std::uint32_t needle_units = read_le32(objects[1]);
+                        answer = needle_units == 0 ? 1 : 0;
+                        const std::uint32_t width =
+                            descs[0]->kind == TypeKind::wstring ? 4U : 1U;
+                        for(std::uint32_t pos = 0;
+                            answer == 0 && pos + needle_units <= hay_units;
+                            ++pos) {
+                            bool match = true;
+                            for(std::uint32_t unit = 0;
+                                unit < needle_units && match; ++unit) {
+                                const std::uint32_t hay_value = width == 4U
+                                    ? read_le32(objects[0] + 4U +
+                                                (pos + unit) * 4U)
+                                    : objects[0][4U + pos + unit];
+                                const std::uint32_t needle_value = width == 4U
+                                    ? read_le32(objects[1] + 4U + unit * 4U)
+                                    : objects[1][4U + unit];
+                                match = hay_value == needle_value;
+                            }
+                            if(match) {
+                                if(width == 4U) {
+                                    answer = static_cast<std::int64_t>(pos + 1U);
+                                } else {
+                                    std::uint32_t byte = 0, scalar_pos = 0,
+                                                  codepoint = 0;
+                                    while(byte < pos && next_utf8(
+                                        objects[0] + 4U, hay_units, byte,
+                                        codepoint)) ++scalar_pos;
+                                    answer = static_cast<std::int64_t>(
+                                        scalar_pos + 1U);
+                                }
+                            }
+                        }
+                    }
+                    sp = scalar_base;
+                    if(sp >= stack_limit) return latch(ScanError::invalid_bytecode);
+                    stack_[sp++] = static_cast<std::uint64_t>(answer);
+                    break;
+                }
+                const TypeDesc *dst = destination_desc;
+                if(dst == nullptr || destination == std::numeric_limits<std::uint32_t>::max() ||
+                   destination > program_->vars_bytes || dst->size > program_->vars_bytes - destination)
+                    return latch(ScanError::invalid_bytecode);
+                std::array<unsigned char, 16388> output{};
+                std::uint32_t output_units = 0;
+                bool capacity_exceeded = false;
+                const std::uint32_t destination_width =
+                    dst->kind == TypeKind::wstring ? 4U : 1U;
+                const std::uint32_t destination_bytes =
+                    static_cast<std::uint32_t>(dst->string.capacity) *
+                    destination_width;
+                auto append = [&](const unsigned char *object, const TypeDesc &desc,
+                                  std::uint32_t first, std::uint32_t last) {
+                    const std::uint32_t begin = unit_at(object, desc, first);
+                    const std::uint32_t end = unit_at(object, desc, last);
+                    const std::uint32_t bytes = end - begin;
+                    if(bytes > destination_bytes - output_units ||
+                       4U + output_units + bytes > output.size()) {
+                        capacity_exceeded = true;
+                        return false;
+                    }
+                    std::memcpy(output.data() + 4U + output_units, object + 4U + begin, bytes);
+                    output_units += bytes;
+                    return true;
+                };
+                const std::uint32_t source_length = scalar_length(objects[0], *descs[0]);
+                bool valid = true;
+                switch(function) {
+                case StandardFunction::concat:
+                    for(std::uint8_t i = 0; i < argc && valid; ++i)
+                        valid = append(objects[i], *descs[i], 0, scalar_length(objects[i], *descs[i]));
+                    break;
+                case StandardFunction::left: {
+                    const std::int64_t count = scalar(1);
+                    if(count < 0) valid = false;
+                    else valid = append(objects[0], *descs[0], 0,
+                                        std::min<std::uint32_t>(source_length, static_cast<std::uint32_t>(count)));
+                    break;
+                }
+                case StandardFunction::right: {
+                    const std::int64_t count = scalar(1);
+                    if(count < 0) valid = false;
+                    else { const std::uint32_t take = std::min<std::uint32_t>(source_length, static_cast<std::uint32_t>(count));
+                        valid = append(objects[0], *descs[0], source_length - take, source_length); }
+                    break;
+                }
+                case StandardFunction::mid: {
+                    const std::int64_t count = scalar(1), position = scalar(2);
+                    if(count < 0 || position < 1 || position > static_cast<std::int64_t>(source_length) + 1) valid = false;
+                    else { const std::uint32_t begin = static_cast<std::uint32_t>(position - 1);
+                        valid = append(objects[0], *descs[0], begin,
+                            std::min<std::uint32_t>(source_length, begin + static_cast<std::uint32_t>(count))); }
+                    break;
+                }
+                case StandardFunction::insert: {
+                    const std::int64_t position = scalar(2);
+                    if(position < 1 || position > static_cast<std::int64_t>(source_length) + 1) valid = false;
+                    else { const std::uint32_t at = static_cast<std::uint32_t>(position - 1);
+                        valid = append(objects[0], *descs[0], 0, at) &&
+                                append(objects[1], *descs[1], 0, scalar_length(objects[1], *descs[1])) &&
+                                append(objects[0], *descs[0], at, source_length); }
+                    break;
+                }
+                case StandardFunction::delete_: {
+                    const std::int64_t count = scalar(1), position = scalar(2);
+                    if(count < 0 || position < 1 || position > static_cast<std::int64_t>(source_length) + 1) valid = false;
+                    else { const std::uint32_t at = static_cast<std::uint32_t>(position - 1);
+                        const std::uint32_t end = std::min<std::uint32_t>(source_length, at + static_cast<std::uint32_t>(count));
+                        valid = append(objects[0], *descs[0], 0, at) && append(objects[0], *descs[0], end, source_length); }
+                    break;
+                }
+                case StandardFunction::replace: {
+                    const std::int64_t count = scalar(2), position = scalar(3);
+                    if(count < 0 || position < 1 || position > static_cast<std::int64_t>(source_length) + 1) valid = false;
+                    else { const std::uint32_t at = static_cast<std::uint32_t>(position - 1);
+                        const std::uint32_t end = std::min<std::uint32_t>(source_length, at + static_cast<std::uint32_t>(count));
+                        valid = append(objects[0], *descs[0], 0, at) &&
+                                append(objects[1], *descs[1], 0, scalar_length(objects[1], *descs[1])) &&
+                                append(objects[0], *descs[0], end, source_length); }
+                    break;
+                }
+                default: return latch(ScanError::invalid_bytecode);
+                }
+                if(!valid) return latch(capacity_exceeded
+                    ? ScanError::string_capacity_exceeded
+                    : ScanError::range_violation);
+                const std::uint32_t width = destination_width;
+                const std::uint32_t stored_units = width == 4U ? output_units / 4U : output_units;
+                if(stored_units > dst->string.capacity)
+                    return latch(ScanError::string_capacity_exceeded);
+                output[0] = static_cast<unsigned char>(stored_units);
+                output[1] = static_cast<unsigned char>(stored_units >> 8U);
+                output[2] = static_cast<unsigned char>(stored_units >> 16U);
+                output[3] = static_cast<unsigned char>(stored_units >> 24U);
+                std::memset(execution_vars_ + destination, 0, dst->size);
+                std::memcpy(execution_vars_ + destination, output.data(),
+                            4U + output_units);
+                sp = scalar_base;
+                (void)scalar_at;
                 break;
             }
 
@@ -1859,8 +2671,8 @@ public:
             return 0;
         }
         std::uint64_t value = 0;
-        return load_value(program_->vars[index].offset,
-                          program_->vars[index].type_id, value)
+        return load_value_at(visible_vars_, program_->vars[index].offset,
+                             program_->vars[index].type_id, value)
                    ? as_i64(value)
                    : 0;
     }
@@ -1871,8 +2683,8 @@ public:
             return 0.0;
         }
         std::uint64_t value = 0;
-        return load_value(program_->vars[index].offset,
-                          program_->vars[index].type_id, value)
+        return load_value_at(visible_vars_, program_->vars[index].offset,
+                             program_->vars[index].type_id, value)
                    ? detail::bits_double(value)
                    : 0.0;
     }
@@ -1883,6 +2695,748 @@ public:
     }
 
 private:
+    static constexpr std::uint32_t invalid_sfc_index =
+        std::numeric_limits<std::uint32_t>::max();
+    static constexpr std::size_t sfc_block_bytes = 16;
+    static constexpr std::uint8_t action_direct = 1U;
+    static constexpr std::uint8_t action_store = 2U;
+    static constexpr std::uint8_t action_reset = 4U;
+    static constexpr std::uint8_t action_expire = 8U;
+
+    unsigned char *sfc_at(std::uint32_t offset) const noexcept
+    {
+        return sfc_runtime_ + offset;
+    }
+
+    bool sfc_commit_started() const noexcept
+    {
+        return sfc_runner_->phase == SfcRunnerPhase::commit_vars ||
+               sfc_runner_->phase == SfcRunnerPhase::commit_active ||
+               sfc_runner_->phase == SfcRunnerPhase::commit_blocks ||
+               sfc_runner_->phase == SfcRunnerPhase::commit_actions ||
+               sfc_runner_->phase == SfcRunnerPhase::finish;
+    }
+
+    void rollback_sfc_commit() noexcept
+    {
+        if(program_ == nullptr || sfc_runtime_ == nullptr) return;
+        std::memcpy(vars_, sfc_at(program_->sfc_committed_shadow_offset()),
+                    program_->vars_bytes);
+        for(const SfcNetworkInfo &network : program_->sfc_networks) {
+            std::memcpy(sfc_at(network.committed_active_offset),
+                        sfc_at(network.shadow_active_offset),
+                        network.steps.size());
+            std::memcpy(sfc_at(network.committed_block_offset),
+                        sfc_at(network.shadow_block_offset),
+                        network.action_blocks.size() * sfc_block_bytes);
+            std::memcpy(sfc_at(network.committed_action_offset),
+                        sfc_at(network.shadow_action_offset),
+                        network.actions.size());
+        }
+    }
+
+    static std::int64_t block_elapsed(const unsigned char *state) noexcept
+    {
+        std::int64_t result = 0;
+        std::memcpy(&result, state, sizeof(result));
+        return result;
+    }
+
+    static void block_elapsed(unsigned char *state,
+                              std::int64_t value) noexcept
+    {
+        std::memcpy(state, &value, sizeof(value));
+    }
+
+    static std::int64_t saturating_add(std::int64_t left,
+                                       std::int64_t right) noexcept
+    {
+        if(right > 0 && left > std::numeric_limits<std::int64_t>::max() - right)
+            return std::numeric_limits<std::int64_t>::max();
+        return left + right;
+    }
+
+    void reset_sfc_network(const SfcNetworkInfo &network) noexcept
+    {
+        std::memset(sfc_at(network.committed_active_offset), 0,
+                    network.steps.size());
+        std::memset(sfc_at(network.staged_active_offset), 0,
+                    network.steps.size());
+        std::memset(sfc_at(network.firing_offset), 0,
+                    network.transitions.size());
+        std::memset(sfc_at(network.committed_block_offset), 0,
+                    network.action_blocks.size() * sfc_block_bytes);
+        std::memset(sfc_at(network.staged_block_offset), 0,
+                    network.action_blocks.size() * sfc_block_bytes);
+        std::memset(sfc_at(network.committed_action_offset), 0,
+                    network.actions.size());
+        std::memset(sfc_at(network.staged_action_offset), 0,
+                    network.actions.size());
+        std::memset(sfc_at(network.direct_action_offset), 0,
+                    network.actions.size());
+        for(std::size_t index = 0; index < network.steps.size(); ++index) {
+            if(!network.steps[index].initial) continue;
+            sfc_at(network.committed_active_offset)[index] = 1U;
+            sfc_at(network.staged_active_offset)[index] = 1U;
+        }
+    }
+
+    void initialize_sfc_runtime() noexcept
+    {
+        if(program_ == nullptr || sfc_runtime_ == nullptr ||
+           program_->sfc_runtime_bytes == 0) return;
+        std::memset(sfc_runtime_, 0, program_->sfc_runtime_bytes);
+        for(const SfcNetworkInfo &network : program_->sfc_networks)
+            reset_sfc_network(network);
+    }
+
+    bool transition_eligible(const SfcNetworkInfo &network,
+                             std::size_t transition_index) const noexcept
+    {
+        const SfcTransitionInfo &transition =
+            network.transitions[transition_index];
+        if((transition.sources.size() > 1 || transition.targets.size() > 1) &&
+           !transition.simultaneous) return false;
+        const unsigned char *active =
+            sfc_at(network.committed_active_offset);
+        for(std::uint16_t source : transition.sources)
+            if(source >= network.steps.size() || active[source] == 0)
+                return false;
+        const unsigned char *firing = sfc_at(network.firing_offset);
+        for(std::size_t prior = 0; prior < transition_index; ++prior) {
+            if(firing[prior] == 0) continue;
+            for(std::uint16_t source : transition.sources) {
+                if(std::find(network.transitions[prior].sources.begin(),
+                             network.transitions[prior].sources.end(),
+                             source) !=
+                   network.transitions[prior].sources.end()) return false;
+            }
+        }
+        return true;
+    }
+
+    void begin_sfc_regions() noexcept
+    {
+        sfc_runner_->phase = SfcRunnerPhase::stage_active;
+        sfc_runner_->network_index = 0;
+        sfc_runner_->item_index = 0;
+        sfc_runner_->subitem_index = 0;
+        sfc_runner_->active_region = nullptr;
+        sfc_runner_->work_remaining = 0;
+        sfc_runner_->reducer = 0;
+    }
+
+    void finish_sfc_region() noexcept
+    {
+        if(sfc_runner_->network_index >= program_->sfc_networks.size()) {
+            sfc_runner_->active_region = nullptr;
+            return;
+        }
+        SfcNetworkInfo const &network =
+            program_->sfc_networks[sfc_runner_->network_index];
+        if(sfc_runner_->phase == SfcRunnerPhase::transitions &&
+           sfc_runner_->item_index < network.transitions.size()) {
+            const SfcRegionInfo &condition =
+                network.transitions[sfc_runner_->item_index].condition;
+            std::uint64_t raw = 0;
+            if(load_value(condition.result_offset, type_id(Type::bool_), raw) &&
+               raw != 0) {
+                sfc_at(network.firing_offset)[sfc_runner_->item_index] = 1U;
+            }
+        }
+        ++sfc_runner_->item_index;
+        sfc_runner_->work_remaining = 0;
+        sfc_runner_->active_region = nullptr;
+    }
+
+    void update_sfc_qualifier_block(SfcNetworkInfo const &network,
+                                    std::size_t index) noexcept
+    {
+        unsigned char *active = sfc_at(network.staged_active_offset);
+        const unsigned char *old_active =
+            sfc_at(network.committed_active_offset);
+        const SfcActionBlockInfo &block = network.action_blocks[index];
+            unsigned char *state = sfc_at(network.staged_block_offset) +
+                                   index * sfc_block_bytes;
+            const bool signal = block.step < network.steps.size() &&
+                                active[block.step] != 0;
+            const bool activation = block.step < network.steps.size() &&
+                                    (signal || old_active[block.step] != 0);
+            const bool previous = state[9] != 0;
+            const bool rising = activation && !previous;
+            std::int64_t elapsed = block_elapsed(state);
+            bool pending = state[8] != 0;
+            bool latched = state[10] != 0;
+            std::uint8_t contribution = 0;
+            const SfcQualifier qualifier =
+                static_cast<SfcQualifier>(block.qualifier);
+            switch(qualifier) {
+            case SfcQualifier::n:
+                if(signal) contribution |= action_direct;
+                break;
+            case SfcQualifier::s:
+                if(rising) latched = true;
+                if(latched) contribution |= action_store;
+                break;
+            case SfcQualifier::r:
+                if(signal) contribution |= action_reset;
+                break;
+            case SfcQualifier::p:
+                if(rising) contribution |= action_direct;
+                break;
+            case SfcQualifier::l:
+                if(!signal) {
+                    elapsed = 0;
+                } else {
+                    elapsed = rising ? task_period_ns_ :
+                        saturating_add(elapsed, task_period_ns_);
+                    if(block.duration_ns > 0 &&
+                       elapsed <= block.duration_ns)
+                        contribution |= action_direct;
+                }
+                break;
+            case SfcQualifier::d:
+                if(!signal) {
+                    elapsed = 0;
+                } else {
+                    elapsed = rising ? task_period_ns_ :
+                        saturating_add(elapsed, task_period_ns_);
+                    if(elapsed >= block.duration_ns)
+                        contribution |= action_direct;
+                }
+                break;
+            case SfcQualifier::sd:
+                if(rising && !latched) pending = true;
+                if(pending) {
+                    elapsed = saturating_add(elapsed, task_period_ns_);
+                    if(elapsed >= block.duration_ns) {
+                        pending = false;
+                        latched = true;
+                        contribution |= action_store;
+                    }
+                }
+                if(latched) contribution |= action_store;
+                break;
+            case SfcQualifier::ds:
+                if(!activation && !latched) {
+                    elapsed = 0;
+                    pending = false;
+                } else if(activation && !latched) {
+                    pending = true;
+                    elapsed = rising ? task_period_ns_ :
+                        saturating_add(elapsed, task_period_ns_);
+                    if(elapsed >= block.duration_ns) {
+                        pending = false;
+                        latched = true;
+                        contribution |= action_store;
+                    }
+                }
+                if(latched) contribution |= action_store;
+                break;
+            case SfcQualifier::sl:
+                if(rising) {
+                    latched = true;
+                    elapsed = task_period_ns_;
+                    contribution |= action_store;
+                } else if(latched) {
+                    elapsed = saturating_add(elapsed, task_period_ns_);
+                }
+                if(latched && elapsed >= block.duration_ns) {
+                    latched = false;
+                    contribution |= action_expire;
+                }
+                if(latched) contribution |= action_store;
+                break;
+            }
+            block_elapsed(state, elapsed);
+            state[8] = pending ? 1U : 0U;
+            state[9] = signal ? 1U : 0U;
+            state[10] = latched ? 1U : 0U;
+            state[11] = contribution;
+    }
+
+    void start_sfc_phase(SfcRunnerPhase phase) noexcept
+    {
+        sfc_runner_->phase = phase;
+        sfc_runner_->network_index = 0;
+        sfc_runner_->item_index = 0;
+        sfc_runner_->subitem_index = 0;
+        sfc_runner_->work_remaining = 0;
+    }
+
+    std::uint64_t transition_check_cost(
+        const SfcNetworkInfo &network, std::size_t index) const noexcept
+    {
+        const SfcTransitionInfo &transition = network.transitions[index];
+        std::uint64_t cost = 1U + transition.sources.size();
+        for(std::size_t prior = 0; prior < index; ++prior)
+            cost += 1U + transition.sources.size() *
+                             network.transitions[prior].sources.size();
+        return cost;
+    }
+
+    void advance_sfc_runner() noexcept
+    {
+        for(;;) {
+            if(sfc_runner_->phase == SfcRunnerPhase::stage_vars) {
+                if(sfc_runner_->item_index >= program_->vars_bytes) {
+                    visible_vars_ = sfc_at(
+                        program_->sfc_committed_shadow_offset());
+                    sfc_runner_->phase = SfcRunnerPhase::base;
+                    sfc_runner_->item_index = 0;
+                    sfc_runner_->subitem_index = 0;
+                    return;
+                }
+                if(sfc_runner_->subitem_index == 0) {
+                    sfc_runtime_[sfc_runner_->item_index] = vars_[sfc_runner_->item_index];
+                    sfc_runner_->subitem_index = 1;
+                } else {
+                    sfc_at(program_->sfc_committed_shadow_offset())
+                        [sfc_runner_->item_index] = vars_[sfc_runner_->item_index];
+                    ++sfc_runner_->item_index;
+                    sfc_runner_->subitem_index = 0;
+                    if(sfc_runner_->item_index >= program_->vars_bytes) {
+                        visible_vars_ = sfc_at(
+                            program_->sfc_committed_shadow_offset());
+                        sfc_runner_->phase = SfcRunnerPhase::base;
+                        sfc_runner_->item_index = 0;
+                    }
+                }
+                return;
+            }
+            if(sfc_runner_->phase == SfcRunnerPhase::stage_active) {
+                if(sfc_runner_->network_index >= program_->sfc_networks.size()) {
+                    start_sfc_phase(SfcRunnerPhase::stage_firing);
+                    continue;
+                }
+                const SfcNetworkInfo &network =
+                    program_->sfc_networks[sfc_runner_->network_index];
+                if(sfc_runner_->item_index >= network.steps.size()) {
+                    ++sfc_runner_->network_index; sfc_runner_->item_index = 0; continue;
+                }
+                if(sfc_runner_->subitem_index == 0) {
+                    sfc_at(network.staged_active_offset)[sfc_runner_->item_index] =
+                        sfc_at(network.committed_active_offset)[sfc_runner_->item_index];
+                    sfc_runner_->subitem_index = 1;
+                } else {
+                    sfc_at(network.shadow_active_offset)[sfc_runner_->item_index] =
+                        sfc_at(network.committed_active_offset)[sfc_runner_->item_index];
+                    ++sfc_runner_->item_index;
+                    sfc_runner_->subitem_index = 0;
+                }
+                return;
+            }
+            if(sfc_runner_->phase == SfcRunnerPhase::stage_firing) {
+                if(sfc_runner_->network_index >= program_->sfc_networks.size()) {
+                    start_sfc_phase(SfcRunnerPhase::stage_blocks);
+                    continue;
+                }
+                const SfcNetworkInfo &network =
+                    program_->sfc_networks[sfc_runner_->network_index];
+                if(sfc_runner_->item_index >= network.transitions.size()) {
+                    ++sfc_runner_->network_index; sfc_runner_->item_index = 0; continue;
+                }
+                sfc_at(network.firing_offset)[sfc_runner_->item_index++] = 0;
+                return;
+            }
+            if(sfc_runner_->phase == SfcRunnerPhase::stage_blocks) {
+                if(sfc_runner_->network_index >= program_->sfc_networks.size()) {
+                    start_sfc_phase(SfcRunnerPhase::stage_actions);
+                    continue;
+                }
+                const SfcNetworkInfo &network =
+                    program_->sfc_networks[sfc_runner_->network_index];
+                if(sfc_runner_->item_index >= network.action_blocks.size()) {
+                    ++sfc_runner_->network_index; sfc_runner_->item_index = 0; continue;
+                }
+                const std::size_t byte = sfc_runner_->subitem_index;
+                const std::size_t offset =
+                    sfc_runner_->item_index * sfc_block_bytes + byte / 2U;
+                if((byte & 1U) == 0)
+                    sfc_at(network.staged_block_offset)[offset] =
+                        sfc_at(network.committed_block_offset)[offset];
+                else
+                    sfc_at(network.shadow_block_offset)[offset] =
+                        sfc_at(network.committed_block_offset)[offset];
+                ++sfc_runner_->subitem_index;
+                if(sfc_runner_->subitem_index == sfc_block_bytes * 2U) {
+                    ++sfc_runner_->item_index;
+                    sfc_runner_->subitem_index = 0;
+                }
+                return;
+            }
+            if(sfc_runner_->phase == SfcRunnerPhase::stage_actions ||
+               sfc_runner_->phase == SfcRunnerPhase::stage_direct) {
+                if(sfc_runner_->network_index >= program_->sfc_networks.size()) {
+                    start_sfc_phase(sfc_runner_->phase == SfcRunnerPhase::stage_actions
+                                        ? SfcRunnerPhase::stage_direct
+                                        : SfcRunnerPhase::transitions);
+                    continue;
+                }
+                const SfcNetworkInfo &network =
+                    program_->sfc_networks[sfc_runner_->network_index];
+                if(sfc_runner_->item_index >= network.actions.size()) {
+                    ++sfc_runner_->network_index; sfc_runner_->item_index = 0; continue;
+                }
+                if(sfc_runner_->phase == SfcRunnerPhase::stage_actions) {
+                    if(sfc_runner_->subitem_index == 0) {
+                        sfc_at(network.staged_action_offset)[sfc_runner_->item_index] =
+                            sfc_at(network.committed_action_offset)
+                                  [sfc_runner_->item_index];
+                        sfc_runner_->subitem_index = 1;
+                    } else {
+                        sfc_at(network.shadow_action_offset)[sfc_runner_->item_index] =
+                            sfc_at(network.committed_action_offset)
+                                  [sfc_runner_->item_index];
+                        ++sfc_runner_->item_index;
+                        sfc_runner_->subitem_index = 0;
+                    }
+                } else {
+                    sfc_at(network.direct_action_offset)[sfc_runner_->item_index] = 0;
+                    ++sfc_runner_->item_index;
+                }
+                return;
+            }
+            if(sfc_runner_->phase == SfcRunnerPhase::transitions) {
+                if(sfc_runner_->network_index >= program_->sfc_networks.size()) {
+                    start_sfc_phase(SfcRunnerPhase::active_updates);
+                    continue;
+                }
+                const SfcNetworkInfo &network =
+                    program_->sfc_networks[sfc_runner_->network_index];
+                if(sfc_runner_->item_index >= network.transitions.size()) {
+                    ++sfc_runner_->network_index; sfc_runner_->item_index = 0;
+                    sfc_runner_->work_remaining = 0; continue;
+                }
+                if(sfc_runner_->work_remaining == 0)
+                    sfc_runner_->work_remaining = transition_check_cost(
+                        network, sfc_runner_->item_index);
+                if(--sfc_runner_->work_remaining != 0) return;
+                if(transition_eligible(network, sfc_runner_->item_index)) {
+                    sfc_runner_->active_region =
+                        &network.transitions[sfc_runner_->item_index].condition;
+                    return;
+                }
+                ++sfc_runner_->item_index;
+                return;
+            }
+            if(sfc_runner_->phase == SfcRunnerPhase::active_updates) {
+                if(sfc_runner_->network_index >= program_->sfc_networks.size()) {
+                    start_sfc_phase(SfcRunnerPhase::qualifier_blocks);
+                    continue;
+                }
+                const SfcNetworkInfo &network =
+                    program_->sfc_networks[sfc_runner_->network_index];
+                if(sfc_runner_->item_index >= network.transitions.size()) {
+                    ++sfc_runner_->network_index; sfc_runner_->item_index = 0;
+                    sfc_runner_->subitem_index = 0; continue;
+                }
+                const SfcTransitionInfo &transition =
+                    network.transitions[sfc_runner_->item_index];
+                const bool firing =
+                    sfc_at(network.firing_offset)[sfc_runner_->item_index] != 0;
+                if(sfc_runner_->subitem_index == 0) {
+                    ++sfc_runner_->subitem_index;
+                    return;
+                }
+                if(sfc_runner_->subitem_index <= transition.sources.size()) {
+                    if(firing)
+                        sfc_at(network.staged_active_offset)
+                            [transition.sources[sfc_runner_->subitem_index - 1]] = 0;
+                    ++sfc_runner_->subitem_index;
+                    return;
+                }
+                const std::size_t target = sfc_runner_->subitem_index -
+                                           transition.sources.size() - 1U;
+                if(target < transition.targets.size()) {
+                    if(firing)
+                        sfc_at(network.staged_active_offset)
+                            [transition.targets[target]] = 1U;
+                    ++sfc_runner_->subitem_index;
+                    if(target + 1U < transition.targets.size()) return;
+                }
+                ++sfc_runner_->item_index;
+                sfc_runner_->subitem_index = 0;
+                return;
+            }
+            if(sfc_runner_->phase == SfcRunnerPhase::qualifier_blocks) {
+                if(sfc_runner_->network_index >= program_->sfc_networks.size()) {
+                    start_sfc_phase(SfcRunnerPhase::qualifier_actions);
+                    continue;
+                }
+                const SfcNetworkInfo &network =
+                    program_->sfc_networks[sfc_runner_->network_index];
+                if(sfc_runner_->item_index >= network.action_blocks.size()) {
+                    ++sfc_runner_->network_index; sfc_runner_->item_index = 0; continue;
+                }
+                update_sfc_qualifier_block(network, sfc_runner_->item_index++);
+                return;
+            }
+            if(sfc_runner_->phase == SfcRunnerPhase::qualifier_actions) {
+                if(sfc_runner_->network_index >= program_->sfc_networks.size()) {
+                    start_sfc_phase(SfcRunnerPhase::actions);
+                    continue;
+                }
+                const SfcNetworkInfo &network =
+                    program_->sfc_networks[sfc_runner_->network_index];
+                if(sfc_runner_->item_index >= network.actions.size()) {
+                    ++sfc_runner_->network_index; sfc_runner_->item_index = 0;
+                    sfc_runner_->subitem_index = 0; continue;
+                }
+                const std::size_t blocks = network.action_blocks.size();
+                if(sfc_runner_->subitem_index == 0) {
+                    sfc_runner_->reducer = 0;
+                    ++sfc_runner_->subitem_index;
+                    return;
+                }
+                if(sfc_runner_->subitem_index <= blocks) {
+                    const std::size_t block = sfc_runner_->subitem_index - 1U;
+                    if(network.action_blocks[block].action == sfc_runner_->item_index)
+                        sfc_runner_->reducer |=
+                            sfc_at(network.staged_block_offset)
+                                  [block * sfc_block_bytes + 11U];
+                    ++sfc_runner_->subitem_index;
+                    return;
+                }
+                unsigned char *stored = sfc_at(network.staged_action_offset);
+                if(sfc_runner_->subitem_index == blocks + 1U) {
+                    sfc_runner_->action_suppressed =
+                        (sfc_runner_->reducer & (action_reset | action_expire)) != 0;
+                    if((sfc_runner_->reducer & action_reset) != 0 ||
+                       (sfc_runner_->reducer & action_expire) != 0)
+                        stored[sfc_runner_->item_index] = 0;
+                    else if((sfc_runner_->reducer & action_store) != 0)
+                        stored[sfc_runner_->item_index] = 1U;
+                    ++sfc_runner_->subitem_index;
+                    return;
+                }
+                const std::size_t cleanup = sfc_runner_->subitem_index - blocks - 2U;
+                if(cleanup < blocks) {
+                    if((sfc_runner_->reducer & action_reset) != 0 &&
+                       network.action_blocks[cleanup].action == sfc_runner_->item_index) {
+                        unsigned char *state =
+                            sfc_at(network.staged_block_offset) +
+                            cleanup * sfc_block_bytes;
+                        const unsigned char previous = state[9];
+                        std::memset(state, 0, sfc_block_bytes);
+                        state[9] = previous;
+                    }
+                    ++sfc_runner_->subitem_index;
+                    return;
+                }
+                sfc_at(network.direct_action_offset)[sfc_runner_->item_index] =
+                    !sfc_runner_->action_suppressed &&
+                            (stored[sfc_runner_->item_index] != 0 ||
+                             (sfc_runner_->reducer & action_direct) != 0)
+                        ? 1U : 0U;
+                ++sfc_runner_->item_index;
+                sfc_runner_->subitem_index = 0;
+                return;
+            }
+            if(sfc_runner_->phase == SfcRunnerPhase::actions) {
+                if(sfc_runner_->network_index >= program_->sfc_networks.size()) {
+                    start_sfc_phase(SfcRunnerPhase::trace_exits);
+                    continue;
+                }
+                const SfcNetworkInfo &network =
+                    program_->sfc_networks[sfc_runner_->network_index];
+                if(sfc_runner_->item_index >= network.actions.size()) {
+                    ++sfc_runner_->network_index; sfc_runner_->item_index = 0; continue;
+                }
+                if(sfc_at(network.direct_action_offset)[sfc_runner_->item_index] != 0) {
+                    sfc_runner_->active_region = &network.actions[sfc_runner_->item_index].region;
+                    return;
+                }
+                ++sfc_runner_->item_index;
+                return;
+            }
+            break;
+        }
+        advance_sfc_trace_and_commit();
+    }
+
+    void append_sfc_trace(std::size_t network_index, SfcEventKind kind,
+                          std::size_t entity_index, std::uint8_t qualifier,
+                          std::int32_t line, std::int32_t column,
+                          std::int32_t end_line,
+                          std::int32_t end_column) noexcept
+    {
+        if(sfc_runner_->trace_size >= sfc_runner_->trace_capacity) {
+            ++sfc_runner_->trace_dropped;
+            return;
+        }
+        SfcTraceRecord &record = sfc_runner_->trace[sfc_runner_->trace_size++];
+        record = SfcTraceRecord{};
+        record.scan = sfc_runner_->scan;
+        record.network = static_cast<std::uint32_t>(network_index);
+        record.kind = kind;
+        record.qualifier = qualifier;
+        record.line = line;
+        record.column = column;
+        record.end_line = end_line;
+        record.end_column = end_column;
+        const std::uint32_t index = static_cast<std::uint32_t>(entity_index);
+        if(kind == SfcEventKind::step_exit ||
+           kind == SfcEventKind::step_enter) record.step = index;
+        else if(kind == SfcEventKind::transition_fire)
+            record.transition = index;
+        else if(kind == SfcEventKind::qualifier_update) record.block = index;
+        else if(kind == SfcEventKind::action_execute) record.action = index;
+    }
+
+    void advance_sfc_trace_and_commit() noexcept
+    {
+        for(;;) {
+            if(sfc_runner_->phase == SfcRunnerPhase::commit_vars) {
+                if(sfc_runner_->item_index < program_->vars_bytes) {
+                    vars_[sfc_runner_->item_index] = sfc_runtime_[sfc_runner_->item_index];
+                    ++sfc_runner_->item_index;
+                    return;
+                }
+                start_sfc_phase(SfcRunnerPhase::commit_active);
+                continue;
+            }
+            if(sfc_runner_->network_index >= program_->sfc_networks.size()) {
+                SfcRunnerPhase next = SfcRunnerPhase::finish;
+                switch(sfc_runner_->phase) {
+                case SfcRunnerPhase::trace_exits:
+                    next = SfcRunnerPhase::trace_transitions; break;
+                case SfcRunnerPhase::trace_transitions:
+                    next = SfcRunnerPhase::trace_enters; break;
+                case SfcRunnerPhase::trace_enters:
+                    next = SfcRunnerPhase::trace_qualifiers; break;
+                case SfcRunnerPhase::trace_qualifiers:
+                    next = SfcRunnerPhase::trace_actions; break;
+                case SfcRunnerPhase::trace_actions:
+                    next = SfcRunnerPhase::commit_vars; break;
+                case SfcRunnerPhase::commit_active:
+                    next = SfcRunnerPhase::commit_blocks; break;
+                case SfcRunnerPhase::commit_blocks:
+                    next = SfcRunnerPhase::commit_actions; break;
+                case SfcRunnerPhase::commit_actions:
+                    next = SfcRunnerPhase::finish; break;
+                default: break;
+                }
+                start_sfc_phase(next);
+                continue;
+            }
+            const SfcNetworkInfo &network =
+                program_->sfc_networks[sfc_runner_->network_index];
+            const unsigned char *old_active =
+                sfc_at(network.committed_active_offset);
+            const unsigned char *new_active =
+                sfc_at(network.staged_active_offset);
+            if(sfc_runner_->phase == SfcRunnerPhase::trace_exits ||
+               sfc_runner_->phase == SfcRunnerPhase::trace_enters) {
+                if(sfc_runner_->item_index >= network.steps.size()) {
+                    ++sfc_runner_->network_index; sfc_runner_->item_index = 0; continue;
+                }
+                const std::size_t step = sfc_runner_->item_index++;
+                const bool emit = sfc_runner_->phase == SfcRunnerPhase::trace_exits
+                    ? old_active[step] != 0 && new_active[step] == 0
+                    : old_active[step] == 0 && new_active[step] != 0;
+                if(emit)
+                    append_sfc_trace(sfc_runner_->network_index,
+                                     sfc_runner_->phase == SfcRunnerPhase::trace_exits
+                                         ? SfcEventKind::step_exit
+                                         : SfcEventKind::step_enter,
+                                     step, 0, network.steps[step].line,
+                                     network.steps[step].column,
+                                     network.steps[step].end_line,
+                                     network.steps[step].end_column);
+                return;
+            }
+            if(sfc_runner_->phase == SfcRunnerPhase::trace_transitions) {
+                if(sfc_runner_->item_index >= network.transitions.size()) {
+                    ++sfc_runner_->network_index; sfc_runner_->item_index = 0; continue;
+                }
+                const std::size_t transition = sfc_runner_->item_index++;
+                if(sfc_at(network.firing_offset)[transition] != 0)
+                    append_sfc_trace(sfc_runner_->network_index,
+                                     SfcEventKind::transition_fire,
+                                     transition, 0,
+                                     network.transitions[transition].line,
+                                     network.transitions[transition].column,
+                                     network.transitions[transition].end_line,
+                                     network.transitions[transition].end_column);
+                return;
+            }
+            if(sfc_runner_->phase == SfcRunnerPhase::trace_qualifiers) {
+                if(sfc_runner_->item_index >= network.action_blocks.size()) {
+                    ++sfc_runner_->network_index; sfc_runner_->item_index = 0; continue;
+                }
+                const std::size_t block = sfc_runner_->item_index++;
+                append_sfc_trace(sfc_runner_->network_index,
+                                 SfcEventKind::qualifier_update, block,
+                                 network.action_blocks[block].qualifier,
+                                 network.action_blocks[block].line,
+                                 network.action_blocks[block].column,
+                                 network.action_blocks[block].end_line,
+                                 network.action_blocks[block].end_column);
+                return;
+            }
+            if(sfc_runner_->phase == SfcRunnerPhase::trace_actions) {
+                if(sfc_runner_->item_index >= network.actions.size()) {
+                    ++sfc_runner_->network_index; sfc_runner_->item_index = 0; continue;
+                }
+                const std::size_t action = sfc_runner_->item_index++;
+                const unsigned char *execute =
+                    sfc_at(network.direct_action_offset);
+                if(execute[action] != 0)
+                    append_sfc_trace(sfc_runner_->network_index,
+                                     SfcEventKind::action_execute, action, 0,
+                                     network.actions[action].line,
+                                     network.actions[action].column,
+                                     network.actions[action].end_line,
+                                     network.actions[action].end_column);
+                return;
+            }
+            if(sfc_runner_->phase == SfcRunnerPhase::commit_active) {
+                if(sfc_runner_->item_index >= network.steps.size()) {
+                    ++sfc_runner_->network_index; sfc_runner_->item_index = 0; continue;
+                }
+                sfc_at(network.committed_active_offset)[sfc_runner_->item_index] =
+                    sfc_at(network.staged_active_offset)[sfc_runner_->item_index];
+                ++sfc_runner_->item_index;
+                return;
+            }
+            if(sfc_runner_->phase == SfcRunnerPhase::commit_blocks) {
+                if(sfc_runner_->item_index >= network.action_blocks.size()) {
+                    ++sfc_runner_->network_index; sfc_runner_->item_index = 0; continue;
+                }
+                const std::size_t offset =
+                    sfc_runner_->item_index * sfc_block_bytes + sfc_runner_->subitem_index;
+                sfc_at(network.committed_block_offset)[offset] =
+                    sfc_at(network.staged_block_offset)[offset];
+                ++sfc_runner_->subitem_index;
+                if(sfc_runner_->subitem_index == sfc_block_bytes) {
+                    ++sfc_runner_->item_index;
+                    sfc_runner_->subitem_index = 0;
+                }
+                return;
+            }
+            if(sfc_runner_->phase == SfcRunnerPhase::commit_actions) {
+                if(sfc_runner_->item_index >= network.actions.size()) {
+                    ++sfc_runner_->network_index; sfc_runner_->item_index = 0; continue;
+                }
+                sfc_at(network.committed_action_offset)[sfc_runner_->item_index] =
+                    sfc_at(network.staged_action_offset)[sfc_runner_->item_index];
+                ++sfc_runner_->item_index;
+                return;
+            }
+            if(sfc_runner_->phase == SfcRunnerPhase::finish) {
+                execution_vars_ = vars_;
+                visible_vars_ = vars_;
+                ++sfc_runner_->scan;
+                if(process_image_ != nullptr)
+                    process_image_->commit_scan(
+                        *program_, vars_, !defer_process_image_publish_);
+                sfc_runner_->phase = SfcRunnerPhase::none;
+                return;
+            }
+        }
+    }
+
     template <typename Storage>
     static Storage *construct_binding_storage(unsigned char *&cursor)
     {
@@ -2504,14 +4058,20 @@ private:
         return true;
     }
 
-    bool load_raw64(std::uint32_t offset, std::uint64_t &value) const
+    bool load_raw64_at(const unsigned char *storage, std::uint32_t offset,
+                       std::uint64_t &value) const
     {
         if(program_ == nullptr || offset > program_->vars_bytes ||
            8U > program_->vars_bytes - offset) {
             return false;
         }
-        std::memcpy(&value, vars_ + offset, sizeof(value));
+        std::memcpy(&value, storage + offset, sizeof(value));
         return true;
+    }
+
+    bool load_raw64(std::uint32_t offset, std::uint64_t &value) const
+    {
+        return load_raw64_at(execution_vars_, offset, value);
     }
 
     bool store_raw64(std::uint32_t offset, std::uint64_t value)
@@ -2520,19 +4080,26 @@ private:
            8U > program_->vars_bytes - offset) {
             return false;
         }
-        std::memcpy(vars_ + offset, &value, sizeof(value));
+        std::memcpy(execution_vars_ + offset, &value, sizeof(value));
         return true;
     }
 
     bool load_value(std::uint32_t offset, TypeId type_id,
                     std::uint64_t &value) const
     {
-        if(program_ == nullptr) {
+        return load_value_at(execution_vars_, offset, type_id, value);
+    }
+
+    bool load_value_at(const unsigned char *storage, std::uint32_t offset,
+                       TypeId type_id, std::uint64_t &value) const
+    {
+        if(program_ == nullptr || storage == nullptr) {
             return false;
         }
         const TypeDesc *desc = program_->types.get(type_id);
         if(desc == nullptr) {
-            return type_id == invalid_type_id && load_raw64(offset, value);
+            return type_id == invalid_type_id &&
+                   load_raw64_at(storage, offset, value);
         }
         if(desc->kind == TypeKind::array || desc->kind == TypeKind::struct_ ||
            desc->size == 0 || desc->size > 8 ||
@@ -2542,7 +4109,7 @@ private:
         }
         std::uint64_t raw = 0;
         for(std::uint64_t i = 0; i < desc->size; ++i) {
-            raw |= static_cast<std::uint64_t>(vars_[offset + i]) <<
+            raw |= static_cast<std::uint64_t>(storage[offset + i]) <<
                    (i * 8U);
         }
         TypeId base_id = type_id;
@@ -2574,6 +4141,10 @@ private:
         if(program_ == nullptr) {
             return false;
         }
+        if(process_image_ != nullptr) {
+            (void)process_image_->forced_store(*program_, offset, type_id,
+                                               value);
+        }
         const TypeDesc *desc = program_->types.get(type_id);
         if(desc == nullptr) {
             return type_id == invalid_type_id && store_raw64(offset, value);
@@ -2598,9 +4169,11 @@ private:
             value = raw;
         }
         for(std::uint64_t i = 0; i < desc->size; ++i) {
-            vars_[offset + i] =
+            execution_vars_[offset + i] =
                 static_cast<unsigned char>(value >> (i * 8U));
         }
+        if(process_image_ != nullptr)
+            process_image_->mark_store(*program_, offset, type_id);
         return true;
     }
 
@@ -2616,17 +4189,51 @@ private:
 
     ScanError latch(ScanError error)
     {
+        if(sfc_runner_->active_region != nullptr &&
+           sfc_runner_->network_index < program_->sfc_networks.size()) {
+            sfc_runner_->fault_network_index =
+                static_cast<std::uint32_t>(sfc_runner_->network_index);
+            sfc_runner_->fault_element_index =
+                static_cast<std::uint32_t>(sfc_runner_->item_index);
+            sfc_runner_->fault_element_kind =
+                sfc_runner_->phase == SfcRunnerPhase::transitions
+                    ? TaskFaultElementKind::transition
+                    : TaskFaultElementKind::action;
+        }
+        if(sfc_commit_started()) rollback_sfc_commit();
+        execution_vars_ = vars_;
+        visible_vars_ = vars_;
+        sfc_runner_->trace_size = sfc_runner_->trace_scan_begin_size;
+        sfc_runner_->trace_dropped = sfc_runner_->trace_scan_begin_dropped;
+        sfc_runner_->active_region = nullptr;
         fault_ = error;
+        execution_state_ = InstanceState::faulted;
         return error;
     }
 
     const Program *program_ = nullptr;
+    ProcessImage *process_image_ = nullptr;
     unsigned char *vars_ = nullptr;
+    const unsigned char *visible_vars_ = nullptr;
+    unsigned char *execution_vars_ = nullptr;
+    unsigned char *sfc_runtime_ = nullptr;
+    SfcRunnerStorage *sfc_runner_ = nullptr;
     unsigned char *fb_area_ = nullptr;
     std::uint64_t *stack_ = nullptr;
     ScanError fault_ = ScanError::ok;
+    InstanceState execution_state_ = InstanceState::idle;
+    std::size_t pc_ = 0;
+    std::uint32_t instruction_pc_ = 0;
+    std::int32_t sp_ = 0;
+    std::int64_t remaining_budget_ = 0;
     bool scan_started_ = false;
+    bool defer_process_image_publish_ = false;
     std::int64_t task_period_ns_ = 0;
+    std::int64_t utc_dt_ns_ = 0;
+    RuntimeDebugHooks *debug_hooks_ = nullptr;
+    std::uint32_t debug_mapping_ = 0;
+    const SourceMapEntry *last_debug_entry_ = nullptr;
+    InstructionId last_debug_instruction_id_{};
     AxisTargetStorage *axis_targets_ = nullptr;
     GroupTargetStorage *group_targets_ = nullptr;
     PathTableStorage *path_tables_ = nullptr;

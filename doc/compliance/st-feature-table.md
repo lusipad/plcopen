@@ -1,6 +1,6 @@
 # ST L0-L7 特性闭合总账
 
-> 状态：**骨架已批准，持续更新（2026-07-17）**。单一事实源为
+> 状态：**已实现并完成闭合（2026-07-17）**。单一事实源为
 > [st-feature-set.yml](st-feature-set.yml)；本页只作人读视图。实现状态只可
 > 由生成/注册/测试证据提升，语义批准本身不改变 pending。
 
@@ -28,28 +28,28 @@ L 系列只在以下条件同时成立时完成：
 | L2a | AXIS_REF + 首批十个单轴 MC 绑定 | implemented（阶段切片） | `plcopen_core_st_l2a_tests`；不代表 L2 闭合 |
 | L2b | 用户 POU、参数、作用域、EN/ENO | implemented | `plcopen_core_st_l2b_tests`；[矩阵](st-l2b-semantics.md) |
 | L2c / Bind Complete | GROUP_REF + basic/Part1/Part4/Part5 全量绑定 | implemented | `plcopen_core_st_l2c_tests`；[矩阵](st-l2c-semantics.md) |
-| L3 | 定位变量、进程映像、RETAIN/PERSISTENT、force | pending | [矩阵](st-l3-semantics.md) |
-| L4a-d | 标准函数与 FB 闭合集 | pending | [矩阵](st-l4-semantics.md) |
-| L5 | 配置、资源、多任务、看门狗与恢复 | pending | [矩阵](st-l5-semantics.md) |
-| L6 | SFC 文本执行与九种限定符 | pending | [矩阵](st-l6-semantics.md) |
-| L7 | 监控、force、断点、单步、trace | pending | [矩阵](st-l7-semantics.md) |
+| L3 | 定位变量、进程映像、RETAIN/PERSISTENT、force | implemented | [矩阵](st-l3-semantics.md) |
+| L4a-d | 标准函数与 FB 闭合集 | implemented | [矩阵](st-l4-semantics.md) |
+| L5 | 配置、资源、多任务、看门狗与恢复 | implemented | [矩阵](st-l5-semantics.md) |
+| L6 | SFC 文本执行与九种限定符 | implemented | [矩阵](st-l6-semantics.md) |
+| L7 | 监控、force、断点、单步、trace | implemented | [矩阵](st-l7-semantics.md) |
 
 ## 3. 机器集合状态
 
 | 集合 | 当前证据 | 未闭合项 |
 |------|----------|----------|
-| grammar | L0 parser/黄金测试、L1b1/L1b2 TYPE、L1b3 字面量、L2b 用户 POU | L3/L5/L6 文法 pending |
-| types | L0/L1a、ENUM/SUBRANGE、ARRAY/STRUCT、字符/字符串/日期、AXIS_REF/GROUP_REF 与 49 个公开绑定类型 | L3-L7 类型 pending |
-| operators | L0/L1a、枚举/子范围、聚合访问、字符串比较/日期算术 | L4 标准函数 pending |
-| conversions | `st-l1a-conversions.yaml` 210 格、枚举/字符显式转换 | 无 L1 pending |
-| pous | 内建 FB 调用机制；用户 FUNCTION/FB/PROGRAM、参数与 EN/ENO；134 个标准 FB 完整绑定 | L5/L6 执行模型 pending |
-| storage | 静态变量/实例区 | 映像、RETAIN/PERSISTENT、force、快照 pending |
-| tasks | 无 | L5 全部 pending |
-| sfc_qualifiers | 无 | N/S/R/L/D/P/SD/DS/SL 全部 pending |
-| functions | L1a 转换函数不计 L4 标准函数闭合 | L4 固定函数表全部 pending |
-| fbs | basic 10 + Part1/2 45 + Part4 68 + Part5 11 = 134，全量已绑定 | L4d 标准函数/FB 总终验 pending |
-| pins | 1476/1476 pin 显式 authority、生成、注册与 native adapter 闭合 | 无 L2c pending |
-| diagnostics | 基础集、range/string/date/alias/binding fault 与稳定拒绝诊断 | L3-L7 新稳定码与拒绝测试 pending |
+| grammar | L0 parser/黄金测试、L1b1/L1b2 TYPE、L1b3 字面量、L2b 用户 POU、L3 定位变量、L5 配置资源任务、L6 SFC 文法 | 无 |
+| types | L0/L1a、ENUM/SUBRANGE、ARRAY/STRUCT、字符/字符串/日期、AXIS_REF/GROUP_REF 与 L3-L7 运行期类型语义 | 无 |
+| operators | L0/L1a、枚举/子范围、聚合访问、字符串比较/日期算术与 L4 标准函数 | 无 |
+| conversions | `st-l1a-conversions.yaml` 210 格、枚举/字符显式转换 | 无 |
+| pous | 内建 FB 调用机制；用户 FUNCTION/FB/PROGRAM、参数与 EN/ENO；134 个标准 FB 完整绑定；L5/L6 执行模型 | 无 |
+| storage | 静态变量/实例区、映像、RETAIN/PERSISTENT、force、快照 | 无 |
+| tasks | CONFIGURATION/RESOURCE、周期/事件任务、优先级、映射、看门狗、reset/restart | 无 |
+| sfc_qualifiers | N/S/R/L/D/P/SD/DS/SL 全部实现 | 无 |
+| functions | 51 个固定标准函数 + L1a 转换矩阵 | 无 |
+| fbs | basic 10 + Part1/2 45 + Part4 68 + Part5 11 = 134，全量已绑定并完成终验 | 无 |
+| pins | 1476/1476 pin 显式 authority、生成、注册与 native adapter 闭合 | 无 |
+| diagnostics | 基础集、range/string/date/alias/binding fault、L3-L7 稳定诊断与拒绝测试 | 无 |
 
 ## 4. 排除项纪律
 
@@ -60,4 +60,4 @@ pending，不能用于完成声明。
 
 ---
 
-*创建：2026-07-17；当前仍有 pending，L 系列尚未完成。*
+*创建：2026-07-17；2026-07-17 完成闭合，`pending=0`。*

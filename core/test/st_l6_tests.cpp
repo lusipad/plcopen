@@ -8,6 +8,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <limits>
 #include <new>
 #include <string>
 #include <string_view>
@@ -83,7 +84,7 @@ struct Rig
 {
     st::CompileResult compiled;
     st::Instance instance;
-    alignas(8) unsigned char storage[1048576] = {};
+    std::vector<std::uint64_t> storage;
 
     bool build(const std::string &source,
                const st::CompileOptions &options = st::CompileOptions{})
@@ -96,8 +97,12 @@ struct Rig
             }
             return false;
         }
-        return instance.load(compiled.program, "main", storage,
-                             sizeof(storage), kPeriodNs) == rt::ErrorCode::ok;
+        storage.resize((compiled.program.required_bytes() + 7U) / 8U);
+        return instance.load(
+                   compiled.program, "main",
+                   reinterpret_cast<unsigned char *>(storage.data()),
+                   storage.size() * sizeof(storage[0]), kPeriodNs) ==
+               rt::ErrorCode::ok;
     }
 
     bool scan(std::int64_t budget = kBudget)
@@ -216,6 +221,116 @@ void conflicting_step_update_is_rejected()
     check(!result.ok &&
               has_code(result, st::DiagCode::sema_unsafe_sfc_network),
           "L6-D06 conflicting activation and exit has stable diagnostic");
+}
+
+void graph_and_region_structure_are_rejected_before_runtime()
+{
+    const char *bad[] = {
+        "INITIAL_STEP A: END_STEP\n"
+        "TRANSITION FROM A TO A := TRUE; END_TRANSITION",
+        "INITIAL_STEP Start: END_STEP\nSTEP A: TERMINAL; END_STEP\n"
+        "STEP B: TERMINAL; END_STEP\nSTEP Done: TERMINAL; END_STEP\n"
+        "TRANSITION FROM Start TO (A, B) SIMULTANEOUS := TRUE; "
+        "END_TRANSITION\n"
+        "TRANSITION FROM A TO B := TRUE; END_TRANSITION\n"
+        "TRANSITION FROM B TO Done := TRUE; END_TRANSITION",
+        "INITIAL_STEP Start: END_STEP\nSTEP A: TERMINAL; END_STEP\n"
+        "STEP B: TERMINAL; END_STEP\n"
+        "TRANSITION FROM Start TO (A, B) := TRUE; END_TRANSITION",
+        "INITIAL_STEP Start: END_STEP\nSTEP A: END_STEP\n"
+        "STEP B: END_STEP\nSTEP Done: TERMINAL; END_STEP\n"
+        "TRANSITION FROM Start TO (A, B) SIMULTANEOUS := TRUE; "
+        "END_TRANSITION\n"
+        "TRANSITION FROM (A, B) TO Done := TRUE; END_TRANSITION",
+        "INITIAL_STEP A: END_STEP\nSTEP B: TERMINAL; END_STEP\n"
+        "TRANSITION FROM (A, A) TO B SIMULTANEOUS := TRUE; END_TRANSITION",
+        "INITIAL_STEP A: END_STEP\nSTEP B: TERMINAL; END_STEP\n"
+        "TRANSITION FROM A TO (B, B) SIMULTANEOUS := TRUE; END_TRANSITION",
+    };
+    for(const char *body : bad) {
+        const st::CompileResult result = st::compile(program("X : BOOL;", body));
+        check(!result.ok &&
+                  has_code(result, st::DiagCode::sema_unsafe_sfc_network),
+              "L6-D06 unsafe structural graph is rejected statically");
+    }
+}
+
+void structural_keywords_ignore_comments_and_strings()
+{
+    const st::CompileResult result = st::compile(program(
+              "Runs : DINT;",
+              "INITIAL_STEP A: Work(N); TERMINAL; END_STEP\n"
+              "(* STEP Fake: 'END_STEP' END_STEP *)\n"
+              "ACTION Work: (* END_ACTION *) Runs := Runs + 1; "
+              "END_ACTION"));
+    check(result.ok,
+          "L6 parser ignores structural words in comments and strings");
+    const std::string quoted =
+        "'END_ACTION' \"END_ACTION\" (* END_ACTION *) END_ACTION";
+    check(st::sfc_detail::find_word(quoted, "end_action") ==
+              quoted.rfind("END_ACTION"),
+          "L6 structural scanner ignores quoted and commented keywords");
+    check(st::sfc_detail::find_code_sequence("';' ;", ";") == 4,
+          "L6 action-block scanner ignores semicolons in strings");
+    check(st::compile(program(
+              "Runs : DINT;",
+              "INITIAL_STEP A: (* ; END_STEP *) Work(N); TERMINAL; END_STEP\n"
+              "ACTION Work: Runs := Runs + 1; END_ACTION")).ok,
+          "L6 action-block parser ignores commented semicolons");
+}
+
+void nested_simultaneous_regions_pair_and_execute()
+{
+    Rig rig;
+    check(rig.build(program(
+              "X : BOOL;",
+              "INITIAL_STEP Start: END_STEP\n"
+              "STEP Left: END_STEP\nSTEP Right: END_STEP\n"
+              "STEP L1: END_STEP\nSTEP L2: END_STEP\n"
+              "STEP LeftDone: END_STEP\nSTEP Done: TERMINAL; END_STEP\n"
+              "TRANSITION FROM Start TO (Left, Right) SIMULTANEOUS := TRUE; "
+              "END_TRANSITION\n"
+              "TRANSITION FROM Left TO (L1, L2) SIMULTANEOUS := TRUE; "
+              "END_TRANSITION\n"
+              "TRANSITION FROM (L1, L2) TO LeftDone SIMULTANEOUS := TRUE; "
+              "END_TRANSITION\n"
+              "TRANSITION FROM (LeftDone, Right) TO Done SIMULTANEOUS := TRUE; "
+              "END_TRANSITION")),
+          "L6-D05 nested simultaneous regions build");
+    check(rig.compiled.ok &&
+              rig.compiled.program.sfc_networks[0].max_parallel_active_steps ==
+                  3,
+          "L6-A07 nested region report records peak active-set width three");
+    check(rig.scan() && rig.scan() && rig.scan() && rig.scan() &&
+              rig.active("done"),
+          "L6-D05 nested simultaneous regions preserve phased execution");
+}
+
+void runtime_honors_the_simultaneous_artifact_flag()
+{
+    st::CompileResult compiled = st::compile(program(
+        "X : BOOL;",
+        "INITIAL_STEP A: END_STEP\nSTEP B: TERMINAL; END_STEP\n"
+        "STEP C: TERMINAL; END_STEP\n"
+        "TRANSITION FROM A TO (B, C) SIMULTANEOUS := TRUE; "
+        "END_TRANSITION"));
+    check(compiled.ok, "L6-D05 simultaneous flag fixture compiles");
+    if(!compiled.ok) return;
+    compiled.program.sfc_networks[0].transitions[0].simultaneous = false;
+    std::vector<std::uint64_t> storage(
+        (compiled.program.required_bytes() + 7U) / 8U);
+    st::Instance instance;
+    bool a = false;
+    bool b = false;
+    check(instance.load(compiled.program, "main",
+                        reinterpret_cast<unsigned char *>(storage.data()),
+                        storage.size() * sizeof(storage[0]), kPeriodNs) ==
+                  rt::ErrorCode::ok &&
+              instance.scan(kBudget) == st::ScanError::ok &&
+              instance.sfc_step_active("flow", "a", a) == rt::ErrorCode::ok &&
+              instance.sfc_step_active("flow", "b", b) == rt::ErrorCode::ok &&
+              a && !b,
+          "L6-D05 runtime refuses an unmarked multi-branch artifact");
 }
 
 void n_qualifier_runs_only_while_step_is_active()
@@ -432,7 +547,7 @@ void sd_can_be_requested_again_after_r()
               "TRANSITION FROM Reset TO Again := TRUE; END_TRANSITION\n"
               "ACTION Work: Runs := Runs + 1; END_ACTION")),
           "L6-A02 SD reactivation program builds");
-    check(rig.scan() && rig.scan() && rig.scan() && rig.value("Runs") == 1,
+    check(rig.scan() && rig.scan() && rig.scan() && rig.value("Runs") == 2,
           "L6-A02 SD accepts a fresh delayed request after R");
 }
 
@@ -539,6 +654,46 @@ void sl_reactivation_starts_a_fresh_lifetime()
           "L6-A02 SL starts a fresh bounded latch on reactivation");
 }
 
+void stored_blocks_reassert_after_another_blocks_expiry()
+{
+    Rig rig;
+    check(rig.build(program(
+              "Runs : DINT;",
+              "INITIAL_STEP A: Work(SD, T#0ms); Work(SL, T#3ms); "
+              "TERMINAL; END_STEP\n"
+              "ACTION Work: Runs := Runs + 1; END_ACTION")),
+          "L6-A02 independent stored-block contributions build");
+    check(rig.scan() && rig.value("Runs") == 1 &&
+              rig.scan() && rig.value("Runs") == 2 &&
+              rig.scan() && rig.value("Runs") == 2 &&
+              rig.scan() && rig.value("Runs") == 3,
+          "L6-A02 SD reasserts after a same-action SL expiry clear");
+}
+
+void reset_and_expiry_suppress_every_direct_qualifier()
+{
+    const char *direct[] = {"N", "L, T#3ms", "D, T#0ms", "P"};
+    for(const char *qualifier : direct) {
+        Rig rig;
+        std::string body =
+            "INITIAL_STEP A: Work(R); Work(" + std::string(qualifier) +
+            "); TERMINAL; END_STEP\n"
+            "ACTION Work: Runs := Runs + 1; END_ACTION";
+        check(rig.build(program("Runs : DINT;", body)) &&
+                  rig.scan() && rig.value("Runs") == 0,
+              "L6-A02 R suppresses N/L/D/P in the same scan");
+    }
+    Rig expiry;
+    check(expiry.build(program(
+              "Runs : DINT;",
+              "INITIAL_STEP A: Work(SL, T#2ms); Work(N); TERMINAL; END_STEP\n"
+              "ACTION Work: Runs := Runs + 1; END_ACTION")) &&
+              expiry.scan() && expiry.value("Runs") == 1 &&
+              expiry.scan() && expiry.value("Runs") == 1 &&
+              expiry.scan() && expiry.value("Runs") == 2,
+          "L6-A02 SL expiry suppresses N only in its expiry scan");
+}
+
 void action_bodies_follow_declaration_order()
 {
     Rig rig;
@@ -623,6 +778,86 @@ void negative_time_has_stable_range_diagnostic()
           "L6-A04 negative qualifier TIME has sema_range_violation");
 }
 
+void transition_effect_analysis_is_transitive()
+{
+    const std::string pure =
+        "FUNCTION Ready : BOOL\nVAR_INPUT X : BOOL; END_VAR\n"
+        "Ready := X; END_FUNCTION\n" +
+        program("X : BOOL;",
+                "INITIAL_STEP A: END_STEP\n"
+                "STEP B: TERMINAL; END_STEP\n"
+                "TRANSITION FROM A TO B := Ready(X); END_TRANSITION");
+    const st::CompileResult pure_result = st::compile(pure);
+    check(pure_result.ok,
+          "L6-D02 transitively pure FUNCTION is allowed in transition");
+
+    const std::string global_read =
+        "VAR_GLOBAL G : BOOL; END_VAR\n"
+        "FUNCTION ReadsGlobal : BOOL\nVAR_EXTERNAL G : BOOL; END_VAR\n"
+        "ReadsGlobal := G; END_FUNCTION\n" +
+        program("X : BOOL;",
+                "INITIAL_STEP A: END_STEP\n"
+                "STEP B: TERMINAL; END_STEP\n"
+                "TRANSITION FROM A TO B := ReadsGlobal(); END_TRANSITION");
+    check(st::compile(global_read).ok,
+          "L6-D02 transition purity permits transitive global reads");
+
+    const std::string global_write =
+        "VAR_GLOBAL G : BOOL; END_VAR\n"
+        "FUNCTION WritesGlobal : BOOL\nVAR_EXTERNAL G : BOOL; END_VAR\n"
+        "G := TRUE; WritesGlobal := TRUE; END_FUNCTION\n" +
+        program("X : BOOL;",
+                "INITIAL_STEP A: END_STEP\n"
+                "STEP B: TERMINAL; END_STEP\n"
+                "TRANSITION FROM A TO B := WritesGlobal(); END_TRANSITION");
+    const st::CompileResult write_result = st::compile(global_write);
+    check(!write_result.ok &&
+              has_code(write_result,
+                       st::DiagCode::sema_sfc_transition_side_effect),
+          "L6-D02 transitive global write is rejected in transition");
+
+    const st::CompileResult fb_result = st::compile(program(
+        "X : BOOL; Edge : R_TRIG;",
+        "INITIAL_STEP A: END_STEP\n"
+        "STEP B: TERMINAL; END_STEP\n"
+        "TRANSITION FROM A TO B := Edge(X).Q; END_TRANSITION"));
+    check(!fb_result.ok &&
+              has_code(fb_result,
+                       st::DiagCode::sema_sfc_transition_side_effect),
+          "L6-D02 positional FB call is rejected in transition");
+
+    const std::string shadowed_elsewhere =
+        "VAR_GLOBAL G : BOOL; END_VAR\n"
+        "FUNCTION LocalWrite : BOOL VAR G : BOOL; END_VAR "
+        "G := TRUE; LocalWrite := G; END_FUNCTION\n" +
+        program("X : BOOL;",
+                "INITIAL_STEP A: END_STEP\nSTEP B: TERMINAL; END_STEP\n"
+                "TRANSITION FROM A TO B := LocalWrite(); END_TRANSITION");
+    const st::CompileResult shadow_result = st::compile(shadowed_elsewhere);
+    check(shadow_result.ok,
+          "L6-D02 symbol resolution honors a local shadow of a global");
+
+    const char *impure_scopes[] = {
+        "FUNCTION Bad : BOOL VAR_IN_OUT X : BOOL; END_VAR "
+        "X := TRUE; Bad := TRUE; END_FUNCTION\n",
+        "FUNCTION Bad : BOOL VAR_TEMP Edge : R_TRIG; END_VAR "
+        "Bad := Edge(TRUE).Q; END_FUNCTION\n",
+        "FUNCTION Bad : BOOL VAR_EXTERNAL Edge : R_TRIG; END_VAR "
+        "Bad := Edge(TRUE).Q; END_FUNCTION\n",
+    };
+    for(const char *declaration : impure_scopes) {
+        const st::CompileResult scoped = st::compile(
+            std::string(declaration) +
+            program("X : BOOL;",
+                    "INITIAL_STEP A: END_STEP\nSTEP B: TERMINAL; END_STEP\n"
+                    "TRANSITION FROM A TO B := Bad(X); END_TRANSITION"));
+        check(!scoped.ok &&
+                  has_code(scoped,
+                           st::DiagCode::sema_sfc_transition_side_effect),
+              "L6-D02 scoped IN_OUT/TEMP/EXTERNAL effects are rejected");
+    }
+}
+
 void task_fault_names_the_sfc_action_and_isolates_other_task()
 {
     const std::string source =
@@ -641,22 +876,59 @@ void task_fault_names_the_sfc_action_and_isolates_other_task()
     const st::CompileResult compiled = st::compile(source);
     check(compiled.ok, "L6-A05 SFC task-fault configuration compiles");
     if(!compiled.ok) return;
-    alignas(8) unsigned char storage[1048576]{};
+    std::vector<std::uint64_t> storage(32768);
     st::ConfigurationRuntime runtime;
-    check(runtime.load(compiled.program, "plant", storage, sizeof(storage),
-                       kPeriodNs) == rt::ErrorCode::ok &&
-              runtime.boundary(0, nullptr, 0) == rt::ErrorCode::ok &&
-              runtime.run(kBudget) == rt::ErrorCode::ok,
+    const rt::ErrorCode load_result = runtime.load(compiled.program, "plant",
+                       reinterpret_cast<unsigned char *>(storage.data()),
+                       storage.size() * sizeof(storage[0]),
+                       kPeriodNs);
+    const rt::ErrorCode boundary_result =
+        load_result == rt::ErrorCode::ok
+            ? runtime.boundary(0, nullptr, 0)
+            : load_result;
+    const rt::ErrorCode run_result =
+        boundary_result == rt::ErrorCode::ok ? runtime.run(kBudget)
+                                             : boundary_result;
+    check(load_result == rt::ErrorCode::ok &&
+              boundary_result == rt::ErrorCode::ok &&
+              run_result == rt::ErrorCode::ok,
           "L6-A05 SFC fault returns control to scheduler");
     st::TaskStatus bad{};
     st::TaskStatus good{};
     check(runtime.task_status("r0", "badtask", bad) == rt::ErrorCode::ok &&
-              bad.state == st::TaskState::faulted && bad.fault_pou == "bad" &&
-              bad.fault_sfc == "flow" && bad.fault_action == "fail",
+              bad.state == st::TaskState::faulted &&
+              runtime.artifact_pou_name(bad.fault_pou_index) == "Bad" &&
+              runtime.artifact_sfc_name(bad.fault_pou_index,
+                                        bad.fault_sfc_index) == "Flow" &&
+              bad.fault_element_kind == st::TaskFaultElementKind::action &&
+              runtime.artifact_sfc_action_name(
+                  bad.fault_pou_index, bad.fault_sfc_index,
+                  bad.fault_action_index) == "Fail",
           "L6-A05 task fault identifies POU network and action");
     check(runtime.task_status("r0", "goodtask", good) == rt::ErrorCode::ok &&
               good.state != st::TaskState::faulted,
           "L6-A05 SFC action fault is isolated from another task");
+}
+
+void transition_fault_identifies_the_transition_and_rolls_back()
+{
+    Rig rig;
+    check(rig.build(program(
+              "X : DINT; Z : DINT;",
+              "INITIAL_STEP A: END_STEP\n"
+              "STEP B: TERMINAL; END_STEP\n"
+              "TRANSITION FROM A TO B := (1 / Z) > 0; END_TRANSITION")),
+          "L6-A05 transition-fault fixture builds");
+    check(!rig.scan() &&
+              rig.instance.fault_sfc_element_kind() ==
+                  st::TaskFaultElementKind::transition &&
+              rig.instance.fault_sfc_network_index() == 0 &&
+              rig.instance.fault_sfc_element_index() == 0 &&
+              rig.active("a") && !rig.active("b"),
+          "L6-A05 transition fault identifies edge and keeps committed set");
+    rig.instance.reset();
+    check(rig.active("a") && !rig.active("b"),
+          "L6-A05 reset preserves committed SFC state after transition fault");
 }
 
 void trace_is_ordered_and_carries_source_positions()
@@ -674,7 +946,8 @@ void trace_is_ordered_and_carries_source_positions()
           "L6-A06 caller-owned SFC trace buffer binds before scan");
     check(rig.scan(), "L6-A06 traced scan succeeds");
     const std::size_t count = rig.instance.sfc_trace_size();
-    check(count >= 5, "L6-A06 scan emits step transition qualifier action events");
+    check(count == 5,
+          "L6-A06 scan emits the exact step/transition/qualifier/action count");
     bool saw_exit = false;
     bool saw_fire = false;
     bool saw_enter = false;
@@ -683,6 +956,10 @@ void trace_is_ordered_and_carries_source_positions()
     for(std::size_t index = 0; index < count; ++index) {
         check(records[index].line > 0 && records[index].column > 0,
               "L6-A06 every SFC trace event has a source position");
+        check(records[index].end_line > records[index].line ||
+                  (records[index].end_line == records[index].line &&
+                   records[index].end_column > records[index].column),
+              "L6-A06 every SFC trace event carries a non-empty span");
         if(records[index].kind == st::SfcEventKind::step_exit) saw_exit = true;
         if(records[index].kind == st::SfcEventKind::transition_fire) {
             saw_fire = saw_exit;
@@ -699,6 +976,46 @@ void trace_is_ordered_and_carries_source_positions()
     }
     check(saw_exit && saw_fire && saw_enter && saw_qualifier && saw_action,
           "L6-A06 trace order is exit fire enter qualifier action");
+    const std::uint32_t none = std::numeric_limits<std::uint32_t>::max();
+    check(records[0].network == 0 && records[0].step == 0 &&
+              records[0].transition == none && records[0].action == none &&
+              records[0].block == none &&
+              records[1].transition == 0 && records[1].step == none &&
+              records[2].step == 1 && records[3].block == 0 &&
+              records[4].action == 0,
+          "L6-A06 trace uses independent typed entity indices");
+}
+
+void trace_capacity_zero_exact_and_overflow_are_accounted()
+{
+    const std::string source = program(
+        "Runs : DINT;",
+        "INITIAL_STEP A: Work(P); END_STEP\nSTEP B: TERMINAL; END_STEP\n"
+        "TRANSITION FROM A TO B := TRUE; END_TRANSITION\n"
+        "ACTION Work: Runs := Runs + 1; END_ACTION");
+    Rig zero;
+    check(zero.build(source) &&
+              zero.instance.configure_sfc_trace(nullptr, 0) ==
+                  rt::ErrorCode::ok &&
+              zero.scan() && zero.instance.sfc_trace_size() == 0 &&
+              zero.instance.sfc_trace_dropped() == 5,
+          "L6-A06 trace capacity zero drops every exact record");
+    Rig exact;
+    st::SfcTraceRecord exact_records[5]{};
+    check(exact.build(source) &&
+              exact.instance.configure_sfc_trace(exact_records, 5) ==
+                  rt::ErrorCode::ok &&
+              exact.scan() && exact.instance.sfc_trace_size() == 5 &&
+              exact.instance.sfc_trace_dropped() == 0,
+          "L6-A06 trace capacity N retains every exact record");
+    Rig overflow;
+    st::SfcTraceRecord short_records[4]{};
+    check(overflow.build(source) &&
+              overflow.instance.configure_sfc_trace(short_records, 4) ==
+                  rt::ErrorCode::ok &&
+              overflow.scan() && overflow.instance.sfc_trace_size() == 4 &&
+              overflow.instance.sfc_trace_dropped() == 1,
+          "L6-A06 trace overflow increments the exact dropped count");
 }
 
 std::string linear_network(std::size_t steps)
@@ -716,17 +1033,25 @@ std::string linear_network(std::size_t steps)
     return program("X : BOOL;", body);
 }
 
-std::string action_network(std::size_t actions)
+std::string declared_action_network(std::size_t actions)
 {
-    std::string blocks;
     std::string bodies;
-    for(std::size_t index = 0; index < actions; ++index) {
-        blocks += " A" + std::to_string(index) + "(N);";
+    for(std::size_t index = 0; index < actions; ++index)
         bodies += "ACTION A" + std::to_string(index) +
                   ": X := X + 1; END_ACTION\n";
-    }
-    return program("X : DINT;", "INITIAL_STEP S:" + blocks +
-                                      " TERMINAL; END_STEP\n" + bodies);
+    return program("X : DINT;",
+                   "INITIAL_STEP S: TERMINAL; END_STEP\n" + bodies);
+}
+
+std::string block_capacity_network(std::size_t blocks)
+{
+    std::string declarations;
+    for(std::size_t index = 0; index < blocks; ++index)
+        declarations += " Work(N);";
+    return program("X : DINT;",
+                   "INITIAL_STEP S:" + declarations +
+                       " TERMINAL; END_STEP\n"
+                       "ACTION Work: X := X + 1; END_ACTION");
 }
 
 std::string branch_network(std::size_t width)
@@ -787,12 +1112,21 @@ void exact_capacity_boundaries_are_enforced()
 
     options = st::CompileOptions{};
     options.max_sfc_actions = 4;
-    options.max_sfc_action_blocks_per_step = 4;
-    check(st::compile(action_network(4), options).ok,
-          "L6-A07 action and block capacity N is accepted");
-    const st::CompileResult actions = st::compile(action_network(5), options);
+    check(st::compile(declared_action_network(4), options).ok,
+          "L6-A07 action capacity N is accepted independently");
+    const st::CompileResult actions =
+        st::compile(declared_action_network(5), options);
     check(!actions.ok && has_code(actions, st::DiagCode::capacity_exceeded),
-          "L6-A07 action and block capacity N+1 is rejected");
+          "L6-A07 action capacity N+1 is rejected independently");
+
+    options = st::CompileOptions{};
+    options.max_sfc_action_blocks_per_step = 4;
+    check(st::compile(block_capacity_network(4), options).ok,
+          "L6-A07 action-block capacity N is accepted independently");
+    const st::CompileResult blocks =
+        st::compile(block_capacity_network(5), options);
+    check(!blocks.ok && has_code(blocks, st::DiagCode::capacity_exceeded),
+          "L6-A07 action-block capacity N+1 is rejected independently");
 
     options = st::CompileOptions{};
     options.max_sfc_branch_width = 4;
@@ -880,18 +1214,179 @@ void sfc_scan_is_zero_allocation()
           "L6-A07 SFC scan performs zero allocations");
 }
 
+void sfc_runtime_carve_and_resume_are_transactional()
+{
+    const st::CompileResult compiled = st::compile(program(
+        "X : DINT;",
+        "INITIAL_STEP A: Work(N); TERMINAL; END_STEP\n"
+        "ACTION Work: X := 42; END_ACTION"));
+    check(compiled.ok, "L6-A07 transactional resume fixture compiles");
+    if(!compiled.ok) return;
+    const std::size_t required = compiled.program.required_bytes();
+    std::vector<std::uint64_t> exact((required + 7U) / 8U);
+    st::Instance exact_instance;
+    check(exact_instance.load(
+              compiled.program, "main",
+              reinterpret_cast<unsigned char *>(exact.data()), required,
+              kPeriodNs) == rt::ErrorCode::ok,
+          "L6-A07 exact SFC runtime carve is accepted");
+    st::Instance short_instance;
+    check(required != 0 &&
+              short_instance.load(
+                  compiled.program, "main",
+                  reinterpret_cast<unsigned char *>(exact.data()),
+                  required - 1U, kPeriodNs) ==
+                  rt::ErrorCode::capacity_exceeded,
+          "L6-A07 exact SFC runtime carve minus one is rejected");
+
+    check(exact_instance.begin(kBudget) == st::ScanError::ok,
+          "L6-A07 sliced SFC scan begins");
+    const int variable = exact_instance.find("X");
+    bool hidden_until_commit = variable >= 0;
+    const std::uint64_t slice_limit =
+        compiled.program.worst_case_instructions + 1U;
+    for(std::uint64_t slice = 0;
+        slice < slice_limit && !exact_instance.complete();
+        ++slice) {
+        std::int64_t executed = 0;
+        if(exact_instance.resume(1, executed) != st::ScanError::ok) {
+            hidden_until_commit = false;
+            break;
+        }
+        if(!exact_instance.complete() &&
+           exact_instance.value_i64(static_cast<std::size_t>(variable)) != 0)
+            hidden_until_commit = false;
+    }
+    check(exact_instance.complete() && hidden_until_commit &&
+              exact_instance.value_i64(static_cast<std::size_t>(variable)) ==
+                  42,
+          "L6-A07 resume yields without exposing staged action writes");
+    Rig fault;
+    check(fault.build(program(
+              "X : DINT; Z : DINT;",
+              "INITIAL_STEP A: Fail(N); TERMINAL; END_STEP\n"
+              "ACTION Fail: X := 7; X := 1 / Z; END_ACTION")) &&
+              !fault.scan() && fault.value("X") == 0,
+          "L6-A05 action fault discards every staged write");
+}
+
+void runner_wcet_matches_the_exact_budget_boundary()
+{
+    const st::CompileResult compiled = st::compile(program(
+        "X : DINT;",
+        "INITIAL_STEP A: END_STEP\nSTEP B: Work(N); TERMINAL; END_STEP\n"
+        "TRANSITION FROM A TO B := TRUE; END_TRANSITION\n"
+        "ACTION Work: X := X + 1; END_ACTION"));
+    check(compiled.ok && compiled.program.worst_case_bounded,
+          "L6-A07 runner WCET fixture compiles as bounded");
+    if(!compiled.ok || !compiled.program.worst_case_bounded) return;
+    const std::int64_t exact = static_cast<std::int64_t>(
+        compiled.program.worst_case_instructions);
+    const std::string source = program(
+        "X : DINT;",
+        "INITIAL_STEP A: END_STEP\nSTEP B: Work(N); TERMINAL; END_STEP\n"
+        "TRANSITION FROM A TO B := TRUE; END_TRANSITION\n"
+        "ACTION Work: X := X + 1; END_ACTION");
+    Rig enough;
+    Rig short_one;
+    const bool enough_built = enough.build(source);
+    const st::ScanError enough_result = enough_built
+        ? enough.instance.scan(exact) : st::ScanError::invalid_argument;
+    check(enough_built && enough_result == st::ScanError::ok &&
+              enough.value("X") == 1,
+          "L6-A07 runner completes at exact WCET N");
+    const bool short_built = short_one.build(source);
+    const st::ScanError short_result = short_built
+        ? short_one.instance.scan(exact - 1)
+        : st::ScanError::invalid_argument;
+    check(short_built && short_result == st::ScanError::budget_exceeded &&
+              short_one.value("X") == 0,
+          "L6-A07 runner faults transactionally at WCET N-1");
+}
+
+void multiple_sfc_networks_share_one_transition_snapshot()
+{
+    const std::string source =
+        "PROGRAM Main\nVAR X : DINT; END_VAR\n"
+        "SFC Producer\n"
+        "INITIAL_STEP A: Set(N); TERMINAL; END_STEP\n"
+        "ACTION Set: X := 1; END_ACTION\nEND_SFC\n"
+        "SFC Consumer\n"
+        "INITIAL_STEP B: END_STEP\nSTEP C: TERMINAL; END_STEP\n"
+        "TRANSITION FROM B TO C := X = 1; END_TRANSITION\n"
+        "END_SFC\nEND_PROGRAM\n";
+    Rig rig;
+    check(rig.build(source), "L6-D03 multi-network fixture builds");
+    bool consumer_b = false;
+    bool consumer_c = false;
+    check(rig.scan() && rig.value("X") == 1 &&
+              rig.instance.sfc_step_active("consumer", "b", consumer_b) ==
+                  rt::ErrorCode::ok &&
+              rig.instance.sfc_step_active("consumer", "c", consumer_c) ==
+                  rt::ErrorCode::ok &&
+              consumer_b && !consumer_c,
+          "L6-D03 all network transitions precede every network action");
+    check(rig.scan() &&
+              rig.instance.sfc_step_active("consumer", "c", consumer_c) ==
+                  rt::ErrorCode::ok &&
+              consumer_c,
+          "L6-D03 action result becomes visible next transition phase");
+}
+
 void explicit_restart_reinitializes_the_network()
 {
     Rig rig;
     check(rig.build(program(
               "X : DINT;",
-              "INITIAL_STEP A: END_STEP\nSTEP B: END_STEP\n"
+              "INITIAL_STEP A: END_STEP\nSTEP B: TERMINAL; END_STEP\n"
               "TRANSITION FROM A TO B := TRUE; END_TRANSITION")) &&
               rig.scan() && rig.active("b"),
           "L6-D01 restart fixture reaches non-initial step");
     check(rig.instance.restart_sfc("flow") == rt::ErrorCode::ok &&
               rig.active("a") && !rig.active("b"),
           "L6-D01 explicit restart activates only the initial step");
+}
+
+void reset_retries_committed_timers_and_restart_clears_them()
+{
+    const std::string source = program(
+        "Z : DINT;",
+        "INITIAL_STEP A: Fail(SD, T#3ms); TERMINAL; END_STEP\n"
+        "ACTION Fail: Z := 1 / Z; END_ACTION");
+    Rig retry;
+    check(retry.build(source) && retry.scan() && retry.scan() &&
+              !retry.scan(),
+          "L6-A05 timed-action fault fixture reaches its deadline");
+    retry.instance.reset();
+    check(!retry.scan(),
+          "L6-A05 reset retries from the committed timer and latch state");
+
+    Rig restart;
+    check(restart.build(source) && restart.scan() && restart.scan() &&
+              restart.instance.restart_sfc("flow") == rt::ErrorCode::ok &&
+              restart.scan() && restart.scan() && !restart.scan(),
+          "L6-D01 restart clears timer/latch state before reinitialization");
+}
+
+void running_restart_is_rejected_without_disturbing_the_scan()
+{
+    Rig rig;
+    check(rig.build(program(
+              "X : DINT;",
+              "INITIAL_STEP A: Work(N); TERMINAL; END_STEP\n"
+              "ACTION Work: X := X + 1; END_ACTION")) &&
+              rig.instance.begin(kBudget) == st::ScanError::ok &&
+              rig.instance.restart_sfc("flow") ==
+                  rt::ErrorCode::invalid_argument,
+          "L6-D01 restart is rejected while a scan is running");
+    std::int64_t executed = 0;
+    bool finished = false;
+    for(std::size_t slice = 0; slice < 10000 && !rig.instance.complete();
+        ++slice)
+        if(rig.instance.resume(1, executed) != st::ScanError::ok) break;
+    finished = rig.instance.complete();
+    check(finished && rig.value("X") == 1,
+          "L6-D01 rejected running restart leaves the scan intact");
 }
 
 void lower_language_source_regression()
@@ -927,6 +1422,10 @@ int main()
     simultaneous_divergence_activates_every_successor();
     simultaneous_convergence_waits_for_every_predecessor();
     conflicting_step_update_is_rejected();
+    graph_and_region_structure_are_rejected_before_runtime();
+    structural_keywords_ignore_comments_and_strings();
+    nested_simultaneous_regions_pair_and_execute();
+    runtime_honors_the_simultaneous_artifact_flag();
     n_qualifier_runs_only_while_step_is_active();
     n_qualifier_resumes_after_step_reactivation();
     s_qualifier_latches_until_r_and_can_reactivate();
@@ -944,17 +1443,27 @@ int main()
     ds_r_clears_latch_and_allows_reactivation();
     sl_has_zero_one_n_expiry_and_r_priority();
     sl_reactivation_starts_a_fresh_lifetime();
+    stored_blocks_reassert_after_another_blocks_expiry();
+    reset_and_expiry_suppress_every_direct_qualifier();
     action_bodies_follow_declaration_order();
     shared_action_executes_once_per_scan();
     unsafe_networks_have_stable_recovering_diagnostics();
     negative_time_has_stable_range_diagnostic();
+    transition_effect_analysis_is_transitive();
     task_fault_names_the_sfc_action_and_isolates_other_task();
+    transition_fault_identifies_the_transition_and_rolls_back();
     trace_is_ordered_and_carries_source_positions();
+    trace_capacity_zero_exact_and_overflow_are_accounted();
     exact_capacity_boundaries_are_enforced();
     graph_report_has_static_cost_and_reachability();
     compile_and_trace_are_deterministic();
     sfc_scan_is_zero_allocation();
+    sfc_runtime_carve_and_resume_are_transactional();
+    runner_wcet_matches_the_exact_budget_boundary();
+    multiple_sfc_networks_share_one_transition_snapshot();
     explicit_restart_reinitializes_the_network();
+    reset_retries_committed_timers_and_restart_clears_them();
+    running_restart_is_rejected_without_disturbing_the_scan();
     lower_language_source_regression();
     if(failures == 0) std::printf("PASS st_l6_tests\n");
     return failures == 0 ? 0 : 1;

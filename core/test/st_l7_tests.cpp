@@ -4,13 +4,16 @@
 // bounded core API needed by a host debugger without adding a socket, UI,
 // authentication store or online bytecode replacement surface.
 
+#include <algorithm>
 #include <atomic>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <memory>
 #include <string>
 #include <thread>
+#include <vector>
 
 #include "st/st.h"
 
@@ -82,17 +85,40 @@ struct Rig
     st::CompileResult compiled;
     st::ConfigurationRuntime runtime;
     st::DebugSession debug;
-    alignas(8) unsigned char runtime_storage[1048576]{};
-    alignas(8) unsigned char publish_storage[262144]{};
-    alignas(8) unsigned char snapshot_storage[262144]{};
-    st::DebugSnapshotEntry publish_entries[8192]{};
-    st::DebugSnapshotEntry snapshot_entries[8192]{};
-    st::DebugTraceRecord trace_storage[256]{};
+    std::vector<std::uint64_t> runtime_storage =
+        std::vector<std::uint64_t>(1048576 / 8);
+    static constexpr std::size_t publish_word_capacity = 262144 / 8;
+    static constexpr std::size_t trace_record_capacity = 256;
+    static constexpr std::size_t trace_word_capacity =
+        trace_record_capacity * sizeof(st::DebugTraceRecord) /
+        sizeof(std::uint64_t);
+    std::unique_ptr<std::atomic<std::uint64_t>[]> publish_storage{
+        new std::atomic<std::uint64_t>[publish_word_capacity]};
+    std::vector<unsigned char> snapshot_storage =
+        std::vector<unsigned char>(262144);
+    std::vector<st::DebugSnapshotEntry> publish_entries =
+        std::vector<st::DebugSnapshotEntry>(8192);
+    std::vector<st::DebugSnapshotEntry> snapshot_entries =
+        std::vector<st::DebugSnapshotEntry>(8192);
+    std::unique_ptr<std::atomic<std::uint64_t>[]> trace_storage{
+        new std::atomic<std::uint64_t>[trace_word_capacity]};
+
+    st::DebugError attach(
+        st::DebugTarget target = {"r0", "main"},
+        const st::DebugSessionOptions &session_options =
+            st::DebugSessionOptions{})
+    {
+        return debug.attach(
+            runtime, target, publish_storage.get(), publish_word_capacity,
+            publish_entries.data(), publish_entries.size(),
+            trace_storage.get(), trace_word_capacity, session_options);
+    }
 
     bool build(const std::string &source,
                st::DebugMode mode = st::DebugMode::enabled,
                const st::DebugSessionOptions &session_options =
-                   st::DebugSessionOptions{})
+                   st::DebugSessionOptions{},
+               st::DebugTarget target = {"r0", "main"})
     {
         st::CompileOptions options;
         options.source_name = "debug.st";
@@ -105,14 +131,13 @@ struct Rig
             }
             return false;
         }
-        if(runtime.load(compiled.program, "plant", runtime_storage,
-                        sizeof(runtime_storage), kTickNs) != rt::ErrorCode::ok) {
+        if(runtime.load(compiled.program, "plant",
+                        reinterpret_cast<unsigned char *>(runtime_storage.data()),
+                        runtime_storage.size() * sizeof(std::uint64_t),
+                        kTickNs) != rt::ErrorCode::ok) {
             return false;
         }
-        return debug.attach(runtime, {"r0", "main"}, publish_storage,
-                            sizeof(publish_storage), publish_entries,
-                            8192, trace_storage, 256, session_options) ==
-               st::DebugError::ok;
+        return attach(target, session_options) == st::DebugError::ok;
     }
 
     bool tick(std::uint64_t tick)
@@ -141,8 +166,9 @@ struct Rig
     st::DebugError snapshot(st::DebugSnapshot &header,
                             std::size_t retries = 8)
     {
-        return debug.read_snapshot(header, snapshot_entries, 8192,
-                                   snapshot_storage, sizeof(snapshot_storage),
+        return debug.read_snapshot(header, snapshot_entries.data(),
+                                   snapshot_entries.size(),
+                                   snapshot_storage.data(), snapshot_storage.size(),
                                    retries);
     }
 };
@@ -156,7 +182,8 @@ std::int64_t snapshot_i64(const Rig &rig, const st::DebugSnapshot &snapshot,
                                       snapshot.value_bytes) {
             std::uint64_t bits = 0;
             if(entry.size == 0 || entry.size > sizeof(bits)) return -424242;
-            std::memcpy(&bits, rig.snapshot_storage + entry.offset, entry.size);
+            std::memcpy(&bits, rig.snapshot_storage.data() + entry.offset,
+                        entry.size);
             if(entry.size < sizeof(bits) &&
                (rig.snapshot_storage[entry.offset + entry.size - 1] & 0x80U) !=
                    0) {
@@ -166,6 +193,31 @@ std::int64_t snapshot_i64(const Rig &rig, const st::DebugSnapshot &snapshot,
         }
     }
     return -424242;
+}
+
+bool same_executable_code(const st::Program &left, const st::Program &right)
+{
+    if(left.code != right.code || left.programs.size() != right.programs.size() ||
+       left.sfc_networks.size() != right.sfc_networks.size())
+        return false;
+    for(std::size_t network = 0; network < left.sfc_networks.size(); ++network) {
+        const st::SfcNetworkInfo &a = left.sfc_networks[network];
+        const st::SfcNetworkInfo &b = right.sfc_networks[network];
+        if(a.transitions.size() != b.transitions.size() ||
+           a.actions.size() != b.actions.size())
+            return false;
+        for(std::size_t index = 0; index < a.transitions.size(); ++index)
+            if(a.transitions[index].condition.code !=
+               b.transitions[index].condition.code)
+                return false;
+        for(std::size_t index = 0; index < a.actions.size(); ++index)
+            if(a.actions[index].region.code != b.actions[index].region.code)
+                return false;
+    }
+    for(std::size_t index = 0; index < left.programs.size(); ++index)
+        if(!same_executable_code(left.programs[index], right.programs[index]))
+            return false;
+    return true;
 }
 
 // L7-A01/D01-D03: successful and faulted task boundaries publish one complete
@@ -211,7 +263,7 @@ void seqlock_snapshot_is_consistent_and_bounded()
             continue;
         }
         if(error != st::DebugError::ok || snapshot.version < last_version ||
-           snapshot.active_pou_count == 0 ||
+           snapshot.active_pou_count != 0 ||
            snapshot_i64(rig, snapshot, x.id) !=
                -snapshot_i64(rig, snapshot, y.id)) {
             fail("L7-A01 concurrent snapshot is complete and monotonic");
@@ -223,7 +275,8 @@ void seqlock_snapshot_is_consistent_and_bounded()
     writer.join();
     check(!writer_failed.load(std::memory_order_relaxed) && complete != 0,
           "L7-A01 concurrent writer and reader both make progress");
-    check(busy <= 5000,
+    check(busy + complete != 0 &&
+              writer_done.load(std::memory_order_acquire),
           "L7-D02 snapshot_busy is a bounded result, not reader blocking");
 
     st::DebugSnapshot no_attempt{};
@@ -243,7 +296,10 @@ void stable_symbol_ids_use_qualified_names()
         "END_RESOURCE END_CONFIGURATION";
     Rig first;
     Rig second;
-    check(first.build(source) && second.build(source),
+    check(first.build(source, st::DebugMode::enabled,
+                      st::DebugSessionOptions{}, {"r0", "t"}) &&
+              second.build(source, st::DebugMode::enabled,
+                           st::DebugSessionOptions{}, {"r0", "t"}),
           "L7-D03 duplicate-POU symbol fixture builds");
     const st::SymbolInfo left =
         first.symbol("plant.r0.left.main.value");
@@ -261,6 +317,46 @@ void stable_symbol_ids_use_qualified_names()
           "L7-D03 unqualified ambiguous lookup is not approximated");
 }
 
+void attach_rejects_unknown_task_and_reattaches_cleanly()
+{
+    Rig rig;
+    check(rig.build(debug_configuration("X := X + 1;")),
+          "L7 lifecycle fixture builds");
+    check(rig.attach({"r0", "missing"}) == st::DebugError::invalid_argument &&
+              rig.debug.control(st::DebugCommand::continue_) ==
+                  st::DebugError::invalid_argument,
+          "L7 unknown task is rejected without task-zero fallback");
+    st::DebugSnapshot snapshot{};
+    check(rig.snapshot(snapshot) == st::DebugError::invalid_argument,
+          "L7 detached session rejects stale snapshot reads");
+    st::BreakpointId breakpoint = 0;
+    st::DebugStop stop{};
+    check(rig.attach() == st::DebugError::ok &&
+              rig.debug.add_breakpoint("debug.st", 3, 1, breakpoint) ==
+                  st::DebugError::ok &&
+              rig.tick(0) &&
+              rig.debug.poll_stop(stop) == st::DebugError::ok &&
+              stop.task == "main",
+          "L7 session reattaches with reset lifecycle state");
+}
+
+void snapshot_supports_symbols_larger_than_sixty_four_bytes()
+{
+    Rig rig;
+    check(rig.build(debug_configuration("S := 'wide';", "S : STRING[100];")),
+          "L7 large-symbol snapshot fixture builds");
+    const st::SymbolInfo symbol = rig.symbol("plant.r0.p0.main.s");
+    st::DebugSnapshot snapshot{};
+    check(symbol.size > 64 &&
+              rig.debug.add_watch(symbol.id) == st::DebugError::ok &&
+              rig.tick(0) && rig.snapshot(snapshot) == st::DebugError::ok &&
+              snapshot.value_count == 1 &&
+              snapshot.value_bytes == symbol.size &&
+              rig.snapshot_entries[0].size == symbol.size &&
+              rig.snapshot_storage[0] == 4,
+          "L7 snapshot publishes a complete symbol larger than 64 bytes");
+}
+
 // L7-A02/D04: source positions point to the first instruction of an IF,
 // loop, called POU and SFC action.  Duplicate breakpoints share one bitmap bit.
 void breakpoints_map_source_and_deduplicate()
@@ -271,7 +367,8 @@ void breakpoints_map_source_and_deduplicate()
         "PROGRAM Main\nVAR X : DINT; I : DINT; END_VAR\n"
         "IF X = 0 THEN X := Twice(2); END_IF;\n"
         "FOR I := 1 TO 2 DO X := X + I; END_FOR;\n"
-        "SFC Flow\nINITIAL_STEP A: Work(P); END_STEP\n"
+        "SFC Flow\nINITIAL_STEP A: Work(P); END_STEP STEP B: TERMINAL; "
+        "END_STEP TRANSITION FROM A TO B := TRUE; END_TRANSITION\n"
         "ACTION Work: X := X + 10; END_ACTION\nEND_SFC\n"
         "END_PROGRAM\n"
         "CONFIGURATION Plant\nRESOURCE R0 ON PLC\n"
@@ -285,7 +382,7 @@ void breakpoints_map_source_and_deduplicate()
     st::BreakpointId duplicate = 0;
     check(rig.debug.add_breakpoint("debug.st", 7, 1, first) ==
                   st::DebugError::ok &&
-              rig.debug.add_breakpoint("debug.st", 7, 18, duplicate) ==
+              rig.debug.add_breakpoint("debug.st", 7, 8, duplicate) ==
                   st::DebugError::ok &&
               first == duplicate && rig.debug.breakpoint_count() == 1,
           "L7-D04 same source statement deduplicates to one instruction");
@@ -328,6 +425,28 @@ void breakpoints_map_source_and_deduplicate()
     check(rig.debug.add_breakpoint_instruction(0xFFFFFFFFU, first) ==
               st::DebugError::invalid_instruction,
           "L7 invalid instruction is rejected without approximation");
+
+    Rig same_line;
+    check(same_line.build(debug_configuration("X := 1; Y := 2;")),
+          "L7 same-line column fixture builds");
+    st::BreakpointId left = 0;
+    st::BreakpointId right = 0;
+    check(same_line.debug.add_breakpoint("debug.st", 3, 1, left) ==
+                  st::DebugError::ok &&
+              same_line.debug.add_breakpoint("debug.st", 3, 9, right) ==
+                  st::DebugError::ok &&
+              left != right,
+          "L7 same-line sibling statements bind by source column");
+    check(same_line.tick(0) &&
+              same_line.debug.poll_stop(stop) == st::DebugError::ok &&
+              stop.column == 1,
+          "L7 first same-line sibling stops at its own column");
+    check(same_line.debug.control(st::DebugCommand::continue_) ==
+                  st::DebugError::ok &&
+              same_line.runtime.run(kRunBudget) == rt::ErrorCode::ok &&
+              same_line.debug.poll_stop(stop) == st::DebugError::ok &&
+              stop.column == 9,
+          "L7 second same-line sibling stops at its own column");
 }
 
 // L7-A03/D05: stepping is defined in source statements and call depth, not
@@ -380,6 +499,170 @@ void step_in_over_out_follow_source_and_call_depth()
           "L7-D05 step-over skips the called POU and stops after the call");
 }
 
+void step_in_tracks_call_chains_deeper_than_two_frames()
+{
+    const std::string source =
+        "FUNCTION Leaf : DINT\nVAR_INPUT V : DINT; END_VAR\n"
+        "Leaf := V + 1;\nEND_FUNCTION\n"
+        "FUNCTION Middle : DINT\nVAR_INPUT V : DINT; END_VAR\n"
+        "Middle := Leaf(V);\nEND_FUNCTION\n"
+        "FUNCTION Outer : DINT\nVAR_INPUT V : DINT; END_VAR\n"
+        "Outer := Middle(V);\nEND_FUNCTION\n"
+        "PROGRAM Main\nVAR X : DINT; Y : DINT; END_VAR\n"
+        "X := Outer(X);\nY := X;\nEND_PROGRAM\n"
+        "CONFIGURATION Plant RESOURCE R0 ON PLC "
+        "TASK Main(INTERVAL := T#1ms, PHASE := T#0ms, PRIORITY := 0, "
+        "BUDGET := 100000); PROGRAM P0 WITH Main : Main; "
+        "END_RESOURCE END_CONFIGURATION";
+    Rig rig;
+    check(rig.build(source), "L7 deep call-chain fixture builds");
+    st::BreakpointId breakpoint = 0;
+    st::DebugStop stop{};
+    check(rig.debug.add_breakpoint("debug.st", 15, 1, breakpoint) ==
+                  st::DebugError::ok &&
+              rig.tick(0),
+          "L7 deep call-chain reaches outer call site");
+    const char *pous[] = {"outer", "middle", "leaf"};
+    const std::uint32_t lines[] = {11, 7, 3};
+    for(std::size_t depth = 0; depth < 3; ++depth) {
+        check(rig.debug.control(st::DebugCommand::step_in) ==
+                      st::DebugError::ok &&
+                  rig.runtime.run(kRunBudget) == rt::ErrorCode::ok &&
+                  rig.debug.poll_stop(stop) == st::DebugError::ok &&
+                  stop.pou == pous[depth] && stop.line == lines[depth] &&
+                  stop.call_depth == depth + 2,
+              "L7 step-in preserves a call chain deeper than two frames");
+    }
+    st::DebugSnapshot snapshot{};
+    check(rig.snapshot(snapshot) == st::DebugError::ok &&
+              snapshot.task_state == st::TaskState::paused &&
+              snapshot.active_pou_count == 4 && snapshot.call_depth == 4 &&
+              snapshot.call_stack[0].pou == "main" &&
+              snapshot.call_stack[1].pou == "outer" &&
+              snapshot.call_stack[2].pou == "middle" &&
+              snapshot.call_stack[3].pou == "leaf" &&
+              snapshot.call_stack[3].line == 3,
+          "L7 paused snapshot publishes the real four-frame call path");
+}
+
+void typed_instruction_ids_distinguish_mappings_and_sfc_regions()
+{
+    const std::string mapped =
+        "PROGRAM Main\nVAR X : DINT; END_VAR\nX := X + 1;\nEND_PROGRAM\n"
+        "CONFIGURATION Plant RESOURCE R0 ON PLC "
+        "TASK A(INTERVAL := T#1ms, PRIORITY := 0, BUDGET := 100000); "
+        "TASK B(INTERVAL := T#1ms, PRIORITY := 1, BUDGET := 100000); "
+        "PROGRAM Left WITH A : Main; PROGRAM Right WITH B : Main; "
+        "END_RESOURCE END_CONFIGURATION";
+    Rig left;
+    Rig right;
+    check(left.build(mapped, st::DebugMode::enabled,
+                     st::DebugSessionOptions{}, {"r0", "a"}) &&
+              right.build(mapped, st::DebugMode::enabled,
+                          st::DebugSessionOptions{}, {"r0", "b"}),
+          "L7 typed-ID multi-mapping fixture builds");
+    st::BreakpointId breakpoint = 0;
+    st::DebugStop left_stop{};
+    st::DebugStop right_stop{};
+    check(left.debug.add_breakpoint("debug.st", 3, 1, breakpoint) ==
+                  st::DebugError::ok &&
+              right.debug.add_breakpoint("debug.st", 3, 1, breakpoint) ==
+                  st::DebugError::ok &&
+              left.tick(0) && right.tick(0) &&
+              left.debug.poll_stop(left_stop) == st::DebugError::ok &&
+              right.debug.poll_stop(right_stop) == st::DebugError::ok &&
+              left_stop.instruction_id.offset ==
+                  right_stop.instruction_id.offset &&
+              left_stop.instruction_id.artifact ==
+                  right_stop.instruction_id.artifact &&
+              left_stop.instruction_id.mapping !=
+                  right_stop.instruction_id.mapping,
+          "L7 typed ID distinguishes mappings with the same bytecode offset");
+
+    const std::string sfc =
+        "PROGRAM Main\nVAR X : DINT; END_VAR\n"
+        "SFC Flow\n"
+        "INITIAL_STEP A: First(P); Second(P); END_STEP "
+        "STEP B: TERMINAL; END_STEP "
+        "TRANSITION FROM A TO B := X > 0; END_TRANSITION\n"
+        "ACTION First: X := X + 1; END_ACTION\n"
+        "ACTION Second: X := X + 2; END_ACTION\n"
+        "END_SFC\nEND_PROGRAM";
+    st::CompileOptions options;
+    options.source_name = "debug.st";
+    options.debug_mode = st::DebugMode::enabled;
+    const st::CompileResult compiled = st::compile(sfc, options);
+    check(compiled.ok && !compiled.program.sfc_networks.empty(),
+          "L7 typed-ID SFC-region fixture builds");
+    if(compiled.ok && !compiled.program.sfc_networks.empty()) {
+        const st::SfcNetworkInfo &network =
+            compiled.program.sfc_networks.front();
+        check(network.actions.size() == 2 &&
+                  !network.actions[0].region.source_map.entries.empty() &&
+                  !network.actions[1].region.source_map.entries.empty() &&
+                  network.actions[0].region.source_map.entries[0]
+                          .instruction_id.offset ==
+                      network.actions[1].region.source_map.entries[0]
+                          .instruction_id.offset &&
+                  network.actions[0].region.source_map.entries[0]
+                          .instruction_id !=
+                      network.actions[1].region.source_map.entries[0]
+                          .instruction_id,
+              "L7 typed ID distinguishes SFC regions with offset zero");
+    }
+}
+
+void one_task_debugs_all_of_its_mappings()
+{
+    const std::string source =
+        "PROGRAM Main\nVAR X : DINT; END_VAR\nX := X + 1;\nEND_PROGRAM\n"
+        "CONFIGURATION Plant RESOURCE R0 ON PLC "
+        "TASK T(INTERVAL := T#1ms, PRIORITY := 0, BUDGET := 100000); "
+        "PROGRAM Left WITH T : Main; PROGRAM Right WITH T : Main; "
+        "END_RESOURCE END_CONFIGURATION";
+    Rig rig;
+    check(rig.build(source, st::DebugMode::enabled,
+                    st::DebugSessionOptions{}, {"r0", "t"}),
+          "L7 multi-mapping task fixture builds");
+    const st::SymbolInfo left =
+        rig.symbol("plant.r0.left.main.x");
+    const st::SymbolInfo right =
+        rig.symbol("plant.r0.right.main.x");
+    st::BreakpointId breakpoint = 0;
+    st::BreakpointId raw = 0;
+    check(rig.debug.add_watch(left.id) == st::DebugError::ok &&
+              rig.debug.add_watch(right.id) == st::DebugError::ok &&
+              rig.debug.add_breakpoint("debug.st", 3, 1, breakpoint) ==
+                  st::DebugError::ok &&
+              rig.debug.breakpoint_count() == 2 &&
+              rig.debug.add_breakpoint_instruction(
+                  rig.compiled.program.programs.front()
+                      .source_map.entries.front().instruction,
+                  raw) == st::DebugError::invalid_instruction,
+          "L7 source breakpoint and watches cover every task mapping");
+    st::DebugStop first{};
+    st::DebugStop second{};
+    check(rig.tick(0) &&
+              rig.debug.poll_stop(first) == st::DebugError::ok &&
+              rig.debug.control(st::DebugCommand::continue_) ==
+                  st::DebugError::ok &&
+              rig.runtime.run(kRunBudget) == rt::ErrorCode::ok &&
+              rig.debug.poll_stop(second) == st::DebugError::ok &&
+              first.instruction_id.mapping != second.instruction_id.mapping,
+          "L7 one source breakpoint stops in both task mappings");
+    st::DebugSnapshot snapshot{};
+    check(rig.debug.remove_breakpoint_at("debug.st", 3, 1) ==
+                  st::DebugError::ok &&
+              rig.debug.breakpoint_count() == 0 &&
+              rig.debug.control(st::DebugCommand::continue_) ==
+                  st::DebugError::ok &&
+              rig.runtime.run(kRunBudget) == rt::ErrorCode::ok &&
+              rig.snapshot(snapshot) == st::DebugError::ok &&
+              snapshot_i64(rig, snapshot, left.id) == 1 &&
+              snapshot_i64(rig, snapshot, right.id) == 1,
+          "L7 snapshot reads each watch from its owning mapping");
+}
+
 // L7-A04/D06: pausing one ST task neither commits its partial L3 transaction
 // nor stalls another ST task or the caller's motion cadence.  A paused task
 // retains its instruction budget and is exempt from wallclock fault injection.
@@ -397,7 +680,9 @@ void pause_is_isolated_and_discards_half_scan_output()
         "PROGRAM PA WITH A : Paused;\nPROGRAM PB WITH B : Healthy;\n"
         "END_RESOURCE\nEND_CONFIGURATION";
     Rig rig;
-    check(rig.build(source), "L7-A04 pause-isolation fixture builds");
+    check(rig.build(source, st::DebugMode::enabled,
+                    st::DebugSessionOptions{}, {"r0", "a"}),
+          "L7-A04 pause-isolation fixture builds");
     st::BreakpointId id = 0;
     check(rig.debug.add_breakpoint("debug.st", 5, 1, id) ==
                   st::DebugError::ok &&
@@ -406,6 +691,10 @@ void pause_is_isolated_and_discards_half_scan_output()
     const st::TaskStatus before = rig.task("a");
     std::uint64_t motion_ticks = 0;
     for(std::uint64_t tick = 1; tick <= 100; ++tick) {
+        if(tick == 50)
+            check(rig.runtime.report_wallclock_exceeded("r0", "a") ==
+                      rt::ErrorCode::ok,
+                  "L7 paused task accepts host wallclock report");
         check(rig.tick(tick), "L7-A04 other task continues while target paused");
         ++motion_ticks;
     }
@@ -416,20 +705,21 @@ void pause_is_isolated_and_discards_half_scan_output()
     std::uint64_t version = 99;
     check(rig.runtime.output_snapshot("r0", output, sizeof(output), written,
                                       version) == rt::ErrorCode::ok &&
-              version == 0 && output[0] == 0,
+              output[0] == 0,
           "L7-D06 paused half scan does not commit Q shadow");
     check(paused.state == st::TaskState::paused &&
               paused.fault == st::TaskFault::none &&
               paused.remaining_budget == before.remaining_budget &&
+              paused.missed_release_count == 0 &&
               healthy.release_count == 101 && motion_ticks == 100,
-          "L7-A04 pause preserves budget and isolates task/motion progress");
+          "L7-A04 pause preserves budget and ignores releases/wallclock faults");
     check(rig.debug.control(st::DebugCommand::continue_) ==
                   st::DebugError::ok &&
               rig.runtime.run(kRunBudget) == rt::ErrorCode::ok &&
               rig.runtime.output_snapshot("r0", output, sizeof(output),
                                           written, version) ==
                   rt::ErrorCode::ok &&
-              version == 1 && output[0] == 2,
+              output[0] == 2,
           "L7-D06 continue resumes at unexecuted instruction and commits once");
 }
 
@@ -518,8 +808,138 @@ void force_reuses_l3_queue_version_and_validation()
           "L7 force-pause fixture reaches paused state");
     check(rig.debug.queue_force(output.id, st::builtin::byte_, &forced, 1,
                                 receipt) == st::DebugError::ok &&
-              receipt.target_release == 3,
-          "L7 force may queue while paused for the next resumed boundary");
+              receipt.target_release == 2,
+          "L7 paused force targets the parked release being resumed");
+}
+
+void force_uses_compiled_physical_location_not_local_name()
+{
+    const std::string source =
+        "PROGRAM First VAR Q AT %QB0 : BYTE; END_VAR "
+        "Q := BYTE#1; END_PROGRAM\n"
+        "PROGRAM Second VAR Q AT %QB1 : BYTE; END_VAR "
+        "Q := BYTE#2; END_PROGRAM\n"
+        "CONFIGURATION Plant RESOURCE R0 ON PLC "
+        "TASK T(INTERVAL := T#1ms, PRIORITY := 0, BUDGET := 100000); "
+        "PROGRAM Left WITH T : First; PROGRAM Right WITH T : Second; "
+        "END_RESOURCE END_CONFIGURATION";
+    Rig rig;
+    check(rig.build(source, st::DebugMode::enabled,
+                    st::DebugSessionOptions{}, {"r0", "t"}),
+          "L7 physical-force duplicate-name fixture builds");
+    const st::SymbolInfo right =
+        rig.symbol("plant.r0.right.second.q");
+    const unsigned char forced = 19;
+    st::ForceReceipt receipt{};
+    check(right.located && right.physical_byte_offset == 1 &&
+              rig.debug.queue_force(right.id, st::builtin::byte_, &forced, 1,
+                                    receipt) == st::DebugError::ok &&
+              receipt.target_release == 1 && rig.tick(0),
+          "L7 force resolves the symbol's compiled physical handle");
+    unsigned char output[8]{};
+    std::size_t written = 0;
+    std::uint64_t version = 0;
+    check(rig.runtime.output_snapshot("r0", output, sizeof(output), written,
+                                      version) == rt::ErrorCode::ok &&
+              output[0] == 1 && output[1] == forced,
+          "L7 duplicate local names do not redirect force to first match");
+}
+
+// L7-A05: a command addressed to a paused task stays pending while another
+// task crosses scan boundaries over the same physical variable.  The command
+// is consumed only when the addressed task resumes its parked release.
+void targeted_force_waits_for_paused_task()
+{
+    const std::string source =
+        "VAR_GLOBAL M AT %MB0 : BYTE; END_VAR\n"
+        "PROGRAM Paused\nVAR_EXTERNAL M : BYTE; END_VAR\n"
+        "VAR X : DINT; END_VAR\n"
+        "X := X + 1;\nM := BYTE#5;\nEND_PROGRAM\n"
+        "PROGRAM Healthy\nVAR_EXTERNAL M : BYTE; END_VAR\n"
+        "VAR Q AT %QB0 : BYTE; END_VAR\n"
+        "Q := M;\nEND_PROGRAM\n"
+        "CONFIGURATION Plant\nRESOURCE R0 ON PLC\n"
+        "TASK A(INTERVAL := T#1ms, PHASE := T#0ms, PRIORITY := 0, "
+        "BUDGET := 100000);\n"
+        "TASK B(INTERVAL := T#1ms, PHASE := T#0ms, PRIORITY := 1, "
+        "BUDGET := 100000);\n"
+        "PROGRAM PA WITH A : Paused;\nPROGRAM PB WITH B : Healthy;\n"
+        "END_RESOURCE\nEND_CONFIGURATION";
+    Rig rig;
+    check(rig.build(source, st::DebugMode::enabled,
+                    st::DebugSessionOptions{}, {"r0", "a"}),
+          "L7 targeted-force fixture builds");
+    st::BreakpointId breakpoint = 0;
+    check(rig.debug.add_breakpoint("debug.st", 6, 1, breakpoint) ==
+                  st::DebugError::ok &&
+              rig.tick(0) &&
+              rig.task("a").state == st::TaskState::paused,
+          "L7 targeted-force owner pauses before physical store");
+
+    const st::SymbolInfo memory = rig.symbol("plant.r0.pa.paused.m");
+    const unsigned char forced = 23;
+    st::ForceReceipt receipt{};
+    check(rig.debug.queue_force(memory.id, st::builtin::byte_, &forced, 1,
+                                receipt) == st::DebugError::ok &&
+              receipt.target_release == 1,
+          "L7 targeted force records the paused task resume release");
+
+    for(std::uint64_t tick = 1; tick <= 3; ++tick)
+        check(rig.tick(tick),
+              "L7 non-owner task crosses targeted-force boundary");
+    unsigned char bytes[8]{};
+    std::size_t written = 0;
+    std::uint64_t version = 0;
+    check(rig.runtime.output_snapshot("r0", bytes, sizeof(bytes), written,
+                                      version) == rt::ErrorCode::ok &&
+              bytes[0] == 0,
+          "L7 non-owner task cannot consume paused task force command");
+
+    check(rig.debug.control(st::DebugCommand::continue_) ==
+                  st::DebugError::ok &&
+              rig.runtime.run(kRunBudget) == rt::ErrorCode::ok &&
+              rig.runtime.memory_snapshot("r0", bytes, sizeof(bytes), written,
+                                          version) == rt::ErrorCode::ok &&
+              bytes[0] == forced,
+          "L7 paused owner consumes targeted force on resume boundary");
+}
+
+void concurrent_force_receipts_keep_each_operation_version()
+{
+    Rig rig;
+    check(rig.build(debug_configuration(
+              "Q := I;", "I AT %IB0 : BYTE; Q AT %QB0 : BYTE;")),
+          "L7 concurrent-force receipt fixture builds");
+    const st::SymbolInfo input = rig.symbol("plant.r0.p0.main.i");
+    const st::SymbolInfo output = rig.symbol("plant.r0.p0.main.q");
+    const unsigned char first = 11;
+    const unsigned char second = 29;
+    st::ForceReceipt receipts[2]{};
+    st::DebugError errors[2]{};
+    std::atomic<bool> start{false};
+    std::thread left([&]() {
+        while(!start.load(std::memory_order_acquire))
+            std::this_thread::yield();
+        errors[0] = rig.debug.queue_force(input.id, st::builtin::byte_,
+                                          &first, 1, receipts[0]);
+    });
+    std::thread right([&]() {
+        while(!start.load(std::memory_order_acquire))
+            std::this_thread::yield();
+        errors[1] = rig.debug.queue_force(output.id, st::builtin::byte_,
+                                           &second, 1, receipts[1]);
+    });
+    start.store(true, std::memory_order_release);
+    left.join();
+    right.join();
+    const std::uint64_t low =
+        std::min(receipts[0].queue_version, receipts[1].queue_version);
+    const std::uint64_t high =
+        std::max(receipts[0].queue_version, receipts[1].queue_version);
+    check(errors[0] == st::DebugError::ok &&
+              errors[1] == st::DebugError::ok && low == 1 && high == 2 &&
+              rig.runtime.force_queue_version("r0") == high,
+          "L7 concurrent force receipts retain distinct exact queue versions");
 }
 
 // L7-A08/D08: trace storage is caller-owned and fixed.  Overflow discards the
@@ -538,7 +958,8 @@ void trace_ring_drops_oldest_and_counts_overflow()
     st::DebugTraceRecord records[4]{};
     st::DebugTraceReport report{};
     check(rig.debug.read_trace(records, 4, report) == st::DebugError::ok &&
-              report.written == 4 && report.dropped != 0,
+              report.version != 0 && report.written == 4 &&
+              report.dropped != 0,
           "L7-D08 fixed trace ring reports dropped oldest records");
     for(std::size_t index = 1; index < report.written; ++index) {
         check(records[index].sequence == records[index - 1].sequence + 1,
@@ -565,7 +986,8 @@ void trace_covers_scan_task_pou_sfc_fb_and_fault_events()
         "PROGRAM Main\nVAR Edge : R_TRIG; X : BOOL; Z : DINT; D : DINT; "
         "END_VAR\n"
         "Edge(CLK := X);\n"
-        "SFC Flow\nINITIAL_STEP A: Work(P); END_STEP\n"
+        "SFC Flow\nINITIAL_STEP A: Work(P); END_STEP STEP B: TERMINAL; "
+        "END_STEP TRANSITION FROM A TO B := TRUE; END_TRANSITION\n"
         "ACTION Work: D := 1 / Z; END_ACTION\nEND_SFC\n"
         "END_PROGRAM\n"
         "CONFIGURATION Plant RESOURCE R0 ON PLC "
@@ -580,7 +1002,11 @@ void trace_covers_scan_task_pou_sfc_fb_and_fault_events()
     check(rig.debug.read_trace(records, 256, report) == st::DebugError::ok,
           "L7-D08 all-event trace is readable");
     bool seen[6]{};
+    bool identities = true;
     for(std::size_t index = 0; index < report.written; ++index) {
+        identities = identities && records[index].resource_id != 0 &&
+                     records[index].task_id != 0 &&
+                     records[index].release == 1;
         if(records[index].kind == st::DebugEventKind::scan) seen[0] = true;
         if(records[index].kind == st::DebugEventKind::task) seen[1] = true;
         if(records[index].kind == st::DebugEventKind::pou) seen[2] = true;
@@ -590,6 +1016,74 @@ void trace_covers_scan_task_pou_sfc_fb_and_fault_events()
     }
     check(seen[0] && seen[1] && seen[2] && seen[3] && seen[4] && seen[5],
           "L7-D08 trace covers scan task POU SFC FB and fault event classes");
+    check(identities,
+          "L7-D08 every trace record carries resource task and release identity");
+    bool pou_identity = false;
+    bool sfc_identity = false;
+    for(std::size_t index = 0; index < report.written; ++index) {
+        if(records[index].kind == st::DebugEventKind::pou)
+            pou_identity = pou_identity || records[index].pou_id != 0;
+        if(records[index].kind == st::DebugEventKind::sfc)
+            sfc_identity = sfc_identity ||
+                           (records[index].pou_id != 0 &&
+                            records[index].sfc_id != 0);
+    }
+    check(pou_identity && sfc_identity,
+          "L7-D08 POU and SFC trace payloads carry artifact identities");
+}
+
+void trace_reader_is_consistent_during_concurrent_publication()
+{
+    st::DebugSessionOptions options;
+    options.trace_capacity = 64;
+    Rig rig;
+    check(rig.build(debug_configuration("X := X + 1; Y := X + 1;"),
+                    st::DebugMode::enabled, options),
+          "L7 concurrent trace fixture builds");
+    std::atomic<bool> done{false};
+    std::atomic<bool> healthy{true};
+    std::uint64_t prior_version = 0;
+    std::uint64_t prior_dropped = 0;
+    std::thread writer([&]() {
+        for(std::uint64_t tick = 0; tick < 10000; ++tick) {
+            if(!rig.tick(tick)) {
+                healthy.store(false, std::memory_order_relaxed);
+                break;
+            }
+        }
+        done.store(true, std::memory_order_release);
+    });
+    while(!done.load(std::memory_order_acquire)) {
+        st::DebugTraceRecord records[64]{};
+        st::DebugTraceReport report{};
+        const st::DebugError error =
+            rig.debug.read_trace(records, 64, report);
+        if(error != st::DebugError::ok &&
+           error != st::DebugError::snapshot_busy) {
+            healthy.store(false, std::memory_order_relaxed);
+            break;
+        }
+        if(error != st::DebugError::ok) continue;
+        if(report.version < prior_version || report.dropped < prior_dropped) {
+            healthy.store(false, std::memory_order_relaxed);
+            break;
+        }
+        prior_version = report.version;
+        prior_dropped = report.dropped;
+        for(std::size_t index = 0; index < report.written; ++index) {
+            if(records[index].sequence == 0 ||
+               static_cast<unsigned>(records[index].kind) >
+                   static_cast<unsigned>(st::DebugEventKind::fault) ||
+               (index != 0 && records[index].sequence !=
+                                  records[index - 1].sequence + 1U)) {
+                healthy.store(false, std::memory_order_relaxed);
+                break;
+            }
+        }
+    }
+    writer.join();
+    check(healthy.load(std::memory_order_relaxed),
+          "L7 concurrent trace reads are complete or bounded-busy, never torn");
 }
 
 // L7-A07: zero release overhead is an artifact property, not a brittle
@@ -617,6 +1111,75 @@ void debug_and_release_artifacts_have_explicit_zero_cost_contract()
               release.program.debug_report.runtime_debug_branches == 0 &&
               release.program.code.size() < debug.program.code.size(),
           "L7-A07 release artifact emits zero probe branches and no map");
+
+    const std::string sfc_source =
+        "PROGRAM Main\nVAR X : DINT; END_VAR\nX := X + 1;\n"
+        "SFC Flow\nINITIAL_STEP A: Work(P); END_STEP "
+        "STEP B: TERMINAL; END_STEP "
+        "TRANSITION FROM A TO B := X > 100; END_TRANSITION\n"
+        "ACTION Work: X := X + 2; END_ACTION\nEND_SFC\n"
+        "END_PROGRAM";
+    const st::CompileResult sfc_debug = st::compile(sfc_source, debug_options);
+    const st::CompileResult sfc_release =
+        st::compile(sfc_source, release_options);
+    const st::CompileResult sfc_default = st::compile(sfc_source);
+    check(sfc_debug.ok && sfc_release.ok && sfc_default.ok,
+          "L7-A07 SFC debug/release/default artifacts compile");
+    check(!sfc_release.program.contains_opcode(st::Op::debug_probe) &&
+              !sfc_default.program.contains_opcode(st::Op::debug_probe),
+          "L7-A07 decoded release base and every SFC region contain no probe opcode");
+    check(same_executable_code(sfc_release.program, sfc_default.program),
+          "L7-A07 default compile is byte-identical to explicit disabled mode");
+    check(sfc_release.program.canonical_manifest() ==
+              sfc_default.program.canonical_manifest(),
+          "L7-A07 serialized release artifact is identical to default mode");
+
+    if(sfc_debug.ok && sfc_release.ok) {
+        const st::Program &debug_program = sfc_debug.program.programs.empty()
+            ? sfc_debug.program
+            : sfc_debug.program.programs.front();
+        const st::Program &release_program = sfc_release.program.programs.empty()
+            ? sfc_release.program
+            : sfc_release.program.programs.front();
+        std::vector<std::uint64_t> debug_storage(
+            (debug_program.required_bytes() + 7U) / 8U);
+        std::vector<std::uint64_t> release_storage(
+            (release_program.required_bytes() + 7U) / 8U);
+        st::Instance debug_instance;
+        st::Instance release_instance;
+        const bool loaded =
+            debug_instance.load(
+                debug_program,
+                reinterpret_cast<unsigned char *>(debug_storage.data()),
+                debug_storage.size() * sizeof(std::uint64_t), kTickNs) ==
+                rt::ErrorCode::ok &&
+            release_instance.load(
+                release_program,
+                reinterpret_cast<unsigned char *>(release_storage.data()),
+                release_storage.size() * sizeof(std::uint64_t), kTickNs) ==
+                rt::ErrorCode::ok;
+        check(loaded, "L7-A07 parity instances load");
+        std::int32_t debug_x = 0;
+        std::int32_t release_x = 0;
+        std::uint32_t debug_offset = 0;
+        std::uint32_t release_offset = 0;
+        for(const st::VarInfo &var : debug_program.vars)
+            if(var.lower == "x") debug_offset = var.offset;
+        for(const st::VarInfo &var : release_program.vars)
+            if(var.lower == "x") release_offset = var.offset;
+        check(loaded && debug_instance.scan(100000) == st::ScanError::ok &&
+                  release_instance.scan(100000) == st::ScanError::ok &&
+                  debug_instance.read_variable(
+                      debug_offset, sizeof(debug_x),
+                      reinterpret_cast<unsigned char *>(&debug_x)) &&
+                  release_instance.read_variable(
+                      release_offset, sizeof(release_x),
+                      reinterpret_cast<unsigned char *>(&release_x)) &&
+                  debug_x == release_x &&
+                  debug_instance.remaining_budget() ==
+                      release_instance.remaining_budget(),
+              "L7-A07 debug/release SFC output and budget are identical");
+    }
 
     Rig disabled;
     check(!disabled.build(source, st::DebugMode::disabled) &&
@@ -665,17 +1228,77 @@ void exact_breakpoint_watch_and_snapshot_capacities()
           "L7 watch capacity N+1 is rejected");
 
     st::DebugSnapshot snapshot{};
-    check(rig.debug.read_snapshot(snapshot, rig.snapshot_entries, 3,
-                                  rig.snapshot_storage,
-                                  sizeof(rig.snapshot_storage), 8) ==
+    check(rig.debug.read_snapshot(snapshot, rig.snapshot_entries.data(), 3,
+                                  rig.snapshot_storage.data(),
+                                  rig.snapshot_storage.size(), 8) ==
                   st::DebugError::capacity_exceeded &&
               snapshot.value_count == 0 && snapshot.value_bytes == 0,
           "L7 undersized snapshot entry buffer fails without partial output");
-    check(rig.debug.read_snapshot(snapshot, rig.snapshot_entries, 8192,
-                                  rig.snapshot_storage, 15, 8) ==
+    check(rig.debug.read_snapshot(snapshot, rig.snapshot_entries.data(), 8192,
+                                  rig.snapshot_storage.data(), 15, 8) ==
                   st::DebugError::capacity_exceeded &&
               snapshot.value_count == 0 && snapshot.value_bytes == 0,
           "L7 undersized snapshot byte buffer fails without partial output");
+}
+
+void typed_atomic_storage_has_exact_attach_contract()
+{
+    static_assert(alignof(std::atomic<std::uint64_t>) >=
+                  alignof(std::uint64_t));
+    Rig rig;
+    check(rig.build(debug_configuration("X := X + 1;")),
+          "L7 typed-storage fixture builds");
+    st::DebugSnapshotEntry entries[4]{};
+    const std::size_t probes =
+        rig.compiled.program.programs.empty()
+            ? rig.compiled.program.source_map.entries.size()
+            : rig.compiled.program.programs.front().source_map.entries.size();
+    const std::size_t exact_words = 6U + (probes + 63U) / 64U;
+    std::unique_ptr<std::atomic<std::uint64_t>[]> exact{
+        new std::atomic<std::uint64_t>[exact_words]};
+    std::unique_ptr<std::atomic<std::uint64_t>[]> short_publish{
+        new std::atomic<std::uint64_t>[exact_words - 1U]};
+    constexpr std::size_t trace_words =
+        sizeof(st::DebugTraceRecord) / sizeof(std::uint64_t);
+    std::unique_ptr<std::atomic<std::uint64_t>[]> trace{
+        new std::atomic<std::uint64_t>[trace_words]};
+    check(rig.debug.attach(rig.runtime, {"r0", "main"}, nullptr, 0,
+                           entries, std::size(entries), nullptr, 0) ==
+                  st::DebugError::invalid_argument,
+          "L7 null typed publish storage is rejected");
+    check(rig.debug.attach(rig.runtime, {"r0", "main"}, exact.get(),
+                           exact_words, entries, std::size(entries),
+                           trace.get(), trace_words - 1U) ==
+                  st::DebugError::capacity_exceeded,
+          "L7 partial trace-record storage is rejected");
+    check(rig.debug.attach(rig.runtime, {"r0", "main"},
+                           short_publish.get(), exact_words - 1U, entries,
+                           std::size(entries), nullptr, 0) ==
+                  st::DebugError::capacity_exceeded,
+          "L7 publish storage N-1 is rejected");
+    check(rig.debug.attach(rig.runtime, {"r0", "main"}, exact.get(),
+                           exact_words, entries, std::size(entries),
+                           trace.get(), trace_words) == st::DebugError::ok,
+          "L7 publish and trace storage exact N is accepted");
+}
+
+void watch_plan_freezes_at_first_task_publication()
+{
+    Rig rig;
+    check(rig.build(debug_configuration("X := X + 1; Y := Y + 1;")),
+          "L7 watch-freeze fixture builds");
+    const st::SymbolInfo x = rig.symbol("plant.r0.p0.main.x");
+    const st::SymbolInfo y = rig.symbol("plant.r0.p0.main.y");
+    check(rig.debug.add_watch(x.id) == st::DebugError::ok && rig.tick(0),
+          "L7 watch plan accepts symbols before first task publication");
+    check(rig.debug.add_watch(y.id) == st::DebugError::watch_plan_frozen &&
+              rig.debug.add_watch(y.id) ==
+                  st::DebugError::watch_plan_frozen,
+          "L7 watch plan rejects later additions with a stable error");
+    st::DebugSnapshot snapshot{};
+    check(rig.snapshot(snapshot) == st::DebugError::ok &&
+              snapshot.value_count == 1,
+          "L7 frozen snapshot layout remains unchanged");
 }
 
 std::uint32_t next_random(std::uint32_t &state)
@@ -780,6 +1403,61 @@ void debug_cycle_path_is_zero_allocation()
           "L7 debug scan publication and snapshot perform zero allocations");
 }
 
+void debugger_control_and_fault_paths_are_zero_allocation()
+{
+    st::DebugSessionOptions options;
+    options.trace_capacity = 4;
+    Rig controlled;
+    check(controlled.build(debug_configuration(
+              "Q := BYTE#1;\nX := X + 1;",
+              "Q AT %QB0 : BYTE; X : DINT;"),
+              st::DebugMode::enabled, options),
+          "L7 zero-allocation control fixture builds");
+    const st::SymbolInfo output =
+        controlled.symbol("plant.r0.p0.main.q");
+    st::BreakpointId breakpoint = 0;
+    check(controlled.debug.add_breakpoint("debug.st", 3, 1, breakpoint) ==
+              st::DebugError::ok,
+          "L7 zero-allocation control breakpoint binds");
+
+    Rig faulted;
+    check(faulted.build(debug_configuration(
+              "X := 1; Y := X / Z;", "X : DINT; Y : DINT; Z : DINT;")),
+          "L7 zero-allocation fault fixture builds");
+
+    const unsigned char forced = 17;
+    st::ForceReceipt receipt{};
+    st::DebugTraceRecord trace[4]{};
+    st::DebugTraceReport trace_report{};
+    st::DebugSnapshot snapshot{};
+    bool healthy = true;
+    g_frozen_allocations = 0;
+    g_freeze_allocations = true;
+    healthy = healthy && controlled.tick(0);
+    healthy = healthy &&
+        controlled.debug.control(st::DebugCommand::step_over) ==
+            st::DebugError::ok &&
+        controlled.runtime.run(kRunBudget) == rt::ErrorCode::ok &&
+        controlled.debug.control(st::DebugCommand::continue_) ==
+            st::DebugError::ok &&
+        controlled.runtime.run(kRunBudget) == rt::ErrorCode::ok;
+    healthy = healthy &&
+        controlled.debug.queue_force(output.id, st::builtin::byte_, &forced,
+                                      1, receipt) == st::DebugError::ok &&
+        controlled.tick(1) &&
+        controlled.debug.read_trace(trace, 4, trace_report) ==
+            st::DebugError::ok &&
+        trace_report.dropped != 0;
+    healthy = healthy && faulted.tick(0) &&
+        faulted.snapshot(snapshot) == st::DebugError::ok &&
+        faulted.debug.read_trace(trace, 4, trace_report) == st::DebugError::ok;
+    g_freeze_allocations = false;
+    check(healthy,
+          "L7 hit/pause/resume/step/fault/trace/force paths stay healthy");
+    check(g_frozen_allocations == 0,
+          "L7 hit/pause/resume/step/fault/trace/force paths allocate zero");
+}
+
 void lower_layer_runtime_regression()
 {
     const char *sources[] = {
@@ -809,17 +1487,29 @@ int main()
 {
     seqlock_snapshot_is_consistent_and_bounded();
     stable_symbol_ids_use_qualified_names();
+    attach_rejects_unknown_task_and_reattaches_cleanly();
+    snapshot_supports_symbols_larger_than_sixty_four_bytes();
     breakpoints_map_source_and_deduplicate();
     step_in_over_out_follow_source_and_call_depth();
+    step_in_tracks_call_chains_deeper_than_two_frames();
+    typed_instruction_ids_distinguish_mappings_and_sfc_regions();
+    one_task_debugs_all_of_its_mappings();
     pause_is_isolated_and_discards_half_scan_output();
     fault_snapshot_is_read_only_and_recovery_is_ordered();
     force_reuses_l3_queue_version_and_validation();
+    force_uses_compiled_physical_location_not_local_name();
+    targeted_force_waits_for_paused_task();
+    concurrent_force_receipts_keep_each_operation_version();
     trace_ring_drops_oldest_and_counts_overflow();
     trace_covers_scan_task_pou_sfc_fb_and_fault_events();
+    trace_reader_is_consistent_during_concurrent_publication();
     debug_and_release_artifacts_have_explicit_zero_cost_contract();
     exact_breakpoint_watch_and_snapshot_capacities();
+    typed_atomic_storage_has_exact_attach_contract();
+    watch_plan_freezes_at_first_task_publication();
     random_control_sequence_matches_minimal_oracle();
     debug_cycle_path_is_zero_allocation();
+    debugger_control_and_fault_paths_are_zero_allocation();
     lower_layer_runtime_regression();
     return failures == 0 ? 0 : 1;
 }

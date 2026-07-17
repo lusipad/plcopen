@@ -1,6 +1,6 @@
 # ST 批次 L5 语义矩阵：任务、资源与故障恢复
 
-> 状态：**已批准，待实现（2026-07-17，维护者）**。本矩阵覆盖
+> 状态：**已实现并复审通过（2026-07-17）**。本矩阵覆盖
 > CONFIGURATION/RESOURCE、周期与事件任务、多 PROGRAM 映射、看门狗和
 > 跨任务一致性；调度由 executor 驱动，VM 不读取墙钟。
 
@@ -64,11 +64,27 @@
 | L5-A07 | 运动隔离 | 故障 ST 任务下 RT executor 轨迹消费持续且 TSAN 0 报告 |
 | L5-A08 | fuzz/容量 | 配置图 ≥100,000，0 crash/UBSan；N/N+1 边界全绿 |
 
-## 5. 不做
+## 5. 实现与验证证据
+
+- 生产入口：`core/st/tasking.h`、`core/st/configuration_runtime.h`、
+  `core/st/process_image.h` 与 `core/st/vm.h`；资源级唯一事务 owner 保证协作式
+  非抢占，一个 TASK 的全部 PROGRAM 映射成功后才统一发布。
+- 资源映像复用 L3 schema：跨 PROGRAM 的本地 Q/M 同址拒绝；只有同一
+  GVL/VAR_EXTERNAL 逻辑对象可合并；I 区允许完全相同及 X 与包含它的
+  B/W/D/L 别名。
+- `core/test/st_l5_frontend_tests.cpp` 覆盖 grammar、artifact 与 N/N+1；
+  `core/test/st_l5_tests.cpp` 覆盖 L5-A01 至 A07，包括随机优先级/声明序 oracle、
+  owner 跨边界/reset/restart/resource fault、事务回滚和 RT executor 轨迹消费。
+- `core/test/st_fuzz.cpp --l5` 的 Release 固定种子配置图 100,000/100,000 通过；
+  Nightly 同一路径在 sanitizer 下运行。WSL Ubuntu TSan 执行 L5 测试为
+  `st l5 tests passed`，0 报告。
+- Windows Debug L0-L5 联合 CTest 20/20 通过；第三轮独立语义复审 APPROVE。
+
+## 6. 不做
 
 - VM 内抢占、多核并行 ST、OS 线程创建、实时调度策略设置和系统时钟读取不做。
 - 安全任务认证、冗余控制器和分布式 resource 不做。
 
 ---
 
-*批准：2026-07-17；实现：pending。*
+*批准：2026-07-17；实现：2026-07-17；复审：APPROVE。*

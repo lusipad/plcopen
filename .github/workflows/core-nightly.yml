@@ -70,6 +70,12 @@ jobs:
       - name: Build dual-domain executor demo
         run: cmake --build build --target plcopen_core_rt_executor_demo --parallel
 
+      - name: Build ST L3 process-image concurrency tests
+        run: cmake --build build --target plcopen_core_st_l3_tests --parallel
+
+      - name: Build ST L5 task and motion isolation tests
+        run: cmake --build build --target plcopen_core_st_l5_tests --parallel
+
       # setarch -R: TSan is incompatible with the high ASLR entropy of
       # ubuntu-24.04 kernels (unexpected memory mapping otherwise).
       - name: Run executor under ThreadSanitizer (ADR-0007)
@@ -77,6 +83,16 @@ jobs:
           setarch $(uname -m) -R
           ./build/core/plcopen_core_rt_executor_demo
           --cycles 20000 --period-ns 250000 --trace /tmp/tsan_trace.bin
+
+      - name: Run ST L3 process image under ThreadSanitizer
+        run: >
+          setarch $(uname -m) -R
+          ./build/core/plcopen_core_st_l3_tests
+
+      - name: Run ST L5 task and motion isolation under ThreadSanitizer
+        run: >
+          setarch $(uname -m) -R
+          ./build/core/plcopen_core_st_l5_tests
 
   st-frontend-fuzz-sanitized:
     runs-on: ubuntu-latest
@@ -100,3 +116,34 @@ jobs:
 
       - name: Run ST multi-POU fuzz (L2b-A07)
         run: ./build/core/plcopen_core_st_fuzz --iterations 100000 --l2b
+
+      - name: Run ST configuration graph fuzz (L5-A08)
+        run: ./build/core/plcopen_core_st_fuzz --iterations 100000 --l5
+
+      - name: Run ST textual SFC fuzz (L6-A08)
+        run: ./build/core/plcopen_core_st_fuzz --iterations 100000 --l6
+
+      - name: Run ST debugger state-machine fuzz (L7-A08)
+        run: ./build/core/plcopen_core_st_fuzz --iterations 100000 --l7
+
+  st-l7-debug-tsan:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Configure CMake (TSan)
+        run: >
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo
+          -DCMAKE_CXX_FLAGS="-fsanitize=thread -g"
+          -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=thread"
+
+      - name: Build ST L7 debugger concurrency tests
+        run: cmake --build build --target plcopen_core_st_l7_tests --parallel
+
+      # setarch -R avoids the high-ASLR mapping conflict on ubuntu-24.04.
+      - name: Run ST L7 debugger under ThreadSanitizer
+        run: >
+          setarch $(uname -m) -R
+          ./build/core/plcopen_core_st_l7_tests

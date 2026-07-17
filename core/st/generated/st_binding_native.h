@@ -36751,9 +36751,12 @@ inline bool st_binding_load_tagged_reference(
     return false;
 }
 
-constexpr bool st_binding_native_capabilities_valid() noexcept
+constexpr bool st_binding_native_capabilities_valid(
+    std::size_t begin, std::size_t end) noexcept
 {
-    for(const StBindingFbMetadata &fb : kStBindingFbs) {
+    if(begin > end || end > kStBindingFbs.size()) return false;
+    for(std::size_t fb_index = begin; fb_index < end; ++fb_index) {
+        const StBindingFbMetadata &fb = kStBindingFbs[fb_index];
         const StBindingNativeCapabilityMasks masks =
             st_binding_native_capabilities(fb.type);
         const std::uint64_t valid =
@@ -36848,7 +36851,11 @@ inline constexpr std::size_t kStBindingStoreSequencePinCount = 11U;
 inline constexpr std::size_t kStBindingLoadSequencePinCount = 11U;
 inline constexpr std::size_t kStBindingStoreTaggedReferencePinCount = 1U;
 inline constexpr std::size_t kStBindingLoadTaggedReferencePinCount = 1U;
-static_assert(st_binding_native_capabilities_valid());
+static_assert(st_binding_native_capabilities_valid(0U, 32U));
+static_assert(st_binding_native_capabilities_valid(32U, 64U));
+static_assert(st_binding_native_capabilities_valid(64U, 96U));
+static_assert(st_binding_native_capabilities_valid(96U, 128U));
+static_assert(st_binding_native_capabilities_valid(128U, 134U));
 static_assert(std::is_default_constructible_v<fb::RTrig>);
 static_assert(std::is_destructible_v<fb::RTrig>);
 static_assert(std::is_default_constructible_v<fb::FTrig>);

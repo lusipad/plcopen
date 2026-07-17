@@ -35,7 +35,7 @@ enum class ExprKind : std::uint8_t
     pin_read,      // name '.' pin_name (FB output read)
     unary,         // op: minus / not
     binary,        // op token kind
-    call,          // name '(' expr ')': conversion function (L1a 4.x)
+    call,          // name '(' arguments ')': conversion/standard function
     aggregate_init,
 };
 
@@ -98,6 +98,7 @@ struct Expr
     BinaryOp binary_op = BinaryOp::add;
     ExprIndex lhs = kNoExpr;
     ExprIndex rhs = kNoExpr;
+    std::vector<ExprIndex> arguments;
     std::vector<AccessStep> access;
     std::vector<InitItem> items;
 };
@@ -144,6 +145,12 @@ struct Stmt
     StmtKind kind = StmtKind::empty;
     std::int32_t line = 0;
     std::int32_t column = 0;
+    bool debug_provenance = false;
+    std::string debug_pou;
+    std::string debug_call_path;
+    std::int32_t debug_line = 0;
+    std::int32_t debug_column = 0;
+    std::uint16_t debug_call_depth = 0;
 
     // assign
     std::string target;            // variable name (original spelling)
@@ -180,6 +187,13 @@ struct VarDecl
     std::string lower;         // lookup key
     bool is_fb = false;
     bool is_constant = false;  // VAR CONSTANT block member (L1a 2.5)
+    bool is_retain = false;
+    bool is_persistent = false;
+    bool is_located = false;
+    char location_area = 0;    // I/Q/M
+    char location_width = 0;   // X/B/W/D/L
+    std::uint32_t location_byte = 0;
+    std::uint8_t location_bit = 0;
     Type type = Type::bool_;
     FbType fb_type = FbType::r_trig;
     std::string type_name;    // non-empty for a user-defined type
@@ -235,12 +249,90 @@ struct UserTypeDecl
     std::int32_t column = 0;
 };
 
+enum class SfcQualifier : std::uint8_t
+{
+    n = 0,
+    s,
+    r,
+    l,
+    d,
+    p,
+    sd,
+    ds,
+    sl,
+};
+
+struct SfcActionBlockDecl
+{
+    std::string action;
+    std::string lower;
+    SfcQualifier qualifier = SfcQualifier::n;
+    std::int64_t duration_ns = 0;
+    std::int32_t line = 0;
+    std::int32_t column = 0;
+    std::int32_t end_line = 0;
+    std::int32_t end_column = 0;
+};
+
+struct SfcStepDecl
+{
+    std::string name;
+    std::string lower;
+    bool initial = false;
+    bool terminal = false;
+    std::vector<SfcActionBlockDecl> actions;
+    std::int32_t line = 0;
+    std::int32_t column = 0;
+    std::int32_t end_line = 0;
+    std::int32_t end_column = 0;
+};
+
+struct SfcTransitionDecl
+{
+    std::vector<std::string> sources;
+    std::vector<std::string> targets;
+    std::string condition;
+    bool simultaneous = false;
+    std::int32_t condition_line = 0;
+    std::int32_t condition_column = 0;
+    std::int32_t line = 0;
+    std::int32_t column = 0;
+    std::int32_t end_line = 0;
+    std::int32_t end_column = 0;
+};
+
+struct SfcActionDecl
+{
+    std::string name;
+    std::string lower;
+    std::string body;
+    std::int32_t body_line = 0;
+    std::int32_t body_column = 0;
+    std::int32_t line = 0;
+    std::int32_t column = 0;
+    std::int32_t end_line = 0;
+    std::int32_t end_column = 0;
+};
+
+struct SfcNetworkDecl
+{
+    std::string name;
+    std::string lower;
+    std::string program_lower;
+    std::vector<SfcStepDecl> steps;
+    std::vector<SfcTransitionDecl> transitions;
+    std::vector<SfcActionDecl> actions;
+    std::int32_t line = 0;
+    std::int32_t column = 0;
+};
+
 struct Ast
 {
     std::string program_name;
     std::vector<UserTypeDecl> user_types;
     std::vector<VarDecl> vars;
     std::vector<StmtIndex> body;
+    std::vector<SfcNetworkDecl> sfc_networks;
     std::vector<Expr> exprs;
     std::vector<Stmt> stmts;
 

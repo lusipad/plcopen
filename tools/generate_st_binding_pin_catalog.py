@@ -27,6 +27,9 @@ PIN_DESC_CATALOG = ROOT / "core/st/generated/st_binding_pins.h"
 ADAPTER_OVERLAY = ROOT / "doc/compliance/st-binding-adapters.yml"
 TYPE_AUTHORITY = ROOT / "doc/compliance/st-binding-types.yml"
 
+PIN_DESC_VALIDATION_CHUNK_SIZE = 256
+NATIVE_CAPABILITY_VALIDATION_CHUNK_SIZE = 32
+
 SET_STABLE_CODES = {
     "iec_basic": 0x0001,
     "plcopen_part1_part2": 0x0002,
@@ -94,6 +97,13 @@ class AdapterFb:
 
 def normalize(value: str) -> str:
     return re.sub(r"[^a-z0-9]", "", value.lower())
+
+
+def validation_chunks(item_count: int, chunk_size: int) -> list[tuple[int, int]]:
+    return [
+        (begin, min(begin + chunk_size, item_count))
+        for begin in range(0, item_count, chunk_size)
+    ]
 
 
 def pin_to_snake(value: str) -> str:
@@ -1097,6 +1107,12 @@ def render_pin_desc_cpp(fbs: list[Fb]) -> str:
     if max_pin_count > 0xffff:
         raise RuntimeError("generated FB pin table exceeds uint16_t range")
     pin_count = len(rows)
+    validation_assertions = [
+        f"static_assert(st_binding_pin_descs_valid({begin}U, {end}U));"
+        for begin, end in validation_chunks(
+            pin_count, PIN_DESC_VALIDATION_CHUNK_SIZE
+        )
+    ]
     lines = [
         "#pragma once",
         "",
@@ -1155,11 +1171,12 @@ def render_pin_desc_cpp(fbs: list[Fb]) -> str:
         "    return invalid_type_id;",
         "}",
         "",
-        "constexpr bool st_binding_pin_descs_valid() noexcept",
+        "constexpr bool st_binding_pin_descs_valid(",
+        "    std::size_t begin, std::size_t end) noexcept",
         "{",
         "    if(kStBindingPinDescs.size() != kStBindingPins.size()) return false;",
-        "    for(std::size_t index = 0; index < kStBindingPinDescs.size();",
-        "        ++index) {",
+        "    if(begin > end || end > kStBindingPinDescs.size()) return false;",
+        "    for(std::size_t index = begin; index < end; ++index) {",
         "        const PinDesc &desc = kStBindingPinDescs[index];",
         "        const StBindingPinMetadata &metadata = kStBindingPins[index];",
         "        if(!st_binding_lower_name_matches(desc.lower_name,",
@@ -1184,18 +1201,26 @@ def render_pin_desc_cpp(fbs: list[Fb]) -> str:
         "",
         "constexpr bool st_binding_pin_tables_valid() noexcept",
         "{",
-        "    for(const StBindingFbMetadata &metadata : kStBindingFbs) {",
-        "        const PinTable table = st_binding_pin_table(metadata.type);",
-        "        if(table.count != metadata.pin_count) return false;",
-        "        if(table.pins !=",
-        "           kStBindingPinDescs.data() + metadata.first_pin) return false;",
+        "    if(static_cast<std::size_t>(StBindingFbType::count) !=",
+        "       kStBindingFbs.size()) return false;",
+        "    std::size_t expected_first_pin = 0;",
+        "    for(std::size_t index = 0; index < kStBindingFbs.size(); ++index) {",
+        "        const StBindingFbMetadata &metadata = kStBindingFbs[index];",
+        "        if(static_cast<std::size_t>(metadata.type) != index) return false;",
+        "        const std::size_t first_pin = metadata.first_pin;",
+        "        const std::size_t pin_count = metadata.pin_count;",
+        "        if(first_pin != expected_first_pin ||",
+        "           first_pin > kStBindingPinDescs.size() ||",
+        "           pin_count > kStBindingPinDescs.size() - first_pin)",
+        "            return false;",
+        "        expected_first_pin = first_pin + pin_count;",
         "    }",
-        "    return st_binding_pin_table(StBindingFbType::count).pins == nullptr;",
+        "    return expected_first_pin == kStBindingPinDescs.size();",
         "}",
         "",
         f"static_assert(kStBindingPinDescs.size() == {pin_count}U);",
         f"static_assert(kStBindingFbs.size() == {len(fbs)}U);",
-        "static_assert(st_binding_pin_descs_valid());",
+        *validation_assertions,
         "static_assert(st_binding_pin_tables_valid());",
         "",
         "} // namespace generated",
@@ -2192,6 +2217,12 @@ def render_native_cpp(fbs: list[Fb]) -> str:
                 "        }",
             ])
 
+    capability_validation_assertions = [
+        f"static_assert(st_binding_native_capabilities_valid({begin}U, {end}U));"
+        for begin, end in validation_chunks(
+            len(fbs), NATIVE_CAPABILITY_VALIDATION_CHUNK_SIZE
+        )
+    ]
     lines = [
         "#pragma once",
         "",
@@ -2549,9 +2580,12 @@ def render_native_cpp(fbs: list[Fb]) -> str:
         "    return false;",
         "}",
         "",
-        "constexpr bool st_binding_native_capabilities_valid() noexcept",
+        "constexpr bool st_binding_native_capabilities_valid(",
+        "    std::size_t begin, std::size_t end) noexcept",
         "{",
-        "    for(const StBindingFbMetadata &fb : kStBindingFbs) {",
+        "    if(begin > end || end > kStBindingFbs.size()) return false;",
+        "    for(std::size_t fb_index = begin; fb_index < end; ++fb_index) {",
+        "        const StBindingFbMetadata &fb = kStBindingFbs[fb_index];",
         "        const StBindingNativeCapabilityMasks masks =",
         "            st_binding_native_capabilities(fb.type);",
         "        const std::uint64_t valid =",
@@ -2657,7 +2691,7 @@ def render_native_cpp(fbs: list[Fb]) -> str:
         ("inline constexpr std::size_t "
          "kStBindingLoadTaggedReferencePinCount = "
          f"{load_tagged_reference_count}U;"),
-        "static_assert(st_binding_native_capabilities_valid());",
+        *capability_validation_assertions,
         *construct_assertions,
         "",
         "} // namespace plcopen::core::st::generated",

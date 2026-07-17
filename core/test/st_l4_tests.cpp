@@ -171,6 +171,22 @@ struct Rig
                                           buffer + info->offset + desc->size);
     }
 
+    bool set_i64(const char *name, std::int64_t value)
+    {
+        const st::VarInfo *info = var(name);
+        if(info == nullptr) return false;
+        const st::TypeDesc *desc = compiled.program.types.get(info->type_id);
+        if(desc == nullptr || desc->size == 0U || desc->size > 8U ||
+           info->offset > sizeof(buffer) ||
+           desc->size > sizeof(buffer) - info->offset) return false;
+        const std::uint64_t bits = static_cast<std::uint64_t>(value);
+        for(unsigned byte = 0; byte < desc->size; ++byte) {
+            buffer[info->offset + byte] =
+                static_cast<unsigned char>(bits >> (byte * 8U));
+        }
+        return true;
+    }
+
     std::string string_value(const char *name) const
     {
         const std::vector<unsigned char> bytes = object_bytes(name);
@@ -261,12 +277,15 @@ void any_resolution_arithmetic_selection_and_comparison()
     Rig rig;
     const std::string vars =
         "s : SINT := -128; i : INT := 2; d : DINT := 3; "
-        "abs_min : SINT; joined : DINT; sub : DINT; mul : DINT; "
+        "abs_min : SINT; narrow_abs : LINT; narrow_add : LINT; "
+        "joined : DINT; sub : DINT; mul : DINT; "
         "div : DINT; modv : DINT; power : LREAL; mn : DINT; mx : DINT; "
         "limited : DINT; selected : DINT; muxed : DINT; "
         "gt : BOOL; ge : BOOL; eq : BOOL; le : BOOL; lt : BOOL; ne : BOOL;";
     const std::string body =
-        "abs_min := ABS(s); joined := ADD(i, d, SINT#4); "
+        "abs_min := ABS(s); narrow_abs := ABS(SINT#-128); "
+        "narrow_add := ADD(SINT#127, SINT#1); "
+        "joined := ADD(i, d, SINT#4); "
         "sub := SUB(20, 3); mul := MUL(2, 3, 4); div := DIV(20, 3); "
         "modv := MOD(20, 3); power := EXPT(2.0, 3.0); "
         "mn := MIN(8, 3, 5); mx := MAX(8, 3, 5); "
@@ -277,6 +296,8 @@ void any_resolution_arithmetic_selection_and_comparison()
     check(rig.build(unit(vars, body)), "L4-A02 ANY fixture builds");
     check(rig.scan() == st::ScanError::ok, "L4-A02 ANY fixture scans");
     check(rig.i64("abs_min") == -128, "L4-A02 ABS signed min wraps");
+    check(rig.i64("narrow_abs") == -128 && rig.i64("narrow_add") == -128,
+          "L4-A02 assignment target does not change ANY join");
     check(rig.i64("joined") == 9, "L4-A02 lossless ANY join chosen");
     check(rig.i64("sub") == 17 && rig.i64("mul") == 24 &&
               rig.i64("div") == 6 && rig.i64("modv") == 2,
@@ -322,6 +343,73 @@ void any_resolution_arithmetic_selection_and_comparison()
     check(!ambiguous.ok &&
               has_code(ambiguous, st::DiagCode::sema_ambiguous_overload),
           "L4-A02 tied overload is explicit ambiguity");
+}
+
+void integer_division_and_checked_date_time_boundaries()
+{
+    Rig integer;
+    check(integer.build(unit(
+              "u : ULINT := ULINT#18_446_744_073_709_551_615; "
+              "uq : ULINT; ur : ULINT; lo : LINT := LINT#-9_223_372_036_854_775_808; "
+              "sq : LINT; sr : LINT;",
+              "uq := DIV(u, ULINT#2); ur := MOD(u, ULINT#2); "
+              "sq := DIV(lo, LINT#-1); sr := MOD(lo, LINT#-1);")),
+          "L4-B01 integer division boundary fixture builds");
+    check(integer.scan() == st::ScanError::ok,
+          "L4-B01 integer division boundary fixture scans");
+    check(static_cast<std::uint64_t>(integer.i64("uq")) ==
+              0x7FFFFFFFFFFFFFFFULL && integer.i64("ur") == 1,
+          "L4-B01 unsigned DIV MOD preserve high bit");
+    check(integer.i64("sq") == std::numeric_limits<std::int64_t>::min() &&
+              integer.i64("sr") == 0,
+          "L4-B01 LINT minimum DIV MOD minus one wrap without UB");
+
+    Rig subtract_min;
+    check(subtract_min.build(unit(
+              "a : TIME; b : TIME; out : TIME := T#7ns;",
+              "out := SUB_TIME(a, b);")) &&
+              subtract_min.set_i64("a", std::numeric_limits<std::int64_t>::min()) &&
+              subtract_min.set_i64("b", std::numeric_limits<std::int64_t>::min()),
+          "L4-B02 checked subtraction fixture builds");
+    check(subtract_min.scan() == st::ScanError::ok &&
+              subtract_min.i64("out") == 0,
+          "L4-B02 minimum minus minimum is representable");
+
+    struct Boundary
+    {
+        const char *name;
+        std::string vars;
+        std::string body;
+        const char *left;
+        std::int64_t left_value;
+        const char *right;
+        std::int64_t right_value;
+    };
+    const Boundary boundaries[] = {
+        {"SUB_DATE_DATE", "a : DATE; b : DATE; out : TIME := T#7ns; marker : DINT;",
+         "marker := 1; out := SUB_DATE_DATE(a, b); marker := 2;",
+         "a", std::numeric_limits<std::int32_t>::max(), "b",
+         std::numeric_limits<std::int32_t>::min()},
+        {"MULTIME", "a : TIME; b : DINT := 2; out : TIME := T#7ns; marker : DINT;",
+         "marker := 1; out := MULTIME(a, b); marker := 2;",
+         "a", std::numeric_limits<std::int64_t>::max(), "b", 2},
+        {"DIVTIME", "a : TIME; b : DINT := -1; out : TIME := T#7ns; marker : DINT;",
+         "marker := 1; out := DIVTIME(a, b); marker := 2;",
+         "a", std::numeric_limits<std::int64_t>::min(), "b", -1},
+        {"CONCAT_DATE_TOD", "a : DATE; b : TOD; out : DT := DT#1970-01-01-00:00:00.000000007; marker : DINT;",
+         "marker := 1; out := CONCAT_DATE_TOD(a, b); marker := 2;",
+         "a", 106752, "b", 0},
+    };
+    for(const Boundary &boundary : boundaries) {
+        Rig rig;
+        check(rig.build(unit(boundary.vars, boundary.body)) &&
+                  rig.set_i64(boundary.left, boundary.left_value) &&
+                  rig.set_i64(boundary.right, boundary.right_value),
+              boundary.name);
+        check(rig.scan() == st::ScanError::date_time_range_violation &&
+                  rig.i64("out") == 7 && rig.i64("marker") == 1,
+              boundary.name);
+    }
 }
 
 // L4-A03/D05-D08: integer wrap, IEEE domains, invalid LIMIT/MUX and
@@ -528,6 +616,32 @@ void string_functions_unicode_and_faults()
           "L4-A05 invalid position faults atomically");
 }
 
+void string_capacity_fault_classification()
+{
+    struct Case
+    {
+        const char *name;
+        const char *expression;
+    };
+    const Case cases[] = {
+        {"INSERT", "INSERT(source, 'xyz', 2)"},
+        {"REPLACE", "REPLACE(source, 'xyz', 1, 2)"},
+    };
+    for(const Case &test : cases) {
+        Rig rig;
+        check(rig.build(unit(
+                  "source : STRING[8] := 'abc'; out : STRING[3] := 'old'; "
+                  "marker : DINT;",
+                  std::string("marker := 1; out := ") + test.expression +
+                      "; marker := 2;")),
+              test.name);
+        check(rig.scan() == st::ScanError::string_capacity_exceeded &&
+                  rig.string_value("out") == "old" &&
+                  rig.i64("marker") == 1,
+              test.name);
+    }
+}
+
 // L4-A06/D16-D18: pure integer calendar/nanosecond functions, leap-day and
 // midnight boundaries, overflow atomicity, and explicit host UTC injection.
 void date_time_functions_and_utc_boundary()
@@ -662,6 +776,44 @@ void cost_budget_determinism_and_zero_allocation()
           "L4-A08 standard functions allocate zero in scan");
 }
 
+void standard_cost_consistency()
+{
+    std::string scalar_args = "1";
+    for(int argument = 1; argument < 32; ++argument) scalar_args += ",1";
+    const std::string scalar_source = unit(
+        "out : DINT;", "out := ADD(" + scalar_args + ");");
+    Rig scalar_exact;
+    Rig scalar_under;
+    check(scalar_exact.build(scalar_source) && scalar_under.build(scalar_source),
+          "L4-B03 scalar cost fixtures build");
+    const std::int64_t scalar_budget = static_cast<std::int64_t>(
+        scalar_exact.compiled.program.worst_case_instructions);
+    check(scalar_exact.compiled.program.max_standard_function_cost == 32 &&
+              scalar_budget > 32,
+          "L4-B03 scalar argc cost is reported in artifact WCET");
+    check(scalar_exact.scan(scalar_budget) == st::ScanError::ok &&
+              scalar_under.scan(scalar_budget - 1) ==
+                  st::ScanError::budget_exceeded,
+          "L4-B03 scalar dynamic charge matches WCET exactly");
+
+    const std::string find_source = unit(
+        "hay : STRING[64] := 'aaaaaaaa'; needle : STRING[32] := 'b'; "
+        "found : DINT;", "found := FIND(hay, needle);");
+    Rig find_exact;
+    Rig find_under;
+    check(find_exact.build(find_source) && find_under.build(find_source),
+          "L4-B04 FIND cost fixtures build");
+    const std::uint32_t find_cost = 64U * 32U + 64U + 32U;
+    const std::int64_t find_budget = static_cast<std::int64_t>(
+        find_exact.compiled.program.worst_case_instructions);
+    check(find_exact.compiled.program.max_standard_function_cost == find_cost,
+          "L4-B04 FIND worst-case cost includes search product");
+    check(find_exact.scan(find_budget) == st::ScanError::ok &&
+              find_under.scan(find_budget - 1) ==
+                  st::ScanError::budget_exceeded,
+          "L4-B04 FIND dynamic charge matches WCET exactly");
+}
+
 // L0-L3 source regression: current-source behavior survives the L4 registry
 // and opcode extension.  The L3 case is compile-only because its process
 // image transaction behavior belongs to st_l3_tests.cpp.
@@ -702,7 +854,7 @@ void prior_layer_regression()
     }
 
     const st::CompileResult l3 = st::compile(
-        "PROGRAM p VAR mapped AT %MW0 : DINT; END_VAR mapped := 7; END_PROGRAM");
+        "PROGRAM p VAR mapped AT %MD0 : DWORD; END_VAR mapped := 7; END_PROGRAM");
     check(l3.ok, "L3 located-variable source still compiles");
 }
 
@@ -713,10 +865,13 @@ int main()
     exact_function_manifest();
     any_resolution_arithmetic_selection_and_comparison();
     numeric_domains_faults_and_evaluation_order();
+    integer_division_and_checked_date_time_boundaries();
     shifts_and_rotates();
     string_functions_unicode_and_faults();
+    string_capacity_fault_classification();
     date_time_functions_and_utc_boundary();
     cost_budget_determinism_and_zero_allocation();
+    standard_cost_consistency();
     prior_layer_regression();
     if(failures) {
         std::printf("%d failure(s)\n", failures);

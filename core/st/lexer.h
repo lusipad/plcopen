@@ -94,6 +94,9 @@ inline constexpr KeywordEntry kKeywords[] = {
     {"continue", TokenKind::kw_continue},
     {"return", TokenKind::kw_return},
     {"constant", TokenKind::kw_constant},
+    {"retain", TokenKind::kw_retain},
+    {"persistent", TokenKind::kw_persistent},
+    {"at", TokenKind::kw_at},
     {"type", TokenKind::kw_type},
     {"end_type", TokenKind::kw_end_type},
     {"array", TokenKind::kw_array},
@@ -104,6 +107,18 @@ inline constexpr KeywordEntry kKeywords[] = {
     {"xor", TokenKind::kw_xor},
     {"not", TokenKind::kw_not},
     {"mod", TokenKind::kw_mod},
+    {"sfc", TokenKind::kw_sfc},
+    {"end_sfc", TokenKind::kw_end_sfc},
+    {"initial_step", TokenKind::kw_initial_step},
+    {"step", TokenKind::kw_step},
+    {"end_step", TokenKind::kw_end_step},
+    {"transition", TokenKind::kw_transition},
+    {"end_transition", TokenKind::kw_end_transition},
+    {"from", TokenKind::kw_from},
+    {"action", TokenKind::kw_action},
+    {"end_action", TokenKind::kw_end_action},
+    {"simultaneous", TokenKind::kw_simultaneous},
+    {"terminal", TokenKind::kw_terminal},
     {"bool", TokenKind::kw_bool},
     {"int", TokenKind::kw_int},
     {"dint", TokenKind::kw_dint},
@@ -153,10 +168,7 @@ inline constexpr UnsupportedEntry kUnsupported[] = {
     // identifiers; they stay usable as variable names in L0.)
     // L1b composite/string/date universe
     // L3 process image / retention
-    {"retain", DiagCode::unsupported_l3},
     {"non_retain", DiagCode::unsupported_l3},
-    {"persistent", DiagCode::unsupported_l3},
-    {"at", DiagCode::unsupported_l3},
     // L5 configuration / tasking
     {"configuration", DiagCode::unsupported_l5},
     {"end_configuration", DiagCode::unsupported_l5},
@@ -164,14 +176,6 @@ inline constexpr UnsupportedEntry kUnsupported[] = {
     {"end_resource", DiagCode::unsupported_l5},
     {"task", DiagCode::unsupported_l5},
     {"with", DiagCode::unsupported_l5},
-    // L6 SFC
-    {"step", DiagCode::unsupported_l6},
-    {"end_step", DiagCode::unsupported_l6},
-    {"transition", DiagCode::unsupported_l6},
-    {"end_transition", DiagCode::unsupported_l6},
-    {"action", DiagCode::unsupported_l6},
-    {"end_action", DiagCode::unsupported_l6},
-    {"initial_step", DiagCode::unsupported_l6},
     // non-goals
     {"ref_to", DiagCode::unsupported_non_goal},
     {"pointer", DiagCode::unsupported_non_goal},
@@ -182,8 +186,10 @@ inline constexpr UnsupportedEntry kUnsupported[] = {
 class Lexer
 {
 public:
-    explicit Lexer(std::string_view source)
+    explicit Lexer(std::string_view source,
+                   bool trusted_debug_provenance = false)
         : source_(source)
+        , trusted_debug_provenance_(trusted_debug_provenance)
     {
     }
 
@@ -193,6 +199,13 @@ public:
         Token token;
         token.line = line_;
         token.column = column_;
+        token.debug_provenance = pending_debug_provenance_;
+        token.debug_pou = pending_debug_pou_;
+        token.debug_call_path = pending_debug_call_path_;
+        token.debug_line = pending_debug_line_;
+        token.debug_column = pending_debug_column_;
+        token.debug_call_depth = pending_debug_depth_;
+        pending_debug_provenance_ = false;
         if(pending_comment_error_) {
             pending_comment_error_ = false;
             token.kind = TokenKind::error;
@@ -214,6 +227,9 @@ public:
         }
         if(c == '\'' || c == '"') {
             return lex_string(token, start, c);
+        }
+        if(c == '%') {
+            return lex_located_address(token, start);
         }
         return lex_punct(token, start);
     }
@@ -259,6 +275,12 @@ private:
                 continue;
             }
             if(c == '(' && peek(1) == '*') {
+                if(trusted_debug_provenance_ && peek(2) == '@' &&
+                   peek(3) == 'D' && peek(4) == 'B' &&
+                   peek(5) == 'G' && peek(6) == ' ') {
+                    parse_debug_directive();
+                    continue;
+                }
                 advance();
                 advance();
                 int depth = 1;
@@ -283,6 +305,38 @@ private:
             }
             return;
         }
+    }
+
+    void parse_debug_directive()
+    {
+        for(unsigned i = 0; i < 7; ++i) advance();
+        const auto field = [&]() {
+            while(!at_end() && peek() == ' ') advance();
+            const std::size_t begin = pos_;
+            while(!at_end() && peek() != ' ' &&
+                  !(peek() == '*' && peek(1) == ')'))
+                advance();
+            return source_.substr(begin, pos_ - begin);
+        };
+        const auto number = [&](std::string_view text) {
+            std::uint32_t value = 0;
+            for(char c : text) {
+                if(c < '0' || c > '9') return std::uint32_t{0};
+                value = value * 10U + static_cast<std::uint32_t>(c - '0');
+            }
+            return value;
+        };
+        pending_debug_pou_ = field();
+        pending_debug_call_path_ = field();
+        pending_debug_line_ = static_cast<std::int32_t>(number(field()));
+        pending_debug_column_ = static_cast<std::int32_t>(number(field()));
+        pending_debug_depth_ = static_cast<std::uint16_t>(number(field()));
+        while(!at_end() && !(peek() == '*' && peek(1) == ')')) advance();
+        if(!at_end()) { advance(); advance(); }
+        pending_debug_provenance_ = !pending_debug_pou_.empty() &&
+                                    pending_debug_line_ > 0 &&
+                                    pending_debug_column_ > 0 &&
+                                    pending_debug_depth_ > 0;
     }
 
     Token make_error(Token token, DiagCode code, std::size_t start)
@@ -387,6 +441,37 @@ private:
             return make_error(token, DiagCode::lex_bad_identifier, start);
         }
         token.kind = TokenKind::identifier;
+        return token;
+    }
+
+    Token lex_located_address(Token token, std::size_t start)
+    {
+        advance(); // '%'
+        const char area = detail::to_lower(peek());
+        if(area != 'i' && area != 'q' && area != 'm') {
+            return make_error(token, DiagCode::lex_invalid_character, start);
+        }
+        advance();
+        const char width = detail::to_lower(peek());
+        if(width != 'x' && width != 'b' && width != 'w' &&
+           width != 'd' && width != 'l') {
+            return make_error(token, DiagCode::lex_invalid_character, start);
+        }
+        advance();
+        if(!detail::is_digit(peek())) {
+            return make_error(token, DiagCode::lex_bad_numeric_literal, start);
+        }
+        while(detail::is_digit(peek())) advance();
+        if(width == 'x' && peek() == '.') {
+            advance();
+            if(!detail::is_digit(peek())) {
+                return make_error(token, DiagCode::lex_bad_numeric_literal,
+                                  start);
+            }
+            while(detail::is_digit(peek())) advance();
+        }
+        token.kind = TokenKind::located_address;
+        token.text = source_.substr(start, pos_ - start);
         return token;
     }
 
@@ -1022,10 +1107,17 @@ private:
     }
 
     std::string_view source_;
+    bool trusted_debug_provenance_ = false;
     std::size_t pos_ = 0;
     std::int32_t line_ = 1;
     std::int32_t column_ = 1;
     bool pending_comment_error_ = false;
+    bool pending_debug_provenance_ = false;
+    std::string_view pending_debug_pou_;
+    std::string_view pending_debug_call_path_;
+    std::int32_t pending_debug_line_ = 0;
+    std::int32_t pending_debug_column_ = 0;
+    std::uint16_t pending_debug_depth_ = 0;
 };
 
 } // namespace plcopen::core::st

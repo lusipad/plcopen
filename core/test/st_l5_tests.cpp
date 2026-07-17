@@ -8,11 +8,14 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <atomic>
 #include <string>
 #include <string_view>
+#include <thread>
 #include <vector>
 
-#include "axis/state.h"
+#include "adapters/servo.h"
+#include "rt/spsc_queue.h"
 #include "st/st.h"
 
 namespace
@@ -109,7 +112,8 @@ struct Rig
 {
     st::CompileResult compiled;
     st::ConfigurationRuntime runtime;
-    alignas(8) unsigned char storage[1048576] = {};
+    std::vector<std::uint64_t> storage =
+        std::vector<std::uint64_t>(1048576U / sizeof(std::uint64_t));
 
     bool build(const std::string &source,
                const st::CompileOptions &options = st::CompileOptions{})
@@ -122,8 +126,11 @@ struct Rig
             }
             return false;
         }
-        return runtime.load(compiled.program, "plant", storage,
-                            sizeof(storage), kTickNs) == rt::ErrorCode::ok;
+        return runtime.load(
+                   compiled.program, "plant",
+                   reinterpret_cast<unsigned char *>(storage.data()),
+                   storage.size() * sizeof(std::uint64_t), kTickNs) ==
+               rt::ErrorCode::ok;
     }
 
     bool boundary(std::uint64_t tick, const st::EventSample *events = nullptr,
@@ -297,6 +304,90 @@ void declaration_order_breaks_priority_ties()
           "L5-D03 later-declared equal-priority task commits last");
 }
 
+void priority_and_declaration_order_have_full_oracle()
+{
+    const char *globals = "VAR_GLOBAL Trace AT %MD0 : DWORD; END_VAR\n";
+    const char *pous =
+        "PROGRAM One VAR_EXTERNAL Trace : DWORD; END_VAR "
+        "Trace := UDINT_TO_DWORD(DWORD_TO_UDINT(Trace) * 10 + 1); "
+        "END_PROGRAM\n"
+        "PROGRAM Two VAR_EXTERNAL Trace : DWORD; END_VAR "
+        "Trace := UDINT_TO_DWORD(DWORD_TO_UDINT(Trace) * 10 + 2); "
+        "END_PROGRAM\n"
+        "PROGRAM Three VAR_EXTERNAL Trace : DWORD; END_VAR "
+        "Trace := UDINT_TO_DWORD(DWORD_TO_UDINT(Trace) * 10 + 3); "
+        "END_PROGRAM\n";
+    const char *config =
+        "RESOURCE R0 ON PLC\n"
+        "TASK B(INTERVAL := T#1ms, PRIORITY := 2, BUDGET := 100);\n"
+        "TASK A(INTERVAL := T#1ms, PRIORITY := 0, BUDGET := 100);\n"
+        "TASK C(INTERVAL := T#1ms, PRIORITY := 2, BUDGET := 100);\n"
+        "PROGRAM P2 WITH B : Two;\nPROGRAM P1 WITH A : One;\n"
+        "PROGRAM P3 WITH C : Three;\nEND_RESOURCE";
+    Rig rig;
+    check(rig.build(configuration(pous, config, globals)) &&
+              rig.boundary(0) && rig.drain() && rig.memory("r0") == 123,
+          "L5-A02 full oracle is priority then declaration order");
+
+    std::uint32_t random = 0x5a17c3e1U;
+    auto next_random = [&] {
+        random = random * 1664525U + 1013904223U;
+        return random;
+    };
+    for(int round = 0; round < 24; ++round) {
+        int declaration[5] = {0, 1, 2, 3, 4};
+        int priority[5]{};
+        for(int index = 4; index > 0; --index) {
+            const int other = static_cast<int>(next_random() %
+                                               static_cast<unsigned>(index + 1));
+            std::swap(declaration[index], declaration[other]);
+        }
+        for(int index = 0; index < 5; ++index)
+            priority[index] = static_cast<int>(next_random() % 3U);
+
+        std::string random_pous;
+        for(int index = 0; index < 5; ++index) {
+            random_pous += "PROGRAM P" + std::to_string(index) +
+                " VAR_EXTERNAL Trace : DWORD; END_VAR "
+                "Trace := UDINT_TO_DWORD(DWORD_TO_UDINT(Trace) * 10 + " +
+                std::to_string(index + 1) + "); END_PROGRAM\n";
+        }
+        std::string random_config = "RESOURCE R0 ON PLC\n";
+        for(int at = 0; at < 5; ++at) {
+            const int index = declaration[at];
+            random_config += "TASK T" + std::to_string(index) +
+                "(INTERVAL := T#1ms, PRIORITY := " +
+                std::to_string(priority[index]) +
+                ", BUDGET := 100);\n";
+        }
+        for(int index = 4; index >= 0; --index) {
+            random_config += "PROGRAM I" + std::to_string(index) +
+                " WITH T" + std::to_string(index) + " : P" +
+                std::to_string(index) + ";\n";
+        }
+        random_config += "END_RESOURCE";
+
+        int execution[5] = {0, 1, 2, 3, 4};
+        int declaration_rank[5]{};
+        for(int at = 0; at < 5; ++at)
+            declaration_rank[declaration[at]] = at;
+        std::sort(execution, execution + 5, [&](int left, int right) {
+            return priority[left] != priority[right]
+                ? priority[left] < priority[right]
+                : declaration_rank[left] < declaration_rank[right];
+        });
+        std::int64_t expected = 0;
+        for(const int index : execution) expected = expected * 10 + index + 1;
+
+        Rig random_rig;
+        check(random_rig.build(configuration(random_pous, random_config,
+                                             globals)) &&
+                  random_rig.boundary(0) && random_rig.drain() &&
+                  random_rig.memory("r0") == expected,
+              "L5-A02 randomized priority/declaration full oracle");
+    }
+}
+
 void program_mapping_order_is_preserved()
 {
     const char *globals =
@@ -317,6 +408,240 @@ void program_mapping_order_is_preserved()
           "L5-D03 PROGRAM-order configuration builds");
     check(rig.boundary(0) && rig.drain() && rig.memory("r0") == 32,
           "L5-D03 same-task PROGRAM mappings execute in declaration order");
+}
+
+void program_mapping_release_is_one_image_transaction()
+{
+    const std::string programs =
+        "PROGRAM First\nVAR Q AT %QD0 : DWORD; END_VAR\n"
+        "Q := DWORD#11;\nEND_PROGRAM\n"
+        "PROGRAM Second\nVAR Q AT %QD4 : DWORD; END_VAR\n"
+        "Q := DWORD#22;\nEND_PROGRAM\n";
+    const std::string config =
+        "RESOURCE R0 ON PLC\n"
+        "TASK T(INTERVAL := T#1ms, PRIORITY := 0, BUDGET := 100);\n"
+        "PROGRAM A WITH T : First;\nPROGRAM B WITH T : Second;\n"
+        "END_RESOURCE";
+    Rig rig;
+    check(rig.build(configuration(programs, config)),
+          "L5 multi-mapping transaction builds");
+    check(rig.boundary(0), "L5 multi-mapping transaction releases");
+    for(int step = 0; step < 100; ++step) {
+        check(rig.runtime.run(1) == rt::ErrorCode::ok,
+              "L5 multi-mapping transaction advances");
+        const st::TaskStatus status = rig.task("r0", "t");
+        unsigned char bytes[8]{};
+        std::size_t written = 0;
+        std::uint64_t version = 99;
+        check(rig.runtime.output_snapshot("r0", bytes, sizeof(bytes), written,
+                                          version) == rt::ErrorCode::ok,
+              "L5 multi-mapping snapshot succeeds");
+        if(status.state == st::TaskState::running) {
+            check(version == 0 && bytes[0] == 0 && bytes[4] == 0,
+                  "L5 multi-mapping partial release stays unpublished");
+            continue;
+        }
+        check(status.state == st::TaskState::idle && version == 1 &&
+                  bytes[0] == 11 && bytes[4] == 22,
+              "L5 multi-mapping release publishes once when complete");
+        return;
+    }
+    fail("L5 multi-mapping release completes within budget");
+}
+
+void later_mapping_reads_same_task_staged_image()
+{
+    const std::string programs =
+        "PROGRAM First\nVAR_EXTERNAL Q : DWORD; END_VAR\n"
+        "Q := DWORD#17;\nEND_PROGRAM\n"
+        "PROGRAM Second\nVAR_EXTERNAL Q : DWORD; END_VAR\n"
+        "VAR Seen AT %QD4 : DWORD; END_VAR\nSeen := Q;\nEND_PROGRAM\n";
+    const std::string config =
+        "RESOURCE R0 ON PLC\n"
+        "TASK T(INTERVAL := T#1ms, PRIORITY := 0, BUDGET := 100);\n"
+        "PROGRAM A WITH T : First;\nPROGRAM B WITH T : Second;\n"
+        "END_RESOURCE";
+    Rig rig;
+    check(rig.build(configuration(
+              programs, config,
+              "VAR_GLOBAL Q AT %QD0 : DWORD; END_VAR\n")) &&
+              rig.boundary(0) && rig.drain(),
+          "L5 same-task staged-image fixture executes");
+    unsigned char bytes[8]{};
+    std::size_t written = 0;
+    std::uint64_t version = 0;
+    check(rig.runtime.output_snapshot("r0", bytes, sizeof(bytes), written,
+                                      version) == rt::ErrorCode::ok &&
+              bytes[0] == 17 && bytes[4] == 17 && version == 1,
+          "L5 later mapping reads the shared staged task image");
+}
+
+void later_mapping_fault_discards_earlier_mapping_writes()
+{
+    const std::string programs =
+        "PROGRAM First\nVAR Q AT %QD0 : DWORD; END_VAR\n"
+        "Q := DWORD#11;\nEND_PROGRAM\n"
+        "PROGRAM Bad\nVAR Z : DINT; X : DINT; END_VAR\n"
+        "X := 1 / Z;\nEND_PROGRAM\n";
+    const std::string config =
+        "RESOURCE R0 ON PLC\n"
+        "TASK T(INTERVAL := T#1ms, PRIORITY := 0, BUDGET := 100);\n"
+        "PROGRAM A WITH T : First;\nPROGRAM B WITH T : Bad;\n"
+        "END_RESOURCE";
+    Rig rig;
+    check(rig.build(configuration(programs, config)),
+          "L5 later-mapping fault transaction builds");
+    check(rig.boundary(0) && rig.drain(),
+          "L5 later-mapping fault transaction executes");
+    const st::TaskStatus status = rig.task("r0", "t");
+    unsigned char bytes[8]{};
+    std::size_t written = 0;
+    std::uint64_t version = 99;
+    check(status.state == st::TaskState::faulted &&
+              rig.runtime.output_snapshot("r0", bytes, sizeof(bytes), written,
+                                          version) == rt::ErrorCode::ok &&
+              version == 0 && bytes[0] == 0,
+          "L5 later mapping fault discards whole task image transaction");
+}
+
+void resource_image_remaps_initial_values_and_rejects_bad_overlap()
+{
+    const std::string initialized = configuration(
+        "PROGRAM A\nVAR Q AT %QD0 : DWORD := DWORD#11; END_VAR\n"
+        "END_PROGRAM\n"
+        "PROGRAM B\nVAR Q AT %QD4 : DWORD := DWORD#22; END_VAR\n"
+        "END_PROGRAM\n",
+        "RESOURCE R0 ON PLC\n"
+        "TASK T(INTERVAL := T#1ms, PRIORITY := 0, BUDGET := 100);\n"
+        "PROGRAM A0 WITH T : A;\nPROGRAM B0 WITH T : B;\n"
+        "END_RESOURCE");
+    Rig rig;
+    check(rig.build(initialized),
+          "L5 resource image remapped initial values build");
+    unsigned char bytes[8]{};
+    std::size_t written = 0;
+    std::uint64_t version = 99;
+    check(rig.runtime.output_snapshot("r0", bytes, sizeof(bytes), written,
+                                      version) == rt::ErrorCode::ok &&
+              bytes[0] == 11 && bytes[4] == 22,
+          "L5 resource image preserves per-PROGRAM located initial values");
+
+    const st::CompileResult incompatible = st::compile(configuration(
+        "PROGRAM Wide\nVAR Q AT %QD0 : DWORD; END_VAR\nEND_PROGRAM\n"
+        "PROGRAM Narrow\nVAR Q AT %QB0 : BYTE; END_VAR\nEND_PROGRAM\n",
+        "RESOURCE R0 ON PLC\n"
+        "TASK T(INTERVAL := T#1ms, PRIORITY := 0, BUDGET := 100);\n"
+        "PROGRAM W WITH T : Wide;\nPROGRAM N WITH T : Narrow;\n"
+        "END_RESOURCE"));
+    std::vector<std::uint64_t> storage(1024);
+    st::ConfigurationRuntime runtime;
+    check(incompatible.ok &&
+              runtime.load(
+                  incompatible.program, "plant",
+                  reinterpret_cast<unsigned char *>(storage.data()),
+                  storage.size() * sizeof(std::uint64_t), kTickNs) ==
+                  rt::ErrorCode::invalid_argument,
+          "L5 resource image rejects cross-PROGRAM incompatible overlap");
+
+    for(const char area : {'Q', 'M'}) {
+        const std::string location = std::string("%") + area + "D0";
+        const st::CompileResult local_exact = st::compile(configuration(
+            "PROGRAM A\nVAR V AT " + location +
+                " : DWORD; END_VAR\nEND_PROGRAM\n"
+            "PROGRAM B\nVAR V AT " + location +
+                " : DWORD; END_VAR\nEND_PROGRAM\n",
+            "RESOURCE R0 ON PLC\n"
+            "TASK T(INTERVAL := T#1ms, PRIORITY := 0, BUDGET := 100);\n"
+            "PROGRAM A0 WITH T : A;\nPROGRAM B0 WITH T : B;\n"
+            "END_RESOURCE"));
+        st::ConfigurationRuntime local_runtime;
+        check(local_exact.ok &&
+                  local_runtime.load(
+                      local_exact.program, "plant",
+                      reinterpret_cast<unsigned char *>(storage.data()),
+                      storage.size() * sizeof(std::uint64_t), kTickNs) ==
+                      rt::ErrorCode::invalid_argument,
+              area == 'Q'
+                  ? "L5 resource rejects distinct local exact Q aliases"
+                  : "L5 resource rejects distinct local exact M aliases");
+    }
+
+    const char *input_widths[] = {"B", "W", "D", "L"};
+    const char *input_types[] = {"BYTE", "WORD", "DWORD", "LWORD"};
+    for(std::size_t index = 0; index < 4; ++index) {
+        const std::string source = configuration(
+            std::string(
+                "PROGRAM Bit\nVAR I AT %IX0.0 : BOOL; END_VAR\nEND_PROGRAM\n"
+                "PROGRAM Whole\nVAR I AT %I") +
+                input_widths[index] + "0 : " + input_types[index] +
+                "; END_VAR\nEND_PROGRAM\n",
+            "RESOURCE R0 ON PLC\n"
+            "TASK T(INTERVAL := T#1ms, PRIORITY := 0, BUDGET := 100);\n"
+            "PROGRAM X WITH T : Bit;\nPROGRAM N WITH T : Whole;\n"
+            "END_RESOURCE");
+        Rig input_alias;
+        check(input_alias.build(source),
+              "L5 resource accepts I X alias contained by B/W/D/L");
+    }
+}
+
+void conflicts_use_actual_dirty_bits()
+{
+    Rig readonly;
+    check(readonly.build(configuration(
+              "PROGRAM A\nVAR_EXTERNAL Q : DWORD; END_VAR\n"
+              "VAR N : DINT; END_VAR\n"
+              "N := N + 1;\nEND_PROGRAM\n"
+              "PROGRAM B\nVAR_EXTERNAL Q : DWORD; END_VAR\n"
+              "VAR N : DINT; END_VAR\n"
+              "N := N + 1;\nEND_PROGRAM\n",
+              "RESOURCE R0 ON PLC\n"
+              "TASK A(INTERVAL := T#1ms, PRIORITY := 0, BUDGET := 100);\n"
+              "TASK B(INTERVAL := T#1ms, PRIORITY := 1, BUDGET := 100);\n"
+              "PROGRAM A0 WITH A : A;\nPROGRAM B0 WITH B : B;\n"
+              "END_RESOURCE",
+              "VAR_GLOBAL Q AT %QD0 : DWORD; END_VAR\n")) &&
+              readonly.boundary(0) && readonly.drain(),
+          "L5 read-only alias tasks execute");
+    st::ResourceStatus readonly_status{};
+    check(readonly.runtime.resource_status("r0", readonly_status) ==
+                  rt::ErrorCode::ok &&
+              readonly_status.write_conflict_count == 0,
+          "L5 declared but unwritten located variables do not conflict");
+
+    Rig bits;
+    check(bits.build(configuration(
+              "PROGRAM A\nVAR Q AT %QX0.0 : BOOL; END_VAR\n"
+              "Q := TRUE;\nEND_PROGRAM\n"
+              "PROGRAM B\nVAR Q AT %QX0.1 : BOOL; END_VAR\n"
+              "Q := TRUE;\nEND_PROGRAM\n",
+              "RESOURCE R0 ON PLC\n"
+              "TASK A(INTERVAL := T#1ms, PRIORITY := 0, BUDGET := 100);\n"
+              "TASK B(INTERVAL := T#1ms, PRIORITY := 1, BUDGET := 100);\n"
+              "PROGRAM A0 WITH A : A;\nPROGRAM B0 WITH B : B;\n"
+              "END_RESOURCE")) &&
+              bits.boundary(0) && bits.drain(),
+          "L5 disjoint-bit tasks execute");
+    st::ResourceStatus bit_status{};
+    check(bits.runtime.resource_status("r0", bit_status) ==
+                  rt::ErrorCode::ok &&
+              bit_status.write_conflict_count == 0,
+          "L5 disjoint dirty bits in one byte do not conflict");
+}
+
+void resource_input_submission_is_sampled_once_per_task()
+{
+    Rig rig;
+    check(rig.build(one_periodic(
+              "Input", "VAR I AT %ID0 : DWORD; Seen : DINT; END_VAR",
+              "Seen := DWORD_TO_DINT(I);")),
+          "L5 resource input configuration builds");
+    const unsigned char input[4] = {42, 0, 0, 0};
+    check(rig.runtime.submit_input("r0", input, sizeof(input), 7) ==
+                  rt::ErrorCode::ok &&
+              rig.boundary(0) && rig.drain() &&
+              rig.value("r0", "p0", "seen") == 42,
+          "L5 resource submit_input reaches mapped PROGRAM snapshot");
 }
 
 // L5-A03/D05-D06: each mapping has independent persistent state, while a
@@ -406,6 +731,80 @@ void missed_releases_do_not_catch_up()
           "L5-D04 scheduler resumes from the current release only");
 }
 
+void resource_transaction_owner_is_cooperative_and_non_preemptive()
+{
+    const char *globals = "VAR_GLOBAL Trace AT %MD0 : DWORD; END_VAR\n";
+    const char *pous =
+        "PROGRAM Low VAR_EXTERNAL Trace : DWORD; END_VAR "
+        "VAR I : DINT; N : DINT; END_VAR "
+        "FOR I := 1 TO 100 DO N := N + 1; END_FOR; "
+        "Trace := UDINT_TO_DWORD(DWORD_TO_UDINT(Trace) * 10 + 1); "
+        "END_PROGRAM\n"
+        "PROGRAM High VAR_EXTERNAL Trace : DWORD; END_VAR "
+        "Trace := UDINT_TO_DWORD(DWORD_TO_UDINT(Trace) * 10 + 2); "
+        "END_PROGRAM\n";
+    const char *config =
+        "RESOURCE R0 ON PLC\n"
+        "TASK LowTask(INTERVAL := T#10ms, PHASE := T#0ms, PRIORITY := 7, "
+        "BUDGET := 10000);\n"
+        "TASK HighTask(INTERVAL := T#10ms, PHASE := T#1ms, PRIORITY := 0, "
+        "BUDGET := 100);\n"
+        "PROGRAM L WITH LowTask : Low;\n"
+        "PROGRAM H WITH HighTask : High;\nEND_RESOURCE";
+    Rig rig;
+    check(rig.build(configuration(pous, config, globals)) &&
+              rig.boundary(0) &&
+              rig.runtime.run(1) == rt::ErrorCode::ok &&
+              rig.boundary(1) && rig.drain(),
+          "L5 resource owner survives a higher-priority boundary release");
+    check(rig.memory("r0") == 12 &&
+              rig.task("r0", "lowtask").completed_count == 1 &&
+              rig.task("r0", "hightask").completed_count == 1,
+          "L5 cooperative owner completes before newly ready high task");
+}
+
+void reset_and_restart_discard_an_active_resource_owner()
+{
+    for(const bool restart : {false, true}) {
+        const char *globals =
+            "VAR_GLOBAL Trace AT %MD0 : DWORD; END_VAR\n";
+        const char *pous =
+            "PROGRAM Long VAR_EXTERNAL Trace : DWORD; END_VAR "
+            "VAR I : DINT; N : DINT := 10; END_VAR "
+            "N := N + 1; FOR I := 1 TO 100 DO N := N + 1; END_FOR; "
+            "Trace := 1; END_PROGRAM\n"
+            "PROGRAM Ready VAR_EXTERNAL Trace : DWORD; END_VAR "
+            "Trace := 2; END_PROGRAM\n";
+        const char *config =
+            "RESOURCE R0 ON PLC\n"
+            "TASK LongTask(INTERVAL := T#10ms, PHASE := T#0ms, "
+            "PRIORITY := 7, BUDGET := 10000);\n"
+            "TASK ReadyTask(INTERVAL := T#10ms, PHASE := T#1ms, "
+            "PRIORITY := 0, BUDGET := 100);\n"
+            "PROGRAM L WITH LongTask : Long;\n"
+            "PROGRAM H WITH ReadyTask : Ready;\nEND_RESOURCE";
+        Rig rig;
+        check(rig.build(configuration(pous, config, globals)) &&
+                  rig.boundary(0) &&
+                  rig.runtime.run(8) == rt::ErrorCode::ok,
+              "L5 active owner recovery fixture starts");
+        const std::int64_t before = rig.value("r0", "l", "n");
+        const rt::ErrorCode queued = restart
+            ? rig.runtime.restart_task("r0", "longtask")
+            : rig.runtime.reset_task("r0", "longtask");
+        check(queued == rt::ErrorCode::ok && rig.boundary(1) && rig.drain() &&
+                  rig.memory("r0") == 2 &&
+                  rig.task("r0", "readytask").completed_count == 1,
+              restart
+                  ? "L5 restart discards owner and unblocks ready task"
+                  : "L5 reset discards owner and unblocks ready task");
+        check(rig.value("r0", "l", "n") == (restart ? 10 : before),
+              restart
+                  ? "L5 active-owner restart reinitializes PROGRAM state"
+                  : "L5 active-owner reset preserves PROGRAM state");
+    }
+}
+
 void instruction_budget_fault_discards_output()
 {
     Rig rig;
@@ -423,7 +822,10 @@ void instruction_budget_fault_discards_output()
     std::uint64_t version = 99;
     check(status.state == st::TaskState::faulted &&
               status.fault == st::TaskFault::task_budget_exceeded &&
-              status.fault_count == 1 && !status.fault_pou.empty() &&
+              status.fault_count == 1 &&
+              status.fault_pou_index != st::invalid_artifact_index &&
+              rig.runtime.artifact_pou_name(status.fault_pou_index) ==
+                  "Budget" &&
               status.fault_instruction != 0,
           "L5-D08 budget fault preserves reason POU position and count");
     check(rig.runtime.output_snapshot("r0", bytes, sizeof(bytes), written,
@@ -437,9 +839,10 @@ void wallclock_fault_is_injected_at_a_boundary()
     Rig rig;
     check(rig.build(one_periodic(
               "Slow", "VAR I : DINT; Q AT %QD0 : DWORD; END_VAR",
-              "FOR I := 1 TO 100 DO Q := Q + 1; END_FOR;")),
+              "FOR I := 1 TO 100 DO "
+              "Q := UDINT_TO_DWORD(DWORD_TO_UDINT(Q) + 1); END_FOR;")),
           "L5-D09 wallclock-fault configuration builds");
-    check(rig.boundary(0) && rig.runtime.run(1) == rt::ErrorCode::ok,
+    check(rig.boundary(0) && rig.runtime.run(8) == rt::ErrorCode::ok,
           "L5-D09 task is active before host report");
     check(rig.runtime.report_wallclock_exceeded("r0", "main") ==
               rt::ErrorCode::ok,
@@ -447,7 +850,11 @@ void wallclock_fault_is_injected_at_a_boundary()
     check(rig.boundary(1), "L5-D09 report latches at next boundary");
     const st::TaskStatus status = rig.task("r0", "main");
     check(status.state == st::TaskState::faulted &&
-              status.fault == st::TaskFault::task_wallclock_exceeded,
+              status.fault == st::TaskFault::task_wallclock_exceeded &&
+              status.fault_pou_index != st::invalid_artifact_index &&
+              rig.runtime.artifact_pou_name(status.fault_pou_index) ==
+                  "Slow" &&
+              status.fault_instruction != 0,
           "L5-D09 wallclock report becomes stable task fault");
     unsigned char bytes[8]{};
     std::size_t written = 0;
@@ -542,11 +949,13 @@ void resource_fault_stops_one_resource_only()
           "L5-D13 multi-resource configuration builds");
     check(rig.boundary(0) && rig.drain(),
           "L5-D13 both resources execute before fault");
-    check(rig.runtime.report_resource_fault(
+    check(rig.boundary(1) &&
+              rig.runtime.run(1) == rt::ErrorCode::ok &&
+              rig.runtime.report_resource_fault(
               "r0", st::ResourceFault::image_commit_failed) ==
                   rt::ErrorCode::ok,
-          "L5-D13 host queues resource image fault");
-    for(std::uint64_t tick = 1; tick < 10; ++tick) {
+          "L5-D13 host queues resource fault against active owner");
+    for(std::uint64_t tick = 2; tick < 10; ++tick) {
         check(rig.boundary(tick) && rig.drain(),
               "L5-D13 unaffected resource continues");
     }
@@ -557,30 +966,112 @@ void resource_fault_stops_one_resource_only()
               left.fault == st::ResourceFault::image_commit_failed &&
               right.fault == st::ResourceFault::none &&
               rig.value("r0", "p0", "n") == 1 &&
-              rig.value("r1", "p1", "n") == 10,
+              rig.value("r1", "p1", "n") == 9 &&
+              rig.task("r1", "t1").missed_release_count == 1,
           "L5-D13 resource fault neither runs locally nor propagates remotely");
 }
 
-// L5-A07/D07: the ST runtime owns no motion executor and returns after a
-// fault; a host can continue consuming one motion tick per base boundary.
+struct ExecutorFrame
+{
+    std::uint64_t tick = 0;
+    adapters::ServoSetpoints setpoints{};
+};
+
+struct ExecutorTrace
+{
+    std::uint64_t tick = 0;
+    double commanded = 0.0;
+    double feedback = 0.0;
+};
+
+// L5-A07/D07: exercise the reference executor handoff itself: committed
+// frames are consumed once, written through Servo, and emitted to a trace
+// ring while ST remains an independent host-driven domain.
 void motion_tick_consumption_survives_st_fault()
 {
     Rig rig;
     check(rig.build(one_periodic(
               "Bad", "VAR Z : DINT; X : DINT; END_VAR", "X := 1 / Z;")),
           "L5-A07 faulting ST configuration builds");
-    axis::AxisModel motion;
-    motion.set_power(true);
-    std::uint64_t motion_ticks = 0;
+    rt::SpscQueue<ExecutorFrame, 1024> committed;
+    rt::SpscQueue<ExecutorTrace, 1024> trace;
+    for(std::uint64_t tick = 0; tick < 1000; ++tick) {
+        ExecutorFrame frame{};
+        frame.tick = tick;
+        frame.setpoints.position = static_cast<double>(tick) + 0.25;
+        check(committed.push(frame), "L5-A07 committed frame is queued");
+    }
+    adapters::ServoSim servo;
     for(std::uint64_t tick = 0; tick < 1000; ++tick) {
         check(rig.boundary(tick) && rig.drain(),
               "L5-A07 faulted ST boundary returns to host");
-        motion.cycle();
-        ++motion_ticks;
+        ExecutorFrame frame{};
+        adapters::ServoFeedback feedback{};
+        check(committed.pop(frame), "L5-A07 RT executor consumes one frame");
+        servo.write_setpoints(frame.setpoints);
+        servo.read_feedback(feedback);
+        check(trace.push({frame.tick, frame.setpoints.position,
+                          feedback.position}),
+              "L5-A07 RT executor publishes trace record");
     }
-    check(motion_ticks == 1000 &&
+    std::uint64_t traces = 0;
+    ExecutorTrace record{};
+    bool ordered = true;
+    while(trace.pop(record)) {
+        ordered = ordered && record.tick == traces &&
+                  record.commanded == record.feedback;
+        ++traces;
+    }
+    check(traces == 1000 && ordered && committed.empty() &&
               rig.task("r0", "main").state == st::TaskState::faulted,
-          "L5-D07 motion-domain cadence survives latched ST task fault");
+          "L5-D07 executor and trace cadence survive latched ST task fault");
+}
+
+void motion_and_l5_run_concurrently_without_shared_state()
+{
+    Rig rig;
+    check(rig.build(one_periodic(
+              "Bad", "VAR Z : DINT; X : DINT; END_VAR", "X := 1 / Z;")),
+          "L5-A07 concurrent faulting configuration builds");
+    rt::SpscQueue<ExecutorFrame, 1024> committed;
+    rt::SpscQueue<ExecutorTrace, 1024> trace;
+    for(std::uint64_t tick = 0; tick < 1000; ++tick) {
+        ExecutorFrame frame{};
+        frame.tick = tick;
+        frame.setpoints.position = static_cast<double>(tick) + 0.5;
+        check(committed.push(frame),
+              "L5-A07 concurrent committed frame is queued");
+    }
+    std::atomic<bool> start{false};
+    std::thread executor([&] {
+        adapters::ServoSim servo;
+        while(!start.load(std::memory_order_acquire)) {}
+        for(std::uint64_t tick = 0; tick < 1000; ++tick) {
+            ExecutorFrame frame{};
+            while(!committed.pop(frame)) {}
+            adapters::ServoFeedback feedback{};
+            servo.write_setpoints(frame.setpoints);
+            servo.read_feedback(feedback);
+            while(!trace.push({frame.tick, frame.setpoints.position,
+                               feedback.position})) {}
+        }
+    });
+    start.store(true, std::memory_order_release);
+    for(std::uint64_t tick = 0; tick < 1000; ++tick)
+        check(rig.boundary(tick) && rig.drain(),
+              "L5-A07 concurrent ST boundary returns");
+    executor.join();
+    std::uint64_t traces = 0;
+    ExecutorTrace record{};
+    bool ordered = true;
+    while(trace.pop(record)) {
+        ordered = ordered && record.tick == traces &&
+                  record.commanded == record.feedback;
+        ++traces;
+    }
+    check(traces == 1000 && ordered && committed.empty() &&
+              rig.task("r0", "main").state == st::TaskState::faulted,
+          "L5-A07 RT executor trace and ST complete concurrently");
 }
 
 void invalid_task_configuration_has_stable_diagnostics()
@@ -705,7 +1196,7 @@ void artifact_reports_release_costs_and_image_bytes()
 {
     const st::CompileResult compiled = st::compile(one_periodic(
         "Report", "VAR I AT %ID0 : DWORD; Q AT %QD0 : DWORD; END_VAR",
-        "Q := I + 1;"));
+        "Q := UDINT_TO_DWORD(DWORD_TO_UDINT(I) + 1);"));
     check(compiled.ok, "L5 report configuration compiles");
     if(!compiled.ok) return;
     st::TaskingReport report{};
@@ -717,6 +1208,23 @@ void artifact_reports_release_costs_and_image_bytes()
               report.image_copy_bytes >= 8 &&
               report.required_runtime_bytes > 0,
           "L5 artifact reports release cost image copy and runtime storage");
+
+    const std::size_t required =
+        static_cast<std::size_t>(report.required_runtime_bytes);
+    std::vector<std::uint64_t> exact((required + 7U) / 8U);
+    std::vector<std::uint64_t> short_buffer((required + 7U) / 8U);
+    st::ConfigurationRuntime exact_runtime;
+    st::ConfigurationRuntime short_runtime;
+    check(exact_runtime.load(
+              compiled.program, "plant",
+              reinterpret_cast<unsigned char *>(exact.data()), required,
+              kTickNs) == rt::ErrorCode::ok,
+          "L5 required_runtime_bytes is sufficient exactly");
+    check(short_runtime.load(
+              compiled.program, "plant",
+              reinterpret_cast<unsigned char *>(short_buffer.data()),
+              required - 1U, kTickNs) == rt::ErrorCode::capacity_exceeded,
+          "L5 required_runtime_bytes minus one is rejected");
 }
 
 void compilation_and_schedule_are_deterministic()
@@ -774,7 +1282,7 @@ void cycle_path_is_zero_allocation()
     Rig rig;
     check(rig.build(one_periodic(
               "Rt", "VAR I AT %ID0 : DWORD; Q AT %QD0 : DWORD; END_VAR",
-              "Q := I + 1;")),
+              "Q := UDINT_TO_DWORD(DWORD_TO_UDINT(I) + 1);")),
           "L5 RT configuration builds");
     check(rig.boundary(0) && rig.drain(), "L5 RT warm-up completes");
     g_frozen_allocations = 0;
@@ -847,16 +1355,26 @@ int main()
     event_requires_a_new_rising_edge();
     priority_orders_same_tick_commits();
     declaration_order_breaks_priority_ties();
+    priority_and_declaration_order_have_full_oracle();
     program_mapping_order_is_preserved();
+    program_mapping_release_is_one_image_transaction();
+    later_mapping_reads_same_task_staged_image();
+    later_mapping_fault_discards_earlier_mapping_writes();
+    resource_image_remaps_initial_values_and_rejects_bad_overlap();
+    conflicts_use_actual_dirty_bits();
+    resource_input_submission_is_sampled_once_per_task();
     program_instances_are_independent();
     task_snapshots_never_expose_half_writes();
     missed_releases_do_not_catch_up();
+    resource_transaction_owner_is_cooperative_and_non_preemptive();
+    reset_and_restart_discard_an_active_resource_owner();
     instruction_budget_fault_discards_output();
     wallclock_fault_is_injected_at_a_boundary();
     faulted_task_is_isolated_from_other_tasks();
     reset_preserves_state_restart_reinitializes_state();
     resource_fault_stops_one_resource_only();
     motion_tick_consumption_survives_st_fault();
+    motion_and_l5_run_concurrently_without_shared_state();
     invalid_task_configuration_has_stable_diagnostics();
     duplicate_and_unmapped_programs_are_diagnosed();
     task_self_control_and_dynamic_tasks_are_rejected();

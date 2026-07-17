@@ -23,8 +23,15 @@
 | L2a-stage | implemented | AXIS_REF + 十个单轴 MC 测试 | 由 L2c 替换临时 INT 枚举路线并扩到 Bind Complete |
 | L1b1 | implemented | enum/subrange + bytecode v2 + 22 黄金程序 | 保持回归 |
 | L1b2 | implemented | ARRAY/STRUCT + byte-offset ABI + 22 黄金程序 | 保持回归 |
-| L1b3-L7 | approved / pending | 语义矩阵 | 按工作拆解依次测试先行实现 |
-| L∀ | pending | feature-set/table 骨架 | 建 verifier 并随每批收紧 |
+| L1b3 | implemented | 字符/字符串/日期时间 + 100k fuzz | 保持回归 |
+| L2b | implemented | 用户 POU/多 PROGRAM + artifact/fuzz | 保持回归 |
+| L2c | implemented | 134 FB / 1476 pins 闭包 | 保持回归 |
+| L3 | implemented | 进程映像/retain/force + TSan | 保持回归 |
+| L4 | implemented | 51 个标准函数 + 精确预算 | 保持回归 |
+| L5 | implemented | task/resource/runtime + 100k fuzz/TSan | 保持回归 |
+| L6 | implemented | 文本 SFC/九限定符/事务 runner + 100k fuzz | 保持回归 |
+| L7 | implemented | 调试/快照 + release 零成本 + 100k fuzz/TSan | 保持回归 |
+| L∀ | implemented | feature-set/table 闭合 + 完成态 verifier | 保持回归 |
 
 ## 2. 无兼容迁移清单
 
@@ -221,17 +228,128 @@
   L3-L7 五个未来 RED 合同目标不计入本批。Clang、ARM64 与远端门提交后补录。
 - 剩余 pending 与下一批前置：85；L3 进程映像/存储与 L4a 标准函数可并行。
 
+### 2026-07-17 / ST-L3 / working tree
+
+- 目标矩阵与验收 ID：L3-A01 至 L3-A07、D01 至 D13；以
+  `st-l3-semantics.md` 与 `st_l3_tests.cpp` 为验收事实源。
+- feature-set 变更（pending → implemented）：located variables、I/Q/M
+  process image、X/B/W/D/L、RETAIN、PERSISTENT、force mask 与布局诊断。
+- 实际设计与矩阵一致处：地址在编译期固化；输入在扫描边界冻结，Q/M 只在
+  正常 HALT 后提交；故障丢弃图像写入但保留普通变量既有先写语义；force/
+  release 在下一边界生效并覆盖 located 读取、写入和最终发布。
+- Decisions：输入只允许完全相同别名及 X 与包含它的 B/W/D/L 别名，Q/M 任意重叠均以
+  `sema_process_image_overlap` 拒绝；W/D/L 分别要求 2/4/8 字节对齐。
+- Decisions：RETAIN 要求项目指纹一致；PERSISTENT 跨指纹时仍要求稳定 ID、
+  TypeId 与长度完全一致。只支持当前快照格式与当前源码重新编译，不设迁移层。
+- Decisions：仅 located M 位串 `+` 使用既有固定宽度模运算；非 located 位串
+  算术仍按 L1a 拒绝，避免放宽基础语言语义。
+- 本地门禁：Windows Release L3 专项通过；L0-L3 15 个专项/矩阵门禁 15/15
+  通过；ST conformance check 通过。并发输入冻结、输出无撕裂、故障回滚、
+  snapshot、force/release、1000 次冻结 scan 零分配与 100 次确定编译均覆盖。
+- 远端门禁：待提交后执行。
+
+### 2026-07-17 / ST-L4 / working tree
+
+- 目标矩阵与验收 ID：L4-A01 至 L4-A08、D01 至 D18；以
+  `st-l4-semantics.md` 和 `st_l4_tests.cpp` 为验收事实源。
+- feature-set 变更（pending → implemented）：51 个固定标准函数全部转为
+  implemented；生产清单声明、注册与测试集合相等。
+- 实际设计与矩阵一致处：ANY 重载只采用 L1a 无损拓宽；参数从左到右立即
+  求值；位串移位按静态宽度处理；STRING/WSTRING 位置按 Unicode 标量解释；
+  日期时间只使用整数日历/纳秒，UTC 由宿主显式注入。
+- 偏差及原因：L4 内嵌 L3 回归样例由 `%MW0 : DINT` 修正为
+  `%MD0 : DWORD`，以满足 L3-D01 的地址宽度与 IEC 位串类型精确映射；实现语义
+  未变。
+- 删除的临时/兼容路径：不保留单参数 call 语法假定或旧字节码解释器；当前
+  源码直接使用多参数 call AST 和 L4 指令。
+- bytecode version / opcode / hash 变化：格式升至当前统一版本；新增有界
+  `standard_scalar` / `standard_string` 指令，artifact 报告
+  `max_standard_function_cost`。
+- 测试先行证据：L4 RED 最初由缺失生产清单、诊断码、UTC 注入、成本字段和
+  运行指令触发；闭合后 51 函数、故障原子性、精确预算 N/N-1、1000 次冻结
+  scan 零分配及确定性均通过。
+- 本地门禁：Windows Debug `plcopen_core_st_l4_tests` 通过。L0-L2c 联合回归
+  中，L4 未引入专项失败；仍待 L3 合入批处理其毕业后过期的 L0 拒绝断言，
+  并复核 located-memory 位串加法特例对 L1a 非 located 变量的隔离。
+- 远端门禁：待提交后执行。
+- 剩余 pending 与下一批前置：L4 无 pending；继续 L5-L7。
+
+### 2026-07-17 / ST-L5 / working tree
+
+- 目标矩阵与验收 ID：L5-A01 至 L5-A08、D01 至 D13；以
+  `st-l5-semantics.md`、`st_l5_frontend_tests.cpp` 与 `st_l5_tests.cpp` 为
+  验收事实源。
+- feature-set 变更（pending → implemented）：CONFIGURATION/RESOURCE grammar、
+  九项 task 能力与 task fault 诊断共 11 项；全局 pending 24 → 13。
+- 实际设计与矩阵一致处：宿主在整数边界采样 release，RESOURCE 内按
+  priority/声明序协作调度；资源级唯一 transaction owner 在一个 TASK 的全部
+  PROGRAM 映射完成前禁止同资源抢占，成功统一发布，fault/reset/restart/
+  resource fault 统一丢弃并释放 owner。
+- Decisions：资源映像严格复用 L3 schema。跨 PROGRAM 的本地 Q/M 即使同址
+  同型也拒绝；仅同一 GVL/VAR_EXTERNAL 逻辑对象可合并；I 区允许完全同址及
+  X 与包含它的 B/W/D/L 别名，其余部分重叠拒绝。冲突只按最终提交时实际 dirty
+  bit 计数，不按声明重叠计数。
+- Decisions：每个 PROGRAM 映射拥有独立 VM 实例，但同 TASK 的映射共享一次
+  资源事务；映像合并重定位每个 located `var_offset` 并复制各 PROGRAM 初值。
+  VM 不读墙钟，宿主报告在边界锁存并保留当前 POU/PC artifact 位置。
+- 偏差及原因：无。第三轮复审补齐资源 owner、L3 schema 精确复用、随机调度
+  oracle 与真实 RT executor/trace 消费后 APPROVE。
+- 删除的临时/兼容路径：不保留隐式单 PROGRAM 执行、动态任务控制、旧 artifact
+  或双轨 schema；项目为全新软件，只接受当前源码与当前产物。
+- 测试先行证据：10,000 tick release、事件边沿、24 轮固定种子随机 priority/
+  declaration 全序、跨映射原子提交/回滚、owner 跨边界与三类恢复、输入 alias、
+  初值重映射、dirty-bit 冲突、wallclock POU/PC 和 RT executor trace 均覆盖。
+- 本地门禁：Windows Debug L0-L5 联合 CTest 20/20；L5 fuzz smoke 3000/3000；
+  Release 固定种子配置图 fuzz 100,000/100,000；WSL Ubuntu TSan L5 0 报告；
+  feature-set、conformance 与 diff-check 通过。Nightly 已接入 L5 sanitizer fuzz
+  100,000 与 L5 TSan。
+- 远端门禁：待提交后执行。
+- 剩余 pending 与下一批前置：13；L6 SFC 与 L7 调试/快照。
+
+### 2026-07-17 / ST-L6 / working tree
+
+- 目标矩阵与验收 ID：L6-A01 至 L6-A08、D01 至 D07；以
+  `st-l6-semantics.md` 与 `st_l6_tests.cpp` 为验收事实源。
+- feature-set 变更（pending → implemented）：文本 SFC grammar、九种动作限定符
+  与 unsafe SFC network 诊断共 11 项；全局 pending 13 → 2。
+- 实际设计：文本 SFC 在 load domain 编译为定容 network artifact；每 scan
+  先用全局旧 active-step 快照求值全部转换，再通过可恢复 runner 依次完成
+  active 更新、逐 block qualifier 归约、声明序 action、trace 和原子 commit。
+  runner 的逐项 charge 与 WCET 来自同一网络结构，包含 branch 宽度、prior
+  firing 检查和 R/reducer 扫描。
+- 图与纯度：单转换自环、可并发 exit/enter 冲突、未标记多分支、交叉/孤立
+  simultaneous 和不成对汇合均静态拒绝；嵌套 simultaneous 支持结构化配对。
+  transition 允许 GVL/external/located 读取及纯 FUNCTION，只拒绝写效应、FB
+  调用和赋值，并按局部符号 shadow 解析。
+- 动作与事务：N/S/R/L/D/P/SD/DS/SL 每个 action block 独立保存 timer、pending、
+  activation edge 和持久 set/clear 贡献；每 scan 按 `R > expiry-clear > stored-set >
+  direct` 从全部 block 重算。同名动作体每 scan 至多一次；fault/abort 丢弃 staged
+  状态，reset 保留 committed timer/latch，restart 清空并恢复唯一初始步。
+- artifact/trace/内存：删除未使用的 per-entity 假 offset；network runtime layout、
+  `static_bytes` 和 `required_bytes()` 由单一布局函数产生。TaskStatus 与 trace 只用
+  artifact index；trace 分离 network/step/transition/action/block index，记录真实
+  span、scan 和 dropped，caller-owned 容量 0/N/overflow 均有精确断言。
+- 删除的临时/兼容路径：不保留旧 SFC 语法、旧 artifact、动态扩容或双轨 VM；
+  项目为全新软件，只接受当前源码和当前字节码。
+- 当前本地证据：Windows Debug L0-L6 定向 CTest 17/17；feature-set 与
+  conformance 2/2；fuzz smoke 3000 轮 base/L2b/L5/L6 全部通过；diff-check 无
+  空白错误。Release 固定种子 L6 fuzz 100,000 轮通过；WSL Clang ASan/UBSan
+  最新重建后的 L6 专项与 L6 fuzz smoke 3000 轮均为 0 报告；第三轮独立语义
+  复审 APPROVE，无 remaining semantic blocker。Nightly 已接入 L6 sanitizer
+  fuzz 100,000。
+- 剩余 pending：2；仅 L7 调试/快照。
+
 ## 5. 最终审计记录（完成时填写）
 
 | 证据 | 结果 |
 |------|------|
-| 十二 feature 集合相等 | pending |
-| basic 10 + Part1/2 45 + Part4 68 + Part5 11 展开 | pending |
-| 所有 excluded 有 scope/diagnostic/rejection test | pending |
-| ST 专项与全量 CTest | pending |
-| Windows/Linux/ARM64 | pending |
-| RT scan/零分配/覆盖率/clang-tidy/回放 | pending |
-| 文档严格构建与链接检查 | pending |
+| 十二 feature 集合相等 | pass |
+| basic 10 + Part1/2 45 + Part4 68 + Part5 11 展开 | pass |
+| 所有 excluded 有 scope/diagnostic/rejection test | pass |
+| ST 专项与全量 CTest | pass（本地当前已重刷 L7 + feature-set；其余见各批记录） |
+| Windows/Linux/ARM64 | partial（Windows/WSL 证据已齐；ARM64 待远端） |
+| RT scan/零分配/覆盖率/clang-tidy/回放 | partial（本批直接证据为 RT/零分配；其余按项目门禁后补） |
+| 文档严格构建与链接检查 | partial |
 | 工作树、提交、远端 CI | pending |
 
 ---

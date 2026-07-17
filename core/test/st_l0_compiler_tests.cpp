@@ -227,16 +227,12 @@ void unsupported_constructs()
         {"FUNCTION f : INT END_FUNCTION", st::DiagCode::unsupported_l2},
         {"PROGRAM p VAR_INPUT x : INT; END_VAR END_PROGRAM",
          st::DiagCode::unsupported_l2},
-        // anchor L0-6-l3
-        {"PROGRAM p VAR RETAIN x : INT; END_VAR END_PROGRAM",
-         st::DiagCode::unsupported_l3},
-        {"PROGRAM p VAR x AT %QX0.0 : INT; END_VAR END_PROGRAM",
-         st::DiagCode::unsupported_l3},
+        // anchor L0-6-l3: L3 constructs are accepted/rejected by their
+        // current semantics and covered by core/test/st_l3_tests.cpp.
         // anchor L0-6-l5
         {"CONFIGURATION c END_CONFIGURATION", st::DiagCode::unsupported_l5},
-        // anchor L0-6-l6
-        {"PROGRAM p VAR x : INT; END_VAR STEP s: END_STEP END_PROGRAM",
-         st::DiagCode::unsupported_l6},
+        // anchor L0-6-l6: textual SFC graduated; syntax and semantics are covered by
+        // core/test/st_l6_tests.cpp rather than the legacy unsupported gate.
         // anchor L0-6-non-goal
         {"PROGRAM p VAR r : RTC; END_VAR END_PROGRAM",
          st::DiagCode::unsupported_non_goal},

@@ -67,6 +67,18 @@ enum class DiagCode : std::uint16_t
     sema_fb_instance_required = 333,
     sema_standard_name_conflict = 334,
     sema_recursive_pou = 335,
+    sema_no_matching_overload = 336,
+    sema_ambiguous_overload = 337,
+    sema_invalid_argument = 338,
+    sema_process_image_overlap = 339,
+    sema_task_interval_invalid = 340,
+    sema_task_phase_invalid = 341,
+    sema_task_priority_invalid = 342,
+    sema_program_duplicate_mapping = 343,
+    warning_program_unmapped = 344,
+    unsupported_l5_task_control = 345,
+    sema_unsafe_sfc_network = 346,
+    sema_sfc_transition_side_effect = 347,
 
     // 4xx capacity (all explicit, never silent truncation; matrix 3.11)
     capacity_code = 400,
@@ -76,6 +88,9 @@ enum class DiagCode : std::uint16_t
     capacity_stack = 404,
     capacity_types = 405,
     capacity_exceeded = 406,
+    capacity_resources = 407,
+    capacity_tasks = 408,
+    capacity_program_mappings = 409,
 
     // 5xx unsupported constructs with batch ownership (matrix 6)
     unsupported_l1 = 501,
@@ -150,6 +165,18 @@ constexpr const char *to_string(DiagCode code)
     case DiagCode::sema_fb_instance_required: return "sema_fb_instance_required";
     case DiagCode::sema_standard_name_conflict: return "sema_standard_name_conflict";
     case DiagCode::sema_recursive_pou: return "sema_recursive_pou";
+    case DiagCode::sema_no_matching_overload: return "sema_no_matching_overload";
+    case DiagCode::sema_ambiguous_overload: return "sema_ambiguous_overload";
+    case DiagCode::sema_invalid_argument: return "sema_invalid_argument";
+    case DiagCode::sema_process_image_overlap: return "sema_process_image_overlap";
+    case DiagCode::sema_task_interval_invalid: return "sema_task_interval_invalid";
+    case DiagCode::sema_task_phase_invalid: return "sema_task_phase_invalid";
+    case DiagCode::sema_task_priority_invalid: return "sema_task_priority_invalid";
+    case DiagCode::sema_program_duplicate_mapping: return "sema_program_duplicate_mapping";
+    case DiagCode::warning_program_unmapped: return "warning_program_unmapped";
+    case DiagCode::unsupported_l5_task_control: return "unsupported_l5_task_control";
+    case DiagCode::sema_unsafe_sfc_network: return "sema_unsafe_sfc_network";
+    case DiagCode::sema_sfc_transition_side_effect: return "sema_sfc_transition_side_effect";
     case DiagCode::capacity_code: return "capacity_code";
     case DiagCode::capacity_variables: return "capacity_variables";
     case DiagCode::capacity_fb_instances: return "capacity_fb_instances";
@@ -157,6 +184,9 @@ constexpr const char *to_string(DiagCode code)
     case DiagCode::capacity_stack: return "capacity_stack";
     case DiagCode::capacity_types: return "capacity_types";
     case DiagCode::capacity_exceeded: return "capacity_exceeded";
+    case DiagCode::capacity_resources: return "capacity_resources";
+    case DiagCode::capacity_tasks: return "capacity_tasks";
+    case DiagCode::capacity_program_mappings: return "capacity_program_mappings";
     case DiagCode::unsupported_l1: return "unsupported_l1";
     case DiagCode::unsupported_l2: return "unsupported_l2";
     case DiagCode::unsupported_l3: return "unsupported_l3";

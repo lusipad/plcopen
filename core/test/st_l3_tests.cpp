@@ -245,9 +245,14 @@ void overlap_alignment_and_type_rejection()
 {
     const st::CompileResult legal_input_alias = st::compile(program(
         "VAR a AT %IW0 : WORD; b AT %IW0 : WORD; "
-        "x AT %IX2.3 : BOOL; byte AT %IB2 : BYTE; out : WORD; END_VAR",
-        "IF x THEN out := a + b + byte; END_IF;"));
-    check(legal_input_alias.ok, "L3-D02/D03 compatible input aliases allowed");
+        "xb AT %IX2.3 : BOOL; byte_value AT %IB2 : BYTE; "
+        "xw AT %IX4.3 : BOOL; word_value AT %IW4 : WORD; "
+        "xd AT %IX8.3 : BOOL; dword_value AT %ID8 : DWORD; "
+        "xl AT %IX16.3 : BOOL; lword_value AT %IL16 : LWORD; "
+        "out : WORD; END_VAR",
+        ";"));
+    check(legal_input_alias.ok,
+          "L3-D02/D03 X aliases inside B/W/D/L inputs are allowed");
 
     const char *writable_overlap[] = {
         "VAR a AT %QB0 : BYTE; b AT %QB0 : BYTE; END_VAR",
@@ -409,8 +414,9 @@ void output_publication_is_atomic()
     Rig rig;
     check(rig.build(program(
               "VAR left AT %QD0 : DWORD; right AT %QD4 : DWORD; "
-              "counter : DWORD; END_VAR",
-              "counter := counter + 1; left := counter; right := NOT counter;")),
+              "counter : UDINT; END_VAR",
+              "counter := counter + 1; left := UDINT_TO_DWORD(counter); "
+              "right := NOT UDINT_TO_DWORD(counter);")),
           "L3-D06 output publication program builds");
 
     std::atomic<bool> stop{false};
@@ -590,9 +596,86 @@ void retain_round_trip_and_rejection()
     report = st::SnapshotReport{};
     check(truncated.image.restore_snapshot(st::SnapshotKind::retain, first,
                                            first_size - 1, report) ==
-                  st::SnapshotError::malformed &&
-              report.restored == 0 && report.defaulted == 1,
+                   st::SnapshotError::malformed &&
+               report.restored == 0 && report.defaulted == 1,
           "L3-D08 truncated snapshot rejected with declaration default");
+
+}
+
+// L3-D10: decoding is a transaction.  A valid prefix must remain invisible
+// when any later item or trailing byte makes the complete buffer malformed.
+void restore_rejection_is_atomic()
+{
+    const std::string two_retain =
+        "PROGRAM Main\n"
+        "VAR RETAIN first AT %MW0 : WORD := WORD#1; "
+        "second AT %MW2 : WORD := WORD#2; END_VAR\n"
+        ";\nEND_PROGRAM\n";
+    unsigned char two_snapshot[4096]{};
+    std::size_t two_size = 0;
+    {
+        Rig producer;
+        check(producer.build(two_retain),
+              "L3-D10 two-item snapshot producer builds");
+        const unsigned char forced_first[2] = {10, 0};
+        const unsigned char forced_second[2] = {20, 0};
+        check(producer.image.queue_force("first", st::builtin::word,
+                                         forced_first, 2) ==
+                      rt::ErrorCode::ok &&
+                  producer.image.queue_force("second", st::builtin::word,
+                                              forced_second, 2) ==
+                      rt::ErrorCode::ok &&
+                  producer.scan() == st::ScanError::ok,
+              "L3-D10 two retained values reach committed memory");
+        check(producer.image.encode_snapshot(st::SnapshotKind::retain,
+                                             two_snapshot,
+                                             sizeof(two_snapshot),
+                                             two_size) ==
+                      st::SnapshotError::ok &&
+                  two_size > 1,
+              "L3-D10 two-item snapshot encodes");
+    }
+
+    {
+        Rig partial;
+        check(partial.build(two_retain),
+              "L3-D10 partial-restore target builds");
+        st::SnapshotReport report{};
+        check(partial.image.restore_snapshot(st::SnapshotKind::retain,
+                                             two_snapshot, two_size - 1,
+                                             report) ==
+                      st::SnapshotError::malformed &&
+                  report.restored == 0 && report.defaulted == 2 &&
+                  partial.scan() == st::ScanError::ok,
+              "L3-D10 truncated second item queues no prefix restore");
+        std::vector<unsigned char> memory;
+        std::uint64_t memory_version = 0;
+        check(partial.memory(memory, memory_version) &&
+                  read_le(memory.data(), 2) == 1 &&
+                  read_le(memory.data() + 2, 2) == 2,
+              "L3-D10 failed partial restore keeps every declaration default");
+    }
+
+    {
+        Rig trailing;
+        check(trailing.build(two_retain),
+              "L3-D10 trailing-data restore target builds");
+        two_snapshot[two_size] = 0xA5;
+        st::SnapshotReport report{};
+        check(trailing.image.restore_snapshot(st::SnapshotKind::retain,
+                                              two_snapshot, two_size + 1,
+                                              report) ==
+                      st::SnapshotError::malformed &&
+                  report.restored == 0 && report.defaulted == 2 &&
+                  trailing.scan() == st::ScanError::ok,
+              "L3-D10 trailing data queues no otherwise-valid restore");
+        std::vector<unsigned char> memory;
+        std::uint64_t memory_version = 0;
+        check(trailing.memory(memory, memory_version) &&
+                  read_le(memory.data(), 2) == 1 &&
+                  read_le(memory.data() + 2, 2) == 2,
+              "L3-D10 rejected trailing data keeps declaration defaults");
+    }
 }
 
 // L3-A05/D09: PERSISTENT may cross a project-fingerprint change, but only a
@@ -715,6 +798,61 @@ void force_priority_release_and_validation()
           "L3-D13 partial-width force rejected");
 }
 
+// L3-A07/D08/D11/D12: executor commands may arrive while a scan is active.
+// The normal assertions catch protocol loss; the nightly TSan execution proves
+// that command publication and consumption do not race on payload storage.
+void concurrent_force_and_restore_commands_are_safe()
+{
+    const std::string source = program(
+        "VAR i AT %IB0 : BYTE; q AT %QB0 : BYTE; END_VAR "
+        "VAR RETAIN m AT %MB0 : BYTE; END_VAR",
+        "q := i; m := m + 1;");
+    Rig rig;
+    check(rig.build(source), "L3-A07 concurrent command fixture builds");
+    const unsigned char input = 3;
+    check(rig.submit_input(&input, 1, 1) &&
+              rig.scan() == st::ScanError::ok,
+          "L3-A07 concurrent command fixture warms up");
+
+    unsigned char snapshot[4096]{};
+    std::size_t snapshot_size = 0;
+    check(rig.image.encode_snapshot(st::SnapshotKind::retain, snapshot,
+                                    sizeof(snapshot), snapshot_size) ==
+              st::SnapshotError::ok,
+          "L3-A07 concurrent restore payload encodes");
+
+    std::atomic<bool> failed{false};
+    std::thread executor([&]() {
+        const unsigned char forced = 9;
+        for(int iteration = 0; iteration < 20000; ++iteration) {
+            if(rig.image.queue_force("q", st::builtin::byte_, &forced, 1) !=
+                   rt::ErrorCode::ok ||
+               rig.image.queue_release("q") != rt::ErrorCode::ok) {
+                failed.store(true, std::memory_order_relaxed);
+                return;
+            }
+            st::SnapshotReport report{};
+            if(rig.image.restore_snapshot(st::SnapshotKind::retain, snapshot,
+                                          snapshot_size, report) !=
+                   st::SnapshotError::ok ||
+               report.restored != 1 || report.rejected != 0) {
+                failed.store(true, std::memory_order_relaxed);
+                return;
+            }
+        }
+    });
+    for(int scan = 0; scan < 20000 &&
+         !failed.load(std::memory_order_relaxed); ++scan) {
+        if(rig.scan() != st::ScanError::ok) {
+            failed.store(true, std::memory_order_relaxed);
+            break;
+        }
+    }
+    executor.join();
+    check(!failed.load(std::memory_order_relaxed),
+          "L3-A07 force/release/restore commands are scan-concurrent safe");
+}
+
 // L3-A07: scan, image swap, force-mask application and version publication
 // are all allocation-free after load.  Compilation is deterministic together
 // with the process-image fingerprint and layout sizes.
@@ -722,8 +860,10 @@ void rt_and_determinism()
 {
     const std::string source = program(
         "VAR i AT %ID0 : DWORD; q AT %QD0 : DWORD; m AT %MD0 : DWORD; "
-        "n : DWORD; END_VAR",
-        "n := n + i + m; q := n; m := m + 1;");
+        "n : UDINT; END_VAR",
+        "n := n + DWORD_TO_UDINT(i) + DWORD_TO_UDINT(m); "
+        "q := UDINT_TO_DWORD(n); "
+        "m := UDINT_TO_DWORD(DWORD_TO_UDINT(m) + 1);");
     Rig rig;
     check(rig.build(source), "L3-A07 RT program builds");
     const unsigned char input[4] = {1, 0, 0, 0};
@@ -763,8 +903,9 @@ void rt_and_determinism()
     }
     const st::CompileResult changed = st::compile(program(
         "VAR i AT %ID0 : DWORD; q AT %QD0 : DWORD; "
-        "m AT %MD0 : DWORD; renamed : DWORD; END_VAR",
-        "renamed := i + m; q := renamed;"));
+        "m AT %MD0 : DWORD; renamed : UDINT; END_VAR",
+        "renamed := DWORD_TO_UDINT(i) + DWORD_TO_UDINT(m); "
+        "q := UDINT_TO_DWORD(renamed);"));
     check(changed.ok && changed.program.process_image.fingerprint !=
                             first.program.process_image.fingerprint,
           "L3-D08 project fingerprint changes with the declared schema");
@@ -800,10 +941,11 @@ void lower_layer_source_regression()
          "timer(IN := TRUE, PT := T#0s); out := timer.Q; END_PROGRAM",
          "out", 1},
         {"L2b user function",
-         "FUNCTION UserAdd : DINT VAR_INPUT a : DINT; b : DINT; END_VAR "
-         "UserAdd := a + b; END_FUNCTION "
-         "PROGRAM Main VAR out : DINT; END_VAR out := UserAdd(5, 6); "
-         "END_PROGRAM",
+         "FUNCTION UserAdd : DINT\n"
+         "VAR_INPUT a : DINT; b : DINT; END_VAR\n"
+         "UserAdd := a + b;\nEND_FUNCTION\n"
+         "PROGRAM Main\nVAR out : DINT; END_VAR\n"
+         "out := UserAdd(5, 6);\nEND_PROGRAM",
          "out", 11},
     };
     for(const SourceCase &test : cases) {
@@ -829,8 +971,10 @@ int main()
     output_publication_is_atomic();
     fault_rolls_back_images_not_ordinary_variables();
     retain_round_trip_and_rejection();
+    restore_rejection_is_atomic();
     persistent_stable_id_and_type_drift();
     force_priority_release_and_validation();
+    concurrent_force_and_restore_commands_are_safe();
     rt_and_determinism();
     lower_layer_source_regression();
     if(failures != 0) {

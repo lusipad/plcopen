@@ -30,8 +30,9 @@ class Parser
 {
 public:
     Parser(std::string_view source, std::size_t max_diagnostics,
-           std::int32_t max_nesting)
-        : lexer_(source)
+           std::int32_t max_nesting,
+           bool trusted_debug_provenance = false)
+        : lexer_(source, trusted_debug_provenance)
         , max_diagnostics_(max_diagnostics)
         , max_nesting_(max_nesting)
     {
@@ -447,6 +448,9 @@ private:
         // VAR CONSTANT block (approved st-l1a-semantics 2.5): every member
         // is a compile-time constant.
         const bool constant_block = eat(TokenKind::kw_constant);
+        const bool retain_block = !constant_block && eat(TokenKind::kw_retain);
+        const bool persistent_block =
+            !constant_block && !retain_block && eat(TokenKind::kw_persistent);
         while(!at(TokenKind::kw_end_var) && !at(TokenKind::end_of_input)) {
             if(at(TokenKind::unsupported_keyword)) {
                 diag(token_diag(current_), current_);
@@ -466,11 +470,24 @@ private:
             }
             VarDecl decl;
             decl.is_constant = constant_block;
+            decl.is_retain = retain_block;
+            decl.is_persistent = persistent_block;
             decl.line = current_.line;
             decl.column = current_.column;
             decl.name.assign(current_.text.data(), current_.text.size());
             decl.lower = lower_copy(current_.text);
             bump();
+            if(eat(TokenKind::kw_at)) {
+                if(!at(TokenKind::located_address) ||
+                   !parse_location(decl, current_.text)) {
+                    diag(DiagCode::parse_expected_token, current_,
+                         "located address");
+                    recover_statement();
+                    continue;
+                }
+                decl.is_located = true;
+                bump();
+            }
             if(!expect(TokenKind::colon, "':'")) {
                 recover_statement();
                 continue;
@@ -494,6 +511,42 @@ private:
             result_.ast.vars.push_back(static_cast<VarDecl &&>(decl));
         }
         expect(TokenKind::kw_end_var, "END_VAR");
+    }
+
+    static bool parse_location(VarDecl &decl, std::string_view text)
+    {
+        if(text.size() < 4 || text[0] != '%') return false;
+        const auto lower = [](char c) {
+            return c >= 'A' && c <= 'Z' ? static_cast<char>(c - 'A' + 'a')
+                                        : c;
+        };
+        decl.location_area = static_cast<char>(lower(text[1]) - 'a' + 'A');
+        decl.location_width = static_cast<char>(lower(text[2]) - 'a' + 'A');
+        std::uint64_t byte = 0;
+        std::size_t index = 3;
+        while(index < text.size() && text[index] >= '0' && text[index] <= '9') {
+            const unsigned digit = static_cast<unsigned>(text[index] - '0');
+            if(byte > (std::numeric_limits<std::uint32_t>::max() - digit) /
+                          10U) {
+                return false;
+            }
+            byte = byte * 10U + digit;
+            ++index;
+        }
+        decl.location_byte = static_cast<std::uint32_t>(byte);
+        if(decl.location_width == 'X') {
+            if(index >= text.size() || text[index++] != '.') return false;
+            unsigned bit = 0;
+            if(index >= text.size()) return false;
+            while(index < text.size() && text[index] >= '0' &&
+                  text[index] <= '9') {
+                bit = bit * 10U + static_cast<unsigned>(text[index] - '0');
+                if(bit > 255U) return false;
+                ++index;
+            }
+            decl.location_bit = static_cast<std::uint8_t>(bit);
+        }
+        return index == text.size();
     }
 
     ExprIndex parse_aggregate_initializer()
@@ -702,6 +755,18 @@ private:
     }
 
     // Returns stmt index, or -2 when the statement failed and recovery ran.
+    static void copy_debug_provenance(Stmt &stmt, const Token &token)
+    {
+        stmt.debug_provenance = token.debug_provenance;
+        if(!token.debug_provenance) return;
+        stmt.debug_pou.assign(token.debug_pou.data(), token.debug_pou.size());
+        stmt.debug_call_path.assign(token.debug_call_path.data(),
+                                    token.debug_call_path.size());
+        stmt.debug_line = token.debug_line;
+        stmt.debug_column = token.debug_column;
+        stmt.debug_call_depth = token.debug_call_depth;
+    }
+
     StmtIndex parse_statement()
     {
         switch(current_.kind) {
@@ -710,6 +775,7 @@ private:
             stmt.kind = StmtKind::empty;
             stmt.line = current_.line;
             stmt.column = current_.column;
+        copy_debug_provenance(stmt, current_);
             bump();
             return result_.ast.add_stmt(static_cast<Stmt &&>(stmt));
         }
@@ -723,6 +789,7 @@ private:
             stmt.kind = StmtKind::exit_;
             stmt.line = current_.line;
             stmt.column = current_.column;
+        copy_debug_provenance(stmt, current_);
             bump();
             expect(TokenKind::semicolon, "';'");
             return result_.ast.add_stmt(static_cast<Stmt &&>(stmt));
@@ -732,6 +799,7 @@ private:
             stmt.kind = StmtKind::continue_;
             stmt.line = current_.line;
             stmt.column = current_.column;
+        copy_debug_provenance(stmt, current_);
             bump();
             expect(TokenKind::semicolon, "';'");
             return result_.ast.add_stmt(static_cast<Stmt &&>(stmt));
@@ -741,6 +809,7 @@ private:
             stmt.kind = StmtKind::return_;
             stmt.line = current_.line;
             stmt.column = current_.column;
+        copy_debug_provenance(stmt, current_);
             bump();
             expect(TokenKind::semicolon, "';'");
             return result_.ast.add_stmt(static_cast<Stmt &&>(stmt));
@@ -764,6 +833,7 @@ private:
         Stmt stmt;
         stmt.line = current_.line;
         stmt.column = current_.column;
+        copy_debug_provenance(stmt, current_);
         std::string first(current_.text.data(), current_.text.size());
         bump();
 
@@ -839,6 +909,7 @@ private:
         stmt.kind = StmtKind::if_;
         stmt.line = current_.line;
         stmt.column = current_.column;
+        copy_debug_provenance(stmt, current_);
         bump(); // IF
         while(true) {
             const ExprIndex condition = parse_expression();
@@ -874,6 +945,7 @@ private:
         stmt.kind = StmtKind::case_;
         stmt.line = current_.line;
         stmt.column = current_.column;
+        copy_debug_provenance(stmt, current_);
         bump(); // CASE
         stmt.selector = parse_expression();
         if(stmt.selector == kNoExpr || !expect(TokenKind::kw_of, "OF")) {
@@ -946,6 +1018,7 @@ private:
         stmt.kind = StmtKind::for_;
         stmt.line = current_.line;
         stmt.column = current_.column;
+        copy_debug_provenance(stmt, current_);
         bump(); // FOR
         if(!at(TokenKind::identifier)) {
             diag(DiagCode::parse_expected_token, current_, "control variable");
@@ -991,6 +1064,7 @@ private:
         stmt.kind = StmtKind::while_;
         stmt.line = current_.line;
         stmt.column = current_.column;
+        copy_debug_provenance(stmt, current_);
         bump(); // WHILE
         stmt.condition = parse_expression();
         if(stmt.condition == kNoExpr || !expect(TokenKind::kw_do, "DO")) {
@@ -1009,6 +1083,7 @@ private:
         stmt.kind = StmtKind::repeat;
         stmt.line = current_.line;
         stmt.column = current_.column;
+        copy_debug_provenance(stmt, current_);
         bump(); // REPEAT
         parse_statement_list(stmt.body, {TokenKind::kw_until});
         if(!expect(TokenKind::kw_until, "UNTIL")) {
@@ -1262,6 +1337,7 @@ private:
             expect(TokenKind::rparen, "')'");
             return inner;
         }
+        case TokenKind::kw_mod:
         case TokenKind::identifier: {
             expr.name.assign(current_.text.data(), current_.text.size());
             bump();
@@ -1275,20 +1351,19 @@ private:
                 expr.pin.assign(current_.text.data(), current_.text.size());
                 bump();
             } else if(at(TokenKind::lparen)) {
-                // Conversion-function call (approved st-l1a-semantics 4.x):
-                // single argument, resolved by sema against conv.h.
                 bump();
                 expr.kind = ExprKind::call;
                 ++nesting_;
-                expr.lhs = nesting_ >= max_nesting_
-                               ? (diag(DiagCode::parse_nesting_too_deep,
-                                       current_),
-                                  kNoExpr)
-                               : parse_expression();
+                do {
+                    const ExprIndex argument = nesting_ >= max_nesting_
+                        ? (diag(DiagCode::parse_nesting_too_deep, current_),
+                           kNoExpr)
+                        : parse_expression();
+                    if(argument == kNoExpr) { --nesting_; return kNoExpr; }
+                    expr.arguments.push_back(argument);
+                } while(eat(TokenKind::comma));
                 --nesting_;
-                if(expr.lhs == kNoExpr) {
-                    return kNoExpr;
-                }
+                expr.lhs = expr.arguments.front();
                 if(!expect(TokenKind::rparen, "')'")) {
                     return kNoExpr;
                 }

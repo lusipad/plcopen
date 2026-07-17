@@ -1,6 +1,6 @@
 # ST 批次 L6 语义矩阵：SFC 文本执行语义
 
-> 状态：**已批准，待实现（2026-07-17，维护者）**。本矩阵定义文本 SFC
+> 状态：**已实现并复审通过（2026-07-17）**。本矩阵定义文本 SFC
 > 的步、转换、分支/汇合和全部 N/S/R/L/D/P/SD/DS/SL 动作限定符；图形
 > 编辑器不在范围内。
 
@@ -67,10 +67,20 @@
 | L6-A04 | 不安全网络 | 每类稳定诊断且恢复可继续报后续错误 |
 | L6-A05 | POU/任务集成 | action fault 进入所属 task fault；其他 task/运动域隔离 |
 | L6-A06 | trace | step/transition/action/qualifier 事件确定且有源位置 |
-| L6-A07 | RT/容量 | scan 零分配；N/N+1 边界全绿 |
+| L6-A07 | RT/容量 | scan 零分配；精确预算 N 成功、N-1 事务性失败 |
 | L6-A08 | fuzz | 结构化网络 ≥100,000，0 crash/UBSan |
 
-## 5. 不做
+## 5. 实现与复审证据
+
+- Windows Debug L0-L6 定向 CTest 17/17、feature-set 与 conformance 2/2
+  通过；base/L2b/L5/L6 fuzz smoke 各 3000 轮通过。
+- Release 固定种子 L6 结构化网络 fuzz 100,000 轮通过；WSL Clang
+  ASan/UBSan 最新重建后的 L6 专项与 L6 fuzz smoke 3000 轮均为 0 报告。
+- runner 覆盖逐步 resume、scan 内 staged 状态不可见、fault/abort 回滚、精确
+  WCET N/N-1、嵌套同时分支峰值和 caller-owned trace 容量边界。
+- 第三轮独立语义复审结论：APPROVE，无 remaining semantic blocker。
+
+## 6. 不做
 
 - SFC 图形编辑器、布局/连线 round-trip、LD/FBD action、macro step 和在线
   网络修改不做。
@@ -78,4 +88,4 @@
 
 ---
 
-*批准：2026-07-17；实现：pending。*
+*批准：2026-07-17；实现：2026-07-17；复审：APPROVE。*

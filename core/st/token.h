@@ -24,6 +24,7 @@ enum class TokenKind : std::uint8_t
     date_literal,
     tod_literal,
     dt_literal,
+    located_address, // %I/%Q/%M followed by X/B/W/D/L address
 
     // punctuation
     assign,        // :=
@@ -82,8 +83,25 @@ enum class TokenKind : std::uint8_t
     kw_not,
     kw_mod,
 
+    // textual SFC (L6)
+    kw_sfc,
+    kw_end_sfc,
+    kw_initial_step,
+    kw_step,
+    kw_end_step,
+    kw_transition,
+    kw_end_transition,
+    kw_from,
+    kw_action,
+    kw_end_action,
+    kw_simultaneous,
+    kw_terminal,
+
     // declaration qualifiers
     kw_constant,
+    kw_retain,
+    kw_persistent,
+    kw_at,
     kw_type,
     kw_end_type,
     kw_array,
@@ -132,6 +150,12 @@ struct Token
     bool real_form = false;             // typed literal carries a real payload
     Type literal_type = Type::bool_;    // typed_literal target type
     std::uint16_t diag_payload = 0;     // DiagCode value for error/unsupported
+    bool debug_provenance = false;
+    std::string_view debug_pou;
+    std::string_view debug_call_path;
+    std::int32_t debug_line = 0;
+    std::int32_t debug_column = 0;
+    std::uint16_t debug_call_depth = 0;
 };
 
 } // namespace plcopen::core::st

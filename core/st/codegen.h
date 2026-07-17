@@ -29,6 +29,12 @@ struct CodegenLimits
     std::uint32_t max_vars_bytes = 16384;
     std::uint16_t max_stack_slots = 64;
     std::size_t max_diagnostics = 256;
+    std::string source_name = "source.st";
+    DebugMode debug_mode = DebugMode::disabled;
+    std::int32_t debug_line_offset = 0;
+    std::string debug_pou;
+    std::uint16_t debug_call_depth = 1;
+    bool debug_require_provenance = false;
 };
 
 class Codegen
@@ -56,11 +62,14 @@ public:
         }
         analyze_worst_case(program);
         program.code = static_cast<std::vector<std::uint8_t> &&>(code_);
+        program.instruction_offsets =
+            static_cast<std::vector<std::uint32_t> &&>(instruction_offsets_);
         program.constants =
             static_cast<std::vector<std::uint64_t> &&>(constants_);
         program.string_constants =
             static_cast<std::vector<std::uint8_t> &&>(string_constants_);
         program.vars = sema_.vars;
+        program.process_image = sema_.process_image;
         program.fbs = sema_.fbs;
         program.types = sema_.types;
         program.initial_data = sema_.initial_data;
@@ -68,6 +77,14 @@ public:
         program.vars_bytes = temp_high_;
         program.fb_bytes = sema_.fb_bytes;
         program.max_string_operation_cost = sema_.max_string_operation_cost;
+        program.max_standard_function_cost = sema_.max_standard_function_cost;
+        program.debug_mode = limits_.debug_mode;
+        program.source_map.entries =
+            static_cast<std::vector<SourceMapEntry> &&>(source_map_);
+        program.debug_report.breakpoint_probe_count =
+            program.source_map.entries.size();
+        program.debug_report.source_map_entries =
+            program.source_map.entries.size();
         if(program.vars_bytes > limits_.max_vars_bytes) {
             fail(DiagCode::capacity_variables);
             return false;
@@ -439,6 +456,60 @@ private:
             return;
         }
         case ExprKind::call: {
+            if(note.standard_function != StandardFunction::count) {
+                if(note.standard_function >= StandardFunction::len &&
+                   note.standard_function <= StandardFunction::find) {
+                    int scalar_count = 0;
+                    for(const ExprIndex argument : expr.arguments) {
+                        const ExprInfo &argument_info = info(argument);
+                        if(argument_info.type == Type::string_ ||
+                           argument_info.type == Type::wstring) {
+                            const Expr &argument_expr =
+                                ast_.exprs[static_cast<std::size_t>(argument)];
+                            if(argument_expr.kind == ExprKind::call &&
+                               argument_info.standard_function != StandardFunction::count)
+                                emit_expr(argument);
+                        } else {
+                            emit_expr(argument);
+                            ++scalar_count;
+                        }
+                    }
+                    emit_op(Op::standard_string);
+                    emit_u8(static_cast<std::uint8_t>(note.standard_function));
+                    emit_u8(note.standard_argc);
+                    const bool string_result = note.type == Type::string_ ||
+                                               note.type == Type::wstring;
+                    emit_u32(string_result ? note.offset
+                                           : std::numeric_limits<std::uint32_t>::max());
+                    emit_u32(string_result ? note.storage_type_id : note.type_id);
+                    for(const ExprIndex argument : expr.arguments) {
+                        const ExprInfo &argument_info = info(argument);
+                        const bool string_argument =
+                            argument_info.type == Type::string_ ||
+                            argument_info.type == Type::wstring;
+                        emit_u8(string_argument ? 1U : 0U);
+                        if(string_argument) emit_string_operand(argument_info);
+                    }
+                    set_last_cost(note.standard_cost);
+                    if(string_result) {
+                        pop(scalar_count);
+                    } else {
+                        pop(scalar_count);
+                        push();
+                    }
+                    return;
+                }
+                for(const ExprIndex argument : expr.arguments) {
+                    emit_expr(argument);
+                }
+                emit_op(Op::standard_scalar);
+                emit_u8(static_cast<std::uint8_t>(note.standard_function));
+                emit_u8(note.standard_argc);
+                emit_u8(static_cast<std::uint8_t>(note.type));
+                set_last_cost(note.standard_cost);
+                if(note.standard_argc > 0) pop(note.standard_argc - 1);
+                return;
+            }
             // Conversion function (L1a 4.x): argument then lowering ops.
             const std::string call_name = lower_name(expr.name);
             if(call_name == "len") {
@@ -733,6 +804,72 @@ private:
             return;
         }
         const Stmt &stmt = ast_.stmts[static_cast<std::size_t>(index)];
+        const std::int32_t source_line =
+            debug_statement_line_ == stmt.line ? debug_statement_line_
+                                               : stmt.line;
+        const std::int32_t source_column =
+            debug_statement_line_ == stmt.line ? debug_statement_column_
+                                               : stmt.column;
+        struct DebugStatementScope
+        {
+            std::int32_t &line;
+            std::int32_t &column;
+            std::int32_t previous_line;
+            std::int32_t previous_column;
+            DebugStatementScope(std::int32_t &target_line,
+                                std::int32_t &target_column,
+                                std::int32_t next_line,
+                                std::int32_t next_column)
+                : line(target_line), column(target_column),
+                  previous_line(target_line),
+                  previous_column(target_column)
+            {
+                line = next_line;
+                column = next_column;
+            }
+            ~DebugStatementScope()
+            {
+                line = previous_line;
+                column = previous_column;
+            }
+        } debug_scope(debug_statement_line_, debug_statement_column_,
+                      source_line, source_column);
+        if(stmt.kind != StmtKind::empty &&
+           (!limits_.debug_require_provenance || stmt.debug_provenance) &&
+           limits_.debug_mode == DebugMode::enabled) {
+            SourceMapEntry entry;
+            entry.source_name = limits_.source_name;
+            entry.pou = stmt.debug_provenance
+                            ? stmt.debug_pou
+                            : limits_.debug_pou.empty()
+                            ? ast_.program_name
+                            : limits_.debug_pou;
+            for(char &value : entry.pou)
+                if(value >= 'A' && value <= 'Z')
+                    value = static_cast<char>(value - 'A' + 'a');
+            entry.pou_id = stable_symbol_id(entry.pou).value;
+            entry.line = static_cast<std::uint32_t>(std::max(
+                0, stmt.debug_provenance
+                       ? stmt.debug_line
+                       : source_line + limits_.debug_line_offset));
+            entry.column = static_cast<std::uint32_t>(std::max(
+                0, stmt.debug_provenance ? stmt.debug_column
+                                         : source_column));
+            entry.call_path = stmt.debug_call_path;
+            entry.instruction = static_cast<std::uint32_t>(code_.size());
+            entry.instruction_id.offset = entry.instruction;
+            entry.probe_index = static_cast<std::uint32_t>(source_map_.size());
+            entry.breakpoint_key = entry.probe_index;
+            entry.event_kind = stmt.kind == StmtKind::fb_call
+                                   ? DebugEventKind::fb
+                                   : DebugEventKind::pou;
+            entry.call_depth = stmt.debug_provenance
+                ? stmt.debug_call_depth
+                : limits_.debug_call_depth;
+            source_map_.push_back(entry);
+            emit_op(Op::debug_probe);
+            emit_u32(entry.probe_index);
+        }
         switch(stmt.kind) {
         case StmtKind::assign: {
             const StmtInfo &target = stmt_info(index);
@@ -741,6 +878,9 @@ private:
                (target_desc->kind == TypeKind::string ||
                 target_desc->kind == TypeKind::wstring)) {
                 const ExprInfo &source = info(stmt.value);
+                if(source.standard_function != StandardFunction::count) {
+                    emit_expr(stmt.value);
+                }
                 if(source.object_constant) {
                     emit_op(Op::string_copy_const);
                     emit_u32(target.offset);
@@ -822,6 +962,10 @@ private:
             return;
         }
     }
+
+    std::vector<SourceMapEntry> source_map_;
+    std::int32_t debug_statement_line_ = -1;
+    std::int32_t debug_statement_column_ = 0;
 
     void emit_body(const std::vector<StmtIndex> &body)
     {

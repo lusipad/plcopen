@@ -12,6 +12,7 @@
 #include "st/conv.h"
 #include "st/diag.h"
 #include "st/pins.h"
+#include "st/standard_functions.h"
 
 // L0 semantic analysis (approved st-l0-semantics 1.6-1.12/3.8-3.11):
 // strict same-type rules with no implicit conversion; literals adopt the
@@ -71,6 +72,9 @@ struct ExprInfo
     bool object_constant = false;
     std::vector<std::uint8_t> object_bytes;
     ExprIndex string_index = kNoExpr;
+    StandardFunction standard_function = StandardFunction::count;
+    std::uint8_t standard_argc = 0;
+    std::uint32_t standard_cost = 1;
 };
 
 struct StmtInfo
@@ -101,6 +105,11 @@ struct SemaLimits
     std::uint32_t max_array_elements = 65536;
     std::uint16_t max_struct_fields = 256;
     std::uint16_t max_aggregate_depth = 16;
+    std::uint32_t max_input_image_bytes = 65536;
+    std::uint32_t max_output_image_bytes = 65536;
+    std::uint32_t max_memory_image_bytes = 65536;
+    std::uint16_t max_retain_entries = 4096;
+    std::uint16_t max_force_entries = 1024;
 };
 
 struct SemaResult
@@ -115,7 +124,9 @@ struct SemaResult
     std::uint32_t vars_bytes = 0;
     std::uint32_t fb_bytes = 0;
     std::uint32_t max_string_operation_cost = 0;
+    std::uint32_t max_standard_function_cost = 0;
     std::uint32_t string_constant_bytes = 0;
+    ProcessImageInfo process_image;
 };
 
 class Sema
@@ -665,9 +676,137 @@ private:
                 diag(DiagCode::sema_not_const_expr, decl.line, decl.column,
                      "VAR CONSTANT requires an initializer");
             }
+            if(decl.is_located && !register_location(decl, info)) {
+                continue;
+            }
             result_.vars.push_back(static_cast<VarInfo &&>(info));
         }
         result_.fb_bytes = fb_offset;
+    }
+
+    static std::uint64_t stable_id(std::string_view name)
+    {
+        std::uint64_t hash = 1469598103934665603ULL;
+        for(char c : name) {
+            hash ^= static_cast<unsigned char>(c);
+            hash *= 1099511628211ULL;
+        }
+        return hash;
+    }
+
+    bool register_location(const VarDecl &decl, const VarInfo &info)
+    {
+        const std::uint8_t width = decl.location_width == 'X' ? 1U
+            : decl.location_width == 'B' ? 1U
+            : decl.location_width == 'W' ? 2U
+            : decl.location_width == 'D' ? 4U
+            : decl.location_width == 'L' ? 8U : 0U;
+        const TypeId expected = decl.location_width == 'X' ? builtin::bool_
+            : decl.location_width == 'B' ? builtin::byte_
+            : decl.location_width == 'W' ? builtin::word
+            : decl.location_width == 'D' ? builtin::dword
+            : decl.location_width == 'L' ? builtin::lword : invalid_type_id;
+        if(width == 0 || info.type_id != expected ||
+           (decl.location_width == 'X' && decl.location_bit > 7U)) {
+            diag(DiagCode::sema_type_mismatch, decl.line, decl.column,
+                 decl.name);
+            return false;
+        }
+        if(width > 1U && decl.location_byte % width != 0U) {
+            diag(DiagCode::sema_type_mismatch, decl.line, decl.column,
+                 decl.name);
+            return false;
+        }
+        if((decl.is_retain || decl.is_persistent) &&
+           decl.location_area != 'M') {
+            diag(DiagCode::sema_type_mismatch, decl.line, decl.column,
+                 decl.name);
+            return false;
+        }
+        if((decl.is_retain || decl.is_persistent) &&
+           result_.process_image.retain_entries >= limits_.max_retain_entries) {
+            diag(DiagCode::capacity_exceeded, decl.line, decl.column,
+                 decl.name);
+            return false;
+        }
+        const std::uint64_t end = static_cast<std::uint64_t>(
+                                      decl.location_byte) + width;
+        const std::uint32_t limit = decl.location_area == 'I'
+            ? limits_.max_input_image_bytes
+            : decl.location_area == 'Q' ? limits_.max_output_image_bytes
+                                        : limits_.max_memory_image_bytes;
+        if(end > limit) {
+            diag(DiagCode::capacity_exceeded, decl.line, decl.column,
+                 decl.name);
+            return false;
+        }
+
+        const std::uint64_t first_bit =
+            static_cast<std::uint64_t>(decl.location_byte) * 8U +
+            (decl.location_width == 'X' ? decl.location_bit : 0U);
+        const std::uint64_t last_bit = decl.location_width == 'X'
+            ? first_bit
+            : first_bit + static_cast<std::uint64_t>(width) * 8U - 1U;
+        for(const LocatedVarInfo &old : result_.process_image.variables) {
+            if(static_cast<char>(old.area == ProcessArea::input ? 'I'
+                                 : old.area == ProcessArea::output ? 'Q'
+                                                                  : 'M') !=
+               decl.location_area) {
+                continue;
+            }
+            const std::uint64_t old_first =
+                static_cast<std::uint64_t>(old.byte_offset) * 8U +
+                (old.bit_address ? old.bit : 0U);
+            const std::uint64_t old_last = old.bit_address
+                ? old_first
+                : old_first + static_cast<std::uint64_t>(old.byte_width) *
+                                  8U - 1U;
+            if(last_bit < old_first || old_last < first_bit) continue;
+            bool compatible = false;
+            if(decl.location_area == 'I') {
+                compatible = first_bit == old_first && last_bit == old_last;
+                if(decl.location_width == 'X' && !old.bit_address) {
+                    compatible = first_bit >= old_first &&
+                                 first_bit <= old_last;
+                } else if(decl.location_width != 'X' && old.bit_address) {
+                    compatible = old_first >= first_bit &&
+                                 old_first <= last_bit;
+                }
+            }
+            if(!compatible) {
+                diag(DiagCode::sema_process_image_overlap, decl.line,
+                     decl.column, decl.name);
+                return false;
+            }
+        }
+
+        LocatedVarInfo located;
+        located.name = decl.name;
+        located.lower = decl.lower;
+        located.type_id = info.type_id;
+        located.area = decl.location_area == 'I' ? ProcessArea::input
+            : decl.location_area == 'Q' ? ProcessArea::output
+                                        : ProcessArea::memory;
+        located.byte_offset = decl.location_byte;
+        located.var_offset = info.offset;
+        located.byte_width = width;
+        located.bit = decl.location_bit;
+        located.bit_address = decl.location_width == 'X';
+        located.retain = decl.is_retain;
+        located.persistent = decl.is_persistent;
+        located.stable_id = stable_id(decl.lower);
+        result_.process_image.variables.push_back(
+            static_cast<LocatedVarInfo &&>(located));
+        std::uint32_t &bytes = decl.location_area == 'I'
+            ? result_.process_image.input_bytes
+            : decl.location_area == 'Q' ? result_.process_image.output_bytes
+                                        : result_.process_image.memory_bytes;
+        bytes = std::max(bytes, static_cast<std::uint32_t>(end));
+        if(decl.is_retain || decl.is_persistent) {
+            ++result_.process_image.retain_entries;
+        }
+        result_.process_image.max_force_entries = limits_.max_force_entries;
+        return true;
     }
 
     void write_initial_scalar(std::uint32_t offset, TypeId type_id,
@@ -2070,6 +2209,283 @@ private:
         return false;
     }
 
+    bool standard_error(const Expr &expr, DiagCode code)
+    {
+        diag(code, expr.line, expr.column, expr.name);
+        return false;
+    }
+
+    Type standard_join(const Expr &expr, std::size_t first, Type fallback,
+                       bool &compatible) const
+    {
+        Type joined = fallback;
+        bool found = false;
+        Type literal_fallback = fallback;
+        compatible = true;
+        for(std::size_t i = first; i < expr.arguments.size(); ++i) {
+            const Type candidate = anchor_type(expr.arguments[i], fallback);
+            const bool candidate_found = anchor_found_;
+            if(!candidate_found) {
+                if(candidate != fallback) literal_fallback = candidate;
+                continue;
+            }
+            if(!found) {
+                joined = candidate;
+                found = true;
+            } else if(candidate == joined || widens_to(candidate, joined)) {
+                // keep current join
+            } else if(widens_to(joined, candidate)) {
+                joined = candidate;
+            } else {
+                compatible = false;
+            }
+        }
+        return found ? joined : literal_fallback;
+    }
+
+    bool check_standard_args(const Expr &expr, std::size_t first,
+                             Expected expected)
+    {
+        for(std::size_t i = first; i < expr.arguments.size(); ++i) {
+            if(!check_expr(expr.arguments[i], expected)) return false;
+        }
+        return true;
+    }
+
+    bool standard_function_call(const Expr &expr, ExprInfo &info,
+                                Expected expected, StandardFunction function)
+    {
+        const std::size_t argc = expr.arguments.size();
+        const auto arity = [argc](std::size_t low, std::size_t high) {
+            return argc >= low && argc <= high;
+        };
+        info.standard_function = function;
+        info.standard_argc = static_cast<std::uint8_t>(argc);
+        info.standard_cost = static_cast<std::uint32_t>(
+            std::max<std::size_t>(argc, 1U));
+        result_.max_standard_function_cost = std::max(
+            result_.max_standard_function_cost,
+            info.standard_cost);
+
+        if(function >= StandardFunction::len &&
+           function <= StandardFunction::find) {
+            return standard_string_function(expr, info, expected, function);
+        }
+
+        const bool variadic = function == StandardFunction::add ||
+            function == StandardFunction::mul || function == StandardFunction::min ||
+            function == StandardFunction::max ||
+            (function >= StandardFunction::gt && function <= StandardFunction::ne);
+        if((variadic && !arity(2, 32)) ||
+           (function == StandardFunction::mux && !arity(3, 33)) ||
+           (!variadic && function != StandardFunction::mux &&
+            ((function <= StandardFunction::atan && argc != 1) ||
+             ((function >= StandardFunction::sub && function <= StandardFunction::expt) && argc != 2) ||
+             ((function >= StandardFunction::limit && function <= StandardFunction::sel) && argc != 3) ||
+             ((function >= StandardFunction::shl && function <= StandardFunction::ror) && argc != 2) ||
+             (function >= StandardFunction::add_time && argc != 2)))) {
+            return standard_error(expr, DiagCode::sema_no_matching_overload);
+        }
+
+        if(function == StandardFunction::abs &&
+           ast_.exprs[static_cast<std::size_t>(expr.arguments[0])].kind ==
+               ExprKind::literal_int &&
+           ast_.exprs[static_cast<std::size_t>(expr.arguments[0])].based) {
+            return standard_error(expr, DiagCode::sema_ambiguous_overload);
+        }
+
+        Type result_type = Type::dint;
+        TypeId result_id = builtin::dint;
+        bool compatible = true;
+
+        if(function >= StandardFunction::add_time) {
+            Type left = Type::time;
+            Type right = Type::time;
+            switch(function) {
+            case StandardFunction::add_tod_time: left = Type::tod; result_type = Type::tod; break;
+            case StandardFunction::add_dt_time: left = Type::dt; result_type = Type::dt; break;
+            case StandardFunction::sub_date_date: left = right = Type::date; result_type = Type::time; break;
+            case StandardFunction::sub_tod_time: left = Type::tod; right = Type::time; result_type = Type::tod; break;
+            case StandardFunction::sub_dt_dt: left = right = Type::dt; result_type = Type::time; break;
+            case StandardFunction::concat_date_tod: left = Type::date; right = Type::tod; result_type = Type::dt; break;
+            case StandardFunction::multime:
+            case StandardFunction::divtime:
+                left = Type::time; right = Type::dint; result_type = Type::time; break;
+            default: result_type = Type::time; break;
+            }
+            if(!check_expr(expr.arguments[0], want(left)) ||
+               !check_expr(expr.arguments[1], want(right))) {
+                return standard_error(expr, DiagCode::sema_no_matching_overload);
+            }
+            result_id = st::type_id(result_type);
+        } else if(function >= StandardFunction::shl && function <= StandardFunction::ror) {
+            const Type bits = anchor_type(expr.arguments[0], Type::dint);
+            if(!anchor_found_ || !is_bitstring(bits) ||
+               !check_expr(expr.arguments[0], want(bits)) ||
+               !check_expr(expr.arguments[1], want(Type::dint))) {
+                return standard_error(expr, DiagCode::sema_no_matching_overload);
+            }
+            const ExprInfo &count = result_.exprs[static_cast<std::size_t>(expr.arguments[1])];
+            if(count.is_const && static_cast<std::int64_t>(count.bits) < 0) {
+                return standard_error(expr, DiagCode::sema_range_violation);
+            }
+            result_type = bits;
+            result_id = st::type_id(bits);
+        } else if(function >= StandardFunction::gt && function <= StandardFunction::ne) {
+            const Type operand = standard_join(expr, 0, Type::dint, compatible);
+            if(!compatible || !(is_integer(operand) || is_real_family(operand) ||
+                                is_bitstring(operand)) ||
+               !check_standard_args(expr, 0, want(operand))) {
+                return standard_error(expr, DiagCode::sema_no_matching_overload);
+            }
+            result_type = Type::bool_;
+            result_id = builtin::bool_;
+        } else if(function == StandardFunction::sel || function == StandardFunction::mux) {
+            const std::size_t first = function == StandardFunction::sel ? 1U : 1U;
+            result_type = standard_join(expr, first, Type::dint, compatible);
+            if(!compatible ||
+               !check_expr(expr.arguments[0],
+                           want(function == StandardFunction::sel ? Type::bool_ : Type::dint)) ||
+               !check_standard_args(expr, first, want(result_type))) {
+                return standard_error(expr, DiagCode::sema_no_matching_overload);
+            }
+            result_id = st::type_id(result_type);
+        } else {
+            result_type = standard_join(expr, 0, Type::dint, compatible);
+            const bool transcendental = function >= StandardFunction::sqrt &&
+                function <= StandardFunction::atan;
+            const bool expt = function == StandardFunction::expt;
+            const bool numeric = is_integer(result_type) || is_real_family(result_type);
+            if(!compatible || !numeric || (transcendental && !is_real_family(result_type)) ||
+               (expt && !is_real_family(result_type)) ||
+               (function == StandardFunction::mod && !is_integer(result_type)) ||
+               !check_standard_args(expr, 0, want(result_type))) {
+                return standard_error(expr, DiagCode::sema_no_matching_overload);
+            }
+            result_id = st::type_id(result_type);
+            if(function == StandardFunction::limit) {
+                const ExprInfo &minimum = result_.exprs[static_cast<std::size_t>(expr.arguments[0])];
+                const ExprInfo &maximum = result_.exprs[static_cast<std::size_t>(expr.arguments[2])];
+                if(minimum.is_const && maximum.is_const) {
+                    const bool reversed = is_real_family(result_type)
+                        ? detail::bits_double(minimum.bits) > detail::bits_double(maximum.bits)
+                        : is_unsigned_int(result_type)
+                            ? minimum.bits > maximum.bits
+                        : static_cast<std::int64_t>(minimum.bits) >
+                              static_cast<std::int64_t>(maximum.bits);
+                    if(reversed) return standard_error(expr, DiagCode::sema_invalid_argument);
+                }
+            }
+        }
+
+        if(expected.has && expected.type != result_type &&
+           !widens_to(result_type, expected.type)) {
+            return mismatch(expr, expected.type, result_type);
+        }
+        info.type = result_type;
+        info.type_id = result_id;
+        info.valid = true;
+        return true;
+    }
+
+    bool standard_string_function(const Expr &expr, ExprInfo &info,
+                                  Expected expected,
+                                  StandardFunction function)
+    {
+        const std::size_t argc = expr.arguments.size();
+        const bool result_string = function >= StandardFunction::left &&
+            function <= StandardFunction::replace;
+        const std::size_t low = function == StandardFunction::concat ? 2U
+            : function == StandardFunction::len ? 1U : 2U;
+        const std::size_t high = function == StandardFunction::concat ? 32U
+            : function == StandardFunction::len ? 1U
+            : function == StandardFunction::replace ? 4U
+            : function == StandardFunction::mid || function == StandardFunction::insert ||
+              function == StandardFunction::delete_ ? 3U : 2U;
+        if(argc < low || argc > high || (function != StandardFunction::concat && argc != high))
+            return standard_error(expr, DiagCode::sema_no_matching_overload);
+
+        Type string_type = Type::string_;
+        TypeId string_id = invalid_type_id;
+        if(result_string) {
+            if(!expected.has || (expected.type != Type::string_ &&
+                                 expected.type != Type::wstring))
+                return standard_error(expr, DiagCode::sema_no_matching_overload);
+            string_type = expected.type;
+            string_id = expected.type_id;
+        } else {
+            const Type anchored = anchor_type(expr.arguments[0], Type::string_);
+            if(!anchor_found_ || (anchored != Type::string_ && anchored != Type::wstring))
+                return standard_error(expr, DiagCode::sema_no_matching_overload);
+            string_type = anchored;
+            if(!check_expr(expr.arguments[0], Expected{}))
+                return standard_error(expr, DiagCode::sema_no_matching_overload);
+            const ExprInfo &first = result_.exprs[static_cast<std::size_t>(expr.arguments[0])];
+            string_id = first.storage_type_id == invalid_type_id ? first.type_id
+                                                                  : first.storage_type_id;
+        }
+        const TypeDesc *string_desc = result_.types.get(string_id);
+        if(string_desc == nullptr) return standard_error(expr, DiagCode::sema_no_matching_overload);
+
+        for(std::size_t i = result_string ? 0U : 1U; i < argc; ++i) {
+            const bool scalar =
+                (function == StandardFunction::left || function == StandardFunction::right) && i == 1U ||
+                function == StandardFunction::mid && i >= 1U ||
+                function == StandardFunction::insert && i == 2U ||
+                function == StandardFunction::delete_ && i >= 1U ||
+                function == StandardFunction::replace && i >= 2U;
+            if(!check_expr(expr.arguments[i], scalar ? want(Type::dint)
+                                                     : want(string_type, string_id)))
+                return standard_error(expr, DiagCode::sema_no_matching_overload);
+        }
+        std::uint32_t capacities[32] = {};
+        std::uint8_t string_count = 0;
+        for(const ExprIndex argument : expr.arguments) {
+            const ExprInfo &argument_info =
+                result_.exprs[static_cast<std::size_t>(argument)];
+            if(argument_info.type != Type::string_ &&
+               argument_info.type != Type::wstring) continue;
+            const TypeId argument_id =
+                argument_info.storage_type_id == invalid_type_id
+                    ? argument_info.type_id : argument_info.storage_type_id;
+            const TypeDesc *argument_desc = result_.types.get(argument_id);
+            if(argument_desc != nullptr) {
+                capacities[string_count++] = static_cast<std::uint32_t>(
+                    argument_desc->string.capacity);
+            }
+        }
+        info.standard_cost = standard_string_cost(
+            function, capacities, string_count,
+            result_string ? static_cast<std::uint32_t>(string_desc->string.capacity)
+                          : 0U);
+        result_.max_string_operation_cost = std::max(
+            result_.max_string_operation_cost, info.standard_cost);
+        result_.max_standard_function_cost = std::max(
+            result_.max_standard_function_cost, info.standard_cost);
+        info.standard_function = function;
+        info.standard_argc = static_cast<std::uint8_t>(argc);
+        info.valid = true;
+        if(!result_string) {
+            info.type = Type::dint;
+            info.type_id = builtin::dint;
+            return true;
+        }
+        const std::uint32_t aligned = (result_.vars_bytes + 7U) & ~7U;
+        if(aligned > limits_.max_vars_bytes || string_desc->size >
+               limits_.max_vars_bytes - aligned) {
+            return standard_error(expr, DiagCode::capacity_variables);
+        }
+        info.type = string_type;
+        info.type_id = string_id;
+        info.storage_type_id = string_id;
+        info.offset = aligned;
+        info.memory_access = true;
+        result_.vars_bytes = aligned + static_cast<std::uint32_t>(string_desc->size);
+        if(result_.initial_data.size() < result_.vars_bytes)
+            result_.initial_data.resize(result_.vars_bytes, 0);
+        return true;
+    }
+
     // <SRC>_TO_<DST> / TRUNC_* call (matrix 4.x): the single argument is
     // typed against the source cell type (whitelist widening applies), the
     // result carries the destination type. Constant arguments fold with
@@ -2078,6 +2494,10 @@ private:
     bool conversion_call(const Expr &expr, ExprInfo &info, Expected expected)
     {
         const std::string conversion_name = lower_copy(expr.name);
+        StandardFunction standard;
+        if(resolve_standard_function(conversion_name, standard)) {
+            return standard_function_call(expr, info, expected, standard);
+        }
         if(conversion_name == "l2b_alias_guard") {
             if(expected.has && expected.type != Type::dint) {
                 return mismatch(expr, expected.type, Type::dint);
@@ -2847,7 +3267,11 @@ private:
         if(!operand.has) {
             operand = want(join_anchors(expr.lhs, expr.rhs, Type::dint));
         }
-        if(!valid_arith(expr.binary_op, operand.type)) {
+        const bool located_memory_add =
+            expr.binary_op == BinaryOp::add && is_bitstring(operand.type) &&
+            is_located_memory_expr(expr.lhs);
+        if(!valid_arith(expr.binary_op, operand.type) &&
+           !located_memory_add) {
             diag(DiagCode::sema_operand_type_invalid, expr.line, expr.column,
                  "operator not defined for this type");
             return false;
@@ -2984,6 +3408,25 @@ private:
         default:
             return false;
         }
+    }
+
+    bool is_located_memory_expr(ExprIndex index) const
+    {
+        if(index == kNoExpr || static_cast<std::size_t>(index) >=
+                                    ast_.exprs.size()) {
+            return false;
+        }
+        const Expr &expr = ast_.exprs[static_cast<std::size_t>(index)];
+        if(expr.kind != ExprKind::variable || !expr.access.empty()) {
+            return false;
+        }
+        const std::string lower = lower_copy(expr.name);
+        for(const LocatedVarInfo &var : result_.process_image.variables) {
+            if(var.area == ProcessArea::memory && var.lower == lower) {
+                return true;
+            }
+        }
+        return false;
     }
 
     void fold_logical(const Expr &expr, ExprInfo &info, Type target)

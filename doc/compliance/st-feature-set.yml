@@ -33,9 +33,9 @@ grammar:
   - {id: type_array_struct, status: implemented, test: core/test/st_l1b2_tests.cpp}
   - {id: string_date_literals, status: implemented, test: core/test/st_l1b3_tests.cpp}
   - {id: user_pous, status: implemented, spec: st-l2b-semantics.md, test: core/test/st_l2b_tests.cpp}
-  - {id: located_variables, status: pending, spec: st-l3-semantics.md}
-  - {id: configuration_resource_task, status: pending, spec: st-l5-semantics.md}
-  - {id: sfc_text, status: pending, spec: st-l6-semantics.md}
+  - {id: located_variables, status: implemented, spec: st-l3-semantics.md, test: core/test/st_l3_tests.cpp}
+  - {id: configuration_resource_task, status: implemented, spec: st-l5-semantics.md, test: core/test/st_l5_frontend_tests.cpp}
+  - {id: sfc_text, status: implemented, spec: st-l6-semantics.md, test: core/test/st_l6_tests.cpp}
 
 types:
   - {id: BOOL, status: implemented, test: core/test/st_l0_runtime_tests.cpp}
@@ -111,89 +111,89 @@ pous:
 storage:
   - {id: static_variable_image, status: implemented, test: core/test/st_l0_quality_tests.cpp}
   - {id: static_fb_instances, status: implemented, test: core/test/st_l0_quality_tests.cpp}
-  - {id: process_image_I, status: pending, spec: st-l3-semantics.md}
-  - {id: process_image_Q, status: pending, spec: st-l3-semantics.md}
-  - {id: process_image_M, status: pending, spec: st-l3-semantics.md}
-  - {id: located_X_B_W_D_L, status: pending, spec: st-l3-semantics.md}
-  - {id: RETAIN, status: pending, spec: st-l3-semantics.md}
-  - {id: PERSISTENT, status: pending, spec: st-l3-semantics.md}
-  - {id: force_mask, status: pending, spec: st-l3-semantics.md}
-  - {id: seqlock_snapshot, status: pending, spec: st-l7-semantics.md}
+  - {id: process_image_I, status: implemented, spec: st-l3-semantics.md, test: core/test/st_l3_tests.cpp}
+  - {id: process_image_Q, status: implemented, spec: st-l3-semantics.md, test: core/test/st_l3_tests.cpp}
+  - {id: process_image_M, status: implemented, spec: st-l3-semantics.md, test: core/test/st_l3_tests.cpp}
+  - {id: located_X_B_W_D_L, status: implemented, spec: st-l3-semantics.md, test: core/test/st_l3_tests.cpp}
+  - {id: RETAIN, status: implemented, spec: st-l3-semantics.md, test: core/test/st_l3_tests.cpp}
+  - {id: PERSISTENT, status: implemented, spec: st-l3-semantics.md, test: core/test/st_l3_tests.cpp}
+  - {id: force_mask, status: implemented, spec: st-l3-semantics.md, test: core/test/st_l3_tests.cpp}
+  - {id: seqlock_snapshot, status: implemented, spec: st-l7-semantics.md, test: core/test/st_l7_tests.cpp}
 
 tasks:
-  - {id: CONFIGURATION, status: pending, spec: st-l5-semantics.md}
-  - {id: RESOURCE, status: pending, spec: st-l5-semantics.md}
-  - {id: periodic_task, status: pending, spec: st-l5-semantics.md}
-  - {id: event_task, status: pending, spec: st-l5-semantics.md}
-  - {id: priority_order, status: pending, spec: st-l5-semantics.md}
-  - {id: program_mapping, status: pending, spec: st-l5-semantics.md}
-  - {id: instruction_watchdog, status: pending, spec: st-l5-semantics.md}
-  - {id: wallclock_fault_injection, status: pending, spec: st-l5-semantics.md}
-  - {id: reset_restart, status: pending, spec: st-l5-semantics.md}
+  - {id: CONFIGURATION, status: implemented, spec: st-l5-semantics.md, test: core/test/st_l5_frontend_tests.cpp}
+  - {id: RESOURCE, status: implemented, spec: st-l5-semantics.md, test: core/test/st_l5_tests.cpp}
+  - {id: periodic_task, status: implemented, spec: st-l5-semantics.md, test: core/test/st_l5_tests.cpp}
+  - {id: event_task, status: implemented, spec: st-l5-semantics.md, test: core/test/st_l5_tests.cpp}
+  - {id: priority_order, status: implemented, spec: st-l5-semantics.md, test: core/test/st_l5_tests.cpp}
+  - {id: program_mapping, status: implemented, spec: st-l5-semantics.md, test: core/test/st_l5_tests.cpp}
+  - {id: instruction_watchdog, status: implemented, spec: st-l5-semantics.md, test: core/test/st_l5_tests.cpp}
+  - {id: wallclock_fault_injection, status: implemented, spec: st-l5-semantics.md, test: core/test/st_l5_tests.cpp}
+  - {id: reset_restart, status: implemented, spec: st-l5-semantics.md, test: core/test/st_l5_tests.cpp}
 
 sfc_qualifiers:
-  - {id: N, status: pending, spec: st-l6-semantics.md}
-  - {id: S, status: pending, spec: st-l6-semantics.md}
-  - {id: R, status: pending, spec: st-l6-semantics.md}
-  - {id: L, status: pending, spec: st-l6-semantics.md}
-  - {id: D, status: pending, spec: st-l6-semantics.md}
-  - {id: P, status: pending, spec: st-l6-semantics.md}
-  - {id: SD, status: pending, spec: st-l6-semantics.md}
-  - {id: DS, status: pending, spec: st-l6-semantics.md}
-  - {id: SL, status: pending, spec: st-l6-semantics.md}
+  - {id: N, status: implemented, spec: st-l6-semantics.md, test: core/test/st_l6_tests.cpp}
+  - {id: S, status: implemented, spec: st-l6-semantics.md, test: core/test/st_l6_tests.cpp}
+  - {id: R, status: implemented, spec: st-l6-semantics.md, test: core/test/st_l6_tests.cpp}
+  - {id: L, status: implemented, spec: st-l6-semantics.md, test: core/test/st_l6_tests.cpp}
+  - {id: D, status: implemented, spec: st-l6-semantics.md, test: core/test/st_l6_tests.cpp}
+  - {id: P, status: implemented, spec: st-l6-semantics.md, test: core/test/st_l6_tests.cpp}
+  - {id: SD, status: implemented, spec: st-l6-semantics.md, test: core/test/st_l6_tests.cpp}
+  - {id: DS, status: implemented, spec: st-l6-semantics.md, test: core/test/st_l6_tests.cpp}
+  - {id: SL, status: implemented, spec: st-l6-semantics.md, test: core/test/st_l6_tests.cpp}
 
 functions:
-  - {id: ABS, status: pending, spec: st-l4-semantics.md}
-  - {id: SQRT, status: pending, spec: st-l4-semantics.md}
-  - {id: LN, status: pending, spec: st-l4-semantics.md}
-  - {id: LOG, status: pending, spec: st-l4-semantics.md}
-  - {id: EXP, status: pending, spec: st-l4-semantics.md}
-  - {id: SIN, status: pending, spec: st-l4-semantics.md}
-  - {id: COS, status: pending, spec: st-l4-semantics.md}
-  - {id: TAN, status: pending, spec: st-l4-semantics.md}
-  - {id: ASIN, status: pending, spec: st-l4-semantics.md}
-  - {id: ACOS, status: pending, spec: st-l4-semantics.md}
-  - {id: ATAN, status: pending, spec: st-l4-semantics.md}
-  - {id: ADD, status: pending, spec: st-l4-semantics.md}
-  - {id: SUB, status: pending, spec: st-l4-semantics.md}
-  - {id: MUL, status: pending, spec: st-l4-semantics.md}
-  - {id: DIV, status: pending, spec: st-l4-semantics.md}
-  - {id: MOD, status: pending, spec: st-l4-semantics.md}
-  - {id: EXPT, status: pending, spec: st-l4-semantics.md}
-  - {id: MIN, status: pending, spec: st-l4-semantics.md}
-  - {id: MAX, status: pending, spec: st-l4-semantics.md}
-  - {id: LIMIT, status: pending, spec: st-l4-semantics.md}
-  - {id: SEL, status: pending, spec: st-l4-semantics.md}
-  - {id: MUX, status: pending, spec: st-l4-semantics.md}
-  - {id: GT, status: pending, spec: st-l4-semantics.md}
-  - {id: GE, status: pending, spec: st-l4-semantics.md}
-  - {id: EQ, status: pending, spec: st-l4-semantics.md}
-  - {id: LE, status: pending, spec: st-l4-semantics.md}
-  - {id: LT, status: pending, spec: st-l4-semantics.md}
-  - {id: NE, status: pending, spec: st-l4-semantics.md}
-  - {id: SHL, status: pending, spec: st-l4-semantics.md}
-  - {id: SHR, status: pending, spec: st-l4-semantics.md}
-  - {id: ROL, status: pending, spec: st-l4-semantics.md}
-  - {id: ROR, status: pending, spec: st-l4-semantics.md}
-  - {id: LEN, status: pending, spec: st-l4-semantics.md}
-  - {id: LEFT, status: pending, spec: st-l4-semantics.md}
-  - {id: RIGHT, status: pending, spec: st-l4-semantics.md}
-  - {id: MID, status: pending, spec: st-l4-semantics.md}
-  - {id: CONCAT, status: pending, spec: st-l4-semantics.md}
-  - {id: INSERT, status: pending, spec: st-l4-semantics.md}
-  - {id: DELETE, status: pending, spec: st-l4-semantics.md}
-  - {id: REPLACE, status: pending, spec: st-l4-semantics.md}
-  - {id: FIND, status: pending, spec: st-l4-semantics.md}
-  - {id: ADD_TIME, status: pending, spec: st-l4-semantics.md}
-  - {id: ADD_TOD_TIME, status: pending, spec: st-l4-semantics.md}
-  - {id: ADD_DT_TIME, status: pending, spec: st-l4-semantics.md}
-  - {id: SUB_TIME, status: pending, spec: st-l4-semantics.md}
-  - {id: SUB_DATE_DATE, status: pending, spec: st-l4-semantics.md}
-  - {id: SUB_TOD_TIME, status: pending, spec: st-l4-semantics.md}
-  - {id: SUB_DT_DT, status: pending, spec: st-l4-semantics.md}
-  - {id: MULTIME, status: pending, spec: st-l4-semantics.md}
-  - {id: DIVTIME, status: pending, spec: st-l4-semantics.md}
-  - {id: CONCAT_DATE_TOD, status: pending, spec: st-l4-semantics.md}
+  - {id: ABS, status: implemented, spec: st-l4-semantics.md, test: core/test/st_l4_tests.cpp}
+  - {id: SQRT, status: implemented, spec: st-l4-semantics.md, test: core/test/st_l4_tests.cpp}
+  - {id: LN, status: implemented, spec: st-l4-semantics.md, test: core/test/st_l4_tests.cpp}
+  - {id: LOG, status: implemented, spec: st-l4-semantics.md, test: core/test/st_l4_tests.cpp}
+  - {id: EXP, status: implemented, spec: st-l4-semantics.md, test: core/test/st_l4_tests.cpp}
+  - {id: SIN, status: implemented, spec: st-l4-semantics.md, test: core/test/st_l4_tests.cpp}
+  - {id: COS, status: implemented, spec: st-l4-semantics.md, test: core/test/st_l4_tests.cpp}
+  - {id: TAN, status: implemented, spec: st-l4-semantics.md, test: core/test/st_l4_tests.cpp}
+  - {id: ASIN, status: implemented, spec: st-l4-semantics.md, test: core/test/st_l4_tests.cpp}
+  - {id: ACOS, status: implemented, spec: st-l4-semantics.md, test: core/test/st_l4_tests.cpp}
+  - {id: ATAN, status: implemented, spec: st-l4-semantics.md, test: core/test/st_l4_tests.cpp}
+  - {id: ADD, status: implemented, spec: st-l4-semantics.md, test: core/test/st_l4_tests.cpp}
+  - {id: SUB, status: implemented, spec: st-l4-semantics.md, test: core/test/st_l4_tests.cpp}
+  - {id: MUL, status: implemented, spec: st-l4-semantics.md, test: core/test/st_l4_tests.cpp}
+  - {id: DIV, status: implemented, spec: st-l4-semantics.md, test: core/test/st_l4_tests.cpp}
+  - {id: MOD, status: implemented, spec: st-l4-semantics.md, test: core/test/st_l4_tests.cpp}
+  - {id: EXPT, status: implemented, spec: st-l4-semantics.md, test: core/test/st_l4_tests.cpp}
+  - {id: MIN, status: implemented, spec: st-l4-semantics.md, test: core/test/st_l4_tests.cpp}
+  - {id: MAX, status: implemented, spec: st-l4-semantics.md, test: core/test/st_l4_tests.cpp}
+  - {id: LIMIT, status: implemented, spec: st-l4-semantics.md, test: core/test/st_l4_tests.cpp}
+  - {id: SEL, status: implemented, spec: st-l4-semantics.md, test: core/test/st_l4_tests.cpp}
+  - {id: MUX, status: implemented, spec: st-l4-semantics.md, test: core/test/st_l4_tests.cpp}
+  - {id: GT, status: implemented, spec: st-l4-semantics.md, test: core/test/st_l4_tests.cpp}
+  - {id: GE, status: implemented, spec: st-l4-semantics.md, test: core/test/st_l4_tests.cpp}
+  - {id: EQ, status: implemented, spec: st-l4-semantics.md, test: core/test/st_l4_tests.cpp}
+  - {id: LE, status: implemented, spec: st-l4-semantics.md, test: core/test/st_l4_tests.cpp}
+  - {id: LT, status: implemented, spec: st-l4-semantics.md, test: core/test/st_l4_tests.cpp}
+  - {id: NE, status: implemented, spec: st-l4-semantics.md, test: core/test/st_l4_tests.cpp}
+  - {id: SHL, status: implemented, spec: st-l4-semantics.md, test: core/test/st_l4_tests.cpp}
+  - {id: SHR, status: implemented, spec: st-l4-semantics.md, test: core/test/st_l4_tests.cpp}
+  - {id: ROL, status: implemented, spec: st-l4-semantics.md, test: core/test/st_l4_tests.cpp}
+  - {id: ROR, status: implemented, spec: st-l4-semantics.md, test: core/test/st_l4_tests.cpp}
+  - {id: LEN, status: implemented, spec: st-l4-semantics.md, test: core/test/st_l4_tests.cpp}
+  - {id: LEFT, status: implemented, spec: st-l4-semantics.md, test: core/test/st_l4_tests.cpp}
+  - {id: RIGHT, status: implemented, spec: st-l4-semantics.md, test: core/test/st_l4_tests.cpp}
+  - {id: MID, status: implemented, spec: st-l4-semantics.md, test: core/test/st_l4_tests.cpp}
+  - {id: CONCAT, status: implemented, spec: st-l4-semantics.md, test: core/test/st_l4_tests.cpp}
+  - {id: INSERT, status: implemented, spec: st-l4-semantics.md, test: core/test/st_l4_tests.cpp}
+  - {id: DELETE, status: implemented, spec: st-l4-semantics.md, test: core/test/st_l4_tests.cpp}
+  - {id: REPLACE, status: implemented, spec: st-l4-semantics.md, test: core/test/st_l4_tests.cpp}
+  - {id: FIND, status: implemented, spec: st-l4-semantics.md, test: core/test/st_l4_tests.cpp}
+  - {id: ADD_TIME, status: implemented, spec: st-l4-semantics.md, test: core/test/st_l4_tests.cpp}
+  - {id: ADD_TOD_TIME, status: implemented, spec: st-l4-semantics.md, test: core/test/st_l4_tests.cpp}
+  - {id: ADD_DT_TIME, status: implemented, spec: st-l4-semantics.md, test: core/test/st_l4_tests.cpp}
+  - {id: SUB_TIME, status: implemented, spec: st-l4-semantics.md, test: core/test/st_l4_tests.cpp}
+  - {id: SUB_DATE_DATE, status: implemented, spec: st-l4-semantics.md, test: core/test/st_l4_tests.cpp}
+  - {id: SUB_TOD_TIME, status: implemented, spec: st-l4-semantics.md, test: core/test/st_l4_tests.cpp}
+  - {id: SUB_DT_DT, status: implemented, spec: st-l4-semantics.md, test: core/test/st_l4_tests.cpp}
+  - {id: MULTIME, status: implemented, spec: st-l4-semantics.md, test: core/test/st_l4_tests.cpp}
+  - {id: DIVTIME, status: implemented, spec: st-l4-semantics.md, test: core/test/st_l4_tests.cpp}
+  - {id: CONCAT_DATE_TOD, status: implemented, spec: st-l4-semantics.md, test: core/test/st_l4_tests.cpp}
 
 fbs:
   - id: iec_basic
@@ -249,11 +249,11 @@ diagnostics:
   - {id: date_time_range_violation, status: implemented, test: core/test/st_l1b3_tests.cpp}
   - {id: alias_violation, status: implemented, spec: st-l2b-semantics.md, test: core/test/st_l2b_tests.cpp}
   - {id: binding_locked_duplicate_binding, status: implemented, spec: st-l2c-semantics.md, test: core/test/st_l2c_tests.cpp}
-  - {id: process_image_layout_retain, status: pending, spec: st-l3-semantics.md}
-  - {id: overload_and_function_range, status: pending, spec: st-l4-semantics.md}
-  - {id: task_faults, status: pending, spec: st-l5-semantics.md}
-  - {id: unsafe_sfc_network, status: pending, spec: st-l6-semantics.md}
-  - {id: debugging_snapshot, status: pending, spec: st-l7-semantics.md}
+  - {id: process_image_layout_retain, status: implemented, spec: st-l3-semantics.md, test: core/test/st_l3_tests.cpp}
+  - {id: overload_and_function_range, status: implemented, spec: st-l4-semantics.md, test: core/test/st_l4_tests.cpp}
+  - {id: task_faults, status: implemented, spec: st-l5-semantics.md, test: core/test/st_l5_tests.cpp}
+  - {id: unsafe_sfc_network, status: implemented, spec: st-l6-semantics.md, test: core/test/st_l6_tests.cpp}
+  - {id: debugging_snapshot, status: implemented, spec: st-l7-semantics.md, test: core/test/st_l7_tests.cpp}
   - id: legacy_source_opcode_hash
     status: excluded
     scope_reason: new software; only the current compiler and bytecode format are supported

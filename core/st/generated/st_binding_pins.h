@@ -1637,11 +1637,12 @@ constexpr TypeId st_binding_pin_type_id_for_name(
     return invalid_type_id;
 }
 
-constexpr bool st_binding_pin_descs_valid() noexcept
+constexpr bool st_binding_pin_descs_valid(
+    std::size_t begin, std::size_t end) noexcept
 {
     if(kStBindingPinDescs.size() != kStBindingPins.size()) return false;
-    for(std::size_t index = 0; index < kStBindingPinDescs.size();
-        ++index) {
+    if(begin > end || end > kStBindingPinDescs.size()) return false;
+    for(std::size_t index = begin; index < end; ++index) {
         const PinDesc &desc = kStBindingPinDescs[index];
         const StBindingPinMetadata &metadata = kStBindingPins[index];
         if(!st_binding_lower_name_matches(desc.lower_name,
@@ -1666,18 +1667,31 @@ constexpr bool st_binding_pin_descs_valid() noexcept
 
 constexpr bool st_binding_pin_tables_valid() noexcept
 {
-    for(const StBindingFbMetadata &metadata : kStBindingFbs) {
-        const PinTable table = st_binding_pin_table(metadata.type);
-        if(table.count != metadata.pin_count) return false;
-        if(table.pins !=
-           kStBindingPinDescs.data() + metadata.first_pin) return false;
+    if(static_cast<std::size_t>(StBindingFbType::count) !=
+       kStBindingFbs.size()) return false;
+    std::size_t expected_first_pin = 0;
+    for(std::size_t index = 0; index < kStBindingFbs.size(); ++index) {
+        const StBindingFbMetadata &metadata = kStBindingFbs[index];
+        if(static_cast<std::size_t>(metadata.type) != index) return false;
+        const std::size_t first_pin = metadata.first_pin;
+        const std::size_t pin_count = metadata.pin_count;
+        if(first_pin != expected_first_pin ||
+           first_pin > kStBindingPinDescs.size() ||
+           pin_count > kStBindingPinDescs.size() - first_pin)
+            return false;
+        expected_first_pin = first_pin + pin_count;
     }
-    return st_binding_pin_table(StBindingFbType::count).pins == nullptr;
+    return expected_first_pin == kStBindingPinDescs.size();
 }
 
 static_assert(kStBindingPinDescs.size() == 1476U);
 static_assert(kStBindingFbs.size() == 134U);
-static_assert(st_binding_pin_descs_valid());
+static_assert(st_binding_pin_descs_valid(0U, 256U));
+static_assert(st_binding_pin_descs_valid(256U, 512U));
+static_assert(st_binding_pin_descs_valid(512U, 768U));
+static_assert(st_binding_pin_descs_valid(768U, 1024U));
+static_assert(st_binding_pin_descs_valid(1024U, 1280U));
+static_assert(st_binding_pin_descs_valid(1280U, 1476U));
 static_assert(st_binding_pin_tables_valid());
 
 } // namespace generated
