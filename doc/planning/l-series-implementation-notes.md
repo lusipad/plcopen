@@ -371,11 +371,11 @@
 | 十二 feature 集合相等 | pass |
 | basic 10 + Part1/2 45 + Part4 68 + Part5 11 展开 | pass |
 | 所有 excluded 有 scope/diagnostic/rejection test | pass |
-| ST 专项与全量 CTest | pass（本地当前已重刷 L7 + feature-set；其余见各批记录） |
-| Windows/Linux/ARM64 | partial（Windows/WSL 证据已齐；ARM64 待远端） |
-| RT scan/零分配/覆盖率/clang-tidy/回放 | partial（本批直接证据为 RT/零分配；其余按项目门禁后补） |
-| 文档严格构建与链接检查 | partial |
-| 工作树、提交、远端 CI | pending |
+| ST 专项与全量 CTest | pass（本地 Windows Release 90/90；远端 Windows、Linux GCC/Clang 与 ARM64/QEMU 全部通过） |
+| Windows/Linux/ARM64 | pass（提交 `12bf86d`：Windows CI `29609816224`；Linux CI `29609816003`，含 GCC、Clang 与 ARM64） |
+| RT scan/零分配/覆盖率/clang-tidy/回放 | pass（Windows/Linux RT scan 与 replay；Windows coverage；Linux Clang E2 全量 clang-tidy；各批零分配与 sanitizer 证据见上） |
+| 文档严格构建与链接检查 | pass（Linux CI Doxygen/Graphviz 产物校验；本地 `python -m mkdocs build --strict`） |
+| 工作树、提交、远端 CI | pass（L 系列代码闭合提交 `12bf86d` 已推送；Windows/Linux 两条正式 CI 均为 success） |
 
 ---
 
