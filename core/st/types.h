@@ -5,6 +5,7 @@
 #include <cstring>
 
 #include "st/type_desc.h"
+#include "st/generated/st_binding_catalog.h"
 
 // L0 value-type universe (approved st-l0-semantics 1.2): six elementary
 // types. TIME is int64 nanoseconds end-to-end; quantization happens only at
@@ -43,9 +44,10 @@ enum class Type : std::uint8_t
     date = 21,
     tod = 22,
     dt = 23,
+    group_ref = 24, // opaque host-bound AxisGroup handle (L2c)
 };
 
-inline constexpr int kTypeCount = 24;
+inline constexpr int kTypeCount = 25;
 
 constexpr TypeId type_id(Type type)
 {
@@ -66,7 +68,8 @@ constexpr TypeId type_id(Type type)
     case Type::word: return builtin::word;
     case Type::dword: return builtin::dword;
     case Type::lword: return builtin::lword;
-    case Type::axis_ref: return invalid_type_id;
+    case Type::axis_ref: return binding_type::axis_ref;
+    case Type::group_ref: return binding_type::group_ref;
     case Type::char_: return builtin::usint;
     case Type::wchar: return builtin::udint;
     case Type::date: return builtin::date;
@@ -100,6 +103,8 @@ constexpr Type type_from_id(TypeId id)
     case builtin::word: return Type::word;
     case builtin::dword: return Type::dword;
     case builtin::lword: return Type::lword;
+    case binding_type::axis_ref: return Type::axis_ref;
+    case binding_type::group_ref: return Type::group_ref;
     default: return Type::bool_;
     }
 }
@@ -176,33 +181,11 @@ constexpr bool widens_to(Type from, Type to)
     return false;
 }
 
-// Bound FB set (matrix 3.8): the eleven basic.h IEC blocks; RTC is excluded
-// by contract (wall-clock calendar dependency).
-enum class FbType : std::uint8_t
-{
-    r_trig = 0,
-    f_trig = 1,
-    sr = 2,
-    rs = 3,
-    ton = 4,
-    tof = 5,
-    tp = 6,
-    ctu = 7,
-    ctd = 8,
-    ctud = 9,
-    mc_power = 10,
-    mc_home = 11,
-    mc_stop = 12,
-    mc_halt = 13,
-    mc_move_absolute = 14,
-    mc_move_relative = 15,
-    mc_move_additive = 16,
-    mc_move_velocity = 17,
-    mc_set_override = 18,
-    mc_reset = 19,
-};
+// FB identity is generated from the checked-in PLCopen/IEC authorities.
+// RTC remains excluded because it depends on a wall-clock calendar source.
+using FbType = generated::StBindingFbType;
 
-inline constexpr int kFbTypeCount = 20;
+inline constexpr int kFbTypeCount = static_cast<int>(FbType::count);
 
 namespace detail
 {
@@ -343,35 +326,16 @@ constexpr const char *to_string(Type type)
     case Type::date: return "DATE";
     case Type::tod: return "TOD";
     case Type::dt: return "DT";
+    case Type::group_ref: return "GROUP_REF";
     }
     return "?";
 }
 
 constexpr const char *to_string(FbType type)
 {
-    switch(type) {
-    case FbType::r_trig: return "R_TRIG";
-    case FbType::f_trig: return "F_TRIG";
-    case FbType::sr: return "SR";
-    case FbType::rs: return "RS";
-    case FbType::ton: return "TON";
-    case FbType::tof: return "TOF";
-    case FbType::tp: return "TP";
-    case FbType::ctu: return "CTU";
-    case FbType::ctd: return "CTD";
-    case FbType::ctud: return "CTUD";
-    case FbType::mc_power: return "MC_Power";
-    case FbType::mc_home: return "MC_Home";
-    case FbType::mc_stop: return "MC_Stop";
-    case FbType::mc_halt: return "MC_Halt";
-    case FbType::mc_move_absolute: return "MC_MoveAbsolute";
-    case FbType::mc_move_relative: return "MC_MoveRelative";
-    case FbType::mc_move_additive: return "MC_MoveAdditive";
-    case FbType::mc_move_velocity: return "MC_MoveVelocity";
-    case FbType::mc_set_override: return "MC_SetOverride";
-    case FbType::mc_reset: return "MC_Reset";
-    }
-    return "?";
+    const generated::StBindingFbMetadata *metadata =
+        generated::st_binding_fb_metadata(type);
+    return metadata != nullptr ? metadata->name.data() : "?";
 }
 
 } // namespace plcopen::core::st

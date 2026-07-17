@@ -1585,6 +1585,12 @@ int check_homing_soft_limit_lifecycle()
     group_home.group_ref = &group;
     group_home.execute = true;
     group_home.call();
+    if (!group_home.outputs.busy || group_home.outputs.done || group_home.outputs.error)
+    {
+        return fail("group_home queued lifecycle");
+    }
+    group.cycle();
+    group_home.call();
     if (!group_home.outputs.done || group_home.outputs.error ||
         submit_takeover(member, 2.0).error() != rt::ErrorCode::out_of_range)
     {

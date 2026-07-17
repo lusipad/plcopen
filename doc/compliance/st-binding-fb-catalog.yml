@@ -1,0 +1,170 @@
+# ST-L2c FB-level binding authority. Pin schemas are supplied by the set
+# sources named below and are validated separately; an FB row alone never
+# counts as a registered pin dispatcher.
+schema: plcopen-st-binding-fb-catalog-v1
+sets:
+  iec_basic:
+    source: core/fb/basic.h
+    pin_source: doc/compliance/iec-basic-fb-io.yml
+    expected: 10
+  plcopen_part1_part2:
+    source: doc/compliance/plcopen-motion-part1-io.yml
+    pin_source: doc/compliance/plcopen-motion-part1-io.yml
+    expected: 45
+  plcopen_part4:
+    source: doc/compliance/plcopen-part4-clause-audit.md
+    pin_source: doc/compliance/plcopen-motion-part4-io.yml
+    expected: 68
+  plcopen_part5:
+    source: doc/compliance/plcopen-motion-part5-io.yml
+    pin_source: doc/compliance/plcopen-motion-part5-io.yml
+    expected: 11
+fbs:
+  # IEC basic 10 (RTC is outside the deterministic ST scope).
+  - {set: iec_basic, name: R_TRIG, native: fb::RTrig}
+  - {set: iec_basic, name: F_TRIG, native: fb::FTrig}
+  - {set: iec_basic, name: SR, native: fb::SR}
+  - {set: iec_basic, name: RS, native: fb::RS}
+  - {set: iec_basic, name: TON, native: fb::TON}
+  - {set: iec_basic, name: TOF, native: fb::TOF}
+  - {set: iec_basic, name: TP, native: fb::TP}
+  - {set: iec_basic, name: CTU, native: fb::CTU}
+  - {set: iec_basic, name: CTD, native: fb::CTD}
+  - {set: iec_basic, name: CTUD, native: fb::CTUD}
+
+  # PLCopen Motion Part 1/2, 45 independent FBs.
+  - {set: plcopen_part1_part2, name: MC_Power, native: fb::FbPower}
+  - {set: plcopen_part1_part2, name: MC_Home, native: fb::FbHome}
+  - {set: plcopen_part1_part2, name: MC_Stop, native: fb::FbStop}
+  - {set: plcopen_part1_part2, name: MC_Halt, native: fb::FbHalt}
+  - {set: plcopen_part1_part2, name: MC_MoveAbsolute, native: fb::FbMoveAbsolute}
+  - {set: plcopen_part1_part2, name: MC_MoveRelative, native: fb::FbMoveRelative}
+  - {set: plcopen_part1_part2, name: MC_MoveAdditive, native: fb::FbMoveAdditive}
+  - {set: plcopen_part1_part2, name: MC_MoveSuperimposed, native: fb::FbMoveSuperimposed}
+  - {set: plcopen_part1_part2, name: MC_HaltSuperimposed, native: fb::FbHaltSuperimposed}
+  - {set: plcopen_part1_part2, name: MC_MoveVelocity, native: fb::FbMoveVelocity}
+  - {set: plcopen_part1_part2, name: MC_MoveContinuousAbsolute, native: fb::FbMoveContinuousAbsolute}
+  - {set: plcopen_part1_part2, name: MC_MoveContinuousRelative, native: fb::FbMoveContinuousRelative}
+  - {set: plcopen_part1_part2, name: MC_TorqueControl, native: fb::FbTorqueControl}
+  - {set: plcopen_part1_part2, name: MC_PositionProfile, native: fb::FbPositionProfile}
+  - {set: plcopen_part1_part2, name: MC_VelocityProfile, native: fb::FbVelocityProfile}
+  - {set: plcopen_part1_part2, name: MC_AccelerationProfile, native: fb::FbAccelerationProfile}
+  - {set: plcopen_part1_part2, name: MC_SetPosition, native: fb::FbSetPosition}
+  - {set: plcopen_part1_part2, name: MC_SetOverride, native: fb::FbSetOverride}
+  - {set: plcopen_part1_part2, name: MC_ReadParameter, native: fb::FbReadParameter}
+  - {set: plcopen_part1_part2, name: MC_ReadBoolParameter, native: fb::FbReadBoolParameter}
+  - {set: plcopen_part1_part2, name: MC_WriteParameter, native: fb::FbWriteParameter}
+  - {set: plcopen_part1_part2, name: MC_WriteBoolParameter, native: fb::FbWriteBoolParameter}
+  - {set: plcopen_part1_part2, name: MC_ReadDigitalInput, native: fb::FbReadDigitalInput}
+  - {set: plcopen_part1_part2, name: MC_ReadDigitalOutput, native: fb::FbReadDigitalOutput}
+  - {set: plcopen_part1_part2, name: MC_WriteDigitalOutput, native: fb::FbWriteDigitalOutput}
+  - {set: plcopen_part1_part2, name: MC_ReadActualPosition, native: fb::FbReadActualPosition}
+  - {set: plcopen_part1_part2, name: MC_ReadActualVelocity, native: fb::FbReadActualVelocity}
+  - {set: plcopen_part1_part2, name: MC_ReadActualTorque, native: fb::FbReadActualTorque}
+  - {set: plcopen_part1_part2, name: MC_ReadStatus, native: fb::FbReadStatus}
+  - {set: plcopen_part1_part2, name: MC_ReadMotionState, native: fb::FbReadMotionState}
+  - {set: plcopen_part1_part2, name: MC_ReadAxisInfo, native: fb::FbReadAxisInfo}
+  - {set: plcopen_part1_part2, name: MC_ReadAxisError, native: fb::FbReadAxisError}
+  - {set: plcopen_part1_part2, name: MC_Reset, native: fb::FbReset}
+  - {set: plcopen_part1_part2, name: MC_DigitalCamSwitch, native: fb::FbDigitalCamSwitch}
+  - {set: plcopen_part1_part2, name: MC_TouchProbe, native: fb::FbTouchProbe}
+  - {set: plcopen_part1_part2, name: MC_AbortTrigger, native: fb::FbAbortTrigger}
+  - {set: plcopen_part1_part2, name: MC_CamTableSelect, native: fb::FbCamTableSelect}
+  - {set: plcopen_part1_part2, name: MC_CamIn, native: fb::FbCamIn}
+  - {set: plcopen_part1_part2, name: MC_CamOut, native: fb::FbCamOut}
+  - {set: plcopen_part1_part2, name: MC_GearIn, native: fb::FbGearIn}
+  - {set: plcopen_part1_part2, name: MC_GearOut, native: fb::FbGearOut}
+  - {set: plcopen_part1_part2, name: MC_GearInPos, native: fb::FbGearInPos}
+  - {set: plcopen_part1_part2, name: MC_PhasingAbsolute, native: fb::FbPhasingAbsolute}
+  - {set: plcopen_part1_part2, name: MC_PhasingRelative, native: fb::FbPhasingRelative}
+  - {set: plcopen_part1_part2, name: MC_CombineAxes, native: fb::FbCombineAxes}
+
+  # PLCopen Motion Part 4, 68 FBs in clause order.
+  - {set: plcopen_part4, name: MC_AddAxisToGroup, native: fb::FbAddAxisToGroup}
+  - {set: plcopen_part4, name: MC_RemoveAxisFromGroup, native: fb::FbRemoveAxisFromGroup}
+  - {set: plcopen_part4, name: MC_UngroupAllAxes, native: fb::FbUngroupAllAxes}
+  - {set: plcopen_part4, name: MC_GroupReadConfiguration, native: fb::FbGroupReadConfiguration}
+  - {set: plcopen_part4, name: MC_ReadAxisGroupInfo, native: fb::FbReadAxisGroupInfo}
+  - {set: plcopen_part4, name: MC_GroupEnable, native: fb::FbGroupEnable}
+  - {set: plcopen_part4, name: MC_GroupDisable, native: fb::FbGroupDisable}
+  - {set: plcopen_part4, name: MC_GroupHome, native: fb::FbGroupHome}
+  - {set: plcopen_part4, name: MC_GroupPower, native: fb::FbGroupPower}
+  - {set: plcopen_part4, name: MC_SetKinTransform, native: fb::FbSetKinTransform}
+  - {set: plcopen_part4, name: MC_SetCartesianTransform, native: fb::FbSetCartesianTransform}
+  - {set: plcopen_part4, name: MC_SetCoordinateTransform, native: fb::FbSetCoordinateTransform}
+  - {set: plcopen_part4, name: MC_ReadKinTransform, native: fb::FbReadKinTransform}
+  - {set: plcopen_part4, name: MC_ReadCartesianTransform, native: fb::FbReadCartesianTransform}
+  - {set: plcopen_part4, name: MC_ReadCoordinateTransform, native: fb::FbReadCoordinateTransform}
+  - {set: plcopen_part4, name: MC_ReadDHParameters, native: fb::FbReadDHParameters}
+  - {set: plcopen_part4, name: MC_ReadJointInfo, native: fb::FbReadJointInfo}
+  - {set: plcopen_part4, name: MC_GroupSetPosition, native: fb::FbGroupSetPosition}
+  - {set: plcopen_part4, name: MC_GroupReadPosition, native: fb::FbGroupReadPosition}
+  - {set: plcopen_part4, name: MC_GroupReadVelocity, native: fb::FbGroupReadVelocity}
+  - {set: plcopen_part4, name: MC_GroupReadAcceleration, native: fb::FbGroupReadAcceleration}
+  - {set: plcopen_part4, name: MC_GroupReadMotionState, native: fb::FbGroupReadMotionState}
+  - {set: plcopen_part4, name: MC_GroupReadCommandInfo, native: fb::FbGroupReadCommandInfo}
+  - {set: plcopen_part4, name: MC_GroupReadParameter, native: fb::FbGroupReadParameter}
+  - {set: plcopen_part4, name: MC_GroupWriteParameter, native: fb::FbGroupWriteParameter}
+  - {set: plcopen_part4, name: MC_GroupWriteReferenceDynamics, native: fb::FbGroupWriteReferenceDynamics}
+  - {set: plcopen_part4, name: MC_GroupReadReferenceDynamics, native: fb::FbGroupReadReferenceDynamics}
+  - {set: plcopen_part4, name: MC_GroupWriteDefaultDynamics, native: fb::FbGroupWriteDefaultDynamics}
+  - {set: plcopen_part4, name: MC_GroupReadDefaultDynamics, native: fb::FbGroupReadDefaultDynamics}
+  - {set: plcopen_part4, name: MC_GroupReadStatus, native: fb::FbGroupReadStatus}
+  - {set: plcopen_part4, name: MC_GroupReadError, native: fb::FbGroupReadError}
+  - {set: plcopen_part4, name: MC_GroupReset, native: fb::FbGroupReset}
+  - {set: plcopen_part4, name: MC_GroupReadSWLimits, native: fb::FbGroupReadSWLimits}
+  - {set: plcopen_part4, name: MC_GroupWriteSWLimits, native: fb::FbGroupWriteSWLimits}
+  - {set: plcopen_part4, name: MC_GroupStop, native: fb::FbGroupStop}
+  - {set: plcopen_part4, name: MC_GroupHalt, native: fb::FbGroupHalt}
+  - {set: plcopen_part4, name: MC_GroupInterrupt, native: fb::FbGroupInterrupt}
+  - {set: plcopen_part4, name: MC_GroupContinue, native: fb::FbGroupContinue}
+  - {set: plcopen_part4, name: MC_MoveLinearAbsolute, native: fb::FbMoveLinearAbsolute}
+  - {set: plcopen_part4, name: MC_MoveLinearRelative, native: fb::FbMoveLinearRelative}
+  - {set: plcopen_part4, name: MC_MoveCircularAbsolute, native: fb::FbMoveCircularAbsolute}
+  - {set: plcopen_part4, name: MC_MoveCircularRelative, native: fb::FbMoveCircularRelative}
+  - {set: plcopen_part4, name: MC_MoveDirectAbsolute, native: fb::FbMoveDirectAbsolute}
+  - {set: plcopen_part4, name: MC_MoveDirectRelative, native: fb::FbMoveDirectRelative}
+  - {set: plcopen_part4, name: MC_GroupWaitTime, native: fb::FbGroupWaitTime}
+  - {set: plcopen_part4, name: MC_PathSelect, native: fb::FbPathSelect}
+  - {set: plcopen_part4, name: MC_MovePath, native: fb::FbMovePath}
+  - {set: plcopen_part4, name: MC_GroupSetOverride, native: fb::FbGroupSetOverride}
+  - {set: plcopen_part4, name: MC_GroupJog, native: fb::FbGroupJog}
+  - {set: plcopen_part4, name: MC_GroupJogVector, native: fb::FbGroupJogVector}
+  - {set: plcopen_part4, name: MC_GroupWriteJoggingDynamics, native: fb::FbGroupWriteJoggingDynamics}
+  - {set: plcopen_part4, name: MC_GroupReadJoggingDynamics, native: fb::FbGroupReadJoggingDynamics}
+  - {set: plcopen_part4, name: MC_GroupReadRigidBodyDynamic, native: fb::FbGroupReadRigidBodyDynamic}
+  - {set: plcopen_part4, name: MC_GroupWriteRigidBodyDynamic, native: fb::FbGroupWriteRigidBodyDynamic}
+  - {set: plcopen_part4, name: MC_GroupWriteToolData, native: fb::FbGroupWriteToolData}
+  - {set: plcopen_part4, name: MC_GroupReadToolData, native: fb::FbGroupReadToolData}
+  - {set: plcopen_part4, name: MC_GroupSelectTool, native: fb::FbGroupSelectTool}
+  - {set: plcopen_part4, name: MC_GroupReadTool, native: fb::FbGroupReadTool}
+  - {set: plcopen_part4, name: MC_GroupWritePayloadData, native: fb::FbGroupWritePayloadData}
+  - {set: plcopen_part4, name: MC_GroupReadPayloadData, native: fb::FbGroupReadPayloadData}
+  - {set: plcopen_part4, name: MC_GroupSelectPayload, native: fb::FbGroupSelectPayload}
+  - {set: plcopen_part4, name: MC_GroupReadPayload, native: fb::FbGroupReadPayload}
+  - {set: plcopen_part4, name: MC_GroupTransformPosition, native: fb::FbGroupTransformPosition}
+  - {set: plcopen_part4, name: MC_SyncAxisToGroup, native: fb::FbSyncAxisToGroup}
+  - {set: plcopen_part4, name: MC_SyncGroupToAxis, native: fb::FbSyncGroupToAxis}
+  - {set: plcopen_part4, name: MC_SetDynCoordTransform, native: fb::FbSetDynCoordTransform}
+  - {set: plcopen_part4, name: MC_TrackConveyorBelt, native: fb::FbTrackConveyorBelt}
+  - {set: plcopen_part4, name: MC_TrackRotaryTable, native: fb::FbTrackRotaryTable}
+
+  # PLCopen Motion Part 5, 11 FBs.
+  - {set: plcopen_part5, name: MC_StepAbsoluteSwitch, native: fb::FbStepAbsoluteSwitch}
+  - {set: plcopen_part5, name: MC_StepLimitSwitch, native: fb::FbStepLimitSwitch}
+  - {set: plcopen_part5, name: MC_StepBlock, native: fb::FbStepBlock}
+  - {set: plcopen_part5, name: MC_StepReferencePulse, native: fb::FbStepReferencePulse}
+  - {set: plcopen_part5, name: MC_StepDistanceCoded, native: fb::FbStepDistanceCoded}
+  - {set: plcopen_part5, name: MC_HomeDirect, native: fb::FbHomeDirect}
+  - {set: plcopen_part5, name: MC_HomeAbsolute, native: fb::FbHomeAbsolute}
+  - {set: plcopen_part5, name: MC_FinishHoming, native: fb::FbFinishHoming}
+  - {set: plcopen_part5, name: MC_StepReferenceFlyingSwitch, native: fb::FbStepReferenceFlyingSwitch}
+  - {set: plcopen_part5, name: MC_StepReferenceFlyingRefPulse, native: fb::FbStepReferenceFlyingRefPulse}
+  - {set: plcopen_part5, name: MC_AbortPassiveHoming, native: fb::FbAbortPassiveHoming}
+
+# These are deliberate project extensions, not members of the fixed PLCopen
+# L2c denominator. They remain available to native C++ callers only.
+extensions_outside_l2c:
+  - {name: MC_ReadCommandPosition, native: fb::FbReadCommandPosition}
+  - {name: MC_ReadCommandVelocity, native: fb::FbReadCommandVelocity}
+  - {name: MC_EmergencyStop, native: fb::FbEmergencyStop}

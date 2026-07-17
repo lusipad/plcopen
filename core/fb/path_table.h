@@ -28,11 +28,21 @@ struct PathWaypoint
     axis::InterpolationSpace interpolation_space = axis::InterpolationSpace::joint;
 };
 
-// PathTable: validated waypoint array with a handle. The caller owns the
-// storage; PathSelect validates and stamps a handle, MovePath consumes it.
-struct PathTable
+// Supplier-specific MC_PATH_REF. The caller owns this fixed-capacity source
+// description and may reuse it after PathSelect returns.
+struct PathDescription
 {
     static constexpr std::size_t MaxWaypoints = 32;
+
+    PathWaypoint waypoints[MaxWaypoints]{};
+    std::size_t count = 0;
+};
+
+// Supplier-specific MC_PATH_DATA_REF. The caller owns the selected result;
+// PathSelect copies a validated description into it and MovePath consumes it.
+struct PathTable
+{
+    static constexpr std::size_t MaxWaypoints = PathDescription::MaxWaypoints;
 
     PathWaypoint waypoints[MaxWaypoints]{};
     std::size_t count = 0;
@@ -40,12 +50,46 @@ struct PathTable
     std::size_t axis_count = 0;
 };
 
-// MC_PathSelect: validate a path table and issue a handle.
+inline rt::ErrorCode validate_path_waypoint(const PathWaypoint &waypoint,
+                                            std::size_t axis_count)
+{
+    if(waypoint.target.size != axis_count) return rt::ErrorCode::invalid_argument;
+    for(std::size_t axis_index = 0; axis_index < axis_count; ++axis_index) {
+        if(!std::isfinite(waypoint.target.value[axis_index])) {
+            return rt::ErrorCode::invalid_argument;
+        }
+    }
+    if(!std::isfinite(waypoint.velocity) || waypoint.velocity <= 0.0 ||
+       !std::isfinite(waypoint.acceleration) || waypoint.acceleration <= 0.0 ||
+       !std::isfinite(waypoint.deceleration) || waypoint.deceleration <= 0.0 ||
+       !std::isfinite(waypoint.jerk) || waypoint.jerk <= 0.0 ||
+       !std::isfinite(waypoint.transition_parameter)) {
+        return rt::ErrorCode::invalid_argument;
+    }
+    if(waypoint.interpolation_space != axis::InterpolationSpace::joint &&
+       waypoint.interpolation_space != axis::InterpolationSpace::cartesian) {
+        return rt::ErrorCode::invalid_argument;
+    }
+    if(waypoint.transition_mode == axis::TransitionMode::none) {
+        return waypoint.transition_parameter == 0.0
+                   ? rt::ErrorCode::ok
+                   : rt::ErrorCode::invalid_argument;
+    }
+    if(waypoint.transition_mode == axis::TransitionMode::max_corner_deviation) {
+        return waypoint.transition_parameter > 0.0
+                   ? rt::ErrorCode::ok
+                   : rt::ErrorCode::invalid_argument;
+    }
+    return rt::ErrorCode::unsupported;
+}
+
+// MC_PathSelect: validate a source description and publish a selected result.
 class FbPathSelect
 {
 public:
     axis::AxisGroup *group_ref = nullptr;
-    PathTable *table = nullptr;
+    PathTable *path_data = nullptr;
+    const PathDescription *path_description = nullptr;
     bool execute = false;
     MotionOutputs outputs{};
 
@@ -61,47 +105,43 @@ public:
             return;
         }
         clear(outputs);
-        if(group_ref == nullptr || table == nullptr) {
+        if(group_ref == nullptr || path_data == nullptr || path_description == nullptr) {
             outputs.error = true;
             outputs.error_id = rt::ErrorCode::invalid_argument;
             return;
         }
-        if(table->count < 2 || table->count > PathTable::MaxWaypoints) {
+        if(path_description->count < 2 ||
+           path_description->count > PathTable::MaxWaypoints) {
             outputs.error = true;
             outputs.error_id = rt::ErrorCode::invalid_argument;
             return;
         }
         const std::size_t n_axes = group_ref->member_count();
-        for(std::size_t i = 0; i < table->count; ++i) {
-            const PathWaypoint &wp = table->waypoints[i];
-            if(wp.target.size != n_axes) {
+        if(n_axes < 2) {
+            outputs.error = true;
+            outputs.error_id = rt::ErrorCode::invalid_argument;
+            return;
+        }
+        for(std::size_t i = 0; i < path_description->count; ++i) {
+            const PathWaypoint &wp = path_description->waypoints[i];
+            const rt::ErrorCode valid = validate_path_waypoint(wp, n_axes);
+            if(valid != rt::ErrorCode::ok) {
                 outputs.error = true;
-                outputs.error_id = rt::ErrorCode::invalid_argument;
-                return;
-            }
-            for(std::size_t j = 0; j < n_axes; ++j) {
-                if(!std::isfinite(wp.target.value[j])) {
-                    outputs.error = true;
-                    outputs.error_id = rt::ErrorCode::invalid_argument;
-                    return;
-                }
-            }
-            if(!std::isfinite(wp.velocity) || wp.velocity <= 0.0 ||
-               !std::isfinite(wp.acceleration) || wp.acceleration <= 0.0 ||
-               !std::isfinite(wp.deceleration) || wp.deceleration <= 0.0 ||
-               !std::isfinite(wp.jerk) || wp.jerk <= 0.0) {
-                outputs.error = true;
-                outputs.error_id = rt::ErrorCode::invalid_argument;
-                return;
-            }
-            if(!std::isfinite(wp.transition_parameter)) {
-                outputs.error = true;
-                outputs.error_id = rt::ErrorCode::invalid_argument;
+                outputs.error_id = valid;
                 return;
             }
         }
-        table->axis_count = n_axes;
-        table->handle = ++next_handle_;
+        PathTable selected{};
+        selected.count = path_description->count;
+        selected.axis_count = n_axes;
+        selected.handle = ++next_handle_;
+        if(selected.handle == 0) {
+            selected.handle = ++next_handle_;
+        }
+        for(std::size_t i = 0; i < selected.count; ++i) {
+            selected.waypoints[i] = path_description->waypoints[i];
+        }
+        *path_data = selected;
         outputs.done = true;
     }
 
@@ -115,32 +155,54 @@ private:
 class FbMovePath : public GroupExecuteFb
 {
 public:
-    PathTable *table = nullptr;
+    PathTable *path_data = nullptr;
+    axis::CoordSystem coord_system = axis::CoordSystem::acs;
+    axis::BufferMode buffer_mode = axis::BufferMode::aborting;
+    axis::TransitionMode transition_mode = axis::TransitionMode::none;
+    double transition_parameter = 0.0;
 
     void call()
     {
         if(rising_edge()) {
-            if(group_ref == nullptr || table == nullptr || table->handle == 0 ||
-               table->count < 2 || table->axis_count != group_ref->member_count()) {
+            if(group_ref == nullptr || path_data == nullptr || path_data->handle == 0 ||
+               path_data->count < 2 ||
+               path_data->count > PathTable::MaxWaypoints ||
+               path_data->axis_count != group_ref->member_count()) {
                 accept(rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument));
                 return;
             }
-            const PathWaypoint &first = table->waypoints[0];
+            const rt::ErrorCode options = validate_options();
+            if(options != rt::ErrorCode::ok) {
+                accept(rt::Result<std::uint32_t>::failure(options));
+                return;
+            }
+            for(std::size_t i = 0; i < path_data->count; ++i) {
+                const rt::ErrorCode valid =
+                    validate_path_waypoint(path_data->waypoints[i], path_data->axis_count);
+                if(valid != rt::ErrorCode::ok) {
+                    accept(rt::Result<std::uint32_t>::failure(valid));
+                    return;
+                }
+            }
+            const PathWaypoint &first = path_data->waypoints[0];
             axis::GroupCommand cmd{};
             cmd.target = first.target;
             cmd.velocity = first.velocity;
             cmd.acceleration = first.acceleration;
             cmd.deceleration = first.deceleration;
             cmd.jerk = first.jerk;
-            cmd.buffer_mode = axis::BufferMode::aborting;
+            cmd.buffer_mode = buffer_mode;
+            cmd.coord_system = coord_system;
+            cmd.transition_mode = transition_mode;
+            cmd.transition_parameter = transition_parameter;
             cmd.interpolation_space = first.interpolation_space;
             const auto result = group_ref->submit_linear(cmd);
             if(!result) {
                 accept(result);
                 return;
             }
-            for(std::size_t i = 1; i < table->count; ++i) {
-                const PathWaypoint &wp = table->waypoints[i];
+            for(std::size_t i = 1; i < path_data->count; ++i) {
+                const PathWaypoint &wp = path_data->waypoints[i];
                 axis::GroupCommand seg{};
                 seg.target = wp.target;
                 seg.velocity = wp.velocity;
@@ -150,7 +212,8 @@ public:
                 seg.transition_mode = wp.transition_mode;
                 seg.transition_parameter = wp.transition_parameter;
                 seg.interpolation_space = wp.interpolation_space;
-                if(i < table->count - 1 &&
+                seg.coord_system = coord_system;
+                if(i < path_data->count - 1 &&
                    wp.transition_mode != axis::TransitionMode::none) {
                     seg.buffer_mode = axis::BufferMode::blending_low;
                 } else {
@@ -165,6 +228,50 @@ public:
             accept(result);
         }
         observe_group();
+    }
+
+private:
+    rt::ErrorCode validate_options() const
+    {
+        switch(coord_system) {
+        case axis::CoordSystem::acs:
+        case axis::CoordSystem::mcs:
+        case axis::CoordSystem::pcs:
+            break;
+        case axis::CoordSystem::wcs:
+        case axis::CoordSystem::fcs:
+        case axis::CoordSystem::tcs:
+            return rt::ErrorCode::unsupported;
+        default:
+            return rt::ErrorCode::invalid_argument;
+        }
+        switch(buffer_mode) {
+        case axis::BufferMode::aborting:
+        case axis::BufferMode::buffered:
+        case axis::BufferMode::blending_low:
+        case axis::BufferMode::blending_high:
+            break;
+        default:
+            return rt::ErrorCode::invalid_argument;
+        }
+        if(!std::isfinite(transition_parameter)) {
+            return rt::ErrorCode::invalid_argument;
+        }
+        if(transition_mode == axis::TransitionMode::none) {
+            return transition_parameter == 0.0
+                       ? rt::ErrorCode::ok
+                       : rt::ErrorCode::invalid_argument;
+        }
+        if(transition_mode != axis::TransitionMode::max_corner_deviation) {
+            return rt::ErrorCode::unsupported;
+        }
+        if(transition_parameter <= 0.0 || buffer_mode == axis::BufferMode::aborting) {
+            return rt::ErrorCode::invalid_argument;
+        }
+        if(buffer_mode == axis::BufferMode::buffered) {
+            return rt::ErrorCode::unsupported;
+        }
+        return rt::ErrorCode::ok;
     }
 };
 
@@ -266,40 +373,52 @@ private:
 class FbSetKinTransform : public GroupExecuteFb
 {
 public:
-    const kin::PoseKinematics *pose_plugin = nullptr;
-    const kin::Kinematics *kinematics_plugin = nullptr;
+    axis::KinTransformRef kin_transform{};
     double min_singularity_margin = 0.0;
     double max_joint_step = 0.01;
+    axis::ExecutionMode execution_mode = axis::ExecutionMode::immediately;
 
     void call()
     {
-        if(!rising_edge()) {
-            return;
-        }
-        if(group_ref == nullptr) {
-            accept(rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument));
-            return;
-        }
-        if(pose_plugin != nullptr) {
-            const rt::ErrorCode result = group_ref->set_pose_kinematics(
-                pose_plugin, min_singularity_margin, max_joint_step);
-            if(result != rt::ErrorCode::ok) {
-                accept(rt::Result<std::uint32_t>::failure(result));
-                return;
+        if(rising_edge()) {
+            if(group_ref == nullptr) {
+                accept(rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument));
+            } else {
+                accept(group_ref->submit_kinematics(
+                    kin_transform, min_singularity_margin, max_joint_step,
+                    execution_mode));
             }
         }
-        if(kinematics_plugin != nullptr) {
-            const rt::ErrorCode result =
-                group_ref->set_kinematics(kinematics_plugin, min_singularity_margin);
-            if(result != rt::ErrorCode::ok) {
-                accept(rt::Result<std::uint32_t>::failure(result));
-                return;
-            }
+        observe();
+    }
+
+private:
+    void observe()
+    {
+        if(!execute || tracked_command_id_ == 0 || group_ref == nullptr ||
+           outputs.done || outputs.error || outputs.command_aborted) return;
+        if(group_ref->management_command_aborted(tracked_command_id_)) {
+            outputs.command_aborted = true;
+            outputs.busy = false;
+            outputs.active = false;
+            return;
         }
-        accept(rt::Result<std::uint32_t>::success(1));
-        outputs.done = true;
-        outputs.busy = false;
-        outputs.active = false;
+        const rt::ErrorCode error = group_ref->management_command_error(tracked_command_id_);
+        if(error != rt::ErrorCode::ok) {
+            outputs.error = true;
+            outputs.error_id = error;
+            outputs.busy = false;
+            outputs.active = false;
+            return;
+        }
+        if(group_ref->management_command_done(tracked_command_id_)) {
+            outputs.done = true;
+            outputs.busy = false;
+            outputs.active = false;
+            return;
+        }
+        outputs.busy = true;
+        outputs.active = group_ref->management_command_active(tracked_command_id_);
     }
 };
 
@@ -312,8 +431,14 @@ public:
     bool valid = false;
     bool error = false;
     rt::ErrorCode error_id = rt::ErrorCode::ok;
-    double workpiece_frame[6] = {};
-    double tool_transform[6] = {};
+    axis::CoordSystem coord_system = axis::CoordSystem::pcs;
+    axis::ToolData transform{};
+    double trans_x = 0.0;
+    double trans_y = 0.0;
+    double trans_z = 0.0;
+    double rot_angle1 = 0.0;
+    double rot_angle2 = 0.0;
+    double rot_angle3 = 0.0;
 
     void call()
     {
@@ -321,10 +446,8 @@ public:
             valid = false;
             error = false;
             error_id = rt::ErrorCode::ok;
-            for(int i = 0; i < 6; ++i) {
-                workpiece_frame[i] = 0.0;
-                tool_transform[i] = 0.0;
-            }
+            transform = {};
+            clear_scalars();
             return;
         }
         if(group_ref == nullptr) {
@@ -333,11 +456,32 @@ public:
             error_id = rt::ErrorCode::invalid_argument;
             return;
         }
-        group_ref->workpiece_frame_rpy(workpiece_frame);
-        group_ref->tool_transform_rpy(tool_transform);
+        transform = {};
+        const rt::ErrorCode result = group_ref->coordinate_transform(
+            coord_system, transform);
+        if(result != rt::ErrorCode::ok) {
+            valid = false;
+            error = true;
+            error_id = result;
+            clear_scalars();
+            return;
+        }
+        trans_x = transform.value[0];
+        trans_y = transform.value[1];
+        trans_z = transform.value[2];
+        rot_angle1 = transform.value[3];
+        rot_angle2 = transform.value[4];
+        rot_angle3 = transform.value[5];
         valid = true;
         error = false;
         error_id = rt::ErrorCode::ok;
+    }
+
+private:
+    void clear_scalars()
+    {
+        trans_x = trans_y = trans_z = 0.0;
+        rot_angle1 = rot_angle2 = rot_angle3 = 0.0;
     }
 };
 
@@ -350,26 +494,103 @@ public:
 
     void call()
     {
-        if(!rising_edge()) return;
-        if(group_ref == nullptr) {
-            accept(rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument));
+        if(rising_edge()) {
+            if(group_ref == nullptr) {
+                accept(rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument));
+            } else {
+                accept(group_ref->submit_coordinate_transform(
+                    coordinate_system, transform, execution_mode));
+            }
+        }
+        observe();
+    }
+
+private:
+    void observe()
+    {
+        if(!execute || tracked_command_id_ == 0 || group_ref == nullptr ||
+           outputs.done || outputs.error || outputs.command_aborted) return;
+        if(group_ref->management_command_aborted(tracked_command_id_)) {
+            outputs.command_aborted = true;
+            outputs.busy = false;
+            outputs.active = false;
             return;
         }
-        const rt::ErrorCode result = group_ref->set_coordinate_transform(
-            coordinate_system, transform, execution_mode);
-        if(result != rt::ErrorCode::ok) {
-            accept(rt::Result<std::uint32_t>::failure(result));
+        const rt::ErrorCode error = group_ref->management_command_error(tracked_command_id_);
+        if(error != rt::ErrorCode::ok) {
+            outputs.error = true;
+            outputs.error_id = error;
+            outputs.busy = false;
+            outputs.active = false;
             return;
         }
-        accept(rt::Result<std::uint32_t>::success(1));
-        outputs.done = true;
-        outputs.busy = false;
-        outputs.active = false;
+        if(group_ref->management_command_done(tracked_command_id_)) {
+            outputs.done = true;
+            outputs.busy = false;
+            outputs.active = false;
+            return;
+        }
+        outputs.busy = true;
+        outputs.active = group_ref->management_command_active(tracked_command_id_);
     }
 };
 
-class FbSetCartesianTransform : public FbSetCoordinateTransform
+class FbSetCartesianTransform : public GroupExecuteFb
 {
+public:
+    axis::CoordSystem coordinate_system = axis::CoordSystem::pcs;
+    axis::ExecutionMode execution_mode = axis::ExecutionMode::immediately;
+    double trans_x = 0.0;
+    double trans_y = 0.0;
+    double trans_z = 0.0;
+    double rot_angle1 = 0.0;
+    double rot_angle2 = 0.0;
+    double rot_angle3 = 0.0;
+
+    void call()
+    {
+        if(rising_edge()) {
+            if(group_ref == nullptr) {
+                accept(rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument));
+            } else {
+                axis::ToolData transform{};
+                transform.value = {trans_x, trans_y, trans_z,
+                                   rot_angle1, rot_angle2, rot_angle3};
+                accept(group_ref->submit_coordinate_transform(
+                    coordinate_system, transform, execution_mode));
+            }
+        }
+        observe();
+    }
+
+private:
+    void observe()
+    {
+        if(!execute || tracked_command_id_ == 0 || group_ref == nullptr ||
+           outputs.done || outputs.error || outputs.command_aborted) return;
+        if(group_ref->management_command_aborted(tracked_command_id_)) {
+            outputs.command_aborted = true;
+            outputs.busy = false;
+            outputs.active = false;
+            return;
+        }
+        const rt::ErrorCode error = group_ref->management_command_error(tracked_command_id_);
+        if(error != rt::ErrorCode::ok) {
+            outputs.error = true;
+            outputs.error_id = error;
+            outputs.busy = false;
+            outputs.active = false;
+            return;
+        }
+        if(group_ref->management_command_done(tracked_command_id_)) {
+            outputs.done = true;
+            outputs.busy = false;
+            outputs.active = false;
+            return;
+        }
+        outputs.busy = true;
+        outputs.active = group_ref->management_command_active(tracked_command_id_);
+    }
 };
 
 class FbReadKinTransform
@@ -380,8 +601,7 @@ public:
     bool valid = false;
     bool error = false;
     rt::ErrorCode error_id = rt::ErrorCode::ok;
-    const kin::Kinematics *kinematics_plugin = nullptr;
-    const kin::PoseKinematics *pose_plugin = nullptr;
+    axis::KinTransformRef kin_transform{};
 
     void call()
     {
@@ -389,20 +609,17 @@ public:
             valid = false;
             error = false;
             error_id = rt::ErrorCode::ok;
-            kinematics_plugin = nullptr;
-            pose_plugin = nullptr;
+            kin_transform = {};
             return;
         }
         if(group_ref == nullptr) {
             valid = false;
             error = true;
             error_id = rt::ErrorCode::invalid_argument;
-            kinematics_plugin = nullptr;
-            pose_plugin = nullptr;
+            kin_transform = {};
             return;
         }
-        kinematics_plugin = group_ref->kinematics_plugin();
-        pose_plugin = group_ref->pose_kinematics_plugin();
+        kin_transform = group_ref->kin_transform();
         valid = true;
         error = false;
         error_id = rt::ErrorCode::ok;

@@ -233,6 +233,116 @@ void load_domain_stability()
           "type descriptors stay stable while table grows");
 }
 
+void binding_catalog_contract()
+{
+    TypeTable table;
+    check(install_binding_types(table) == TypeError::ok,
+          "binding catalog installs on a fresh table");
+    check(table.next_type_id() == first_load_type_id + binding_type::count,
+          "binding catalog reserves a deterministic TypeId prefix");
+    check(table.get(binding_type::mc_buffer_mode) != nullptr &&
+              table.get(binding_type::mc_buffer_mode)->kind == TypeKind::enum_ &&
+              table.get(binding_type::axis_ref) != nullptr &&
+              table.get(binding_type::axis_ref)->kind == TypeKind::ref &&
+              table.get(binding_type::group_ref) != nullptr &&
+              table.get(binding_type::group_ref)->kind == TypeKind::ref,
+          "binding catalog exposes canonical enum and reference descriptors");
+    check(binding_type::public_count == 49U &&
+              generated::kStBindingTypes.size() == binding_type::public_count,
+          "binding catalog covers every non-builtin ST type");
+    bool all_layouts_match = true;
+    for(const generated::StBindingTypeMetadata &metadata : generated::kStBindingTypes) {
+        const TypeDesc *desc = table.get(metadata.type);
+        all_layouts_match = all_layouts_match && desc != nullptr &&
+                            desc->size == metadata.size &&
+                            desc->alignment == metadata.alignment;
+    }
+    check(all_layouts_match, "all binding TypeDesc layouts match generated metadata");
+
+    const TypeDesc *group_position = table.get(binding_type::mc_group_position);
+    const TypeDesc *limits = table.get(binding_type::mc_group_s_w_limits);
+    const TypeDesc *rigid = table.get(binding_type::mc_rigid_body_dynamic);
+    const TypeDesc *time_position = table.get(binding_type::mc_time_position);
+    check(group_position != nullptr && group_position->kind == TypeKind::struct_ &&
+              group_position->size == 72U && group_position->alignment == 8U &&
+              group_position->structure.fields.size() == 2U &&
+              group_position->structure.fields[1].offset == 64U,
+          "MC_GROUP_POSITION has canonical ST layout");
+    check(limits != nullptr && limits->kind == TypeKind::struct_ &&
+              limits->size == 200U && limits->alignment == 8U &&
+              limits->structure.fields.size() == 2U &&
+              limits->structure.fields[1].offset == 192U,
+          "MC_GROUP_S_W_LIMITS has canonical counted-array layout");
+    check(rigid != nullptr && rigid->kind == TypeKind::array && rigid->size == 720U &&
+              rigid->alignment == 8U && rigid->array.dimensions.size() == 1U &&
+              rigid->array.dimensions[0].extent == 9U,
+          "MC_RIGID_BODY_DYNAMIC has canonical fixed-array layout");
+    check(time_position != nullptr && time_position->kind == TypeKind::ref &&
+              time_position->size == 8U && time_position->alignment == 8U,
+          "profile spans use stable handle storage");
+
+    std::int64_t native = 99;
+    std::int64_t iec = 99;
+    check(generated::st_binding_enum_to_native(binding_type::mc_buffer_mode, 5, native) &&
+              native == 3 &&
+              generated::st_binding_enum_from_native(binding_type::mc_buffer_mode, 3, iec) &&
+              iec == 5,
+          "MC_BUFFER_MODE keeps explicit IEC/native mapping");
+    check(generated::st_binding_enum_to_native(binding_type::mc_direction, -1, native) &&
+              native == 2 &&
+              generated::st_binding_enum_from_native(binding_type::mc_direction, 3, iec) &&
+              iec == 2,
+          "MC_DIRECTION keeps explicit IEC/native mapping");
+    native = 77;
+    check(!generated::st_binding_enum_to_native(binding_type::mc_direction, 77, native) &&
+              native == 77,
+          "binding enum codec rejects invalid IEC values without modifying output");
+
+    check(!generated::st_binding_handle_valid(generated::st_binding_null_handle) &&
+              generated::st_binding_handle_valid(1U),
+          "binding handle zero is the only null handle");
+
+    const generated::StBindingTypeMetadata *profile =
+        generated::st_binding_type_metadata(binding_type::mc_time_position);
+    check(profile != nullptr && profile->kind == generated::StBindingTypeKind::span &&
+              profile->codec == generated::StBindingCodecKind::profile_sequence &&
+              profile->requires_task_period && profile->min_count == 1U &&
+              profile->max_count == 8U && profile->element_size == 56U &&
+              profile->element_alignment == 8U &&
+              profile->time_rounding == generated::StBindingTimeRounding::ceil,
+          "profile span metadata carries bounded task-period conversion contract");
+    std::int64_t cycles = -1;
+    check(generated::st_binding_time_ns_to_cycles(0, 10, cycles) && cycles == 0 &&
+              generated::st_binding_time_ns_to_cycles(1, 10, cycles) && cycles == 1 &&
+              generated::st_binding_time_ns_to_cycles(10, 10, cycles) && cycles == 1 &&
+              generated::st_binding_time_ns_to_cycles(11, 10, cycles) && cycles == 2 &&
+              generated::st_binding_time_ns_to_cycles(
+                  std::numeric_limits<std::int64_t>::max(), 1, cycles) &&
+              cycles == std::numeric_limits<std::int64_t>::max() &&
+              !generated::st_binding_time_ns_to_cycles(-1, 10, cycles) &&
+              !generated::st_binding_time_ns_to_cycles(1, 0, cycles),
+          "TIME nanoseconds convert to bounded ceiling cycle counts");
+    check(install_binding_types(table) == TypeError::ok,
+          "binding catalog exact reinstall is idempotent");
+
+    TypeTable conflicting;
+    TypeId ignored = invalid_type_id;
+    check(conflicting.add_string("MC_BUFFER_MODE", 8, ignored) == TypeError::ok &&
+              install_binding_types(conflicting) == TypeError::duplicate_type,
+          "binding catalog rejects a forged first slot");
+
+    TypeTable partial;
+    check(partial.add_enum(
+              "MC_BUFFER_MODE", builtin::dint,
+              {{"aborting", IntegerValue::signed_value(0)},
+               {"buffered", IntegerValue::signed_value(1)},
+               {"blending_low", IntegerValue::signed_value(2)},
+               {"blending_high", IntegerValue::signed_value(5)}},
+              ignored) == TypeError::ok &&
+              install_binding_types(partial) == TypeError::duplicate_type,
+          "binding catalog rejects a partial installation");
+}
+
 void canonical_dump_contract()
 {
     auto populate = [](TypeTable &table)
@@ -278,6 +388,7 @@ int main()
     struct_contract();
     fixed_string_and_ref_contract();
     load_domain_stability();
+    binding_catalog_contract();
     canonical_dump_contract();
     if (failures != 0)
     {

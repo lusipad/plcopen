@@ -88,7 +88,7 @@ protected:
         outputs.active = true;
     }
 
-    void observe_sync()
+    void observe_sync(bool pulse_approach = true)
     {
         start_sync = false;
         if(tracked_command_id_ == 0 || slave_ref == nullptr) {
@@ -118,8 +118,9 @@ protected:
         outputs.busy = true;
         outputs.active = phase != axis::SyncPhase::queued;
         in_sync = phase == axis::SyncPhase::engaged;
-        start_sync = phase != last_phase_ && (phase == axis::SyncPhase::approaching ||
-                                              phase == axis::SyncPhase::engaged);
+        start_sync = phase != last_phase_ &&
+                     (phase == axis::SyncPhase::engaged ||
+                      (pulse_approach && phase == axis::SyncPhase::approaching));
         last_phase_ = phase;
     }
 
@@ -169,6 +170,9 @@ public:
     double ratio_numerator = 1.0;
     double ratio_denominator = 1.0;
     axis::MasterValueSource master_value_source = axis::MasterValueSource::command;
+    double acceleration = 0.0;
+    double deceleration = 0.0;
+    double jerk = 0.0;
     axis::BufferMode buffer_mode = axis::BufferMode::aborting;
     bool in_gear = false;
 
@@ -179,7 +183,7 @@ public:
         } else {
             update_gear_ratio();
         }
-        observe_sync();
+        observe_sync(false);
         in_gear = in_sync;
     }
 
@@ -217,6 +221,9 @@ protected:
         command.ratio_numerator = ratio_numerator;
         command.ratio_denominator = ratio_denominator;
         command.source = master_value_source;
+        command.acceleration = acceleration;
+        command.deceleration = deceleration;
+        command.jerk = jerk;
         command.buffer_mode = buffer_mode;
         return command;
     }
@@ -228,8 +235,7 @@ public:
     double master_sync_position = 0.0;
     double slave_sync_position = 0.0;
     double master_start_distance = 0.0;
-    // Per-cycle displacement cap for the slave approach; 0 leaves it uncapped.
-    // Acceleration-shaped approach profiles are not modeled in the rewrite core.
+    axis::SyncMode sync_mode = axis::SyncMode::shortest;
     double velocity = 0.0;
 
     void call()
@@ -240,6 +246,7 @@ public:
             command.master_sync_position = master_sync_position;
             command.slave_sync_position = slave_sync_position;
             command.master_start_distance = master_start_distance;
+            command.sync_mode = sync_mode;
             command.approach_velocity = velocity;
             submit_gear(command);
         } else {
@@ -307,11 +314,19 @@ using FbCamOut = FbGearOut;
 class FbCamTableSelect
 {
 public:
+    axis::AxisModel *master_ref = nullptr;
+    axis::AxisModel *slave_ref = nullptr;
     exec::CamTableView cam_table{};
+    bool periodic = false;
+    bool master_absolute = true;
+    bool slave_absolute = true;
+    axis::ExecutionMode execution_mode = axis::ExecutionMode::immediately;
     bool execute = false;
     bool done = false;
+    bool busy = false;
     bool error = false;
     rt::ErrorCode error_id = rt::ErrorCode::ok;
+    std::uint32_t cam_table_id = 0;
     exec::CamTableView cam_table_selected{};
 
     void call()
@@ -320,6 +335,7 @@ public:
         last_execute_ = execute;
         if(!execute) {
             done = false;
+            busy = false;
             error = false;
             error_id = rt::ErrorCode::ok;
             return;
@@ -327,14 +343,42 @@ public:
         if(!rising) {
             return;
         }
-        if(!cam_table.valid()) {
+        busy = false;
+        if(master_ref == nullptr || slave_ref == nullptr || !cam_table.valid()) {
             error = true;
             error_id = rt::ErrorCode::invalid_argument;
             done = false;
             cam_table_selected = {};
             return;
         }
+        if(!same_enabled_group(*master_ref, *slave_ref)) {
+            error = true;
+            error_id = rt::ErrorCode::precondition_failed;
+            done = false;
+            cam_table_selected = {};
+            return;
+        }
+        if(execution_mode != axis::ExecutionMode::immediately) {
+            error = true;
+            error_id = rt::ErrorCode::unsupported;
+            done = false;
+            cam_table_selected = {};
+            return;
+        }
+        const rt::Result<std::uint32_t> selected =
+            slave_ref->select_cam_table(master_ref, cam_table, periodic,
+                                        master_absolute, slave_absolute,
+                                        cam_table_id);
+        if(!selected) {
+            error = true;
+            error_id = selected.error();
+            done = false;
+            cam_table_selected = {};
+            return;
+        }
         cam_table_selected = cam_table;
+        cam_table_selected.periodic = periodic;
+        cam_table_id = selected.value();
         done = true;
         error = false;
         error_id = rt::ErrorCode::ok;
@@ -355,23 +399,36 @@ public:
     double master_sync_position = 0.0;
     double master_start_distance = 0.0;
     double velocity = 0.0;
+    axis::CamStartMode start_mode = axis::CamStartMode::absolute;
     axis::MasterValueSource master_value_source = axis::MasterValueSource::command;
+    std::uint32_t cam_table_id = 0;
     axis::BufferMode buffer_mode = axis::BufferMode::aborting;
+    bool end_of_profile = false;
 
     void call()
     {
         if(rising_edge()) {
+            reset_profile_tracking();
             submit();
         } else if(execute && continuous_update_allowed() && tracked_command_id_ != 0 &&
                   slave_ref != nullptr) {
-            const rt::ErrorCode updated =
-                slave_ref->cam_update(master_offset, master_scaling, slave_offset, slave_scaling);
+            const double effective_master_offset = master_offset + selected_master_origin_;
+            const double effective_slave_offset =
+                slave_offset + selected_slave_origin_ + relative_slave_bias_;
+            const rt::ErrorCode updated = slave_ref->cam_update(effective_master_offset,
+                                                                master_scaling,
+                                                                effective_slave_offset,
+                                                                slave_scaling);
             if(updated != rt::ErrorCode::ok) {
                 outputs.error = true;
                 outputs.error_id = updated;
+            } else {
+                profile_master_offset_ = effective_master_offset;
+                profile_master_scaling_ = master_scaling;
             }
         }
         observe_sync();
+        update_end_of_profile();
     }
 
 private:
@@ -385,6 +442,10 @@ private:
             accept(rt::Result<std::uint32_t>::failure(rt::ErrorCode::precondition_failed));
             return;
         }
+        if(start_mode == axis::CamStartMode::ramp_in) {
+            accept(rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported));
+            return;
+        }
         axis::CamInCommand command{};
         command.master = master_ref;
         command.table = cam_table;
@@ -392,13 +453,110 @@ private:
         command.master_scaling = master_scaling;
         command.slave_offset = slave_offset;
         command.slave_scaling = slave_scaling;
+        selected_master_origin_ = 0.0;
+        selected_slave_origin_ = 0.0;
+        relative_slave_bias_ = 0.0;
+        if(cam_table_id != 0) {
+            const rt::Result<axis::CamTableSelection> selected =
+                slave_ref->cam_table_selection(cam_table_id);
+            if(!selected || selected.value().master != master_ref) {
+                accept(rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument));
+                return;
+            }
+            const axis::CamTableSelection selection = selected.value();
+            command.table = selection.table;
+            if(!selection.master_absolute) {
+                selected_master_origin_ = selection.master_origin;
+                command.master_offset += selected_master_origin_;
+            }
+            if(!selection.slave_absolute) {
+                selected_slave_origin_ = selection.slave_origin;
+                command.slave_offset += selected_slave_origin_;
+            }
+        }
+        if(start_mode == axis::CamStartMode::relative) {
+            if(!command.table.valid() || !std::isfinite(command.master_scaling) ||
+               command.master_scaling == 0.0 || !std::isfinite(command.slave_scaling)) {
+                accept(rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument));
+                return;
+            }
+            const axis::AxisSnapshot &master_snapshot = master_ref->snapshot();
+            const double master_position =
+                master_value_source == axis::MasterValueSource::actual
+                    ? master_snapshot.actual_position
+                    : master_snapshot.command_position;
+            const double table_input =
+                (master_position - command.master_offset) / command.master_scaling;
+            const rt::Result<double> sampled = command.table.sample(table_input);
+            if(!sampled) {
+                accept(rt::Result<std::uint32_t>::failure(sampled.error()));
+                return;
+            }
+            command.slave_offset = slave_ref->snapshot().command_position -
+                                   command.slave_scaling * sampled.value();
+            relative_slave_bias_ =
+                command.slave_offset - slave_offset - selected_slave_origin_;
+        }
         command.source = master_value_source;
         command.buffer_mode = buffer_mode;
         command.master_sync_position = master_sync_position;
         command.master_start_distance = master_start_distance;
         command.approach_velocity = velocity;
-        accept(slave_ref->cam_in(command));
+        const rt::Result<std::uint32_t> accepted = slave_ref->cam_in(command);
+        if(accepted) {
+            profile_table_ = command.table;
+            profile_master_offset_ = command.master_offset;
+            profile_master_scaling_ = command.master_scaling;
+            profile_source_ = command.source;
+        }
+        accept(accepted);
     }
+
+    void reset_profile_tracking()
+    {
+        end_of_profile = false;
+        profile_period_valid_ = false;
+        profile_table_ = {};
+    }
+
+    void update_end_of_profile()
+    {
+        end_of_profile = false;
+        if(!in_sync || master_ref == nullptr || !profile_table_.valid() ||
+           profile_master_scaling_ == 0.0) {
+            profile_period_valid_ = false;
+            return;
+        }
+        const axis::AxisSnapshot &snapshot = master_ref->snapshot();
+        const double master_position = profile_source_ == axis::MasterValueSource::actual
+                                           ? snapshot.actual_position
+                                           : snapshot.command_position;
+        const double input =
+            (master_position - profile_master_offset_) / profile_master_scaling_;
+        const double first = profile_table_.points[0].master;
+        const double last = profile_table_.points[profile_table_.size - 1].master;
+        if(!profile_table_.periodic) {
+            end_of_profile = input < first || input > last;
+            return;
+        }
+        const double span = last - first;
+        const std::int64_t period = static_cast<std::int64_t>(std::floor((input - first) / span));
+        if(profile_period_valid_) {
+            end_of_profile = period != profile_period_;
+        }
+        profile_period_ = period;
+        profile_period_valid_ = true;
+    }
+
+    exec::CamTableView profile_table_{};
+    double profile_master_offset_ = 0.0;
+    double profile_master_scaling_ = 1.0;
+    axis::MasterValueSource profile_source_ = axis::MasterValueSource::command;
+    double selected_master_origin_ = 0.0;
+    double selected_slave_origin_ = 0.0;
+    double relative_slave_bias_ = 0.0;
+    std::int64_t profile_period_ = 0;
+    bool profile_period_valid_ = false;
 };
 
 class FbCombineAxes : public SyncExecuteFb
@@ -465,8 +623,14 @@ public:
     axis::AxisModel *slave_ref = nullptr;
     double phase_shift = 0.0;
     double velocity = 0.0;
+    double acceleration = 0.0;
+    double deceleration = 0.0;
+    double jerk = 0.0;
+    axis::BufferMode buffer_mode = axis::BufferMode::aborting;
     bool execute = false;
     MotionOutputs outputs{};
+    double absolute_phase_shift = 0.0;
+    double covered_phase_shift = 0.0;
 
 protected:
     explicit PhasingFb(bool relative)
@@ -482,26 +646,45 @@ protected:
         if(rising) {
             clear(outputs);
             started_ = false;
+            tracked_command_id_ = 0;
+            absolute_phase_shift = 0.0;
+            covered_phase_shift = 0.0;
             terminal_low_cycle_ = false;
         } else if(!execute && terminal_low_cycle_) {
             clear(outputs);
             started_ = false;
+            tracked_command_id_ = 0;
             terminal_low_cycle_ = false;
             return;
         } else if(falling &&
                   (outputs.done || outputs.command_aborted || outputs.error)) {
             clear(outputs);
             started_ = false;
+            tracked_command_id_ = 0;
         }
         if(rising) {
             start();
             return;
         }
-        if(started_ && outputs.busy && slave_ref != nullptr && !slave_ref->phasing_active()) {
-            outputs.done = true;
-            outputs.busy = false;
-            outputs.active = false;
-            terminal_low_cycle_ = !execute;
+        if(started_ && slave_ref != nullptr) {
+            absolute_phase_shift = slave_ref->gear_phase_offset();
+            covered_phase_shift = slave_ref->phasing_covered_shift(tracked_command_id_);
+            const axis::PhasingCommandState state =
+                slave_ref->phasing_command_state(tracked_command_id_);
+            outputs.busy = state == axis::PhasingCommandState::queued ||
+                           state == axis::PhasingCommandState::active;
+            outputs.active = state == axis::PhasingCommandState::active;
+            if(state == axis::PhasingCommandState::completed) {
+                outputs.done = true;
+                outputs.busy = false;
+                outputs.active = false;
+                terminal_low_cycle_ = !execute;
+            } else if(state == axis::PhasingCommandState::aborted) {
+                outputs.command_aborted = true;
+                outputs.busy = false;
+                outputs.active = false;
+                terminal_low_cycle_ = !execute;
+            }
         }
     }
 
@@ -516,27 +699,39 @@ private:
             outputs.error_id = rt::ErrorCode::invalid_argument;
             return;
         }
-        const rt::ErrorCode requested = relative_
-                                            ? slave_ref->phasing_relative(phase_shift, velocity)
-                                            : slave_ref->phasing_absolute(phase_shift, velocity);
-        if(requested != rt::ErrorCode::ok) {
+        axis::PhasingCommand command{};
+        command.phase_shift = phase_shift;
+        command.velocity = velocity;
+        command.acceleration = acceleration;
+        command.deceleration = deceleration;
+        command.jerk = jerk;
+        command.buffer_mode = buffer_mode;
+        command.relative = relative_;
+        const rt::Result<std::uint32_t> requested = slave_ref->submit_phasing(command);
+        if(!requested) {
             outputs.error = true;
-            outputs.error_id = requested;
+            outputs.error_id = requested.error();
             return;
         }
         started_ = true;
-        if(slave_ref->phasing_active()) {
-            outputs.busy = true;
-            outputs.active = true;
-        } else {
-            outputs.done = true;
-        }
+        tracked_command_id_ = requested.value();
+        outputs.command_id = tracked_command_id_;
+        outputs.command_accepted = true;
+        absolute_phase_shift = slave_ref->gear_phase_offset();
+        covered_phase_shift = slave_ref->phasing_covered_shift(tracked_command_id_);
+        const axis::PhasingCommandState state =
+            slave_ref->phasing_command_state(tracked_command_id_);
+        outputs.busy = state == axis::PhasingCommandState::queued ||
+                       state == axis::PhasingCommandState::active;
+        outputs.active = state == axis::PhasingCommandState::active;
+        outputs.done = state == axis::PhasingCommandState::completed;
     }
 
     bool relative_ = false;
     bool last_execute_ = false;
     bool started_ = false;
     bool terminal_low_cycle_ = false;
+    std::uint32_t tracked_command_id_ = 0;
 };
 
 class FbPhasingAbsolute : public PhasingFb

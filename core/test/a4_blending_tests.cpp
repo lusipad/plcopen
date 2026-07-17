@@ -558,6 +558,8 @@ int check_fb_blend_inputs()
     first.acceleration = 0.002;
     first.deceleration = 0.002;
     first.jerk = 0.002;
+    first.transition_velocity = 0.0;
+    first.orientation_mode = axis::OrientationMode::joint_space;
     first.execute = true;
     first.call();
     if(!first.outputs.command_accepted) {
@@ -577,16 +579,30 @@ int check_fb_blend_inputs()
     blend.deceleration = 0.002;
     blend.jerk = 0.002;
     blend.buffer_mode = axis::BufferMode::blending_high;
+    blend.transition_velocity = 0.01;
     blend.transition_mode = axis::TransitionMode::max_corner_deviation;
     blend.transition_parameter = 0.05;
+    blend.orientation_mode = axis::OrientationMode::joint_space;
     blend.execute = true;
     blend.call();
     if(!blend.outputs.command_accepted || blend.outputs.error) {
         return fail("fb blend accepted");
     }
-    if(run_to_standstill(rig.group) < 0 ||
+    double observed_transition_velocity = 0.0;
+    for(int i = 0; i < 20000 && rig.group.status() != axis::GroupStatus::standby; ++i) {
+        rig.group.cycle();
+        const double y = rig.y.snapshot().command_position;
+        if(y > 1e-9 && y < 0.05 && observed_transition_velocity == 0.0) {
+            observed_transition_velocity = rig.group.path_derivative(false);
+        }
+    }
+    if(rig.group.status() != axis::GroupStatus::standby ||
        !near(rig.y.snapshot().command_position, 2.0, 1e-9)) {
         return fail("fb blend chain finishes");
+    }
+    if(observed_transition_velocity <= 0.0 ||
+       observed_transition_velocity > blend.transition_velocity + 1e-12) {
+        return fail("fb transition velocity caps planner node");
     }
 
     fb::FbMoveLinearAbsolute bad;
@@ -598,6 +614,19 @@ int check_fb_blend_inputs()
     bad.call();
     if(!bad.outputs.error || bad.outputs.error_id != rt::ErrorCode::unsupported) {
         return fail("fb unsupported transition surfaced");
+    }
+
+    fb::FbMoveLinearRelative bad_relative;
+    bad_relative.group_ref = &rig.group;
+    bad_relative.position.size = 2;
+    bad_relative.position.value[0] = 1.0;
+    bad_relative.transition_velocity = 2.0;
+    bad_relative.orientation_mode = axis::OrientationMode::joint_space;
+    bad_relative.execute = true;
+    bad_relative.call();
+    if(!bad_relative.outputs.error ||
+       bad_relative.outputs.error_id != rt::ErrorCode::invalid_argument) {
+        return fail("fb relative transition velocity validated");
     }
     return 0;
 }

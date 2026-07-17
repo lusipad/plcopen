@@ -1,160 +1,78 @@
 #pragma once
 
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <string_view>
 
-#include "fb/basic.h"
-#include "fb/motion.h"
+#include "st/generated/st_binding_native.h"
 #include "st/types.h"
 
-// FB pin metadata (approved st-l0-semantics 3.9/3.10): per-block explicit
-// pin tables with IEC pin names, ST-side types and direction. Pin ids are
-// bytecode operands (index into the block's table). The machine-readable
-// binding matrix in doc/compliance mirrors these tables one to one.
+// FB pin metadata is generated from the checked-in IEC/PLCopen authorities.
+// Pin ids are bytecode operands and are stable zero-based ordinals within an
+// FB. Native registration remains independent: unresolved adapters keep their
+// declared pin/type surface without becoming registered native accessors.
 
 namespace plcopen::core::st
 {
 
 struct PinDesc
 {
-    std::string_view lower_name; // IEC pin name, lower case
+    std::string_view lower_name; // canonical IEC pin name, ASCII lower case
     Type type = Type::bool_;
+    TypeId type_id = invalid_type_id;
+    generated::StBindingPinDirection direction =
+        generated::StBindingPinDirection::unresolved;
+    // Compatibility for existing semantic call sites. in_out accepts input,
+    // while direction retains its distinct read/write contract.
     bool is_input = false;
 };
 
-#include "st/generated/mc_pins.h"
-
-namespace detail
+constexpr TypeId pin_type_id(const PinDesc &pin) noexcept
 {
+    return pin.type_id;
+}
 
-inline constexpr PinDesc kPinsRTrig[] = {
-    {"clk", Type::bool_, true},
-    {"q", Type::bool_, false},
-};
+constexpr bool pin_accepts_input(const PinDesc &pin) noexcept
+{
+    return pin.direction == generated::StBindingPinDirection::input ||
+           pin.direction == generated::StBindingPinDirection::in_out;
+}
 
-inline constexpr PinDesc kPinsFTrig[] = {
-    {"clk", Type::bool_, true},
-    {"q", Type::bool_, false},
-};
-
-inline constexpr PinDesc kPinsSr[] = {
-    {"s1", Type::bool_, true},
-    {"r", Type::bool_, true},
-    {"q1", Type::bool_, false},
-};
-
-inline constexpr PinDesc kPinsRs[] = {
-    {"s", Type::bool_, true},
-    {"r1", Type::bool_, true},
-    {"q1", Type::bool_, false},
-};
-
-inline constexpr PinDesc kPinsTimer[] = {
-    {"in", Type::bool_, true},
-    {"pt", Type::time, true},
-    {"q", Type::bool_, false},
-    {"et", Type::time, false},
-};
-
-inline constexpr PinDesc kPinsCtu[] = {
-    {"cu", Type::bool_, true},
-    {"r", Type::bool_, true},
-    {"pv", Type::dint, true},
-    {"q", Type::bool_, false},
-    {"cv", Type::dint, false},
-};
-
-inline constexpr PinDesc kPinsCtd[] = {
-    {"cd", Type::bool_, true},
-    {"ld", Type::bool_, true},
-    {"pv", Type::dint, true},
-    {"q", Type::bool_, false},
-    {"cv", Type::dint, false},
-};
-
-inline constexpr PinDesc kPinsCtud[] = {
-    {"cu", Type::bool_, true},
-    {"cd", Type::bool_, true},
-    {"r", Type::bool_, true},
-    {"ld", Type::bool_, true},
-    {"pv", Type::dint, true},
-    {"qu", Type::bool_, false},
-    {"qd", Type::bool_, false},
-    {"cv", Type::dint, false},
-};
-
-} // namespace detail
+constexpr bool pin_produces_output(const PinDesc &pin) noexcept
+{
+    return pin.direction == generated::StBindingPinDirection::output ||
+           pin.direction == generated::StBindingPinDirection::in_out;
+}
 
 struct PinTable
 {
     const PinDesc *pins = nullptr;
-    std::uint8_t count = 0;
+    std::uint16_t count = 0;
 };
 
-constexpr PinTable pin_table(FbType type)
+#include "st/generated/st_binding_pins.h"
+
+constexpr PinTable pin_table(FbType type) noexcept
 {
-    switch(type) {
-    case FbType::r_trig: return {detail::kPinsRTrig, 2};
-    case FbType::f_trig: return {detail::kPinsFTrig, 2};
-    case FbType::sr: return {detail::kPinsSr, 3};
-    case FbType::rs: return {detail::kPinsRs, 3};
-    case FbType::ton:
-    case FbType::tof:
-    case FbType::tp:
-        return {detail::kPinsTimer, 4};
-    case FbType::ctu: return {detail::kPinsCtu, 5};
-    case FbType::ctd: return {detail::kPinsCtd, 5};
-    case FbType::ctud: return {detail::kPinsCtud, 8};
-    case FbType::mc_power:
-        return {generated::kPinsMC_Power, 8};
-    case FbType::mc_home: return {generated::kPinsMC_Home, 10};
-    case FbType::mc_stop: return {generated::kPinsMC_Stop, 9};
-    case FbType::mc_halt: return {generated::kPinsMC_Halt, 11};
-    case FbType::mc_move_absolute:
-        return {generated::kPinsMC_MoveAbsolute, 16};
-    case FbType::mc_move_relative:
-        return {generated::kPinsMC_MoveRelative, 15};
-    case FbType::mc_move_additive:
-        return {generated::kPinsMC_MoveAdditive, 15};
-    case FbType::mc_move_velocity:
-        return {generated::kPinsMC_MoveVelocity, 15};
-    case FbType::mc_set_override:
-        return {generated::kPinsMC_SetOverride, 9};
-    case FbType::mc_reset: return {generated::kPinsMC_Reset, 6};
-    }
-    return {};
+    return generated::st_binding_pin_table(type);
 }
 
-// Instance storage footprint in the load-time layout (matrix 3.2); every
-// instance is aligned to 8 bytes.
-inline std::size_t fb_size(FbType type)
+constexpr std::size_t fb_size(FbType type) noexcept
 {
-    switch(type) {
-    case FbType::r_trig: return sizeof(fb::RTrig);
-    case FbType::f_trig: return sizeof(fb::FTrig);
-    case FbType::sr: return sizeof(fb::SR);
-    case FbType::rs: return sizeof(fb::RS);
-    case FbType::ton: return sizeof(fb::TON);
-    case FbType::tof: return sizeof(fb::TOF);
-    case FbType::tp: return sizeof(fb::TP);
-    case FbType::ctu: return sizeof(fb::CTU);
-    case FbType::ctd: return sizeof(fb::CTD);
-    case FbType::ctud: return sizeof(fb::CTUD);
-    case FbType::mc_power: return sizeof(fb::FbPower);
-    case FbType::mc_home: return sizeof(fb::FbHome);
-    case FbType::mc_stop: return sizeof(fb::FbStop);
-    case FbType::mc_halt: return sizeof(fb::FbHalt);
-    case FbType::mc_move_absolute: return sizeof(fb::FbMoveAbsolute);
-    case FbType::mc_move_relative: return sizeof(fb::FbMoveRelative);
-    case FbType::mc_move_additive: return sizeof(fb::FbMoveAdditive);
-    case FbType::mc_move_velocity: return sizeof(fb::FbMoveVelocity);
-    case FbType::mc_set_override: return sizeof(fb::FbSetOverride);
-    case FbType::mc_reset: return sizeof(fb::FbReset);
-    }
-    return 0;
+    return generated::st_binding_native_size(type);
 }
 
+constexpr std::size_t fb_align(FbType type) noexcept
+{
+    return generated::st_binding_native_align(type);
+}
+
+// Maximum alignment of the generated native FB set. Existing load-layout
+// callers retain this aggregate bound; per-FB consumers use fb_align().
 inline constexpr std::size_t kFbAlign = 8;
+
+static_assert(fb_size(FbType::count) == 0U);
+static_assert(fb_align(FbType::count) == 0U);
 
 } // namespace plcopen::core::st

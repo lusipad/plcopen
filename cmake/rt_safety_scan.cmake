@@ -48,6 +48,46 @@ endif()
 
 set(VIOLATIONS)
 
+set(HEAP_REGEX
+    "(^|[^A-Za-z0-9_:])(new|delete)([^A-Za-z0-9_]|$)|std::(make_unique|make_shared|unique_ptr|shared_ptr|allocator|vector|deque|list|map|unordered_map|string)")
+
+function(normalize_heap_scan_content content output)
+    # Placement construction starts an object lifetime in caller-owned memory;
+    # it does not allocate. Keep the exemption deliberately narrow so ordinary
+    # new expressions and allocation helpers remain violations.
+    string(REGEX REPLACE "#include[ \t]*<new>[^\n]*" ""
+        normalized "${content}")
+    string(REGEX REPLACE
+        "::new[ \t\r\n]*\\([ \t\r\n]*static_cast<void[ \t]*\\*>\\([^)]*\\)[ \t\r\n]*\\)[ \t\r\n]*[A-Za-z_][A-Za-z0-9_:<>]*[ \t\r\n]*\\{[ \t\r\n]*\\}"
+        "placement_construct" normalized "${normalized}")
+    # A deleted special member (`= delete;`) is a compile-time declaration,
+    # not a heap deallocation expression.
+    string(REGEX REPLACE "=[ \t\r\n]*delete[ \t\r\n]*;" "= default;"
+        normalized "${normalized}")
+    set(${output} "${normalized}" PARENT_SCOPE)
+endfunction()
+
+# Scanner fixtures: the precise placement-new form is allowed, while normal
+# allocation, deletion, and owning heap wrappers must continue to be caught.
+normalize_heap_scan_content(
+    "#include <new>\n::new(static_cast<void *>(cursor)) Storage{};"
+    placement_fixture)
+if(placement_fixture MATCHES "${HEAP_REGEX}")
+    message(FATAL_ERROR "RT-safety scanner rejected placement-new fixture")
+endif()
+normalize_heap_scan_content("auto *raw = new Item" new_fixture)
+if(NOT new_fixture MATCHES "${HEAP_REGEX}")
+    message(FATAL_ERROR "RT-safety scanner missed ordinary new fixture")
+endif()
+normalize_heap_scan_content("delete raw" delete_fixture)
+if(NOT delete_fixture MATCHES "${HEAP_REGEX}")
+    message(FATAL_ERROR "RT-safety scanner missed ordinary delete fixture")
+endif()
+normalize_heap_scan_content("std::unique_ptr<Item> owned" unique_ptr_fixture)
+if(NOT unique_ptr_fixture MATCHES "${HEAP_REGEX}")
+    message(FATAL_ERROR "RT-safety scanner missed unique_ptr fixture")
+endif()
+
 function(check_rule file content name regex)
     string(REGEX MATCH "${regex}" match "${content}")
     if(match)
@@ -61,8 +101,8 @@ endfunction()
 foreach(file IN LISTS RT_FILES)
     file(READ "${file}" content)
 
-    check_rule("${file}" "${content}" "heap allocation"
-        "(^|[^A-Za-z0-9_:])(new|delete)([^A-Za-z0-9_]|$)|std::(make_unique|make_shared|unique_ptr|shared_ptr|allocator|vector|deque|list|map|unordered_map|string)")
+    normalize_heap_scan_content("${content}" heap_content)
+    check_rule("${file}" "${heap_content}" "heap allocation" "${HEAP_REGEX}")
     check_rule("${file}" "${content}" "blocking synchronization"
         "std::(mutex|recursive_mutex|timed_mutex|shared_mutex|lock_guard|unique_lock|scoped_lock|condition_variable)")
     check_rule("${file}" "${content}" "exceptions"

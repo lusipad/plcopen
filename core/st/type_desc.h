@@ -666,6 +666,23 @@ class TypeTable
         return commit(std::move(desc), out);
     }
 
+    TypeError add_opaque_ref(std::string_view name, TypeId &out)
+    {
+        out = invalid_type_id;
+        TypeError error = validate_new_name(name);
+        if (error != TypeError::ok)
+        {
+            return error;
+        }
+        TypeDesc desc;
+        desc.kind = TypeKind::ref;
+        desc.name.assign(name.data(), name.size());
+        desc.size = 8;
+        desc.alignment = 8;
+        desc.reference.target = invalid_type_id;
+        return commit(std::move(desc), out);
+    }
+
     TypeError enum_value(TypeId type, std::string_view name, IntegerValue &out) const noexcept
     {
         const TypeDesc *desc = get(type);
@@ -896,3 +913,5 @@ class TypeTable
 };
 
 } // namespace plcopen::core::st
+
+#include "st/generated/st_binding_types.h"

@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "st/bytecode.h"
+#include "st/binding.h"
 #include "st/codegen.h"
 #include "st/diag.h"
 #include "st/parser.h"
@@ -25,7 +26,9 @@ struct CompileOptions
 {
     std::uint32_t max_code_bytes = 65536;
     std::uint32_t max_vars_bytes = 16384;
-    std::uint16_t max_fb_instances = 256;
+    std::uint16_t max_fb_instances = kMaxFbInstances;
+    std::uint16_t max_axis_refs = kMaxAxisBindings;
+    std::uint16_t max_group_refs = kMaxGroupBindings;
     std::uint16_t max_diagnostics = 256;
     std::uint16_t max_stack_slots = 64;
     std::int32_t max_nesting = 64;
@@ -60,7 +63,18 @@ inline CompileResult compile_single_program(
 
     SemaLimits sema_limits;
     sema_limits.max_vars_bytes = options.max_vars_bytes;
-    sema_limits.max_fb_instances = options.max_fb_instances;
+    sema_limits.max_fb_instances =
+        options.max_fb_instances < kMaxFbInstances
+            ? options.max_fb_instances
+            : kMaxFbInstances;
+    sema_limits.max_axis_refs =
+        options.max_axis_refs < kMaxAxisBindings
+            ? options.max_axis_refs
+            : kMaxAxisBindings;
+    sema_limits.max_group_refs =
+        options.max_group_refs < kMaxGroupBindings
+            ? options.max_group_refs
+            : kMaxGroupBindings;
     sema_limits.max_diagnostics = options.max_diagnostics;
     sema_limits.max_user_types = options.max_user_types;
     sema_limits.max_enum_members = options.max_enum_members;

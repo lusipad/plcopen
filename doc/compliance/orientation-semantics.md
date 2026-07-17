@@ -76,3 +76,19 @@ set_tool_transform_rpy` + `apply_coordinate_frame` 位姿分支（submit 时
 一次解算，周期路径零新增）。验收 `plcopen_core_pose_tests` 全绿
 （管线等价 oracle 1e-9 / 端到端位姿 1e-8 / 拒绝矩阵全表），既有回放
 语料逐位不变（含工件帧 RigidFrame→RigidTransform 换型）。
+
+## 14-pin 原生姿态扩展（2026-07-17）
+
+`MC_MoveLinearAbsolute/Relative` 与 `MC_MoveCircularAbsolute/Relative` 的
+`OrientationMode` 直接进入 `GroupCommand`，值域固定为：
+
+| 模式 | 插值策略 |
+|---|---|
+| `joint_space` | 保持成员域规划；不承诺 TCP 测地 |
+| `shortest_path` | 要求 pose 插件与 MCS/PCS；TCP 姿态按起终旋转的最短轴角测地插值 |
+| `constant` | 要求 pose 插件与 MCS/PCS；整段复制确定性段起点 TCP 旋转，忽略目标姿态槽位 |
+
+relative 模式下，位置向量相对段起点 TCP（PCS 仅旋转该向量），
+`shortest_path` 将输入 RPY 作为相对旋转右乘起点旋转；`constant` 保持起点
+旋转。非法枚举返回 `invalid_argument`；合法但缺 pose 插件、坐标系错误或
+尚未实现的 Cartesian circular blending 组合返回 `unsupported`。

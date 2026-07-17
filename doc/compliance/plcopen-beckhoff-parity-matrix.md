@@ -27,7 +27,7 @@
 | Override 与活动轨迹重规划 | implemented | `FbSetOverride`、`AxisModel::set_override`、C4 回归 | 同步从轴由主值驱动，不走本地 override planner |
 | 在线坐标重设 | implemented | `FbSetPosition`、Part 5 Flying 专用重标定路径 | Part 1 整体坐标域平移与 Part 5 目标数值不变是两个合同 |
 | Position/Velocity/Acceleration Profile | implemented | 固定容量 profile 表、`plcopen_core_r3_profile_tests` | 不解析厂商 profile 数据库或外部表仓库，见 KB-024 |
-| Torque Control / TorqueLimit 透传 | partial | `FbTorqueControl`、Part 5 TorqueLimit、servo setpoint 测试 | 不证明真实扭矩闭环、堵转安全或驱动执行，见 KB-011/080 |
+| Torque Control / TorqueLimit 透传 | partial | `FbTorqueControl` TorqueRamp/ContinuousUpdate、CST limits、Part 5 TorqueLimit、servo setpoint 测试 | 软件接口与 setpoint 合同闭合；不证明真实扭矩闭环、堵转安全或驱动执行，见 KB-011/080 |
 | Gear、GearInPos、Phasing | implemented | `core/fb/sync.h`、`plcopen_core_r3_sync_tests` | 单主单从；逼近段为有界线性/速度限制模型，见 KB-019/021 |
 | Cam table、CamIn/CamOut、在线换表 | implemented | `CamTable`、C2 spline、`plcopen_core_cam_tests` | 调用方持有固定容量表；无厂商控制器表仓库 |
 | CombineAxes | implemented | 双主轴 add/sub setpoint combination、同步回归 | 不扩展为 Part 4 路径合成 |
@@ -63,7 +63,7 @@
 | 确定性回放 | implemented | 18 份 golden fixture、`plcopen_core_replay_regression` | 声明变更必须同步 KB 与基线 |
 | Windows / Linux / ARM64 | implemented | CI 构建、CTest、ARM64/QEMU | 真实 ARM 控制器性能仍需目标硬件测量 |
 | C++ 包消费 | implemented | `plcopen::plcopen`、installed/FetchContent smoke | ABI 稳定性不作为 alpha 阶段兼容承诺 |
-| IEC 61131-3 ST 消费面 | partial | ST-L0/L1a/L2a、首批 10 个单轴 MC 块 | 不是完整 IEC 平台；复合类型、多 POU、完整 MC 绑定仍未实现 |
+| IEC 61131-3 ST 消费面 | partial | ST-L0/L1a/L1b/L2b/L2c；134/134 标准 FB、1476/1476 pins | PLCopen 运动 FB 绑定已闭合；L3 进程映像、L4 标准函数、L5-L7 任务/SFC/调试仍未实现，故不是完整 IEC 平台 |
 | PLCopen 正式 B/E/V 声明与 Logo | partial | Part 1/4/5 机读审计与声明草案 | 供应商签署、PLCopen 提交/批准是独立行政动作 |
 
 ## 5. 主动排除的产品面

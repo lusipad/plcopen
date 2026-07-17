@@ -14,6 +14,10 @@ namespace plcopen::core::fb
 class FbGroupHome : public GroupExecuteFb
 {
 public:
+    axis::GroupPosition position{};
+    axis::CoordSystem coord_system = axis::CoordSystem::acs;
+    axis::BufferMode buffer_mode = axis::BufferMode::aborting;
+
     void call()
     {
         if(rising_edge()) {
@@ -21,16 +25,38 @@ public:
                 accept(rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument));
                 return;
             }
-            const rt::ErrorCode homed = group_ref->group_home();
-            if(homed != rt::ErrorCode::ok) {
-                accept(rt::Result<std::uint32_t>::failure(homed));
-                return;
-            }
-            accept(rt::Result<std::uint32_t>::success(1));
+            accept(group_ref->submit_group_home(position, coord_system, buffer_mode));
+        }
+        observe();
+    }
+
+private:
+    void observe()
+    {
+        if(!execute || tracked_command_id_ == 0 || group_ref == nullptr ||
+           outputs.done || outputs.error || outputs.command_aborted) return;
+        if(group_ref->management_command_aborted(tracked_command_id_)) {
+            outputs.command_aborted = true;
+            outputs.busy = false;
+            outputs.active = false;
+            return;
+        }
+        const rt::ErrorCode error = group_ref->management_command_error(tracked_command_id_);
+        if(error != rt::ErrorCode::ok) {
+            outputs.error = true;
+            outputs.error_id = error;
+            outputs.busy = false;
+            outputs.active = false;
+            return;
+        }
+        if(group_ref->management_command_done(tracked_command_id_)) {
             outputs.done = true;
             outputs.busy = false;
             outputs.active = false;
+            return;
         }
+        outputs.busy = true;
+        outputs.active = group_ref->management_command_active(tracked_command_id_);
     }
 };
 
@@ -43,6 +69,11 @@ public:
     double acceleration = 1.0;
     double deceleration = 1.0;
     double jerk = 1.0;
+    axis::CoordSystem coord_system = axis::CoordSystem::acs;
+    axis::BufferMode buffer_mode = axis::BufferMode::aborting;
+    double transition_velocity = 0.0;
+    axis::TransitionMode transition_mode = axis::TransitionMode::none;
+    double transition_parameter = 0.0;
 
     void call()
     {
@@ -51,8 +82,18 @@ public:
                 accept(rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument));
                 return;
             }
-            accept(group_ref->submit_direct(
-                position, false, velocity, acceleration, deceleration, jerk));
+            axis::GroupCommand command{};
+            command.target = position;
+            command.velocity = velocity;
+            command.acceleration = acceleration;
+            command.deceleration = deceleration;
+            command.jerk = jerk;
+            command.coord_system = coord_system;
+            command.buffer_mode = buffer_mode;
+            command.transition_velocity = transition_velocity;
+            command.transition_mode = transition_mode;
+            command.transition_parameter = transition_parameter;
+            accept(group_ref->submit_direct(command));
         }
         observe_direct();
     }
@@ -74,13 +115,13 @@ private:
             outputs.active = false;
             return;
         }
-        if(group_ref->last_completed_direct_command() == tracked_command_id_) {
+        if(group_ref->direct_command_done(tracked_command_id_)) {
             outputs.done = true;
             outputs.busy = false;
             outputs.active = false;
             return;
         }
-        if(group_ref->last_aborted_direct_command() == tracked_command_id_) {
+        if(group_ref->direct_command_aborted(tracked_command_id_)) {
             outputs.command_aborted = true;
             outputs.done = false;
             outputs.busy = false;
@@ -88,10 +129,9 @@ private:
             tracked_command_id_ = 0;
             return;
         }
-        if((gs == axis::GroupStatus::moving || gs == axis::GroupStatus::stopping) &&
-           group_ref->direct_motion_active()) {
+        if(group_ref->direct_command_busy(tracked_command_id_)) {
             outputs.busy = true;
-            outputs.active = true;
+            outputs.active = group_ref->direct_command_active(tracked_command_id_);
             outputs.done = false;
             return;
         }
@@ -112,6 +152,11 @@ public:
     double acceleration = 1.0;
     double deceleration = 1.0;
     double jerk = 1.0;
+    axis::CoordSystem coord_system = axis::CoordSystem::acs;
+    axis::BufferMode buffer_mode = axis::BufferMode::aborting;
+    double transition_velocity = 0.0;
+    axis::TransitionMode transition_mode = axis::TransitionMode::none;
+    double transition_parameter = 0.0;
 
     void call()
     {
@@ -120,8 +165,19 @@ public:
                 accept(rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument));
                 return;
             }
-            accept(group_ref->submit_direct(
-                distance, true, velocity, acceleration, deceleration, jerk));
+            axis::GroupCommand command{};
+            command.target = distance;
+            command.relative = true;
+            command.velocity = velocity;
+            command.acceleration = acceleration;
+            command.deceleration = deceleration;
+            command.jerk = jerk;
+            command.coord_system = coord_system;
+            command.buffer_mode = buffer_mode;
+            command.transition_velocity = transition_velocity;
+            command.transition_mode = transition_mode;
+            command.transition_parameter = transition_parameter;
+            accept(group_ref->submit_direct(command));
         }
         observe_direct();
     }
@@ -143,13 +199,13 @@ private:
             outputs.active = false;
             return;
         }
-        if(group_ref->last_completed_direct_command() == tracked_command_id_) {
+        if(group_ref->direct_command_done(tracked_command_id_)) {
             outputs.done = true;
             outputs.busy = false;
             outputs.active = false;
             return;
         }
-        if(group_ref->last_aborted_direct_command() == tracked_command_id_) {
+        if(group_ref->direct_command_aborted(tracked_command_id_)) {
             outputs.command_aborted = true;
             outputs.done = false;
             outputs.busy = false;
@@ -157,10 +213,9 @@ private:
             tracked_command_id_ = 0;
             return;
         }
-        if((gs == axis::GroupStatus::moving || gs == axis::GroupStatus::stopping) &&
-           group_ref->direct_motion_active()) {
+        if(group_ref->direct_command_busy(tracked_command_id_)) {
             outputs.busy = true;
-            outputs.active = true;
+            outputs.active = group_ref->direct_command_active(tracked_command_id_);
             outputs.done = false;
             return;
         }
@@ -172,29 +227,52 @@ private:
     }
 };
 
-// MC_GroupSetOverride: group-level velocity factor.
-class FbGroupSetOverride : public GroupExecuteFb
+// MC_GroupSetOverride: enable-based cyclic group override.
+class FbGroupSetOverride
 {
 public:
+    axis::AxisGroup *group_ref = nullptr;
+    bool enable = false;
     double vel_factor = 1.0;
+    double acc_factor = 1.0;
+    double jerk_factor = 1.0;
+    bool enabled = false;
+    bool busy = false;
+    bool error = false;
+    rt::ErrorCode error_id = rt::ErrorCode::ok;
 
     void call()
     {
-        if(rising_edge()) {
-            if(group_ref == nullptr) {
-                accept(rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument));
-                return;
-            }
-            const rt::ErrorCode result = group_ref->set_group_override(vel_factor);
-            if(result != rt::ErrorCode::ok) {
-                accept(rt::Result<std::uint32_t>::failure(result));
-                return;
-            }
-            accept(rt::Result<std::uint32_t>::success(1));
-            outputs.done = true;
-            outputs.busy = false;
-            outputs.active = false;
+        if(!enable) {
+            enabled = false;
+            busy = false;
+            error = false;
+            error_id = rt::ErrorCode::ok;
+            return;
         }
+        busy = true;
+        enabled = false;
+        error = false;
+        error_id = rt::ErrorCode::ok;
+        if(group_ref == nullptr) {
+            busy = false;
+            error = true;
+            error_id = rt::ErrorCode::invalid_argument;
+            return;
+        }
+        const auto clamp_factor = [](double factor) {
+            return factor < 0.0 ? 0.0 : (factor > 1.0 ? 1.0 : factor);
+        };
+        const rt::ErrorCode result = group_ref->set_group_override(
+            clamp_factor(vel_factor), clamp_factor(acc_factor),
+            clamp_factor(jerk_factor));
+        busy = false;
+        if(result != rt::ErrorCode::ok) {
+            error = true;
+            error_id = result;
+            return;
+        }
+        enabled = true;
     }
 };
 
@@ -275,6 +353,7 @@ class FbGroupHalt : public GroupExecuteFb
 public:
     double deceleration = 1.0;
     double jerk = 1.0;
+    axis::BufferMode buffer_mode = axis::BufferMode::aborting;
 
     void call()
     {
@@ -283,7 +362,7 @@ public:
                 accept(rt::Result<std::uint32_t>::failure(
                     rt::ErrorCode::invalid_argument));
             } else {
-                accept(group_ref->halt(deceleration, jerk));
+                accept(group_ref->halt(deceleration, jerk, buffer_mode));
             }
         }
         observe();
@@ -317,7 +396,7 @@ private:
 class FbGroupWaitTime : public GroupExecuteFb
 {
 public:
-    std::int64_t duration_cycles = 0;
+    std::int64_t duration = 0;
     axis::BufferMode buffer_mode = axis::BufferMode::aborting;
 
     void call()
@@ -327,7 +406,7 @@ public:
                 accept(rt::Result<std::uint32_t>::failure(
                     rt::ErrorCode::invalid_argument));
             } else {
-                accept(group_ref->submit_wait(duration_cycles, buffer_mode));
+                accept(group_ref->submit_wait(duration, buffer_mode));
             }
         }
         observe();

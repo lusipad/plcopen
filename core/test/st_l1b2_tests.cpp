@@ -327,8 +327,12 @@ void struct_layout_and_nested_access()
               dump.find("field count type=4 offset=4") != std::string::npos &&
               dump.find("field small type=2 offset=8") != std::string::npos,
           "L1b2-A03 declaration-order natural layout");
+    const std::string record_field =
+        "field record type=" +
+        std::to_string(st::first_load_type_id + st::binding_type::count) +
+        " offset=0";
     check(dump.find("struct Nested size=24 align=8") != std::string::npos &&
-              dump.find("field record type=65536 offset=0") !=
+              dump.find(record_field) !=
                   std::string::npos &&
               dump.find("field value type=11 offset=16") !=
                   std::string::npos,

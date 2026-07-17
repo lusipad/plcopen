@@ -153,6 +153,9 @@ int check_gear_follow_and_out()
     gear.slave_ref = &pair.slave;
     gear.ratio_numerator = 2.0;
     gear.ratio_denominator = 1.0;
+    gear.acceleration = 0.02;
+    gear.deceleration = 0.03;
+    gear.jerk = 0.01;
     gear.execute = true;
 
     if(!pair.master.submit(make_move(3.0, 0.1))) {
@@ -161,6 +164,8 @@ int check_gear_follow_and_out()
 
     bool saw_start_pulse = false;
     bool pulse_was_single_cycle = true;
+    bool saw_profiled_engagement = false;
+    double previous_acceleration = pair.slave.snapshot().command_acceleration;
     for(int i = 0; i < 200; ++i) {
         pair.cycle();
         const bool was_in_sync = gear.in_sync;
@@ -171,9 +176,20 @@ int check_gear_follow_and_out()
             }
             saw_start_pulse = true;
         }
+        if(pair.slave.sync_phase() == axis::SyncPhase::approaching) {
+            saw_profiled_engagement = true;
+            const double acceleration = pair.slave.snapshot().command_acceleration;
+            if(acceleration > gear.acceleration + 1e-9 ||
+               acceleration < -gear.deceleration - 1e-9 ||
+               std::fabs(acceleration - previous_acceleration) > gear.jerk + 1e-9) {
+                return fail("gear engagement dynamics envelope");
+            }
+            previous_acceleration = acceleration;
+        }
         if(was_in_sync && gear.in_sync &&
            !near(pair.slave.snapshot().command_position,
-                 2.0 * pair.master.snapshot().command_position,
+                 2.0 * pair.master.snapshot().command_position +
+                     pair.slave.gear_phase_offset(),
                  1e-9)) {
             return fail("gear slave tracks master ratio");
         }
@@ -181,11 +197,13 @@ int check_gear_follow_and_out()
             break;
         }
     }
-    if(!gear.in_sync || !saw_start_pulse || !pulse_was_single_cycle) {
+    if(!gear.in_sync || !saw_start_pulse || !pulse_was_single_cycle ||
+       !saw_profiled_engagement) {
         return fail("gear sync entry and single start pulse");
     }
     if(pair.slave.status() != axis::AxisStatus::synchronized_motion ||
-       !near(pair.slave.snapshot().command_position, 6.0, 1e-9)) {
+       !near(pair.slave.snapshot().command_position,
+             6.0 + pair.slave.gear_phase_offset(), 1e-9)) {
         return fail("gear slave endpoint");
     }
 
@@ -241,7 +259,9 @@ int check_gear_sources_and_update()
     actual_gear.call();
     pair.cycle();
     actual_gear.call();
-    if(!actual_gear.in_sync || !near(pair.slave.snapshot().command_position, 1.5, 1e-12)) {
+    if(!actual_gear.in_sync ||
+       !near(pair.slave.snapshot().command_position,
+             pair.master.snapshot().actual_position + pair.slave.gear_phase_offset(), 1e-12)) {
         return fail("gear actual source sample");
     }
 
@@ -252,7 +272,9 @@ int check_gear_sources_and_update()
     command_gear.call();
     pair.cycle();
     command_gear.call();
-    if(!command_gear.in_sync || !near(pair.slave.snapshot().command_position, 2.0, 1e-12)) {
+    if(!command_gear.in_sync ||
+       !near(pair.slave.snapshot().command_position,
+             pair.master.snapshot().command_position + pair.slave.gear_phase_offset(), 1e-12)) {
         return fail("gear command source sample");
     }
     if(!actual_gear.outputs.command_aborted && actual_gear.in_sync) {
@@ -262,7 +284,8 @@ int check_gear_sources_and_update()
     command_gear.ratio_numerator = 2.0;
     pair.cycle();
     command_gear.call();
-    if(!near(pair.slave.snapshot().command_position, 2.0, 1e-12)) {
+    if(!near(pair.slave.snapshot().command_position,
+             pair.master.snapshot().command_position + pair.slave.gear_phase_offset(), 1e-12)) {
         return fail("gear latched ratio ignores input change");
     }
 
@@ -271,7 +294,8 @@ int check_gear_sources_and_update()
     command_gear.call();
     pair.cycle();
     command_gear.call();
-    if(!near(pair.slave.snapshot().command_position, 2.0, 1e-12)) {
+    if(!near(pair.slave.snapshot().command_position,
+             pair.master.snapshot().command_position + pair.slave.gear_phase_offset(), 1e-12)) {
         return fail("gear late ContinuousUpdate does not grant permission");
     }
 
@@ -355,7 +379,7 @@ int check_gear_buffer_modes()
             return fail("gear buffered engages after move completes");
         }
         if(!near(pair.slave.snapshot().command_position,
-                 pair.master.snapshot().command_position,
+                 pair.master.snapshot().command_position + pair.slave.gear_phase_offset(),
                  1e-9)) {
             return fail("gear buffered follows after engage");
         }
@@ -505,14 +529,15 @@ int check_gear_in_pos()
         return fail("gear-in-pos aligned phase after sync");
     }
 
-    fb::FbGearInPos invalid;
-    invalid.master_ref = &pair.master;
-    invalid.slave_ref = &pair.slave;
-    invalid.master_start_distance = -1.0;
-    invalid.execute = true;
-    invalid.call();
-    if(!invalid.outputs.error || invalid.outputs.error_id != rt::ErrorCode::invalid_argument) {
-        return fail("gear-in-pos rejects negative start distance");
+    fb::FbGearInPos unsupported;
+    unsupported.master_ref = &pair.master;
+    unsupported.slave_ref = &pair.slave;
+    unsupported.sync_mode = axis::SyncMode::catch_up;
+    unsupported.execute = true;
+    unsupported.call();
+    if(!unsupported.outputs.error ||
+       unsupported.outputs.error_id != rt::ErrorCode::unsupported) {
+        return fail("gear-in-pos rejects undefined vendor sync mode");
     }
 
     return 0;
@@ -551,6 +576,9 @@ int check_phasing()
     relative.slave_ref = &pair.slave;
     relative.phase_shift = 1.25;
     relative.velocity = 0.25;
+    relative.acceleration = 0.25;
+    relative.deceleration = 0.25;
+    relative.jerk = 0.25;
     relative.execute = true;
     relative.call();
     if(!relative.outputs.busy || relative.outputs.done) {
@@ -571,6 +599,10 @@ int check_phasing()
        !near(pair.slave.gear_phase_offset(), 1.25, 1e-9)) {
         return fail("phasing relative ramp to target");
     }
+    if(!near(relative.covered_phase_shift, 1.25, 1e-9) ||
+       !near(relative.absolute_phase_shift, 1.25, 1e-9)) {
+        return fail("phasing relative covered and absolute outputs");
+    }
     if(!near(pair.slave.snapshot().command_position,
              pair.master.snapshot().command_position + 1.25,
              1e-9)) {
@@ -582,6 +614,9 @@ int check_phasing()
     absolute.slave_ref = &pair.slave;
     absolute.phase_shift = -0.5;
     absolute.velocity = 0.5;
+    absolute.acceleration = 0.5;
+    absolute.deceleration = 0.5;
+    absolute.jerk = 0.5;
     absolute.execute = true;
     for(int i = 0; i < 40 && !absolute.outputs.done; ++i) {
         absolute.call();
@@ -606,6 +641,81 @@ int check_phasing()
         return fail("phasing zero velocity is direct set");
     }
 
+    fb::FbPhasingAbsolute predecessor;
+    predecessor.master_ref = &pair.master;
+    predecessor.slave_ref = &pair.slave;
+    predecessor.phase_shift = 3.0;
+    predecessor.velocity = 0.2;
+    predecessor.acceleration = 0.1;
+    predecessor.deceleration = 0.1;
+    predecessor.jerk = 0.05;
+    predecessor.execute = true;
+    predecessor.call();
+
+    fb::FbPhasingRelative buffered;
+    buffered.master_ref = &pair.master;
+    buffered.slave_ref = &pair.slave;
+    buffered.phase_shift = -0.5;
+    buffered.velocity = 0.2;
+    buffered.acceleration = 0.1;
+    buffered.deceleration = 0.1;
+    buffered.jerk = 0.05;
+    buffered.buffer_mode = axis::BufferMode::buffered;
+    buffered.execute = true;
+    buffered.call();
+    if(!buffered.outputs.busy || buffered.outputs.active || buffered.outputs.done) {
+        return fail("phasing buffered command waits inactive");
+    }
+    for(int i = 0; i < 400 && !buffered.outputs.done; ++i) {
+        pair.cycle();
+        gear.call();
+        predecessor.call();
+        buffered.call();
+    }
+    if(!predecessor.outputs.done || !buffered.outputs.done ||
+       !near(pair.slave.gear_phase_offset(), 2.5, 1e-9) ||
+       !near(buffered.covered_phase_shift, -0.5, 1e-9)) {
+        return fail("phasing buffered sequence and covered shift");
+    }
+
+    fb::FbPhasingAbsolute interrupted;
+    interrupted.master_ref = &pair.master;
+    interrupted.slave_ref = &pair.slave;
+    interrupted.phase_shift = 5.0;
+    interrupted.velocity = 0.1;
+    interrupted.acceleration = 0.05;
+    interrupted.deceleration = 0.05;
+    interrupted.jerk = 0.02;
+    interrupted.execute = true;
+    interrupted.call();
+    for(int i = 0; i < 3; ++i) {
+        pair.cycle();
+        gear.call();
+        interrupted.call();
+    }
+    fb::FbPhasingAbsolute takeover;
+    takeover.master_ref = &pair.master;
+    takeover.slave_ref = &pair.slave;
+    takeover.phase_shift = -1.0;
+    takeover.velocity = 0.2;
+    takeover.acceleration = 0.1;
+    takeover.deceleration = 0.1;
+    takeover.jerk = 0.05;
+    takeover.execute = true;
+    takeover.call();
+    interrupted.call();
+    if(!interrupted.outputs.command_aborted || !takeover.outputs.busy) {
+        return fail("phasing aborting takeover lifecycle");
+    }
+    for(int i = 0; i < 400 && !takeover.outputs.done; ++i) {
+        pair.cycle();
+        gear.call();
+        takeover.call();
+    }
+    if(!takeover.outputs.done || !near(pair.slave.gear_phase_offset(), -1.0, 1e-9)) {
+        return fail("phasing aborting takeover reaches target");
+    }
+
     fb::FbPhasingAbsolute invalid;
     invalid.master_ref = &pair.master;
     invalid.slave_ref = &pair.slave;
@@ -615,6 +725,18 @@ int check_phasing()
     invalid.call();
     if(!invalid.outputs.error || invalid.outputs.error_id != rt::ErrorCode::invalid_argument) {
         return fail("phasing rejects negative velocity");
+    }
+
+    fb::FbPhasingAbsolute missing_dynamics;
+    missing_dynamics.master_ref = &pair.master;
+    missing_dynamics.slave_ref = &pair.slave;
+    missing_dynamics.phase_shift = 1.0;
+    missing_dynamics.velocity = 0.1;
+    missing_dynamics.execute = true;
+    missing_dynamics.call();
+    if(!missing_dynamics.outputs.error ||
+       missing_dynamics.outputs.error_id != rt::ErrorCode::invalid_argument) {
+        return fail("phasing rejects profiled command without dynamics");
     }
 
     axis::AxisModel wrong_master;
@@ -713,29 +835,38 @@ int check_gear_approach_velocity_caps_both_directions()
         axis::GearInCommand gear{};
         gear.master = &master;
         gear.position_sync = true;
-        gear.master_sync_position = 2.0 * direction;
-        gear.slave_sync_position = 4.0 * direction;
-        gear.master_start_distance = 1.0;
-        gear.approach_velocity = 0.01;
+        gear.master_sync_position = 10.0 * direction;
+        gear.slave_sync_position = 2.0 * direction;
+        gear.master_start_distance = 10.0 * direction;
+        gear.approach_velocity = 0.2;
+        gear.acceleration = 0.05;
+        gear.deceleration = 0.05;
+        gear.jerk = 0.02;
         if(!slave.gear_in(gear) ||
-           !master.submit(make_move(3.0 * direction, 0.05))) {
+           !master.submit(make_move(12.0 * direction, 0.1))) {
             return fail("gear approach cap setup");
         }
         double previous = slave.snapshot().command_position;
+        double previous_acceleration = slave.snapshot().command_acceleration;
         bool moved = false;
-        for(int cycle = 0; cycle < 400 &&
+        for(int cycle = 0; cycle < 800 &&
                            slave.sync_phase() != axis::SyncPhase::engaged;
             ++cycle) {
             master.cycle();
             slave.cycle();
             const double current = slave.snapshot().command_position;
-            const double step = current - previous;
+            const double velocity = slave.snapshot().command_velocity;
+            const double acceleration = slave.snapshot().command_acceleration;
             if(slave.sync_phase() == axis::SyncPhase::approaching &&
-               std::fabs(step) > gear.approach_velocity + 1e-12) {
+               (std::fabs(velocity) > gear.approach_velocity + 1e-9 ||
+                acceleration > gear.acceleration + 1e-9 ||
+                acceleration < -gear.deceleration - 1e-9 ||
+                std::fabs(acceleration - previous_acceleration) > gear.jerk + 1e-9)) {
                 return fail("gear approach velocity cap");
             }
-            if(std::fabs(step) > 1e-12) moved = true;
+            if(std::fabs(current - previous) > 1e-12) moved = true;
             previous = current;
+            previous_acceleration = acceleration;
         }
         if(!moved || slave.sync_phase() != axis::SyncPhase::engaged ||
            (direction > 0 && slave.snapshot().command_position <= 0.0) ||
@@ -760,6 +891,8 @@ int check_cam_follow()
     table.push({3.0, 1.5});
 
     fb::FbCamTableSelect select;
+    select.master_ref = &pair.master;
+    select.slave_ref = &pair.slave;
     select.cam_table = table.view();
     select.execute = true;
     select.call();
@@ -777,7 +910,7 @@ int check_cam_follow()
     fb::FbCamIn cam;
     cam.master_ref = &pair.master;
     cam.slave_ref = &pair.slave;
-    cam.cam_table = select.cam_table_selected;
+    cam.cam_table_id = select.cam_table_id;
     cam.execute = true;
 
     if(!pair.master.submit(make_move(3.0, 0.1))) {
@@ -814,7 +947,7 @@ int check_cam_follow()
 int check_cam_scaling_and_periodic()
 {
     {
-        SyncPair pair;
+        static SyncPair pair;
         if(pair.setup() != rt::ErrorCode::ok ||
            pair.master.set_position(2.0) != rt::ErrorCode::ok) {
             return fail("cam scaling setup");
@@ -857,7 +990,7 @@ int check_cam_scaling_and_periodic()
     }
 
     {
-        SyncPair pair;
+        static SyncPair pair;
         if(pair.setup() != rt::ErrorCode::ok ||
            pair.master.set_position(1.25) != rt::ErrorCode::ok) {
             return fail("cam periodic setup");
@@ -1110,7 +1243,13 @@ int check_sync_fb_error_paths()
 
     // FbCamTableSelect: execute=false, non-rising
     {
+    SyncPair pair;
+        if(pair.setup() != rt::ErrorCode::ok) {
+            return fail("cam table select lifecycle setup");
+        }
         fb::FbCamTableSelect sel;
+        sel.master_ref = &pair.master;
+        sel.slave_ref = &pair.slave;
         sel.execute = false;
         sel.call();
         if(sel.done || sel.error) {
@@ -1203,6 +1342,167 @@ int check_sync_fb_error_paths()
         }
     }
 
+    return 0;
+}
+
+int check_cam_selection_modes_and_end_profile()
+{
+    const exec::CamPoint points[] = {{0.0, 0.0}, {1.0, 10.0}};
+
+    // A selected ID carries the table and the master/slave absolute contract.
+    {
+        static SyncPair pair;
+        if(pair.setup() != rt::ErrorCode::ok ||
+           pair.master.set_position(2.0) != rt::ErrorCode::ok ||
+           pair.slave.set_position(7.0) != rt::ErrorCode::ok) {
+            return fail("cam selection relative origins setup");
+        }
+        fb::FbCamTableSelect select;
+        select.master_ref = &pair.master;
+        select.slave_ref = &pair.slave;
+        select.cam_table = exec::CamTableView{points, 2, false};
+        select.master_absolute = false;
+        select.slave_absolute = false;
+        select.execute = true;
+        select.call();
+        if(!select.done || select.busy || select.cam_table_id == 0) {
+            return fail("cam table ID selection");
+        }
+
+        fb::FbCamIn cam;
+        cam.master_ref = &pair.master;
+        cam.slave_ref = &pair.slave;
+        cam.cam_table_id = select.cam_table_id;
+        cam.continuous_update = true;
+        cam.execute = true;
+        cam.call();
+        pair.cycle();
+        cam.call();
+        if(!cam.in_sync || !near(pair.slave.snapshot().command_position, 7.0, 1e-9)) {
+            return fail("cam selected relative origins");
+        }
+        pair.master.set_position(2.5);
+        pair.cycle();
+        cam.call();
+        if(!near(pair.slave.snapshot().command_position, 12.0, 1e-9)) {
+            return fail("cam selected ID follows table");
+        }
+        cam.slave_offset = 1.0;
+        cam.call();
+        pair.cycle();
+        cam.call();
+        if(!near(pair.slave.snapshot().command_position, 13.0, 1e-9)) {
+            return fail("cam selected origins survive continuous update");
+        }
+    }
+
+    // StartMode relative aligns the first coupled setpoint to the current slave.
+    {
+        static SyncPair pair;
+        if(pair.setup() != rt::ErrorCode::ok ||
+           pair.master.set_position(0.5) != rt::ErrorCode::ok ||
+           pair.slave.set_position(9.0) != rt::ErrorCode::ok) {
+            return fail("cam relative start setup");
+        }
+        fb::FbCamTableSelect select;
+        select.master_ref = &pair.master;
+        select.slave_ref = &pair.slave;
+        select.cam_table = exec::CamTableView{points, 2, false};
+        select.execute = true;
+        select.call();
+
+        fb::FbCamIn cam;
+        cam.master_ref = &pair.master;
+        cam.slave_ref = &pair.slave;
+        cam.cam_table_id = select.cam_table_id;
+        cam.start_mode = axis::CamStartMode::relative;
+        cam.execute = true;
+        cam.call();
+        pair.cycle();
+        cam.call();
+        if(!cam.in_sync || !near(pair.slave.snapshot().command_position, 9.0, 1e-9)) {
+            return fail("cam relative start continuity");
+        }
+
+        fb::FbCamIn unsupported;
+        unsupported.master_ref = &pair.master;
+        unsupported.slave_ref = &pair.slave;
+        unsupported.cam_table_id = select.cam_table_id;
+        unsupported.start_mode = axis::CamStartMode::ramp_in;
+        unsupported.execute = true;
+        unsupported.call();
+        if(!unsupported.outputs.error ||
+           unsupported.outputs.error_id != rt::ErrorCode::unsupported) {
+            return fail("cam ramp-in explicit unsupported");
+        }
+    }
+
+    // Periodic tables pulse once per crossed period; non-periodic tables keep
+    // EndOfProfile high while the master remains outside the domain.
+    {
+        static SyncPair pair;
+        if(pair.setup() != rt::ErrorCode::ok ||
+           pair.master.set_position(0.25) != rt::ErrorCode::ok) {
+            return fail("cam periodic profile setup");
+        }
+        fb::FbCamTableSelect select;
+        select.master_ref = &pair.master;
+        select.slave_ref = &pair.slave;
+        select.cam_table = exec::CamTableView{points, 2, false};
+        select.periodic = true;
+        select.execute = true;
+        select.call();
+        fb::FbCamIn cam;
+        cam.master_ref = &pair.master;
+        cam.slave_ref = &pair.slave;
+        cam.cam_table_id = select.cam_table_id;
+        cam.execute = true;
+        cam.call();
+        pair.cycle();
+        cam.call();
+        pair.master.set_position(1.25);
+        pair.cycle();
+        cam.call();
+        if(!cam.end_of_profile) {
+            return fail("cam periodic end-of-profile pulse");
+        }
+        cam.call();
+        if(cam.end_of_profile) {
+            return fail("cam periodic end-of-profile single cycle");
+        }
+    }
+
+    {
+        static SyncPair pair;
+        if(pair.setup() != rt::ErrorCode::ok ||
+           pair.master.set_position(0.5) != rt::ErrorCode::ok) {
+            return fail("cam nonperiodic profile setup");
+        }
+        fb::FbCamTableSelect select;
+        select.master_ref = &pair.master;
+        select.slave_ref = &pair.slave;
+        select.cam_table = exec::CamTableView{points, 2, false};
+        select.execute = true;
+        select.call();
+        fb::FbCamIn cam;
+        cam.master_ref = &pair.master;
+        cam.slave_ref = &pair.slave;
+        cam.cam_table_id = select.cam_table_id;
+        cam.execute = true;
+        cam.call();
+        pair.cycle();
+        cam.call();
+        pair.master.set_position(1.5);
+        pair.cycle();
+        cam.call();
+        if(!cam.end_of_profile) {
+            return fail("cam nonperiodic end-of-profile level");
+        }
+        cam.call();
+        if(!cam.end_of_profile) {
+            return fail("cam nonperiodic end-of-profile remains high");
+        }
+    }
     return 0;
 }
 
@@ -1547,7 +1847,7 @@ int check_sync_update_and_feedback_validation()
 
     axis::GearInCommand gear{};
     gear.master = &master1;
-    for(int field = 0; field < 8; ++field) {
+    for(int field = 0; field < 14; ++field) {
         axis::GearInCommand invalid = gear;
         switch(field) {
         case 0: invalid.ratio_numerator = nan; break;
@@ -1556,8 +1856,14 @@ int check_sync_update_and_feedback_validation()
         case 3: invalid.master_sync_position = nan; break;
         case 4: invalid.slave_sync_position = nan; break;
         case 5: invalid.master_start_distance = nan; break;
-        case 6: invalid.master_start_distance = -1.0; break;
-        default: invalid.approach_velocity = nan; break;
+        case 6: invalid.approach_velocity = nan; break;
+        case 7: invalid.approach_velocity = -1.0; break;
+        case 8: invalid.acceleration = nan; break;
+        case 9: invalid.acceleration = -1.0; break;
+        case 10: invalid.deceleration = nan; break;
+        case 11: invalid.deceleration = -1.0; break;
+        case 12: invalid.jerk = nan; break;
+        default: invalid.jerk = -1.0; break;
         }
         if(slave.gear_in(invalid).error() != rt::ErrorCode::invalid_argument) {
             return fail("gear rejects each invalid sync field");
@@ -1635,12 +1941,14 @@ int check_sync_update_and_feedback_validation()
 int main()
 {
     if(check_cam_table_view() != 0 || check_cam_law_and_table_validation_matrix() != 0 ||
+       check_cam_follow() != 0 || check_cam_scaling_and_periodic() != 0 ||
+       check_cam_selection_modes_and_end_profile() != 0 ||
+       check_cam_start_distance() != 0 ||
        check_gear_follow_and_out() != 0 ||
        check_gear_sources_and_update() != 0 || check_gear_buffer_modes() != 0 ||
         check_gear_preconditions() != 0 || check_gear_in_pos() != 0 ||
         check_gear_approach_velocity_caps_both_directions() != 0 || check_phasing() != 0 ||
-       check_cam_follow() != 0 || check_cam_scaling_and_periodic() != 0 ||
-       check_cam_start_distance() != 0 || check_combine_axes() != 0 ||
+       check_combine_axes() != 0 ||
        check_sync_command_interactions() != 0 || check_sync_fb_error_paths() != 0 ||
        check_sync_fb_short_circuit_matrix() != 0 ||
        check_axis_sync_input_validation() != 0 || check_cam_switch_validation() != 0 ||

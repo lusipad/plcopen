@@ -82,6 +82,8 @@ struct StmtInfo
     std::vector<std::uint8_t> param_pins;
     std::vector<ExprInfo::DynamicIndex> dynamic_indices;
     bool aggregate_copy = false;
+    bool fb_output_copy = false;
+    std::uint8_t pin_id = 0;
     std::uint32_t source_offset = 0;
     std::uint32_t copy_size = 0;
 };
@@ -89,7 +91,9 @@ struct StmtInfo
 struct SemaLimits
 {
     std::uint32_t max_vars_bytes = 16384;
-    std::uint16_t max_fb_instances = 256;
+    std::uint16_t max_fb_instances = 1024;
+    std::uint16_t max_axis_refs = 64;
+    std::uint16_t max_group_refs = 16;
     std::size_t max_diagnostics = 256;
     std::uint16_t max_user_types = 256;
     std::uint16_t max_enum_members = 256;
@@ -130,6 +134,9 @@ public:
         result_.exprs.resize(ast_.exprs.size());
         result_.stmts.resize(ast_.stmts.size());
         precheck_string_pool();
+        if(install_binding_types(result_.types) != TypeError::ok) {
+            diag(DiagCode::capacity_types, 1, 1, "binding type catalog");
+        }
         declare_types();
         declare_vars();
         for(const StmtIndex index : ast_.body) {
@@ -454,6 +461,8 @@ private:
     void declare_vars()
     {
         std::uint32_t fb_offset = 0;
+        std::uint16_t axis_refs = 0;
+        std::uint16_t group_refs = 0;
         for(const VarDecl &decl : ast_.vars) {
             if(find_var(decl.lower) >= 0 || find_fb(decl.lower) >= 0) {
                 diag(DiagCode::sema_duplicate_identifier, decl.line,
@@ -480,6 +489,18 @@ private:
                 fb_offset += static_cast<std::uint32_t>(
                     (size + kFbAlign - 1) / kFbAlign * kFbAlign);
                 result_.fbs.push_back(static_cast<FbInfo &&>(info));
+                continue;
+            }
+            if(decl.type == Type::axis_ref &&
+               axis_refs++ >= limits_.max_axis_refs) {
+                diag(DiagCode::capacity_exceeded, decl.line, decl.column,
+                     decl.name);
+                continue;
+            }
+            if(decl.type == Type::group_ref &&
+               group_refs++ >= limits_.max_group_refs) {
+                diag(DiagCode::capacity_exceeded, decl.line, decl.column,
+                     decl.name);
                 continue;
             }
             if((result_.vars.size() + 1U) * 8U >
@@ -540,6 +561,13 @@ private:
                                             ? desc->enum_base
                                             : desc->subrange.base;
                     info.type = type_from_id(base);
+                } else if(desc->kind == TypeKind::ref &&
+                          info.type_id != binding_type::axis_ref &&
+                          info.type_id != binding_type::group_ref) {
+                    // Registry-backed opaque values are represented by a
+                    // canonical 64-bit handle. Their nominal TypeId still
+                    // prevents assignment/cross-kind use.
+                    info.type = Type::ulint;
                 }
                 if(desc->kind == TypeKind::enum_) {
                     if(!desc->enum_items.empty()) {
@@ -554,18 +582,24 @@ private:
                     info.init_bits = desc->subrange.lower.as_unsigned();
                 }
             }
+            if((info.type_id == binding_type::mc_input_ref ||
+                info.type_id == binding_type::mc_output_ref) &&
+               axis_refs++ >= limits_.max_axis_refs) {
+                diag(DiagCode::capacity_exceeded, decl.line, decl.column,
+                     decl.name);
+                continue;
+            }
             info.constant = decl.is_constant;
             const TypeDesc *storage = result_.types.get(info.type_id);
-            if(storage == nullptr && info.type != Type::axis_ref) {
+            if(storage == nullptr) {
                 diag(DiagCode::sema_type_mismatch, decl.line, decl.column,
                      decl.name);
                 continue;
             }
             const std::uint32_t alignment =
-                storage == nullptr ? 8U
-                : storage->alignment > 8 ? 8U : storage->alignment;
+                storage->alignment > 8 ? 8U : storage->alignment;
             const std::uint64_t storage_size =
-                storage == nullptr ? 8U : storage->size;
+                storage->size;
             const std::uint64_t aligned =
                 (static_cast<std::uint64_t>(result_.vars_bytes) +
                  alignment - 1U) & ~(static_cast<std::uint64_t>(alignment) - 1U);
@@ -581,8 +615,10 @@ private:
             result_.initial_data.resize(result_.vars_bytes, 0);
             default_initialize(info.type_id, info.offset);
             if(decl.init != kNoExpr) {
-                if(info.type == Type::axis_ref) {
-                    diag(DiagCode::sema_operand_type_invalid, decl.line,
+                if(info.type == Type::axis_ref ||
+                   info.type == Type::group_ref ||
+                   storage->kind == TypeKind::ref) {
+                    diag(DiagCode::sema_type_mismatch, decl.line,
                          decl.column, decl.name);
                     result_.vars.push_back(static_cast<VarInfo &&>(info));
                     continue;
@@ -1082,12 +1118,38 @@ private:
                            stmt.column)) {
             return;
         }
-        if(info.type == Type::axis_ref) {
-            diag(DiagCode::sema_operand_type_invalid, stmt.line, stmt.column,
+        const TypeDesc *desc = result_.types.get(info.type_id);
+        if(desc != nullptr && desc->kind == TypeKind::ref) {
+            const Expr &source_expr =
+                ast_.exprs[static_cast<std::size_t>(stmt.value)];
+            if(source_expr.kind != ExprKind::pin_read) {
+                diag(DiagCode::sema_type_mismatch, stmt.line, stmt.column,
+                     stmt.target);
+                return;
+            }
+            if(!check_expr(stmt.value, Expected{})) return;
+            const ExprInfo &source =
+                result_.exprs[static_cast<std::size_t>(stmt.value)];
+            if(source.memory_access || source.type != info.type ||
+               source.type_id != info.type_id) {
+                diag(DiagCode::sema_type_mismatch, stmt.line, stmt.column,
+                     stmt.target);
+            }
+            return;
+        }
+        if(info.type == Type::axis_ref || info.type == Type::group_ref) {
+            diag(DiagCode::sema_type_mismatch, stmt.line, stmt.column,
                  stmt.target);
             return;
         }
-        const TypeDesc *desc = result_.types.get(info.type_id);
+        if(desc != nullptr &&
+           (desc->kind == TypeKind::array ||
+            desc->kind == TypeKind::struct_) &&
+           type_contains_reference(info.type_id)) {
+            diag(DiagCode::sema_type_mismatch, stmt.line, stmt.column,
+                 "aggregates containing host references are not assignable");
+            return;
+        }
         if(desc != nullptr && (desc->kind == TypeKind::string ||
                                desc->kind == TypeKind::wstring)) {
             if(check_expr(stmt.value, want(info.type, info.type_id))) {
@@ -1120,8 +1182,14 @@ private:
                      "dynamic aggregate copy is not supported in L1b2");
                 return;
             }
-            info.aggregate_copy = true;
-            info.source_offset = source.offset;
+            if(source.memory_access) {
+                info.aggregate_copy = true;
+                info.source_offset = source.offset;
+            } else {
+                info.fb_output_copy = true;
+                info.fb_index = source.fb_index;
+                info.pin_id = source.pin_id;
+            }
             info.copy_size = static_cast<std::uint32_t>(desc->size);
             return;
         }
@@ -1320,7 +1388,8 @@ private:
             for(std::size_t i = 0; i < stmt.params.size(); ++i) {
                 info.param_pins.push_back(static_cast<std::uint8_t>(i));
                 check_expr(stmt.params[i].value,
-                           want(table.pins[i].type));
+                           want(table.pins[i].type,
+                                pin_type_id(table.pins[i])));
             }
             return;
         }
@@ -1355,7 +1424,9 @@ private:
             }
             used.push_back(static_cast<std::uint8_t>(pin));
             info.param_pins.push_back(static_cast<std::uint8_t>(pin));
-            check_expr(param.value, want(table.pins[pin].type));
+            check_expr(param.value,
+                       want(table.pins[pin].type,
+                            pin_type_id(table.pins[pin])));
         }
     }
 
@@ -2291,6 +2362,22 @@ private:
         return true;
     }
 
+    bool type_contains_reference(TypeId type_id) const
+    {
+        const TypeDesc *desc = result_.types.get(type_id);
+        if(desc == nullptr) return false;
+        if(desc->kind == TypeKind::ref) return true;
+        if(desc->kind == TypeKind::array) {
+            return type_contains_reference(desc->array.element);
+        }
+        if(desc->kind == TypeKind::struct_) {
+            for(const StructField &field : desc->structure.fields) {
+                if(type_contains_reference(field.type)) return true;
+            }
+        }
+        return false;
+    }
+
     bool variable(const Expr &expr, ExprInfo &info, Expected expected)
     {
         const std::string lower = lower_copy(expr.name);
@@ -2429,7 +2516,7 @@ private:
             return false;
         }
         const PinDesc &desc = pin_table(type).pins[pin];
-        if(desc.is_input) {
+        if(!pin_produces_output(desc)) {
             diag(DiagCode::sema_pin_not_output, expr.line, expr.column,
                  expr.pin);
             return false;
@@ -2439,7 +2526,7 @@ private:
             return mismatch(expr, expected.type, desc.type);
         }
         info.type = expected.has ? expected.type : desc.type;
-        info.type_id = expected.has ? expected.type_id : st::type_id(desc.type);
+        info.type_id = expected.has ? expected.type_id : pin_type_id(desc);
         info.fb_index = static_cast<std::uint16_t>(fb);
         info.pin_id = static_cast<std::uint8_t>(pin);
         info.valid = true;

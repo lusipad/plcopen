@@ -2,6 +2,7 @@
 #include <string>
 #include <thread>
 #include <type_traits>
+#include <vector>
 
 #include "axis/state.h"
 #include "rt/spsc_queue.h"
@@ -42,6 +43,11 @@ std::string program(const char *vars, const char *body)
     return source;
 }
 
+std::vector<std::uint64_t> instance_storage(const st::Program &program)
+{
+    return std::vector<std::uint64_t>((program.required_bytes() + 7U) / 8U);
+}
+
 void axis_ref_contract()
 {
     const st::CompileResult declared =
@@ -53,7 +59,7 @@ void axis_ref_contract()
                 "AxisX := AxisY;")
             .c_str());
     check(!assigned.ok, "AXIS_REF assignment rejected");
-    check(has_code(assigned, st::DiagCode::sema_operand_type_invalid),
+    check(has_code(assigned, st::DiagCode::sema_type_mismatch),
           "AXIS_REF assignment diagnostic");
 }
 
@@ -66,24 +72,24 @@ void host_binding_contract()
         return;
     }
 
-    alignas(8) unsigned char storage[256]{};
+    std::vector<std::uint64_t> storage = instance_storage(compiled.program);
     st::Instance instance;
-    check(instance.load(compiled.program, storage, sizeof(storage), 1000000) ==
+    check(instance.load(compiled.program,
+                        reinterpret_cast<unsigned char *>(storage.data()),
+                        storage.size() * sizeof(storage[0]), 1000000) ==
               rt::ErrorCode::ok,
           "binding program loads");
 
     axis::AxisModel first;
     axis::AxisModel second;
-    check(instance.bind_axis("axisx", &first) == rt::ErrorCode::ok,
+    check(instance.bind_axis("axisx", &first) == st::BindingError::ok,
           "case-insensitive initial bind");
-    check(instance.bind_axis("AXISX", &second) == rt::ErrorCode::ok,
-          "pre-scan rebind");
-    check(instance.bind_axis("missing", &first) ==
-              rt::ErrorCode::invalid_argument,
+    check(instance.bind_axis("AXISX", &second) == st::BindingError::duplicate,
+          "duplicate pre-scan bind rejected");
+    check(instance.bind_axis("missing", &first) == st::BindingError::unknown,
           "unknown AXIS_REF rejected");
     check(instance.scan(8) == st::ScanError::ok, "first scan");
-    check(instance.bind_axis("AxisX", &first) ==
-              rt::ErrorCode::precondition_failed,
+    check(instance.bind_axis("AxisX", &first) == st::BindingError::locked,
           "running rebind rejected");
 }
 
@@ -111,10 +117,14 @@ void mc_power_contract()
         return;
     }
 
-    alignas(8) unsigned char unbound_storage[512]{};
+    std::vector<std::uint64_t> unbound_storage =
+        instance_storage(compiled.program);
     st::Instance unbound;
-    check(unbound.load(compiled.program, unbound_storage,
-                       sizeof(unbound_storage), 1000000) == rt::ErrorCode::ok,
+    check(unbound.load(
+              compiled.program,
+              reinterpret_cast<unsigned char *>(unbound_storage.data()),
+              unbound_storage.size() * sizeof(unbound_storage[0]), 1000000) ==
+              rt::ErrorCode::ok,
           "unbound MC_Power loads");
     check(unbound.scan(64) == st::ScanError::ok,
           "unbound MC_Power does not fault scan");
@@ -128,13 +138,17 @@ void mc_power_contract()
                   static_cast<std::int64_t>(rt::ErrorCode::invalid_argument),
           "unbound MC_Power reports invalid_argument");
 
-    alignas(8) unsigned char bound_storage[512]{};
+    std::vector<std::uint64_t> bound_storage =
+        instance_storage(compiled.program);
     st::Instance bound;
     axis::AxisModel axis;
-    check(bound.load(compiled.program, bound_storage, sizeof(bound_storage),
-                     1000000) == rt::ErrorCode::ok,
+    check(bound.load(
+              compiled.program,
+              reinterpret_cast<unsigned char *>(bound_storage.data()),
+              bound_storage.size() * sizeof(bound_storage[0]), 1000000) ==
+              rt::ErrorCode::ok,
           "bound MC_Power loads");
-    check(bound.bind_axis("AxisX", &axis) == rt::ErrorCode::ok,
+    check(bound.bind_axis("AxisX", &axis) == st::BindingError::ok,
           "MC_Power axis binds");
     check(bound.scan(64) == st::ScanError::ok, "bound MC_Power scans");
     check(axis.powered(), "MC_Power enables AxisModel");
@@ -181,20 +195,24 @@ void mc_execute_blocks_contract()
         "AxisX : AXIS_REF; Home : MC_Home; Busy : BOOL; Active : BOOL; "
         "Error : BOOL;\nEND_VAR\n"
         "Home(Axis := AxisX, Execute := TRUE, Position := 2.0, "
-        "BufferMode := 0);\n"
+        "BufferMode := MC_BUFFER_MODE#aborting);\n"
         "Busy := Home.Busy; Active := Home.Active; Error := Home.Error;\n"
         "END_PROGRAM\n";
     const st::CompileResult home_program = st::compile(home_source);
     check(home_program.ok, "MC_Home program compiles");
     if(home_program.ok) {
-        alignas(8) unsigned char storage[1024]{};
+        std::vector<std::uint64_t> storage =
+            instance_storage(home_program.program);
         st::Instance instance;
         axis::AxisModel axis;
         axis.set_power(true);
-        check(instance.load(home_program.program, storage, sizeof(storage),
-                            1000000) == rt::ErrorCode::ok,
+        check(instance.load(
+                  home_program.program,
+                  reinterpret_cast<unsigned char *>(storage.data()),
+                  storage.size() * sizeof(storage[0]), 1000000) ==
+                  rt::ErrorCode::ok,
               "MC_Home loads");
-        check(instance.bind_axis("AxisX", &axis) == rt::ErrorCode::ok,
+        check(instance.bind_axis("AxisX", &axis) == st::BindingError::ok,
               "MC_Home binds");
         check(instance.scan(128) == st::ScanError::ok, "MC_Home scans");
         check(axis.snapshot().active_command_id != 0,
@@ -216,16 +234,20 @@ void mc_execute_blocks_contract()
         "Stop(Axis := AxisX, Execute := TRUE, Deceleration := 1.0, "
         "Jerk := 2.0);\n"
         "Halt(Axis := AxisX, Execute := TRUE, Deceleration := 1.0, "
-        "Jerk := 2.0, BufferMode := 0);\n"
+        "Jerk := 2.0, BufferMode := MC_BUFFER_MODE#aborting);\n"
         "StopError := Stop.Error; HaltError := Halt.Error;\n"
         "END_PROGRAM\n";
     const st::CompileResult stop_halt = st::compile(stop_halt_source);
     check(stop_halt.ok, "MC_Stop and MC_Halt compile");
     if(stop_halt.ok) {
-        alignas(8) unsigned char storage[2048]{};
+        std::vector<std::uint64_t> storage =
+            instance_storage(stop_halt.program);
         st::Instance instance;
-        check(instance.load(stop_halt.program, storage, sizeof(storage),
-                            1000000) == rt::ErrorCode::ok,
+        check(instance.load(
+                  stop_halt.program,
+                  reinterpret_cast<unsigned char *>(storage.data()),
+                  storage.size() * sizeof(storage[0]), 1000000) ==
+                  rt::ErrorCode::ok,
               "MC_Stop and MC_Halt load");
         check(instance.scan(128) == st::ScanError::ok,
               "unbound Stop and Halt scan");
@@ -243,28 +265,9 @@ void mc_execute_blocks_contract()
         "Home(Axis := AxisX, Execute := TRUE, Position := 0.0, "
         "BufferMode := 6); Error := Home.Error; ErrorID := Home.ErrorID;\n"
         "END_PROGRAM\n");
-    check(unsupported_mode.ok, "unsupported BufferMode program compiles");
-    if(unsupported_mode.ok) {
-        alignas(8) unsigned char storage[1024]{};
-        st::Instance instance;
-        axis::AxisModel axis;
-        axis.set_power(true);
-        check(instance.load(unsupported_mode.program, storage,
-                            sizeof(storage), 1000000) == rt::ErrorCode::ok,
-              "unsupported BufferMode loads");
-        check(instance.bind_axis("AxisX", &axis) == rt::ErrorCode::ok,
-              "unsupported BufferMode binds");
-        check(instance.scan(128) == st::ScanError::ok,
-              "unsupported BufferMode scans");
-        const int error = instance.find("Error");
-        const int error_id = instance.find("ErrorID");
-        check(error >= 0 && instance.value_i64(error) == 1,
-              "unsupported BufferMode Error");
-        check(error_id >= 0 && instance.value_i64(error_id) ==
-                                   static_cast<std::int64_t>(
-                                       rt::ErrorCode::invalid_argument),
-              "unsupported BufferMode invalid_argument");
-    }
+    check(!unsupported_mode.ok, "legacy integer BufferMode is rejected");
+    check(has_code(unsupported_mode, st::DiagCode::sema_type_mismatch),
+          "legacy integer BufferMode has stable type diagnostic");
 }
 
 void mc_move_absolute_contract()
@@ -275,8 +278,9 @@ void mc_move_absolute_contract()
         "Aborted : BOOL; Error : BOOL;\nEND_VAR\n"
         "Move(Axis := AxisX, Execute := TRUE, ContinuousUpdate := FALSE, "
         "Position := 0.25, Velocity := 1.0, Acceleration := 2.0, "
-        "Deceleration := 2.0, Jerk := 10.0, Direction := 0, "
-        "BufferMode := 0);\n"
+        "Deceleration := 2.0, Jerk := 10.0, "
+        "Direction := MC_DIRECTION#current, "
+        "BufferMode := MC_BUFFER_MODE#aborting);\n"
         "Done := Move.Done; Busy := Move.Busy; "
         "Aborted := Move.CommandAborted; Error := Move.Error;\n"
         "END_PROGRAM\n";
@@ -284,16 +288,18 @@ void mc_move_absolute_contract()
     check(compiled.ok, "MC_MoveAbsolute program compiles");
     if(!compiled.ok) return;
 
-    alignas(8) unsigned char storage[2048]{};
+    std::vector<std::uint64_t> storage = instance_storage(compiled.program);
     st::Instance instance;
     axis::AxisModel st_axis;
     axis::AxisModel cpp_axis;
     st_axis.set_power(true);
     cpp_axis.set_power(true);
-    check(instance.load(compiled.program, storage, sizeof(storage), 1000000) ==
+    check(instance.load(compiled.program,
+                        reinterpret_cast<unsigned char *>(storage.data()),
+                        storage.size() * sizeof(storage[0]), 1000000) ==
               rt::ErrorCode::ok,
           "MC_MoveAbsolute loads");
-    check(instance.bind_axis("AxisX", &st_axis) == rt::ErrorCode::ok,
+    check(instance.bind_axis("AxisX", &st_axis) == st::BindingError::ok,
           "MC_MoveAbsolute binds");
 
     fb::FbMoveAbsolute direct;
@@ -349,13 +355,16 @@ void remaining_blocks_compile_contract()
         "Flag : BOOL; Code : DINT;\nEND_VAR\n"
         "Rel(Axis := AxisX, Execute := FALSE, ContinuousUpdate := FALSE, "
         "Distance := 1.0, Velocity := 1.0, Acceleration := 1.0, "
-        "Deceleration := 1.0, Jerk := 1.0, BufferMode := 1);\n"
+        "Deceleration := 1.0, Jerk := 1.0, "
+        "BufferMode := MC_BUFFER_MODE#buffered);\n"
         "Add(Axis := AxisX, Execute := FALSE, ContinuousUpdate := FALSE, "
         "Distance := 1.0, Velocity := 1.0, Acceleration := 1.0, "
-        "Deceleration := 1.0, Jerk := 1.0, BufferMode := 0);\n"
+        "Deceleration := 1.0, Jerk := 1.0, "
+        "BufferMode := MC_BUFFER_MODE#aborting);\n"
         "Vel(Axis := AxisX, Execute := FALSE, ContinuousUpdate := FALSE, "
         "Velocity := 1.0, Acceleration := 1.0, Deceleration := 1.0, "
-        "Jerk := 1.0, Direction := 1, BufferMode := 0);\n"
+        "Jerk := 1.0, Direction := MC_DIRECTION#positive, "
+        "BufferMode := MC_BUFFER_MODE#aborting);\n"
         "Override(Axis := AxisX, Enable := FALSE, VelFactor := 1.0, "
         "AccFactor := 1.0, JerkFactor := 1.0);\n"
         "Reset(Axis := AxisX, Execute := FALSE);\n"
@@ -369,91 +378,102 @@ void remaining_blocks_compile_contract()
 void basic_binding_dispatch_contract()
 {
     alignas(8) unsigned char storage[256]{};
+    const auto store = [&](st::FbType type, std::uint16_t pin,
+                           std::uint64_t value) {
+        check(st::fb_store_scalar(type, storage, pin, value),
+              "generated binding accepts scalar input");
+    };
+    const auto load = [&](st::FbType type, std::uint16_t pin) {
+        std::uint64_t value = 0;
+        check(st::fb_load_scalar(type, storage, pin, value),
+              "generated binding exposes scalar output");
+        return value;
+    };
 
     st::fb_init(st::FbType::r_trig, storage, 1000000);
-    st::fb_store(st::FbType::r_trig, storage, 0, 1);
+    store(st::FbType::r_trig, 0, 1);
     st::fb_cycle(st::FbType::r_trig, storage);
-    check(st::fb_load(st::FbType::r_trig, storage, 1) == 1,
+    check(load(st::FbType::r_trig, 1) == 1,
           "R_TRIG binding dispatch");
 
     st::fb_init(st::FbType::f_trig, storage, 1000000);
-    st::fb_store(st::FbType::f_trig, storage, 0, 1);
+    store(st::FbType::f_trig, 0, 1);
     st::fb_cycle(st::FbType::f_trig, storage);
-    st::fb_store(st::FbType::f_trig, storage, 0, 0);
+    store(st::FbType::f_trig, 0, 0);
     st::fb_cycle(st::FbType::f_trig, storage);
-    check(st::fb_load(st::FbType::f_trig, storage, 1) == 1,
+    check(load(st::FbType::f_trig, 1) == 1,
           "F_TRIG binding dispatch");
 
     st::fb_init(st::FbType::sr, storage, 1000000);
-    st::fb_store(st::FbType::sr, storage, 0, 1);
-    st::fb_store(st::FbType::sr, storage, 1, 0);
+    store(st::FbType::sr, 0, 1);
+    store(st::FbType::sr, 1, 0);
     st::fb_cycle(st::FbType::sr, storage);
-    check(st::fb_load(st::FbType::sr, storage, 2) == 1,
+    check(load(st::FbType::sr, 2) == 1,
           "SR binding dispatch");
 
     st::fb_init(st::FbType::rs, storage, 1000000);
-    st::fb_store(st::FbType::rs, storage, 0, 1);
-    st::fb_store(st::FbType::rs, storage, 1, 1);
+    store(st::FbType::rs, 0, 1);
+    store(st::FbType::rs, 1, 1);
     st::fb_cycle(st::FbType::rs, storage);
-    check(st::fb_load(st::FbType::rs, storage, 2) == 0,
+    check(load(st::FbType::rs, 2) == 0,
           "RS reset dominance through binding");
 
     st::fb_init(st::FbType::ton, storage, 1000000);
-    st::fb_store(st::FbType::ton, storage, 0, 1);
-    st::fb_store(st::FbType::ton, storage, 1, 2000000);
+    store(st::FbType::ton, 0, 1);
+    store(st::FbType::ton, 1, 2000000);
     st::fb_cycle(st::FbType::ton, storage);
-    check(st::fb_load(st::FbType::ton, storage, 2) == 0 &&
-              st::fb_load(st::FbType::ton, storage, 3) == 1000000,
+    check(load(st::FbType::ton, 2) == 0 &&
+              load(st::FbType::ton, 3) == 1000000,
           "TON binding preserves nanoseconds");
 
     st::fb_init(st::FbType::tof, storage, 1000000);
-    st::fb_store(st::FbType::tof, storage, 0, 1);
-    st::fb_store(st::FbType::tof, storage, 1, 2000000);
+    store(st::FbType::tof, 0, 1);
+    store(st::FbType::tof, 1, 2000000);
     st::fb_cycle(st::FbType::tof, storage);
-    st::fb_store(st::FbType::tof, storage, 0, 0);
+    store(st::FbType::tof, 0, 0);
     st::fb_cycle(st::FbType::tof, storage);
-    check(st::fb_load(st::FbType::tof, storage, 2) == 1 &&
-              st::fb_load(st::FbType::tof, storage, 3) == 1000000,
+    check(load(st::FbType::tof, 2) == 1 &&
+              load(st::FbType::tof, 3) == 1000000,
           "TOF binding preserves nanoseconds");
 
     st::fb_init(st::FbType::tp, storage, 1000000);
-    st::fb_store(st::FbType::tp, storage, 1, 2000000);
-    st::fb_store(st::FbType::tp, storage, 0, 1);
+    store(st::FbType::tp, 1, 2000000);
+    store(st::FbType::tp, 0, 1);
     st::fb_cycle(st::FbType::tp, storage);
-    check(st::fb_load(st::FbType::tp, storage, 2) == 1 &&
-              st::fb_load(st::FbType::tp, storage, 3) == 1000000,
+    check(load(st::FbType::tp, 2) == 1 &&
+              load(st::FbType::tp, 3) == 1000000,
           "TP binding preserves nanoseconds");
 
     st::fb_init(st::FbType::ctu, storage, 1000000);
-    st::fb_store(st::FbType::ctu, storage, 2, 1);
-    st::fb_store(st::FbType::ctu, storage, 0, 0);
+    store(st::FbType::ctu, 2, 1);
+    store(st::FbType::ctu, 0, 0);
     st::fb_cycle(st::FbType::ctu, storage);
-    st::fb_store(st::FbType::ctu, storage, 0, 1);
+    store(st::FbType::ctu, 0, 1);
     st::fb_cycle(st::FbType::ctu, storage);
-    check(st::fb_load(st::FbType::ctu, storage, 3) == 1 &&
-              st::fb_load(st::FbType::ctu, storage, 4) == 1,
+    check(load(st::FbType::ctu, 3) == 1 &&
+              load(st::FbType::ctu, 4) == 1,
           "CTU binding inputs and outputs");
 
     st::fb_init(st::FbType::ctd, storage, 1000000);
-    st::fb_store(st::FbType::ctd, storage, 2, 2);
-    st::fb_store(st::FbType::ctd, storage, 1, 1);
+    store(st::FbType::ctd, 2, 2);
+    store(st::FbType::ctd, 1, 1);
     st::fb_cycle(st::FbType::ctd, storage);
-    st::fb_store(st::FbType::ctd, storage, 1, 0);
-    st::fb_store(st::FbType::ctd, storage, 0, 1);
+    store(st::FbType::ctd, 1, 0);
+    store(st::FbType::ctd, 0, 1);
     st::fb_cycle(st::FbType::ctd, storage);
-    check(st::fb_load(st::FbType::ctd, storage, 4) == 1,
+    check(load(st::FbType::ctd, 4) == 1,
           "CTD binding inputs and outputs");
 
     st::fb_init(st::FbType::ctud, storage, 1000000);
-    st::fb_store(st::FbType::ctud, storage, 4, 2);
-    st::fb_store(st::FbType::ctud, storage, 3, 1);
+    store(st::FbType::ctud, 4, 2);
+    store(st::FbType::ctud, 3, 1);
     st::fb_cycle(st::FbType::ctud, storage);
-    st::fb_store(st::FbType::ctud, storage, 3, 0);
-    st::fb_store(st::FbType::ctud, storage, 2, 1);
+    store(st::FbType::ctud, 3, 0);
+    store(st::FbType::ctud, 2, 1);
     st::fb_cycle(st::FbType::ctud, storage);
-    check(st::fb_load(st::FbType::ctud, storage, 5) == 0 &&
-              st::fb_load(st::FbType::ctud, storage, 6) == 1 &&
-              st::fb_load(st::FbType::ctud, storage, 7) == 0,
+    check(load(st::FbType::ctud, 5) == 0 &&
+              load(st::FbType::ctud, 6) == 1 &&
+              load(st::FbType::ctud, 7) == 0,
           "CTUD binding reset and outputs");
 }
 
@@ -467,13 +487,16 @@ void remaining_blocks_runtime_contract()
         "OverrideError : BOOL; ResetError : BOOL; ResetCode : DINT;\nEND_VAR\n"
         "Rel(Axis := AxisX, Execute := FALSE, ContinuousUpdate := TRUE, "
         "Distance := 1.0, Velocity := 2.0, Acceleration := 3.0, "
-        "Deceleration := 4.0, Jerk := 5.0, BufferMode := 2);\n"
+        "Deceleration := 4.0, Jerk := 5.0, "
+        "BufferMode := MC_BUFFER_MODE#blending_low);\n"
         "Add(Axis := AxisX, Execute := FALSE, ContinuousUpdate := TRUE, "
         "Distance := 1.0, Velocity := 2.0, Acceleration := 3.0, "
-        "Deceleration := 4.0, Jerk := 5.0, BufferMode := 5);\n"
+        "Deceleration := 4.0, Jerk := 5.0, "
+        "BufferMode := MC_BUFFER_MODE#blending_high);\n"
         "Vel(Axis := AxisX, Execute := FALSE, ContinuousUpdate := TRUE, "
         "Velocity := 2.0, Acceleration := 3.0, Deceleration := 4.0, "
-        "Jerk := 5.0, Direction := -1, BufferMode := 1);\n"
+        "Jerk := 5.0, Direction := MC_DIRECTION#negative, "
+        "BufferMode := MC_BUFFER_MODE#buffered);\n"
         "Override(Axis := AxisX, Enable := FALSE, VelFactor := 0.5, "
         "AccFactor := 0.5, JerkFactor := 0.5);\n"
         "Reset(Axis := AxisX, Execute := FALSE);\n"
@@ -484,14 +507,16 @@ void remaining_blocks_runtime_contract()
     check(compiled.ok, "remaining MC runtime program compiles");
     if(!compiled.ok) return;
 
-    alignas(8) unsigned char storage[4096]{};
+    std::vector<std::uint64_t> storage = instance_storage(compiled.program);
     st::Instance instance;
     axis::AxisModel axis;
     axis.set_power(true);
-    check(instance.load(compiled.program, storage, sizeof(storage), 1000000) ==
+    check(instance.load(compiled.program,
+                        reinterpret_cast<unsigned char *>(storage.data()),
+                        storage.size() * sizeof(storage[0]), 1000000) ==
               rt::ErrorCode::ok,
           "remaining MC runtime program loads");
-    check(instance.bind_axis("AxisX", &axis) == rt::ErrorCode::ok,
+    check(instance.bind_axis("AxisX", &axis) == st::BindingError::ok,
           "remaining MC runtime axis binds");
     check(instance.scan(512) == st::ScanError::ok,
           "remaining MC runtime program scans");
@@ -515,7 +540,8 @@ void executor_domain_smoke()
         "END_VAR\nMove(Axis := AxisX, Execute := TRUE, "
         "ContinuousUpdate := FALSE, Position := 0.1, Velocity := 1.0, "
         "Acceleration := 2.0, Deceleration := 2.0, Jerk := 10.0, "
-        "Direction := 0, BufferMode := 0);\nEND_PROGRAM\n");
+        "Direction := MC_DIRECTION#current, "
+        "BufferMode := MC_BUFFER_MODE#aborting);\nEND_PROGRAM\n");
     check(compiled.ok, "executor ST program compiles");
     if(!compiled.ok) return;
 
@@ -527,14 +553,16 @@ void executor_domain_smoke()
     static_assert(std::is_trivially_copyable<Frame>::value,
                   "committed ST frame must be queue-safe");
     rt::SpscQueue<Frame, 64> committed;
-    alignas(8) unsigned char storage[2048]{};
+    std::vector<std::uint64_t> storage = instance_storage(compiled.program);
     st::Instance instance;
     axis::AxisModel axis;
     axis.set_power(true);
-    check(instance.load(compiled.program, storage, sizeof(storage), 1000000) ==
+    check(instance.load(compiled.program,
+                        reinterpret_cast<unsigned char *>(storage.data()),
+                        storage.size() * sizeof(storage[0]), 1000000) ==
               rt::ErrorCode::ok,
           "executor ST program loads");
-    check(instance.bind_axis("AxisX", &axis) == rt::ErrorCode::ok,
+    check(instance.bind_axis("AxisX", &axis) == st::BindingError::ok,
           "executor ST axis binds");
 
     std::thread planner([&]() {

@@ -500,12 +500,22 @@ int check_motion_facades()
     torque.execute = true;
     torque.torque = 3.0;
     torque.call();
-    if(!torque.in_torque || !near(axis.snapshot().actual_torque, 3.0, 1e-12)) {
+    if(!torque.in_torque || !near(axis.command_torque(), 3.0, 1e-12) ||
+       !near(axis.snapshot().actual_torque, 0.0, 1e-12)) {
         return fail("fb torque");
+    }
+    if(axis.set_actual_feedback(axis.snapshot().actual_position,
+                                axis.snapshot().actual_velocity,
+                                axis.snapshot().actual_acceleration, 2.75) !=
+           rt::ErrorCode::ok ||
+       !near(axis.snapshot().actual_torque, 2.75, 1e-12) ||
+       !near(axis.command_torque(), 3.0, 1e-12)) {
+        return fail("fb torque command feedback separation");
     }
     torque.execute = false;
     torque.call();
-    if(!torque.in_torque || !near(axis.snapshot().actual_torque, 3.0, 1e-12)) {
+    if(!torque.in_torque || !near(axis.command_torque(), 3.0, 1e-12) ||
+       !near(axis.snapshot().actual_torque, 2.75, 1e-12)) {
         return fail("fb torque owner persists");
     }
 

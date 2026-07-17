@@ -774,6 +774,15 @@ private:
                 emit_u32(target.copy_size);
                 return;
             }
+            if(target.fb_output_copy) {
+                emit_op(Op::fb_load_object);
+                emit_u16(target.fb_index);
+                emit_u8(target.pin_id);
+                emit_u32(target.offset);
+                emit_u32(target.type_id);
+                set_last_cost(target.copy_size);
+                return;
+            }
             emit_expr(stmt.value);
             ExprInfo access;
             access.offset = target.offset;
@@ -1010,11 +1019,27 @@ private:
     void emit_fb_call(const Stmt &stmt, const StmtInfo &info)
     {
         for(std::size_t i = 0; i < stmt.params.size(); ++i) {
-            emit_expr(stmt.params[i].value);
-            emit_op(Op::fb_store_in);
-            emit_u16(info.fb_index);
-            emit_u8(info.param_pins[i]);
-            pop();
+            const ExprInfo &argument =
+                this->info(stmt.params[i].value);
+            const TypeDesc *desc = sema_.types.get(argument.type_id);
+            const bool object = desc != nullptr &&
+                (desc->kind == TypeKind::array ||
+                 desc->kind == TypeKind::struct_ ||
+                 desc->kind == TypeKind::string ||
+                 desc->kind == TypeKind::wstring);
+            if(object) {
+                emit_op(Op::fb_store_object);
+                emit_u16(info.fb_index);
+                emit_u8(info.param_pins[i]);
+                emit_u32(argument.offset);
+                emit_u32(argument.type_id);
+            } else {
+                emit_expr(stmt.params[i].value);
+                emit_op(Op::fb_store_in);
+                emit_u16(info.fb_index);
+                emit_u8(info.param_pins[i]);
+                pop();
+            }
         }
         emit_op(Op::fb_call);
         emit_u16(info.fb_index);

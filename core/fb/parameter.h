@@ -76,82 +76,61 @@ class FbReadBoolParameter : public EnableReadFb
     }
 };
 
-// Execute-based writes (MC_WriteParameter / MC_WriteBoolParameter). The write
-// applies within the triggering cycle; done clears on the falling edge.
-class FbWriteParameter
+// Execute-based writes use the axis management-command lifecycle. Immediate
+// mode applies in the triggering scan; queued mode remains Busy until the axis
+// motion queue drains and AxisModel executes the write.
+class FbWriteParameter : public AxisManagementExecuteFb
 {
   public:
-    axis::AxisModel *axis_ref = nullptr;
     axis::AxisParameter parameter_number = axis::AxisParameter::sw_limit_pos;
     double value = 0.0;
-    bool execute = false;
-    bool done = false;
-    bool error = false;
-    rt::ErrorCode error_id = rt::ErrorCode::ok;
+    axis::ExecutionMode execution_mode = axis::ExecutionMode::immediately;
 
     void call()
     {
-        const bool rising = execute && !last_execute_;
-        last_execute_ = execute;
-        if (!execute)
-        {
-            done = false;
-            error = false;
-            error_id = rt::ErrorCode::ok;
-            return;
+        if(rising_edge()) {
+            if(axis_ref == nullptr) {
+                accept_management(rt::Result<std::uint32_t>::failure(
+                    rt::ErrorCode::invalid_argument));
+            } else if(execution_mode != axis::ExecutionMode::immediately &&
+                      execution_mode != axis::ExecutionMode::queued) {
+                accept_management(rt::Result<std::uint32_t>::failure(
+                    rt::ErrorCode::unsupported));
+            } else {
+                accept_management(axis_ref->submit_write_parameter(
+                    parameter_number, value,
+                    execution_mode == axis::ExecutionMode::queued));
+            }
         }
-        if (!rising)
-        {
-            return;
-        }
-        const rt::ErrorCode written = axis_ref == nullptr
-                                          ? rt::ErrorCode::invalid_argument
-                                          : axis_ref->write_parameter(parameter_number, value);
-        done = written == rt::ErrorCode::ok;
-        error = !done;
-        error_id = written;
+        observe_management();
     }
-
-  private:
-    bool last_execute_ = false;
 };
 
-class FbWriteBoolParameter
+class FbWriteBoolParameter : public AxisManagementExecuteFb
 {
   public:
-    axis::AxisModel *axis_ref = nullptr;
     axis::AxisParameter parameter_number = axis::AxisParameter::enable_limit_pos;
     bool value = false;
-    bool execute = false;
-    bool done = false;
-    bool error = false;
-    rt::ErrorCode error_id = rt::ErrorCode::ok;
+    axis::ExecutionMode execution_mode = axis::ExecutionMode::immediately;
 
     void call()
     {
-        const bool rising = execute && !last_execute_;
-        last_execute_ = execute;
-        if (!execute)
-        {
-            done = false;
-            error = false;
-            error_id = rt::ErrorCode::ok;
-            return;
+        if(rising_edge()) {
+            if(axis_ref == nullptr) {
+                accept_management(rt::Result<std::uint32_t>::failure(
+                    rt::ErrorCode::invalid_argument));
+            } else if(execution_mode != axis::ExecutionMode::immediately &&
+                      execution_mode != axis::ExecutionMode::queued) {
+                accept_management(rt::Result<std::uint32_t>::failure(
+                    rt::ErrorCode::unsupported));
+            } else {
+                accept_management(axis_ref->submit_write_bool_parameter(
+                    parameter_number, value,
+                    execution_mode == axis::ExecutionMode::queued));
+            }
         }
-        if (!rising)
-        {
-            return;
-        }
-        const rt::ErrorCode written = axis_ref == nullptr
-                                          ? rt::ErrorCode::invalid_argument
-                                          : axis_ref->write_bool_parameter(parameter_number, value);
-        done = written == rt::ErrorCode::ok;
-        error = !done;
-        error_id = written;
+        observe_management();
     }
-
-  private:
-    bool last_execute_ = false;
 };
 
 // Enable-based snapshot reads. The selector indirection keeps one implementation
@@ -296,22 +275,28 @@ class FbReadAxisError : public EnableReadFb
   public:
     axis::AxisModel *axis_ref = nullptr;
     bool axis_error = false;
+    rt::ErrorCode axis_error_id = rt::ErrorCode::ok;
 
     void call()
     {
         if (!begin_enable())
         {
             if (!enable)
+            {
                 axis_error = false;
+                axis_error_id = rt::ErrorCode::ok;
+            }
             return;
         }
         if (axis_ref == nullptr)
         {
             axis_error = false;
+            axis_error_id = rt::ErrorCode::ok;
             fail_enable(rt::ErrorCode::invalid_argument);
             return;
         }
         axis_error = axis_ref->snapshot().error;
+        axis_error_id = axis_ref->snapshot().error_id;
         complete_enable();
     }
 };
@@ -323,34 +308,22 @@ class FbSetPosition : public AxisExecuteFb
   public:
     double position = 0.0;
     bool relative = false;
+    axis::ExecutionMode execution_mode = axis::ExecutionMode::immediately;
 
     void call()
     {
-        if (!rising_edge())
-        {
-            return;
+        if(rising_edge()) {
+            if(axis_ref == nullptr) {
+                accept(rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument));
+            } else if(execution_mode != axis::ExecutionMode::immediately &&
+                      execution_mode != axis::ExecutionMode::queued) {
+                accept(rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported));
+            } else {
+                accept(axis_ref->submit_set_position(
+                    position, relative, execution_mode == axis::ExecutionMode::queued));
+            }
         }
-        if (axis_ref == nullptr)
-        {
-            accept(rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument));
-            return;
-        }
-        const axis::AxisSnapshot before = axis_ref->snapshot();
-        const double delta = relative ? position : position - before.actual_position;
-        const bool moving = before.status == axis::AxisStatus::discrete_motion ||
-                            before.status == axis::AxisStatus::continuous_motion ||
-                            before.status == axis::AxisStatus::stopping;
-        const rt::ErrorCode set = moving ? axis_ref->shift_coordinates(delta)
-                                         : axis_ref->set_position(before.actual_position + delta);
-        if (set != rt::ErrorCode::ok)
-        {
-            accept(rt::Result<std::uint32_t>::failure(set));
-            return;
-        }
-        accept(rt::Result<std::uint32_t>::success(1));
-        outputs.done = true;
-        outputs.busy = false;
-        outputs.active = false;
+        observe_axis_management();
     }
 };
 

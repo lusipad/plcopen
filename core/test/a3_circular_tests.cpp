@@ -515,6 +515,11 @@ int check_fb_lifecycle()
     circular.end_point.value[0] = 0.0;
     circular.end_point.value[1] = 1.0;
     circular.velocity = 0.05;
+    circular.tolerance = 0.0;
+    circular.transition_mode = axis::TransitionMode::none;
+    circular.transition_velocity = 0.0;
+    circular.transition_parameter = 0.0;
+    circular.orientation_mode = axis::OrientationMode::joint_space;
     circular.execute = true;
     circular.call();
     if(!circular.outputs.command_accepted || circular.outputs.command_id == 0 ||
@@ -559,6 +564,11 @@ int check_fb_lifecycle()
     relative.end_point.value[1] = -1.0;
     relative.velocity = 0.05;
     relative.path_choice = axis::CircPathChoice::clockwise;
+    relative.tolerance = 0.0;
+    relative.transition_mode = axis::TransitionMode::none;
+    relative.transition_velocity = 0.0;
+    relative.transition_parameter = 0.0;
+    relative.orientation_mode = axis::OrientationMode::joint_space;
     relative.execute = true;
     relative.call();
     if(!relative.outputs.command_accepted) {
@@ -570,6 +580,53 @@ int check_fb_lifecycle()
     if(!near(rig.x.snapshot().command_position, 1.0, 1e-9) ||
        !near(rig.y.snapshot().command_position, 0.0, 1e-9)) {
         return fail("fb relative endpoint exact");
+    }
+    return 0;
+}
+
+int check_circular_tolerance_contract()
+{
+    Rig rig(3);
+    axis::GroupCommand approach{};
+    approach.target.size = 3;
+    approach.target.value[0] = 1.0;
+    approach.velocity = 0.5;
+    if(!rig.group.submit_linear(approach) || run_to_standstill(rig.group) < 0) {
+        return fail("circular tolerance approach");
+    }
+
+    axis::GroupCommand arc = make_quarter_arc(3);
+    arc.target.value[2] = 1.0;
+    arc.aux.value[2] = 0.6;
+    arc.tolerance = 0.099;
+    rt::Result<std::uint32_t> rejected = rig.group.submit_circular(arc);
+    if(rejected || rejected.error() != rt::ErrorCode::invalid_argument) {
+        return fail("circular tolerance below following-axis residual");
+    }
+    arc.tolerance = -1.0;
+    rejected = rig.group.submit_circular(arc);
+    if(rejected || rejected.error() != rt::ErrorCode::invalid_argument) {
+        return fail("circular negative tolerance rejected");
+    }
+    arc.tolerance = 0.100000000001;
+    if(!rig.group.submit_circular(arc) || run_to_standstill(rig.group) < 0) {
+        return fail("circular tolerance boundary accepted");
+    }
+    if(!near(rig.z.snapshot().command_position, 1.0, 1e-9)) {
+        return fail("circular tolerance endpoint exact");
+    }
+
+    fb::FbMoveCircularRelative relative;
+    relative.group_ref = &rig.group;
+    relative.aux_point.size = 3;
+    relative.end_point.size = 3;
+    relative.tolerance = -1.0;
+    relative.orientation_mode = axis::OrientationMode::joint_space;
+    relative.execute = true;
+    relative.call();
+    if(!relative.outputs.error ||
+       relative.outputs.error_id != rt::ErrorCode::invalid_argument) {
+        return fail("relative circular tolerance forwarded");
     }
     return 0;
 }
@@ -629,6 +686,7 @@ int main()
        check_third_axis_linear_following() != 0 || check_degenerate_geometry_errors() != 0 ||
        check_mode_and_pathchoice_contract() != 0 || check_buffer_modes_and_relative() != 0 ||
        check_group_stop_stays_on_arc() != 0 || check_fb_lifecycle() != 0 ||
+       check_circular_tolerance_contract() != 0 ||
        check_group_motion_facades_reject_null_group() != 0 ||
        check_interrupted_group_rejects_buffered_arc() != 0) {
         return 1;

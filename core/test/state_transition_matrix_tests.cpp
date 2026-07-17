@@ -58,6 +58,24 @@ axis::AxisCommand command(axis::CommandKind kind, axis::BufferMode mode)
     return value;
 }
 
+rt::Result<std::uint32_t> submit_direct(axis::AxisGroup &group,
+                                        axis::GroupPosition target,
+                                        bool relative,
+                                        double velocity,
+                                        double acceleration,
+                                        double deceleration,
+                                        double jerk)
+{
+    axis::GroupCommand value{};
+    value.target = target;
+    value.relative = relative;
+    value.velocity = velocity;
+    value.acceleration = acceleration;
+    value.deceleration = deceleration;
+    value.jerk = jerk;
+    return group.submit_direct(value);
+}
+
 int check_axis_command_matrix()
 {
     const axis::CommandKind kinds[] = {
@@ -253,8 +271,12 @@ int check_sync_and_stream_matrix()
             slave.cycle();
             if(!finite(slave.snapshot())) return fail("sync matrix finite");
         }
-        slave.phasing_absolute(0.5, 0.1);
-        slave.phasing_relative(-0.25, 0.0);
+        axis::PhasingCommand phase{};
+        phase.phase_shift = 0.5;
+        slave.submit_phasing(phase);
+        phase.phase_shift = -0.25;
+        phase.relative = true;
+        slave.submit_phasing(phase);
         slave.sync_out();
 
         stream::StreamFilterConfig config{};
@@ -332,7 +354,7 @@ int check_axis_property_sequences()
             case 9:
                 model.submit_superimposed(random.signed_value(), 0.1, 0.1, 0.1, 0.01);
                 break;
-            case 10: model.halt_superimposed(); break;
+            case 10: model.halt_superimposed(1.0, 1.0); break;
             case 11: model.home_direct(random.signed_value()); break;
             case 12:
                 model.set_actual_feedback(random.signed_value(), random.signed_value(),
@@ -402,7 +424,7 @@ int check_group_property_sequences()
                 axis::GroupPosition target{};
                 target.size = random.next() % (axis::AxisGroup::MaxAxes + 2);
                 for(double &entry : target.value) entry = random.signed_value();
-                group.submit_direct(target, (bits & 1u) != 0, 0.2, 0.05, 0.05, 0.01);
+                submit_direct(group, target, (bits & 1u) != 0, 0.2, 0.05, 0.05, 0.01);
                 break;
             }
             case 4: group.set_group_override(static_cast<double>(bits % 150) / 100.0); break;
@@ -683,7 +705,7 @@ int check_group_public_state_contract_matrix()
         target.value[0] = 3.0;
         target.value[1] = -2.0;
         const rt::Result<std::uint32_t> direct =
-            group.submit_direct(target, false, 0.2, 0.1, 0.1, 0.05);
+            submit_direct(group, target, false, 0.2, 0.1, 0.1, 0.05);
         if(!direct || !group.direct_motion_active() ||
            group.set_group_override(0.5) != rt::ErrorCode::unsupported ||
            group.submit_linear(group_command(axis::BufferMode::aborting)).error() !=
@@ -842,7 +864,10 @@ int check_axis_public_validation_matrix()
 
     for(int field = 0; field < 8; ++field) {
         axis::AxisCommand invalid = valid;
-        if(field == 0) invalid.buffer_mode = axis::BufferMode::buffered;
+        if(field == 0) {
+            invalid.buffer_mode = static_cast<axis::BufferMode>( // NOLINT(clang-analyzer-optin.core.EnumCastOutOfRange)
+                99);
+        }
         if(field == 1) invalid.kind = axis::CommandKind::move_velocity;
         if(field == 2) {
             invalid.direction = static_cast<axis::Direction>( // NOLINT(clang-analyzer-optin.core.EnumCastOutOfRange)
@@ -966,13 +991,32 @@ int check_axis_public_validation_matrix()
     slave.set_power(true);
     axis::GearInCommand gear{};
     gear.master = &master;
-    if(!slave.gear_in(gear) || !slave.gear_engaged_with(&master) ||
-       slave.gear_engaged_with(nullptr) || slave.gear_engaged_with(&slave) ||
-       slave.phasing_absolute(NAN, 0.1) != rt::ErrorCode::invalid_argument ||
-       slave.phasing_absolute(0.0, NAN) != rt::ErrorCode::invalid_argument ||
-       slave.phasing_absolute(0.0, -0.1) != rt::ErrorCode::invalid_argument ||
-       slave.phasing_absolute(0.5, 0.0) != rt::ErrorCode::ok ||
-       slave.phasing_absolute(1.0, 0.1) != rt::ErrorCode::ok) {
+    if(!slave.gear_in(gear)) return fail("gear phasing setup");
+    slave.cycle();
+    const auto phase_error = [&](double shift, double velocity, double acceleration,
+                                 double deceleration, double jerk) {
+        axis::PhasingCommand phase{};
+        phase.phase_shift = shift;
+        phase.velocity = velocity;
+        phase.acceleration = acceleration;
+        phase.deceleration = deceleration;
+        phase.jerk = jerk;
+        return slave.submit_phasing(phase).error();
+    };
+    axis::PhasingCommand direct{};
+    direct.phase_shift = 0.5;
+    axis::PhasingCommand profiled{};
+    profiled.phase_shift = 1.0;
+    profiled.velocity = 0.1;
+    profiled.acceleration = 0.1;
+    profiled.deceleration = 0.1;
+    profiled.jerk = 0.1;
+    if(!slave.gear_engaged_with(&master) || slave.gear_engaged_with(nullptr) ||
+       slave.gear_engaged_with(&slave) ||
+       phase_error(NAN, 0.1, 0.1, 0.1, 0.1) != rt::ErrorCode::invalid_argument ||
+       phase_error(0.0, NAN, 0.1, 0.1, 0.1) != rt::ErrorCode::invalid_argument ||
+       phase_error(0.0, -0.1, 0.1, 0.1, 0.1) != rt::ErrorCode::invalid_argument ||
+       !slave.submit_phasing(direct) || !slave.submit_phasing(profiled)) {
         return fail("gear phasing validation matrix");
     }
     return 0;
@@ -998,8 +1042,11 @@ int check_sync_public_validation_matrix()
         if(field == 3) invalid.master_sync_position = nan;
         if(field == 4) invalid.slave_sync_position = nan;
         if(field == 5) invalid.master_start_distance = nan;
-        if(field == 6) invalid.master_start_distance = -1.0;
-        if(field == 7) invalid.approach_velocity = nan;
+        if(field == 6) invalid.approach_velocity = nan;
+        if(field == 7) invalid.acceleration = nan;
+        if(field == 8) invalid.deceleration = nan;
+        if(field == 9) invalid.jerk = nan;
+        if(field == 10) invalid.jerk = -1.0;
         if(slave.gear_in(invalid).error() != rt::ErrorCode::invalid_argument) {
             return fail("gear input validation matrix");
         }

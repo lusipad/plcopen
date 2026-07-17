@@ -122,6 +122,33 @@ protected:
         terminal_observed();
     }
 
+    void observe_axis_management()
+    {
+        if(tracked_command_id_ == 0 || axis_ref == nullptr || outputs.done || outputs.error) {
+            return;
+        }
+        const rt::ErrorCode command_error =
+            axis_ref->management_command_error(tracked_command_id_);
+        if(command_error != rt::ErrorCode::ok) {
+            outputs.error = true;
+            outputs.error_id = command_error;
+            outputs.busy = false;
+            outputs.active = false;
+            terminal_observed();
+            return;
+        }
+        if(axis_ref->management_command_done(tracked_command_id_)) {
+            outputs.done = true;
+            outputs.busy = false;
+            outputs.active = false;
+            terminal_observed();
+            return;
+        }
+        outputs.busy = axis_ref->management_command_pending(tracked_command_id_) ||
+                       axis_ref->management_command_active(tracked_command_id_);
+        outputs.active = axis_ref->management_command_active(tracked_command_id_);
+    }
+
     std::uint32_t tracked_command_id_ = 0;
 
     void fail_runtime(rt::ErrorCode code)
@@ -146,11 +173,81 @@ private:
     bool terminal_low_cycle_ = false;
 };
 
+class AxisManagementExecuteFb
+{
+public:
+    axis::AxisModel *axis_ref = nullptr;
+    bool execute = false;
+    bool done = false;
+    bool busy = false;
+    bool error = false;
+    rt::ErrorCode error_id = rt::ErrorCode::ok;
+
+protected:
+    bool rising_edge()
+    {
+        const bool rising = execute && !last_execute_;
+        last_execute_ = execute;
+        if(!execute) {
+            done = false;
+            busy = false;
+            error = false;
+            error_id = rt::ErrorCode::ok;
+            tracked_command_id_ = 0;
+        } else if(rising) {
+            done = false;
+            busy = false;
+            error = false;
+            error_id = rt::ErrorCode::ok;
+            tracked_command_id_ = 0;
+        }
+        return rising;
+    }
+
+    void accept_management(rt::Result<std::uint32_t> accepted)
+    {
+        if(!accepted) {
+            error = true;
+            error_id = accepted.error();
+            busy = false;
+            return;
+        }
+        tracked_command_id_ = accepted.value();
+        busy = true;
+    }
+
+    void observe_management()
+    {
+        if(tracked_command_id_ == 0 || axis_ref == nullptr || done || error) return;
+        const rt::ErrorCode command_error =
+            axis_ref->management_command_error(tracked_command_id_);
+        if(command_error != rt::ErrorCode::ok) {
+            error = true;
+            error_id = command_error;
+            busy = false;
+            return;
+        }
+        if(axis_ref->management_command_done(tracked_command_id_)) {
+            done = true;
+            busy = false;
+            return;
+        }
+        busy = axis_ref->management_command_pending(tracked_command_id_) ||
+               axis_ref->management_command_active(tracked_command_id_);
+    }
+
+private:
+    std::uint32_t tracked_command_id_ = 0;
+    bool last_execute_ = false;
+};
+
 class FbPower
 {
 public:
     axis::AxisModel *axis_ref = nullptr;
     bool enable = false;
+    bool enable_positive = true;
+    bool enable_negative = true;
     bool status = false;
     bool valid = false;
     bool error = false;
@@ -165,7 +262,8 @@ public:
             error_id = rt::ErrorCode::invalid_argument;
             return;
         }
-        const rt::ErrorCode result = axis_ref->set_power(enable);
+        const rt::ErrorCode result =
+            axis_ref->set_power(enable, enable_positive, enable_negative);
         error = result != rt::ErrorCode::ok;
         error_id = result;
         valid = !error;
@@ -204,7 +302,10 @@ public:
     axis::AxisModel *axis_ref = nullptr;
     bool enable = false;
     double vel_factor = 1.0;
+    double acc_factor = 1.0;
+    double jerk_factor = 1.0;
     bool enabled = false;
+    bool busy = false;
     bool error = false;
     rt::ErrorCode error_id = rt::ErrorCode::ok;
 
@@ -212,25 +313,29 @@ public:
     {
         if(!enable) {
             enabled = false;
+            busy = false;
             error = false;
             error_id = rt::ErrorCode::ok;
             return;
         }
         if(axis_ref == nullptr) {
             enabled = false;
+            busy = false;
             error = true;
             error_id = rt::ErrorCode::invalid_argument;
             return;
         }
-        error_id = axis_ref->set_override(vel_factor);
+        error_id = axis_ref->set_override(vel_factor, acc_factor, jerk_factor);
         error = error_id != rt::ErrorCode::ok;
         enabled = !error;
+        busy = false;
     }
 };
 
 class FbMoveAbsolute : public AxisExecuteFb
 {
 public:
+    bool continuous_update = false;
     double position = 0.0;
     double velocity = 1.0;
     double acceleration = 1.0;
@@ -242,12 +347,37 @@ public:
     void call()
     {
         if(rising_edge()) {
+            begin_continuous_update(position);
             submit(axis::CommandKind::move_absolute, position);
+        } else {
+            update_target(position, position);
         }
         observe_axis();
     }
 
 protected:
+    void begin_continuous_update(double input)
+    {
+        continuous_update_enabled_ = continuous_update;
+        last_input_ = input;
+        start_position_ = axis_ref == nullptr
+                              ? 0.0
+                              : axis_ref->snapshot().command_position;
+    }
+
+    void update_target(double input, double absolute_target)
+    {
+        if(!execute || !continuous_update_enabled_ ||
+           tracked_command_id_ == 0 || axis_ref == nullptr ||
+           input == last_input_) {
+            return;
+        }
+        last_input_ = input;
+        const rt::ErrorCode updated =
+            axis_ref->update_active_target(tracked_command_id_, absolute_target);
+        if(updated != rt::ErrorCode::ok) fail_runtime(updated);
+    }
+
     void submit(axis::CommandKind kind, double value)
     {
         if(axis_ref == nullptr) {
@@ -268,6 +398,12 @@ protected:
         command.buffer_mode = buffer_mode;
         accept(axis_ref->submit(command));
     }
+
+    double start_position_ = 0.0;
+
+private:
+    double last_input_ = 0.0;
+    bool continuous_update_enabled_ = false;
 };
 
 class FbMoveRelative : public FbMoveAbsolute
@@ -278,7 +414,10 @@ public:
     void call()
     {
         if(rising_edge()) {
+            begin_continuous_update(distance);
             submit(axis::CommandKind::move_relative, distance);
+        } else {
+            update_target(distance, start_position_ + distance);
         }
         observe_axis();
     }
@@ -292,7 +431,10 @@ public:
     void call()
     {
         if(rising_edge()) {
+            begin_continuous_update(distance);
             submit(axis::CommandKind::move_additive, distance);
+        } else {
+            update_target(distance, start_position_ + distance);
         }
         observe_axis();
     }
@@ -447,6 +589,7 @@ public:
     double jerk = 1.0;
     bool continuous_update = false;
     bool in_end_velocity = false;
+    axis::Direction direction = axis::Direction::current;
     axis::BufferMode buffer_mode = axis::BufferMode::aborting;
 
     void call()
@@ -478,6 +621,7 @@ protected:
         command.deceleration = deceleration;
         command.jerk = jerk;
         command.end_velocity = end_velocity;
+        command.direction = direction;
         command.buffer_mode = buffer_mode;
         accept(axis_ref->submit(command));
     }
@@ -568,7 +712,9 @@ public:
     double acceleration = 1.0;
     double deceleration = 1.0;
     double jerk = 1.0;
+    bool continuous_update = false;
     bool execute = false;
+    double covered_distance = 0.0;
     MotionOutputs outputs{};
 
     void call()
@@ -580,6 +726,9 @@ public:
             clear(outputs);
             tracked_command_id_ = 0;
             terminal_low_cycle_ = false;
+            continuous_update_enabled_ = continuous_update;
+            last_distance_ = distance;
+            covered_distance = 0.0;
         } else if(!execute && terminal_low_cycle_) {
             clear(outputs);
             tracked_command_id_ = 0;
@@ -594,7 +743,25 @@ public:
             submit();
             return;
         }
+        if(execute && continuous_update_enabled_ && tracked_command_id_ != 0 &&
+           axis_ref != nullptr && distance != last_distance_) {
+            last_distance_ = distance;
+            const rt::ErrorCode updated = axis_ref->update_superimposed_target(
+                tracked_command_id_, distance, velocity, acceleration,
+                deceleration, jerk);
+            if(updated != rt::ErrorCode::ok) {
+                axis_ref->abort_superimposed();
+                outputs.error = true;
+                outputs.error_id = updated;
+                outputs.busy = false;
+                outputs.active = false;
+                return;
+            }
+        }
         observe();
+        if(axis_ref != nullptr && tracked_command_id_ != 0) {
+            covered_distance = axis_ref->superimposed_distance();
+        }
     }
 
 private:
@@ -648,14 +815,18 @@ private:
     std::uint32_t tracked_command_id_ = 0;
     bool last_execute_ = false;
     bool terminal_low_cycle_ = false;
+    bool continuous_update_enabled_ = false;
+    double last_distance_ = 0.0;
 };
 
-// MC_HaltSuperimposed: stops only the superimposed offset; the accumulated
-// contribution persists and the halt completes within the triggering cycle.
+// MC_HaltSuperimposed: stops only the superimposed offset with the requested
+// dynamics; the accumulated contribution persists while base motion continues.
 class FbHaltSuperimposed
 {
 public:
     axis::AxisModel *axis_ref = nullptr;
+    double deceleration = 1.0;
+    double jerk = 1.0;
     bool execute = false;
     MotionOutputs outputs{};
 
@@ -665,9 +836,11 @@ public:
         last_execute_ = execute;
         if(!execute) {
             clear(outputs);
+            tracked_command_id_ = 0;
             return;
         }
         if(!rising) {
+            observe();
             return;
         }
         clear(outputs);
@@ -676,39 +849,88 @@ public:
             outputs.error_id = rt::ErrorCode::invalid_argument;
             return;
         }
-        const rt::ErrorCode halted = axis_ref->halt_superimposed();
+        tracked_command_id_ = axis_ref->superimposed_command_id();
+        const rt::ErrorCode halted =
+            axis_ref->halt_superimposed(deceleration, jerk);
         if(halted != rt::ErrorCode::ok) {
             outputs.error = true;
             outputs.error_id = halted;
+            tracked_command_id_ = 0;
             return;
         }
-        outputs.done = true;
+        observe();
     }
 
 private:
+    void observe()
+    {
+        if(axis_ref == nullptr || tracked_command_id_ == 0 ||
+           axis_ref->superimposed_command_id() != tracked_command_id_) {
+            outputs.done = true;
+            outputs.busy = false;
+            outputs.active = false;
+            tracked_command_id_ = 0;
+            return;
+        }
+        outputs.done = false;
+        outputs.busy = true;
+        outputs.active = true;
+    }
+
     bool last_execute_ = false;
+    std::uint32_t tracked_command_id_ = 0;
 };
 
 class FbTorqueControl : public AxisExecuteFb
 {
 public:
+    bool continuous_update = false;
     double torque = 0.0;
+    double torque_ramp = 0.0;
+    double velocity = 0.0;
+    double acceleration = 0.0;
+    double deceleration = 0.0;
+    double jerk = 0.0;
+    axis::Direction direction = axis::Direction::current;
+    axis::BufferMode buffer_mode = axis::BufferMode::aborting;
     bool in_torque = false;
+
+    bool set_cycle_time(std::int64_t task_period_ns)
+    {
+        if(task_period_ns <= 0) return false;
+        task_period_ns_ = task_period_ns;
+        return true;
+    }
 
     void call()
     {
         if(rising_edge()) {
-            if(axis_ref == nullptr || !std::isfinite(torque)) {
-                accept(rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument));
+            continuous_update_enabled_ = continuous_update;
+            axis::AxisCommand command{};
+            const rt::ErrorCode built = build_command(command);
+            if(axis_ref == nullptr || built != rt::ErrorCode::ok) {
+                accept(rt::Result<std::uint32_t>::failure(
+                    axis_ref == nullptr ? rt::ErrorCode::invalid_argument
+                                        : built));
             } else {
-                axis::AxisCommand command{};
-                command.kind = axis::CommandKind::torque;
-                command.value = torque;
-                const rt::Result<std::uint32_t> accepted = axis_ref->submit(command);
-                if(accepted) {
-                    commanded_torque_ = torque;
-                }
+                const rt::Result<std::uint32_t> accepted =
+                    axis_ref->submit(command);
+                if(accepted) remember(command);
                 accept(accepted);
+            }
+        } else if(execute && continuous_update_enabled_ &&
+                  tracked_command_id_ != 0 && axis_ref != nullptr &&
+                  inputs_changed()) {
+            axis::AxisCommand command{};
+            const rt::ErrorCode built = build_command(command);
+            const rt::ErrorCode updated =
+                built == rt::ErrorCode::ok
+                    ? axis_ref->update_active_torque(tracked_command_id_, command)
+                    : built;
+            if(updated != rt::ErrorCode::ok) {
+                fail_runtime(updated);
+            } else {
+                remember(command);
             }
         }
         observe_axis();
@@ -723,7 +945,79 @@ public:
     }
 
 private:
+    rt::ErrorCode build_command(axis::AxisCommand &command) const
+    {
+        if(!std::isfinite(torque) ||
+           !std::isfinite(torque_ramp) || torque_ramp < 0.0 ||
+           !std::isfinite(velocity) || velocity < 0.0 ||
+           !std::isfinite(acceleration) || acceleration < 0.0 ||
+           !std::isfinite(deceleration) || deceleration < 0.0 ||
+           !std::isfinite(jerk) || jerk < 0.0) {
+            return rt::ErrorCode::invalid_argument;
+        }
+        if(direction == axis::Direction::shortest_way) {
+            return rt::ErrorCode::unsupported;
+        }
+        if(buffer_mode != axis::BufferMode::aborting) {
+            return rt::ErrorCode::unsupported;
+        }
+        double target = torque;
+        if(direction == axis::Direction::positive) {
+            target = std::fabs(torque);
+        } else if(direction == axis::Direction::negative) {
+            target = -std::fabs(torque);
+        }
+        const double ramp =
+            torque_ramp * static_cast<double>(task_period_ns_) / 1.0e9;
+        if(!std::isfinite(ramp) || (torque_ramp > 0.0 && ramp <= 0.0)) {
+            return rt::ErrorCode::out_of_range;
+        }
+        command.kind = axis::CommandKind::torque;
+        command.value = target;
+        command.torque_ramp = ramp;
+        command.velocity = velocity;
+        command.acceleration = acceleration;
+        command.deceleration = deceleration;
+        command.jerk = jerk;
+        command.direction = direction;
+        command.buffer_mode = buffer_mode;
+        return rt::ErrorCode::ok;
+    }
+
+    bool inputs_changed() const
+    {
+        return torque != last_torque_input_ ||
+               torque_ramp != last_torque_ramp_ ||
+               velocity != last_velocity_ ||
+               acceleration != last_acceleration_ ||
+               deceleration != last_deceleration_ || jerk != last_jerk_ ||
+               direction != last_direction_ || buffer_mode != last_buffer_mode_;
+    }
+
+    void remember(const axis::AxisCommand &command)
+    {
+        commanded_torque_ = command.value;
+        last_torque_input_ = torque;
+        last_torque_ramp_ = torque_ramp;
+        last_velocity_ = velocity;
+        last_acceleration_ = acceleration;
+        last_deceleration_ = deceleration;
+        last_jerk_ = jerk;
+        last_direction_ = direction;
+        last_buffer_mode_ = buffer_mode;
+    }
+
     double commanded_torque_ = 0.0;
+    double last_torque_input_ = 0.0;
+    double last_torque_ramp_ = 0.0;
+    double last_velocity_ = 0.0;
+    double last_acceleration_ = 0.0;
+    double last_deceleration_ = 0.0;
+    double last_jerk_ = 0.0;
+    axis::Direction last_direction_ = axis::Direction::current;
+    axis::BufferMode last_buffer_mode_ = axis::BufferMode::aborting;
+    bool continuous_update_enabled_ = false;
+    std::int64_t task_period_ns_ = 1000000;
 };
 
 class GroupExecuteFb
@@ -877,7 +1171,9 @@ public:
     // requests a quintic corner blend; unlisted combinations are explicit
     // errors.
     axis::TransitionMode transition_mode = axis::TransitionMode::none;
+    double transition_velocity = 0.0;
     double transition_parameter = 0.0;
+    axis::OrientationMode orientation_mode = axis::OrientationMode::joint_space;
 
     void call()
     {
@@ -903,7 +1199,9 @@ protected:
         command.jerk = jerk;
         command.buffer_mode = buffer_mode;
         command.transition_mode = transition_mode;
+        command.transition_velocity = transition_velocity;
         command.transition_parameter = transition_parameter;
+        command.orientation_mode = orientation_mode;
         command.coord_system = coord_system;
         accept(group_ref->submit_linear(command));
     }
@@ -939,6 +1237,11 @@ public:
     // Approved coordinate matrix (B1 v1): ACS/MCS/PCS; WCS/FCS/TCS report
     // explicit unsupported.
     axis::CoordSystem coord_system = axis::CoordSystem::acs;
+    double tolerance = 0.0;
+    axis::TransitionMode transition_mode = axis::TransitionMode::none;
+    double transition_velocity = 0.0;
+    double transition_parameter = 0.0;
+    axis::OrientationMode orientation_mode = axis::OrientationMode::joint_space;
 
     void call()
     {
@@ -968,6 +1271,11 @@ protected:
         command.jerk = jerk;
         command.buffer_mode = buffer_mode;
         command.coord_system = coord_system;
+        command.tolerance = tolerance;
+        command.transition_mode = transition_mode;
+        command.transition_velocity = transition_velocity;
+        command.transition_parameter = transition_parameter;
+        command.orientation_mode = orientation_mode;
         accept(group_ref->submit_circular(command));
     }
 };

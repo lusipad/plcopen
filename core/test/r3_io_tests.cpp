@@ -85,9 +85,9 @@ int check_digital_cam_switch()
     fb::FbDigitalCamSwitch cam_switch;
     cam_switch.axis_ref = &axis;
     fb::CamSwitchTable<8> switches;
-    switches.push({1, -1.0, 1.0, 0.0});
-    switches.push({1, 2.0, 4.0, 0.0});
-    switches.push({3, -0.5, 0.5, 0.0});
+    switches.push({2, -1.0, 1.0, 0.0});
+    switches.push({2, 2.0, 4.0, 0.0});
+    switches.push({4, -0.5, 0.5, 0.0});
     cam_switch.switches = switches.view();
     cam_switch.enable = true;
     cam_switch.call();
@@ -108,7 +108,7 @@ int check_digital_cam_switch()
         return fail("cam switch re-enters window");
     }
     fb::CamSwitchTable<8> replacement;
-    replacement.push({2, -1.0, 1.0, 0.0});
+    replacement.push({3, -1.0, 1.0, 0.0});
     cam_switch.switches = replacement.view();
     cam_switch.call();
     if(axis.digital_output(1).value() || !axis.digital_output(2).value()) {
@@ -126,7 +126,7 @@ int check_digital_cam_switch()
     fb::FbDigitalCamSwitch periodic;
     periodic.axis_ref = &axis;
     fb::CamSwitchTable<8> periodic_switches;
-    periodic_switches.push({1, 3.5, 0.5, 4.0});
+    periodic_switches.push({2, 3.5, 0.5, 4.0});
     periodic.switches = periodic_switches.view();
     periodic.enable = true;
     axis.set_position(3.75);
@@ -184,8 +184,8 @@ int check_digital_cam_switch()
 
     axis.set_position(0.0);
     fb::CamSwitchTable<8> partly_invalid;
-    partly_invalid.push({0, -1.0, 1.0, 0.0});
-    partly_invalid.push({4, -1.0, 1.0, 0.0});
+    partly_invalid.push({1, -1.0, 1.0, 0.0});
+    partly_invalid.push({5, -1.0, 1.0, 0.0});
     invalid.switches = partly_invalid.view();
     invalid.call();
     if(!invalid.error || axis.digital_output(0).value()) {
@@ -194,7 +194,7 @@ int check_digital_cam_switch()
 
     fb::CamSwitchTable<9> capacity_switches;
     for(std::size_t track = 0; track < 8; ++track) {
-        capacity_switches.push({track % axis::AxisModel::DigitalOutputCount,
+        capacity_switches.push({track % axis::AxisModel::DigitalOutputCount + 1,
                                 -1.0,
                                 1.0,
                                 0.0});
@@ -204,13 +204,113 @@ int check_digital_cam_switch()
     if(!invalid.in_operation) {
         return fail("cam switch accepts eight actions");
     }
-    capacity_switches.push({0, -1.0, 1.0, 0.0});
+    capacity_switches.push({1, -1.0, 1.0, 0.0});
     invalid.switches = capacity_switches.view();
     invalid.call();
     if(!invalid.error || invalid.error_id != rt::ErrorCode::invalid_argument) {
         return fail("cam switch rejects more than eight actions");
     }
 
+    // Standard E fields live on the multi-track structures, not as singular
+    // FB outputs. Actual-source compensation predicts the switching edge.
+    bool output_levels[axis::AxisModel::DigitalOutputCount]{};
+    fb::CamTrackOption options[axis::AxisModel::DigitalOutputCount]{};
+    options[0].on_compensation_ns = -200000000;
+    fb::CamSwitchAction compensated_action{};
+    compensated_action.track_number = 1;
+    compensated_action.on_position = 1.0;
+    compensated_action.off_position = 2.0;
+    compensated_action.axis_direction = fb::CamSwitchAction::AxisDirection::positive;
+    fb::CamSwitchTable<1> compensated_switches;
+    compensated_switches.push(compensated_action);
+    fb::FbDigitalCamSwitch extended;
+    extended.axis_ref = &axis;
+    extended.switches = compensated_switches.view();
+    extended.outputs = {output_levels, axis::AxisModel::DigitalOutputCount};
+    extended.track_options = {options, axis::AxisModel::DigitalOutputCount};
+    extended.value_source = axis::MasterValueSource::actual;
+    extended.enable = true;
+    axis.set_actual_feedback(0.9, 1.0);
+    extended.call(1000000);
+    if(!extended.in_operation || extended.busy || !output_levels[0] ||
+       !axis.digital_output(0).value()) {
+        return fail("cam switch actual source and on compensation");
+    }
+    extended.enable_mask = 0;
+    extended.call(1000000);
+    if(output_levels[0] || axis.digital_output(0).value()) {
+        return fail("cam switch enable mask");
+    }
+
+    fb::CamSwitchAction timed_action{};
+    timed_action.track_number = 1;
+    timed_action.on_position = 1.5;
+    timed_action.axis_direction = fb::CamSwitchAction::AxisDirection::positive;
+    timed_action.cam_switch_mode = fb::CamSwitchAction::Mode::time;
+    timed_action.duration_ns = 2000000;
+    fb::CamSwitchTable<1> timed_switches;
+    timed_switches.push(timed_action);
+    extended.switches = timed_switches.view();
+    extended.enable_mask = 0xFFFFFFFFU;
+    options[0] = {};
+    axis.set_actual_feedback(1.0, 1.0);
+    extended.call(1000000);
+    axis.set_actual_feedback(1.6, 1.0);
+    extended.call(1000000);
+    if(!output_levels[0]) {
+        return fail("time cam triggers on crossing");
+    }
+    axis.set_actual_feedback(1.7, 1.0);
+    extended.call(1000000);
+    if(!output_levels[0]) {
+        return fail("time cam holds duration");
+    }
+    axis.set_actual_feedback(1.8, 1.0);
+    extended.call(1000000);
+    if(output_levels[0]) {
+        return fail("time cam releases after duration");
+    }
+
+    return 0;
+}
+
+int check_queued_digital_output()
+{
+    axis::AxisModel axis;
+    axis.set_power(true);
+
+    fb::FbWriteDigitalOutput write;
+    write.axis_ref = &axis;
+    write.output_number = 2;
+    write.value = true;
+    write.execution_mode = axis::ExecutionMode::queued;
+    write.execute = true;
+    write.call();
+    if(!write.busy || write.done || write.error || axis.digital_output(2).value()) {
+        return fail("queued digital output starts busy");
+    }
+    axis.cycle();
+    write.call();
+    if(write.busy || !write.done || write.error || !axis.digital_output(2).value()) {
+        return fail("queued digital output completes after cycle");
+    }
+
+    fb::FbWriteDigitalOutput rejected;
+    rejected.axis_ref = &axis;
+    rejected.output_number = axis::AxisModel::DigitalOutputCount;
+    rejected.value = true;
+    rejected.execution_mode = axis::ExecutionMode::queued;
+    rejected.execute = true;
+    rejected.call();
+    if(!rejected.busy || rejected.error) {
+        return fail("queued digital output rejection starts busy");
+    }
+    axis.cycle();
+    rejected.call();
+    if(rejected.busy || rejected.done || !rejected.error ||
+       rejected.error_id != rt::ErrorCode::unsupported) {
+        return fail("queued digital output rejection completes with error");
+    }
     return 0;
 }
 
@@ -444,7 +544,7 @@ int check_io_error_paths()
         fb::FbDigitalCamSwitch cs;
         cs.axis_ref = &axis;
         fb::CamSwitchTable<8> switches;
-        switches.push({0, 1.0, 3.0, 4.0});
+        switches.push({1, 1.0, 3.0, 4.0});
         cs.switches = switches.view();
         cs.enable = true;
         axis.set_position(-2.5);
@@ -482,7 +582,8 @@ int check_io_error_paths()
 
 int main()
 {
-    if(check_digital_io() != 0 || check_digital_cam_switch() != 0 ||
+    if(check_digital_io() != 0 || check_queued_digital_output() != 0 ||
+       check_digital_cam_switch() != 0 ||
        check_read_axis_info() != 0 || check_read_motion_state() != 0 ||
        check_io_error_paths() != 0) {
         return 1;

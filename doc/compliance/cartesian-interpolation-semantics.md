@@ -37,7 +37,9 @@
 
 | 形态 | 语义 |
 |---|---|
-| cartesian + relative / circular / blending 过渡 / 非 mcs·pcs / ACS | `unsupported` |
+| cartesian + `joint_space` relative / blending 圆弧 / 非 mcs·pcs / ACS | `unsupported` |
+| pose + `shortest_path` relative | 位移相对段起点 TCP；RPY 作为相对旋转并与起点姿态复合，走最短测地 |
+| pose + `constant` absolute/relative | 位置按绝对/相对规则解释；整段保持确定性起点 TCP 姿态 |
 | cartesian + 无插件（恒等）组 | `unsupported` |
 | 预验证：不可达 / 越步门 / margin 违例 | `infeasible` / `infeasible` / `precondition_failed` |
 | 位姿段 θ ≥ π − 1e-6 | `invalid_argument` |

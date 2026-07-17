@@ -260,6 +260,9 @@ if(BUILD_TESTING AND PLCOPEN_BUILD_CORE_TESTS)
     add_test(NAME plcopen_core_st_feature_set_check
              COMMAND ${CMAKE_COMMAND}
                      -P ${CMAKE_CURRENT_SOURCE_DIR}/../cmake/verify_st_feature_set.cmake)
+    add_test(NAME plcopen_core_st_binding_fb_catalog_check
+             COMMAND ${CMAKE_COMMAND}
+                     -P ${CMAKE_CURRENT_SOURCE_DIR}/../cmake/verify_st_binding_fb_catalog.cmake)
 
     add_executable(plcopen_core_st_fuzz test/st_fuzz.cpp)
     target_link_libraries(plcopen_core_st_fuzz PRIVATE plcopen::core)

@@ -1,0 +1,967 @@
+# Transcribed from the detailed FB tables in PLCopen Motion Control Part 4 v2.0 clauses 9.1-10.7.
+# This checked-in file is the ST pin authority. C++ field reflection may
+# validate adapters, but must never add, remove or rename these pins.
+schema: plcopen-motion-part4-io-v1
+source: plcopen_motion_control_part_4_version_2.0.pdf clauses 9.1-10.7
+rows:
+  - number: '9.1'
+    name: 'MC_AddAxisToGroup'
+    pins:
+      - {direction: in_out, class: B, name: AxesGroup, st_type: GROUP_REF}
+      - {direction: in_out, class: B, name: Axis, st_type: AXIS_REF}
+      - {direction: input, class: B, name: Execute}
+      - {direction: input, class: E, name: IdentInGroup, st_type: MC_IDENT_IN_GROUP}
+      - {direction: output, class: B, name: Done}
+      - {direction: output, class: E, name: Busy}
+      - {direction: output, class: B, name: Error}
+      - {direction: output, class: E, name: ErrorID}
+  - number: '9.2'
+    name: 'MC_RemoveAxisFromGroup'
+    pins:
+      - {direction: in_out, class: B, name: AxesGroup, st_type: GROUP_REF}
+      - {direction: input, class: B, name: Execute}
+      - {direction: input, class: E, name: IdentInGroup, st_type: MC_IDENT_IN_GROUP}
+      - {direction: output, class: B, name: Done}
+      - {direction: output, class: E, name: Busy}
+      - {direction: output, class: B, name: Error}
+      - {direction: output, class: E, name: ErrorID}
+  - number: '9.3'
+    name: 'MC_UngroupAllAxes'
+    pins:
+      - {direction: in_out, class: B, name: AxesGroup, st_type: GROUP_REF}
+      - {direction: input, class: B, name: Execute}
+      - {direction: output, class: B, name: Done}
+      - {direction: output, class: E, name: Busy}
+      - {direction: output, class: B, name: Error}
+      - {direction: output, class: E, name: ErrorID}
+  - number: '9.4'
+    name: 'MC_GroupReadConfiguration'
+    pins:
+      - {direction: in_out, class: B, name: AxesGroup, st_type: GROUP_REF}
+      - {direction: input, class: B, name: Enable}
+      - {direction: input, class: B, name: IdentInGroup, st_type: MC_IDENT_IN_GROUP}
+      - {direction: input, class: E, name: CoordSystem}
+      - {direction: output, class: B, name: Valid}
+      - {direction: output, class: E, name: Busy}
+      - {direction: output, class: B, name: Error}
+      - {direction: output, class: E, name: ErrorID}
+      - {direction: output, class: B, name: Axis, st_type: AXIS_REF}
+      - {direction: output, class: E, name: AxisID}
+  - number: '9.5'
+    name: 'MC_ReadAxisGroupInfo'
+    pins:
+      - {direction: in_out, class: B, name: Axis, st_type: AXIS_REF}
+      - {direction: input, class: B, name: Enable}
+      - {direction: output, class: B, name: Valid}
+      - {direction: output, class: E, name: Busy}
+      - {direction: output, class: B, name: Error}
+      - {direction: output, class: E, name: ErrorID}
+      - {direction: output, class: E, name: AxesGroup, st_type: GROUP_REF}
+      - {direction: output, class: E, name: AxesGroupID}
+      - {direction: output, class: B, name: IdentInGroup, st_type: MC_IDENT_IN_GROUP}
+  - number: '9.6'
+    name: 'MC_GroupEnable'
+    pins:
+      - {direction: in_out, class: B, name: AxesGroup, st_type: GROUP_REF}
+      - {direction: input, class: B, name: Execute}
+      - {direction: output, class: B, name: Done}
+      - {direction: output, class: E, name: Busy}
+      - {direction: output, class: B, name: Error}
+      - {direction: output, class: E, name: ErrorID}
+  - number: '9.7'
+    name: 'MC_GroupDisable'
+    pins:
+      - {direction: in_out, class: B, name: AxesGroup, st_type: GROUP_REF}
+      - {direction: input, class: B, name: Execute}
+      - {direction: output, class: B, name: Done}
+      - {direction: output, class: E, name: Busy}
+      - {direction: output, class: B, name: Error}
+      - {direction: output, class: E, name: ErrorID}
+  - number: '9.8'
+    name: 'MC_GroupHome'
+    pins:
+      - {direction: in_out, class: B, name: AxesGroup, st_type: GROUP_REF}
+      - {direction: input, class: B, name: Execute}
+      - {direction: input, class: B, name: Position}
+      - {direction: input, class: E, name: CoordSystem}
+      - {direction: input, class: E, name: BufferMode}
+      - {direction: output, class: B, name: Done}
+      - {direction: output, class: E, name: Busy}
+      - {direction: output, class: E, name: Active}
+      - {direction: output, class: E, name: CommandAccepted}
+      - {direction: output, class: E, name: CommandAborted}
+      - {direction: output, class: B, name: Error}
+      - {direction: output, class: E, name: ErrorID}
+  - number: '9.9'
+    name: 'MC_GroupPower'
+    pins:
+      - {direction: in_out, class: B, name: AxesGroup, st_type: GROUP_REF}
+      - {direction: input, class: B, name: Enable}
+      - {direction: output, class: B, name: Status}
+      - {direction: output, class: E, name: Valid}
+      - {direction: output, class: B, name: Error}
+      - {direction: output, class: E, name: ErrorID}
+  - number: '9.10.1'
+    name: 'MC_SetKinTransform'
+    pins:
+      - {direction: in_out, class: B, name: AxesGroup, st_type: GROUP_REF}
+      - {direction: input, class: B, name: Execute}
+      - {direction: input, class: E, name: KinTransform}
+      - {direction: input, class: E, name: ExecutionMode}
+      - {direction: output, class: B, name: Done}
+      - {direction: output, class: E, name: Busy}
+      - {direction: output, class: E, name: Active}
+      - {direction: output, class: E, name: CommandAccepted}
+      - {direction: output, class: E, name: CommandAborted}
+      - {direction: output, class: E, name: CommandID}
+      - {direction: output, class: B, name: Error}
+      - {direction: output, class: E, name: ErrorID}
+  - number: '9.10.2'
+    name: 'MC_SetCartesianTransform'
+    pins:
+      - {direction: in_out, class: B, name: AxesGroup, st_type: GROUP_REF}
+      - {direction: input, class: B, name: Execute}
+      - {direction: input, class: B, name: TransX}
+      - {direction: input, class: B, name: TransY}
+      - {direction: input, class: B, name: TransZ}
+      - {direction: input, class: B, name: RotAngle1}
+      - {direction: input, class: B, name: RotAngle2}
+      - {direction: input, class: B, name: RotAngle3}
+      - {direction: input, class: E, name: CoordSystem}
+      - {direction: input, class: E, name: ExecutionMode}
+      - {direction: output, class: B, name: Done}
+      - {direction: output, class: E, name: Busy}
+      - {direction: output, class: E, name: Active}
+      - {direction: output, class: E, name: CommandAccepted}
+      - {direction: output, class: E, name: CommandAborted}
+      - {direction: output, class: E, name: CommandID}
+      - {direction: output, class: B, name: Error}
+      - {direction: output, class: E, name: ErrorID}
+  - number: '9.10.3'
+    name: 'MC_SetCoordinateTransform'
+    pins:
+      - {direction: in_out, class: B, name: AxesGroup, st_type: GROUP_REF}
+      - {direction: input, class: B, name: Execute}
+      - {direction: input, class: E, name: CoordTransform}
+      - {direction: input, class: E, name: CoordSystem}
+      - {direction: input, class: E, name: ExecutionMode}
+      - {direction: output, class: B, name: Done}
+      - {direction: output, class: E, name: Busy}
+      - {direction: output, class: E, name: Active}
+      - {direction: output, class: E, name: CommandAccepted}
+      - {direction: output, class: E, name: CommandAborted}
+      - {direction: output, class: E, name: CommandID}
+      - {direction: output, class: B, name: Error}
+      - {direction: output, class: E, name: ErrorID}
+  - number: '9.10.4'
+    name: 'MC_ReadKinTransform'
+    pins:
+      - {direction: in_out, class: B, name: AxesGroup, st_type: GROUP_REF}
+      - {direction: input, class: B, name: Enable}
+      - {direction: output, class: B, name: Valid}
+      - {direction: output, class: E, name: Busy}
+      - {direction: output, class: B, name: Error}
+      - {direction: output, class: E, name: ErrorID}
+      - {direction: output, class: B, name: KinTransform}
+  - number: '9.10.5'
+    name: 'MC_ReadCartesianTransform'
+    pins:
+      - {direction: in_out, class: B, name: AxesGroup, st_type: GROUP_REF}
+      - {direction: input, class: B, name: Enable}
+      - {direction: input, class: E, name: CoordSystem}
+      - {direction: output, class: B, name: Valid}
+      - {direction: output, class: E, name: Busy}
+      - {direction: output, class: B, name: Error}
+      - {direction: output, class: E, name: ErrorID}
+      - {direction: output, class: B, name: TransX}
+      - {direction: output, class: B, name: TransY}
+      - {direction: output, class: B, name: TransZ}
+      - {direction: output, class: B, name: RotAngle1}
+      - {direction: output, class: B, name: RotAngle2}
+      - {direction: output, class: B, name: RotAngle3}
+  - number: '9.10.6'
+    name: 'MC_ReadCoordinateTransform'
+    pins:
+      - {direction: in_out, class: B, name: AxesGroup, st_type: GROUP_REF}
+      - {direction: input, class: B, name: Enable}
+      - {direction: input, class: B, name: CoordSystem}
+      - {direction: output, class: B, name: Valid}
+      - {direction: output, class: E, name: Busy}
+      - {direction: output, class: B, name: Error}
+      - {direction: output, class: E, name: ErrorID}
+      - {direction: output, class: B, name: CoordTransform}
+  - number: '9.11'
+    name: 'MC_ReadDHParameters'
+    pins:
+      - {direction: in_out, class: B, name: AxesGroup, st_type: GROUP_REF}
+      - {direction: input, class: B, name: Enable}
+      - {direction: output, class: B, name: Valid}
+      - {direction: output, class: E, name: Busy}
+      - {direction: output, class: B, name: Error}
+      - {direction: output, class: E, name: ErrorID}
+      - {direction: output, class: B, name: DHParameters}
+  - number: '9.12'
+    name: 'MC_ReadJointInfo'
+    pins:
+      - {direction: in_out, class: B, name: AxesGroup, st_type: GROUP_REF}
+      - {direction: input, class: B, name: Enable}
+      - {direction: output, class: B, name: Valid}
+      - {direction: output, class: E, name: Busy}
+      - {direction: output, class: B, name: Error}
+      - {direction: output, class: E, name: ErrorID}
+      - {direction: output, class: B, name: JointInfo}
+  - number: '9.13'
+    name: 'MC_GroupSetPosition'
+    pins:
+      - {direction: in_out, class: B, name: AxesGroup, st_type: GROUP_REF}
+      - {direction: input, class: B, name: Execute}
+      - {direction: input, class: B, name: Position}
+      - {direction: input, class: E, name: Relative}
+      - {direction: input, class: E, name: CoordSystem}
+      - {direction: input, class: E, name: ExecutionMode}
+      - {direction: output, class: B, name: Done}
+      - {direction: output, class: E, name: Busy}
+      - {direction: output, class: E, name: CommandAccepted}
+      - {direction: output, class: E, name: CommandAborted}
+      - {direction: output, class: E, name: CommandID}
+      - {direction: output, class: B, name: Error}
+      - {direction: output, class: E, name: ErrorID}
+  - number: '9.14'
+    name: 'MC_GroupReadPosition'
+    pins:
+      - {direction: in_out, class: B, name: AxesGroup, st_type: GROUP_REF}
+      - {direction: input, class: B, name: Enable}
+      - {direction: input, class: E, name: CoordSystem}
+      - {direction: input, class: E, name: Source}
+      - {direction: output, class: B, name: Valid}
+      - {direction: output, class: E, name: Busy}
+      - {direction: output, class: B, name: Error}
+      - {direction: output, class: E, name: ErrorID}
+      - {direction: output, class: B, name: Position}
+  - number: '9.15'
+    name: 'MC_GroupReadVelocity'
+    pins:
+      - {direction: in_out, class: B, name: AxesGroup, st_type: GROUP_REF}
+      - {direction: input, class: B, name: Enable}
+      - {direction: input, class: E, name: CoordSystem}
+      - {direction: input, class: E, name: Source}
+      - {direction: output, class: B, name: Valid}
+      - {direction: output, class: E, name: Busy}
+      - {direction: output, class: B, name: Error}
+      - {direction: output, class: E, name: ErrorID}
+      - {direction: output, class: B, name: Velocity}
+      - {direction: output, class: E, name: PathVelocity}
+  - number: '9.16'
+    name: 'MC_GroupReadAcceleration'
+    pins:
+      - {direction: in_out, class: B, name: AxesGroup, st_type: GROUP_REF}
+      - {direction: input, class: B, name: Enable}
+      - {direction: input, class: E, name: CoordSystem}
+      - {direction: input, class: E, name: Source}
+      - {direction: output, class: B, name: Valid}
+      - {direction: output, class: E, name: Busy}
+      - {direction: output, class: B, name: Error}
+      - {direction: output, class: E, name: ErrorID}
+      - {direction: output, class: B, name: Acceleration}
+      - {direction: output, class: E, name: PathAcceleration}
+  - number: '9.17'
+    name: 'MC_GroupReadMotionState'
+    pins:
+      - {direction: in_out, class: B, name: AxesGroup, st_type: GROUP_REF}
+      - {direction: input, class: B, name: Enable}
+      - {direction: output, class: B, name: Valid}
+      - {direction: output, class: E, name: Busy}
+      - {direction: output, class: B, name: Error}
+      - {direction: output, class: E, name: ErrorID}
+      - {direction: output, class: B, name: Tracking}
+      - {direction: output, class: B, name: InSync}
+      - {direction: output, class: B, name: InPosition}
+      - {direction: output, class: B, name: Standstill}
+      - {direction: output, class: B, name: ConstantVelocity}
+      - {direction: output, class: B, name: Accelerating}
+      - {direction: output, class: B, name: Decelerating}
+      - {direction: output, class: E, name: ActiveCommandID}
+  - number: '9.18'
+    name: 'MC_GroupReadCommandInfo'
+    pins:
+      - {direction: in_out, class: B, name: AxesGroup, st_type: GROUP_REF}
+      - {direction: input, class: B, name: Enable}
+      - {direction: input, class: B, name: CommandID}
+      - {direction: output, class: B, name: Valid}
+      - {direction: output, class: E, name: Busy}
+      - {direction: output, class: B, name: Error}
+      - {direction: output, class: E, name: ErrorID}
+      - {direction: output, class: B, name: CommandState}
+      - {direction: output, class: E, name: ElapsedDuration}
+      - {direction: output, class: E, name: RemainingDuration}
+      - {direction: output, class: E, name: RemainingDistance}
+      - {direction: output, class: E, name: Progress}
+      - {direction: output, class: E, name: InfoID}
+      - {direction: output, class: E, name: WarningID}
+  - number: '9.19'
+    name: 'MC_GroupReadParameter'
+    pins:
+      - {direction: in_out, class: B, name: AxesGroup, st_type: GROUP_REF}
+      - {direction: input, class: B, name: Enable}
+      - {direction: input, class: B, name: ParameterNumber}
+      - {direction: output, class: B, name: Valid}
+      - {direction: output, class: E, name: Busy}
+      - {direction: output, class: B, name: Error}
+      - {direction: output, class: E, name: ErrorID}
+      - {direction: output, class: B, name: Value}
+  - number: '9.20'
+    name: 'MC_GroupWriteParameter'
+    pins:
+      - {direction: in_out, class: B, name: AxesGroup, st_type: GROUP_REF}
+      - {direction: input, class: B, name: Execute}
+      - {direction: input, class: B, name: ParameterNumber}
+      - {direction: input, class: B, name: Value}
+      - {direction: input, class: E, name: ExecutionMode}
+      - {direction: output, class: B, name: Done}
+      - {direction: output, class: E, name: Busy}
+      - {direction: output, class: E, name: CommandAccepted}
+      - {direction: output, class: E, name: CommandAborted}
+      - {direction: output, class: E, name: CommandID}
+      - {direction: output, class: B, name: Error}
+      - {direction: output, class: E, name: ErrorID}
+  - number: '9.21'
+    name: 'MC_GroupWriteReferenceDynamics'
+    pins:
+      - {direction: in_out, class: B, name: AxesGroup, st_type: GROUP_REF}
+      - {direction: input, class: B, name: Execute}
+      - {direction: input, class: B, name: Velocity}
+      - {direction: input, class: E, name: Acceleration}
+      - {direction: input, class: E, name: Deceleration}
+      - {direction: input, class: E, name: Jerk}
+      - {direction: output, class: B, name: Done}
+      - {direction: output, class: E, name: Busy}
+      - {direction: output, class: B, name: Error}
+      - {direction: output, class: E, name: ErrorID}
+  - number: '9.22'
+    name: 'MC_GroupReadReferenceDynamics'
+    pins:
+      - {direction: in_out, class: B, name: AxesGroup, st_type: GROUP_REF}
+      - {direction: input, class: B, name: Enable}
+      - {direction: output, class: B, name: Valid}
+      - {direction: output, class: E, name: Busy}
+      - {direction: output, class: B, name: Error}
+      - {direction: output, class: E, name: ErrorID}
+      - {direction: output, class: B, name: Velocity}
+      - {direction: output, class: E, name: Acceleration}
+      - {direction: output, class: E, name: Deceleration}
+      - {direction: output, class: E, name: Jerk}
+  - number: '9.23'
+    name: 'MC_GroupWriteDefaultDynamics'
+    pins:
+      - {direction: in_out, class: B, name: AxesGroup, st_type: GROUP_REF}
+      - {direction: input, class: B, name: Execute}
+      - {direction: input, class: B, name: Velocity}
+      - {direction: input, class: E, name: Acceleration}
+      - {direction: input, class: E, name: Deceleration}
+      - {direction: input, class: E, name: Jerk}
+      - {direction: output, class: B, name: Done}
+      - {direction: output, class: E, name: Busy}
+      - {direction: output, class: B, name: Error}
+      - {direction: output, class: E, name: ErrorID}
+  - number: '9.24'
+    name: 'MC_GroupReadDefaultDynamics'
+    pins:
+      - {direction: in_out, class: B, name: AxesGroup, st_type: GROUP_REF}
+      - {direction: input, class: B, name: Enable}
+      - {direction: output, class: B, name: Valid}
+      - {direction: output, class: E, name: Busy}
+      - {direction: output, class: B, name: Error}
+      - {direction: output, class: E, name: ErrorID}
+      - {direction: output, class: B, name: Velocity}
+      - {direction: output, class: E, name: Acceleration}
+      - {direction: output, class: E, name: Deceleration}
+      - {direction: output, class: E, name: Jerk}
+  - number: '9.25'
+    name: 'MC_GroupStop'
+    pins:
+      - {direction: in_out, class: B, name: AxesGroup, st_type: GROUP_REF}
+      - {direction: input, class: B, name: Execute}
+      - {direction: input, class: E, name: Deceleration}
+      - {direction: input, class: E, name: Jerk}
+      - {direction: output, class: B, name: Done}
+      - {direction: output, class: E, name: Busy}
+      - {direction: output, class: E, name: CommandAborted}
+      - {direction: output, class: B, name: Error}
+      - {direction: output, class: E, name: ErrorID}
+  - number: '9.26'
+    name: 'MC_GroupHalt'
+    pins:
+      - {direction: in_out, class: B, name: AxesGroup, st_type: GROUP_REF}
+      - {direction: input, class: B, name: Execute}
+      - {direction: input, class: E, name: Deceleration}
+      - {direction: input, class: E, name: Jerk}
+      - {direction: input, class: E, name: BufferMode}
+      - {direction: output, class: B, name: Done}
+      - {direction: output, class: E, name: Busy}
+      - {direction: output, class: E, name: Active}
+      - {direction: output, class: E, name: CommandAccepted}
+      - {direction: output, class: E, name: CommandID}
+      - {direction: output, class: E, name: CommandAborted}
+      - {direction: output, class: B, name: Error}
+      - {direction: output, class: E, name: ErrorID}
+  - number: '9.27'
+    name: 'MC_GroupInterrupt'
+    pins:
+      - {direction: in_out, class: B, name: AxesGroup, st_type: GROUP_REF}
+      - {direction: input, class: B, name: Execute}
+      - {direction: input, class: E, name: Deceleration}
+      - {direction: input, class: E, name: Jerk}
+      - {direction: output, class: B, name: Done}
+      - {direction: output, class: E, name: Busy}
+      - {direction: output, class: B, name: Error}
+      - {direction: output, class: E, name: ErrorID}
+  - number: '9.28'
+    name: 'MC_GroupContinue'
+    pins:
+      - {direction: in_out, class: B, name: AxesGroup, st_type: GROUP_REF}
+      - {direction: input, class: B, name: Execute}
+      - {direction: output, class: B, name: Done}
+      - {direction: output, class: E, name: Busy}
+      - {direction: output, class: B, name: Error}
+      - {direction: output, class: E, name: ErrorID}
+  - number: '9.29'
+    name: 'MC_GroupReadStatus'
+    pins:
+      - {direction: in_out, class: B, name: AxesGroup, st_type: GROUP_REF}
+      - {direction: input, class: B, name: Enable}
+      - {direction: output, class: B, name: Valid}
+      - {direction: output, class: E, name: Busy}
+      - {direction: output, class: B, name: Error}
+      - {direction: output, class: E, name: ErrorID}
+      - {direction: output, class: B, name: GroupMoving}
+      - {direction: output, class: B, name: GroupHoming}
+      - {direction: output, class: B, name: GroupErrorStop}
+      - {direction: output, class: B, name: GroupStandby}
+      - {direction: output, class: B, name: GroupStopping}
+      - {direction: output, class: B, name: GroupDisabled}
+  - number: '9.30'
+    name: 'MC_GroupReadError'
+    pins:
+      - {direction: in_out, class: B, name: AxesGroup, st_type: GROUP_REF}
+      - {direction: input, class: B, name: Enable}
+      - {direction: output, class: B, name: Valid}
+      - {direction: output, class: E, name: Busy}
+      - {direction: output, class: B, name: Error}
+      - {direction: output, class: B, name: ErrorID}
+      - {direction: output, class: E, name: GroupErrorID}
+  - number: '9.31'
+    name: 'MC_GroupReset'
+    pins:
+      - {direction: in_out, class: B, name: AxesGroup, st_type: GROUP_REF}
+      - {direction: input, class: B, name: Execute}
+      - {direction: output, class: B, name: Done}
+      - {direction: output, class: E, name: Busy}
+      - {direction: output, class: B, name: Error}
+      - {direction: output, class: E, name: ErrorID}
+  - number: '9.32'
+    name: 'MC_GroupReadSWLimits'
+    pins:
+      - {direction: in_out, class: B, name: AxesGroup, st_type: GROUP_REF}
+      - {direction: input, class: B, name: Enable}
+      - {direction: output, class: B, name: Valid}
+      - {direction: output, class: E, name: Busy}
+      - {direction: output, class: B, name: Error}
+      - {direction: output, class: E, name: ErrorID}
+      - {direction: output, class: B, name: LimitValues}
+  - number: '9.33'
+    name: 'MC_GroupWriteSWLimits'
+    pins:
+      - {direction: in_out, class: B, name: AxesGroup, st_type: GROUP_REF}
+      - {direction: input, class: B, name: Execute}
+      - {direction: input, class: B, name: LimitValues}
+      - {direction: input, class: E, name: ExecutionMode}
+      - {direction: output, class: B, name: Done}
+      - {direction: output, class: E, name: Busy}
+      - {direction: output, class: B, name: Error}
+      - {direction: output, class: E, name: ErrorID}
+  - number: '9.34'
+    name: 'MC_MoveLinearAbsolute'
+    pins:
+      - {direction: in_out, class: B, name: AxesGroup, st_type: GROUP_REF}
+      - {direction: input, class: B, name: Execute}
+      - {direction: input, class: B, name: Position}
+      - {direction: input, class: E, name: Velocity}
+      - {direction: input, class: E, name: Acceleration}
+      - {direction: input, class: E, name: Deceleration}
+      - {direction: input, class: E, name: Jerk}
+      - {direction: input, class: E, name: CoordSystem}
+      - {direction: input, class: E, name: BufferMode}
+      - {direction: input, class: E, name: TransitionVelocity}
+      - {direction: input, class: E, name: TransitionMode}
+      - {direction: input, class: E, name: TransitionParameter}
+      - {direction: input, class: E, name: OrientationMode}
+      - {direction: output, class: B, name: Done}
+      - {direction: output, class: E, name: Busy}
+      - {direction: output, class: E, name: Active}
+      - {direction: output, class: E, name: CommandAccepted}
+      - {direction: output, class: E, name: CommandAborted}
+      - {direction: output, class: B, name: Error}
+      - {direction: output, class: E, name: ErrorID}
+      - {direction: output, class: E, name: CommandID}
+  - number: '9.35'
+    name: 'MC_MoveLinearRelative'
+    pins:
+      - {direction: in_out, class: B, name: AxesGroup, st_type: GROUP_REF}
+      - {direction: input, class: B, name: Execute}
+      - {direction: input, class: B, name: Distance}
+      - {direction: input, class: E, name: Velocity}
+      - {direction: input, class: E, name: Acceleration}
+      - {direction: input, class: E, name: Deceleration}
+      - {direction: input, class: E, name: Jerk}
+      - {direction: input, class: E, name: CoordSystem}
+      - {direction: input, class: E, name: BufferMode}
+      - {direction: input, class: E, name: TransitionVelocity}
+      - {direction: input, class: E, name: TransitionMode}
+      - {direction: input, class: E, name: TransitionParameter}
+      - {direction: input, class: E, name: OrientationMode}
+      - {direction: output, class: B, name: Done}
+      - {direction: output, class: E, name: Busy}
+      - {direction: output, class: E, name: Active}
+      - {direction: output, class: E, name: CommandAccepted}
+      - {direction: output, class: E, name: CommandAborted}
+      - {direction: output, class: B, name: Error}
+      - {direction: output, class: E, name: ErrorID}
+      - {direction: output, class: E, name: CommandID}
+  - number: '9.36'
+    name: 'MC_MoveCircularAbsolute'
+    pins:
+      - {direction: in_out, class: B, name: AxesGroup, st_type: GROUP_REF}
+      - {direction: input, class: B, name: Execute}
+      - {direction: input, class: B, name: CircMode}
+      - {direction: input, class: B, name: AuxPoint}
+      - {direction: input, class: B, name: EndPoint}
+      - {direction: input, class: E, name: PathChoice}
+      - {direction: input, class: E, name: Tolerance}
+      - {direction: input, class: B, name: Velocity}
+      - {direction: input, class: B, name: Acceleration}
+      - {direction: input, class: E, name: Deceleration}
+      - {direction: input, class: E, name: Jerk}
+      - {direction: input, class: E, name: CoordSystem}
+      - {direction: input, class: E, name: BufferMode}
+      - {direction: input, class: E, name: TransitionMode}
+      - {direction: input, class: E, name: TransitionVelocity}
+      - {direction: input, class: E, name: TransitionParameter}
+      - {direction: input, class: B, name: OrientationMode}
+      - {direction: output, class: B, name: Done}
+      - {direction: output, class: E, name: Busy}
+      - {direction: output, class: E, name: Active}
+      - {direction: output, class: E, name: CommandAccepted}
+      - {direction: output, class: E, name: CommandAborted}
+      - {direction: output, class: B, name: Error}
+      - {direction: output, class: E, name: ErrorID}
+      - {direction: output, class: E, name: CommandID}
+  - number: '9.37'
+    name: 'MC_MoveCircularRelative'
+    pins:
+      - {direction: in_out, class: B, name: AxesGroup, st_type: GROUP_REF}
+      - {direction: input, class: B, name: Execute}
+      - {direction: input, class: B, name: CircMode}
+      - {direction: input, class: B, name: AuxPoint}
+      - {direction: input, class: B, name: EndPoint}
+      - {direction: input, class: E, name: PathChoice}
+      - {direction: input, class: E, name: Tolerance}
+      - {direction: input, class: B, name: Velocity}
+      - {direction: input, class: B, name: Acceleration}
+      - {direction: input, class: E, name: Deceleration}
+      - {direction: input, class: E, name: Jerk}
+      - {direction: input, class: E, name: CoordSystem}
+      - {direction: input, class: E, name: BufferMode}
+      - {direction: input, class: E, name: TransitionMode}
+      - {direction: input, class: E, name: TransitionVelocity}
+      - {direction: input, class: E, name: TransitionParameter}
+      - {direction: input, class: B, name: OrientationMode}
+      - {direction: output, class: B, name: Done}
+      - {direction: output, class: E, name: Busy}
+      - {direction: output, class: E, name: Active}
+      - {direction: output, class: E, name: CommandAccepted}
+      - {direction: output, class: E, name: CommandAborted}
+      - {direction: output, class: B, name: Error}
+      - {direction: output, class: E, name: ErrorID}
+      - {direction: output, class: E, name: CommandID}
+  - number: '9.38'
+    name: 'MC_MoveDirectAbsolute'
+    pins:
+      - {direction: in_out, class: B, name: AxesGroup, st_type: GROUP_REF}
+      - {direction: input, class: B, name: Execute}
+      - {direction: input, class: B, name: Position}
+      - {direction: input, class: E, name: Velocity}
+      - {direction: input, class: E, name: Acceleration}
+      - {direction: input, class: E, name: Deceleration}
+      - {direction: input, class: E, name: Jerk}
+      - {direction: input, class: E, name: CoordSystem}
+      - {direction: input, class: E, name: BufferMode}
+      - {direction: input, class: E, name: TransitionVelocity}
+      - {direction: input, class: E, name: TransitionMode}
+      - {direction: input, class: E, name: TransitionParameter}
+      - {direction: output, class: B, name: Done}
+      - {direction: output, class: E, name: Busy}
+      - {direction: output, class: E, name: Active}
+      - {direction: output, class: E, name: CommandAccepted}
+      - {direction: output, class: E, name: CommandAborted}
+      - {direction: output, class: B, name: Error}
+      - {direction: output, class: E, name: ErrorID}
+      - {direction: output, class: E, name: CommandID}
+  - number: '9.39'
+    name: 'MC_MoveDirectRelative'
+    pins:
+      - {direction: in_out, class: B, name: AxesGroup, st_type: GROUP_REF}
+      - {direction: input, class: B, name: Execute}
+      - {direction: input, class: B, name: Distance}
+      - {direction: input, class: E, name: Velocity}
+      - {direction: input, class: E, name: Acceleration}
+      - {direction: input, class: E, name: Deceleration}
+      - {direction: input, class: E, name: Jerk}
+      - {direction: input, class: E, name: CoordSystem}
+      - {direction: input, class: E, name: BufferMode}
+      - {direction: input, class: E, name: TransitionVelocity}
+      - {direction: input, class: E, name: TransitionMode}
+      - {direction: input, class: E, name: TransitionParameter}
+      - {direction: output, class: B, name: Done}
+      - {direction: output, class: E, name: Busy}
+      - {direction: output, class: E, name: Active}
+      - {direction: output, class: E, name: CommandAccepted}
+      - {direction: output, class: E, name: CommandAborted}
+      - {direction: output, class: B, name: Error}
+      - {direction: output, class: E, name: ErrorID}
+      - {direction: output, class: E, name: CommandID}
+  - number: '9.40'
+    name: 'MC_GroupWaitTime'
+    pins:
+      - {direction: in_out, class: B, name: AxesGroup, st_type: GROUP_REF}
+      - {direction: input, class: B, name: Execute}
+      - {direction: input, class: B, name: Duration}
+      - {direction: input, class: B, name: BufferMode}
+      - {direction: output, class: B, name: Done}
+      - {direction: output, class: E, name: Busy}
+      - {direction: output, class: E, name: Active}
+      - {direction: output, class: E, name: CommandAborted}
+      - {direction: output, class: B, name: Error}
+      - {direction: output, class: E, name: ErrorID}
+      - {direction: output, class: E, name: CommandID}
+  - number: '9.41'
+    name: 'MC_PathSelect'
+    pins:
+      - {direction: in_out, class: B, name: AxesGroup, st_type: GROUP_REF}
+      - {direction: in_out, class: B, name: PathData}
+      - {direction: in_out, class: B, name: PathDescription}
+      - {direction: input, class: B, name: Execute}
+      - {direction: output, class: B, name: Done}
+      - {direction: output, class: E, name: Busy}
+      - {direction: output, class: B, name: Error}
+      - {direction: output, class: E, name: ErrorID}
+  - number: '9.42'
+    name: 'MC_MovePath'
+    pins:
+      - {direction: in_out, class: B, name: AxesGroup, st_type: GROUP_REF}
+      - {direction: in_out, class: B, name: PathData}
+      - {direction: input, class: B, name: Execute}
+      - {direction: input, class: E, name: CoordSystem}
+      - {direction: input, class: E, name: BufferMode}
+      - {direction: input, class: E, name: TransitionMode}
+      - {direction: input, class: E, name: TransitionParameter}
+      - {direction: output, class: B, name: Done}
+      - {direction: output, class: E, name: Busy}
+      - {direction: output, class: E, name: Active}
+      - {direction: output, class: E, name: CommandAborted}
+      - {direction: output, class: B, name: Error}
+      - {direction: output, class: E, name: ErrorID}
+  - number: '9.43'
+    name: 'MC_GroupSetOverride'
+    pins:
+      - {direction: in_out, class: B, name: AxesGroup, st_type: GROUP_REF}
+      - {direction: input, class: B, name: Enable}
+      - {direction: input, class: B, name: VelFactor}
+      - {direction: input, class: E, name: AccFactor}
+      - {direction: input, class: E, name: JerkFactor}
+      - {direction: output, class: B, name: Enabled}
+      - {direction: output, class: E, name: Busy}
+      - {direction: output, class: B, name: Error}
+      - {direction: output, class: E, name: ErrorID}
+  - number: '9.44'
+    name: 'MC_GroupJog'
+    pins:
+      - {direction: in_out, class: B, name: AxesGroup, st_type: GROUP_REF}
+      - {direction: input, class: B, name: Enable}
+      - {direction: input, class: B, name: JogPositive}
+      - {direction: input, class: B, name: JogNegative}
+      - {direction: input, class: E, name: VelOverride}
+      - {direction: input, class: E, name: AccOverride}
+      - {direction: input, class: B, name: CoordSystem}
+      - {direction: input, class: E, name: MaxLinearDistance}
+      - {direction: input, class: E, name: MaxAngularDistance}
+      - {direction: output, class: B, name: Enabled}
+      - {direction: output, class: B, name: Active}
+      - {direction: output, class: B, name: CommandAborted}
+      - {direction: output, class: B, name: Error}
+      - {direction: output, class: B, name: ErrorID}
+  - number: '9.45'
+    name: 'MC_GroupJogVector'
+    pins:
+      - {direction: in_out, class: B, name: AxesGroup, st_type: GROUP_REF}
+      - {direction: input, class: B, name: Enable}
+      - {direction: input, class: B, name: Direction}
+      - {direction: input, class: E, name: VelOverride}
+      - {direction: input, class: E, name: AccOverride}
+      - {direction: input, class: B, name: CoordSystem}
+      - {direction: output, class: B, name: Enabled}
+      - {direction: output, class: B, name: Active}
+      - {direction: output, class: B, name: CommandAborted}
+      - {direction: output, class: B, name: Error}
+      - {direction: output, class: B, name: ErrorID}
+  - number: '9.46'
+    name: 'MC_GroupWriteJoggingDynamics'
+    pins:
+      - {direction: in_out, class: B, name: AxesGroup, st_type: GROUP_REF}
+      - {direction: input, class: B, name: Execute}
+      - {direction: input, class: B, name: Velocity}
+      - {direction: input, class: E, name: Acceleration}
+      - {direction: input, class: E, name: Deceleration}
+      - {direction: input, class: E, name: Jerk}
+      - {direction: input, class: B, name: AxisVelocity}
+      - {direction: input, class: E, name: AxisAcceleration}
+      - {direction: input, class: E, name: AxisDeceleration}
+      - {direction: input, class: E, name: AxisJerk}
+      - {direction: output, class: B, name: Done}
+      - {direction: output, class: E, name: Busy}
+      - {direction: output, class: B, name: Error}
+      - {direction: output, class: E, name: ErrorID}
+  - number: '9.47'
+    name: 'MC_GroupReadJoggingDynamics'
+    pins:
+      - {direction: in_out, class: B, name: AxesGroup, st_type: GROUP_REF}
+      - {direction: input, class: B, name: Enable}
+      - {direction: output, class: B, name: Valid}
+      - {direction: output, class: E, name: Busy}
+      - {direction: output, class: B, name: Error}
+      - {direction: output, class: E, name: ErrorID}
+      - {direction: output, class: B, name: Velocity}
+      - {direction: output, class: E, name: Acceleration}
+      - {direction: output, class: E, name: Deceleration}
+      - {direction: output, class: E, name: Jerk}
+      - {direction: output, class: B, name: AxisVelocity}
+      - {direction: output, class: E, name: AxisAcceleration}
+      - {direction: output, class: E, name: AxisDeceleration}
+      - {direction: output, class: E, name: AxisJerk}
+  - number: '9.48'
+    name: 'MC_GroupReadRigidBodyDynamic'
+    pins:
+      - {direction: in_out, class: B, name: AxesGroup, st_type: GROUP_REF}
+      - {direction: input, class: B, name: Enable}
+      - {direction: output, class: B, name: Valid}
+      - {direction: output, class: E, name: Busy}
+      - {direction: output, class: E, name: CommandAborted}
+      - {direction: output, class: B, name: Error}
+      - {direction: output, class: E, name: ErrorID}
+      - {direction: output, class: B, name: RigidBodyCount}
+      - {direction: output, class: B, name: RigidBodyDynamic}
+  - number: '9.49'
+    name: 'MC_GroupWriteRigidBodyDynamic'
+    pins:
+      - {direction: in_out, class: B, name: AxesGroup, st_type: GROUP_REF}
+      - {direction: input, class: B, name: Execute}
+      - {direction: input, class: B, name: RigidBodyCount}
+      - {direction: input, class: B, name: RigidBodyDynamic}
+      - {direction: output, class: B, name: Done}
+      - {direction: output, class: E, name: Busy}
+      - {direction: output, class: E, name: CommandAborted}
+      - {direction: output, class: B, name: Error}
+      - {direction: output, class: E, name: ErrorID}
+  - number: '9.50'
+    name: 'MC_GroupWriteToolData'
+    pins:
+      - {direction: in_out, class: B, name: AxesGroup, st_type: GROUP_REF}
+      - {direction: input, class: B, name: Execute}
+      - {direction: input, class: B, name: ToolNumber}
+      - {direction: input, class: B, name: ToolData}
+      - {direction: input, class: E, name: ExecutionMode}
+      - {direction: output, class: B, name: Done}
+      - {direction: output, class: E, name: Busy}
+      - {direction: output, class: E, name: CommandAccepted}
+      - {direction: output, class: E, name: CommandAborted}
+      - {direction: output, class: E, name: CommandID}
+      - {direction: output, class: B, name: Error}
+      - {direction: output, class: E, name: ErrorID}
+  - number: '9.51'
+    name: 'MC_GroupReadToolData'
+    pins:
+      - {direction: in_out, class: B, name: AxesGroup, st_type: GROUP_REF}
+      - {direction: input, class: B, name: Enable}
+      - {direction: input, class: B, name: ToolNumber}
+      - {direction: output, class: B, name: Valid}
+      - {direction: output, class: E, name: Busy}
+      - {direction: output, class: B, name: Error}
+      - {direction: output, class: E, name: ErrorID}
+      - {direction: output, class: B, name: ToolData}
+  - number: '9.52'
+    name: 'MC_GroupSelectTool'
+    pins:
+      - {direction: in_out, class: B, name: AxesGroup, st_type: GROUP_REF}
+      - {direction: input, class: B, name: Execute}
+      - {direction: input, class: B, name: ToolNumber}
+      - {direction: output, class: B, name: Done}
+      - {direction: output, class: E, name: Busy}
+      - {direction: output, class: B, name: Error}
+      - {direction: output, class: E, name: ErrorID}
+  - number: '9.53'
+    name: 'MC_GroupReadTool'
+    pins:
+      - {direction: in_out, class: B, name: AxesGroup, st_type: GROUP_REF}
+      - {direction: input, class: B, name: Enable}
+      - {direction: input, class: E, name: ToolSource}
+      - {direction: output, class: B, name: Valid}
+      - {direction: output, class: E, name: Busy}
+      - {direction: output, class: B, name: Error}
+      - {direction: output, class: E, name: ErrorID}
+      - {direction: output, class: B, name: ToolNumber}
+  - number: '9.54'
+    name: 'MC_GroupWritePayloadData'
+    pins:
+      - {direction: in_out, class: B, name: AxesGroup, st_type: GROUP_REF}
+      - {direction: input, class: B, name: Execute}
+      - {direction: input, class: B, name: PayloadNumber}
+      - {direction: input, class: B, name: PayloadData}
+      - {direction: output, class: B, name: Done}
+      - {direction: output, class: E, name: Busy}
+      - {direction: output, class: E, name: CommandAborted}
+      - {direction: output, class: B, name: Error}
+      - {direction: output, class: E, name: ErrorID}
+  - number: '9.55'
+    name: 'MC_GroupReadPayloadData'
+    pins:
+      - {direction: in_out, class: B, name: AxesGroup, st_type: GROUP_REF}
+      - {direction: input, class: B, name: Enable}
+      - {direction: input, class: B, name: PayloadNumber}
+      - {direction: output, class: B, name: Valid}
+      - {direction: output, class: E, name: Busy}
+      - {direction: output, class: B, name: Error}
+      - {direction: output, class: E, name: ErrorID}
+      - {direction: output, class: B, name: PayloadData}
+  - number: '9.56'
+    name: 'MC_GroupSelectPayload'
+    pins:
+      - {direction: in_out, class: B, name: AxesGroup, st_type: GROUP_REF}
+      - {direction: input, class: B, name: Execute}
+      - {direction: input, class: B, name: PayloadNumber}
+      - {direction: output, class: B, name: Done}
+      - {direction: output, class: E, name: Busy}
+      - {direction: output, class: E, name: CommandAborted}
+      - {direction: output, class: B, name: Error}
+      - {direction: output, class: E, name: ErrorID}
+  - number: '9.57'
+    name: 'MC_GroupReadPayload'
+    pins:
+      - {direction: in_out, class: B, name: AxesGroup, st_type: GROUP_REF}
+      - {direction: input, class: B, name: Enable}
+      - {direction: input, class: E, name: PayloadSource}
+      - {direction: output, class: B, name: Valid}
+      - {direction: output, class: E, name: Busy}
+      - {direction: output, class: E, name: CommandAborted}
+      - {direction: output, class: B, name: Error}
+      - {direction: output, class: E, name: ErrorID}
+      - {direction: output, class: B, name: PayloadNumber}
+  - number: '9.58'
+    name: 'MC_GroupTransformPosition'
+    pins:
+      - {direction: in_out, class: B, name: AxesGroup, st_type: GROUP_REF}
+      - {direction: input, class: B, name: Enable}
+      - {direction: input, class: E, name: InputPosition}
+      - {direction: input, class: B, name: InputCoordSystem}
+      - {direction: input, class: B, name: OutputCoordSystem}
+      - {direction: output, class: B, name: Valid}
+      - {direction: output, class: E, name: Busy}
+      - {direction: output, class: B, name: Error}
+      - {direction: output, class: E, name: ErrorID}
+      - {direction: output, class: E, name: CommandID}
+      - {direction: output, class: B, name: OutputPosition}
+      - {direction: output, class: E, name: SingularPosition}
+  - number: '10.3'
+    name: 'MC_SyncAxisToGroup'
+    pins:
+      - {direction: in_out, class: B, name: AxesGroup, st_type: GROUP_REF}
+      - {direction: in_out, class: B, name: SlaveAxis, st_type: AXIS_REF}
+      - {direction: input, class: B, name: Execute}
+      - {direction: input, class: E, name: RatioNumerator}
+      - {direction: input, class: E, name: RatioDenominator}
+      - {direction: input, class: E, name: Acceleration}
+      - {direction: input, class: E, name: Deceleration}
+      - {direction: input, class: E, name: Jerk}
+      - {direction: input, class: E, name: BufferMode}
+      - {direction: output, class: E, name: Busy}
+      - {direction: output, class: E, name: Active}
+      - {direction: output, class: E, name: CommandAborted}
+      - {direction: output, class: B, name: Error}
+      - {direction: output, class: E, name: ErrorID}
+      - {direction: output, class: B, name: InSync}
+  - number: '10.4'
+    name: 'MC_SyncGroupToAxis'
+    pins:
+      - {direction: in_out, class: B, name: Master, st_type: AXIS_REF}
+      - {direction: in_out, class: B, name: AxesGroup, st_type: GROUP_REF}
+      - {direction: in_out, class: B, name: PathData}
+      - {direction: input, class: B, name: Execute}
+      - {direction: input, class: E, name: Mode}
+      - {direction: input, class: E, name: TuCNumerator}
+      - {direction: input, class: E, name: TuCDenominator}
+      - {direction: input, class: E, name: Acceleration}
+      - {direction: input, class: E, name: Deceleration}
+      - {direction: input, class: E, name: Jerk}
+      - {direction: input, class: E, name: CoordSystem}
+      - {direction: input, class: E, name: BufferMode}
+      - {direction: output, class: E, name: Busy}
+      - {direction: output, class: E, name: Active}
+      - {direction: output, class: E, name: CommandAborted}
+      - {direction: output, class: B, name: Error}
+      - {direction: output, class: E, name: ErrorID}
+      - {direction: output, class: B, name: InSync}
+  - number: '10.5'
+    name: 'MC_SetDynCoordTransform'
+    pins:
+      - {direction: in_out, class: B, name: AxesGroup, st_type: GROUP_REF}
+      - {direction: in_out, class: B, name: MasterAxesGroup, st_type: GROUP_REF}
+      - {direction: input, class: B, name: Execute}
+      - {direction: input, class: B, name: CoordTransform}
+      - {direction: input, class: E, name: CoordSystem}
+      - {direction: input, class: E, name: BufferMode}
+      - {direction: output, class: B, name: Done}
+      - {direction: output, class: E, name: Busy}
+      - {direction: output, class: E, name: Active}
+      - {direction: output, class: E, name: CommandAborted}
+      - {direction: output, class: B, name: Error}
+      - {direction: output, class: E, name: ErrorID}
+  - number: '10.6'
+    name: 'MC_TrackConveyorBelt'
+    pins:
+      - {direction: in_out, class: B, name: AxesGroup, st_type: GROUP_REF}
+      - {direction: in_out, class: E, name: ConveyorBelt, st_type: AXIS_REF}
+      - {direction: input, class: B, name: Execute}
+      - {direction: input, class: B, name: ConveyorBeltOrigin}
+      - {direction: input, class: E, name: InitialObjectPosition}
+      - {direction: input, class: E, name: CoordSystem}
+      - {direction: input, class: E, name: BufferMode}
+      - {direction: output, class: B, name: Done}
+      - {direction: output, class: E, name: Busy}
+      - {direction: output, class: E, name: Active}
+      - {direction: output, class: E, name: CommandAborted}
+      - {direction: output, class: B, name: Error}
+      - {direction: output, class: E, name: ErrorID}
+  - number: '10.7'
+    name: 'MC_TrackRotaryTable'
+    pins:
+      - {direction: in_out, class: B, name: AxesGroup, st_type: GROUP_REF}
+      - {direction: in_out, class: E, name: RotaryTable, st_type: AXIS_REF}
+      - {direction: input, class: B, name: Execute}
+      - {direction: input, class: B, name: RotaryTableOrigin}
+      - {direction: input, class: E, name: InitialObjectPosition}
+      - {direction: input, class: E, name: CoordSystem}
+      - {direction: input, class: E, name: BufferMode}
+      - {direction: output, class: E, name: Done}
+      - {direction: output, class: E, name: Busy}
+      - {direction: output, class: E, name: Active}
+      - {direction: output, class: E, name: CommandAborted}
+      - {direction: output, class: B, name: Error}
+      - {direction: output, class: E, name: ErrorID}

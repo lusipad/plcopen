@@ -112,7 +112,7 @@ void load_contract()
     st::Program tampered = compiled.program;
     tampered.format_version = 999;
     check(instance.load(tampered, buffer, 4096, kPeriodNs) ==
-              rt::ErrorCode::unsupported,
+              rt::ErrorCode::bytecode_version_mismatch,
           "format version mismatch rejected");
 
     check(instance.load(compiled.program, buffer, 4096, kPeriodNs) ==
@@ -455,7 +455,7 @@ void counters_edges()
     // CU every scan (odd scans high).
     Rig ctu;
     check(ctu.build(wrap(
-              "c : CTU; n : INT; pulse : BOOL; q : BOOL; cv : DINT;",
+              "c : CTU; n : INT; pulse : BOOL; q : BOOL; cv : LINT;",
               "n := n + 1;"
               "pulse := (n MOD 2) = 1;"
               "c(CU := pulse, PV := 2);"
@@ -498,9 +498,9 @@ void counters_edges()
     check(sr.build(wrap(
               "f : SR; n : INT; q : BOOL;",
               "n := n + 1;"
-              "IF n = 1 THEN f(S1 := TRUE, R := FALSE); END_IF;"
-              "IF n = 2 THEN f(S1 := FALSE); END_IF;" // R keeps FALSE
-              "IF n = 3 THEN f(R := TRUE); END_IF;"   // S1 keeps FALSE
+              "IF n = 1 THEN f(SET1 := TRUE, RESET := FALSE); END_IF;"
+              "IF n = 2 THEN f(SET1 := FALSE); END_IF;" // RESET keeps FALSE
+              "IF n = 3 THEN f(RESET := TRUE); END_IF;" // SET1 keeps FALSE
               "q := f.Q1;")),
           "SR builds");
     check(sr.scan() == st::ScanError::ok && sr.i64("q") == 1, "SR sets");
@@ -511,7 +511,7 @@ void counters_edges()
     // CTUD both directions.
     Rig ctud;
     check(ctud.build(wrap(
-              "c : CTUD; n : INT; up : BOOL; down : BOOL; cv : DINT;",
+              "c : CTUD; n : INT; up : BOOL; down : BOOL; cv : LINT;",
               "n := n + 1;"
               "up := n = 2;"
               "down := n = 4;"

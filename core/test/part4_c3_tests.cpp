@@ -5,6 +5,7 @@
 #include "axis/group.h"
 #include "fb/group.h"
 #include "fb/management.h"
+#include "fb/motion.h"
 #include "fb/path_table.h"
 
 namespace
@@ -125,6 +126,21 @@ struct PoseRig
     }
 };
 
+template <typename Fb>
+bool run_pose_motion(PoseRig &rig, Fb &motion, int limit = 4096)
+{
+    motion.execute = true;
+    motion.call();
+    if(!motion.outputs.command_accepted || motion.outputs.error) return false;
+    for(int cycle = 0; cycle < limit; ++cycle) {
+        rig.group.cycle();
+        motion.call();
+        if(motion.outputs.done) return true;
+        if(motion.outputs.error || motion.outputs.command_aborted) return false;
+    }
+    return false;
+}
+
 int check_public_facades_compile()
 {
     static_assert(std::is_default_constructible<fb::FbUngroupAllAxes>::value);
@@ -178,13 +194,26 @@ int check_transform_read_write_and_set_position()
         return fail("transform kinematics setup");
     }
 
-    fb::FbSetCartesianTransform set;
-    set.group_ref = &rig.group;
-    set.execute = true;
-    set.coordinate_system = axis::CoordSystem::pcs;
-    set.transform.value = {10.0, -2.0, 3.0, 0.0, 0.0, 0.0};
-    set.call();
-    if(!set.outputs.done || set.outputs.error) return fail("set cartesian transform");
+    fb::FbSetCoordinateTransform set_pcs;
+    set_pcs.group_ref = &rig.group;
+    set_pcs.execute = true;
+    set_pcs.coordinate_system = axis::CoordSystem::pcs;
+    set_pcs.transform.value = {10.0, -2.0, 3.0, 0.0, 0.0, 0.0};
+    set_pcs.call();
+    if(!set_pcs.outputs.done || set_pcs.outputs.error) return fail("set PCS transform");
+
+    fb::FbSetCartesianTransform set_tcs;
+    set_tcs.group_ref = &rig.group;
+    set_tcs.coordinate_system = axis::CoordSystem::tcs;
+    set_tcs.trans_x = 0.1;
+    set_tcs.trans_y = 0.2;
+    set_tcs.trans_z = 0.3;
+    set_tcs.rot_angle1 = 0.4;
+    set_tcs.rot_angle2 = 0.5;
+    set_tcs.rot_angle3 = 0.6;
+    set_tcs.execute = true;
+    set_tcs.call();
+    if(!set_tcs.outputs.done || set_tcs.outputs.error) return fail("set TCS transform");
 
     fb::FbReadCoordinateTransform read;
     read.group_ref = &rig.group;
@@ -195,11 +224,24 @@ int check_transform_read_write_and_set_position()
         return fail("read coordinate transform");
     }
 
+    fb::FbReadCartesianTransform read_tcs;
+    read_tcs.group_ref = &rig.group;
+    read_tcs.coord_system = axis::CoordSystem::tcs;
+    read_tcs.enable = true;
+    read_tcs.call();
+    if(!read_tcs.valid || read_tcs.error || !near(read_tcs.trans_x, 0.1) ||
+       !near(read_tcs.trans_y, 0.2) || !near(read_tcs.trans_z, 0.3) ||
+       !near(read_tcs.rot_angle1, 0.4) || !near(read_tcs.rot_angle2, 0.5) ||
+       !near(read_tcs.rot_angle3, 0.6)) return fail("read TCS transform");
+
     fb::FbReadKinTransform kin_read;
     kin_read.group_ref = &rig.group;
     kin_read.enable = true;
     kin_read.call();
-    if(!kin_read.valid || kin_read.kinematics_plugin != &identity || kin_read.pose_plugin != nullptr) {
+    if(!kin_read.valid ||
+       kin_read.kin_transform.kind != axis::KinTransformKind::kinematics ||
+       kin_read.kin_transform.kinematics != &identity ||
+       kin_read.kin_transform.pose != nullptr) {
         return fail("read kinematics transform");
     }
 
@@ -236,6 +278,124 @@ int check_transform_read_write_and_set_position()
     return 0;
 }
 
+int check_pose_kin_transform_tag()
+{
+    static IdentityPoseKinematics pose;
+    PoseRig rig;
+    fb::FbSetKinTransform set;
+    set.group_ref = &rig.group;
+    set.kin_transform.kind = axis::KinTransformKind::pose;
+    set.kin_transform.pose = &pose;
+    set.max_joint_step = 0.1;
+    set.execute = true;
+    set.call();
+    if(!set.outputs.done || set.outputs.error) return fail("set pose kin tag");
+
+    fb::FbReadKinTransform read;
+    read.group_ref = &rig.group;
+    read.enable = true;
+    read.call();
+    if(!read.valid || read.error ||
+       read.kin_transform.kind != axis::KinTransformKind::pose ||
+       read.kin_transform.pose != &pose || read.kin_transform.kinematics != nullptr)
+        return fail("read pose kin tag");
+    return 0;
+}
+
+int check_coordinated_orientation_modes()
+{
+    static IdentityPoseKinematics pose;
+    PoseRig rig;
+    if(rig.group.set_pose_kinematics(&pose, 0.0, 0.2) != rt::ErrorCode::ok) {
+        return fail("orientation mode setup");
+    }
+
+    fb::FbMoveLinearAbsolute absolute_line;
+    absolute_line.group_ref = &rig.group;
+    absolute_line.position.size = 6;
+    absolute_line.position.value = {1.0, 0.0, 0.0, 0.4, -0.2, 0.3};
+    absolute_line.coord_system = axis::CoordSystem::mcs;
+    absolute_line.orientation_mode = axis::OrientationMode::constant;
+    if(!run_pose_motion(rig, absolute_line)) {
+        return fail("absolute line constant orientation");
+    }
+    if(!near(rig.axes[0].snapshot().command_position, 1.0) ||
+       !near(rig.axes[3].snapshot().command_position, 0.0) ||
+       !near(rig.axes[4].snapshot().command_position, 0.0) ||
+       !near(rig.axes[5].snapshot().command_position, 0.0)) {
+        return fail("absolute line holds start orientation");
+    }
+
+    fb::FbMoveLinearRelative relative_line;
+    relative_line.group_ref = &rig.group;
+    relative_line.position.size = 6;
+    relative_line.position.value = {0.0, 1.0, 0.0, 0.0, 0.0, 0.3};
+    relative_line.coord_system = axis::CoordSystem::mcs;
+    relative_line.orientation_mode = axis::OrientationMode::shortest_path;
+    if(!run_pose_motion(rig, relative_line)) {
+        return fail("relative line shortest orientation");
+    }
+    if(!near(rig.axes[0].snapshot().command_position, 1.0) ||
+       !near(rig.axes[1].snapshot().command_position, 1.0) ||
+       !near(rig.axes[5].snapshot().command_position, 0.3)) {
+        return fail("relative line composes target pose");
+    }
+
+    fb::FbMoveCircularAbsolute absolute_arc;
+    absolute_arc.group_ref = &rig.group;
+    absolute_arc.aux_point.size = 6;
+    absolute_arc.aux_point.value[0] = std::sqrt(0.5);
+    absolute_arc.aux_point.value[1] = 1.0 + std::sqrt(0.5);
+    absolute_arc.end_point.size = 6;
+    absolute_arc.end_point.value = {0.0, 2.0, 0.0, 0.0, 0.0, 0.6};
+    absolute_arc.path_choice = axis::CircPathChoice::counter_clockwise;
+    absolute_arc.coord_system = axis::CoordSystem::mcs;
+    absolute_arc.orientation_mode = axis::OrientationMode::shortest_path;
+    absolute_arc.tolerance = 0.0;
+    if(!run_pose_motion(rig, absolute_arc)) {
+        return fail("absolute arc shortest orientation");
+    }
+    if(!near(rig.axes[0].snapshot().command_position, 0.0) ||
+       !near(rig.axes[1].snapshot().command_position, 2.0) ||
+       !near(rig.axes[5].snapshot().command_position, 0.6)) {
+        return fail("absolute arc interpolates target orientation");
+    }
+
+    fb::FbMoveCircularRelative relative_arc;
+    relative_arc.group_ref = &rig.group;
+    relative_arc.aux_point.size = 6;
+    relative_arc.aux_point.value[0] = std::sqrt(0.5);
+    relative_arc.aux_point.value[1] = -1.0 + std::sqrt(0.5);
+    relative_arc.end_point.size = 6;
+    relative_arc.end_point.value = {1.0, -1.0, 0.0, 0.5, 0.4, 0.3};
+    relative_arc.path_choice = axis::CircPathChoice::clockwise;
+    relative_arc.coord_system = axis::CoordSystem::mcs;
+    relative_arc.orientation_mode = axis::OrientationMode::constant;
+    relative_arc.tolerance = 0.0;
+    if(!run_pose_motion(rig, relative_arc)) {
+        return fail("relative arc constant orientation");
+    }
+    if(!near(rig.axes[0].snapshot().command_position, 1.0) ||
+       !near(rig.axes[1].snapshot().command_position, 1.0) ||
+       !near(rig.axes[5].snapshot().command_position, 0.6)) {
+        return fail("relative arc holds start orientation");
+    }
+
+    fb::FbMoveLinearRelative invalid;
+    invalid.group_ref = &rig.group;
+    invalid.position.size = 6;
+    invalid.position.value[0] = 0.1;
+    invalid.coord_system = axis::CoordSystem::mcs;
+    invalid.orientation_mode = static_cast<axis::OrientationMode>(99);
+    invalid.execute = true;
+    invalid.call();
+    if(!invalid.outputs.error ||
+       invalid.outputs.error_id != rt::ErrorCode::invalid_argument) {
+        return fail("invalid orientation mode rejected");
+    }
+    return 0;
+}
+
 int check_group_halt_and_wait()
 {
     Rig rig;
@@ -268,7 +428,7 @@ int check_group_halt_and_wait()
     fb::FbGroupWaitTime wait;
     wait.group_ref = &rig.group;
     wait.execute = true;
-    wait.duration_cycles = 4;
+    wait.duration = 4'000'000;
     wait.buffer_mode = axis::BufferMode::aborting;
     wait.call();
     if(!wait.outputs.command_accepted || wait.outputs.error) return fail("wait accepted");
@@ -280,6 +440,30 @@ int check_group_halt_and_wait()
     rig.cycle();
     wait.call();
     if(!wait.outputs.done) return fail("wait duration completion");
+    return 0;
+}
+
+int check_buffered_group_halt()
+{
+    Rig rig;
+    axis::GroupCommand move{};
+    move.target.size = 3;
+    move.target.value[0] = 4.0;
+    move.target.value[1] = 2.0;
+    if(!rig.group.submit_linear(move)) return fail("buffered halt setup");
+    fb::FbGroupHalt halt;
+    halt.group_ref = &rig.group;
+    halt.buffer_mode = axis::BufferMode::buffered;
+    halt.execute = true;
+    halt.call();
+    if(!halt.outputs.command_accepted || halt.outputs.done || halt.outputs.active)
+        return fail("buffered halt queued");
+    for(int i = 0; i < 128 && !halt.outputs.done; ++i) {
+        rig.cycle();
+        halt.call();
+    }
+    if(!halt.outputs.done || rig.group.status() != axis::GroupStatus::standby)
+        return fail("buffered halt completion");
     return 0;
 }
 
@@ -334,7 +518,7 @@ int check_halt_takeover_and_buffered_wait()
     fb::FbGroupWaitTime wait;
     wait.group_ref = &rig.group;
     wait.execute = true;
-    wait.duration_cycles = 3;
+    wait.duration = 3'000'000;
     wait.buffer_mode = axis::BufferMode::buffered;
     wait.call();
     axis::GroupCommand after_wait{};
@@ -362,7 +546,7 @@ int check_halt_takeover_and_buffered_wait()
     fb::FbGroupWaitTime invalid;
     invalid.group_ref = &rig.group;
     invalid.execute = true;
-    invalid.duration_cycles = 0;
+    invalid.duration = 0;
     invalid.call();
     if(!invalid.outputs.error || invalid.outputs.error_id != rt::ErrorCode::invalid_argument) {
         return fail("wait rejects zero duration");
@@ -370,7 +554,7 @@ int check_halt_takeover_and_buffered_wait()
     fb::FbGroupWaitTime blend;
     blend.group_ref = &rig.group;
     blend.execute = true;
-    blend.duration_cycles = 1;
+    blend.duration = 1'000'000;
     blend.buffer_mode = axis::BufferMode::blending_low;
     blend.call();
     if(!blend.outputs.error || blend.outputs.error_id != rt::ErrorCode::unsupported) {
@@ -436,7 +620,7 @@ int check_facade_error_paths()
 
     fb::FbGroupWaitTime wait;
     wait.execute = true;
-    wait.duration_cycles = 1;
+    wait.duration = 1'000'000;
     wait.call();
     if(!wait.outputs.error) return fail("wait null group");
     return 0;
@@ -653,7 +837,7 @@ int check_management_boundaries()
         return fail("empty group power");
     }
     if(empty.ungroup_all_axes() != rt::ErrorCode::ok) return fail("empty ungroup");
-    if(empty.submit_wait(1, axis::BufferMode::aborting).error() !=
+    if(empty.submit_wait(1'000'000, axis::BufferMode::aborting).error() !=
        rt::ErrorCode::invalid_argument) {
         return fail("disabled wait");
     }
@@ -688,8 +872,8 @@ int check_management_boundaries()
         return fail("queued group set position");
     }
 
-    auto first_wait = rig.group.submit_wait(2, axis::BufferMode::aborting);
-    if(!first_wait || rig.group.submit_wait(1, axis::BufferMode::aborting).error() !=
+    auto first_wait = rig.group.submit_wait(2'000'000, axis::BufferMode::aborting);
+    if(!first_wait || rig.group.submit_wait(1'000'000, axis::BufferMode::aborting).error() !=
                           rt::ErrorCode::precondition_failed ||
        !rig.group.wait_command_busy(first_wait.value()) ||
        !rig.group.wait_command_active(first_wait.value()) ||
@@ -730,12 +914,12 @@ int check_management_boundaries()
     if(rig.group.ungroup_all_axes() != rt::ErrorCode::precondition_failed) {
         return fail("ungroup moving rejection");
     }
-    auto moving_wait = rig.group.submit_wait(2, axis::BufferMode::aborting);
+    auto moving_wait = rig.group.submit_wait(2'000'000, axis::BufferMode::aborting);
     if(!moving_wait || !rig.group.wait_command_busy(moving_wait.value()) ||
        rig.group.wait_command_active(moving_wait.value())) {
         return fail("wait stopping state");
     }
-    if(rig.group.submit_wait(1, axis::BufferMode::aborting).error() !=
+    if(rig.group.submit_wait(1'000'000, axis::BufferMode::aborting).error() !=
        rt::ErrorCode::precondition_failed) {
         return fail("duplicate stopping wait");
     }
@@ -757,7 +941,7 @@ int check_management_boundaries()
 
     rig.axes[0].trigger_error();
     rig.group.cycle();
-    if(rig.group.submit_wait(1, axis::BufferMode::buffered).error() !=
+    if(rig.group.submit_wait(1'000'000, axis::BufferMode::buffered).error() !=
            rt::ErrorCode::invalid_argument ||
        rig.group.set_group_power(true) != rt::ErrorCode::precondition_failed ||
        rig.group.group_error() == rt::ErrorCode::ok) {
@@ -767,17 +951,17 @@ int check_management_boundaries()
     static Rig queued_rig;
     if(!queued_rig.group.submit_linear(move)) return fail("queued wait move");
     queued_rig.cycle();
-    auto queued_wait = queued_rig.group.submit_wait(2, axis::BufferMode::buffered);
+    auto queued_wait = queued_rig.group.submit_wait(2'000'000, axis::BufferMode::buffered);
     if(!queued_wait || !queued_rig.group.wait_command_busy(queued_wait.value()) ||
        queued_rig.group.wait_command_active(queued_wait.value()) ||
-       queued_rig.group.submit_wait(1, axis::BufferMode::aborting).error() !=
+       queued_rig.group.submit_wait(1'000'000, axis::BufferMode::aborting).error() !=
            rt::ErrorCode::precondition_failed) {
         return fail("queued wait state");
     }
     fb::FbGroupWaitTime wait_fb;
     wait_fb.group_ref = &queued_rig.group;
     wait_fb.execute = true;
-    wait_fb.duration_cycles = 2;
+    wait_fb.duration = 2'000'000;
     queued_rig.group.halt();
     wait_fb.call();
     queued_rig.group.halt();
@@ -791,7 +975,7 @@ int check_management_boundaries()
         return fail("queued wait transition move");
     }
     auto transition_wait =
-        transition_rig.group.submit_wait(1, axis::BufferMode::buffered);
+        transition_rig.group.submit_wait(1'000'000, axis::BufferMode::buffered);
     if(!transition_wait) return fail("queued wait transition submit");
     for(int i = 0; i < 256 &&
                     !transition_rig.group.wait_command_done(transition_wait.value());
@@ -809,7 +993,7 @@ int check_management_boundaries()
     successor.target.value[0] = 60.0;
     successor.buffer_mode = axis::BufferMode::buffered;
     if(!buffered_queue_rig.group.submit_linear(successor) ||
-       buffered_queue_rig.group.submit_wait(1, axis::BufferMode::buffered).error() !=
+       buffered_queue_rig.group.submit_wait(1'000'000, axis::BufferMode::buffered).error() !=
            rt::ErrorCode::unsupported) {
         return fail("wait behind queued motion rejection");
     }
@@ -838,16 +1022,43 @@ int check_management_boundaries()
     return 0;
 }
 
+int check_wait_time_nanoseconds()
+{
+    Rig rig;
+    if(rig.group.set_task_cycle_period_ns(1'000'000) != rt::ErrorCode::ok ||
+       rig.group.task_cycle_period_ns() != 1'000'000) {
+        return fail("wait ns task period");
+    }
+    const auto wait = rig.group.submit_wait(1'500'001, axis::BufferMode::aborting);
+    if(!wait) return fail("wait ns submit");
+    rig.cycle();
+    if(rig.group.wait_command_done(wait.value())) {
+        return fail("wait ns does not round down");
+    }
+    rig.cycle();
+    if(!rig.group.wait_command_done(wait.value())) {
+        return fail("wait ns ceil to deterministic task cycle");
+    }
+    if(rig.group.set_task_cycle_period_ns(0) != rt::ErrorCode::invalid_argument) {
+        return fail("wait ns invalid task period");
+    }
+    std::printf("  PASS wait_time_nanoseconds\n");
+    return 0;
+}
+
 } // namespace
 
 int main()
 {
     if(check_public_facades_compile() != 0 || check_group_power_and_ungroup() != 0 ||
        check_transform_read_write_and_set_position() != 0 ||
-       check_group_halt_and_wait() != 0 || check_group_error_readback() != 0 ||
+       check_pose_kin_transform_tag() != 0 ||
+       check_coordinated_orientation_modes() != 0 ||
+       check_group_halt_and_wait() != 0 || check_buffered_group_halt() != 0 ||
+       check_group_error_readback() != 0 ||
        check_halt_takeover_and_buffered_wait() != 0 ||
        check_facade_error_paths() != 0 || check_transform_boundaries() != 0 ||
-       check_management_boundaries() != 0) {
+       check_management_boundaries() != 0 || check_wait_time_nanoseconds() != 0) {
         return 1;
     }
     std::printf("PASS Part 4 C3 tests\n");

@@ -188,14 +188,30 @@ int check_halt_superimposed()
 
     fb::FbHaltSuperimposed halt;
     halt.axis_ref = &axis;
+    halt.deceleration = 0.002;
+    halt.jerk = 0.001;
     halt.execute = true;
     halt.call();
-    axis.cycle();
-    base.call();
-    superimposed.call();
-    halt.call();
-    if(!halt.outputs.done || halt.outputs.error) {
-        return fail("halt-superimposed done");
+    if(!halt.outputs.busy || !halt.outputs.active || halt.outputs.done ||
+       halt.outputs.error) {
+        return fail("halt-superimposed starts a controlled stop");
+    }
+    const double offset_before_halt = axis.superimposed_distance();
+    bool stopped_over_multiple_cycles = false;
+    for(int i = 0; i < 500 && !halt.outputs.done; ++i) {
+        axis.cycle();
+        base.call();
+        superimposed.call();
+        halt.call();
+        stopped_over_multiple_cycles = stopped_over_multiple_cycles || i > 0;
+    }
+    if(!halt.outputs.done || halt.outputs.busy || halt.outputs.active ||
+       halt.outputs.error || !stopped_over_multiple_cycles) {
+        return fail("halt-superimposed completes the controlled stop");
+    }
+    if(axis.superimposed_distance() <= offset_before_halt ||
+       axis.superimposed_distance() >= superimposed.distance) {
+        return fail("halt-superimposed preserves the partial braking offset");
     }
     if(!superimposed.outputs.command_aborted) {
         return fail("halt-superimposed aborts only the offset");
@@ -212,6 +228,17 @@ int check_halt_superimposed()
     if(!base.outputs.done || final_position < 8.0 || final_position >= 14.0 ||
        final_position <= position_before_halt) {
         return fail("halt-superimposed base continues to target plus partial offset");
+    }
+
+    fb::FbHaltSuperimposed invalid;
+    invalid.axis_ref = &axis;
+    invalid.deceleration = 0.0;
+    invalid.jerk = 1.0;
+    invalid.execute = true;
+    invalid.call();
+    if(!invalid.outputs.error ||
+       invalid.outputs.error_id != rt::ErrorCode::invalid_argument) {
+        return fail("halt-superimposed rejects invalid dynamics");
     }
 
     return 0;
@@ -332,6 +359,17 @@ int check_move_continuous_relative_and_update()
     invalid.call();
     if(!invalid.outputs.error || invalid.outputs.error_id != rt::ErrorCode::unsupported) {
         return fail("continuous rejects zero end velocity");
+    }
+
+    invalid.execute = false;
+    invalid.call();
+    invalid.end_velocity = 0.05;
+    invalid.direction = static_cast<axis::Direction>(99);
+    invalid.execute = true;
+    invalid.call();
+    if(!invalid.outputs.error ||
+       invalid.outputs.error_id != rt::ErrorCode::invalid_argument) {
+        return fail("continuous absolute validates Direction");
     }
 
     return 0;
@@ -858,6 +896,38 @@ int check_motion_fb_error_paths()
     return 0;
 }
 
+int check_superimposed_continuous_update()
+{
+    axis::AxisModel axis;
+    axis.set_power(true);
+
+    fb::FbMoveSuperimposed move;
+    move.axis_ref = &axis;
+    move.distance = 2.0;
+    move.velocity = 0.1;
+    move.acceleration = 1.0;
+    move.deceleration = 1.0;
+    move.jerk = 10.0;
+    move.continuous_update = true;
+    move.execute = true;
+    move.call();
+    for(int i = 0; i < 20; ++i) {
+        axis.cycle();
+        move.call();
+    }
+    move.distance = 4.0;
+    for(int i = 0; i < 2000 && !move.outputs.done; ++i) {
+        axis.cycle();
+        move.call();
+    }
+    if(!move.outputs.done || move.outputs.error ||
+       !near(move.covered_distance, 4.0, 1e-8) ||
+       !near(axis.snapshot().command_position, 4.0, 1e-8)) {
+        return fail("superimposed ContinuousUpdate and CoveredDistance");
+    }
+    return 0;
+}
+
 int check_override_zero_pause_resume()
 {
     axis::AxisModel axis;
@@ -1054,7 +1124,9 @@ int check_motion_rejection_propagation()
 int main()
 {
     if(check_move_additive() != 0 || check_move_superimposed() != 0 ||
-       check_halt_superimposed() != 0 || check_move_continuous() != 0 ||
+       check_halt_superimposed() != 0 ||
+       check_superimposed_continuous_update() != 0 ||
+       check_move_continuous() != 0 ||
        check_move_continuous_relative_and_update() != 0 ||
        check_superimposed_boundaries() != 0 || check_override_replanning() != 0 ||
        check_override_zero_pause_resume() != 0 ||

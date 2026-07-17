@@ -286,11 +286,11 @@
 | 条款 | 要求（自述） | 判定 | 证据/说明 |
 |------|-------------|------|----------|
 | 3.13-io | B 级 I/O 字段：Axis、Execute、Torque、InTorque、Error | ✅符合 | `FbTorqueControl` 公开持续 `in_torque` 与错误输出（KB-079） |
-| 3.13-n1 | 建立持续扭矩控制，并持续报告命令扭矩已达到 | ✅符合 | TorqueControl 建立独立持续 owner；纯软件 InTorque 比较 commanded torque（KB-079） |
+| 3.13-n1 | 建立持续扭矩控制，并持续报告命令扭矩已达到 | ✅符合 | TorqueControl 建立独立持续 owner；TorqueRamp 按任务周期推进，纯软件 InTorque 比较 commanded torque（KB-011/079） |
 | 3.13-n2 | 后续运动命令接管时退出扭矩控制 | ✅符合 | base 运动接管会清 torque owner 和持续状态（KB-079） |
 | 3.13-state | 扭矩控制应持有持续运动所有权 | ✅符合 | AxisModel 记录 torque command ID/commanded torque，直至接管（KB-079） |
 | 3.13-out | InTorque 必须持续比较，接管时复位 | ✅符合 | InTorque 在 Execute 低时仍随 owner 更新，接管即复位（KB-079） |
-| 3.13-v | 扭矩直通、闭环由伺服实现 | ⚠️偏差(KB-011 已声明) | `known-boundaries.md:22` |
+| 3.13-v | TorqueRamp、运动限制与驱动闭环 | ⚠️硬件边界(KB-011) | TorqueRamp/ContinuousUpdate 在 core 生效；Velocity/Acceleration/Deceleration/Jerk/Direction 进入 ServoSetpoints，实际 CST 闭环由驱动实现 |
 
 ## §3.14 MC_PositionProfile — normative
 
@@ -333,8 +333,9 @@
 | 3.17-n1 | 重标定等量平移命令/实际位置，不产生运动 | ✅符合(仅静止) | `core/axis/state.h:338-347` |
 | 3.17-n2 | Relative 以执行时实际位置为基准 | ✅符合 | Relative SetPosition 以 actual position 计算坐标平移量（KB-079） |
 | 3.17-n3 | 立即模式允许运动中重标定且不改变原物理轨迹/状态 | ✅符合 | 同拍平移 actual/command、活动目标和缓冲绝对域，不重启 profile、不改变状态（KB-079） |
+| 3.17-n4 | queued 模式等待既有单轴运动完成后执行 | ✅符合 | 固定容量轴管理队列持有命令 ID；排队期间 Busy，执行完成后 Done；Relative 在实际执行周期取 actual position |
 | 3.17-state | 状态机交互 | ✅符合 | Standstill 与允许运动态均保持原状态；整批坐标预检后原子提交（KB-079） |
-| 3.17-out | 当周期 Done，下降沿复位 | ✅符合 | `core/fb/parameter.h:398-402`; `core/fb/motion.h:37-45` |
+| 3.17-out | immediate 当周期 Done；queued 排队/执行 Busy，完成后 Done；下降沿复位 | ✅符合 | `FbSetPosition` 观察 AxisModel 管理命令结果账本 |
 | 3.17-v | 厂商扩展：CommandID/Accepted 与通用 Active/Aborted | ⚠️偏差 | 继承 `MotionOutputs`（`core/fb/motion.h:20-31`），未列 V 清单 |
 
 ## §3.18 MC_SetOverride — normative
@@ -369,10 +370,10 @@
 | 3.20-io | 两个 FB 的 B 级 Axis、Execute、ParameterNumber、Value、Done、Error | ✅符合 | REAL：`core/fb/parameter.h:105-135`；BOOL：`core/fb/parameter.h:141-171` |
 | 3.20-n1 | Execute 上升沿写一次，成功 Done、失败 Error | ✅符合 | `core/fb/parameter.h:116-171`; `core/test/r3_parameter_tests.cpp:151-175` |
 | 3.20-n2 | 仅写注册表中可写参数 | ✅符合 | `core/axis/state.h:413-477`; KB-006/023 |
-| 3.20-n3 | 默认立即执行，不改变轴状态 | ✅符合 | 写路径不改状态（`core/fb/parameter.h:129-171`; `core/axis/state.h:413-477`） |
+| 3.20-n3 | ExecutionMode 支持 immediate/queued，写入不改变轴状态 | ✅符合 | immediate 同周期写入；queued 在单轴运动队列清空后按提交顺序执行 |
 | 3.20-state | 状态机交互 | ✅符合 | 参数写入不改变 AxisStatus（`core/axis/state.h:413-477`） |
-| 3.20-out | Done/Error 保持至 Execute 下降沿 | ✅符合 | `core/fb/parameter.h:118-127,154-163` |
-| 3.20-v | 厂商扩展：enum 参数选择、仅立即执行 | ⚠️偏差 | `core/fb/parameter.h:105-175`，未列 V 清单 |
+| 3.20-out | queued 排队/执行期间 Busy；Done/Error 保持至 Execute 下降沿 | ✅符合 | 参数写 FB 统一观察轴管理命令 pending/result 状态 |
+| 3.20-v | 厂商扩展：C++ enum 参数选择 | ⚠️偏差 | 参数选择仍为强类型 `AxisParameter`，应列认证扩展清单 |
 
 ## §3.21 MC_ReadDigitalInput — normative
 
@@ -400,10 +401,10 @@
 |------|-------------|------|----------|
 | 3.23-io | B 级 Output、Execute、Value、Done、Error | ✅符合(命名偏差) | `core/fb/io.h:106-115` |
 | 3.23-n1 | Execute 上升沿写一次 | ✅符合 | `core/fb/io.h:117-136`; `core/axis/state.h:1142-1148` |
-| 3.23-n2 | 默认立即执行且不改变轴状态 | ✅符合 | 写 bank 路径不改状态（同上） |
+| 3.23-n2 | ExecutionMode 支持 immediate/queued 且不改变轴状态 | ✅符合 | immediate 同周期写 bank；queued 在单轴运动清空后按管理队列顺序写入 |
 | 3.23-state | 状态机交互 | ✅符合 | 只改数字输出 bank，不写 AxisStatus（`core/axis/state.h:1142-1148`） |
-| 3.23-out | Done/Error 保持至 Execute 下降沿 | ✅符合 | `core/fb/io.h:119-135`; `core/test/r3_io_tests.cpp:44-66` |
-| 3.23-v | 厂商扩展：固定 4 通道、仅立即执行 | ⚠️偏差 | `core/axis/state.h:1122-1148`，未列 V 清单 |
+| 3.23-out | queued 排队/执行期间 Busy；Done/Error 保持至 Execute 下降沿 | ✅符合 | `r3_io_tests` 覆盖排队完成与非法通道执行期失败 |
+| 3.23-v | 厂商扩展：固定 4 通道 | ⚠️偏差 | 固定通道 bank 仍未列 V 清单 |
 
 ## §3.24 MC_ReadActualPosition — normative
 
@@ -490,12 +491,12 @@
 
 | 条款 | 要求（自述） | 判定 | 证据/说明 |
 |------|-------------|------|----------|
-| 3.32-io | B 级 Axis、Switches、Enable、InOperation、Error | ✅符合 | 定长 `CamSwitchTable` view 与完整电平输出（`core/fb/io.h`）；P1-A4 矩阵 |
-| 3.32-n1 | 一个 FB 按 switch pattern 驱动多个 track/output | ✅符合 | 最多 8 项、4 个轨道；同轨多项 OR 合并（`core/fb/io.h`; `core/test/r3_io_tests.cpp`） |
+| 3.32-io | B 级 Axis、Switches、Enable、InOperation、Error；E 级 Outputs、TrackOptions、EnableMask、ValueSource、Busy | ✅符合 | 定长 action/track/output view；Busy 在同周期软件执行中恒 FALSE（`core/fb/io.h`）；P1-A4 矩阵 |
+| 3.32-n1 | 一个 FB 按 switch pattern 驱动多个 track/output | ✅符合 | 最多 8 项、1-based 四轨；同轨多项 OR；方向、position/time 模式与整数纳秒 Duration（`core/fb/io.h`; `core/test/r3_io_tests.cpp`） |
 | 3.32-n2 | Enable 关闭时停用受控输出 | ✅符合 | 关闭、换表、换轴或错误均清理旧受控轨道（`core/fb/io.h`） |
 | 3.32-state | 不改变轴运动状态 | ✅符合 | 仅读 command position 并写数字输出（`core/fb/io.h`） |
 | 3.32-out | InOperation 应表示 tracks 已启用 | ✅符合 | 全表验证并完成全部轨道写入后置 TRUE；错误时 FALSE（`core/fb/io.h`） |
-| 3.32-v | 固定 8 项、4 个软件数字输出轨道、可选周期窗口 | ⚠️偏差(KB-005 已声明) | `known-boundaries.md`; P1-A4 不含 E 级补偿与硬件 compare offload |
+| 3.32-v | 固定 8 项、4 个软件数字输出轨道、可选周期窗口 | ⚠️偏差(KB-005 已声明) | E 级 on/off 时间补偿已实现；Hysteresis、brake cam 与硬件 compare offload 未实现 |
 
 ## §3.33 MC_TouchProbe — normative
 
@@ -523,22 +524,22 @@
 
 | 条款 | 要求（自述） | 判定 | 证据/说明 |
 |------|-------------|------|----------|
-| 4.2-io | B 级 CamTable、Execute、Done、Error | ✅符合 | `core/fb/sync.h:248-256` |
-| 4.2-n1 | Done 时表已校验且可交给 CamIn | ✅符合 | `core/fb/sync.h:271-281`; `core/test/r3_sync_tests.cpp:591-604` |
-| 4.2-state | 表选择不改变轴状态 | ✅符合 | FB 不持有 AxisModel（`core/fb/sync.h:248-286`） |
-| 4.2-out | 上升沿选择、下降沿清终态 | ✅符合 | `core/fb/sync.h:258-269` |
-| 4.2-v | `CamTableView` 取代控制器表仓库 | ⚠️偏差(KB-016 已声明) | `known-boundaries.md:27` |
+| 4.2-io | Master/Slave、CamTable、Execute、Periodic、MasterAbsolute、SlaveAbsolute、ExecutionMode、Done/Busy/Error/CamTableID | ✅符合(queued 除外) | `FbCamTableSelect` 暴露稳定原生字段；queued 显式 `unsupported` |
+| 4.2-n1 | Done 时表已校验且可由 CamTableID 交给 CamIn | ✅符合 | Slave 侧固定 8 槽注册表返回非零 generation ID；同一 FB 重选复用槽 |
+| 4.2-state | 表选择不改变轴状态 | ✅符合 | 只写 selection registry，不进入运动 owner/queue |
+| 4.2-out | immediate 同周期 Done，Busy=FALSE；下降沿清终态 | ✅符合 | `core/fb/sync.h`; `core/test/r3_sync_tests.cpp` |
+| 4.2-v | 调用方持有点存储，固定 8 槽；queued 下载未实现 | ⚠️偏差(KB-016 已声明) | 无堆/无持久化控制器表仓库；不伪造异步 lifecycle |
 
 ## §4.3 MC_CamIn — normative
 
 | 条款 | 要求（自述） | 判定 | 证据/说明 |
 |------|-------------|------|----------|
-| 4.3-io | B 级 Master、Slave、Execute、InSync、Error | ✅符合 | `core/fb/sync.h:33-39,288-300` |
+| 4.3-io | B 级 Master、Slave、Execute、InSync、Error；E 级 StartMode、CamTableID、EndOfProfile 等 | ✅符合(ramp_in 除外) | `FbCamIn` 原生字段直接连接 selection registry 与 profile 边界检测 |
 | 4.3-n1 | 主轴运动时可接合并处理位置差 | ✅符合 | `core/fb/sync.h:319-341`; `core/axis/state.h:772-803` |
-| 4.3-n2 | StartMode 选择接合方式 | ⚠️偏差(KB-016 已声明) | 无 start_mode，以 offsets/scaling/start-distance 建模（`core/fb/sync.h:291-300`） |
+| 4.3-n2 | StartMode 选择接合方式 | ✅符合(absolute/relative) | absolute 使用选择原点与 offsets；relative 在 Execute 上升沿对齐当前 Slave；ramp_in 缺动力学输入而显式 `unsupported`（KB-016） |
 | 4.3-state | 接合后 Slave 进入 SynchronizedMotion，非法组关系报错 | ✅符合 | `core/axis/state.h:793-803,1388`; `core/fb/sync.h:321-327` |
-| 4.3-out | InSync 持续相等状态 | ✅符合 | CamIn 按 engaged owner/setpoint 持续更新 InSync，Execute 低仍有效（KB-079） |
-| 4.3-v | 厂商扩展：同组 enabled、ContinuousUpdate、直接 table view | ⚠️偏差(KB-013/016 已声明) | `known-boundaries.md:24,27`; `core/fb/sync.h:306-340` |
+| 4.3-out | InSync 与 EndOfProfile | ✅符合 | periodic 每跨一周期脉冲一拍；non-periodic 在 Master 位于表域外期间保持 TRUE，Slave 继续 synchronized_motion |
+| 4.3-v | 同组 enabled、ContinuousUpdate、固定槽 CamTableID；ramp_in 未实现 | ⚠️偏差(KB-013/016 已声明) | `known-boundaries.md`; `core/fb/sync.h` |
 
 ## §4.4 MC_CamOut — normative
 
@@ -554,8 +555,8 @@
 
 | 条款 | 要求（自述） | 判定 | 证据/说明 |
 |------|-------------|------|----------|
-| 4.5-io | B 级 Master、Slave、Execute、RatioNumerator/Denominator、InGear、Error | ✅符合 | `core/fb/sync.h:33-39,111-117` |
-| 4.5-n1 | 从轴进入目标速度比，不追回接合前距离 | ✅符合 | `core/fb/sync.h:155-163`; `core/axis/state.h:762-768` |
+| 4.5-io | B 级 Master、Slave、Execute、RatioNumerator/Denominator、InGear、Error；E 级 Acceleration/Deceleration/Jerk/BufferMode | ✅符合 | `FbGearIn` 全字段进入 `GearInCommand` |
+| 4.5-n1 | 从轴按动力学约束进入目标速度比，不追回接合前距离 | ✅符合 | 非零 dynamics 走 jerk-limited engagement profile，接合时以实时从轴位置建立 phase offset；三项全零为显式 unprofiled 模式 |
 | 4.5-n2 | 可用新 GearIn/ContinuousUpdate 改比率 | ✅符合 | `core/fb/sync.h:143-152`; `core/test/r3_sync_tests.cpp:846-930` |
 | 4.5-state | 接合后进入 SynchronizedMotion | ✅符合 | `core/axis/state.h:1388`; 同组前置为 KB-013 |
 | 4.5-out | InGear 持续语义 | ✅符合 | GearIn 公开持续 InGear/InSync，owner 失效即复位（KB-079） |
@@ -575,24 +576,24 @@
 
 | 条款 | 要求（自述） | 判定 | 证据/说明 |
 |------|-------------|------|----------|
-| 4.7-io | B 级主从轴、比率、同步位置、Execute、InSync、Error | ✅符合 | `core/fb/sync.h:33-39,167-186` |
-| 4.7-n1 | 在接近窗口启动并于指定主从位置接合 | ✅符合 | `core/axis/state.h:765-768`; `core/test/r3_sync_tests.cpp:424-492` |
-| 4.7-n2 | 接近过程受完整动力学限制 | ⚠️偏差(KB-021 已声明) | 仅 velocity cap（`core/fb/sync.h:173-175`; `known-boundaries.md:36`） |
+| 4.7-io | B 级主从轴、比率、同步位置、Execute、InSync、Error；E 级 SyncMode/StartDistance/Velocity/Acceleration/Deceleration/Jerk/BufferMode | ✅符合(shortest) | `FbGearInPos` 全字段进入 `GearInCommand`；vendor-specific 非 shortest 模式显式 unsupported |
+| 4.7-n1 | 在有符号接近窗口启动并于指定主从位置接合 | ✅符合 | `MasterStartDistance` 符号决定窗口穿越方向，fixed-time profile 命中 slave position 与 gear velocity |
+| 4.7-n2 | 接近过程受完整动力学限制 | ✅符合 | `solve_fixed_time` profile 按 Velocity/Acceleration/Deceleration/Jerk 包络采样；正反向定向测试覆盖 |
 | 4.7-state | 接合后进入 SynchronizedMotion，被接管则 Aborted | ✅符合 | `core/fb/sync.h:86-100` |
 | 4.7-out-start | StartSync 为一拍脉冲 | ⚠️偏差(KB-017 已声明) | `core/fb/sync.h:82,99-100`; `known-boundaries.md:28` |
 | 4.7-out | InSync 必须持续比较 | ✅符合 | GearInPos 按同步 owner/setpoint 持续比较（KB-079） |
-| 4.7-v | 厂商扩展：同组 enabled、线性接近、无 SyncMode | ⚠️偏差(KB-013/021 已声明) | `known-boundaries.md:24,36` |
+| 4.7-v | 厂商扩展：同组 enabled；SyncMode 仅 shortest | ⚠️偏差(KB-013 已声明) | catch_up/slow_down 需要未定义的 modulo 周期/路径策略，显式 `unsupported` |
 
 ## §4.8 MC_PhasingAbsolute — normative
 
 | 条款 | 要求（自述） | 判定 | 证据/说明 |
 |------|-------------|------|----------|
-| 4.8-io | B 级 Master、Slave、Execute、PhaseShift、Done、Error | ✅符合 | `master_ref/slave_ref` 显式暴露，并验证已接合 gear 关系（`core/fb/sync.h`; `core/axis/state.h`） |
+| 4.8-io | B 级 Master、Slave、Execute、PhaseShift、Done、Error；E 级完整 dynamics、BufferMode、AbsolutePhaseShift | ✅符合 | `PhasingFb` 全字段进入 `PhasingCommand`，持续导出当前绝对相移 |
 | 4.8-n1 | 对主轴位置施加绝对 phase offset 并保持 | ✅符合 | `core/axis/state.h:1049-1063`; `core/test/r3_sync_tests.cpp:494-520` |
-| 4.8-n2 | 过渡受完整动力学输入控制 | ⚠️偏差(KB-021 已声明) | 仅 phase_shift/velocity（`core/fb/sync.h:405-408`） |
-| 4.8-state | 仅作用于已接合 gear 关系 | ⚠️偏差(KB-014/021 已声明) | `core/axis/state.h:1051-1053` |
+| 4.8-n2 | 过渡受完整动力学输入控制 | ✅符合 | Velocity>0 要求正 Acceleration/Deceleration/Jerk 并走 jerk-limited profile；全零为 direct set |
+| 4.8-state | 仅作用于已接合 gear 关系 | ✅符合 | master/slave 必须匹配已 engaged gear owner，错误原子拒绝 |
 | 4.8-out | 异步 Done 时序 | ✅符合 | PhasingAbsolute 单拍 Execute 后继续观察至 Done/Error/Aborted（KB-079） |
-| 4.8-v | 厂商扩展/偏差：隐式主轴上下文，缺 E 级 AbsolutePhaseShift | ⚠️偏差 | `core/fb/sync.h:402-409`; `core/axis/state.h:1040-1042` |
+| 4.8-v | 厂商扩展：固定容量 phasing queue 与 CommandID | ⚠️偏差 | 仅 Aborting/Buffered；blending 模式显式 unsupported |
 
 ## §4.9 MC_PhasingRelative — normative
 
@@ -600,10 +601,10 @@
 |------|-------------|------|----------|
 | 4.9-io | B 级 Master、Slave、Execute、PhaseShift、Done、Error | ✅符合 | 同 4.8；错误 master、自引用和未接合关系原子拒绝 |
 | 4.9-n1 | phase shift 累加到当前 offset 并保持 | ✅符合 | `core/axis/state.h:1066-1071`; `core/test/r3_sync_tests.cpp:521-548` |
-| 4.9-n2 | 过渡受完整动力学输入控制 | ⚠️偏差(KB-021 已声明) | 仅 velocity（`core/fb/sync.h:405-408`） |
-| 4.9-state | 仅作用于已接合 gear 关系 | ⚠️偏差(KB-014/021 已声明) | `core/axis/state.h:1051-1053` |
+| 4.9-n2 | 过渡受完整动力学输入控制 | ✅符合 | 与 4.8 相同，relative target 在命令实际启动时基于届时绝对 offset 解析 |
+| 4.9-state | 仅作用于已接合 gear 关系 | ✅符合 | Buffered 等待期间 Busy/非 Active；Aborting 旧命令报告 CommandAborted |
 | 4.9-out | 异步 Done 时序 | ✅符合 | PhasingRelative 单拍 Execute 后继续观察至 Done/Error/Aborted（KB-079） |
-| 4.9-v | 厂商扩展/偏差：隐式主轴上下文，缺 E 级 CoveredPhaseShift | ⚠️偏差 | `core/fb/sync.h:402-409,483-494` |
+| 4.9-v | 厂商扩展：固定容量 phasing queue 与 CommandID | ⚠️偏差 | `CoveredPhaseShift` 按命令结果账本持续报告；仅 Aborting/Buffered |
 
 ## §4.10 MC_CombineAxes — normative
 

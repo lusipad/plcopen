@@ -132,6 +132,24 @@ enum class AxisParameter
     max_jerk_appl,
 };
 
+enum class AxisManagementKind
+{
+    set_position,
+    write_parameter,
+    write_bool_parameter,
+    write_digital_output,
+};
+
+struct AxisManagementCommand
+{
+    AxisManagementKind kind = AxisManagementKind::set_position;
+    AxisParameter parameter = AxisParameter::commanded_position;
+    double value = 0.0;
+    std::size_t channel = 0;
+    bool flag = false;
+    std::uint32_t command_id = 0;
+};
+
 struct AxisCommand
 {
     CommandKind kind = CommandKind::move_absolute;
@@ -142,6 +160,9 @@ struct AxisCommand
     double jerk = 1.0;
     // Optional drive-side torque/force ceiling. Zero means no limit.
     double torque_limit = 0.0;
+    // MC_TorqueControl load-domain rate converted to a per-cycle maximum
+    // setpoint delta. Zero applies the target immediately.
+    double torque_ramp = 0.0;
     Direction direction = Direction::current;
     // Only used by the move_continuous_* kinds; it is a signed terminal
     // velocity. Zero remains explicitly unsupported.
@@ -179,6 +200,13 @@ enum class MasterValueSource
     actual,
 };
 
+enum class CamStartMode
+{
+    absolute,
+    relative,
+    ramp_in,
+};
+
 enum class SyncKind
 {
     none,
@@ -197,6 +225,13 @@ enum class SyncPhase
     engaged,
 };
 
+enum class SyncMode
+{
+    shortest,
+    catch_up,
+    slow_down,
+};
+
 enum class CombineMode
 {
     add_axes,
@@ -213,14 +248,46 @@ struct GearInCommand
     double ratio_denominator = 1.0;
     MasterValueSource source = MasterValueSource::command;
     BufferMode buffer_mode = BufferMode::aborting;
+    double acceleration = 0.0;
+    double deceleration = 0.0;
+    double jerk = 0.0;
     // position_sync selects MC_GearInPos semantics: wait for the master sync
     // window, approach the slave sync position, then follow with aligned phase.
     bool position_sync = false;
     double master_sync_position = 0.0;
     double slave_sync_position = 0.0;
     double master_start_distance = 0.0;
-    // Per-cycle displacement cap for the approach segment; 0 disables the cap.
+    SyncMode sync_mode = SyncMode::shortest;
+    // Maximum approach velocity. Zero selects the axis motion limit.
     double approach_velocity = 0.0;
+};
+
+struct PhasingCommand
+{
+    double phase_shift = 0.0;
+    double velocity = 0.0;
+    double acceleration = 0.0;
+    double deceleration = 0.0;
+    double jerk = 0.0;
+    BufferMode buffer_mode = BufferMode::aborting;
+    bool relative = false;
+    std::uint32_t command_id = 0;
+};
+
+enum class PhasingCommandState
+{
+    unknown,
+    queued,
+    active,
+    completed,
+    aborted,
+};
+
+struct PhasingCommandResult
+{
+    std::uint32_t command_id = 0;
+    PhasingCommandState state = PhasingCommandState::unknown;
+    double covered_shift = 0.0;
 };
 
 struct CamInCommand
@@ -241,6 +308,17 @@ struct CamInCommand
     double master_sync_position = 0.0;
     double master_start_distance = 0.0;
     double approach_velocity = 0.0;
+};
+
+struct CamTableSelection
+{
+    std::uint32_t id = 0;
+    const AxisModel *master = nullptr;
+    exec::CamTableView table{};
+    bool master_absolute = true;
+    bool slave_absolute = true;
+    double master_origin = 0.0;
+    double slave_origin = 0.0;
 };
 
 struct CombineAxesCommand
@@ -266,11 +344,19 @@ struct AxisSnapshot
     double actual_position = 0.0;
     double actual_velocity = 0.0;
     double actual_acceleration = 0.0;
+    double command_torque = 0.0;
     double actual_torque = 0.0;
     double command_torque_limit = 0.0;
+    double torque_velocity_limit = 0.0;
+    double torque_acceleration_limit = 0.0;
+    double torque_deceleration_limit = 0.0;
+    double torque_jerk_limit = 0.0;
+    Direction torque_direction = Direction::current;
+    bool torque_mode = false;
     bool powered = false;
     bool homed = false;
     bool error = false;
+    rt::ErrorCode error_id = rt::ErrorCode::ok;
     // Set while a move_continuous_* command holds its end velocity after
     // reaching the target position.
     bool active_command_reached_target = false;
@@ -285,13 +371,20 @@ inline bool is_finite_command(const AxisCommand &command)
     return std::isfinite(command.value) && std::isfinite(command.velocity) &&
            std::isfinite(command.acceleration) && std::isfinite(command.deceleration) &&
            std::isfinite(command.jerk) && std::isfinite(command.torque_limit) &&
-           command.torque_limit >= 0.0 && std::isfinite(command.end_velocity);
+           command.torque_limit >= 0.0 && std::isfinite(command.torque_ramp) &&
+           command.torque_ramp >= 0.0 && std::isfinite(command.end_velocity);
 }
 
 inline bool is_valid_direction(Direction direction)
 {
     return direction == Direction::current || direction == Direction::positive ||
            direction == Direction::negative || direction == Direction::shortest_way;
+}
+
+inline bool is_valid_buffer_mode(BufferMode mode)
+{
+    return mode == BufferMode::aborting || mode == BufferMode::buffered ||
+           mode == BufferMode::blending_low || mode == BufferMode::blending_high;
 }
 
 inline bool is_continuous_kind(CommandKind kind)
@@ -359,7 +452,8 @@ class AxisModel
         return rt::ErrorCode::ok;
     }
 
-    rt::ErrorCode set_power(bool enabled)
+    rt::ErrorCode set_power(bool enabled, bool enable_positive = true,
+                            bool enable_negative = true)
     {
         if (snapshot_.status == AxisStatus::errorstop && enabled)
         {
@@ -369,10 +463,22 @@ class AxisModel
         {
             return rt::ErrorCode::precondition_failed;
         }
-        // MC_Power is level-controlled and called every scan cycle; only a
-        // real power transition may abort motion and reset the state.
+        const bool positive_changed = positive_enabled_ != (enabled && enable_positive);
+        const bool negative_changed = negative_enabled_ != (enabled && enable_negative);
+        positive_enabled_ = enabled && enable_positive;
+        negative_enabled_ = enabled && enable_negative;
+
+        // MC_Power is level-controlled and called every scan cycle. A power
+        // transition always aborts motion; changing a feed enable only aborts
+        // a command that would continue into the newly disabled direction.
         if (enabled == snapshot_.powered)
         {
+            if ((positive_changed || negative_changed) &&
+                !active_direction_enabled())
+            {
+                abort_motion();
+                snapshot_.status = AxisStatus::standstill;
+            }
             return rt::ErrorCode::ok;
         }
 
@@ -567,12 +673,10 @@ class AxisModel
             }
             else
             {
-                const double max_velocity = active_command_.velocity * override_;
                 const double end_velocity = is_continuous_kind(active_command_.kind)
                                                 ? active_command_.end_velocity * override_
                                                 : 0.0;
-                const otg::Limits1D limits{max_velocity, active_command_.acceleration,
-                                           active_command_.deceleration, active_command_.jerk};
+                const otg::Limits1D limits = scaled_limits(active_command_);
                 const rt::Result<otg::Profile1D> replanned = otg::plan_time_optimal(
                     {position, snapshot_.command_velocity, snapshot_.command_acceleration},
                     {active_target_, end_velocity, 0.0}, limits);
@@ -706,6 +810,46 @@ class AxisModel
         }
     }
 
+    rt::Result<std::uint32_t> submit_set_position(double position, bool relative,
+                                                  bool queued)
+    {
+        AxisManagementCommand command{};
+        command.kind = AxisManagementKind::set_position;
+        command.value = position;
+        command.flag = relative;
+        return submit_management(command, queued);
+    }
+
+    rt::Result<std::uint32_t> submit_write_parameter(AxisParameter parameter,
+                                                     double value, bool queued)
+    {
+        AxisManagementCommand command{};
+        command.kind = AxisManagementKind::write_parameter;
+        command.parameter = parameter;
+        command.value = value;
+        return submit_management(command, queued);
+    }
+
+    rt::Result<std::uint32_t> submit_write_bool_parameter(AxisParameter parameter,
+                                                          bool value, bool queued)
+    {
+        AxisManagementCommand command{};
+        command.kind = AxisManagementKind::write_bool_parameter;
+        command.parameter = parameter;
+        command.flag = value;
+        return submit_management(command, queued);
+    }
+
+    rt::Result<std::uint32_t> submit_write_digital_output(std::size_t channel,
+                                                          bool value, bool queued)
+    {
+        AxisManagementCommand command{};
+        command.kind = AxisManagementKind::write_digital_output;
+        command.channel = channel;
+        command.flag = value;
+        return submit_management(command, queued);
+    }
+
     // MC_SetOverride carries the KB-003 contract: newly planned commands scale
     // by the override, velocity commands respond per cycle through
     // signed_velocity(), and an active profile-driven command re-plans from
@@ -714,34 +858,62 @@ class AxisModel
     // keeps the previous override and the running profile untouched.
     rt::ErrorCode set_override(double factor)
     {
+        return set_override(factor, acceleration_override_, jerk_override_);
+    }
+
+    rt::ErrorCode set_override(double velocity_factor,
+                               double acceleration_factor,
+                               double jerk_factor)
+    {
         if (group_blocks_standalone_motion())
         {
             return rt::ErrorCode::invalid_argument;
         }
-        if (!std::isfinite(factor) || factor < 0.0 || factor > 1.0)
+        if (!std::isfinite(velocity_factor) || velocity_factor < 0.0 ||
+            velocity_factor > 1.0 || !std::isfinite(acceleration_factor) ||
+            acceleration_factor <= 0.0 || acceleration_factor > 1.0 ||
+            !std::isfinite(jerk_factor) || jerk_factor <= 0.0 ||
+            jerk_factor > 1.0)
         {
             return rt::ErrorCode::invalid_argument;
         }
-        const double previous = override_;
-        override_ = factor;
-        if (previous == factor)
+        const double previous_velocity = override_;
+        const double previous_acceleration = acceleration_override_;
+        const double previous_jerk = jerk_override_;
+        override_ = velocity_factor;
+        acceleration_override_ = acceleration_factor;
+        jerk_override_ = jerk_factor;
+        if (previous_velocity == velocity_factor &&
+            previous_acceleration == acceleration_factor &&
+            previous_jerk == jerk_factor)
         {
             return rt::ErrorCode::ok;
         }
 
-        if (factor == 0.0 && active_ && active_command_.kind != CommandKind::halt &&
+        const auto restore_previous = [&]() {
+            override_ = previous_velocity;
+            acceleration_override_ = previous_acceleration;
+            jerk_override_ = previous_jerk;
+        };
+
+        if (velocity_factor == 0.0 && active_ && active_command_.kind != CommandKind::halt &&
             active_command_.kind != CommandKind::stop)
         {
             const double v0 = snapshot_.command_velocity;
             const double a0 = snapshot_.command_acceleration;
+            const double scaled_acceleration =
+                active_command_.acceleration * acceleration_override_;
+            const double scaled_deceleration =
+                active_command_.deceleration * acceleration_override_;
+            const double scaled_jerk = active_command_.jerk * jerk_override_;
             const otg::Limits1D halt_limits{std::fabs(v0) + active_command_.velocity + 1e-9,
-                                            std::fmax(std::fabs(a0), active_command_.acceleration),
-                                            active_command_.deceleration, active_command_.jerk};
+                                            std::fmax(std::fabs(a0), scaled_acceleration),
+                                            scaled_deceleration, scaled_jerk};
             double brake_velocity = v0;
             double brake_shift = 0.0;
             if (a0 != 0.0)
             {
-                const double zero_cycles = std::ceil(std::fabs(a0) / active_command_.jerk);
+                const double zero_cycles = std::ceil(std::fabs(a0) / scaled_jerk);
                 brake_velocity += 0.5 * a0 * zero_cycles;
                 brake_shift += v0 * zero_cycles + a0 * zero_cycles * zero_cycles / 3.0;
             }
@@ -752,7 +924,7 @@ class AxisModel
                 {snapshot_.command_position, v0, a0}, {stop_position, 0.0, 0.0}, halt_limits);
             if (!profile)
             {
-                override_ = previous;
+                restore_previous();
                 return profile.error();
             }
             active_profile_ = profile.value();
@@ -763,26 +935,24 @@ class AxisModel
             return rt::ErrorCode::ok;
         }
 
-        if (previous == 0.0 && factor > 0.0 && override_paused_)
+        if (previous_velocity == 0.0 && velocity_factor > 0.0 && override_paused_)
         {
             override_paused_ = false;
             if (active_command_.kind == CommandKind::move_velocity || continuous_holding_)
             {
                 return rt::ErrorCode::ok;
             }
-            const otg::Limits1D limits{active_command_.velocity * factor,
-                                       active_command_.acceleration, active_command_.deceleration,
-                                       active_command_.jerk};
+            const otg::Limits1D limits = scaled_limits(active_command_);
             const double direction = active_target_ >= snapshot_.command_position ? 1.0 : -1.0;
             const double end_velocity = is_continuous_kind(active_command_.kind)
-                                            ? direction * active_command_.end_velocity * factor
+                                            ? direction * active_command_.end_velocity * velocity_factor
                                             : 0.0;
             const rt::Result<otg::Profile1D> profile =
                 otg::plan_time_optimal({snapshot_.command_position, 0.0, 0.0},
                                        {active_target_, end_velocity, 0.0}, limits);
             if (!profile)
             {
-                override_ = previous;
+                restore_previous();
                 override_paused_ = true;
                 return profile.error();
             }
@@ -809,15 +979,14 @@ class AxisModel
             return rt::ErrorCode::ok;
         }
 
-        otg::Limits1D limits{active_command_.velocity * override_, active_command_.acceleration,
-                             active_command_.deceleration, active_command_.jerk};
+        const otg::Limits1D limits = scaled_limits(active_command_);
         const rt::Result<otg::Profile1D> profile =
             otg::plan_time_optimal({snapshot_.command_position, snapshot_.command_velocity,
                                     snapshot_.command_acceleration},
                                    {active_target_, end_velocity, 0.0}, limits);
         if (!profile)
         {
-            override_ = previous;
+            restore_previous();
             return profile.error();
         }
         active_profile_ = profile.value();
@@ -844,8 +1013,14 @@ class AxisModel
             record_command_error(superimposed_id_, code);
         if (stream_id_ != 0)
             record_command_error(stream_id_, code);
+        for (std::size_t i = 0; i < management_queue_.size(); ++i)
+        {
+            remember_management_result(management_queue_[i].command_id, code);
+        }
+        management_queue_.clear();
         abort_motion();
         snapshot_.error = true;
+        snapshot_.error_id = code;
         snapshot_.status = AxisStatus::errorstop;
         return rt::ErrorCode::ok;
     }
@@ -857,6 +1032,7 @@ class AxisModel
             return rt::ErrorCode::invalid_argument;
         }
         snapshot_.error = false;
+        snapshot_.error_id = rt::ErrorCode::ok;
         snapshot_.status = snapshot_.powered ? AxisStatus::standstill : AxisStatus::disabled;
         return rt::ErrorCode::ok;
     }
@@ -935,13 +1111,29 @@ class AxisModel
             return rt::ErrorCode::invalid_argument;
         }
 
-        double from_position = snapshot_.command_position;
-        double from_velocity = snapshot_.command_velocity;
-        double from_acceleration = snapshot_.command_acceleration;
+        const BufferMode first_mode = commands[0].buffer_mode;
+        if(!is_valid_buffer_mode(first_mode))
+        {
+            return rt::ErrorCode::invalid_argument;
+        }
+        if(active_ && first_mode != BufferMode::aborting &&
+           queue_.size() + command_count > QueueCapacity)
+        {
+            return rt::ErrorCode::capacity_exceeded;
+        }
+        double from_position = first_mode == BufferMode::aborting
+                                   ? snapshot_.command_position
+                                   : queued_endpoint();
+        double from_velocity = first_mode == BufferMode::aborting
+                                   ? snapshot_.command_velocity
+                                   : 0.0;
+        double from_acceleration = first_mode == BufferMode::aborting
+                                       ? snapshot_.command_acceleration
+                                       : 0.0;
         for (std::size_t i = 0; i < command_count; ++i)
         {
             const AxisCommand &command = commands[i];
-            const BufferMode expected_mode = i == 0 ? BufferMode::aborting : BufferMode::buffered;
+            const BufferMode expected_mode = i == 0 ? first_mode : BufferMode::buffered;
             if (command.buffer_mode != expected_mode ||
                 (command.kind != CommandKind::move_absolute &&
                  command.kind != CommandKind::move_relative) ||
@@ -966,8 +1158,7 @@ class AxisModel
                 return rt::ErrorCode::out_of_range;
             }
 
-            const otg::Limits1D limits{command.velocity * override_, command.acceleration,
-                                       command.deceleration, command.jerk};
+            const otg::Limits1D limits = scaled_limits(command);
             const rt::Result<otg::Profile1D> profile = otg::plan_time_optimal(
                 {from_position, from_velocity, from_acceleration}, {target, 0.0, 0.0}, limits);
             if (!profile)
@@ -1000,6 +1191,7 @@ class AxisModel
     rt::ErrorCode preflight_group_owned(AxisCommand command) const
     {
         if (!snapshot_.powered || snapshot_.status == AxisStatus::errorstop ||
+            !is_valid_buffer_mode(command.buffer_mode) ||
             !is_finite_command(command) || command.velocity <= 0.0 || command.acceleration <= 0.0 ||
             command.deceleration <= 0.0 || command.jerk <= 0.0 ||
             (command.kind != CommandKind::move_absolute &&
@@ -1013,8 +1205,7 @@ class AxisModel
         {
             return rt::ErrorCode::out_of_range;
         }
-        const otg::Limits1D limits{command.velocity * override_, command.acceleration,
-                                   command.deceleration, command.jerk};
+        const otg::Limits1D limits = scaled_limits(command);
         const rt::Result<otg::Profile1D> profile =
             otg::plan_time_optimal({snapshot_.command_position, snapshot_.command_velocity,
                                     snapshot_.command_acceleration},
@@ -1041,17 +1232,31 @@ class AxisModel
 
     rt::Result<std::uint32_t> submit_impl(AxisCommand command)
     {
+        const bool torque = command.kind == CommandKind::torque;
         if (!snapshot_.powered || snapshot_.status == AxisStatus::errorstop ||
-            !is_finite_command(command) || command.velocity <= 0.0 || command.acceleration <= 0.0 ||
-            command.deceleration <= 0.0 || command.jerk <= 0.0)
+            !is_valid_buffer_mode(command.buffer_mode) ||
+            !is_finite_command(command) ||
+            (torque ? (command.velocity < 0.0 || command.acceleration < 0.0 ||
+                       command.deceleration < 0.0 || command.jerk < 0.0 ||
+                       !is_valid_direction(command.direction) ||
+                       command.direction == Direction::shortest_way)
+                    : (command.velocity <= 0.0 || command.acceleration <= 0.0 ||
+                       command.deceleration <= 0.0 || command.jerk <= 0.0)))
         {
             return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
+        }
+        if(torque && command.buffer_mode != BufferMode::aborting) {
+            // A torque command has no natural completion point. Matching the
+            // Beckhoff CST contract, only an aborting takeover is defined.
+            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported);
         }
         if (stop_lock_id_ != 0 && command.kind != CommandKind::stop)
         {
             return rt::Result<std::uint32_t>::failure(rt::ErrorCode::precondition_failed);
         }
-        if (command.kind == CommandKind::move_absolute && !is_valid_direction(command.direction))
+        if ((command.kind == CommandKind::move_absolute ||
+             command.kind == CommandKind::move_continuous_absolute) &&
+            !is_valid_direction(command.direction))
         {
             return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
         }
@@ -1068,6 +1273,15 @@ class AxisModel
         {
             return rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported);
         }
+        const double direction_reference =
+            command.buffer_mode == BufferMode::aborting
+                ? snapshot_.command_position
+                : queued_endpoint();
+        if (!command_direction_enabled(command, direction_reference))
+        {
+            return rt::Result<std::uint32_t>::failure(
+                rt::ErrorCode::precondition_failed);
+        }
 
         if (command.command_id == 0)
         {
@@ -1076,12 +1290,21 @@ class AxisModel
 
         if (command.kind == CommandKind::torque)
         {
+            const double prior_torque = snapshot_.command_torque;
             abort_motion();
             active_ = true;
             active_command_ = command;
             torque_command_id_ = command.command_id;
             snapshot_.active_command_id = command.command_id;
-            snapshot_.actual_torque = command.value;
+            snapshot_.command_torque = command.torque_ramp == 0.0
+                                           ? command.value
+                                           : prior_torque;
+            snapshot_.torque_velocity_limit = command.velocity;
+            snapshot_.torque_acceleration_limit = command.acceleration;
+            snapshot_.torque_deceleration_limit = command.deceleration;
+            snapshot_.torque_jerk_limit = command.jerk;
+            snapshot_.torque_direction = command.direction;
+            snapshot_.torque_mode = true;
             snapshot_.status = AxisStatus::continuous_motion;
             return rt::Result<std::uint32_t>::success(command.command_id);
         }
@@ -1145,16 +1368,88 @@ class AxisModel
     }
 
   public:
+    rt::Result<std::uint32_t> select_cam_table(const AxisModel *master,
+                                               exec::CamTableView table,
+                                               bool periodic,
+                                               bool master_absolute,
+                                               bool slave_absolute,
+                                               std::uint32_t replace_id = 0)
+    {
+        table.periodic = periodic;
+        if(master == nullptr || master == this || !table.valid() ||
+           (!master_absolute && !table.periodic &&
+            (table.points[0].master > 0.0 || table.points[table.size - 1].master < 0.0))) {
+            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
+        }
+
+        CamTableSelection *slot = nullptr;
+        if(replace_id != 0) {
+            for(CamTableSelection &selection : cam_table_selections_) {
+                if(selection.id == replace_id) {
+                    slot = &selection;
+                    break;
+                }
+            }
+        }
+        if(slot == nullptr) {
+            for(CamTableSelection &selection : cam_table_selections_) {
+                if(selection.id == 0) {
+                    slot = &selection;
+                    break;
+                }
+            }
+        }
+        if(slot == nullptr) {
+            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::capacity_exceeded);
+        }
+
+        const std::uint32_t id = slot->id == 0 ? next_command_id_++ : slot->id;
+        *slot = {id,
+                 master,
+                 table,
+                 master_absolute,
+                 slave_absolute,
+                 master->snapshot().command_position,
+                 snapshot_.command_position};
+        return rt::Result<std::uint32_t>::success(id);
+    }
+
+    rt::Result<CamTableSelection> cam_table_selection(std::uint32_t id) const
+    {
+        if(id == 0) {
+            return rt::Result<CamTableSelection>::failure(rt::ErrorCode::invalid_argument);
+        }
+        for(const CamTableSelection &selection : cam_table_selections_) {
+            if(selection.id == id) {
+                return rt::Result<CamTableSelection>::success(selection);
+            }
+        }
+        return rt::Result<CamTableSelection>::failure(rt::ErrorCode::invalid_argument);
+    }
+
     rt::Result<std::uint32_t> gear_in(const GearInCommand &command)
     {
         if (command.master == nullptr || command.master == this ||
             !std::isfinite(command.ratio_numerator) || !std::isfinite(command.ratio_denominator) ||
             command.ratio_denominator == 0.0 || !std::isfinite(command.master_sync_position) ||
             !std::isfinite(command.slave_sync_position) ||
-            !std::isfinite(command.master_start_distance) || command.master_start_distance < 0.0 ||
-            !std::isfinite(command.approach_velocity) || command.approach_velocity < 0.0)
+            !std::isfinite(command.master_start_distance) ||
+            !std::isfinite(command.approach_velocity) || command.approach_velocity < 0.0 ||
+            !std::isfinite(command.acceleration) || command.acceleration < 0.0 ||
+            !std::isfinite(command.deceleration) || command.deceleration < 0.0 ||
+            !std::isfinite(command.jerk) || command.jerk < 0.0)
         {
             return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
+        }
+        if (command.sync_mode != SyncMode::shortest &&
+            command.sync_mode != SyncMode::catch_up &&
+            command.sync_mode != SyncMode::slow_down)
+        {
+            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
+        }
+        if (command.position_sync && command.sync_mode != SyncMode::shortest)
+        {
+            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported);
         }
 
         const rt::Result<std::uint32_t> begun = begin_sync(SyncKind::gear, command.buffer_mode);
@@ -1164,8 +1459,9 @@ class AxisModel
         }
         sync_gear_ = command;
         phase_offset_ = 0.0;
-        phasing_active_ = false;
-        sync_entry_phase_ = command.position_sync ? SyncPhase::waiting_window : SyncPhase::engaged;
+        abort_phasing_commands();
+        sync_profile_ready_ = false;
+        sync_entry_phase_ = command.position_sync ? SyncPhase::waiting_window : SyncPhase::approaching;
         if (sync_phase_ != SyncPhase::queued)
         {
             sync_phase_ = sync_entry_phase_;
@@ -1463,38 +1759,111 @@ class AxisModel
 
     bool phasing_active() const { return phasing_active_; }
 
+    PhasingCommandState phasing_command_state(std::uint32_t command_id) const
+    {
+        for (std::size_t i = 0; i < phasing_result_count_; ++i)
+        {
+            const std::size_t index =
+                (phasing_result_cursor_ + PhasingResultCapacity - 1 - i) % PhasingResultCapacity;
+            if (phasing_results_[index].command_id == command_id)
+            {
+                return phasing_results_[index].state;
+            }
+        }
+        return PhasingCommandState::unknown;
+    }
+
+    double phasing_covered_shift(std::uint32_t command_id) const
+    {
+        for (std::size_t i = 0; i < phasing_result_count_; ++i)
+        {
+            const std::size_t index =
+                (phasing_result_cursor_ + PhasingResultCapacity - 1 - i) % PhasingResultCapacity;
+            if (phasing_results_[index].command_id == command_id)
+            {
+                return phasing_results_[index].covered_shift;
+            }
+        }
+        return 0.0;
+    }
+
     bool gear_engaged_with(const AxisModel *master) const
     {
         return master != nullptr && sync_kind_ == SyncKind::gear &&
                sync_phase_ == SyncPhase::engaged && sync_gear_.master == master;
     }
 
-    rt::ErrorCode phasing_absolute(double phase, double velocity)
+    rt::Result<std::uint32_t> submit_phasing(PhasingCommand command)
     {
         if (sync_kind_ != SyncKind::gear || sync_phase_ != SyncPhase::engaged ||
-            !std::isfinite(phase) || !std::isfinite(velocity) || velocity < 0.0)
+            !std::isfinite(command.phase_shift) || !std::isfinite(command.velocity) ||
+            !std::isfinite(command.acceleration) || !std::isfinite(command.deceleration) ||
+            !std::isfinite(command.jerk) || command.velocity < 0.0 ||
+            command.acceleration < 0.0 || command.deceleration < 0.0 || command.jerk < 0.0)
         {
-            return rt::ErrorCode::invalid_argument;
+            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
         }
-        if (velocity == 0.0)
+        if (command.buffer_mode != BufferMode::aborting &&
+            command.buffer_mode != BufferMode::buffered)
         {
-            phase_offset_ = phase;
-            phasing_active_ = false;
-            return rt::ErrorCode::ok;
+            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported);
         }
-        phase_target_ = phase;
-        phase_rate_ = velocity;
-        phasing_active_ = true;
-        return rt::ErrorCode::ok;
-    }
+        const bool direct = command.velocity == 0.0;
+        if ((direct && (command.acceleration != 0.0 || command.deceleration != 0.0 ||
+                        command.jerk != 0.0)) ||
+            (!direct && (command.acceleration <= 0.0 || command.deceleration <= 0.0 ||
+                         command.jerk <= 0.0)))
+        {
+            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
+        }
+        if (command.buffer_mode == BufferMode::buffered &&
+            phasing_active_ && phasing_queue_.size() >= QueueCapacity)
+        {
+            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::capacity_exceeded);
+        }
+        if (command.buffer_mode == BufferMode::aborting && !direct)
+        {
+            const double target = command.relative ? phase_offset_ + command.phase_shift
+                                                   : command.phase_shift;
+            if (target != phase_offset_)
+            {
+                const otg::Limits1D limits{command.velocity, command.acceleration,
+                                           command.deceleration, command.jerk};
+                const rt::Result<otg::Profile1D> preflight = otg::plan_time_optimal(
+                    {phase_offset_, phasing_velocity_, phasing_acceleration_},
+                    {target, 0.0, 0.0}, limits);
+                if (!preflight)
+                {
+                    return rt::Result<std::uint32_t>::failure(preflight.error());
+                }
+            }
+        }
 
-    rt::ErrorCode phasing_relative(double shift, double velocity)
-    {
-        if (!std::isfinite(shift))
+        command.command_id = next_command_id_++;
+        remember_phasing(command.command_id, PhasingCommandState::queued, 0.0);
+        if (command.buffer_mode == BufferMode::aborting)
         {
-            return rt::ErrorCode::invalid_argument;
+            abort_phasing_commands(true);
+            remember_phasing(command.command_id, PhasingCommandState::queued, 0.0);
         }
-        return phasing_absolute(phase_offset_ + shift, velocity);
+        if (phasing_active_)
+        {
+            const rt::ErrorCode queued = phasing_queue_.push_back(command);
+            if (queued != rt::ErrorCode::ok)
+            {
+                return rt::Result<std::uint32_t>::failure(queued);
+            }
+        }
+        else
+        {
+            const rt::ErrorCode started = start_phasing(command);
+            if (started != rt::ErrorCode::ok)
+            {
+                remember_phasing(command.command_id, PhasingCommandState::aborted, 0.0);
+                return rt::Result<std::uint32_t>::failure(started);
+            }
+        }
+        return rt::Result<std::uint32_t>::success(command.command_id);
     }
 
     // Adapter hook: inject measured feedback without touching command state.
@@ -1733,6 +2102,10 @@ class AxisModel
         {
             return;
         }
+        if(!has_standalone_motion())
+        {
+            cycle_management();
+        }
         if (stream_cycle())
         {
             cycle_probes();
@@ -1758,12 +2131,13 @@ class AxisModel
             stream_active_ || !std::isfinite(distance) || !std::isfinite(velocity) ||
             velocity <= 0.0 || !std::isfinite(acceleration) || acceleration <= 0.0 ||
             !std::isfinite(deceleration) || deceleration <= 0.0 || !std::isfinite(jerk) ||
-            jerk <= 0.0)
+            jerk <= 0.0 || !direction_enabled(distance))
         {
             return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
         }
 
-        otg::Limits1D limits{velocity * override_, acceleration, deceleration, jerk};
+        const otg::Limits1D limits =
+            scaled_limits(velocity, acceleration, deceleration, jerk);
         const rt::Result<otg::Profile1D> profile =
             otg::plan_time_optimal({0.0, 0.0, 0.0}, {distance, 0.0, 0.0}, limits);
         if (!profile)
@@ -1775,6 +2149,7 @@ class AxisModel
         superimposed_tick_ = 0;
         superimposed_last_ = 0.0;
         superimposed_active_ = true;
+        superimposed_halting_ = false;
         superimposed_id_ = next_command_id_++;
         superimposed_completed_id_ = 0;
         return rt::Result<std::uint32_t>::success(superimposed_id_);
@@ -1782,16 +2157,66 @@ class AxisModel
 
     // Stops only the superimposed offset; the base command keeps running. The
     // contribution accumulated so far persists in the command position.
-    rt::ErrorCode halt_superimposed()
+    rt::ErrorCode halt_superimposed(double deceleration, double jerk)
     {
-        if (!snapshot_.powered || snapshot_.status == AxisStatus::errorstop)
+        if (!snapshot_.powered || snapshot_.status == AxisStatus::errorstop ||
+            !std::isfinite(deceleration) || deceleration <= 0.0 ||
+            !std::isfinite(jerk) || jerk <= 0.0)
         {
             return rt::ErrorCode::invalid_argument;
         }
+        if (!superimposed_active_)
+        {
+            return rt::ErrorCode::ok;
+        }
+
+        const otg::State1D current = otg::sample(
+            superimposed_profile_, rt::CycleTick::from_cycles(superimposed_tick_));
+        if (current.velocity == 0.0 && current.acceleration == 0.0)
+        {
+            superimposed_active_ = false;
+            superimposed_id_ = 0;
+            superimposed_halting_ = false;
+            superimposed_completed_id_ = 0;
+            return rt::ErrorCode::ok;
+        }
+
+        double brake_velocity = current.velocity;
+        double brake_shift = 0.0;
+        if (current.acceleration != 0.0)
+        {
+            const double zero_cycles =
+                std::ceil(std::fabs(current.acceleration) / jerk);
+            brake_velocity += 0.5 * current.acceleration * zero_cycles;
+            brake_shift += current.velocity * zero_cycles +
+                           current.acceleration * zero_cycles * zero_cycles / 3.0;
+        }
+        const otg::Limits1D halt_limits{
+            std::fabs(current.velocity) + std::fabs(brake_velocity) + 1e-9,
+            std::fmax(std::fabs(current.acceleration), deceleration),
+            deceleration, jerk};
+        const double stop_position = current.position + brake_shift +
+            otg::detail::ramp_between(brake_velocity, 0.0, halt_limits).distance;
+        const rt::Result<otg::Profile1D> halt = otg::plan_time_optimal(
+            current, {stop_position, 0.0, 0.0}, halt_limits);
+        if (!halt)
+        {
+            return halt.error();
+        }
+        superimposed_profile_ = halt.value();
+        superimposed_tick_ = 0;
+        superimposed_last_ = current.position;
+        superimposed_halting_ = true;
+        superimposed_completed_id_ = 0;
+        return rt::ErrorCode::ok;
+    }
+
+    void abort_superimposed()
+    {
         superimposed_active_ = false;
         superimposed_id_ = 0;
         superimposed_completed_id_ = 0;
-        return rt::ErrorCode::ok;
+        superimposed_halting_ = false;
     }
 
     bool superimposed_active() const { return superimposed_active_; }
@@ -1799,6 +2224,40 @@ class AxisModel
     std::uint32_t superimposed_command_id() const { return superimposed_id_; }
 
     std::uint32_t superimposed_completed_id() const { return superimposed_completed_id_; }
+
+    double superimposed_distance() const { return superimposed_last_; }
+
+    rt::ErrorCode update_superimposed_target(std::uint32_t command_id,
+                                             double distance,
+                                             double velocity,
+                                             double acceleration,
+                                             double deceleration,
+                                             double jerk)
+    {
+        if(!superimposed_active_ || superimposed_halting_ || command_id == 0 ||
+           command_id != superimposed_id_ || !std::isfinite(distance) ||
+           !std::isfinite(velocity) || velocity <= 0.0 ||
+           !std::isfinite(acceleration) || acceleration <= 0.0 ||
+           !std::isfinite(deceleration) || deceleration <= 0.0 ||
+           !std::isfinite(jerk) || jerk <= 0.0 ||
+           !direction_enabled(distance - superimposed_last_))
+        {
+            return rt::ErrorCode::invalid_argument;
+        }
+        const otg::State1D current = otg::sample(
+            superimposed_profile_, rt::CycleTick::from_cycles(superimposed_tick_));
+        const rt::Result<otg::Profile1D> profile = otg::plan_time_optimal(
+            current, {distance, 0.0, 0.0},
+            scaled_limits(velocity, acceleration, deceleration, jerk));
+        if(!profile)
+        {
+            return profile.error();
+        }
+        superimposed_profile_ = profile.value();
+        superimposed_tick_ = 0;
+        superimposed_last_ = current.position;
+        return rt::ErrorCode::ok;
+    }
 
     // True while the command sits in the buffered queue (facades report Busy
     // for queued successors instead of misreading them as aborted).
@@ -1816,6 +2275,40 @@ class AxisModel
             }
         }
         return false;
+    }
+
+    bool management_command_pending(std::uint32_t command_id) const
+    {
+        if(command_id == 0) return false;
+        for(std::size_t i = 0; i < management_queue_.size(); ++i) {
+            if(management_queue_[i].command_id == command_id) return true;
+        }
+        return false;
+    }
+
+    bool management_command_active(std::uint32_t command_id) const
+    {
+        return command_id != 0 && active_management_id_ == command_id;
+    }
+
+    bool management_command_done(std::uint32_t command_id) const
+    {
+        for(std::size_t i = 0; i < management_results_.size(); ++i) {
+            if(management_results_[i].command_id == command_id) {
+                return management_results_[i].error == rt::ErrorCode::ok;
+            }
+        }
+        return false;
+    }
+
+    rt::ErrorCode management_command_error(std::uint32_t command_id) const
+    {
+        for(std::size_t i = 0; i < management_results_.size(); ++i) {
+            if(management_results_[i].command_id == command_id) {
+                return management_results_[i].error;
+            }
+        }
+        return rt::ErrorCode::ok;
     }
 
     rt::ErrorCode command_error(std::uint32_t command_id) const
@@ -1885,7 +2378,7 @@ class AxisModel
                std::fabs(snapshot_.command_velocity - continuous_hold_velocity_) <= 1e-12;
     }
 
-    double command_torque() const { return snapshot_.actual_torque; }
+    double command_torque() const { return snapshot_.command_torque; }
 
     rt::ErrorCode release_stop(std::uint32_t command_id)
     {
@@ -1915,7 +2408,8 @@ class AxisModel
     {
         if (!active_ || snapshot_.active_command_id != command_id || command_id == 0 ||
             active_command_.kind != CommandKind::move_velocity || !std::isfinite(direction_value) ||
-            !std::isfinite(velocity) || velocity <= 0.0)
+            !std::isfinite(velocity) || velocity <= 0.0 ||
+            !direction_enabled(direction_value))
         {
             return rt::ErrorCode::invalid_argument;
         }
@@ -1924,7 +2418,35 @@ class AxisModel
         return rt::ErrorCode::ok;
     }
 
-    // Retargets the active move_continuous_* or move_absolute command
+    rt::ErrorCode update_active_torque(std::uint32_t command_id,
+                                       const AxisCommand &command)
+    {
+        if(!active_ || snapshot_.active_command_id != command_id ||
+           command_id == 0 || active_command_.kind != CommandKind::torque ||
+           command.kind != CommandKind::torque || !is_finite_command(command) ||
+           command.velocity < 0.0 || command.acceleration < 0.0 ||
+           command.deceleration < 0.0 || command.jerk < 0.0 ||
+           !is_valid_direction(command.direction) ||
+           command.direction == Direction::shortest_way ||
+           command.buffer_mode != BufferMode::aborting) {
+            return rt::ErrorCode::invalid_argument;
+        }
+        active_command_.value = command.value;
+        active_command_.torque_ramp = command.torque_ramp;
+        active_command_.velocity = command.velocity;
+        active_command_.acceleration = command.acceleration;
+        active_command_.deceleration = command.deceleration;
+        active_command_.jerk = command.jerk;
+        active_command_.direction = command.direction;
+        snapshot_.torque_velocity_limit = command.velocity;
+        snapshot_.torque_acceleration_limit = command.acceleration;
+        snapshot_.torque_deceleration_limit = command.deceleration;
+        snapshot_.torque_jerk_limit = command.jerk;
+        snapshot_.torque_direction = command.direction;
+        return rt::ErrorCode::ok;
+    }
+
+    // Retargets an active position command
     // (ContinuousUpdate).
     rt::ErrorCode update_active_target(std::uint32_t command_id, double target)
     {
@@ -1932,7 +2454,9 @@ class AxisModel
             snapshot_.active_command_id != command_id || command_id == 0 ||
             !std::isfinite(target) ||
             (!is_continuous_kind(active_command_.kind) &&
-             active_command_.kind != CommandKind::move_absolute))
+             active_command_.kind != CommandKind::move_absolute &&
+             active_command_.kind != CommandKind::move_relative &&
+             active_command_.kind != CommandKind::move_additive))
         {
             return rt::ErrorCode::invalid_argument;
         }
@@ -1940,14 +2464,17 @@ class AxisModel
         {
             return rt::ErrorCode::out_of_range;
         }
+        if (!direction_enabled(target - snapshot_.command_position))
+        {
+            return rt::ErrorCode::precondition_failed;
+        }
 
         double end_velocity = 0.0;
         if (is_continuous_kind(active_command_.kind))
         {
             end_velocity = active_command_.end_velocity * override_;
         }
-        otg::Limits1D limits{active_command_.velocity * override_, active_command_.acceleration,
-                             active_command_.deceleration, active_command_.jerk};
+        const otg::Limits1D limits = scaled_limits(active_command_);
         const rt::Result<otg::Profile1D> profile =
             otg::plan_time_optimal({snapshot_.command_position, snapshot_.command_velocity,
                                     snapshot_.command_acceleration},
@@ -2020,12 +2547,13 @@ class AxisModel
 
     void reset_sync()
     {
+        abort_phasing_commands();
         sync_kind_ = SyncKind::none;
         sync_phase_ = SyncPhase::idle;
         sync_entry_phase_ = SyncPhase::idle;
         sync_id_ = 0;
         phase_offset_ = 0.0;
-        phasing_active_ = false;
+        sync_profile_ready_ = false;
     }
 
     double master_value(const AxisModel &master, MasterValueSource source) const
@@ -2085,20 +2613,129 @@ class AxisModel
                                            sync_cam_.slave_scaling * sampled.value());
     }
 
+    void remember_phasing(std::uint32_t command_id, PhasingCommandState state,
+                          double covered_shift)
+    {
+        for (std::size_t i = 0; i < phasing_result_count_; ++i)
+        {
+            const std::size_t index =
+                (phasing_result_cursor_ + PhasingResultCapacity - 1 - i) % PhasingResultCapacity;
+            if (phasing_results_[index].command_id == command_id)
+            {
+                phasing_results_[index].state = state;
+                phasing_results_[index].covered_shift = covered_shift;
+                return;
+            }
+        }
+        phasing_results_[phasing_result_cursor_] = {command_id, state, covered_shift};
+        phasing_result_cursor_ = (phasing_result_cursor_ + 1) % PhasingResultCapacity;
+        if (phasing_result_count_ < PhasingResultCapacity)
+        {
+            ++phasing_result_count_;
+        }
+    }
+
+    void abort_phasing_commands(bool preserve_kinematics = false)
+    {
+        if (phasing_active_)
+        {
+            remember_phasing(phasing_id_, PhasingCommandState::aborted,
+                              phase_offset_ - phasing_start_offset_);
+        }
+        for (std::size_t i = 0; i < phasing_queue_.size(); ++i)
+        {
+            remember_phasing(phasing_queue_[i].command_id, PhasingCommandState::aborted, 0.0);
+        }
+        phasing_queue_.clear();
+        phasing_active_ = false;
+        phasing_id_ = 0;
+        if (!preserve_kinematics)
+        {
+            phasing_velocity_ = 0.0;
+            phasing_acceleration_ = 0.0;
+        }
+        phasing_tick_ = 0;
+    }
+
+    rt::ErrorCode start_phasing(const PhasingCommand &command)
+    {
+        const double target = command.relative ? phase_offset_ + command.phase_shift
+                                               : command.phase_shift;
+        phasing_start_offset_ = phase_offset_;
+        phasing_target_ = target;
+        phasing_id_ = command.command_id;
+        if (target == phase_offset_ || command.velocity == 0.0)
+        {
+            phase_offset_ = target;
+            phasing_velocity_ = 0.0;
+            phasing_acceleration_ = 0.0;
+            phasing_active_ = false;
+            remember_phasing(command.command_id, PhasingCommandState::completed,
+                              phase_offset_ - phasing_start_offset_);
+            phasing_id_ = 0;
+            return rt::ErrorCode::ok;
+        }
+
+        const otg::Limits1D limits{command.velocity, command.acceleration,
+                                   command.deceleration, command.jerk};
+        const rt::Result<otg::Profile1D> planned = otg::plan_time_optimal(
+            {phase_offset_, phasing_velocity_, phasing_acceleration_}, {target, 0.0, 0.0}, limits);
+        if (!planned)
+        {
+            phasing_id_ = 0;
+            return planned.error();
+        }
+        phasing_profile_ = planned.value();
+        phasing_tick_ = 0;
+        phasing_active_ = true;
+        remember_phasing(command.command_id, PhasingCommandState::active, 0.0);
+        return rt::ErrorCode::ok;
+    }
+
+    void start_next_phasing()
+    {
+        while (!phasing_active_ && !phasing_queue_.empty())
+        {
+            const PhasingCommand next = phasing_queue_[0];
+            for (std::size_t i = 1; i < phasing_queue_.size(); ++i)
+            {
+                phasing_queue_[i - 1] = phasing_queue_[i];
+            }
+            phasing_queue_.pop_back();
+            const rt::ErrorCode started = start_phasing(next);
+            if (started != rt::ErrorCode::ok)
+            {
+                remember_phasing(next.command_id, PhasingCommandState::aborted, 0.0);
+            }
+        }
+    }
+
     void advance_phasing()
     {
         if (!phasing_active_)
         {
+            start_next_phasing();
             return;
         }
-        const double remaining = phase_target_ - phase_offset_;
-        if (std::fabs(remaining) <= phase_rate_)
+        ++phasing_tick_;
+        const otg::State1D state =
+            otg::sample(phasing_profile_, rt::CycleTick::from_cycles(phasing_tick_));
+        phase_offset_ = state.position;
+        phasing_velocity_ = state.velocity;
+        phasing_acceleration_ = state.acceleration;
+        remember_phasing(phasing_id_, PhasingCommandState::active,
+                          phase_offset_ - phasing_start_offset_);
+        if (phasing_tick_ >= phasing_profile_.duration_cycles())
         {
-            phase_offset_ = phase_target_;
+            phase_offset_ = phasing_target_;
+            phasing_velocity_ = 0.0;
+            phasing_acceleration_ = 0.0;
+            remember_phasing(phasing_id_, PhasingCommandState::completed,
+                              phase_offset_ - phasing_start_offset_);
             phasing_active_ = false;
-            return;
+            phasing_id_ = 0;
+            start_next_phasing();
         }
-        phase_offset_ += remaining > 0.0 ? phase_rate_ : -phase_rate_;
     }
 
     rt::Result<double> sync_engaged_position()
@@ -2145,15 +2782,152 @@ class AxisModel
         return next_position - snapshot_.command_position;
     }
 
+    otg::Limits1D gear_limits() const
+    {
+        const double ratio = sync_gear_.ratio_numerator / sync_gear_.ratio_denominator;
+        const double target_velocity =
+            master_velocity(*sync_gear_.master, sync_gear_.source) * ratio;
+        const double velocity = sync_gear_.position_sync
+                                    ? (sync_gear_.approach_velocity > 0.0
+                                           ? sync_gear_.approach_velocity
+                                           : limits_.max_velocity)
+                                    : std::fmax(std::fabs(snapshot_.command_velocity),
+                                                std::fabs(target_velocity)) + 1e-9;
+        return {velocity,
+                sync_gear_.acceleration > 0.0 ? sync_gear_.acceleration
+                                              : limits_.max_acceleration,
+                sync_gear_.deceleration > 0.0 ? sync_gear_.deceleration
+                                              : limits_.max_deceleration,
+                sync_gear_.jerk > 0.0 ? sync_gear_.jerk : limits_.max_jerk};
+    }
+
+    rt::ErrorCode plan_gear_velocity_transition()
+    {
+        if (sync_gear_.acceleration == 0.0 && sync_gear_.deceleration == 0.0 &&
+            sync_gear_.jerk == 0.0)
+        {
+            // The three optional dynamics inputs form one contract: all zero
+            // selects unprofiled velocity locking, any nonzero value enables
+            // the fully constrained engagement planner.
+            sync_profile_ready_ = false;
+            return rt::ErrorCode::ok;
+        }
+        const double ratio = sync_gear_.ratio_numerator / sync_gear_.ratio_denominator;
+        const double target_velocity =
+            master_velocity(*sync_gear_.master, sync_gear_.source) * ratio;
+        if (std::fabs(snapshot_.command_velocity - target_velocity) <= 1e-12 &&
+            std::fabs(snapshot_.command_acceleration) <= 1e-12)
+        {
+            sync_profile_ready_ = false;
+            return rt::ErrorCode::ok;
+        }
+        const otg::Limits1D limits = gear_limits();
+        const double ramp_distance =
+            otg::detail::ramp_between(snapshot_.command_velocity, target_velocity, limits).distance;
+        const rt::Result<otg::Profile1D> planned = otg::plan_time_optimal(
+            {snapshot_.command_position, snapshot_.command_velocity,
+             snapshot_.command_acceleration},
+            {snapshot_.command_position + ramp_distance, target_velocity, 0.0}, limits);
+        if (!planned)
+        {
+            return planned.error();
+        }
+        sync_profile_ = planned.value();
+        sync_profile_tick_ = 0;
+        sync_profile_target_velocity_ = target_velocity;
+        sync_profile_ready_ = true;
+        return rt::ErrorCode::ok;
+    }
+
+    int sync_window_direction() const
+    {
+        const double distance = sync_master_start_distance();
+        if (distance > 0.0)
+            return 1;
+        if (distance < 0.0)
+            return -1;
+        const double velocity = sync_kind_ == SyncKind::gear
+                                    ? master_velocity(*sync_gear_.master, sync_gear_.source)
+                                    : master_velocity(*sync_cam_.master, sync_cam_.source);
+        if (velocity > 0.0)
+            return 1;
+        if (velocity < 0.0)
+            return -1;
+        return sync_window_master_value() <= sync_master_sync_position() ? 1 : -1;
+    }
+
+    bool sync_reached(double master, double boundary) const
+    {
+        return sync_window_direction() > 0 ? master >= boundary : master <= boundary;
+    }
+
+    rt::ErrorCode plan_position_sync_profile()
+    {
+        const double master = sync_window_master_value();
+        const double master_speed = sync_kind_ == SyncKind::gear
+                                        ? master_velocity(*sync_gear_.master, sync_gear_.source)
+                                        : master_velocity(*sync_cam_.master, sync_cam_.source);
+        const double remaining = sync_master_sync_position() - master;
+        if (remaining * master_speed <= 0.0)
+        {
+            return rt::ErrorCode::precondition_failed;
+        }
+        // The master setpoint is sampled before the slave in the same task.
+        // One guard cycle keeps the fixed-time slave endpoint aligned with
+        // the first cycle that observes the master crossing the sync point.
+        const std::int64_t cycles = static_cast<std::int64_t>(
+            std::ceil(std::fabs(remaining / master_speed))) + 1;
+        const rt::Result<double> target = sync_target_at_sync();
+        if (!target)
+        {
+            return target.error();
+        }
+        const double ratio = sync_gear_.ratio_numerator / sync_gear_.ratio_denominator;
+        const double target_velocity = master_speed * ratio;
+        const rt::Result<otg::Profile1D> planned = otg::solve_fixed_time(
+            {snapshot_.command_position, snapshot_.command_velocity,
+             snapshot_.command_acceleration},
+            {target.value(), target_velocity, 0.0}, gear_limits(), cycles > 0 ? cycles : 1);
+        if (!planned)
+        {
+            return planned.error();
+        }
+        sync_profile_ = planned.value();
+        sync_profile_tick_ = 0;
+        sync_profile_ready_ = true;
+        approach_window_begin_ = sync_master_sync_position() - sync_master_start_distance();
+        approach_start_slave_ = snapshot_.command_position;
+        return rt::ErrorCode::ok;
+    }
+
+    void fail_sync_command(rt::ErrorCode code)
+    {
+        const std::uint32_t failed_id = sync_id_;
+        reset_sync();
+        record_command_error(failed_id, code);
+        snapshot_.active_command_id = 0;
+        snapshot_.command_velocity = 0.0;
+        snapshot_.actual_velocity = 0.0;
+        snapshot_.command_acceleration = 0.0;
+        snapshot_.actual_acceleration = 0.0;
+        snapshot_.status = snapshot_.powered ? AxisStatus::standstill : AxisStatus::disabled;
+    }
+
     void enter_engaged()
     {
-        if (sync_kind_ == SyncKind::gear && sync_gear_.position_sync)
+        if (sync_kind_ == SyncKind::gear)
         {
             const double ratio = sync_gear_.ratio_numerator / sync_gear_.ratio_denominator;
-            phase_offset_ =
-                sync_gear_.slave_sync_position - sync_gear_.master_sync_position * ratio;
+            phase_offset_ = sync_gear_.position_sync
+                                ? sync_gear_.slave_sync_position -
+                                      sync_gear_.master_sync_position * ratio
+                                : snapshot_.command_position -
+                                      master_value(*sync_gear_.master, sync_gear_.source) * ratio;
         }
+        sync_profile_ready_ = false;
         sync_phase_ = SyncPhase::engaged;
+        snapshot_.active_command_id = sync_id_;
+        snapshot_.status = AxisStatus::synchronized_motion;
     }
 
     // Returns true when a stream session owns this cycle: the filter output
@@ -2199,30 +2973,102 @@ class AxisModel
         {
             const double master = sync_window_master_value();
             const double window_begin = sync_master_sync_position() - sync_master_start_distance();
-            if (master < window_begin)
+            if (!sync_reached(master, window_begin))
             {
                 return true;
             }
-            if (sync_master_start_distance() > 0.0 && master < sync_master_sync_position())
+            if (!sync_reached(master, sync_master_sync_position()))
             {
+                if (sync_kind_ == SyncKind::gear)
+                {
+                    const rt::ErrorCode planned = plan_position_sync_profile();
+                    if (planned != rt::ErrorCode::ok)
+                    {
+                        fail_sync_command(planned);
+                        return true;
+                    }
+                }
+                else
+                {
+                    approach_window_begin_ = window_begin;
+                    approach_start_slave_ = snapshot_.command_position;
+                }
                 sync_phase_ = SyncPhase::approaching;
-                approach_window_begin_ = window_begin;
-                approach_start_slave_ = snapshot_.command_position;
-            }
-            else if (master >= sync_master_sync_position())
-            {
-                enter_engaged();
             }
             else
             {
-                return true;
+                enter_engaged();
             }
         }
 
         if (sync_phase_ == SyncPhase::approaching)
         {
+            if (sync_kind_ == SyncKind::gear && !sync_gear_.position_sync)
+            {
+                if (!sync_profile_ready_)
+                {
+                    const rt::ErrorCode planned = plan_gear_velocity_transition();
+                    if (planned != rt::ErrorCode::ok)
+                    {
+                        fail_sync_command(planned);
+                        return true;
+                    }
+                    if (!sync_profile_ready_)
+                    {
+                        enter_engaged();
+                        return true;
+                    }
+                }
+                ++sync_profile_tick_;
+                const otg::State1D state =
+                    otg::sample(sync_profile_, rt::CycleTick::from_cycles(sync_profile_tick_));
+                snapshot_.active_command_id = sync_id_;
+                set_synchronized_state(state.position, state.velocity, state.acceleration);
+                if (sync_profile_tick_ >= sync_profile_.duration_cycles())
+                {
+                    const double live_target =
+                        master_velocity(*sync_gear_.master, sync_gear_.source) *
+                        (sync_gear_.ratio_numerator / sync_gear_.ratio_denominator);
+                    sync_profile_ready_ = false;
+                    if (std::fabs(live_target - sync_profile_target_velocity_) <= 1e-12)
+                    {
+                        enter_engaged();
+                    }
+                }
+                return true;
+            }
+
             const double master = sync_window_master_value();
-            if (master >= sync_master_sync_position())
+            if (sync_kind_ == SyncKind::gear && sync_gear_.position_sync)
+            {
+                if (sync_profile_tick_ < sync_profile_.duration_cycles())
+                {
+                    ++sync_profile_tick_;
+                    const otg::State1D state = otg::sample(
+                        sync_profile_, rt::CycleTick::from_cycles(sync_profile_tick_));
+                    snapshot_.active_command_id = sync_id_;
+                    set_synchronized_state(state.position, state.velocity, state.acceleration);
+                    if (sync_profile_tick_ >= sync_profile_.duration_cycles())
+                    {
+                        if (!sync_reached(master, sync_master_sync_position()))
+                        {
+                            fail_sync_command(rt::ErrorCode::infeasible);
+                        }
+                        else
+                        {
+                            enter_engaged();
+                        }
+                    }
+                    return true;
+                }
+                if (!sync_reached(master, sync_master_sync_position()))
+                {
+                    fail_sync_command(rt::ErrorCode::infeasible);
+                    return true;
+                }
+                enter_engaged();
+            }
+            else if (sync_reached(master, sync_master_sync_position()))
             {
                 enter_engaged();
             }
@@ -2334,6 +3180,59 @@ class AxisModel
         return command.value < 0.0 ? -scaled : scaled;
     }
 
+    otg::Limits1D scaled_limits(double velocity, double acceleration,
+                                double deceleration, double jerk) const
+    {
+        return {velocity * override_, acceleration * acceleration_override_,
+                deceleration * acceleration_override_, jerk * jerk_override_};
+    }
+
+    otg::Limits1D scaled_limits(const AxisCommand &command) const
+    {
+        return scaled_limits(command.velocity, command.acceleration,
+                             command.deceleration, command.jerk);
+    }
+
+    bool direction_enabled(double delta) const
+    {
+        return delta == 0.0 || (delta > 0.0 ? positive_enabled_ : negative_enabled_);
+    }
+
+    bool command_direction_enabled(const AxisCommand &command,
+                                   double reference_position) const
+    {
+        switch (command.kind)
+        {
+        case CommandKind::move_velocity:
+        case CommandKind::torque:
+            return direction_enabled(command.value);
+        case CommandKind::move_relative:
+        case CommandKind::move_additive:
+        case CommandKind::move_continuous_relative:
+            return direction_enabled(command.value);
+        case CommandKind::move_absolute:
+        case CommandKind::move_continuous_absolute:
+        case CommandKind::home:
+            return direction_enabled(command.value - reference_position);
+        default:
+            return true;
+        }
+    }
+
+    bool active_direction_enabled() const
+    {
+        if (!active_ && sync_kind_ == SyncKind::none && !stream_active_)
+        {
+            return true;
+        }
+        if (snapshot_.command_velocity != 0.0)
+        {
+            return direction_enabled(snapshot_.command_velocity);
+        }
+        return !active_ || command_direction_enabled(active_command_,
+                                                      snapshot_.command_position);
+    }
+
     bool target_inside_limits(double target, bool enforce_soft_limits = false) const
     {
         if (homing_limits_suspended_ && !enforce_soft_limits)
@@ -2434,8 +3333,7 @@ class AxisModel
         }
 
         active_target_ = target;
-        otg::Limits1D limits{command.velocity * override_, command.acceleration,
-                             command.deceleration, command.jerk};
+        const otg::Limits1D limits = scaled_limits(command);
         const rt::Result<otg::Profile1D> profile =
             otg::plan_time_optimal({snapshot_.command_position, snapshot_.command_velocity,
                                     snapshot_.command_acceleration},
@@ -2509,10 +3407,18 @@ class AxisModel
         {
             if (active_command_.kind == CommandKind::torque)
             {
+                const double delta =
+                    active_command_.value - snapshot_.command_torque;
+                if(active_command_.torque_ramp == 0.0 ||
+                   std::fabs(delta) <= active_command_.torque_ramp) {
+                    snapshot_.command_torque = active_command_.value;
+                } else {
+                    snapshot_.command_torque +=
+                        delta < 0.0 ? -active_command_.torque_ramp
+                                    : active_command_.torque_ramp;
+                }
                 snapshot_.command_velocity = 0.0;
-                snapshot_.actual_velocity = 0.0;
                 snapshot_.command_acceleration = 0.0;
-                snapshot_.actual_acceleration = 0.0;
                 return;
             }
             const double velocity =
@@ -2644,8 +3550,10 @@ class AxisModel
         if (superimposed_tick_ >= superimposed_profile_.duration_cycles())
         {
             superimposed_active_ = false;
-            superimposed_completed_id_ = superimposed_id_;
+            superimposed_completed_id_ =
+                superimposed_halting_ ? 0 : superimposed_id_;
             superimposed_id_ = 0;
+            superimposed_halting_ = false;
             snapshot_.command_velocity = base_velocity_;
             snapshot_.actual_velocity = base_velocity_;
             if (!active_ && snapshot_.status == AxisStatus::discrete_motion)
@@ -2740,8 +3648,14 @@ class AxisModel
         torque_command_id_ = 0;
         stop_lock_id_ = 0;
         stop_release_requested_ = false;
-        snapshot_.actual_torque = 0.0;
+        snapshot_.command_torque = 0.0;
         snapshot_.command_torque_limit = 0.0;
+        snapshot_.torque_velocity_limit = 0.0;
+        snapshot_.torque_acceleration_limit = 0.0;
+        snapshot_.torque_deceleration_limit = 0.0;
+        snapshot_.torque_jerk_limit = 0.0;
+        snapshot_.torque_direction = Direction::current;
+        snapshot_.torque_mode = false;
         if (snapshot_.status == AxisStatus::synchronized_motion)
         {
             snapshot_.status = snapshot_.powered ? AxisStatus::standstill : AxisStatus::disabled;
@@ -2761,6 +3675,7 @@ class AxisModel
         superimposed_completed_id_ = 0;
         superimposed_tick_ = 0;
         superimposed_last_ = 0.0;
+        superimposed_halting_ = false;
     }
 
     void cycle_probes()
@@ -2805,6 +3720,84 @@ class AxisModel
         rt::ErrorCode error = rt::ErrorCode::ok;
     };
 
+    struct AxisManagementResult
+    {
+        std::uint32_t command_id = 0;
+        rt::ErrorCode error = rt::ErrorCode::ok;
+    };
+
+    rt::Result<std::uint32_t> submit_management(AxisManagementCommand command,
+                                                bool queued)
+    {
+        if(queued) {
+            command.command_id = next_command_id_++;
+            const rt::ErrorCode added = management_queue_.push_back(command);
+            return added == rt::ErrorCode::ok
+                       ? rt::Result<std::uint32_t>::success(command.command_id)
+                       : rt::Result<std::uint32_t>::failure(added);
+        }
+        const rt::ErrorCode result = execute_management(command);
+        if(result != rt::ErrorCode::ok) {
+            return rt::Result<std::uint32_t>::failure(result);
+        }
+        return rt::Result<std::uint32_t>::success(last_management_command_id_);
+    }
+
+    rt::ErrorCode execute_management(AxisManagementCommand command)
+    {
+        if(command.command_id == 0) command.command_id = next_command_id_++;
+        active_management_id_ = command.command_id;
+        rt::ErrorCode result = rt::ErrorCode::ok;
+        switch(command.kind) {
+        case AxisManagementKind::set_position: {
+            const AxisSnapshot before = snapshot_;
+            const double delta = command.flag ? command.value
+                                              : command.value - before.actual_position;
+            const bool moving = before.status == AxisStatus::discrete_motion ||
+                                before.status == AxisStatus::continuous_motion ||
+                                before.status == AxisStatus::stopping;
+            result = moving ? shift_coordinates(delta)
+                            : set_position(before.actual_position + delta);
+            break;
+        }
+        case AxisManagementKind::write_parameter:
+            result = write_parameter(command.parameter, command.value);
+            break;
+        case AxisManagementKind::write_bool_parameter:
+            result = write_bool_parameter(command.parameter, command.flag);
+            break;
+        case AxisManagementKind::write_digital_output:
+            result = set_digital_output(command.channel, command.flag);
+            break;
+        }
+        remember_management_result(command.command_id, result);
+        last_management_command_id_ = command.command_id;
+        active_management_id_ = 0;
+        return result;
+    }
+
+    void cycle_management()
+    {
+        if(management_queue_.empty()) return;
+        const AxisManagementCommand command = management_queue_[0];
+        for(std::size_t i = 1; i < management_queue_.size(); ++i) {
+            management_queue_[i - 1] = management_queue_[i];
+        }
+        management_queue_.pop_back();
+        execute_management(command);
+    }
+
+    void remember_management_result(std::uint32_t command_id, rt::ErrorCode error)
+    {
+        if(management_results_.size() == QueueCapacity) {
+            for(std::size_t i = 1; i < management_results_.size(); ++i) {
+                management_results_[i - 1] = management_results_[i];
+            }
+            management_results_.pop_back();
+        }
+        management_results_.push_back({command_id, error});
+    }
+
     // Active + full buffered queue + the independent sync/superimposed/stream
     // owners must all retain axis-error attribution in the same cycle.
     static constexpr std::size_t CommandErrorCapacity = QueueCapacity + 4;
@@ -2830,14 +3823,22 @@ class AxisModel
     double base_velocity_ = 0.0;
     double continuous_hold_velocity_ = 0.0;
     double override_ = 1.0;
+    double acceleration_override_ = 1.0;
+    double jerk_override_ = 1.0;
     std::int64_t active_tick_ = 0;
     std::int64_t superimposed_tick_ = 0;
     double superimposed_last_ = 0.0;
+    static constexpr std::size_t PhasingResultCapacity = 16;
     double phase_offset_ = 0.0;
-    double phase_target_ = 0.0;
-    double phase_rate_ = 0.0;
+    double phasing_target_ = 0.0;
+    double phasing_start_offset_ = 0.0;
+    double phasing_velocity_ = 0.0;
+    double phasing_acceleration_ = 0.0;
     double approach_window_begin_ = 0.0;
     double approach_start_slave_ = 0.0;
+    double sync_profile_target_velocity_ = 0.0;
+    std::int64_t sync_profile_tick_ = 0;
+    std::int64_t phasing_tick_ = 0;
     std::size_t command_error_cursor_ = 0;
     std::size_t command_error_count_ = 0;
     std::size_t acceleration_segment_count_ = 0;
@@ -2850,26 +3851,38 @@ class AxisModel
     AxisSnapshot snapshot_{};
     AxisCommand active_command_{};
     CamInCommand sync_cam_{};
+    std::array<CamTableSelection, QueueCapacity> cam_table_selections_{};
     std::array<ProbeSlot, DigitalInputCount> probes_{};
     rt::StaticVector<AxisCommand, QueueCapacity> queue_{};
+    rt::StaticVector<AxisManagementCommand, QueueCapacity> management_queue_{};
+    rt::StaticVector<AxisManagementResult, QueueCapacity> management_results_{};
+    rt::StaticVector<PhasingCommand, QueueCapacity> phasing_queue_{};
     exec::CamSpline cam_spline_{};
     otg::Profile1D active_profile_{};
     otg::Profile1D superimposed_profile_{};
+    otg::Profile1D sync_profile_{};
+    otg::Profile1D phasing_profile_{};
     stream::StreamFilter1D stream_filter_{};
     int domain_id_ = 0;
     std::uint32_t next_command_id_ = 1;
+    std::uint32_t active_management_id_ = 0;
+    std::uint32_t last_management_command_id_ = 0;
     std::uint32_t superimposed_id_ = 0;
     std::uint32_t superimposed_completed_id_ = 0;
     SyncKind sync_kind_ = SyncKind::none;
     SyncPhase sync_phase_ = SyncPhase::idle;
     SyncPhase sync_entry_phase_ = SyncPhase::idle;
     std::uint32_t sync_id_ = 0;
+    std::uint32_t phasing_id_ = 0;
     std::uint32_t stream_id_ = 0;
     std::uint32_t torque_command_id_ = 0;
     std::uint32_t stop_lock_id_ = 0;
     std::uint32_t passive_homing_id_ = 0;
     std::uint32_t passive_homing_aborted_id_ = 0;
     std::array<CommandError, CommandErrorCapacity> command_errors_{};
+    std::array<PhasingCommandResult, PhasingResultCapacity> phasing_results_{};
+    std::size_t phasing_result_cursor_ = 0;
+    std::size_t phasing_result_count_ = 0;
     bool active_ = false;
     bool continuous_holding_ = false;
     bool override_braking_ = false;
@@ -2877,11 +3890,15 @@ class AxisModel
     bool halt_profiled_ = false;
     bool blend_armed_ = false;
     bool superimposed_active_ = false;
+    bool superimposed_halting_ = false;
     bool phasing_active_ = false;
+    bool sync_profile_ready_ = false;
     bool stream_active_ = false;
     bool homing_limits_suspended_ = false;
     bool stop_release_requested_ = false;
     bool power_feedback_ = true;
+    bool positive_enabled_ = false;
+    bool negative_enabled_ = false;
     bool acceleration_profile_completed_ = false;
     std::array<bool, DigitalInputCount> digital_input_{};
     std::array<bool, DigitalOutputCount> digital_output_{};

@@ -22,7 +22,7 @@ rows:
       - {direction: in_out, class: B, name: Axis, st_type: AXIS_REF}
       - {direction: input, class: B, name: Execute, st_type: BOOL}
       - {direction: input, class: B, name: Position, st_type: LREAL}
-      - {direction: input, class: E, name: BufferMode, st_type: INT}
+      - {direction: input, class: E, name: BufferMode, st_type: MC_BUFFER_MODE}
       - {direction: output, class: B, name: Done, st_type: BOOL}
       - {direction: output, class: E, name: Busy, st_type: BOOL}
       - {direction: output, class: E, name: Active, st_type: BOOL}
@@ -50,7 +50,7 @@ rows:
       - {direction: input, class: B, name: Execute, st_type: BOOL}
       - {direction: input, class: E, name: Deceleration, st_type: LREAL}
       - {direction: input, class: E, name: Jerk, st_type: LREAL}
-      - {direction: input, class: E, name: BufferMode, st_type: INT}
+      - {direction: input, class: E, name: BufferMode, st_type: MC_BUFFER_MODE}
       - {direction: output, class: B, name: Done, st_type: BOOL}
       - {direction: output, class: E, name: Busy, st_type: BOOL}
       - {direction: output, class: E, name: Active, st_type: BOOL}
@@ -69,8 +69,8 @@ rows:
       - {direction: input, class: E, name: Acceleration, st_type: LREAL}
       - {direction: input, class: E, name: Deceleration, st_type: LREAL}
       - {direction: input, class: E, name: Jerk, st_type: LREAL}
-      - {direction: input, class: B, name: Direction, st_type: INT}
-      - {direction: input, class: E, name: BufferMode, st_type: INT}
+      - {direction: input, class: B, name: Direction, st_type: MC_DIRECTION}
+      - {direction: input, class: E, name: BufferMode, st_type: MC_BUFFER_MODE}
       - {direction: output, class: B, name: Done, st_type: BOOL}
       - {direction: output, class: E, name: Busy, st_type: BOOL}
       - {direction: output, class: E, name: Active, st_type: BOOL}
@@ -89,7 +89,7 @@ rows:
       - {direction: input, class: E, name: Acceleration, st_type: LREAL}
       - {direction: input, class: E, name: Deceleration, st_type: LREAL}
       - {direction: input, class: E, name: Jerk, st_type: LREAL}
-      - {direction: input, class: E, name: BufferMode, st_type: INT}
+      - {direction: input, class: E, name: BufferMode, st_type: MC_BUFFER_MODE}
       - {direction: output, class: B, name: Done, st_type: BOOL}
       - {direction: output, class: E, name: Busy, st_type: BOOL}
       - {direction: output, class: E, name: Active, st_type: BOOL}
@@ -108,7 +108,7 @@ rows:
       - {direction: input, class: E, name: Acceleration, st_type: LREAL}
       - {direction: input, class: E, name: Deceleration, st_type: LREAL}
       - {direction: input, class: E, name: Jerk, st_type: LREAL}
-      - {direction: input, class: E, name: BufferMode, st_type: INT}
+      - {direction: input, class: E, name: BufferMode, st_type: MC_BUFFER_MODE}
       - {direction: output, class: B, name: Done, st_type: BOOL}
       - {direction: output, class: E, name: Busy, st_type: BOOL}
       - {direction: output, class: E, name: Active, st_type: BOOL}
@@ -123,7 +123,7 @@ rows:
       - {direction: input, class: B, name: Execute}
       - {direction: input, class: E, name: ContinuousUpdate}
       - {direction: input, class: B, name: Distance}
-      - {direction: input, class: E, name: VelocityDiff}
+      - {direction: input, class: E, name: VelocityDiff, st_type: LREAL, binding: metadata_only}
       - {direction: input, class: E, name: Acceleration}
       - {direction: input, class: E, name: Deceleration}
       - {direction: input, class: E, name: Jerk}
@@ -157,8 +157,8 @@ rows:
       - {direction: input, class: E, name: Acceleration, st_type: LREAL}
       - {direction: input, class: E, name: Deceleration, st_type: LREAL}
       - {direction: input, class: E, name: Jerk, st_type: LREAL}
-      - {direction: input, class: E, name: Direction, st_type: INT}
-      - {direction: input, class: E, name: BufferMode, st_type: INT}
+      - {direction: input, class: E, name: Direction, st_type: MC_DIRECTION}
+      - {direction: input, class: E, name: BufferMode, st_type: MC_BUFFER_MODE}
       - {direction: output, class: B, name: InVelocity, st_type: BOOL}
       - {direction: output, class: E, name: Busy, st_type: BOOL}
       - {direction: output, class: E, name: Active, st_type: BOOL}
@@ -257,7 +257,7 @@ rows:
       - {direction: input, class: E, name: VelocityScale}
       - {direction: input, class: E, name: Offset}
       - {direction: input, class: E, name: BufferMode}
-      - {direction: output, class: B, name: ProfileCompleted}
+      - {direction: output, class: B, name: ProfileCompleted, st_type: BOOL, binding: metadata_only}
       - {direction: output, class: E, name: Busy}
       - {direction: output, class: E, name: Active}
       - {direction: output, class: E, name: CommandAborted}
@@ -275,7 +275,7 @@ rows:
       - {direction: input, class: E, name: AccelerationScale}
       - {direction: input, class: E, name: Offset}
       - {direction: input, class: E, name: BufferMode}
-      - {direction: output, class: B, name: ProfileCompleted}
+      - {direction: output, class: B, name: ProfileCompleted, st_type: BOOL, binding: metadata_only}
       - {direction: output, class: E, name: Busy}
       - {direction: output, class: E, name: Active}
       - {direction: output, class: E, name: CommandAborted}
@@ -495,6 +495,9 @@ rows:
       - {direction: output, class: E, name: Busy, st_type: BOOL}
       - {direction: output, class: B, name: Error, st_type: BOOL}
       - {direction: output, class: E, name: ErrorID, st_type: DINT}
+# MC_DigitalCamSwitch aggregate elements (not FB pins): MC_CAMSWITCH_REF carries
+# TrackNumber/AxisDirection/CamSwitchMode/Duration. MC_TRACK_REF carries
+# OnCompensation/OffCompensation through Switches/TrackOptions.
   - number: '3.32'
     name: 'MC_DigitalCamSwitch'
     category: single_axis
@@ -510,12 +513,6 @@ rows:
       - {direction: output, class: E, name: Busy}
       - {direction: output, class: B, name: Error}
       - {direction: output, class: E, name: ErrorID}
-      - {direction: output, class: B, name: TrackNumber}
-      - {direction: output, class: E, name: AxisDirection}
-      - {direction: output, class: E, name: CamSwitchMode}
-      - {direction: output, class: E, name: Duration}
-      - {direction: output, class: E, name: OnCompensation}
-      - {direction: output, class: E, name: OffCompensation}
   - number: '3.33'
     name: 'MC_TouchProbe'
     category: single_axis

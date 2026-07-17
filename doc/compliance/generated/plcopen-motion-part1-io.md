@@ -539,12 +539,6 @@
 | MC_DigitalCamSwitch | E | output | `Busy` |  |  |
 | MC_DigitalCamSwitch | B | output | `Error` |  |  |
 | MC_DigitalCamSwitch | E | output | `ErrorID` |  |  |
-| MC_DigitalCamSwitch | B | output | `TrackNumber` |  |  |
-| MC_DigitalCamSwitch | E | output | `AxisDirection` |  |  |
-| MC_DigitalCamSwitch | E | output | `CamSwitchMode` |  |  |
-| MC_DigitalCamSwitch | E | output | `Duration` |  |  |
-| MC_DigitalCamSwitch | E | output | `OnCompensation` |  |  |
-| MC_DigitalCamSwitch | E | output | `OffCompensation` |  |  |
 
 ## MC_TouchProbe
 

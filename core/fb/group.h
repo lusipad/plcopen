@@ -51,6 +51,8 @@ class GroupAdminFb
 class FbAddAxisToGroup : public GroupAdminFb
 {
   public:
+    axis::IdentInGroup ident_in_group{};
+
     void call()
     {
         if (!rising_edge())
@@ -62,25 +64,28 @@ class FbAddAxisToGroup : public GroupAdminFb
             finish(rt::ErrorCode::invalid_argument);
             return;
         }
-        finish(group_ref->add_axis(*axis_ref));
+        finish(group_ref->add_axis(*axis_ref, ident_in_group));
     }
 };
 
 class FbRemoveAxisFromGroup : public GroupAdminFb
 {
   public:
+    axis::IdentInGroup ident_in_group{};
+
     void call()
     {
         if (!rising_edge())
         {
             return;
         }
-        if (group_ref == nullptr || axis_ref == nullptr)
+        if (group_ref == nullptr)
         {
             finish(rt::ErrorCode::invalid_argument);
             return;
         }
-        finish(group_ref->remove_axis(*axis_ref));
+        finish(axis_ref != nullptr ? group_ref->remove_axis(*axis_ref)
+                                   : group_ref->remove_axis(ident_in_group));
     }
 };
 
@@ -118,6 +123,7 @@ class FbGroupReadStatus
     bool stopping = false;
     bool error_stop = false;
     bool interrupted = false;
+    bool group_homing = false;
 
     void call()
     {
@@ -127,6 +133,7 @@ class FbGroupReadStatus
         stopping = false;
         error_stop = false;
         interrupted = false;
+        group_homing = false;
         if (!enable)
         {
             valid = false;
@@ -143,17 +150,21 @@ class FbGroupReadStatus
         }
         const axis::GroupStatus status = group_ref->status();
         bool member_synchronized = false;
+        bool member_homing = group_ref->group_homing();
         for (std::size_t i = 0; i < group_ref->member_count(); ++i)
         {
             const axis::AxisModel *axis = group_ref->member(i);
             if (axis != nullptr && axis->status() == axis::AxisStatus::synchronized_motion)
             {
                 member_synchronized = true;
-                break;
+            }
+            if(axis != nullptr && axis->status() == axis::AxisStatus::homing) {
+                member_homing = true;
             }
         }
         disabled = status == axis::GroupStatus::disabled;
-        standby = status == axis::GroupStatus::standby && !member_synchronized;
+        group_homing = status == axis::GroupStatus::standby && member_homing;
+        standby = status == axis::GroupStatus::standby && !member_synchronized && !member_homing;
         moving = status == axis::GroupStatus::moving ||
                  (status == axis::GroupStatus::standby && member_synchronized);
         stopping = status == axis::GroupStatus::stopping;
@@ -365,7 +376,7 @@ class FbGroupReadConfiguration
         {
             return fail(rt::ErrorCode::unsupported);
         }
-        axis_ref = group_ref->member(ident.index);
+        axis_ref = group_ref->member(ident);
         if (axis_ref == nullptr)
             return fail(rt::ErrorCode::out_of_range);
         axis_id = ident.index;
@@ -412,13 +423,12 @@ class FbReadAxisGroupInfo
                                             : rt::ErrorCode::precondition_failed);
         }
         group_ref = static_cast<axis::AxisGroup *>(axis_ref->group_owner());
-        const std::size_t index = group_ref->member_index(*axis_ref);
-        if (index >= group_ref->member_count())
+        ident = group_ref->member_ident(*axis_ref);
+        if (ident.index == static_cast<std::size_t>(-1))
         {
             group_ref = nullptr;
             return fail(rt::ErrorCode::precondition_failed);
         }
-        ident.index = index;
         valid = true;
     }
 
@@ -718,7 +728,10 @@ class GroupConfigWriteFb
         const bool rising = execute && !last_execute_;
         last_execute_ = execute;
         if (!execute)
+        {
             clear(outputs);
+            tracked_command_id_ = 0;
+        }
         return rising;
     }
     void finish(rt::ErrorCode result)
@@ -732,6 +745,51 @@ class GroupConfigWriteFb
             outputs.error_id = result;
         }
     }
+
+    void accept(rt::Result<std::uint32_t> result)
+    {
+        clear(outputs);
+        if(!result) {
+            outputs.error = true;
+            outputs.error_id = result.error();
+            tracked_command_id_ = 0;
+            return;
+        }
+        tracked_command_id_ = result.value();
+        outputs.command_id = tracked_command_id_;
+        outputs.command_accepted = true;
+        outputs.busy = true;
+    }
+
+    void observe_management()
+    {
+        if(!execute || tracked_command_id_ == 0 || group_ref == nullptr ||
+           outputs.done || outputs.error || outputs.command_aborted) return;
+        if(group_ref->management_command_aborted(tracked_command_id_)) {
+            outputs.command_aborted = true;
+            outputs.busy = false;
+            outputs.active = false;
+            return;
+        }
+        const rt::ErrorCode error = group_ref->management_command_error(tracked_command_id_);
+        if(error != rt::ErrorCode::ok) {
+            outputs.error = true;
+            outputs.error_id = error;
+            outputs.busy = false;
+            outputs.active = false;
+            return;
+        }
+        if(group_ref->management_command_done(tracked_command_id_)) {
+            outputs.done = true;
+            outputs.busy = false;
+            outputs.active = false;
+            return;
+        }
+        outputs.busy = true;
+        outputs.active = group_ref->management_command_active(tracked_command_id_);
+    }
+
+    std::uint32_t tracked_command_id_ = 0;
 
   private:
     bool last_execute_ = false;
@@ -794,12 +852,15 @@ class FbGroupWriteParameter : public GroupConfigWriteFb
   public:
     axis::GroupParameter parameter = axis::GroupParameter::dynamics_mode;
     double value = 0.0;
+    axis::ExecutionMode execution_mode = axis::ExecutionMode::immediately;
     void call()
     {
-        if (!rising_edge())
-            return;
-        finish(group_ref == nullptr ? rt::ErrorCode::invalid_argument
-                                    : group_ref->write_group_parameter(parameter, value));
+        if (rising_edge()) {
+            accept(group_ref == nullptr
+                       ? rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument)
+                       : group_ref->submit_group_parameter(parameter, value, execution_mode));
+        }
+        observe_management();
     }
 };
 
@@ -919,12 +980,15 @@ class FbGroupWriteSWLimits : public GroupConfigWriteFb
 {
   public:
     axis::GroupSWLimits limit_values{};
+    axis::ExecutionMode execution_mode = axis::ExecutionMode::immediately;
     void call()
     {
-        if (!rising_edge())
-            return;
-        finish(group_ref == nullptr ? rt::ErrorCode::invalid_argument
-                                    : group_ref->write_group_sw_limits(limit_values));
+        if (rising_edge()) {
+            accept(group_ref == nullptr
+                       ? rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument)
+                       : group_ref->submit_group_sw_limits(limit_values, execution_mode));
+        }
+        observe_management();
     }
 };
 
@@ -933,12 +997,15 @@ class FbGroupWriteToolData : public GroupConfigWriteFb
   public:
     std::size_t tool_number = 0;
     axis::ToolData tool_data{};
+    axis::ExecutionMode execution_mode = axis::ExecutionMode::immediately;
     void call()
     {
-        if (!rising_edge())
-            return;
-        finish(group_ref == nullptr ? rt::ErrorCode::invalid_argument
-                                    : group_ref->write_tool_data(tool_number, tool_data));
+        if (rising_edge()) {
+            accept(group_ref == nullptr
+                       ? rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument)
+                       : group_ref->submit_tool_data(tool_number, tool_data, execution_mode));
+        }
+        observe_management();
     }
 };
 
@@ -1102,6 +1169,8 @@ class GroupJogFb
     axis::AxisGroup *group_ref = nullptr;
     bool enable = false;
     axis::CoordSystem coord_system = axis::CoordSystem::acs;
+    double vel_override = 1.0;
+    double acc_override = 1.0;
     bool enabled = false;
     bool active = false;
     bool command_aborted = false;
@@ -1109,8 +1178,13 @@ class GroupJogFb
     rt::ErrorCode error_id = rt::ErrorCode::ok;
 
   protected:
-    void apply(const axis::GroupPosition &direction)
+    void apply(const axis::GroupPosition &direction,
+               double max_linear_distance = 0.0,
+               double max_angular_distance = 0.0)
     {
+        const axis::JogCommandOptions options{vel_override, acc_override,
+                                              max_linear_distance,
+                                              max_angular_distance};
         command_aborted = false;
         if (!enable)
         {
@@ -1139,14 +1213,16 @@ class GroupJogFb
         }
         if (!last_enable_)
         {
-            const rt::Result<std::uint32_t> started = group_ref->begin_jog(coord_system, direction);
+            const rt::Result<std::uint32_t> started =
+                group_ref->begin_jog(coord_system, direction, options);
             if (!started)
                 return fail(started.error());
             command_id_ = started.value();
         }
         else
         {
-            const rt::ErrorCode updated = group_ref->update_jog(command_id_, direction);
+            const rt::ErrorCode updated =
+                group_ref->update_jog(command_id_, direction, options);
             if (updated != rt::ErrorCode::ok)
                 return fail(updated);
         }
@@ -1183,6 +1259,8 @@ class FbGroupJog : public GroupJogFb
   public:
     axis::JogBooleanArray jog_positive{};
     axis::JogBooleanArray jog_negative{};
+    double max_linear_distance = 0.0;
+    double max_angular_distance = 0.0;
 
     void call()
     {
@@ -1201,7 +1279,7 @@ class FbGroupJog : public GroupJogFb
                                          : (jog_positive.value[i] ? 1.0 : -1.0);
             }
         }
-        apply(direction);
+        apply(direction, max_linear_distance, max_angular_distance);
     }
 };
 

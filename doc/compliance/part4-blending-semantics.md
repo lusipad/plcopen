@@ -31,6 +31,18 @@
 | `mcTMMaxCornerDeviation` | 公差 > 0 | Aborting | `invalid_argument`（aborting 语义与预混合队列互斥，显式报错） |
 | 其余模式（StartVelocity/ConstantVelocity/CornerDistance） | — | — | `unsupported`（后续按需立项） |
 
+`TransitionVelocity` 是独立的结点速度上限：`0` 由前瞻规划器自动决定；
+正有限值必须不大于命令 `Velocity` 且仅用于 blending 请求，否则
+`invalid_argument`。linear→linear 在欧氏窗口域按命令路径度量换算后限制
+结点；tangent linear→circular 在圆弧长域直接限制结点。该值不替代
+`TransitionParameter` 的几何公差。
+
+圆弧后继允许 `mcTMNone`（零 `TransitionParameter`）或
+`mcTMMaxCornerDeviation`（正有限参数）进入既有 tangent line→arc 窗口；
+非切向连接仍显式降级为 `BUFFERED` 并可查询。切向连接的实际连接偏差为
+零，因此正 `TransitionParameter` 被作为几何验收上界消费，速度由
+`TransitionVelocity`、命令限速、向心限速和前瞻共同约束。
+
 ## 退化与降级规则（显式，进验收测试）
 
 | 形态 | 语义 |

@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <cstddef>
+#include <cstdint>
 
 #include "axis/state.h"
 #include "fb/base.h"
@@ -73,48 +74,69 @@ public:
     }
 };
 
-class FbWriteDigitalOutput
+class FbWriteDigitalOutput : public AxisManagementExecuteFb
 {
 public:
-    axis::AxisModel *axis_ref = nullptr;
     std::size_t output_number = 0;
     bool value = false;
-    bool execute = false;
-    bool done = false;
-    bool error = false;
-    rt::ErrorCode error_id = rt::ErrorCode::ok;
+    axis::ExecutionMode execution_mode = axis::ExecutionMode::immediately;
 
     void call()
     {
-        const bool rising = execute && !last_execute_;
-        last_execute_ = execute;
-        if(!execute) {
-            done = false;
-            error = false;
-            error_id = rt::ErrorCode::ok;
-            return;
+        if(rising_edge()) {
+            if(axis_ref == nullptr) {
+                accept_management(rt::Result<std::uint32_t>::failure(
+                    rt::ErrorCode::invalid_argument));
+            } else if(execution_mode != axis::ExecutionMode::immediately &&
+                      execution_mode != axis::ExecutionMode::queued) {
+                accept_management(rt::Result<std::uint32_t>::failure(
+                    rt::ErrorCode::unsupported));
+            } else {
+                accept_management(axis_ref->submit_write_digital_output(
+                    output_number, value,
+                    execution_mode == axis::ExecutionMode::queued));
+            }
         }
-        if(!rising) {
-            return;
-        }
-        const rt::ErrorCode written = axis_ref == nullptr
-                                          ? rt::ErrorCode::invalid_argument
-                                          : axis_ref->set_digital_output(output_number, value);
-        done = written == rt::ErrorCode::ok;
-        error = !done;
-        error_id = written;
+        observe_management();
     }
-
-private:
-    bool last_execute_ = false;
 };
 
 struct CamSwitchAction
 {
-    std::size_t track_number = 0;
+    std::size_t track_number = 1;
     double on_position = 0.0;
     double off_position = 0.0;
     double period = 0.0;
+    enum class AxisDirection
+    {
+        both,
+        positive,
+        negative,
+    } axis_direction = AxisDirection::both;
+    enum class Mode
+    {
+        position,
+        time,
+    } cam_switch_mode = Mode::position;
+    std::int64_t duration_ns = 0;
+};
+
+struct CamTrackOption
+{
+    std::int64_t on_compensation_ns = 0;
+    std::int64_t off_compensation_ns = 0;
+};
+
+struct CamTrackOptionsView
+{
+    const CamTrackOption *data = nullptr;
+    std::size_t size = 0;
+};
+
+struct CamSwitchOutputsView
+{
+    bool *data = nullptr;
+    std::size_t size = 0;
 };
 
 struct CamSwitchTableView
@@ -150,54 +172,146 @@ class FbDigitalCamSwitch
 public:
     axis::AxisModel *axis_ref = nullptr;
     CamSwitchTableView switches{};
+    CamSwitchOutputsView outputs{};
+    CamTrackOptionsView track_options{};
     bool enable = false;
+    std::uint32_t enable_mask = 0xFFFFFFFFU;
+    axis::MasterValueSource value_source = axis::MasterValueSource::command;
     bool in_operation = false;
+    bool busy = false;
     bool error = false;
     rt::ErrorCode error_id = rt::ErrorCode::ok;
 
-    void call()
+    void call(std::int64_t task_period_ns = 1000000)
     {
+        busy = false;
         if(!enable) {
             release_outputs();
+            reset_actions();
             in_operation = false;
             error = false;
             error_id = rt::ErrorCode::ok;
             return;
         }
         if(axis_ref == nullptr || switches.data == nullptr || switches.size == 0 ||
-           switches.size > MaxActions) {
+           switches.size > MaxActions || task_period_ns <= 0 ||
+           (value_source != axis::MasterValueSource::command &&
+            value_source != axis::MasterValueSource::actual)) {
             fail(rt::ErrorCode::invalid_argument);
             return;
         }
 
         bool levels[axis::AxisModel::DigitalOutputCount]{};
         bool tracks[axis::AxisModel::DigitalOutputCount]{};
-        const double position = axis_ref->snapshot().command_position;
+        const axis::AxisSnapshot &snapshot = axis_ref->snapshot();
+        const double position = value_source == axis::MasterValueSource::actual
+                                    ? snapshot.actual_position
+                                    : snapshot.command_position;
+        const double velocity = value_source == axis::MasterValueSource::actual
+                                    ? snapshot.actual_velocity
+                                    : snapshot.command_velocity;
+        const bool new_table = controlled_axis_ != axis_ref || active_table_ != switches.data ||
+                               active_table_size_ != switches.size;
+        if(new_table) {
+            reset_actions();
+        }
         for(std::size_t index = 0; index < switches.size; ++index) {
             const CamSwitchAction &action = switches.data[index];
-            if(action.track_number >= axis::AxisModel::DigitalOutputCount) {
+            if(action.track_number == 0 ||
+               action.track_number > axis::AxisModel::DigitalOutputCount) {
                 fail(rt::ErrorCode::unsupported);
                 return;
             }
             if(!std::isfinite(action.on_position) || !std::isfinite(action.off_position) ||
                !std::isfinite(action.period) || action.period < 0.0 ||
-               (action.period == 0.0 && action.on_position > action.off_position)) {
+               (action.axis_direction != CamSwitchAction::AxisDirection::both &&
+                action.axis_direction != CamSwitchAction::AxisDirection::positive &&
+                action.axis_direction != CamSwitchAction::AxisDirection::negative) ||
+               (action.cam_switch_mode != CamSwitchAction::Mode::position &&
+                action.cam_switch_mode != CamSwitchAction::Mode::time) ||
+               (action.cam_switch_mode == CamSwitchAction::Mode::position &&
+                action.period == 0.0 && action.on_position > action.off_position) ||
+               (action.cam_switch_mode == CamSwitchAction::Mode::time &&
+                action.duration_ns <= 0)) {
                 fail(rt::ErrorCode::invalid_argument);
                 return;
             }
-            tracks[action.track_number] = true;
-            levels[action.track_number] =
-                levels[action.track_number] || inside_window(position, action);
+            const std::size_t track = action.track_number - 1;
+            if((outputs.data != nullptr && outputs.size <= track) ||
+               (track_options.data != nullptr && track_options.size <= track)) {
+                fail(rt::ErrorCode::invalid_argument);
+                return;
+            }
+            tracks[track] = true;
+        }
+
+        for(std::size_t index = 0; index < switches.size; ++index) {
+            const CamSwitchAction &action = switches.data[index];
+            const std::size_t track = action.track_number - 1;
+            const bool enabled = (enable_mask & (std::uint32_t{1} << track)) != 0;
+            const CamTrackOption options_for_track =
+                track_options.data == nullptr ? CamTrackOption{} : track_options.data[track];
+            const bool direction_matches =
+                action.axis_direction == CamSwitchAction::AxisDirection::both ||
+                (action.axis_direction == CamSwitchAction::AxisDirection::positive &&
+                 velocity > 0.0) ||
+                (action.axis_direction == CamSwitchAction::AxisDirection::negative &&
+                 velocity < 0.0);
+            bool level = false;
+            if(enabled && direction_matches) {
+                if(action.cam_switch_mode == CamSwitchAction::Mode::position) {
+                    const std::int64_t compensation = action_active_[index]
+                                                          ? options_for_track.off_compensation_ns
+                                                          : options_for_track.on_compensation_ns;
+                    const double compensated_position =
+                        position - velocity * static_cast<double>(compensation) / 1.0e9;
+                    action_active_[index] = inside_window(compensated_position, action);
+                } else {
+                    const double compensated_position =
+                        position - velocity *
+                                       static_cast<double>(options_for_track.on_compensation_ns) /
+                                       1.0e9;
+                    if(previous_valid_[index] && crossed_trigger(previous_position_[index],
+                                                                 compensated_position,
+                                                                 velocity,
+                                                                 action)) {
+                        const std::uint64_t duration =
+                            static_cast<std::uint64_t>(action.duration_ns);
+                        remaining_cycles_[index] =
+                            (duration + static_cast<std::uint64_t>(task_period_ns) - 1U) /
+                            static_cast<std::uint64_t>(task_period_ns);
+                    }
+                    action_active_[index] = remaining_cycles_[index] != 0;
+                    if(remaining_cycles_[index] != 0) {
+                        --remaining_cycles_[index];
+                    }
+                    previous_position_[index] = compensated_position;
+                    previous_valid_[index] = true;
+                }
+                level = action_active_[index];
+            } else {
+                action_active_[index] = false;
+                remaining_cycles_[index] = 0;
+                previous_valid_[index] = false;
+            }
+            levels[track] = levels[track] || level;
         }
 
         release_outputs();
         for(std::size_t track = 0; track < axis::AxisModel::DigitalOutputCount; ++track) {
             if(tracks[track]) {
                 axis_ref->set_digital_output(track, levels[track]);
+                if(outputs.data != nullptr) {
+                    outputs.data[track] = levels[track];
+                }
             }
             controlled_tracks_[track] = tracks[track];
         }
         controlled_axis_ = axis_ref;
+        controlled_outputs_ = outputs.data;
+        controlled_outputs_size_ = outputs.size;
+        active_table_ = switches.data;
+        active_table_size_ = switches.size;
         in_operation = true;
         error = false;
         error_id = rt::ErrorCode::ok;
@@ -221,17 +335,61 @@ private:
         return position >= action.on_position && position <= action.off_position;
     }
 
+    static bool crossed_trigger(double previous, double current, double velocity,
+                                const CamSwitchAction &action)
+    {
+        if(velocity == 0.0) {
+            return false;
+        }
+        if(action.period <= 0.0) {
+            return velocity > 0.0 ? previous < action.on_position && current >= action.on_position
+                                  : previous > action.on_position && current <= action.on_position;
+        }
+        const auto wrap = [&](double value) {
+            double wrapped = std::fmod(value, action.period);
+            return wrapped < 0.0 ? wrapped + action.period : wrapped;
+        };
+        const double previous_wrapped = wrap(previous);
+        const double current_wrapped = wrap(current);
+        const double trigger = wrap(action.on_position);
+        if(velocity > 0.0) {
+            return previous_wrapped <= current_wrapped
+                       ? previous_wrapped < trigger && current_wrapped >= trigger
+                       : trigger > previous_wrapped || trigger <= current_wrapped;
+        }
+        return previous_wrapped >= current_wrapped
+                   ? previous_wrapped > trigger && current_wrapped <= trigger
+                   : trigger < previous_wrapped || trigger >= current_wrapped;
+    }
+
+    void reset_actions()
+    {
+        for(std::size_t index = 0; index < MaxActions; ++index) {
+            action_active_[index] = false;
+            remaining_cycles_[index] = 0;
+            previous_position_[index] = 0.0;
+            previous_valid_[index] = false;
+        }
+        active_table_ = nullptr;
+        active_table_size_ = 0;
+    }
+
     void release_outputs()
     {
         if(controlled_axis_ != nullptr) {
             for(std::size_t track = 0; track < axis::AxisModel::DigitalOutputCount; ++track) {
                 if(controlled_tracks_[track]) {
                     controlled_axis_->set_digital_output(track, false);
+                    if(controlled_outputs_ != nullptr && track < controlled_outputs_size_) {
+                        controlled_outputs_[track] = false;
+                    }
                 }
                 controlled_tracks_[track] = false;
             }
         }
         controlled_axis_ = nullptr;
+        controlled_outputs_ = nullptr;
+        controlled_outputs_size_ = 0;
     }
 
     void fail(rt::ErrorCode code)
@@ -243,7 +401,15 @@ private:
     }
 
     axis::AxisModel *controlled_axis_ = nullptr;
+    bool *controlled_outputs_ = nullptr;
+    std::size_t controlled_outputs_size_ = 0;
+    const CamSwitchAction *active_table_ = nullptr;
+    std::size_t active_table_size_ = 0;
     bool controlled_tracks_[axis::AxisModel::DigitalOutputCount]{};
+    bool action_active_[MaxActions]{};
+    std::uint64_t remaining_cycles_[MaxActions]{};
+    double previous_position_[MaxActions]{};
+    bool previous_valid_[MaxActions]{};
 };
 
 // MC_ReadAxisInfo: diagnostic snapshot. The rewrite core is a simulation until

@@ -164,6 +164,8 @@ struct Rig
 
 int check_public_facades_compile()
 {
+    static_assert(sizeof(axis::AxisGroup) <= 64 * 1024,
+                  "AxisGroup must remain safe for ordinary stack construction");
     static_assert(std::is_default_constructible<fb::FbGroupWriteToolData>::value);
     static_assert(std::is_default_constructible<fb::FbGroupReadToolData>::value);
     static_assert(std::is_default_constructible<fb::FbGroupSelectTool>::value);
@@ -249,6 +251,34 @@ int check_tool_store_and_tcp_consumption()
         return fail("tool: slot zero immutable");
     }
     std::printf("  PASS tool_store_and_tcp_consumption\n");
+    return 0;
+}
+
+int check_queued_tool_write()
+{
+    Rig rig(3);
+    axis::GroupCommand move{};
+    move.target.size = 3;
+    move.target.value[0] = 2.0;
+    move.target.value[1] = 1.0;
+    move.target.value[2] = 0.5;
+    if(!rig.group.submit_linear(move)) return fail("queued tool setup");
+    fb::FbGroupWriteToolData write;
+    write.group_ref = &rig.group;
+    write.tool_number = 2;
+    write.tool_data.value[0] = 0.75;
+    write.execution_mode = axis::ExecutionMode::queued;
+    write.execute = true;
+    write.call();
+    if(!write.outputs.command_accepted || write.outputs.done ||
+       rig.group.read_tool_data(2)) return fail("queued tool accepted");
+    for(int i = 0; i < 128 && !write.outputs.done; ++i) {
+        rig.cycle();
+        write.call();
+    }
+    const auto data = rig.group.read_tool_data(2);
+    if(!write.outputs.done || !data || !near(data.value().value[0], 0.75))
+        return fail("queued tool applied");
     return 0;
 }
 
@@ -874,12 +904,99 @@ int check_pose_rotation_and_tool_snapshot()
     return 0;
 }
 
+int check_jog_overrides_and_distance_bounds()
+{
+    static Rig acs(1);
+    if(acs.group.write_jogging_dynamics(jogging(1)) != rt::ErrorCode::ok) {
+        return fail("jog native: ACS dynamics");
+    }
+    fb::FbGroupJog scaled;
+    scaled.group_ref = &acs.group;
+    scaled.enable = true;
+    scaled.vel_override = 0.5;
+    scaled.acc_override = 0.5;
+    scaled.jog_positive.count = 1;
+    scaled.jog_negative.count = 1;
+    scaled.jog_positive.value[0] = true;
+    scaled.call();
+    for(int i = 0; i < 8; ++i) {
+        acs.cycle();
+        scaled.call();
+    }
+    if(acs.axes[0].snapshot().command_velocity > 0.25 + 1e-12 ||
+       std::fabs(acs.axes[0].snapshot().command_acceleration) > 0.1 + 1e-12) {
+        return fail("jog native: overrides scale velocity and acceleration");
+    }
+
+    static IdentityKinematics identity;
+    static Rig linear(3);
+    if(linear.group.set_kinematics(&identity, 0.0) != rt::ErrorCode::ok ||
+       linear.group.write_jogging_dynamics(jogging(3)) != rt::ErrorCode::ok) {
+        return fail("jog native: linear setup");
+    }
+    fb::FbGroupJog buttons;
+    buttons.group_ref = &linear.group;
+    buttons.enable = true;
+    buttons.coord_system = axis::CoordSystem::mcs;
+    buttons.max_linear_distance = 0.6;
+    buttons.jog_positive.count = 3;
+    buttons.jog_negative.count = 3;
+    buttons.jog_positive.value[0] = true;
+    buttons.call();
+    for(int i = 0; i < 20; ++i) {
+        linear.cycle();
+        buttons.call();
+    }
+    if(!near(linear.axes[0].snapshot().command_position, 0.6, 1e-9) ||
+       std::fabs(linear.axes[0].snapshot().command_velocity) > 1e-12) {
+        return fail("jog native: linear distance boundary");
+    }
+
+    static IdentityPoseKinematics pose;
+    static Rig angular(6);
+    if(angular.group.set_pose_kinematics(&pose, 0.0, 10.0) != rt::ErrorCode::ok ||
+       angular.group.write_jogging_dynamics(jogging(6)) != rt::ErrorCode::ok) {
+        return fail("jog native: angular setup");
+    }
+    fb::FbGroupJog rotation;
+    rotation.group_ref = &angular.group;
+    rotation.enable = true;
+    rotation.coord_system = axis::CoordSystem::mcs;
+    rotation.max_angular_distance = 0.3;
+    rotation.jog_positive.count = 6;
+    rotation.jog_negative.count = 6;
+    rotation.jog_positive.value[5] = true;
+    rotation.call();
+    for(int i = 0; i < 20; ++i) {
+        angular.cycle();
+        rotation.call();
+    }
+    if(!near(angular.axes[5].snapshot().command_position, 0.3, 1e-9) ||
+       std::fabs(angular.axes[5].snapshot().command_velocity) > 1e-12) {
+        return fail("jog native: angular distance boundary");
+    }
+
+    fb::FbGroupJog invalid;
+    invalid.group_ref = &acs.group;
+    invalid.enable = true;
+    invalid.vel_override = 1.1;
+    invalid.jog_positive.count = 1;
+    invalid.jog_negative.count = 1;
+    invalid.call();
+    if(!invalid.error || invalid.error_id != rt::ErrorCode::invalid_argument) {
+        return fail("jog native: invalid override");
+    }
+    std::printf("  PASS jog_overrides_and_distance_bounds\n");
+    return 0;
+}
+
 } // namespace
 
 int main()
 {
     if(check_public_facades_compile() != 0) return 1;
     if(check_tool_store_and_tcp_consumption() != 0) return 1;
+    if(check_queued_tool_write() != 0) return 1;
     if(check_payload_store_and_selection() != 0) return 1;
     if(check_data_validation_matrix() != 0) return 1;
     if(check_acs_jog_lifecycle() != 0) return 1;
@@ -891,6 +1008,7 @@ int main()
     if(check_jog_command_contract() != 0) return 1;
     if(check_pose_rotation_and_tool_snapshot() != 0) return 1;
     if(check_active_tool_readback_snapshot() != 0) return 1;
+    if(check_jog_overrides_and_distance_bounds() != 0) return 1;
     std::printf("part4 P4-B2 tests passed\n");
     return 0;
 }

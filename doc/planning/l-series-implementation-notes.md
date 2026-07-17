@@ -162,6 +162,65 @@
 - 远端门禁：待提交后执行。
 - 剩余 pending 与下一批前置：94；L2c 完整 134 FB 绑定。
 
+### 2026-07-17 / ST-L2c / working tree
+
+- 目标矩阵与验收 ID：L2c-A01 至 L2c-A08；完成状态只在 authority、生成、
+  注册、native 映射、测试与拒绝证据全部闭合后写入 feature-set。
+- Decisions：统一注册表以稳定 BindingFbId 为键，而不是以 native C++ 类型
+  为键；MC_CamOut 与 MC_GearOut 共享 FbGearOut 类型，已经证伪纯
+  FbBindingTraits<Block>。parser、sema、bytecode、VM 与 manifest 必须消费
+  同一生成目录。
+- Decisions：ST 引用变量保存固定 registry handle，不保存宿主裸指针位模式；
+  绑定槽由编译顺序预分配，默认 AXIS_REF/GROUP_REF/FB 容量为 64/16/1024，
+  首 scan 后无条件锁定。
+- Decisions：新增 doc/compliance/st-binding-fb-catalog.yml 作为 FB 级权威
+  目录；独立校验器已经证明 Basic 10 + Part1/2 45 + Part4 68 + Part5 11 =
+  134，且 native 门面与原始权威源均可追溯。FB 行本身不作为 pin dispatcher
+  完成证据。
+- Surprises：Part1/2 的 538 pins 仅 114 个带 st_type，Part5 的 147 pins
+  全无逐 pin 类型，Part4 无机器可读 pin 表；现有 scalar-only opcode 也无法
+  承载 GroupPosition、ToolData、profile/cam/path 等聚合 pin。因此必须新增
+  显式 pin schema 与 scalar/ref/object adapter，不能从公开字段或 offsetof
+  猜接口。
+- Surprises：生产树另有 MC_ReadCommandPosition、MC_ReadCommandVelocity
+  和 MC_EmergencyStop 三个项目扩展。现有合规文档明确把它们标为 extension；
+  固定 L2c 分母仍为 134，三者保持 native-only，不用 excluded 伪装进标准闭包。
+- Deviations：无范围偏离。旧 rt::ErrorCode bind API、INT mode pin 和 v2
+  bytecode 均按“全新软件、不考虑兼容性”直接替换，不建立迁移或双轨路径。
+- 阶段中间门禁：FB 级目录校验先通过；完整 L2c 测试保持 RED，直到 registry、
+  pin schema、引用生命周期、逐 FB 轨迹和 100k fuzz 全部落地后才转绿。
+- Surprises：`generate_st_binding_pin_catalog.py::part4_pins` 仍从
+  `core/fb` public fields 反推 Part 4 的 688 个 pin，并非规范 pin authority；
+  已在 `MC_AddAxisToGroup` / `MC_RemoveAxisFromGroup` /
+  `MC_UngroupAllAxes` 证实会把现有简化门面误当标准接口。因此 134 FB 名称
+  目录可用，但 Part 4 pin schema 在显式化前不能直接驱动 production codegen。
+- Decisions：不固化反射结果。Part 4 改为 checked-in 显式 pin authority，生成器
+  只验证其与 native adapter 的映射；Add/Remove 使用 `MC_IDENT_IN_GROUP` 聚合
+  object adapter，Ungroup 只暴露 GROUP_REF + Execute。字节码按无兼容裁决升至
+  v4，object pin 传递显式 offset/TypeId/size，不传宿主对象布局。
+- 本地门禁：新增 `MC_Power` 分方向许可、Acc/Jerk override、三项标准组管理
+  ST 轨迹后，L2c 可执行测试只剩 134 闭包计数 RED；L0-L2b、Part1 C4、
+  Part4 C3 共 14/14 回归通过。
+- Completion：显式 authority 最终展开 basic 10 + Part1/2 45 + Part4 68 +
+  Part5 11 = 134 FB、1476 pins；strict generator 证明 134/134、1476/1476，
+  native gaps=0。Part1/2 为 532 pins、Part4 为 757、Part5 为 147。
+- Completion：49 个公开/59 个安装类型驱动 scalar/ref/object/sequence/tagged
+  codec；AXIS/GROUP、path/cam/profile/kin registry 只在 ST 内保存 1-based handle，
+  backing 按 Program 实际使用种类 placement-construct 到 caller-owned buffer，
+  `Instance <= 256 B`，首 scan 后锁定，周期路径零分配。
+- Completion：Torque、Gear/Phasing、DigitalCam/CamTable、MoveDirect/Jog/Wait、
+  path 与 Part 1/4/5 管理扩展均有 ST↔native 精确映射和生命周期证据；
+  Cam 的 6 个误置顶层 pin 已按标准归回 `MC_CAMSWITCH_REF`/`MC_TRACK_REF`，
+  未建立兼容层。
+- Completion：`st-feature-set.yml` 中 L2c 的 GROUP_REF、3 个 FB 集、3 个 pin
+  集与 binding 诊断均转 implemented；旧 source/opcode/hash 明确 excluded 且有
+  拒绝测试。全局 pending 94 → 85，剩余项只属于 L3-L7。
+- 本地门禁：Windows Debug 与 WSL/GCC Release 已实现层均为 81/81 CTest；
+  L0-L2c 相关回归、strict generators、RT scan 27 files、1000 frozen scans、
+  ASAN quality、`mkdocs build --strict` 与两路 fuzz 100,000/100,000 均通过；
+  L3-L7 五个未来 RED 合同目标不计入本批。Clang、ARM64 与远端门提交后补录。
+- 剩余 pending 与下一批前置：85；L3 进程映像/存储与 L4a 标准函数可并行。
+
 ## 5. 最终审计记录（完成时填写）
 
 | 证据 | 结果 |

@@ -3,6 +3,7 @@
 #include <array>
 #include <cmath>
 #include <cstdint>
+#include <memory>
 
 #include "axis/group_takeover_connector.h"
 #include "axis/state.h"
@@ -107,9 +108,31 @@ struct JoggingDynamics
     std::array<double, GroupPosition::MaxAxes> axis_jerk{};
 };
 
+struct JogCommandOptions
+{
+    double velocity_override = 1.0;
+    double acceleration_override = 1.0;
+    double max_linear_distance = 0.0;
+    double max_angular_distance = 0.0;
+};
+
 struct ToolData
 {
     std::array<double, 6> value{};
+};
+
+enum class KinTransformKind
+{
+    none,
+    kinematics,
+    pose,
+};
+
+struct KinTransformRef
+{
+    KinTransformKind kind = KinTransformKind::none;
+    const kin::Kinematics *kinematics = nullptr;
+    const kin::PoseKinematics *pose = nullptr;
 };
 
 struct PayloadData
@@ -280,6 +303,17 @@ enum class InterpolationSpace
     cartesian,
 };
 
+// Native coordinated-motion orientation contract. joint_space preserves the
+// member-domain interpolation, shortest_path interpolates the TCP rotation on
+// the shortest geodesic, and constant holds the TCP orientation captured at
+// the deterministic segment start.
+enum class OrientationMode
+{
+    joint_space,
+    shortest_path,
+    constant,
+};
+
 // Internal: precomputed Cartesian segment geometry, resolved by the
 // submit_linear pre-validation. Not a user input.
 struct CartesianSegment
@@ -303,10 +337,25 @@ struct CartesianSegment
     double length = 0.0;
 };
 
+enum class GroupCommandKind
+{
+    motion,
+    direct,
+    home,
+    halt,
+    set_kinematics,
+    set_coordinate_transform,
+    write_parameter,
+    write_sw_limits,
+    write_tool_data,
+};
+
 struct GroupCommand
 {
+    GroupCommandKind kind = GroupCommandKind::motion;
     GroupPosition target{};
     bool relative = false;
+    bool direct_semantics = false;
     // Shared-path dynamics. Linear: the scalar path parameter is planned as
     // one jerk-limited 1D profile referenced to the member with the longest
     // travel (the fastest-moving member). Circular: the path parameter is the
@@ -331,13 +380,20 @@ struct GroupCommand
 
     // A4 transition inputs (linear-to-linear geometric blending v1, KB-031).
     TransitionMode transition_mode = TransitionMode::none;
+    // Zero selects the planner-derived junction speed. A positive value is an
+    // explicit upper bound on the transition node velocity.
+    double transition_velocity = 0.0;
     double transition_parameter = 0.0;
+    OrientationMode orientation_mode = OrientationMode::joint_space;
 
     // Circular-only inputs (ignored by submit_linear).
     GroupPathKind path_kind = GroupPathKind::linear;
     CircMode circ_mode = CircMode::border;
     CircPathChoice path_choice = CircPathChoice::counter_clockwise;
     GroupPosition aux{};
+    // Independent circular geometry acceptance. Zero disables the additional
+    // higher-dimensional via-point residual check.
+    double tolerance = 0.0;
     // Internal: the validated arc geometry, resolved by submit_circular from
     // the command's deterministic start point. Not a user input.
     geom::ArcSegment arc{};
@@ -347,6 +403,19 @@ struct GroupCommand
     std::size_t payload_number = 0;
     geom::RigidTransform tool_inverse{};
     bool dynamic_pcs = false;
+    KinTransformRef kin_transform{};
+    double min_singularity_margin = 0.0;
+    double max_joint_step = 0.01;
+    GroupParameter parameter = GroupParameter::dynamics_mode;
+    double parameter_value = 0.0;
+    GroupSWLimits sw_limits{};
+    ToolData tool_data{};
+};
+
+struct GroupManagementResult
+{
+    std::uint32_t command_id = 0;
+    rt::ErrorCode error = rt::ErrorCode::ok;
 };
 
 class AxisGroup
@@ -406,6 +475,7 @@ public:
             axes_[i]->set_group_owner(nullptr);
         }
         axes_.clear();
+        member_idents_.clear();
         status_ = GroupStatus::disabled;
         group_error_id_ = rt::ErrorCode::ok;
         return rt::ErrorCode::ok;
@@ -722,6 +792,24 @@ public:
         return rt::ErrorCode::unsupported;
     }
 
+    rt::Result<std::uint32_t> submit_group_parameter(GroupParameter parameter,
+                                                     double value,
+                                                     ExecutionMode mode)
+    {
+        if(mode == ExecutionMode::immediately) {
+            return complete_immediate(write_group_parameter(parameter, value));
+        }
+        const rt::ErrorCode valid = validate_group_parameter(parameter, value);
+        if(valid != rt::ErrorCode::ok) {
+            return rt::Result<std::uint32_t>::failure(valid);
+        }
+        GroupCommand command{};
+        command.kind = GroupCommandKind::write_parameter;
+        command.parameter = parameter;
+        command.parameter_value = value;
+        return enqueue_management(command, mode);
+    }
+
     const PathDynamics &reference_dynamics() const { return reference_dynamics_; }
     const PathDynamics &default_dynamics() const { return default_dynamics_; }
     const JoggingDynamics &jogging_dynamics() const { return jogging_dynamics_; }
@@ -737,6 +825,24 @@ public:
         tools_[number] = data;
         tool_defined_[number] = true;
         return rt::ErrorCode::ok;
+    }
+
+    rt::Result<std::uint32_t> submit_tool_data(std::size_t number,
+                                              const ToolData &data,
+                                              ExecutionMode mode)
+    {
+        if(mode == ExecutionMode::immediately) {
+            return complete_immediate(write_tool_data(number, data));
+        }
+        const rt::ErrorCode valid = validate_tool_data(number, data);
+        if(valid != rt::ErrorCode::ok) {
+            return rt::Result<std::uint32_t>::failure(valid);
+        }
+        GroupCommand command{};
+        command.kind = GroupCommandKind::write_tool_data;
+        command.tool_number = number;
+        command.tool_data = data;
+        return enqueue_management(command, mode);
     }
 
     rt::Result<ToolData> read_tool_data(std::size_t number) const
@@ -850,9 +956,10 @@ public:
     }
 
     rt::Result<std::uint32_t> begin_jog(CoordSystem coord_system,
-                                        const GroupPosition &direction)
+                                        const GroupPosition &direction,
+                                        const JogCommandOptions &options = {})
     {
-        const rt::ErrorCode valid = validate_jog(coord_system, direction);
+        const rt::ErrorCode valid = validate_jog(coord_system, direction, options);
         if(valid != rt::ErrorCode::ok) {
             return rt::Result<std::uint32_t>::failure(valid);
         }
@@ -867,6 +974,7 @@ public:
         jog_command_id_ = next_command_id_++;
         jog_coord_system_ = coord_system;
         jog_direction_ = direction;
+        jog_options_ = options;
         jog_releasing_ = false;
         jog_error_ = rt::ErrorCode::ok;
         jog_stop_deceleration_ = 0.0;
@@ -888,6 +996,9 @@ public:
                 return rt::Result<std::uint32_t>::failure(read);
             }
             jog_cartesian_position_ = current;
+            for(std::size_t i = 0; i < 6; ++i) {
+                jog_cartesian_start_[i] = current.value[i];
+            }
             jog_tool_offset_ = tool_offset_;
             jog_pose_tool_inverse_ = pose_tool_inverse_;
             jog_cart_velocity_.fill(0.0);
@@ -898,15 +1009,17 @@ public:
         return rt::Result<std::uint32_t>::success(jog_command_id_);
     }
 
-    rt::ErrorCode update_jog(std::uint32_t command_id, const GroupPosition &direction)
+    rt::ErrorCode update_jog(std::uint32_t command_id, const GroupPosition &direction,
+                             const JogCommandOptions &options = {})
     {
         if(!jog_active_ || command_id == 0 || command_id != jog_command_id_) {
             return rt::ErrorCode::precondition_failed;
         }
         if(jog_error_ != rt::ErrorCode::ok) return jog_error_;
-        const rt::ErrorCode valid = validate_jog(jog_coord_system_, direction);
+        const rt::ErrorCode valid = validate_jog(jog_coord_system_, direction, options);
         if(valid != rt::ErrorCode::ok) return valid;
         jog_direction_ = direction;
+        jog_options_ = options;
         jog_releasing_ = false;
         if(any_direction(direction)) status_ = GroupStatus::moving;
         return rt::ErrorCode::ok;
@@ -1008,12 +1121,28 @@ public:
         return rt::ErrorCode::ok;
     }
 
+    rt::Result<std::uint32_t> submit_group_sw_limits(const GroupSWLimits &limits,
+                                                     ExecutionMode mode)
+    {
+        if(mode == ExecutionMode::immediately) {
+            return complete_immediate(write_group_sw_limits(limits));
+        }
+        const rt::ErrorCode valid = validate_group_sw_limits(limits);
+        if(valid != rt::ErrorCode::ok) {
+            return rt::Result<std::uint32_t>::failure(valid);
+        }
+        GroupCommand command{};
+        command.kind = GroupCommandKind::write_sw_limits;
+        command.sw_limits = limits;
+        return enqueue_management(command, mode);
+    }
+
     bool contains(const AxisModel &axis) const
     {
         return find(axis) < axes_.size();
     }
 
-    rt::ErrorCode add_axis(AxisModel &axis)
+    rt::ErrorCode add_axis(AxisModel &axis, IdentInGroup ident)
     {
         if(status_ != GroupStatus::disabled || axis.domain_id() != domain_id_) {
             return rt::ErrorCode::invalid_argument;
@@ -1024,12 +1153,49 @@ public:
         if(axis.group_owner() != nullptr) {
             return rt::ErrorCode::out_of_range;
         }
+        if(find(ident) < member_idents_.size()) {
+            return rt::ErrorCode::invalid_argument;
+        }
 
         const rt::ErrorCode pushed = axes_.push_back(&axis);
         if(pushed != rt::ErrorCode::ok) {
             return pushed;
         }
+        const rt::ErrorCode ident_pushed = member_idents_.push_back(ident);
+        if(ident_pushed != rt::ErrorCode::ok) {
+            axes_.pop_back();
+            return ident_pushed;
+        }
         axis.set_group_owner(this, &status_);
+        return rt::ErrorCode::ok;
+    }
+
+    rt::ErrorCode add_axis(AxisModel &axis)
+    {
+        IdentInGroup ident{};
+        while(find(ident) < member_idents_.size()) {
+            ++ident.index;
+        }
+        return add_axis(axis, ident);
+    }
+
+    rt::ErrorCode remove_axis(IdentInGroup ident)
+    {
+        if(status_ != GroupStatus::disabled) {
+            return rt::ErrorCode::invalid_argument;
+        }
+        const std::size_t index = find(ident);
+        if(index == member_idents_.size()) {
+            return rt::ErrorCode::ok;
+        }
+        AxisModel *axis = axes_[index];
+        for(std::size_t i = index + 1; i < axes_.size(); ++i) {
+            axes_[i - 1] = axes_[i];
+            member_idents_[i - 1] = member_idents_[i];
+        }
+        axes_.pop_back();
+        member_idents_.pop_back();
+        axis->set_group_owner(nullptr);
         return rt::ErrorCode::ok;
     }
 
@@ -1044,10 +1210,31 @@ public:
         }
         for(std::size_t i = index + 1; i < axes_.size(); ++i) {
             axes_[i - 1] = axes_[i];
+            member_idents_[i - 1] = member_idents_[i];
         }
         axes_.pop_back();
+        member_idents_.pop_back();
         axis.set_group_owner(nullptr);
         return rt::ErrorCode::ok;
+    }
+
+    AxisModel *member(IdentInGroup ident)
+    {
+        const std::size_t index = find(ident);
+        return index < axes_.size() ? axes_[index] : nullptr;
+    }
+
+    const AxisModel *member(IdentInGroup ident) const
+    {
+        const std::size_t index = find(ident);
+        return index < axes_.size() ? axes_[index] : nullptr;
+    }
+
+    IdentInGroup member_ident(const AxisModel &axis) const
+    {
+        const std::size_t index = find(axis);
+        return index < member_idents_.size() ? member_idents_[index]
+                                             : IdentInGroup{static_cast<std::size_t>(-1)};
     }
 
     rt::ErrorCode enable()
@@ -1219,9 +1406,35 @@ public:
         return rt::ErrorCode::ok;
     }
 
-    rt::Result<std::uint32_t> halt(double deceleration = 1.0, double jerk = 1.0)
+    rt::Result<std::uint32_t> halt(double deceleration = 1.0,
+                                   double jerk = 1.0,
+                                   BufferMode buffer_mode = BufferMode::aborting)
     {
+        if(buffer_mode != BufferMode::aborting && buffer_mode != BufferMode::buffered) {
+            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported);
+        }
+        if(!std::isfinite(deceleration) || deceleration <= 0.0 ||
+           !std::isfinite(jerk) || jerk <= 0.0 ||
+           status_ == GroupStatus::disabled || status_ == GroupStatus::errorstop) {
+            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
+        }
+        if(buffer_mode == BufferMode::buffered) {
+            GroupCommand command{};
+            command.kind = GroupCommandKind::halt;
+            command.deceleration = deceleration;
+            command.jerk = jerk;
+            command.buffer_mode = buffer_mode;
+            command.command_id = next_command_id_++;
+            const rt::ErrorCode queued = queue_.push_back(command);
+            if(queued != rt::ErrorCode::ok) {
+                return rt::Result<std::uint32_t>::failure(queued);
+            }
+            halt_command_id_ = command.command_id;
+            halt_command_live_ = true;
+            return rt::Result<std::uint32_t>::success(command.command_id);
+        }
         abort_wait();
+        abort_queued_management();
         if(halt_command_live_) {
             if(halt_command_done(halt_command_id_)) {
                 last_completed_halt_id_ = halt_command_id_;
@@ -1249,7 +1462,7 @@ public:
     bool halt_command_active(std::uint32_t command_id) const
     {
         return halt_command_live_ && command_id == halt_command_id_ &&
-               status_ != GroupStatus::standby;
+               status_ != GroupStatus::standby && !command_queued(command_id);
     }
 
     bool halt_command_aborted(std::uint32_t command_id) const
@@ -1257,10 +1470,20 @@ public:
         return command_id != 0 && command_id == last_aborted_halt_id_;
     }
 
-    rt::Result<std::uint32_t> submit_wait(std::int64_t duration_cycles,
+    rt::ErrorCode set_task_cycle_period_ns(std::int64_t period_ns)
+    {
+        if(period_ns <= 0) return rt::ErrorCode::invalid_argument;
+        if(!configuration_writable()) return rt::ErrorCode::precondition_failed;
+        task_cycle_period_ns_ = period_ns;
+        return rt::ErrorCode::ok;
+    }
+
+    std::int64_t task_cycle_period_ns() const { return task_cycle_period_ns_; }
+
+    rt::Result<std::uint32_t> submit_wait(std::int64_t duration_ns,
                                          BufferMode buffer_mode)
     {
-        if(duration_cycles <= 0 || status_ == GroupStatus::disabled ||
+        if(duration_ns <= 0 || status_ == GroupStatus::disabled ||
            status_ == GroupStatus::errorstop) {
             return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
         }
@@ -1276,7 +1499,8 @@ public:
         }
 
         wait_command_id_ = next_command_id_++;
-        wait_duration_cycles_ = duration_cycles;
+        wait_duration_cycles_ = duration_ns / task_cycle_period_ns_;
+        if(duration_ns % task_cycle_period_ns_ != 0) ++wait_duration_cycles_;
         wait_elapsed_cycles_ = 0;
         if(buffer_mode == BufferMode::aborting) {
             const rt::ErrorCode stopped = stop();
@@ -1456,11 +1680,11 @@ public:
                 return rt::ErrorCode::ok;
             }
             active_path_length_ = remaining;
-            const double factor = group_override_;
-            const otg::Limits1D limits{active_command_.velocity * factor,
-                                       active_command_.acceleration,
-                                       active_command_.deceleration,
-                                       active_command_.jerk};
+            const otg::Limits1D limits{
+                active_command_.velocity * group_override_,
+                active_command_.acceleration * group_acc_override_,
+                active_command_.deceleration * group_acc_override_,
+                active_command_.jerk * group_jerk_override_};
             const rt::Result<otg::Profile1D> profile = otg::plan_time_optimal(
                 {0.0, 0.0, 0.0}, {remaining, 0.0, 0.0}, limits);
             if(!profile) {
@@ -1491,9 +1715,11 @@ public:
             for(std::size_t i = 0; i < axes_.size(); ++i) {
                 window_[window_index_].entry[i] = axes_[i]->snapshot().command_position;
             }
-            const double factor = group_override_;
             for(std::size_t s = window_index_; s < window_.size(); ++s) {
-                window_[s].limits.max_velocity *= factor;
+                window_[s].limits.max_velocity *= group_override_;
+                window_[s].limits.max_acceleration *= group_acc_override_;
+                window_[s].limits.max_deceleration *= group_acc_override_;
+                window_[s].limits.max_jerk *= group_jerk_override_;
             }
             bool late = false;
             if(!window_rebuild(late)) {
@@ -1519,11 +1745,15 @@ public:
         return rt::ErrorCode::ok;
     }
 
-    // MC_GroupSetOverride: group-level velocity factor ∈ [0,1]. factor=0
-    // freezes position (velocity target zero, group stays moving).
-    rt::ErrorCode set_group_override(double factor)
+    // MC_GroupSetOverride: independent group velocity, acceleration and jerk
+    // factors. A zero velocity factor performs the existing controlled freeze.
+    rt::ErrorCode set_group_override(double factor, double acc_factor = 1.0,
+                                     double jerk_factor = 1.0)
     {
-        if(!std::isfinite(factor) || factor < 0.0 || factor > 1.0) {
+        if(!std::isfinite(factor) || factor < 0.0 || factor > 1.0 ||
+           !std::isfinite(acc_factor) || acc_factor < 0.0 ||
+           acc_factor > 1.0 || !std::isfinite(jerk_factor) ||
+           jerk_factor < 0.0 || jerk_factor > 1.0) {
             return rt::ErrorCode::invalid_argument;
         }
         if(status_ == GroupStatus::disabled || status_ == GroupStatus::errorstop) {
@@ -1533,8 +1763,13 @@ public:
             return rt::ErrorCode::unsupported;
         }
         const double previous = group_override_;
+        const double previous_acc = group_acc_override_;
+        const double previous_jerk = group_jerk_override_;
         group_override_ = factor;
-        if(previous == factor) {
+        group_acc_override_ = acc_factor;
+        group_jerk_override_ = jerk_factor;
+        if(previous == factor && previous_acc == acc_factor &&
+           previous_jerk == jerk_factor) {
             return rt::ErrorCode::ok;
         }
         if(status_ != GroupStatus::moving) {
@@ -1549,6 +1784,8 @@ public:
                                                         active_command_.jerk);
                 if(paused != rt::ErrorCode::ok) {
                     group_override_ = previous;
+                    group_acc_override_ = previous_acc;
+                    group_jerk_override_ = previous_jerk;
                     return paused;
                 }
                 window_override_paused_ = true;
@@ -1562,17 +1799,17 @@ public:
                 const rt::ErrorCode resumed = continue_motion();
                 if(resumed != rt::ErrorCode::ok || status_ != GroupStatus::moving) {
                     group_override_ = factor;
+                    group_acc_override_ = acc_factor;
+                    group_jerk_override_ = jerk_factor;
                     return resumed;
                 }
-                return set_group_override(factor);
+                return set_group_override(factor, acc_factor, jerk_factor);
             }
-            if(previous > 0.0) {
-                for(std::size_t s = window_index_ + 1; s < window_.size(); ++s) {
+            for(std::size_t s = window_index_ + 1; s < window_.size(); ++s) {
+                if(previous > 0.0) {
                     window_[s].limits.max_velocity =
                         window_[s].limits.max_velocity * (factor / previous);
-                }
-            } else {
-                for(std::size_t s = window_index_ + 1; s < window_.size(); ++s) {
+                } else {
                     double v = active_command_.velocity * factor;
                     if(window_[s].kind == WindowKind::arc) {
                         const double junction = std::fmin(
@@ -1586,6 +1823,21 @@ public:
                     }
                     window_[s].limits.max_velocity = v;
                 }
+                window_[s].limits.max_acceleration =
+                    previous_acc > 0.0
+                        ? window_[s].limits.max_acceleration *
+                              (acc_factor / previous_acc)
+                        : active_command_.acceleration * acc_factor;
+                window_[s].limits.max_deceleration =
+                    previous_acc > 0.0
+                        ? window_[s].limits.max_deceleration *
+                              (acc_factor / previous_acc)
+                        : active_command_.deceleration * acc_factor;
+                window_[s].limits.max_jerk =
+                    previous_jerk > 0.0
+                        ? window_[s].limits.max_jerk *
+                              (jerk_factor / previous_jerk)
+                        : active_command_.jerk * jerk_factor;
             }
             if(window_index_ + 1 < window_.size()) {
                 bool late = false;
@@ -1624,6 +1876,8 @@ public:
                 state, {stop_position, 0.0, 0.0}, halt_limits);
             if(!profile) {
                 group_override_ = previous;
+                group_acc_override_ = previous_acc;
+                group_jerk_override_ = previous_jerk;
                 return profile.error();
             }
             active_profile_ = profile.value();
@@ -1635,14 +1889,17 @@ public:
         if(override_paused_) {
             override_paused_ = false;
         }
-        const otg::Limits1D limits{active_command_.velocity * factor,
-                                   active_command_.acceleration,
-                                   active_command_.deceleration,
-                                   active_command_.jerk};
+        const otg::Limits1D limits{
+            active_command_.velocity * factor,
+            active_command_.acceleration * acc_factor,
+            active_command_.deceleration * acc_factor,
+            active_command_.jerk * jerk_factor};
         const rt::Result<otg::Profile1D> profile = otg::plan_time_optimal(
             state, {active_path_length_, 0.0, 0.0}, limits);
         if(!profile) {
             group_override_ = previous;
+            group_acc_override_ = previous_acc;
+            group_jerk_override_ = previous_jerk;
             return profile.error();
         }
         active_profile_ = profile.value();
@@ -1656,76 +1913,92 @@ public:
         return group_override_;
     }
 
-    // MC_MoveDirectAbsolute/Relative (KB-068): non-coordinated PTP. Each member gets
-    // an independent jerk-limited profile with the shared dynamics; members
-    // arrive at different times. Done when all members reach standstill.
-    rt::Result<std::uint32_t> submit_direct(GroupPosition target,
-                                            bool relative,
-                                            double velocity,
-                                            double acceleration,
-                                            double deceleration,
-                                            double jrk)
+    double group_acc_override() const { return group_acc_override_; }
+
+    double group_jerk_override() const { return group_jerk_override_; }
+
+    // MoveDirect remains independent-member PTP for Aborting/Buffered. An
+    // explicit blending transition is a coordinated line and therefore enters
+    // the existing A4/A5 look-ahead planner instead of being silently ignored.
+    rt::Result<std::uint32_t> submit_direct(GroupCommand command)
     {
-        if(direct_active_) {
-            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
-        }
+        const bool blending = command.buffer_mode == BufferMode::blending_low ||
+                              command.buffer_mode == BufferMode::blending_high;
         if(status_ != GroupStatus::standby && status_ != GroupStatus::moving) {
             return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
         }
-        if(target.size != axes_.size() || !std::isfinite(velocity) || velocity <= 0.0 ||
-           !std::isfinite(acceleration) || acceleration <= 0.0 ||
-           !std::isfinite(deceleration) || deceleration <= 0.0 ||
-           !std::isfinite(jrk) || jrk <= 0.0) {
+        if(command.target.size != axes_.size() || !finite(command.target) ||
+           !std::isfinite(command.velocity) || command.velocity <= 0.0 ||
+           !std::isfinite(command.acceleration) || command.acceleration <= 0.0 ||
+           !std::isfinite(command.deceleration) || command.deceleration <= 0.0 ||
+           !std::isfinite(command.jerk) || command.jerk <= 0.0 ||
+           !std::isfinite(command.transition_velocity) ||
+           command.transition_velocity < 0.0 ||
+           command.transition_velocity > command.velocity ||
+           !std::isfinite(command.transition_parameter)) {
             return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
         }
-        for(std::size_t i = 0; i < axes_.size(); ++i) {
-            if(!std::isfinite(target.value[i])) {
+        if(blending) {
+            if(command.transition_mode != TransitionMode::max_corner_deviation) {
+                return rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported);
+            }
+            if(command.transition_parameter <= 0.0) {
                 return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
             }
+            command.kind = GroupCommandKind::motion;
+            command.direct_semantics = true;
+            return submit_linear(command);
         }
+        if(command.buffer_mode != BufferMode::aborting &&
+           command.buffer_mode != BufferMode::buffered) {
+            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported);
+        }
+        if(command.transition_mode != TransitionMode::none) {
+            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported);
+        }
+        if(command.transition_velocity != 0.0 || command.transition_parameter != 0.0) {
+            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
+        }
+        const rt::ErrorCode framed = apply_coordinate_frame(command);
+        if(framed != rt::ErrorCode::ok) {
+            return rt::Result<std::uint32_t>::failure(framed);
+        }
+        command = normalize(command);
+        command.kind = GroupCommandKind::direct;
+        command.direct_semantics = true;
+        command.command_id = next_command_id_++;
         if(!members_ready_for_group_motion()) {
             return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
         }
-        snapshot_selections();
-        snapshot_active_tool_transform();
-
-        std::array<AxisCommand, MaxAxes> direct_commands{};
-        for(std::size_t i = 0; i < axes_.size(); ++i) {
-            AxisCommand &cmd = direct_commands[i];
-            cmd.kind = relative ? CommandKind::move_relative : CommandKind::move_absolute;
-            cmd.value = target.value[i];
-            cmd.velocity = velocity;
-            cmd.acceleration = acceleration;
-            cmd.deceleration = deceleration;
-            cmd.jerk = jrk;
-            const rt::ErrorCode preflight = axes_[i]->preflight_group_owned(cmd);
-            if(preflight != rt::ErrorCode::ok) {
-                return rt::Result<std::uint32_t>::failure(preflight);
+        const rt::ErrorCode limited = preflight_member_targets(command.target);
+        if(limited != rt::ErrorCode::ok) {
+            return rt::Result<std::uint32_t>::failure(limited);
+        }
+        if(command.buffer_mode == BufferMode::aborting) {
+            abort_wait();
+            abort_halt();
+            abort_direct_members();
+            abort_motion();
+        }
+        if(command.buffer_mode == BufferMode::aborting ||
+           (!active_ && !direct_active_ && !window_active_ &&
+            !wait_blocks_motion_start())) {
+            const rt::ErrorCode started = start_direct(command);
+            if(started != rt::ErrorCode::ok) {
+                return rt::Result<std::uint32_t>::failure(started);
+            }
+        } else {
+            const rt::ErrorCode queued = queue_.push_back(command);
+            if(queued != rt::ErrorCode::ok) {
+                return rt::Result<std::uint32_t>::failure(queued);
             }
         }
-
-        abort_motion();
-        const std::uint32_t cmd_id = next_command_id_++;
-        for(std::size_t i = 0; i < axes_.size(); ++i) {
-            AxisCommand &cmd = direct_commands[i];
-            const rt::Result<std::uint32_t> result = axes_[i]->submit_group_owned(cmd);
-            if(!result) {
-                abort_direct_members();
-                abort_motion();
-                set_group_error(result.error());
-                return rt::Result<std::uint32_t>::failure(result.error());
-            }
-        }
-        direct_active_ = true;
-        direct_stopping_ = false;
-        direct_command_id_ = cmd_id;
-        status_ = GroupStatus::moving;
-        return rt::Result<std::uint32_t>::success(cmd_id);
+        return rt::Result<std::uint32_t>::success(command.command_id);
     }
 
-    // MC_GroupHome: parallel homing of all members. Group must be standby
-    // with empty queue. Each member calls home_direct(0.0). All must
-    // succeed; any failure triggers group errorstop.
+    // Legacy direct entry retained for internal callers; the public FB uses
+    // submit_group_home so Position/CoordSystem/BufferMode enter the group
+    // command queue and have an observable lifecycle.
     rt::ErrorCode group_home()
     {
         if(status_ != GroupStatus::standby || !queue_.empty()) {
@@ -1745,9 +2018,135 @@ public:
         return rt::ErrorCode::ok;
     }
 
+    rt::Result<std::uint32_t> submit_group_home(const GroupPosition &position,
+                                                CoordSystem coordinate_system,
+                                                BufferMode buffer_mode)
+    {
+        if(buffer_mode != BufferMode::aborting && buffer_mode != BufferMode::buffered) {
+            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported);
+        }
+        if(status_ == GroupStatus::disabled || status_ == GroupStatus::errorstop ||
+           status_ == GroupStatus::interrupted || axes_.empty()) {
+            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
+        }
+        GroupPosition requested = position;
+        if(requested.size == 0) requested.size = axes_.size();
+        GroupPosition resolved{};
+        bool singular = false;
+        const rt::ErrorCode transformed = transform_position(
+            requested, coordinate_system, CoordSystem::acs, resolved, singular);
+        if(transformed != rt::ErrorCode::ok) {
+            return rt::Result<std::uint32_t>::failure(transformed);
+        }
+        if(singular) {
+            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::precondition_failed);
+        }
+        const rt::ErrorCode limited = preflight_member_targets(resolved);
+        if(limited != rt::ErrorCode::ok) {
+            return rt::Result<std::uint32_t>::failure(limited);
+        }
+
+        GroupCommand command{};
+        command.kind = GroupCommandKind::home;
+        command.target = resolved;
+        command.buffer_mode = buffer_mode;
+        command.command_id = next_command_id_++;
+        if(buffer_mode == BufferMode::aborting) {
+            abort_wait();
+            abort_halt();
+            abort_motion();
+            status_ = GroupStatus::standby;
+        }
+        const rt::ErrorCode queued = queue_.push_back(command);
+        if(queued != rt::ErrorCode::ok) {
+            return rt::Result<std::uint32_t>::failure(queued);
+        }
+        return rt::Result<std::uint32_t>::success(command.command_id);
+    }
+
+    bool group_homing() const
+    {
+        if(active_management_kind_ == GroupCommandKind::home) return true;
+        for(std::size_t i = 0; i < queue_.size(); ++i) {
+            if(queue_[i].kind == GroupCommandKind::home) return true;
+        }
+        return false;
+    }
+
+    bool management_command_done(std::uint32_t command_id) const
+    {
+        for(std::size_t i = 0; i < management_results_.size(); ++i) {
+            if(management_results_[i].command_id == command_id) {
+                return management_results_[i].error == rt::ErrorCode::ok;
+            }
+        }
+        return false;
+    }
+
+    rt::ErrorCode management_command_error(std::uint32_t command_id) const
+    {
+        for(std::size_t i = 0; i < management_results_.size(); ++i) {
+            if(management_results_[i].command_id == command_id) {
+                return management_results_[i].error;
+            }
+        }
+        return rt::ErrorCode::ok;
+    }
+
+    bool management_command_aborted(std::uint32_t command_id) const
+    {
+        for(std::size_t i = 0; i < aborted_management_ids_.size(); ++i) {
+            if(aborted_management_ids_[i] == command_id) return true;
+        }
+        return false;
+    }
+
+    bool management_command_active(std::uint32_t command_id) const
+    {
+        return active_management_id_ == command_id;
+    }
+
     bool direct_motion_active() const
     {
         return direct_active_;
+    }
+
+    bool direct_command_done(std::uint32_t command_id) const
+    {
+        return command_id != 0 && command_id == last_completed_direct_id_;
+    }
+
+    bool direct_command_aborted(std::uint32_t command_id) const
+    {
+        return command_id != 0 && command_id == last_aborted_direct_id_;
+    }
+
+    bool direct_command_active(std::uint32_t command_id) const
+    {
+        if(direct_active_ && direct_command_id_ == command_id) return true;
+        if(active_ && active_command_.direct_semantics &&
+           active_command_.command_id == command_id) return true;
+        return window_active_ && !window_.empty() &&
+               window_[window_index_].kind == WindowKind::direct_line &&
+               window_[window_index_].command_id == command_id;
+    }
+
+    bool direct_command_busy(std::uint32_t command_id) const
+    {
+        if(direct_command_active(command_id)) return true;
+        for(std::size_t i = 0; i < queue_.size(); ++i) {
+            if(queue_[i].direct_semantics &&
+               queue_[i].command_id == command_id) return true;
+        }
+        if(window_active_) {
+            for(std::size_t i = window_index_; i < window_.size(); ++i) {
+                if(window_[i].kind == WindowKind::direct_line &&
+                   window_[i].command_id == command_id) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     std::uint32_t last_completed_direct_command() const
@@ -2004,28 +2403,97 @@ public:
         return rt::ErrorCode::ok;
     }
 
+    rt::Result<std::uint32_t> submit_kinematics(
+        const KinTransformRef &kin_transform,
+        double min_singularity_margin,
+        double max_joint_step,
+        ExecutionMode mode)
+    {
+        const rt::ErrorCode valid = validate_kinematics(
+            kin_transform, min_singularity_margin, max_joint_step);
+        if(valid != rt::ErrorCode::ok) {
+            return rt::Result<std::uint32_t>::failure(valid);
+        }
+        if(mode == ExecutionMode::immediately) {
+            if(status_ != GroupStatus::standby || !queue_.empty()) {
+                return rt::Result<std::uint32_t>::failure(
+                    rt::ErrorCode::invalid_argument);
+            }
+            return complete_immediate(apply_kinematics(
+                kin_transform, min_singularity_margin, max_joint_step));
+        }
+        GroupCommand command{};
+        command.kind = GroupCommandKind::set_kinematics;
+        command.kin_transform = kin_transform;
+        command.min_singularity_margin = min_singularity_margin;
+        command.max_joint_step = max_joint_step;
+        return enqueue_management(command, mode);
+    }
+
     const kin::Kinematics *kinematics_plugin() const { return kinematics_; }
     const kin::PoseKinematics *pose_kinematics_plugin() const { return pose_kinematics_; }
+    KinTransformRef kin_transform() const
+    {
+        if(pose_kinematics_ != nullptr) {
+            return {KinTransformKind::pose, nullptr, pose_kinematics_};
+        }
+        if(kinematics_ != nullptr) {
+            return {KinTransformKind::kinematics, kinematics_, nullptr};
+        }
+        return {};
+    }
 
     rt::ErrorCode set_coordinate_transform(CoordSystem coordinate_system,
                                            const ToolData &transform,
                                            ExecutionMode execution_mode)
     {
-        if(execution_mode != ExecutionMode::immediately) {
-            return rt::ErrorCode::unsupported;
+        if(execution_mode != ExecutionMode::immediately) return rt::ErrorCode::unsupported;
+        if(coordinate_system == CoordSystem::pcs) {
+            return set_workpiece_frame_rpy(transform.value[0], transform.value[1],
+                                           transform.value[2], transform.value[3],
+                                           transform.value[4], transform.value[5]);
         }
-        if(coordinate_system != CoordSystem::pcs) return rt::ErrorCode::unsupported;
-        return set_workpiece_frame_rpy(transform.value[0], transform.value[1],
-                                       transform.value[2], transform.value[3],
-                                       transform.value[4], transform.value[5]);
+        if(coordinate_system == CoordSystem::tcs) {
+            return set_tool_transform_rpy(transform.value[0], transform.value[1],
+                                          transform.value[2], transform.value[3],
+                                          transform.value[4], transform.value[5]);
+        }
+        return rt::ErrorCode::unsupported;
+    }
+
+    rt::Result<std::uint32_t> submit_coordinate_transform(
+        CoordSystem coordinate_system,
+        const ToolData &transform,
+        ExecutionMode execution_mode)
+    {
+        const rt::ErrorCode valid = validate_coordinate_transform(
+            coordinate_system, transform);
+        if(valid != rt::ErrorCode::ok) {
+            return rt::Result<std::uint32_t>::failure(valid);
+        }
+        if(execution_mode == ExecutionMode::immediately) {
+            return complete_immediate(set_coordinate_transform(
+                coordinate_system, transform, execution_mode));
+        }
+        GroupCommand command{};
+        command.kind = GroupCommandKind::set_coordinate_transform;
+        command.coord_system = coordinate_system;
+        command.tool_data = transform;
+        return enqueue_management(command, execution_mode);
     }
 
     rt::ErrorCode coordinate_transform(CoordSystem coordinate_system,
                                        ToolData &transform) const
     {
-        if(coordinate_system != CoordSystem::pcs) return rt::ErrorCode::unsupported;
-        workpiece_frame_rpy(transform.value.data());
-        return rt::ErrorCode::ok;
+        if(coordinate_system == CoordSystem::pcs) {
+            workpiece_frame_rpy(transform.value.data());
+            return rt::ErrorCode::ok;
+        }
+        if(coordinate_system == CoordSystem::tcs) {
+            tool_transform_rpy(transform.value.data());
+            return rt::ErrorCode::ok;
+        }
+        return rt::ErrorCode::unsupported;
     }
 
     rt::ErrorCode transform_position(const GroupPosition &position,
@@ -2233,6 +2701,9 @@ public:
     rt::Result<std::uint32_t> submit_linear(GroupCommand command)
     {
         pending_dynamic_pcs_ = false;
+        if(command.buffer_mode != BufferMode::aborting && has_queued_management()) {
+            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported);
+        }
         if(jog_active_ && command.buffer_mode != BufferMode::aborting) {
             return rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported);
         }
@@ -2268,6 +2739,18 @@ public:
            !std::isfinite(command.acceleration) || command.deceleration <= 0.0 ||
            !std::isfinite(command.deceleration) || command.jerk <= 0.0 ||
            !std::isfinite(command.jerk) || !finite(command.target)) {
+            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
+        }
+        const rt::ErrorCode orientation = select_orientation_interpolation(command);
+        if(orientation != rt::ErrorCode::ok) {
+            return rt::Result<std::uint32_t>::failure(orientation);
+        }
+        const bool blending_buffer = command.buffer_mode == BufferMode::blending_low ||
+                                     command.buffer_mode == BufferMode::blending_high;
+        if(!std::isfinite(command.transition_velocity) ||
+           command.transition_velocity < 0.0 ||
+           command.transition_velocity > command.velocity ||
+           (command.transition_velocity > 0.0 && !blending_buffer)) {
             return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
         }
         if(!members_ready_for_group_motion()) {
@@ -2314,8 +2797,6 @@ public:
 
         // TransitionMode combination matrix (approved blending matrix):
         // unlisted combinations are explicit errors, never silent downgrades.
-        const bool blending_buffer = command.buffer_mode == BufferMode::blending_low ||
-                                     command.buffer_mode == BufferMode::blending_high;
         if(command.transition_mode == TransitionMode::none) {
             if(command.transition_parameter != 0.0) {
                 return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
@@ -2401,6 +2882,9 @@ public:
     rt::Result<std::uint32_t> submit_circular(GroupCommand command)
     {
         pending_dynamic_pcs_ = false;
+        if(command.buffer_mode != BufferMode::aborting && has_queued_management()) {
+            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported);
+        }
         if(jog_active_ && command.buffer_mode != BufferMode::aborting) {
             return rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported);
         }
@@ -2432,8 +2916,39 @@ public:
            !std::isfinite(command.velocity) || command.acceleration <= 0.0 ||
            !std::isfinite(command.acceleration) || command.deceleration <= 0.0 ||
            !std::isfinite(command.deceleration) || command.jerk <= 0.0 ||
-           !std::isfinite(command.jerk) || !finite(command.target) || !finite(command.aux)) {
+           !std::isfinite(command.jerk) || !finite(command.target) || !finite(command.aux) ||
+           !std::isfinite(command.tolerance) || command.tolerance < 0.0) {
             return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
+        }
+        const rt::ErrorCode orientation = select_orientation_interpolation(command);
+        if(orientation != rt::ErrorCode::ok) {
+            return rt::Result<std::uint32_t>::failure(orientation);
+        }
+        const bool arc_blending = command.buffer_mode == BufferMode::blending_low ||
+                                  command.buffer_mode == BufferMode::blending_high;
+        if(!std::isfinite(command.transition_velocity) ||
+           command.transition_velocity < 0.0 ||
+           command.transition_velocity > command.velocity ||
+           (command.transition_velocity > 0.0 && !arc_blending)) {
+            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
+        }
+        if(command.transition_mode == TransitionMode::none) {
+            if(command.transition_parameter != 0.0) {
+                return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
+            }
+        } else if(command.transition_mode == TransitionMode::max_corner_deviation) {
+            if(!std::isfinite(command.transition_parameter) ||
+               command.transition_parameter <= 0.0) {
+                return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
+            }
+            if(command.buffer_mode == BufferMode::aborting) {
+                return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
+            }
+            if(!arc_blending) {
+                return rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported);
+            }
+        } else {
+            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported);
         }
         if(!members_ready_for_group_motion()) {
             return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
@@ -2454,6 +2969,11 @@ public:
         // resolve here and commit directly — the joint-domain construction
         // below never sees them.
         if(command.interpolation_space == InterpolationSpace::cartesian) {
+            if(arc_blending) {
+                // Cartesian circular transition-window geometry is not
+                // implemented; reject instead of queuing a fake blend.
+                return rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported);
+            }
             const rt::ErrorCode prepared = prepare_cartesian_circular(command);
             if(prepared != rt::ErrorCode::ok) {
                 return rt::Result<std::uint32_t>::failure(prepared);
@@ -2491,15 +3011,6 @@ public:
         if(framed != rt::ErrorCode::ok) {
             return rt::Result<std::uint32_t>::failure(framed);
         }
-        const bool arc_blending = command.buffer_mode == BufferMode::blending_low ||
-                                  command.buffer_mode == BufferMode::blending_high;
-        if(command.transition_mode != TransitionMode::none ||
-           command.transition_parameter != 0.0) {
-            // Tolerance-band line-arc transition curves are v3 scope; arc
-            // window entry rides on tangent continuity alone (approved A5 v2).
-            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported);
-        }
-
         // Deterministic start point: the live commanded position for an
         // aborting takeover, otherwise the committed finish of the queue tail.
         // Geometry is validated before any abort so a rejected command never
@@ -2552,6 +3063,22 @@ public:
                                            : CircPathChoice::clockwise;
         if(derived != command.path_choice) {
             return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
+        }
+        if(command.tolerance > 0.0) {
+            const double via_sweep = geom::normalize_sweep(
+                geom::angle_of(plane_aux, arc.value().center) -
+                    arc.value().start_angle,
+                arc.value().sweep);
+            const double fraction = via_sweep / arc.value().sweep;
+            for(std::size_t i = 2; i < axes_.size(); ++i) {
+                const double expected = start_point[i] +
+                                        (command.target.value[i] - start_point[i]) *
+                                            fraction;
+                if(std::fabs(command.aux.value[i] - expected) > command.tolerance) {
+                    return rt::Result<std::uint32_t>::failure(
+                        rt::ErrorCode::invalid_argument);
+                }
+            }
         }
         command.path_kind = GroupPathKind::circular;
         command.arc = arc.value();
@@ -2801,13 +3328,14 @@ public:
             }
             if(all_done) {
                 if(direct_stopping_) {
-                    last_aborted_direct_id_ = direct_command_id_;
+                    abort_direct(direct_command_id_);
                 } else {
-                    last_completed_direct_id_ = direct_command_id_;
+                    complete_direct(direct_command_id_);
                 }
                 direct_active_ = false;
                 direct_stopping_ = false;
                 status_ = GroupStatus::standby;
+                start_next_queued();
             }
             return;
         }
@@ -2829,6 +3357,9 @@ public:
                 } else {
                     status_ = GroupStatus::standby;
                 }
+            }
+            if(status_ == GroupStatus::standby && !queue_.empty()) {
+                start_next_queued();
             }
             return;
         }
@@ -2911,6 +3442,311 @@ private:
     {
         group_error_id_ = error;
         status_ = GroupStatus::errorstop;
+    }
+
+    rt::ErrorCode validate_group_parameter(GroupParameter parameter, double value) const
+    {
+        if(!std::isfinite(value)) return rt::ErrorCode::invalid_argument;
+        if(parameter == GroupParameter::dynamics_mode) {
+            return value == static_cast<double>(DynamicsMode::absolute) ||
+                           value == static_cast<double>(DynamicsMode::percentage)
+                       ? rt::ErrorCode::ok
+                       : rt::ErrorCode::invalid_argument;
+        }
+        if(parameter == GroupParameter::transition_reference_point) {
+            if(value == static_cast<double>(TransitionReferencePoint::start_point)) {
+                return rt::ErrorCode::unsupported;
+            }
+            return value == static_cast<double>(TransitionReferencePoint::end_point)
+                       ? rt::ErrorCode::ok
+                       : rt::ErrorCode::invalid_argument;
+        }
+        return rt::ErrorCode::unsupported;
+    }
+
+    rt::ErrorCode validate_tool_data(std::size_t number, const ToolData &data) const
+    {
+        if(number == 0) return rt::ErrorCode::precondition_failed;
+        if(number >= ToolCapacity) return rt::ErrorCode::out_of_range;
+        for(double value : data.value) {
+            if(!std::isfinite(value)) return rt::ErrorCode::invalid_argument;
+        }
+        return rt::ErrorCode::ok;
+    }
+
+    rt::ErrorCode validate_group_sw_limits(const GroupSWLimits &limits) const
+    {
+        if(limits.count != axes_.size()) return rt::ErrorCode::invalid_argument;
+        for(std::size_t i = 0; i < limits.count; ++i) {
+            const GroupSWLimit &entry = limits.value[i];
+            if(!std::isfinite(entry.minimum) || !std::isfinite(entry.maximum) ||
+               entry.minimum > entry.maximum) {
+                return rt::ErrorCode::invalid_argument;
+            }
+        }
+        return rt::ErrorCode::ok;
+    }
+
+    rt::ErrorCode validate_kinematics(const KinTransformRef &transform,
+                                      double min_singularity_margin,
+                                      double max_joint_step) const
+    {
+        if(!std::isfinite(min_singularity_margin) || min_singularity_margin < 0.0) {
+            return rt::ErrorCode::invalid_argument;
+        }
+        switch(transform.kind) {
+        case KinTransformKind::none:
+            return transform.kinematics == nullptr && transform.pose == nullptr
+                       ? rt::ErrorCode::ok
+                       : rt::ErrorCode::invalid_argument;
+        case KinTransformKind::pose:
+            if(transform.pose == nullptr || transform.kinematics != nullptr) {
+                return rt::ErrorCode::invalid_argument;
+            }
+            if(!std::isfinite(max_joint_step) || max_joint_step <= 0.0 ||
+               axes_.size() != 6 ||
+               transform.pose->joint_count() != 6) {
+                return rt::ErrorCode::invalid_argument;
+            }
+            return rt::ErrorCode::ok;
+        case KinTransformKind::kinematics:
+            if(transform.kinematics == nullptr || transform.pose != nullptr ||
+               transform.kinematics->joint_count() != axes_.size() ||
+               transform.kinematics->cartesian_count() !=
+                   transform.kinematics->joint_count() ||
+               transform.kinematics->cartesian_count() < 2 ||
+               transform.kinematics->cartesian_count() > 3) {
+                return rt::ErrorCode::invalid_argument;
+            }
+            return rt::ErrorCode::ok;
+        default:
+            return rt::ErrorCode::invalid_argument;
+        }
+    }
+
+    rt::ErrorCode apply_kinematics(const KinTransformRef &transform,
+                                   double min_singularity_margin,
+                                   double max_joint_step)
+    {
+        const rt::ErrorCode valid = validate_kinematics(
+            transform, min_singularity_margin, max_joint_step);
+        if(valid != rt::ErrorCode::ok) return valid;
+        if(transform.kind == KinTransformKind::none) {
+            kinematics_ = nullptr;
+            pose_kinematics_ = nullptr;
+            kinematics_min_margin_ = 0.0;
+            pose_min_margin_ = 0.0;
+            pose_max_joint_step_ = 0.01;
+        } else if(transform.kind == KinTransformKind::kinematics) {
+            kinematics_ = transform.kinematics;
+            kinematics_min_margin_ = min_singularity_margin;
+            pose_kinematics_ = nullptr;
+            pose_min_margin_ = 0.0;
+            pose_max_joint_step_ = 0.01;
+        } else {
+            pose_kinematics_ = transform.pose;
+            pose_min_margin_ = min_singularity_margin;
+            pose_max_joint_step_ = max_joint_step;
+            kinematics_ = nullptr;
+            kinematics_min_margin_ = 0.0;
+        }
+        return rt::ErrorCode::ok;
+    }
+
+    rt::ErrorCode validate_coordinate_transform(CoordSystem coordinate_system,
+                                                const ToolData &transform) const
+    {
+        if(coordinate_system != CoordSystem::pcs && coordinate_system != CoordSystem::tcs) {
+            return rt::ErrorCode::unsupported;
+        }
+        if(coordinate_system == CoordSystem::tcs && numbered_tool_mode_) {
+            return rt::ErrorCode::precondition_failed;
+        }
+        for(double value : transform.value) {
+            if(!std::isfinite(value)) return rt::ErrorCode::invalid_argument;
+        }
+        return rt::ErrorCode::ok;
+    }
+
+    rt::ErrorCode apply_coordinate_transform(CoordSystem coordinate_system,
+                                             const ToolData &transform)
+    {
+        const rt::ErrorCode valid = validate_coordinate_transform(
+            coordinate_system, transform);
+        if(valid != rt::ErrorCode::ok) return valid;
+        if(coordinate_system == CoordSystem::pcs) {
+            cancel_tracking();
+            workpiece_frame_ = geom::make_rpy_transform(
+                transform.value[0], transform.value[1], transform.value[2],
+                transform.value[3], transform.value[4], transform.value[5]);
+            for(int i = 0; i < 6; ++i) {
+                workpiece_frame_rpy_[i] = transform.value[i];
+            }
+            return rt::ErrorCode::ok;
+        }
+        pose_tool_ = geom::make_rpy_transform(
+            transform.value[0], transform.value[1], transform.value[2],
+            transform.value[3], transform.value[4], transform.value[5]);
+        pose_tool_inverse_ = geom::invert(pose_tool_);
+        for(int i = 0; i < 6; ++i) {
+            tool_transform_rpy_[i] = transform.value[i];
+        }
+        return rt::ErrorCode::ok;
+    }
+
+    rt::Result<std::uint32_t> complete_immediate(rt::ErrorCode result)
+    {
+        if(result != rt::ErrorCode::ok) {
+            return rt::Result<std::uint32_t>::failure(result);
+        }
+        const std::uint32_t command_id = next_command_id_++;
+        remember_management_result(command_id, rt::ErrorCode::ok);
+        return rt::Result<std::uint32_t>::success(command_id);
+    }
+
+    rt::Result<std::uint32_t> enqueue_management(GroupCommand command,
+                                                 ExecutionMode mode)
+    {
+        if(mode != ExecutionMode::queued) {
+            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported);
+        }
+        if(status_ != GroupStatus::standby && status_ != GroupStatus::moving &&
+           status_ != GroupStatus::stopping) {
+            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::precondition_failed);
+        }
+        command.command_id = next_command_id_++;
+        const rt::ErrorCode queued = queue_.push_back(command);
+        return queued == rt::ErrorCode::ok
+                   ? rt::Result<std::uint32_t>::success(command.command_id)
+                   : rt::Result<std::uint32_t>::failure(queued);
+    }
+
+    void remember_management_result(std::uint32_t command_id, rt::ErrorCode error)
+    {
+        if(management_results_.size() == QueueCapacity) {
+            for(std::size_t i = 1; i < management_results_.size(); ++i) {
+                management_results_[i - 1] = management_results_[i];
+            }
+            management_results_.pop_back();
+        }
+        management_results_.push_back({command_id, error});
+    }
+
+    void remember_management_aborted(std::uint32_t command_id)
+    {
+        if(command_id == 0) return;
+        if(aborted_management_ids_.size() == QueueCapacity) {
+            for(std::size_t i = 1; i < aborted_management_ids_.size(); ++i) {
+                aborted_management_ids_[i - 1] = aborted_management_ids_[i];
+            }
+            aborted_management_ids_.pop_back();
+        }
+        aborted_management_ids_.push_back(command_id);
+    }
+
+    bool command_queued(std::uint32_t command_id) const
+    {
+        for(std::size_t i = 0; i < queue_.size(); ++i) {
+            if(queue_[i].command_id == command_id) return true;
+        }
+        return false;
+    }
+
+    bool has_queued_management() const
+    {
+        for(std::size_t i = 0; i < queue_.size(); ++i) {
+            if(queue_[i].kind != GroupCommandKind::motion &&
+               queue_[i].kind != GroupCommandKind::direct) return true;
+        }
+        return false;
+    }
+
+    void abort_queued_management()
+    {
+        for(std::size_t i = 0; i < queue_.size(); ++i) {
+            if(queue_[i].kind != GroupCommandKind::motion) {
+                remember_management_aborted(queue_[i].command_id);
+                if(queue_[i].kind == GroupCommandKind::halt &&
+                   halt_command_id_ == queue_[i].command_id) {
+                    last_aborted_halt_id_ = queue_[i].command_id;
+                    halt_command_live_ = false;
+                }
+            }
+        }
+    }
+
+    rt::ErrorCode execute_management(const GroupCommand &command)
+    {
+        active_management_id_ = command.command_id;
+        active_management_kind_ = command.kind;
+        rt::ErrorCode result = rt::ErrorCode::ok;
+        switch(command.kind) {
+        case GroupCommandKind::home:
+            if(status_ != GroupStatus::standby || !members_ready_for_group_motion()) {
+                result = rt::ErrorCode::precondition_failed;
+                break;
+            }
+            for(std::size_t i = 0; i < axes_.size(); ++i) {
+                result = axes_[i]->home_direct(command.target.value[i]);
+                if(result != rt::ErrorCode::ok) break;
+            }
+            if(result != rt::ErrorCode::ok) set_group_error(result);
+            break;
+        case GroupCommandKind::halt:
+            abort_queued_management();
+            queue_.clear();
+            last_completed_halt_id_ = command.command_id;
+            halt_command_id_ = command.command_id;
+            halt_command_live_ = true;
+            break;
+        case GroupCommandKind::set_kinematics:
+            result = apply_kinematics(command.kin_transform,
+                                      command.min_singularity_margin,
+                                      command.max_joint_step);
+            break;
+        case GroupCommandKind::set_coordinate_transform:
+            result = apply_coordinate_transform(command.coord_system, command.tool_data);
+            break;
+        case GroupCommandKind::write_parameter:
+            result = validate_group_parameter(command.parameter, command.parameter_value);
+            if(result == rt::ErrorCode::ok) {
+                if(command.parameter == GroupParameter::dynamics_mode) {
+                    dynamics_mode_ = static_cast<DynamicsMode>(
+                        static_cast<int>(command.parameter_value));
+                } else {
+                    transition_reference_point_ = TransitionReferencePoint::end_point;
+                }
+            }
+            break;
+        case GroupCommandKind::write_sw_limits:
+            result = validate_group_sw_limits(command.sw_limits);
+            if(result == rt::ErrorCode::ok) {
+                for(std::size_t i = 0; i < command.sw_limits.count; ++i) {
+                    MotionLimits next = axes_[i]->limits_;
+                    next.min_position = command.sw_limits.value[i].minimum;
+                    next.max_position = command.sw_limits.value[i].maximum;
+                    next.min_position_enabled = command.sw_limits.value[i].minimum_enabled;
+                    next.max_position_enabled = command.sw_limits.value[i].maximum_enabled;
+                    axes_[i]->limits_ = next;
+                }
+            }
+            break;
+        case GroupCommandKind::write_tool_data:
+            result = validate_tool_data(command.tool_number, command.tool_data);
+            if(result == rt::ErrorCode::ok) {
+                tools_[command.tool_number] = command.tool_data;
+                tool_defined_[command.tool_number] = true;
+            }
+            break;
+        case GroupCommandKind::motion:
+        case GroupCommandKind::direct:
+            result = rt::ErrorCode::invalid_argument;
+            break;
+        }
+        remember_management_result(command.command_id, result);
+        active_management_id_ = 0;
+        active_management_kind_ = GroupCommandKind::motion;
+        return result;
     }
 
     bool cycle_wait()
@@ -3307,8 +4143,20 @@ private:
     }
 
     rt::ErrorCode validate_jog(CoordSystem coord_system,
-                               const GroupPosition &direction) const
+                               const GroupPosition &direction,
+                               const JogCommandOptions &options) const
     {
+        if(!std::isfinite(options.velocity_override) ||
+           options.velocity_override < 0.0 || options.velocity_override > 1.0 ||
+           !std::isfinite(options.acceleration_override) ||
+           options.acceleration_override < 0.0 ||
+           options.acceleration_override > 1.0 ||
+           !std::isfinite(options.max_linear_distance) ||
+           options.max_linear_distance < 0.0 ||
+           !std::isfinite(options.max_angular_distance) ||
+           options.max_angular_distance < 0.0) {
+            return rt::ErrorCode::invalid_argument;
+        }
         if(axes_.empty() || direction.size == 0 || !finite(direction)) {
             return rt::ErrorCode::invalid_argument;
         }
@@ -3335,6 +4183,10 @@ private:
             }
         }
         if(coord_system == CoordSystem::acs) {
+            if(options.max_linear_distance > 0.0 ||
+               options.max_angular_distance > 0.0) {
+                return rt::ErrorCode::unsupported;
+            }
             return direction.size == axes_.size() ? rt::ErrorCode::ok
                                                   : rt::ErrorCode::invalid_argument;
         }
@@ -3343,6 +4195,9 @@ private:
         }
         if(kinematics_ == nullptr && pose_kinematics_ == nullptr) {
             return rt::ErrorCode::precondition_failed;
+        }
+        if(options.max_angular_distance > 0.0 && pose_kinematics_ == nullptr) {
+            return rt::ErrorCode::unsupported;
         }
         return direction.size >= 3 ? rt::ErrorCode::ok
                                    : rt::ErrorCode::invalid_argument;
@@ -3360,8 +4215,10 @@ private:
         const double acceleration_limit =
             target_velocity == 0.0
                 ? (jog_stop_deceleration_ > 0.0 ? jog_stop_deceleration_
-                                                : jogging_dynamics_.axis_deceleration[index])
-                : jogging_dynamics_.axis_acceleration[index];
+                                                : jogging_dynamics_.axis_deceleration[index] *
+                                                      jog_options_.acceleration_override)
+                : jogging_dynamics_.axis_acceleration[index] *
+                      jog_options_.acceleration_override;
         const double desired_acceleration =
             target_velocity > jog_velocity_[index]
                 ? acceleration_limit
@@ -3392,8 +4249,11 @@ private:
         const double acceleration_limit =
             target_velocity == 0.0 && jog_stop_deceleration_ > 0.0
                 ? jog_stop_deceleration_
-                : (target_velocity == 0.0 ? jogging_dynamics_.path.deceleration
-                                          : jogging_dynamics_.path.acceleration);
+                : (target_velocity == 0.0
+                       ? jogging_dynamics_.path.deceleration *
+                             jog_options_.acceleration_override
+                       : jogging_dynamics_.path.acceleration *
+                             jog_options_.acceleration_override);
         const double desired = target_velocity > jog_cart_velocity_[index]
                                    ? acceleration_limit
                                    : (target_velocity < jog_cart_velocity_[index]
@@ -3422,6 +4282,49 @@ private:
             }
         }
         return true;
+    }
+
+    void apply_jog_distance_limits(GroupPosition &next)
+    {
+        if(jog_options_.max_linear_distance > 0.0 && next.size >= 3) {
+            const double dx = next.value[0] - jog_cartesian_start_[0];
+            const double dy = next.value[1] - jog_cartesian_start_[1];
+            const double dz = next.value[2] - jog_cartesian_start_[2];
+            const double distance = std::sqrt(dx * dx + dy * dy + dz * dz);
+            if(distance >= jog_options_.max_linear_distance && distance > 0.0) {
+                const double scale = jog_options_.max_linear_distance / distance;
+                next.value[0] = jog_cartesian_start_[0] + dx * scale;
+                next.value[1] = jog_cartesian_start_[1] + dy * scale;
+                next.value[2] = jog_cartesian_start_[2] + dz * scale;
+                for(std::size_t i = 0; i < 3; ++i) {
+                    jog_direction_.value[i] = 0.0;
+                    jog_cart_velocity_[i] = 0.0;
+                    jog_cart_acceleration_[i] = 0.0;
+                }
+            }
+        }
+        if(jog_options_.max_angular_distance > 0.0 && next.size >= 6) {
+            const geom::RigidTransform start = geom::make_rpy_transform(
+                0.0, 0.0, 0.0, jog_cartesian_start_[3],
+                jog_cartesian_start_[4], jog_cartesian_start_[5]);
+            geom::RigidTransform candidate = geom::make_rpy_transform(
+                0.0, 0.0, 0.0, next.value[3], next.value[4], next.value[5]);
+            double axis[3] = {};
+            double angle = 0.0;
+            geom::relative_axis_angle(start.rotation, candidate.rotation, axis, angle);
+            if(angle >= jog_options_.max_angular_distance && angle > 0.0) {
+                double delta[3][3] = {};
+                geom::rodrigues(axis, jog_options_.max_angular_distance, delta);
+                geom::rotation_multiply(start.rotation, delta, candidate.rotation);
+                geom::extract_rpy(candidate.rotation, next.value[3], next.value[4],
+                                  next.value[5]);
+                for(std::size_t i = 3; i < 6; ++i) {
+                    jog_direction_.value[i] = 0.0;
+                    jog_cart_velocity_[i] = 0.0;
+                    jog_cart_acceleration_[i] = 0.0;
+                }
+            }
+        }
     }
 
     bool solve_jog_cartesian(GroupPosition &target)
@@ -3482,7 +4385,8 @@ private:
         if(jog_coord_system_ == CoordSystem::acs) {
             for(std::size_t i = 0; i < axes_.size(); ++i) {
                 const double target = jog_direction_.value[i] *
-                                      jogging_dynamics_.axis_velocity[i];
+                                      jogging_dynamics_.axis_velocity[i] *
+                                      jog_options_.velocity_override;
                 advance_jog_state(i, target);
                 const double next = jog_position_[i] + jog_velocity_[i];
                 if(!axes_[i]->target_inside_limits(next)) {
@@ -3516,12 +4420,15 @@ private:
                 const double component = i < jog_direction_.size
                                              ? jog_direction_.value[i] * scale
                                              : 0.0;
-                advance_cart_jog_state(i, component * jogging_dynamics_.path.velocity);
+                advance_cart_jog_state(
+                    i, component * jogging_dynamics_.path.velocity *
+                           jog_options_.velocity_override);
             }
             GroupPosition next = jog_cartesian_position_;
             for(std::size_t i = 0; i < 6 && i < next.size; ++i) {
                 next.value[i] += jog_cart_velocity_[i];
             }
+            apply_jog_distance_limits(next);
             if(!solve_jog_cartesian(next)) {
                 jog_direction_ = {};
                 jog_direction_.size = next.size;
@@ -3672,6 +4579,52 @@ private:
         }
     }
 
+    rt::ErrorCode start_direct(const GroupCommand &command)
+    {
+        if(!members_ready_for_group_motion()) return rt::ErrorCode::invalid_argument;
+        std::array<AxisCommand, MaxAxes> commands{};
+        for(std::size_t i = 0; i < axes_.size(); ++i) {
+            AxisCommand &member = commands[i];
+            member.kind = CommandKind::move_absolute;
+            member.value = command.target.value[i];
+            member.velocity = command.velocity;
+            member.acceleration = command.acceleration;
+            member.deceleration = command.deceleration;
+            member.jerk = command.jerk;
+            const rt::ErrorCode preflight = axes_[i]->preflight_group_owned(member);
+            if(preflight != rt::ErrorCode::ok) return preflight;
+        }
+        snapshot_selections();
+        snapshot_active_tool_transform();
+        for(std::size_t i = 0; i < axes_.size(); ++i) {
+            const rt::Result<std::uint32_t> submitted =
+                axes_[i]->submit_group_owned(commands[i]);
+            if(!submitted) {
+                abort_direct_members();
+                set_group_error(submitted.error());
+                return submitted.error();
+            }
+        }
+        direct_active_ = true;
+        direct_stopping_ = false;
+        direct_command_id_ = command.command_id;
+        for(std::size_t i = 0; i < axes_.size(); ++i) {
+            active_finish_[i] = command.target.value[i];
+        }
+        status_ = GroupStatus::moving;
+        return rt::ErrorCode::ok;
+    }
+
+    void complete_direct(std::uint32_t command_id)
+    {
+        last_completed_direct_id_ = command_id;
+    }
+
+    void abort_direct(std::uint32_t command_id)
+    {
+        last_aborted_direct_id_ = command_id;
+    }
+
     rt::ErrorCode stop_direct_members(double deceleration, double jerk)
     {
         for(std::size_t i = 0; i < axes_.size(); ++i) {
@@ -3728,6 +4681,16 @@ private:
         return axes_.size();
     }
 
+    std::size_t find(IdentInGroup ident) const
+    {
+        for(std::size_t i = 0; i < member_idents_.size(); ++i) {
+            if(member_idents_[i].index == ident.index) {
+                return i;
+            }
+        }
+        return member_idents_.size();
+    }
+
     static bool finite(const GroupPosition &position)
     {
         for(std::size_t i = 0; i < position.size; ++i) {
@@ -3743,6 +4706,27 @@ private:
         return geom::Vec3{position.value[0],
                           position.size > 1 ? position.value[1] : 0.0,
                           position.size > 2 ? position.value[2] : 0.0};
+    }
+
+    rt::ErrorCode select_orientation_interpolation(GroupCommand &command) const
+    {
+        switch(command.orientation_mode) {
+        case OrientationMode::joint_space:
+            return rt::ErrorCode::ok;
+        case OrientationMode::shortest_path:
+        case OrientationMode::constant:
+            if(pose_kinematics_ == nullptr) {
+                return rt::ErrorCode::unsupported;
+            }
+            if(command.coord_system != CoordSystem::mcs &&
+               command.coord_system != CoordSystem::pcs) {
+                return rt::ErrorCode::unsupported;
+            }
+            command.interpolation_space = InterpolationSpace::cartesian;
+            return rt::ErrorCode::ok;
+        default:
+            return rt::ErrorCode::invalid_argument;
+        }
     }
 
     static void store_cartesian_part(GroupPosition &position, geom::Vec3 point)
@@ -4001,6 +4985,27 @@ private:
     // quantization declared). The cycle path samples the window geometry
     // and runs one analytic inverse (KB-044 machinery); failures are the
     // declared group errorstop.
+    template<typename T, std::size_t Capacity>
+    class HeapStaticVector
+    {
+      public:
+        HeapStaticVector()
+            : data_(new rt::StaticVector<T, Capacity>())
+        {
+        }
+
+        bool empty() const { return data_->empty(); }
+        std::size_t size() const { return data_->size(); }
+        T &operator[](std::size_t index) { return (*data_)[index]; }
+        const T &operator[](std::size_t index) const { return (*data_)[index]; }
+        rt::ErrorCode push_back(const T &value) { return data_->push_back(value); }
+        void pop_back() { data_->pop_back(); }
+        void clear() { data_->clear(); }
+
+      private:
+        std::unique_ptr<rt::StaticVector<T, Capacity>> data_;
+    };
+
     struct CartPiece
     {
         bool corner = false;
@@ -4033,6 +5038,7 @@ private:
             last_blend_degraded_id_ = command.command_id;
             command.buffer_mode = BufferMode::buffered;
             command.transition_mode = TransitionMode::none;
+            command.transition_velocity = 0.0;
             command.transition_parameter = 0.0;
             const rt::ErrorCode prepared = prepare_cartesian_linear(command);
             if(prepared != rt::ErrorCode::ok) {
@@ -4161,6 +5167,10 @@ private:
             return rt::Result<std::uint32_t>::failure(
                 rt::ErrorCode::capacity_exceeded);
         }
+        if(!degrade && !passthrough && command.transition_velocity > 0.0 &&
+           command.transition_velocity < corner_cap) {
+            corner_cap = command.transition_velocity;
+        }
 
         if(!degrade) {
             // Pre-validation: seed-chain the inverse along the new line (the
@@ -4252,6 +5262,10 @@ private:
             line.dir = t1;
             line.length = passthrough ? len_b : len_b - trim;
             line.cap = command.velocity;
+            if(passthrough && command.transition_velocity > 0.0 &&
+               command.transition_velocity < line.cap) {
+                line.cap = command.transition_velocity;
+            }
             cart_window_.push_back(line);
             for(std::size_t i = 0; i < axes_.size(); ++i) {
                 cart_tail_joints_[i] = chain[i];
@@ -4283,6 +5297,7 @@ private:
         last_blend_degraded_id_ = command.command_id;
         command.buffer_mode = BufferMode::buffered;
         command.transition_mode = TransitionMode::none;
+        command.transition_velocity = 0.0;
         command.transition_parameter = 0.0;
         const rt::ErrorCode prepared = prepare_cartesian_linear(command);
         if(prepared != rt::ErrorCode::ok) {
@@ -4738,6 +5753,13 @@ private:
 
             if(!degrade && segment.pose) {
                 const geom::RigidTransform live_tcp = pose_start_tcp(cart_joints_);
+                if(command.orientation_mode == OrientationMode::constant) {
+                    for(int i = 0; i < 3; ++i) {
+                        for(int j = 0; j < 3; ++j) {
+                            target_pose.rotation[i][j] = live_tcp.rotation[i][j];
+                        }
+                    }
+                }
                 for(int i = 0; i < 3; ++i) {
                     for(int j = 0; j < 3; ++j) {
                         segment.rotation_start[i][j] = live_tcp.rotation[i][j];
@@ -4766,6 +5788,12 @@ private:
                                      : active_command_.deceleration;
             fused.jerk =
                 fused.jerk < active_command_.jerk ? fused.jerk : active_command_.jerk;
+            if(command.transition_velocity > 0.0 &&
+               command.transition_velocity < fused.velocity) {
+                // This planner has one profile for the fused chain, so the
+                // explicit junction cap conservatively bounds that profile.
+                fused.velocity = command.transition_velocity;
+            }
             if(segment.corner.max_curvature > 1e-12) {
                 const double axis_accel =
                     fused.acceleration < fused.deceleration ? fused.acceleration
@@ -4829,6 +5857,7 @@ private:
         last_blend_degraded_id_ = command.command_id;
         command.buffer_mode = BufferMode::buffered;
         command.transition_mode = TransitionMode::none;
+        command.transition_velocity = 0.0;
         command.transition_parameter = 0.0;
         const rt::ErrorCode prepared = prepare_cartesian_linear(command);
         if(prepared != rt::ErrorCode::ok) {
@@ -4853,14 +5882,40 @@ private:
         CartesianSegment segment{};
         if(pose_kinematics_ != nullptr) {
             segment.pose = true;
-            geom::RigidTransform target = geom::make_rpy_transform(
+            const geom::RigidTransform requested = geom::make_rpy_transform(
                 command.target.value[0], command.target.value[1],
                 command.target.value[2], command.target.value[3],
                 command.target.value[4], command.target.value[5]);
-            if(command.coord_system == CoordSystem::pcs) {
-                target = geom::compose(workpiece_frame_, target);
-            }
             const geom::RigidTransform start = pose_start_tcp(chain);
+            geom::RigidTransform target = requested;
+            if(command.relative) {
+                geom::Vec3 displacement = requested.translation;
+                if(command.coord_system == CoordSystem::pcs) {
+                    displacement = geom::transform_rotate(workpiece_frame_, displacement);
+                }
+                target.translation = start.translation + displacement;
+                if(command.orientation_mode == OrientationMode::constant) {
+                    for(int i = 0; i < 3; ++i) {
+                        for(int j = 0; j < 3; ++j) {
+                            target.rotation[i][j] = start.rotation[i][j];
+                        }
+                    }
+                } else {
+                    geom::rotation_multiply(start.rotation, requested.rotation,
+                                            target.rotation);
+                }
+            } else {
+                if(command.coord_system == CoordSystem::pcs) {
+                    target = geom::compose(workpiece_frame_, target);
+                }
+                if(command.orientation_mode == OrientationMode::constant) {
+                    for(int i = 0; i < 3; ++i) {
+                        for(int j = 0; j < 3; ++j) {
+                            target.rotation[i][j] = start.rotation[i][j];
+                        }
+                    }
+                }
+            }
             segment.start = start.translation;
             segment.delta = target.translation - start.translation;
             for(int i = 0; i < 3; ++i) {
@@ -4880,20 +5935,28 @@ private:
             }
         } else {
             geom::Vec3 point = cartesian_part(command.target);
-            if(command.coord_system == CoordSystem::pcs) {
-                point = geom::transform_point(workpiece_frame_, point);
-            }
-            point = point - tool_offset_;
             geom::Vec3 start{};
             const rt::ErrorCode forwarded =
                 kinematics_->forward(chain, axes_.size(), start);
             if(forwarded != rt::ErrorCode::ok) {
                 return forwarded;
             }
+            if(command.relative) {
+                if(command.coord_system == CoordSystem::pcs) {
+                    point = geom::transform_rotate(workpiece_frame_, point);
+                }
+                point = start + point;
+            } else {
+                if(command.coord_system == CoordSystem::pcs) {
+                    point = geom::transform_point(workpiece_frame_, point);
+                }
+                point = point - tool_offset_;
+            }
             segment.start = start;
             segment.delta = point - start;
             segment.length = geom::norm(segment.delta);
         }
+        command.relative = false;
         return prevalidate_cartesian(command, segment, chain);
     }
 
@@ -4919,16 +5982,44 @@ private:
         geom::Vec3 target_point = cartesian_part(command.target);
         if(pose_kinematics_ != nullptr) {
             segment.pose = true;
-            geom::RigidTransform target = geom::make_rpy_transform(
+            const geom::RigidTransform requested = geom::make_rpy_transform(
                 command.target.value[0], command.target.value[1],
                 command.target.value[2], command.target.value[3],
                 command.target.value[4], command.target.value[5]);
-            if(pcs) {
-                target = geom::compose(workpiece_frame_, target);
-                aux_point = geom::transform_point(workpiece_frame_, aux_point);
-            }
             const geom::RigidTransform start = pose_start_tcp(chain);
             start_point = start.translation;
+            geom::RigidTransform target = requested;
+            if(command.relative) {
+                geom::Vec3 target_delta = requested.translation;
+                if(pcs) {
+                    target_delta = geom::transform_rotate(workpiece_frame_, target_delta);
+                    aux_point = geom::transform_rotate(workpiece_frame_, aux_point);
+                }
+                target.translation = start.translation + target_delta;
+                aux_point = start.translation + aux_point;
+                if(command.orientation_mode == OrientationMode::constant) {
+                    for(int i = 0; i < 3; ++i) {
+                        for(int j = 0; j < 3; ++j) {
+                            target.rotation[i][j] = start.rotation[i][j];
+                        }
+                    }
+                } else {
+                    geom::rotation_multiply(start.rotation, requested.rotation,
+                                            target.rotation);
+                }
+            } else {
+                if(pcs) {
+                    target = geom::compose(workpiece_frame_, target);
+                    aux_point = geom::transform_point(workpiece_frame_, aux_point);
+                }
+                if(command.orientation_mode == OrientationMode::constant) {
+                    for(int i = 0; i < 3; ++i) {
+                        for(int j = 0; j < 3; ++j) {
+                            target.rotation[i][j] = start.rotation[i][j];
+                        }
+                    }
+                }
+            }
             target_point = target.translation;
             for(int i = 0; i < 3; ++i) {
                 for(int j = 0; j < 3; ++j) {
@@ -4941,12 +6032,6 @@ private:
                 return rt::ErrorCode::invalid_argument;
             }
         } else {
-            if(pcs) {
-                aux_point = geom::transform_point(workpiece_frame_, aux_point);
-                target_point = geom::transform_point(workpiece_frame_, target_point);
-            }
-            aux_point = aux_point - tool_offset_;
-            target_point = target_point - tool_offset_;
             geom::Vec3 start{};
             const rt::ErrorCode forwarded =
                 kinematics_->forward(chain, axes_.size(), start);
@@ -4954,6 +6039,21 @@ private:
                 return forwarded;
             }
             start_point = start;
+            if(command.relative) {
+                if(pcs) {
+                    aux_point = geom::transform_rotate(workpiece_frame_, aux_point);
+                    target_point = geom::transform_rotate(workpiece_frame_, target_point);
+                }
+                aux_point = start + aux_point;
+                target_point = start + target_point;
+            } else {
+                if(pcs) {
+                    aux_point = geom::transform_point(workpiece_frame_, aux_point);
+                    target_point = geom::transform_point(workpiece_frame_, target_point);
+                }
+                aux_point = aux_point - tool_offset_;
+                target_point = target_point - tool_offset_;
+            }
         }
 
         const geom::Vec3 plane_start{start_point.x, start_point.y, 0.0};
@@ -4979,11 +6079,24 @@ private:
         if(derived != command.path_choice) {
             return rt::ErrorCode::invalid_argument;
         }
+        if(command.tolerance > 0.0) {
+            const double via_sweep = geom::normalize_sweep(
+                geom::angle_of(plane_aux, arc.value().center) -
+                    arc.value().start_angle,
+                arc.value().sweep);
+            const double fraction = via_sweep / arc.value().sweep;
+            const double expected_z = start_point.z +
+                                      (target_point.z - start_point.z) * fraction;
+            if(std::fabs(aux_point.z - expected_z) > command.tolerance) {
+                return rt::ErrorCode::invalid_argument;
+            }
+        }
         segment.arc_path = true;
         segment.arc = arc.value();
         segment.start = start_point;
         segment.delta = target_point - start_point;
         segment.length = arc.value().length;
+        command.relative = false;
         return prevalidate_cartesian(command, segment, chain);
     }
 
@@ -4993,7 +6106,9 @@ private:
            command.coord_system != CoordSystem::pcs) {
             return rt::ErrorCode::unsupported;
         }
-        if(command.relative || command.buffer_mode == BufferMode::blending_low ||
+        if((command.relative &&
+            command.orientation_mode == OrientationMode::joint_space) ||
+           command.buffer_mode == BufferMode::blending_low ||
            command.buffer_mode == BufferMode::blending_high ||
            command.transition_mode != TransitionMode::none ||
            command.transition_parameter != 0.0) {
@@ -5210,10 +6325,14 @@ private:
                 ? window_[window_.size() - 1].target[axis_index]
                 : (cart_window_active_
                        ? cart_tail_joints_[axis_index]
-                       : (active_ ? active_finish_[axis_index]
-                                  : axes_[axis_index]->snapshot().command_position));
+                       : (direct_active_
+                              ? active_finish_[axis_index]
+                              : (active_ ? active_finish_[axis_index]
+                                         : axes_[axis_index]->snapshot().command_position)));
         for(std::size_t i = 0; i < queue_.size(); ++i) {
             const GroupCommand &queued = queue_[i];
+            if(queued.kind != GroupCommandKind::motion &&
+               queued.kind != GroupCommandKind::direct) continue;
             finish = queued.relative ? finish + queued.target.value[axis_index]
                                      : queued.target.value[axis_index];
         }
@@ -5331,6 +6450,9 @@ private:
             interrupt_ratio_ = state.position / active_path_length_;
             if(interrupt_ratio_ > 1.0) { interrupt_ratio_ = 1.0; }
         }
+        if(!interrupting_ && active_command_.direct_semantics) {
+            complete_direct(active_command_.command_id);
+        }
         active_ = false;
         connector_.deactivate();
         if(!interrupting_) {
@@ -5352,11 +6474,34 @@ private:
             queue_[i - 1] = queue_[i];
         }
         queue_.pop_back();
-        start(next);
+        if(next.kind == GroupCommandKind::motion) {
+            start(next);
+        } else if(next.kind == GroupCommandKind::direct) {
+            const rt::ErrorCode started = start_direct(next);
+            if(started != rt::ErrorCode::ok) abort_direct(next.command_id);
+        } else {
+            execute_management(next);
+        }
     }
 
     void abort_motion()
     {
+        if(direct_active_) abort_direct(direct_command_id_);
+        if(active_ && active_command_.direct_semantics) {
+            abort_direct(active_command_.command_id);
+        }
+        if(window_active_) {
+            for(std::size_t i = window_index_; i < window_.size(); ++i) {
+                if(window_[i].kind == WindowKind::direct_line) {
+                    abort_direct(window_[i].command_id);
+                }
+            }
+        }
+        for(std::size_t i = 0; i < queue_.size(); ++i) {
+            if(queue_[i].direct_semantics) {
+                abort_direct(queue_[i].command_id);
+            }
+        }
         if(group_sync_active_) {
             last_aborted_group_sync_id_ = group_sync_id_;
             group_sync_active_ = false;
@@ -5378,6 +6523,7 @@ private:
         interrupted_window_ = false;
         window_reset();
         cart_window_reset();
+        abort_queued_management();
         queue_.clear();
         active_tick_ = 0;
         for(std::size_t i = 0; i < axes_.size(); ++i) {
@@ -5419,6 +6565,7 @@ private:
     enum class WindowKind
     {
         line,
+        direct_line,
         arc,
     };
 
@@ -5452,7 +6599,7 @@ private:
     void window_tangent(const WindowSegment &seg, bool at_exit,
                         std::array<double, MaxAxes> &out) const
     {
-        if(seg.kind == WindowKind::line) {
+        if(seg.kind == WindowKind::line || seg.kind == WindowKind::direct_line) {
             out = seg.dir;
             return;
         }
@@ -5510,7 +6657,8 @@ private:
             window_tangent(tail, true, pred_dir);
             pred_full = tail.full_length;
             pred_limits = tail.limits;
-            pred_is_line = tail.kind == WindowKind::line;
+            pred_is_line = tail.kind == WindowKind::line ||
+                           tail.kind == WindowKind::direct_line;
         } else {
             double length1 = 0.0;
             for(std::size_t i = 0; i < axes_.size(); ++i) {
@@ -5649,6 +6797,12 @@ private:
             }
             node.has_curve = true;
         }
+        if(command.transition_velocity > 0.0) {
+            const double transition_cap = command.transition_velocity * scale2;
+            if(transition_cap < corner_cap) {
+                corner_cap = transition_cap;
+            }
+        }
         node.corner_cap = corner_cap;
 
         // Baseline for the constructive cycle-time gate (captured pre-append).
@@ -5671,6 +6825,8 @@ private:
         tail.node = node;
 
         WindowSegment fresh{};
+        fresh.kind = command.direct_semantics ? WindowKind::direct_line
+                                              : WindowKind::line;
         for(std::size_t i = 0; i < axes_.size(); ++i) {
             fresh.entry[i] = node.has_curve ? node.ctrl[5][i] : pred_target[i];
             fresh.dir[i] = u2[i];
@@ -5760,6 +6916,8 @@ private:
         const double scale1 = length1 / active_path_length_;
 
         WindowSegment seg0{};
+        seg0.kind = active_command_.direct_semantics ? WindowKind::direct_line
+                                                     : WindowKind::line;
         for(std::size_t i = 0; i < axes_.size(); ++i) {
             seg0.entry[i] = active_start_[i];
             seg0.dir[i] = direction[i];
@@ -5880,6 +7038,10 @@ private:
         node.corner_cap = pred_limits.max_velocity < fresh.limits.max_velocity
                               ? pred_limits.max_velocity
                               : fresh.limits.max_velocity;
+        if(command.transition_velocity > 0.0 &&
+           command.transition_velocity < node.corner_cap) {
+            node.corner_cap = command.transition_velocity;
+        }
 
         const std::int64_t old_remaining = window_active_ ? window_remaining_cycles() : -1;
 
@@ -6148,6 +7310,7 @@ private:
             }
             sample_window_curve(seg.node, s);
             if(window_tick_ >= seg.node.curve_cycles) {
+                if(seg.kind == WindowKind::direct_line) complete_direct(seg.command_id);
                 ++window_index_;
                 window_in_curve_ = false;
                 window_tick_ = 0;
@@ -6169,10 +7332,12 @@ private:
                     window_in_curve_ = true;
                     window_tick_ = 0;
                 } else {
+                    if(seg.kind == WindowKind::direct_line) complete_direct(seg.command_id);
                     ++window_index_;
                     window_tick_ = 0;
                 }
             } else {
+                if(seg.kind == WindowKind::direct_line) complete_direct(seg.command_id);
                 window_reset();
                 clear_axes_synchronized();
                 status_ = GroupStatus::standby;
@@ -6314,6 +7479,7 @@ private:
         last_blend_degraded_id_ = command.command_id;
         command.buffer_mode = BufferMode::buffered;
         command.transition_mode = TransitionMode::none;
+        command.transition_velocity = 0.0;
         command.transition_parameter = 0.0;
         const rt::ErrorCode queued = queue_.push_back(command);
         if(queued != rt::ErrorCode::ok) {
@@ -6422,6 +7588,8 @@ private:
     std::int64_t active_tick_ = 0;
     std::int64_t active_duration_ = 1;
     double group_override_ = 1.0;
+    double group_acc_override_ = 1.0;
+    double group_jerk_override_ = 1.0;
     double interrupt_ratio_ = 0.0;
     double jog_stop_deceleration_ = 0.0;
     double jog_stop_jerk_ = 0.0;
@@ -6446,10 +7614,18 @@ private:
     RigidBodyDynamics rigid_body_dynamics_{};
     bool rigid_body_dynamics_defined_ = false;
     double cart_joints_[MaxAxes] = {};
-    double cart_tail_joints_[MaxAxes] = {};
+    // Cartesian look-ahead and Jog are mutually exclusive AxisGroup states;
+    // overlay their submit-domain seed storage so Jog inputs do not enlarge
+    // the already large fixed-capacity look-ahead object.
+    union
+    {
+        double cart_tail_joints_[MaxAxes] = {};
+        double jog_cartesian_start_[MaxAxes];
+    };
     double cart_window_joints_[MaxAxes] = {};
     GroupTakeoverConnector<MaxAxes> connector_{};
     rt::StaticVector<AxisModel *, MaxAxes> axes_{};
+    rt::StaticVector<IdentInGroup, MaxAxes> member_idents_{};
     AxisModel *path_sync_slave_ = nullptr;
     AxisModel *group_sync_master_ = nullptr;
     AxisModel *tracking_master_axis_ = nullptr;
@@ -6476,8 +7652,14 @@ private:
     otg::Profile1D window_stop_profile_{};
     otg::Profile1D active_profile_{};
     rt::StaticVector<GroupCommand, QueueCapacity> queue_{};
-    rt::StaticVector<CartPiece, CartWindowPieces> cart_window_{};
-    rt::StaticVector<WindowSegment, WindowCapacity> window_{};
+    rt::StaticVector<GroupManagementResult, QueueCapacity> management_results_{};
+    rt::StaticVector<std::uint32_t, QueueCapacity> aborted_management_ids_{};
+    // Both look-ahead domains are planned outside cycle(). Keeping their full
+    // fixed-capacity buffers inline made ordinary stack construction unsafe.
+    // Storage is allocated once with the group; all cycle-time access remains
+    // fixed-capacity and allocation-free.
+    HeapStaticVector<CartPiece, CartWindowPieces> cart_window_{};
+    HeapStaticVector<WindowSegment, WindowCapacity> window_{};
     int domain_id_ = 0;
     GroupStatus status_ = GroupStatus::disabled;
     GroupPathKind active_kind_ = GroupPathKind::linear;
@@ -6489,6 +7671,8 @@ private:
     std::uint32_t cart_window_last_id_ = 0;
     std::uint32_t last_blend_degraded_id_ = 0;
     std::uint32_t next_command_id_ = 1;
+    std::uint32_t active_management_id_ = 0;
+    GroupCommandKind active_management_kind_ = GroupCommandKind::motion;
     std::uint32_t direct_command_id_ = 0;
     std::uint32_t last_completed_direct_id_ = 0;
     std::uint32_t last_aborted_direct_id_ = 0;
@@ -6506,6 +7690,7 @@ private:
     std::uint32_t last_aborted_wait_id_ = 0;
     std::int64_t wait_duration_cycles_ = 0;
     std::int64_t wait_elapsed_cycles_ = 0;
+    std::int64_t task_cycle_period_ns_ = 1000000;
     std::size_t selected_tool_ = 0;
     std::size_t active_tool_ = 0;
     std::size_t selected_payload_ = 0;
@@ -6535,7 +7720,13 @@ private:
     bool pending_dynamic_pcs_ = false;
     bool halt_command_live_ = false;
     double group_sync_master_origin_ = 0.0;
-    GroupPosition group_sync_previous_{};
+    // Group-to-axis synchronization is aborted before Jog acquires the group;
+    // both states therefore share their fixed command scratch storage.
+    union
+    {
+        GroupPosition group_sync_previous_{};
+        JogCommandOptions jog_options_;
+    };
     PathMode group_sync_mode_ = PathMode::non_periodic;
     TrackingKind tracking_kind_ = TrackingKind::none;
     GroupWaitState wait_state_ = GroupWaitState::idle;

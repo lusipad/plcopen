@@ -15,8 +15,8 @@ sprint 记录）在 [doc/archive/roadmap-history.md](doc/archive/roadmap-history
    IDE、Safety、EtherCAT 产品化或 CNC。
 2. **商用门板剩余项**：已关闭的软件门保持不回退；需要台架、部署或认证
    的证据不以软件模拟冒充。
-3. **L 系列语言层**：保留已交付 ST-L0/ST-L1a/ST-L2a；PLCopen 软件
-   收束完成后恢复新批次。
+3. **L 系列语言层**：ST-L0/L1a/L1b/L2b/L2c 已交付；下一批按依赖图
+   并行推进 L3 进程映像/存储与 L4a 标准函数，不提前宣称 L5-L7 完成。
 
 硬件触发项到位仍可插队（台架下单 → F 轨 EtherCAT；真机在手 → H1
 修订稿送批）。这里的“对等”限于核心可编程运动能力，不含 IDE、Safety、

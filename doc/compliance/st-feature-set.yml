@@ -66,7 +66,7 @@ types:
   - {id: TOD, status: implemented, test: core/test/st_l1b3_tests.cpp}
   - {id: DT, status: implemented, test: core/test/st_l1b3_tests.cpp}
   - {id: AXIS_REF, status: implemented, test: core/test/st_l2a_tests.cpp}
-  - {id: GROUP_REF, status: pending, spec: st-l2c-semantics.md}
+  - {id: GROUP_REF, status: implemented, spec: st-l2c-semantics.md, test: core/test/st_l2c_tests.cpp}
 
 operators:
   - {id: arithmetic_add_sub_mul_div_mod, status: implemented, test: core/test/st_l0_runtime_tests.cpp}
@@ -202,40 +202,44 @@ fbs:
     items: [R_TRIG, F_TRIG, SR, RS, TON, TOF, TP, CTU, CTD, CTUD]
     test: core/test/st_l0_runtime_tests.cpp
   - id: plcopen_part1_part2
-    status: pending
+    status: implemented
     expected_count: 45
     source: plcopen-motion-part1-io.yml
-    implemented_subset_count: 10
-    implemented_subset_test: core/test/st_l2a_tests.cpp
     spec: st-l2c-semantics.md
+    test: core/test/st_l2c_tests.cpp
   - id: plcopen_part4
-    status: pending
+    status: implemented
     expected_count: 68
     source: plcopen-part4-clause-audit.md
     implementation_surface: core/fb
     spec: st-l2c-semantics.md
+    test: core/test/st_l2c_tests.cpp
   - id: plcopen_part5
-    status: pending
+    status: implemented
     expected_count: 11
     source: plcopen-motion-part5-io.yml
     spec: st-l2c-semantics.md
+    test: core/test/st_l2c_tests.cpp
 
 pins:
   - id: plcopen_part1_part2_pins
-    status: pending
+    status: implemented
     source: plcopen-motion-part1-io.yml
     expected_fbs: 45
     spec: st-l2c-semantics.md
+    test: core/test/st_l2c_tests.cpp
   - id: plcopen_part4_pins
-    status: pending
+    status: implemented
     source: plcopen-part4-clause-audit.md
     expected_fbs: 68
     spec: st-l2c-semantics.md
+    test: core/test/st_l2c_tests.cpp
   - id: plcopen_part5_pins
-    status: pending
+    status: implemented
     source: plcopen-motion-part5-io.yml
     expected_fbs: 11
     spec: st-l2c-semantics.md
+    test: core/test/st_l2c_tests.cpp
 
 diagnostics:
   - {id: lexer_parser_sema_base, status: implemented, source: core/st/diag.h, test: core/test/st_l0_compiler_tests.cpp}
@@ -244,14 +248,14 @@ diagnostics:
   - {id: string_capacity_exceeded, status: implemented, test: core/test/st_l1b3_tests.cpp}
   - {id: date_time_range_violation, status: implemented, test: core/test/st_l1b3_tests.cpp}
   - {id: alias_violation, status: implemented, spec: st-l2b-semantics.md, test: core/test/st_l2b_tests.cpp}
-  - {id: binding_locked_duplicate_binding, status: pending, spec: st-l2c-semantics.md}
+  - {id: binding_locked_duplicate_binding, status: implemented, spec: st-l2c-semantics.md, test: core/test/st_l2c_tests.cpp}
   - {id: process_image_layout_retain, status: pending, spec: st-l3-semantics.md}
   - {id: overload_and_function_range, status: pending, spec: st-l4-semantics.md}
   - {id: task_faults, status: pending, spec: st-l5-semantics.md}
   - {id: unsafe_sfc_network, status: pending, spec: st-l6-semantics.md}
   - {id: debugging_snapshot, status: pending, spec: st-l7-semantics.md}
   - id: legacy_source_opcode_hash
-    status: pending
+    status: excluded
     scope_reason: new software; only the current compiler and bytecode format are supported
     spec: st-l2c-semantics.md
-    rejection_test: pending
+    rejection_test: core/test/st_l2c_tests.cpp

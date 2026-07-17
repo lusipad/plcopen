@@ -63,6 +63,9 @@ namespace
 
 using namespace plcopen::core;
 
+static_assert(sizeof(st::Instance) <= 256,
+              "Instance must keep binding registries out of the stack object");
+
 int failures = 0;
 
 void fail(const char *name)
@@ -153,7 +156,7 @@ void determinism()
     // literal parser (matrix 2.5).
     const unsigned long long hash = fnv1a(first.program);
     std::printf("determinism anchor hash: %llu\n", hash);
-    check(hash == 16885475011046341104ULL, "cross-platform anchor hash");
+    check(hash == 10850470790425961545ULL, "cross-platform anchor hash");
 
     // FOR bound temporaries and constant pool must not leak between
     // compiles of different sources (pool is value-keyed).
@@ -186,7 +189,7 @@ void determinism()
     if(l1a.ok) {
         const unsigned long long l1a_hash = fnv1a(l1a.program);
         std::printf("determinism anchor hash (l1a): %llu\n", l1a_hash);
-        check(l1a_hash == 12959811419021558448ULL,
+        check(l1a_hash == 15855232410053270438ULL,
               "cross-platform L1a anchor hash");
         for(int i = 0; i < 20; ++i) {
             const st::CompileResult again = st::compile(reference_l1a);
@@ -204,7 +207,7 @@ void zero_allocation_scan()
     const st::CompileResult compiled = st::compile(kReference);
     check(compiled.ok, "alloc program compiles");
     alignas(8) static unsigned char buffer[65536];
-    static st::Instance instance;
+    st::Instance instance;
     check(instance.load(compiled.program, buffer, sizeof(buffer), 1000000) ==
               rt::ErrorCode::ok,
           "alloc program loads");
@@ -236,8 +239,9 @@ void zero_allocation_mc_scan()
         "Power(Axis := AxisX, Enable := TRUE);\n"
         "Move(Axis := AxisX, Execute := TRUE, ContinuousUpdate := FALSE, "
         "Position := 1.0, Velocity := 1.0, Acceleration := 1.0, "
-        "Deceleration := 1.0, Jerk := 1.0, Direction := 0, "
-        "BufferMode := 0);\nEND_PROGRAM\n");
+        "Deceleration := 1.0, Jerk := 1.0, "
+        "Direction := MC_DIRECTION#current, "
+        "BufferMode := MC_BUFFER_MODE#aborting);\nEND_PROGRAM\n");
     check(compiled.ok, "MC alloc program compiles");
     if(!compiled.ok) return;
     alignas(8) unsigned char buffer[4096]{};
@@ -246,7 +250,7 @@ void zero_allocation_mc_scan()
     check(instance.load(compiled.program, buffer, sizeof(buffer), 1000000) ==
               rt::ErrorCode::ok,
           "MC alloc program loads");
-    check(instance.bind_axis("AxisX", &axis) == rt::ErrorCode::ok,
+    check(instance.bind_axis("AxisX", &axis) == st::BindingError::ok,
           "MC alloc axis binds");
     g_frozen_allocations = 0;
     g_frozen = true;
@@ -273,7 +277,7 @@ void interpreter_throughput()
         "END_PROGRAM\n");
     check(compiled.ok, "throughput program compiles");
     alignas(8) static unsigned char buffer[65536];
-    static st::Instance instance;
+    st::Instance instance;
     check(instance.load(compiled.program, buffer, sizeof(buffer), 1000000) ==
               rt::ErrorCode::ok,
           "throughput program loads");

@@ -8,12 +8,16 @@
 // prior assignments stay, the fault latches until reset().
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstdint>
 #include <cstring>
 #include <limits>
+#include <new>
 
 #include "rt/error.h"
+#include "st/binding.h"
+#include "st/binding_storage.h"
 #include "st/bind.h"
 #include "st/bytecode.h"
 #include "st/types.h"
@@ -21,6 +25,7 @@
 namespace plcopen::core::axis
 {
 class AxisModel;
+class AxisGroup;
 }
 
 namespace plcopen::core::st
@@ -62,15 +67,51 @@ constexpr const char *to_string(ScanError error)
 class Instance
 {
 public:
+    Instance() = default;
+    Instance(const Instance &) = delete;
+    Instance &operator=(const Instance &) = delete;
+    Instance(Instance &&) = delete;
+    Instance &operator=(Instance &&) = delete;
+
+    ~Instance() { unload(); }
+
+    void unload() noexcept
+    {
+        if(program_ != nullptr && fb_area_ != nullptr) {
+            for(const FbInfo &fb : program_->fbs) {
+                fb_destroy(fb.type, fb_area_ + fb.offset);
+            }
+        }
+        program_ = nullptr;
+        vars_ = nullptr;
+        fb_area_ = nullptr;
+        stack_ = nullptr;
+        fault_ = ScanError::ok;
+        scan_started_ = false;
+        axis_targets_ = nullptr;
+        group_targets_ = nullptr;
+        path_tables_ = nullptr;
+        path_descriptions_ = nullptr;
+        cam_switch_tables_ = nullptr;
+        cam_switch_outputs_ = nullptr;
+        cam_track_options_ = nullptr;
+        cam_tables_ = nullptr;
+        position_profiles_ = nullptr;
+        velocity_profiles_ = nullptr;
+        acceleration_profiles_ = nullptr;
+        kin_transforms_ = nullptr;
+        task_period_ns_ = 0;
+    }
+
     // Load domain. The program object must outlive the instance; the buffer
     // is caller-owned static storage, 8-byte aligned, at least
     // program.required_bytes() long.
     rt::ErrorCode load(const Program &program, unsigned char *buffer,
                        std::size_t buffer_bytes, std::int64_t task_period_ns)
     {
-        program_ = nullptr;
+        unload();
         if(program.format_version != kBytecodeFormatVersion) {
-            return rt::ErrorCode::unsupported;
+            return rt::ErrorCode::bytecode_version_mismatch;
         }
         if(buffer == nullptr || task_period_ns <= 0) {
             return rt::ErrorCode::invalid_argument;
@@ -85,6 +126,9 @@ public:
         fb_area_ = buffer + program.vars_bytes;
         stack_ = reinterpret_cast<std::uint64_t *>(fb_area_ + program.fb_bytes);
         std::memset(buffer, 0, program.required_bytes());
+        unsigned char *binding_storage =
+            buffer + program.binding_storage_offset();
+        load_binding_storage(program, binding_storage);
         if(program.initial_data.size() > program.vars_bytes) {
             return rt::ErrorCode::invalid_argument;
         }
@@ -108,6 +152,7 @@ public:
         for(const FbInfo &fb : program.fbs) {
             fb_init(fb.type, fb_area_ + fb.offset, task_period_ns);
         }
+        task_period_ns_ = task_period_ns;
         program_ = &program;
         fault_ = ScanError::ok;
         scan_started_ = false;
@@ -165,37 +210,319 @@ public:
         return load(*selected, buffer, buffer_bytes, task_period_ns);
     }
 
-    rt::ErrorCode bind_axis(const char *name, axis::AxisModel *axis)
+    BindingError bind_axis(const char *name, axis::AxisModel *axis)
     {
-        if(program_ == nullptr || name == nullptr || axis == nullptr) {
-            return rt::ErrorCode::invalid_argument;
+        return bind_reference(name, BindingTarget::axis(axis));
+    }
+
+    BindingError bind_group(const char *name, axis::AxisGroup *group)
+    {
+        return bind_reference(name, BindingTarget::group(group));
+    }
+
+    BindingError bind_reference(const char *name, BindingTarget target)
+    {
+        if(program_ == nullptr || name == nullptr) {
+            return BindingError::unknown;
         }
-        if(scan_started_ && fault_ == ScanError::ok) {
-            return rt::ErrorCode::precondition_failed;
+        if(scan_started_) {
+            return BindingError::locked;
         }
+        std::uint16_t axis_slot = 0;
+        std::uint16_t group_slot = 0;
         for(const VarInfo &var : program_->vars) {
-            if(var.type != Type::axis_ref) {
+            const BindingTargetKind kind = reference_kind(var.type,
+                                                          var.type_id);
+            if(kind == BindingTargetKind::invalid) {
                 continue;
             }
-            const char *candidate = name;
-            std::size_t index = 0;
-            while(candidate[index] != '\0' && index < var.lower.size()) {
-                char c = candidate[index];
-                if(c >= 'A' && c <= 'Z') {
-                    c = static_cast<char>(c - 'A' + 'a');
-                }
-                if(c != var.lower[index]) {
-                    break;
-                }
-                ++index;
+            const std::uint16_t slot = kind == BindingTargetKind::axis
+                                           ? axis_slot++
+                                           : group_slot++;
+            if(!ascii_name_equal(name, var.lower)) {
+                continue;
             }
-            if(index == var.lower.size() && candidate[index] == '\0') {
-                std::uint64_t raw = reinterpret_cast<std::uintptr_t>(axis);
-                std::memcpy(vars_ + var.offset, &raw, sizeof(raw));
-                return rt::ErrorCode::ok;
+            if(target.pointer() == nullptr) {
+                return BindingError::null_target;
+            }
+            if(target.kind() != kind) {
+                return BindingError::wrong_kind;
+            }
+            if((kind == BindingTargetKind::axis &&
+                slot >= axis_targets_->size()) ||
+               (kind == BindingTargetKind::group &&
+                slot >= group_targets_->size())) {
+                return BindingError::capacity_exceeded;
+            }
+            std::uint64_t handle = 0;
+            std::memcpy(&handle, vars_ + var.offset, sizeof(handle));
+            if(handle != 0) {
+                return BindingError::duplicate;
+            }
+            if(kind == BindingTargetKind::axis) {
+                (*axis_targets_)[slot] =
+                    static_cast<axis::AxisModel *>(target.pointer());
+            } else {
+                auto *group =
+                    static_cast<axis::AxisGroup *>(target.pointer());
+                const rt::ErrorCode period_result =
+                    group->set_task_cycle_period_ns(task_period_ns_);
+                if(period_result != rt::ErrorCode::ok &&
+                   group->task_cycle_period_ns() != task_period_ns_) {
+                    return BindingError::invalid_value;
+                }
+                (*group_targets_)[slot] = group;
+            }
+            handle = static_cast<std::uint64_t>(slot) + 1U;
+            std::memcpy(vars_ + var.offset, &handle, sizeof(handle));
+            return BindingError::ok;
+        }
+        return BindingError::unknown;
+    }
+
+    BindingError bind_path_table(const char *name, fb::PathTable *table)
+    {
+        if(table == nullptr) return BindingError::null_target;
+        return bind_named_handle(
+            name, binding_type::mc_path_table, path_tables_->size(),
+            [&](std::size_t slot) {
+                (*path_tables_)[slot] = table;
+                return BindingError::ok;
+            });
+    }
+
+    BindingError bind_path_description(const char *name,
+                                       const fb::PathWaypoint *waypoints,
+                                       std::size_t count)
+    {
+        if(waypoints == nullptr) return BindingError::null_target;
+        fb::PathDescription decoded{};
+        if(count < 2U || count > fb::PathDescription::MaxWaypoints) {
+            return BindingError::invalid_value;
+        }
+        const std::size_t axis_count = waypoints[0].target.size;
+        if(axis_count < 2U || axis_count > axis::GroupPosition::MaxAxes) {
+            return BindingError::invalid_value;
+        }
+        for(std::size_t index = 0; index < count; ++index) {
+            if(waypoints[index].target.size != axis_count ||
+               fb::validate_path_waypoint(waypoints[index], axis_count) !=
+                   rt::ErrorCode::ok) {
+                return BindingError::invalid_value;
+            }
+            decoded.waypoints[index] = waypoints[index];
+        }
+        decoded.count = count;
+        return bind_named_handle(
+            name, binding_type::mc_path_description,
+            path_descriptions_->size(), [&](std::size_t slot) {
+                (*path_descriptions_)[slot] = decoded;
+                return BindingError::ok;
+            });
+    }
+
+    BindingError bind_kin_transform(const char *name,
+                                    axis::KinTransformRef transform)
+    {
+        switch(transform.kind) {
+        case axis::KinTransformKind::kinematics:
+            if(transform.kinematics == nullptr || transform.pose != nullptr) {
+                return BindingError::invalid_value;
+            }
+            break;
+        case axis::KinTransformKind::pose:
+            if(transform.pose == nullptr || transform.kinematics != nullptr) {
+                return BindingError::invalid_value;
+            }
+            break;
+        case axis::KinTransformKind::none:
+        default:
+            // Handle 0 is the canonical none/clear value; the registry only
+            // owns concrete non-owning plugin references.
+            return BindingError::invalid_value;
+        }
+        return bind_named_handle(
+            name, binding_type::mc_kin_transform_ref,
+            kin_transforms_->size(), [&](std::size_t slot) {
+                (*kin_transforms_)[slot] = transform;
+                return BindingError::ok;
+            });
+    }
+
+    BindingError bind_cam_switch_table(const char *name,
+                                       const fb::CamSwitchAction *data,
+                                       std::size_t count)
+    {
+        if(data == nullptr) return BindingError::null_target;
+        if(count < 1U || count > 8U) return BindingError::invalid_value;
+        for(std::size_t index = 0; index < count; ++index) {
+            const fb::CamSwitchAction &action = data[index];
+            if(action.track_number == 0U ||
+               action.track_number > axis::AxisModel::DigitalOutputCount ||
+               !std::isfinite(action.on_position) ||
+               !std::isfinite(data[index].off_position) ||
+               !std::isfinite(action.period) || action.period < 0.0 ||
+               (action.axis_direction !=
+                    fb::CamSwitchAction::AxisDirection::both &&
+                action.axis_direction !=
+                    fb::CamSwitchAction::AxisDirection::positive &&
+                action.axis_direction !=
+                    fb::CamSwitchAction::AxisDirection::negative) ||
+               (action.cam_switch_mode !=
+                    fb::CamSwitchAction::Mode::position &&
+                action.cam_switch_mode != fb::CamSwitchAction::Mode::time) ||
+               (action.cam_switch_mode ==
+                    fb::CamSwitchAction::Mode::position &&
+                action.period == 0.0 &&
+                action.on_position > action.off_position) ||
+               (action.cam_switch_mode == fb::CamSwitchAction::Mode::time &&
+                action.duration_ns <= 0)) {
+                return BindingError::invalid_value;
             }
         }
-        return rt::ErrorCode::invalid_argument;
+        return bind_named_handle(
+            name, binding_type::mc_cam_switch_table_view,
+            cam_switch_tables_->size(), [&](std::size_t slot) {
+                (*cam_switch_tables_)[slot] = {data, count};
+                return BindingError::ok;
+            });
+    }
+
+    BindingError bind_cam_switch_outputs(const char *name, bool *data,
+                                         std::size_t count)
+    {
+        if(data == nullptr) return BindingError::null_target;
+        if(count < 1U || count > axis::AxisModel::DigitalOutputCount) {
+            return BindingError::invalid_value;
+        }
+        return bind_named_handle(
+            name, binding_type::mc_cam_switch_outputs_view,
+            cam_switch_outputs_->size(), [&](std::size_t slot) {
+                (*cam_switch_outputs_)[slot] = {data, count};
+                return BindingError::ok;
+            });
+    }
+
+    BindingError bind_cam_track_options(const char *name,
+                                        const fb::CamTrackOption *data,
+                                        std::size_t count)
+    {
+        if(data == nullptr) return BindingError::null_target;
+        if(count < 1U || count > axis::AxisModel::DigitalOutputCount) {
+            return BindingError::invalid_value;
+        }
+        return bind_named_handle(
+            name, binding_type::mc_cam_track_options_view,
+            cam_track_options_->size(), [&](std::size_t slot) {
+                (*cam_track_options_)[slot] = {data, count};
+                return BindingError::ok;
+            });
+    }
+
+    BindingError bind_cam_table(const char *name, const exec::CamPoint *data,
+                                std::size_t count, bool periodic)
+    {
+        if(data == nullptr) return BindingError::null_target;
+        const exec::CamTableView view{data, count, periodic};
+        if(count > 64U || !view.valid()) return BindingError::invalid_value;
+        return bind_named_handle(
+            name, binding_type::mc_cam_table_view, cam_tables_->size(),
+            [&](std::size_t slot) {
+                (*cam_tables_)[slot] = view;
+                return BindingError::ok;
+            });
+    }
+
+    BindingError bind_position_profile(
+        const char *name, const BindingPositionProfileEntry *entries,
+        std::size_t count)
+    {
+        BindingProfileSlot decoded{};
+        if(entries == nullptr) return BindingError::null_target;
+        if(count < 1U || count > decoded.segments.size()) {
+            return BindingError::invalid_value;
+        }
+        for(std::size_t index = 0; index < count; ++index) {
+            std::int64_t cycles = 0;
+            if(entries[index].time_ns <= 0 ||
+               !generated::st_binding_time_ns_to_cycles(
+                   entries[index].time_ns, task_period_ns_, cycles) ||
+               !std::isfinite(entries[index].position) ||
+               !std::isfinite(entries[index].velocity) ||
+               !std::isfinite(entries[index].acceleration) ||
+               !std::isfinite(entries[index].deceleration) ||
+               !std::isfinite(entries[index].jerk)) {
+                return BindingError::invalid_value;
+            }
+            axis::ProfileSegment &segment = decoded.segments[index];
+            segment.duration_cycles = cycles;
+            segment.target = entries[index].position;
+            segment.velocity = entries[index].velocity;
+            segment.acceleration = entries[index].acceleration;
+            segment.deceleration = entries[index].deceleration;
+            segment.jerk = entries[index].jerk;
+            segment.relative = entries[index].relative;
+        }
+        decoded.count = count;
+        return bind_profile(name, binding_type::mc_time_position,
+                            *position_profiles_, decoded);
+    }
+
+    BindingError bind_velocity_profile(
+        const char *name, const BindingVelocityProfileEntry *entries,
+        std::size_t count)
+    {
+        BindingProfileSlot decoded{};
+        if(entries == nullptr) return BindingError::null_target;
+        if(count < 1U || count > decoded.segments.size()) {
+            return BindingError::invalid_value;
+        }
+        for(std::size_t index = 0; index < count; ++index) {
+            std::int64_t cycles = 0;
+            if(entries[index].time_ns <= 0 ||
+               !generated::st_binding_time_ns_to_cycles(
+                   entries[index].time_ns, task_period_ns_, cycles) ||
+               !std::isfinite(entries[index].velocity) ||
+               !std::isfinite(entries[index].acceleration) ||
+               !std::isfinite(entries[index].deceleration) ||
+               !std::isfinite(entries[index].jerk)) {
+                return BindingError::invalid_value;
+            }
+            axis::ProfileSegment &segment = decoded.segments[index];
+            segment.duration_cycles = cycles;
+            segment.target = entries[index].velocity;
+            segment.acceleration = entries[index].acceleration;
+            segment.deceleration = entries[index].deceleration;
+            segment.jerk = entries[index].jerk;
+        }
+        decoded.count = count;
+        return bind_profile(name, binding_type::mc_time_velocity,
+                            *velocity_profiles_, decoded);
+    }
+
+    BindingError bind_acceleration_profile(
+        const char *name, const BindingAccelerationProfileEntry *entries,
+        std::size_t count)
+    {
+        BindingProfileSlot decoded{};
+        if(entries == nullptr) return BindingError::null_target;
+        if(count < 1U || count > decoded.segments.size()) {
+            return BindingError::invalid_value;
+        }
+        for(std::size_t index = 0; index < count; ++index) {
+            std::int64_t cycles = 0;
+            if(entries[index].time_ns <= 0 ||
+               !generated::st_binding_time_ns_to_cycles(
+                   entries[index].time_ns, task_period_ns_, cycles) ||
+               !std::isfinite(entries[index].acceleration)) {
+                return BindingError::invalid_value;
+            }
+            decoded.segments[index].duration_cycles = cycles;
+            decoded.segments[index].target = entries[index].acceleration;
+        }
+        decoded.count = count;
+        return bind_profile(name, binding_type::mc_time_acceleration,
+                            *acceleration_profiles_, decoded);
     }
 
     // Clears a latched fault; variable and FB state keep their values
@@ -905,8 +1232,69 @@ public:
                 if(pin >= pin_table(info.type).count) {
                     return latch(ScanError::invalid_bytecode);
                 }
-                fb_store(info.type, fb_area_ + info.offset, pin,
-                         as_i64(stack_[--sp]));
+                std::int64_t value = as_i64(stack_[--sp]);
+                const PinDesc &pin_desc = pin_table(info.type).pins[pin];
+                if(generated::st_binding_can_store_tagged_reference(
+                       info.type, pin)) {
+                    generated::StBindingNativeTaggedReferenceValue tagged{};
+                    if(!resolve_tagged_reference_payload(
+                           pin_desc.type_id, value, tagged) ||
+                       !fb_store_tagged_reference(
+                           info.type, fb_area_ + info.offset, pin,
+                           pin_desc.type_id, tagged)) {
+                        return latch(ScanError::invalid_bytecode);
+                    }
+                    break;
+                }
+                if(generated::st_binding_can_store_sequence(info.type, pin)) {
+                    generated::StBindingNativeSequenceValue sequence{};
+                    if(!resolve_sequence_payload(pin_desc.type_id, value,
+                                                 sequence) ||
+                       !fb_store_sequence(info.type, fb_area_ + info.offset,
+                                          pin, sequence)) {
+                        return latch(ScanError::invalid_bytecode);
+                    }
+                    break;
+                }
+                const Type pin_type = pin_desc.type;
+                if(!resolve_reference_payload(pin_type, pin_desc.type_id,
+                                              value)) {
+                    return latch(ScanError::invalid_bytecode);
+                }
+                if(!fb_store_scalar(info.type, fb_area_ + info.offset, pin,
+                                    as_u64(value))) {
+                    return latch(ScanError::invalid_bytecode);
+                }
+                break;
+            }
+            case Op::fb_store_object: {
+                std::uint16_t fb = 0;
+                std::uint32_t offset = 0;
+                std::uint32_t type_id = 0;
+                if(!rd16(code, size, pc, fb) || pc >= size ||
+                   fb >= program_->fbs.size()) {
+                    return latch(ScanError::invalid_bytecode);
+                }
+                const std::uint8_t pin = code[pc++];
+                if(!rd32(code, size, pc, offset) ||
+                   !rd32(code, size, pc, type_id)) {
+                    return latch(ScanError::invalid_bytecode);
+                }
+                const FbInfo &info = program_->fbs[fb];
+                const TypeDesc *desc = program_->types.get(type_id);
+                if(pin >= pin_table(info.type).count || desc == nullptr ||
+                   (desc->kind != TypeKind::array &&
+                    desc->kind != TypeKind::struct_ &&
+                    desc->kind != TypeKind::string &&
+                    desc->kind != TypeKind::wstring) ||
+                   offset > program_->vars_bytes ||
+                   desc->size > program_->vars_bytes - offset ||
+                   !charge_operation(static_cast<std::uint32_t>(desc->size)) ||
+                   !fb_store_object(info.type, fb_area_ + info.offset, pin,
+                                    vars_ + offset, type_id,
+                                    static_cast<std::uint32_t>(desc->size))) {
+                    return latch(ScanError::invalid_bytecode);
+                }
                 break;
             }
             case Op::fb_call: {
@@ -915,7 +1303,7 @@ public:
                     return latch(ScanError::invalid_bytecode);
                 }
                 const FbInfo &info = program_->fbs[fb];
-                fb_cycle(info.type, fb_area_ + info.offset);
+                fb_cycle(info.type, fb_area_ + info.offset, task_period_ns_);
                 break;
             }
             case Op::fb_load_out: {
@@ -929,8 +1317,72 @@ public:
                 if(pin >= pin_table(info.type).count) {
                     return latch(ScanError::invalid_bytecode);
                 }
-                stack_[sp++] =
-                    as_u64(fb_load(info.type, fb_area_ + info.offset, pin));
+                const PinDesc &pin_desc = pin_table(info.type).pins[pin];
+                if(generated::st_binding_can_load_tagged_reference(
+                       info.type, pin)) {
+                    generated::StBindingNativeTaggedReferenceValue tagged{};
+                    std::int64_t handle = 0;
+                    if(!fb_load_tagged_reference(
+                           info.type, fb_area_ + info.offset, pin,
+                           pin_desc.type_id, tagged) ||
+                       !encode_tagged_reference_payload(
+                           pin_desc.type_id, tagged, handle)) {
+                        return latch(ScanError::invalid_bytecode);
+                    }
+                    stack_[sp++] = as_u64(handle);
+                    break;
+                }
+                if(generated::st_binding_can_load_sequence(info.type, pin)) {
+                    generated::StBindingNativeSequenceValue sequence{};
+                    std::int64_t handle = 0;
+                    if(!fb_load_sequence(info.type, fb_area_ + info.offset,
+                                         pin, sequence) ||
+                       !encode_sequence_payload(pin_desc.type_id, sequence,
+                                                handle)) {
+                        return latch(ScanError::invalid_bytecode);
+                    }
+                    stack_[sp++] = as_u64(handle);
+                    break;
+                }
+                std::uint64_t value = 0;
+                if(!fb_load_scalar(info.type, fb_area_ + info.offset, pin,
+                                   value)) {
+                    return latch(ScanError::invalid_bytecode);
+                }
+                std::int64_t resolved = as_i64(value);
+                if(!encode_reference_payload(pin_desc.type, pin_desc.type_id,
+                                             resolved)) {
+                    return latch(ScanError::invalid_bytecode);
+                }
+                stack_[sp++] = as_u64(resolved);
+                break;
+            }
+            case Op::fb_load_object: {
+                std::uint16_t fb = 0;
+                std::uint32_t offset = 0;
+                std::uint32_t type_id = 0;
+                if(!rd16(code, size, pc, fb) || pc >= size ||
+                   fb >= program_->fbs.size()) {
+                    return latch(ScanError::invalid_bytecode);
+                }
+                const std::uint8_t pin = code[pc++];
+                if(!rd32(code, size, pc, offset) ||
+                   !rd32(code, size, pc, type_id)) {
+                    return latch(ScanError::invalid_bytecode);
+                }
+                const FbInfo &info = program_->fbs[fb];
+                const TypeDesc *desc = program_->types.get(type_id);
+                if(pin >= pin_table(info.type).count || desc == nullptr ||
+                   (desc->kind != TypeKind::array &&
+                    desc->kind != TypeKind::struct_) ||
+                   offset > program_->vars_bytes ||
+                   desc->size > program_->vars_bytes - offset ||
+                   !charge_operation(static_cast<std::uint32_t>(desc->size)) ||
+                   !fb_load_object(info.type, fb_area_ + info.offset, pin,
+                                   vars_ + offset, type_id,
+                                   static_cast<std::uint32_t>(desc->size))) {
+                    return latch(ScanError::invalid_bytecode);
+                }
                 break;
             }
 
@@ -1431,6 +1883,461 @@ public:
     }
 
 private:
+    template <typename Storage>
+    static Storage *construct_binding_storage(unsigned char *&cursor)
+    {
+        static_assert(alignof(Storage) <= 8U);
+        Storage *storage = ::new(static_cast<void *>(cursor)) Storage{};
+        cursor += sizeof(Storage);
+        return storage;
+    }
+
+    void load_binding_storage(const Program &program, unsigned char *cursor)
+    {
+        for(std::uint8_t value =
+                static_cast<std::uint8_t>(BindingStorageKind::axis_targets);
+            value <=
+            static_cast<std::uint8_t>(BindingStorageKind::kin_transforms);
+            ++value) {
+            const BindingStorageKind kind =
+                static_cast<BindingStorageKind>(value);
+            if(!program.uses_binding_storage(kind)) continue;
+            switch(kind) {
+            case BindingStorageKind::axis_targets:
+                axis_targets_ =
+                    construct_binding_storage<AxisTargetStorage>(cursor);
+                break;
+            case BindingStorageKind::group_targets:
+                group_targets_ =
+                    construct_binding_storage<GroupTargetStorage>(cursor);
+                break;
+            case BindingStorageKind::path_tables:
+                path_tables_ =
+                    construct_binding_storage<PathTableStorage>(cursor);
+                break;
+            case BindingStorageKind::path_descriptions:
+                path_descriptions_ =
+                    construct_binding_storage<PathDescriptionStorage>(cursor);
+                break;
+            case BindingStorageKind::cam_switch_tables:
+                cam_switch_tables_ =
+                    construct_binding_storage<CamSwitchTableStorage>(cursor);
+                break;
+            case BindingStorageKind::cam_switch_outputs:
+                cam_switch_outputs_ =
+                    construct_binding_storage<CamSwitchOutputStorage>(cursor);
+                break;
+            case BindingStorageKind::cam_track_options:
+                cam_track_options_ =
+                    construct_binding_storage<CamTrackOptionStorage>(cursor);
+                break;
+            case BindingStorageKind::cam_tables:
+                cam_tables_ =
+                    construct_binding_storage<CamTableStorage>(cursor);
+                break;
+            case BindingStorageKind::position_profiles:
+                position_profiles_ =
+                    construct_binding_storage<PositionProfileStorage>(cursor);
+                break;
+            case BindingStorageKind::velocity_profiles:
+                velocity_profiles_ =
+                    construct_binding_storage<VelocityProfileStorage>(cursor);
+                break;
+            case BindingStorageKind::acceleration_profiles:
+                acceleration_profiles_ = construct_binding_storage<
+                    AccelerationProfileStorage>(cursor);
+                break;
+            case BindingStorageKind::kin_transforms:
+                kin_transforms_ =
+                    construct_binding_storage<KinTransformStorage>(cursor);
+                break;
+            case BindingStorageKind::none: break;
+            }
+        }
+    }
+
+    template <typename Register>
+    BindingError bind_named_handle(const char *name, TypeId expected,
+                                   std::size_t capacity,
+                                   Register register_value)
+    {
+        if(program_ == nullptr || name == nullptr) return BindingError::unknown;
+        if(scan_started_) return BindingError::locked;
+        std::size_t slot = 0;
+        for(const VarInfo &var : program_->vars) {
+            if(var.type_id != expected) continue;
+            if(!ascii_name_equal(name, var.lower)) {
+                ++slot;
+                continue;
+            }
+            if(slot >= capacity) return BindingError::capacity_exceeded;
+            std::uint64_t handle = 0;
+            std::memcpy(&handle, vars_ + var.offset, sizeof(handle));
+            if(handle != 0U) return BindingError::duplicate;
+            const BindingError result = register_value(slot);
+            if(result != BindingError::ok) return result;
+            handle = static_cast<std::uint64_t>(slot) + 1U;
+            std::memcpy(vars_ + var.offset, &handle, sizeof(handle));
+            return BindingError::ok;
+        }
+        return BindingError::unknown;
+    }
+
+    template <std::size_t Capacity>
+    BindingError bind_profile(const char *name, TypeId type,
+                              std::array<BindingProfileSlot, Capacity> &profiles,
+                              const BindingProfileSlot &decoded)
+    {
+        return bind_named_handle(
+            name, type, profiles.size(), [&](std::size_t slot) {
+                profiles[slot] = decoded;
+                return BindingError::ok;
+            });
+    }
+
+    static BindingTargetKind reference_kind(Type type, TypeId type_id)
+    {
+        if(type == Type::axis_ref || type_id == binding_type::axis_ref ||
+           type_id == binding_type::mc_input_ref ||
+           type_id == binding_type::mc_output_ref) {
+            return BindingTargetKind::axis;
+        }
+        if(type == Type::group_ref || type_id == binding_type::group_ref) {
+            return BindingTargetKind::group;
+        }
+        return BindingTargetKind::invalid;
+    }
+
+    template <typename Text>
+    static bool ascii_name_equal(const char *name, const Text &lower)
+    {
+        std::size_t index = 0;
+        while(name[index] != '\0' && index < lower.size()) {
+            char value = name[index];
+            if(value >= 'A' && value <= 'Z') {
+                value = static_cast<char>(value - 'A' + 'a');
+            }
+            if(value != lower[index]) return false;
+            ++index;
+        }
+        return index == lower.size() && name[index] == '\0';
+    }
+
+    bool resolve_reference_payload(Type type, TypeId type_id,
+                                   std::int64_t &value) const
+    {
+        const BindingTargetKind kind = reference_kind(type, type_id);
+        if(kind == BindingTargetKind::invalid) return true;
+        const std::uint64_t handle = static_cast<std::uint64_t>(value);
+        if(handle == 0) {
+            value = 0;
+            return true;
+        }
+        const std::size_t slot = static_cast<std::size_t>(handle - 1U);
+        void *target = nullptr;
+        if(kind == BindingTargetKind::axis) {
+            if(slot >= axis_targets_->size()) return false;
+            target = (*axis_targets_)[slot];
+        } else {
+            if(slot >= group_targets_->size()) return false;
+            target = (*group_targets_)[slot];
+        }
+        if(target == nullptr) return false;
+        value = static_cast<std::int64_t>(
+            reinterpret_cast<std::uintptr_t>(target));
+        return true;
+    }
+
+    bool encode_reference_payload(Type type, TypeId type_id,
+                                  std::int64_t &value) const
+    {
+        const BindingTargetKind kind = reference_kind(type, type_id);
+        if(kind == BindingTargetKind::invalid) return true;
+        if(value == 0) return true;
+        const void *target = reinterpret_cast<const void *>(
+            static_cast<std::uintptr_t>(value));
+        if(kind == BindingTargetKind::axis) {
+            for(std::size_t slot = 0; slot < axis_targets_->size(); ++slot) {
+                if((*axis_targets_)[slot] == target) {
+                    value = static_cast<std::int64_t>(slot + 1U);
+                    return true;
+                }
+            }
+        } else {
+            for(std::size_t slot = 0; slot < group_targets_->size(); ++slot) {
+                if((*group_targets_)[slot] == target) {
+                    value = static_cast<std::int64_t>(slot + 1U);
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    bool resolve_sequence_payload(
+        TypeId type, std::int64_t value,
+        generated::StBindingNativeSequenceValue &sequence) const
+    {
+        if(value == 0) {
+            sequence = {};
+            return true;
+        }
+        if(value < 0) return false;
+        const std::uint64_t handle = static_cast<std::uint64_t>(value);
+        const std::size_t slot = static_cast<std::size_t>(handle - 1U);
+        switch(type) {
+        case binding_type::mc_path_table:
+            if(slot >= path_tables_->size() ||
+               (*path_tables_)[slot] == nullptr) {
+                return false;
+            }
+            sequence = {(*path_tables_)[slot], 1U, false};
+            return true;
+        case binding_type::mc_path_description:
+            if(slot >= path_descriptions_->size() ||
+               (*path_descriptions_)[slot].count == 0U) {
+                return false;
+            }
+            sequence = {&(*path_descriptions_)[slot], 1U, false};
+            return true;
+        case binding_type::mc_cam_switch_table_view:
+            if(slot >= cam_switch_tables_->size() ||
+               (*cam_switch_tables_)[slot].data == nullptr) {
+                return false;
+            }
+            sequence = {(*cam_switch_tables_)[slot].data,
+                        (*cam_switch_tables_)[slot].size, false};
+            return true;
+        case binding_type::mc_cam_switch_outputs_view:
+            if(slot >= cam_switch_outputs_->size() ||
+               (*cam_switch_outputs_)[slot].data == nullptr) {
+                return false;
+            }
+            sequence = {(*cam_switch_outputs_)[slot].data,
+                        (*cam_switch_outputs_)[slot].size, false};
+            return true;
+        case binding_type::mc_cam_track_options_view:
+            if(slot >= cam_track_options_->size() ||
+               (*cam_track_options_)[slot].data == nullptr) {
+                return false;
+            }
+            sequence = {(*cam_track_options_)[slot].data,
+                        (*cam_track_options_)[slot].size, false};
+            return true;
+        case binding_type::mc_cam_table_view:
+            if(slot >= cam_tables_->size() ||
+               (*cam_tables_)[slot].points == nullptr) {
+                return false;
+            }
+            sequence = {(*cam_tables_)[slot].points,
+                        (*cam_tables_)[slot].size,
+                        (*cam_tables_)[slot].periodic};
+            return true;
+        case binding_type::mc_time_position:
+            return resolve_profile_payload(*position_profiles_, slot,
+                                           sequence);
+        case binding_type::mc_time_velocity:
+            return resolve_profile_payload(*velocity_profiles_, slot,
+                                           sequence);
+        case binding_type::mc_time_acceleration:
+            return resolve_profile_payload(*acceleration_profiles_, slot,
+                                           sequence);
+        default: return false;
+        }
+    }
+
+    bool resolve_tagged_reference_payload(
+        TypeId type, std::int64_t value,
+        generated::StBindingNativeTaggedReferenceValue &tagged) const
+    {
+        if(type != binding_type::mc_kin_transform_ref) return false;
+        if(value == 0) {
+            tagged = {};
+            return true;
+        }
+        if(value < 0) return false;
+        const std::size_t slot = static_cast<std::size_t>(
+            static_cast<std::uint64_t>(value) - 1U);
+        if(slot >= kin_transforms_->size()) return false;
+        const axis::KinTransformRef &transform = (*kin_transforms_)[slot];
+        switch(transform.kind) {
+        case axis::KinTransformKind::kinematics:
+            if(transform.kinematics == nullptr || transform.pose != nullptr) {
+                return false;
+            }
+            tagged = {
+                transform.kinematics,
+                generated::StBindingNativeTaggedReferenceTag::kinematics};
+            return true;
+        case axis::KinTransformKind::pose:
+            if(transform.pose == nullptr || transform.kinematics != nullptr) {
+                return false;
+            }
+            tagged = {transform.pose,
+                      generated::StBindingNativeTaggedReferenceTag::pose};
+            return true;
+        case axis::KinTransformKind::none:
+        default: return false;
+        }
+    }
+
+    bool encode_tagged_reference_payload(
+        TypeId type,
+        const generated::StBindingNativeTaggedReferenceValue &tagged,
+        std::int64_t &handle) const
+    {
+        if(type != binding_type::mc_kin_transform_ref) return false;
+        if(tagged.tag ==
+               generated::StBindingNativeTaggedReferenceTag::none &&
+           tagged.data == nullptr) {
+            handle = 0;
+            return true;
+        }
+        for(std::size_t slot = 0; slot < kin_transforms_->size(); ++slot) {
+            const axis::KinTransformRef &transform = (*kin_transforms_)[slot];
+            const bool matches =
+                (tagged.tag ==
+                     generated::StBindingNativeTaggedReferenceTag::kinematics &&
+                 transform.kind == axis::KinTransformKind::kinematics &&
+                 transform.kinematics == tagged.data &&
+                 transform.pose == nullptr) ||
+                (tagged.tag ==
+                     generated::StBindingNativeTaggedReferenceTag::pose &&
+                 transform.kind == axis::KinTransformKind::pose &&
+                 transform.pose == tagged.data &&
+                 transform.kinematics == nullptr);
+            if(matches) {
+                handle = static_cast<std::int64_t>(slot + 1U);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    bool encode_sequence_payload(
+        TypeId type, const generated::StBindingNativeSequenceValue &sequence,
+        std::int64_t &handle) const
+    {
+        if(sequence.data == nullptr && sequence.count == 0U &&
+           !sequence.flag) {
+            handle = 0;
+            return true;
+        }
+        switch(type) {
+        case binding_type::mc_path_table:
+            if(sequence.count != 1U || sequence.flag) return false;
+            return find_sequence_handle(*path_tables_, sequence.data, handle);
+        case binding_type::mc_path_description:
+            if(sequence.count != 1U || sequence.flag) return false;
+            for(std::size_t slot = 0; slot < path_descriptions_->size();
+                ++slot) {
+                if((*path_descriptions_)[slot].count != 0U &&
+                   &(*path_descriptions_)[slot] == sequence.data) {
+                    handle = static_cast<std::int64_t>(slot + 1U);
+                    return true;
+                }
+            }
+            return false;
+        case binding_type::mc_cam_switch_table_view:
+            if(sequence.flag) return false;
+            for(std::size_t slot = 0; slot < cam_switch_tables_->size();
+                ++slot) {
+                const auto &view = (*cam_switch_tables_)[slot];
+                if(view.data == sequence.data && view.size == sequence.count) {
+                    handle = static_cast<std::int64_t>(slot + 1U);
+                    return true;
+                }
+            }
+            return false;
+        case binding_type::mc_cam_switch_outputs_view:
+            if(sequence.flag) return false;
+            for(std::size_t slot = 0; slot < cam_switch_outputs_->size();
+                ++slot) {
+                const auto &view = (*cam_switch_outputs_)[slot];
+                if(view.data == sequence.data &&
+                   view.size == sequence.count) {
+                    handle = static_cast<std::int64_t>(slot + 1U);
+                    return true;
+                }
+            }
+            return false;
+        case binding_type::mc_cam_track_options_view:
+            if(sequence.flag) return false;
+            for(std::size_t slot = 0; slot < cam_track_options_->size();
+                ++slot) {
+                const auto &view = (*cam_track_options_)[slot];
+                if(view.data == sequence.data &&
+                   view.size == sequence.count) {
+                    handle = static_cast<std::int64_t>(slot + 1U);
+                    return true;
+                }
+            }
+            return false;
+        case binding_type::mc_cam_table_view:
+            for(std::size_t slot = 0; slot < cam_tables_->size(); ++slot) {
+                const auto &view = (*cam_tables_)[slot];
+                if(view.points == sequence.data && view.size == sequence.count &&
+                   view.periodic == sequence.flag) {
+                    handle = static_cast<std::int64_t>(slot + 1U);
+                    return true;
+                }
+            }
+            return false;
+        case binding_type::mc_time_position:
+            if(sequence.flag) return false;
+            return find_profile_handle(*position_profiles_, sequence, handle);
+        case binding_type::mc_time_velocity:
+            if(sequence.flag) return false;
+            return find_profile_handle(*velocity_profiles_, sequence, handle);
+        case binding_type::mc_time_acceleration:
+            if(sequence.flag) return false;
+            return find_profile_handle(*acceleration_profiles_, sequence,
+                                       handle);
+        default: return false;
+        }
+    }
+
+    template <std::size_t Capacity>
+    static bool resolve_profile_payload(
+        const std::array<BindingProfileSlot, Capacity> &profiles,
+        std::size_t slot,
+        generated::StBindingNativeSequenceValue &sequence)
+    {
+        if(slot >= profiles.size() || profiles[slot].count == 0U) return false;
+        sequence = {profiles[slot].segments.data(), profiles[slot].count,
+                    false};
+        return true;
+    }
+
+    template <typename Pointer, std::size_t Capacity>
+    static bool find_sequence_handle(const std::array<Pointer, Capacity> &values,
+                                     const void *data, std::int64_t &handle)
+    {
+        for(std::size_t slot = 0; slot < values.size(); ++slot) {
+            if(values[slot] == data) {
+                handle = static_cast<std::int64_t>(slot + 1U);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    template <std::size_t Capacity>
+    static bool find_profile_handle(
+        const std::array<BindingProfileSlot, Capacity> &profiles,
+        const generated::StBindingNativeSequenceValue &sequence,
+        std::int64_t &handle)
+    {
+        for(std::size_t slot = 0; slot < profiles.size(); ++slot) {
+            if(profiles[slot].count == sequence.count &&
+               profiles[slot].segments.data() == sequence.data) {
+                handle = static_cast<std::int64_t>(slot + 1U);
+                return true;
+            }
+        }
+        return false;
+    }
+
     static bool rd16(const std::uint8_t *code, std::size_t size,
                      std::size_t &pc, std::uint16_t &value)
     {
@@ -1719,6 +2626,19 @@ private:
     std::uint64_t *stack_ = nullptr;
     ScanError fault_ = ScanError::ok;
     bool scan_started_ = false;
+    std::int64_t task_period_ns_ = 0;
+    AxisTargetStorage *axis_targets_ = nullptr;
+    GroupTargetStorage *group_targets_ = nullptr;
+    PathTableStorage *path_tables_ = nullptr;
+    PathDescriptionStorage *path_descriptions_ = nullptr;
+    CamSwitchTableStorage *cam_switch_tables_ = nullptr;
+    CamSwitchOutputStorage *cam_switch_outputs_ = nullptr;
+    CamTrackOptionStorage *cam_track_options_ = nullptr;
+    CamTableStorage *cam_tables_ = nullptr;
+    PositionProfileStorage *position_profiles_ = nullptr;
+    VelocityProfileStorage *velocity_profiles_ = nullptr;
+    AccelerationProfileStorage *acceleration_profiles_ = nullptr;
+    KinTransformStorage *kin_transforms_ = nullptr;
 };
 
 } // namespace plcopen::core::st

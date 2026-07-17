@@ -96,6 +96,37 @@ int check_position_profile()
         return fail("linked position profile endpoint");
     }
 
+    axis::AxisCommand predecessor{};
+    predecessor.kind = axis::CommandKind::move_absolute;
+    predecessor.value = 6.0;
+    predecessor.velocity = 0.5;
+    if(!axis.submit(predecessor))
+    {
+        return fail("buffered profile predecessor accepted");
+    }
+    profile.execute = false;
+    profile.call();
+    single.target = 7.0;
+    profile.segments = &single;
+    profile.segment_count = 1;
+    profile.buffer_mode = axis::BufferMode::buffered;
+    profile.execute = true;
+    profile.call();
+    if(!profile.outputs.command_accepted ||
+       !axis.command_pending(profile.outputs.command_id))
+    {
+        return fail("position profile consumes BufferMode");
+    }
+    for(int i = 0; i < 1000 && !profile.outputs.done; ++i)
+    {
+        axis.cycle();
+        profile.call();
+    }
+    if(!profile.outputs.done || !near(axis.snapshot().command_position, 7.0, 1e-8))
+    {
+        return fail("buffered position profile follows predecessor");
+    }
+
     return 0;
 }
 

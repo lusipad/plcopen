@@ -29,6 +29,12 @@ struct ServoSetpoints
     double acceleration = 0.0;
     double torque = 0.0;
     double torque_limit = 0.0;
+    double torque_velocity_limit = 0.0;
+    double torque_acceleration_limit = 0.0;
+    double torque_deceleration_limit = 0.0;
+    double torque_jerk_limit = 0.0;
+    axis::Direction torque_direction = axis::Direction::current;
+    bool torque_mode = false;
 };
 
 struct ServoFeedback
@@ -60,8 +66,14 @@ inline ServoSetpoints make_setpoints(const axis::AxisSnapshot &snapshot)
     setpoints.position = snapshot.command_position;
     setpoints.velocity = snapshot.command_velocity;
     setpoints.acceleration = snapshot.command_acceleration;
-    setpoints.torque = snapshot.actual_torque;
+    setpoints.torque = snapshot.command_torque;
     setpoints.torque_limit = snapshot.command_torque_limit;
+    setpoints.torque_velocity_limit = snapshot.torque_velocity_limit;
+    setpoints.torque_acceleration_limit = snapshot.torque_acceleration_limit;
+    setpoints.torque_deceleration_limit = snapshot.torque_deceleration_limit;
+    setpoints.torque_jerk_limit = snapshot.torque_jerk_limit;
+    setpoints.torque_direction = snapshot.torque_direction;
+    setpoints.torque_mode = snapshot.torque_mode;
     return setpoints;
 }
 

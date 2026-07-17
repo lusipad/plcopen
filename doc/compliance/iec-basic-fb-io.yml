@@ -1,0 +1,63 @@
+schema: plcopen-iec-basic-fb-io-v1
+source: IEC 61131-3 basic FB surface implemented by core/fb/basic.h
+rows:
+  - name: R_TRIG
+    pins:
+      - {direction: input, name: CLK, st_type: BOOL, native_member: clk}
+      - {direction: output, name: Q, st_type: BOOL, native_member: q}
+  - name: F_TRIG
+    pins:
+      - {direction: input, name: CLK, st_type: BOOL, native_member: clk}
+      - {direction: output, name: Q, st_type: BOOL, native_member: q}
+  - name: SR
+    pins:
+      - {direction: input, name: SET1, st_type: BOOL, native_member: set}
+      - {direction: input, name: RESET, st_type: BOOL, native_member: reset}
+      - {direction: output, name: Q1, st_type: BOOL, native_member: q}
+  - name: RS
+    pins:
+      - {direction: input, name: S, st_type: BOOL, native_member: set}
+      - {direction: input, name: R1, st_type: BOOL, native_member: reset}
+      - {direction: output, name: Q1, st_type: BOOL, native_member: q}
+  - name: TON
+    pins:
+      - {direction: input, name: IN, st_type: BOOL, native_member: in}
+      - {direction: input, name: PT, st_type: TIME, native_member: pt}
+      - {direction: output, name: Q, st_type: BOOL, native_member: q}
+      - {direction: output, name: ET, st_type: TIME, native_member: et}
+  - name: TOF
+    pins:
+      - {direction: input, name: IN, st_type: BOOL, native_member: in}
+      - {direction: input, name: PT, st_type: TIME, native_member: pt}
+      - {direction: output, name: Q, st_type: BOOL, native_member: q}
+      - {direction: output, name: ET, st_type: TIME, native_member: et}
+  - name: TP
+    pins:
+      - {direction: input, name: IN, st_type: BOOL, native_member: in}
+      - {direction: input, name: PT, st_type: TIME, native_member: pt}
+      - {direction: output, name: Q, st_type: BOOL, native_member: q}
+      - {direction: output, name: ET, st_type: TIME, native_member: et}
+  - name: CTU
+    pins:
+      - {direction: input, name: CU, st_type: BOOL, native_member: cu}
+      - {direction: input, name: R, st_type: BOOL, native_member: reset}
+      - {direction: input, name: PV, st_type: DINT, native_member: pv}
+      - {direction: output, name: Q, st_type: BOOL, native_member: q}
+      - {direction: output, name: CV, st_type: DINT, native_member: cv}
+  - name: CTD
+    pins:
+      - {direction: input, name: CD, st_type: BOOL, native_member: cd}
+      - {direction: input, name: LD, st_type: BOOL, native_member: load}
+      - {direction: input, name: PV, st_type: DINT, native_member: pv}
+      - {direction: output, name: Q, st_type: BOOL, native_member: q}
+      - {direction: output, name: CV, st_type: DINT, native_member: cv}
+  - name: CTUD
+    pins:
+      - {direction: input, name: CU, st_type: BOOL, native_member: cu}
+      - {direction: input, name: CD, st_type: BOOL, native_member: cd}
+      - {direction: input, name: R, st_type: BOOL, native_member: reset}
+      - {direction: input, name: LD, st_type: BOOL, native_member: load}
+      - {direction: input, name: PV, st_type: DINT, native_member: pv}
+      - {direction: output, name: QU, st_type: BOOL, native_member: qu}
+      - {direction: output, name: QD, st_type: BOOL, native_member: qd}
+      - {direction: output, name: CV, st_type: DINT, native_member: cv}

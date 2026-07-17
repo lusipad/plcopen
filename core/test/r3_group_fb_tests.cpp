@@ -39,6 +39,24 @@ int fail(const char *name)
     return 1;
 }
 
+rt::Result<std::uint32_t> submit_direct(axis::AxisGroup &group,
+                                        axis::GroupPosition target,
+                                        bool relative,
+                                        double velocity,
+                                        double acceleration,
+                                        double deceleration,
+                                        double jerk)
+{
+    axis::GroupCommand command{};
+    command.target = target;
+    command.relative = relative;
+    command.velocity = velocity;
+    command.acceleration = acceleration;
+    command.deceleration = deceleration;
+    command.jerk = jerk;
+    return group.submit_direct(command);
+}
+
 int check_add_remove()
 {
     axis::AxisModel x;
@@ -70,6 +88,7 @@ int check_add_remove()
     fb::FbAddAxisToGroup add_y;
     add_y.group_ref = &group;
     add_y.axis_ref = &y;
+    add_y.ident_in_group.index = 1;
     add_y.execute = true;
     add_y.call();
     if (!add_y.outputs.done || group.member_count() != 2)
@@ -715,7 +734,7 @@ int check_disabled_group_rejections_are_atomic()
         return fail("disabled group rejects configuration atomically");
     }
 
-    const rt::Result<std::uint32_t> direct = group.submit_direct(target, false, 0.5, 0.5, 0.5, 0.5);
+    const rt::Result<std::uint32_t> direct = submit_direct(group, target, false, 0.5, 0.5, 0.5, 0.5);
     const rt::Result<std::uint32_t> linear = group.submit_linear(valid_group_command());
     const rt::Result<std::uint32_t> circular = group.submit_circular(valid_group_command());
     if (direct || linear || circular || direct.error() != rt::ErrorCode::invalid_argument ||
@@ -920,7 +939,7 @@ int check_direct_motion_rejections_are_atomic()
     target.value[0] = 1.0;
     target.value[1] = 2.0;
     const rt::Result<std::uint32_t> accepted =
-        group.submit_direct(target, false, 0.5, 0.5, 0.5, 0.5);
+        submit_direct(group, target, false, 0.5, 0.5, 0.5, 0.5);
     if (!accepted || group.status() != axis::GroupStatus::moving || !group.direct_motion_active())
     {
         return fail("direct motion rejection setup");
@@ -998,7 +1017,7 @@ int check_group_submit_rejections_are_atomic()
             break;
         }
         const rt::Result<std::uint32_t> rejected =
-            group.submit_direct(target, false, velocity, acceleration, deceleration, jerk);
+            submit_direct(group, target, false, velocity, acceleration, deceleration, jerk);
         if (rejected || rejected.error() != rt::ErrorCode::invalid_argument ||
             !same_group_snapshot(before, snapshot_group(group)))
         {
@@ -1367,7 +1386,7 @@ int check_active_group_rejects_member_replan()
     target.size = 2;
     target.value[0] = 4.0;
     target.value[1] = 4.0;
-    const rt::Result<std::uint32_t> direct = group.submit_direct(target, false, 0.5, 0.5, 0.5, 0.5);
+    const rt::Result<std::uint32_t> direct = submit_direct(group, target, false, 0.5, 0.5, 0.5, 0.5);
     const std::uint32_t member_id = axes[0].snapshot().active_command_id;
     if (!direct || member_id == 0 || group.status() != axis::GroupStatus::moving)
     {
@@ -1409,7 +1428,7 @@ int check_direct_member_command_ids_do_not_alias_axis_commands()
         target.size = 2;
         target.value[0] = 1.0;
         target.value[1] = 1.0;
-        if (!group.submit_direct(target, false, 1.0, 1.0, 1.0, 1.0))
+        if (!submit_direct(group, target, false, 1.0, 1.0, 1.0, 1.0))
         {
             return fail("direct completion id guard setup");
         }
@@ -1461,7 +1480,7 @@ int check_direct_member_command_ids_do_not_alias_axis_commands()
         target.size = 2;
         target.value[0] = 10.0;
         target.value[1] = 10.0;
-        if (!group.submit_direct(target, false, 0.1, 0.1, 0.1, 0.1))
+        if (!submit_direct(group, target, false, 0.1, 0.1, 0.1, 0.1))
         {
             return fail("direct abort id guard setup");
         }

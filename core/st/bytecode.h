@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 
+#include "st/binding_storage.h"
 #include "st/types.h"
 
 // L0 bytecode program representation (approved st-l0-semantics 2.4/2.6/3.1):
@@ -17,7 +18,7 @@
 namespace plcopen::core::st
 {
 
-inline constexpr std::uint32_t kBytecodeFormatVersion = 2;
+inline constexpr std::uint32_t kBytecodeFormatVersion = 4;
 
 // Every opcode executes in O(1); loops exist only as structured jumps, so
 // WCET = per-instruction bound x instruction budget (matrix 3.1/3.6).
@@ -85,6 +86,7 @@ enum class Op : std::uint8_t
     for_step_dint, // u16 ctrl, u16 by: ctrl += by with 32-bit wrap
 
     fb_store_in,   // u16 fb index, u8 pin id; pops value
+    fb_store_object, // u16 fb, u8 pin, u32 vars offset, u32 TypeId
     fb_call,       // u16 fb index
     fb_load_out,   // u16 fb index, u8 pin id; pushes value
 
@@ -119,6 +121,7 @@ enum class Op : std::uint8_t
     alias_guard,    // top must be non-zero, otherwise alias_violation
     string_length,  // encoded string operand -> DINT current length
     commit_outputs, // atomic staged copy-out group
+    fb_load_object, // u16 fb, u8 pin, u32 vars offset, u32 TypeId
 };
 
 struct VarInfo
@@ -184,13 +187,42 @@ struct Program
 
     std::string canonical_manifest() const;
 
+    bool uses_binding_storage(BindingStorageKind kind) const
+    {
+        for(const VarInfo &var : vars) {
+            if(binding_storage_kind(var.type, var.type_id) == kind) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    std::size_t binding_storage_offset() const
+    {
+        const std::size_t bytes =
+            static_cast<std::size_t>(vars_bytes) + fb_bytes +
+            static_cast<std::size_t>(stack_slots) * 8;
+        return (std::max(bytes, static_cast<std::size_t>(layout_bytes)) +
+                7U) &
+               ~std::size_t{7U};
+    }
+
     // Load-time footprint contract (matrix 3.2): callers place instances in
     // statically owned buffers of at least this size, 8-byte aligned.
     std::size_t required_bytes() const
     {
-        std::size_t bytes = static_cast<std::size_t>(vars_bytes) + fb_bytes +
-                            static_cast<std::size_t>(stack_slots) * 8;
-        bytes = std::max(bytes, static_cast<std::size_t>(layout_bytes));
+        std::size_t bytes = binding_storage_offset();
+        for(std::uint8_t value =
+                static_cast<std::uint8_t>(BindingStorageKind::axis_targets);
+            value <=
+            static_cast<std::uint8_t>(BindingStorageKind::kin_transforms);
+            ++value) {
+            const BindingStorageKind kind =
+                static_cast<BindingStorageKind>(value);
+            if(uses_binding_storage(kind)) {
+                bytes += binding_storage_bytes(kind);
+            }
+        }
         for(const Program &program : programs) {
             bytes = std::max(bytes, program.required_bytes());
         }

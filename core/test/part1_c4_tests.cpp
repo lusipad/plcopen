@@ -220,6 +220,74 @@ int check_continuous_update_permission_is_edge_latched()
     return 0;
 }
 
+int check_position_continuous_update()
+{
+    axis::AxisModel absolute_axis;
+    absolute_axis.set_power(true);
+    fb::FbMoveAbsolute absolute;
+    absolute.axis_ref = &absolute_axis;
+    absolute.continuous_update = true;
+    absolute.position = 0.25;
+    absolute.velocity = 1.0;
+    absolute.execute = true;
+    absolute.call();
+    absolute_axis.cycle();
+    absolute.position = 0.5;
+    absolute.call();
+    for(int cycle = 0; cycle < 4000 && !absolute.outputs.done; ++cycle) {
+        absolute_axis.cycle();
+        absolute.call();
+    }
+    if(!absolute.outputs.done ||
+       !near(absolute_axis.snapshot().command_position, 0.5, 1e-8)) {
+        return fail("D-20 MoveAbsolute ContinuousUpdate retargets active motion");
+    }
+
+    axis::AxisModel relative_axis;
+    relative_axis.set_power(true);
+    fb::FbMoveRelative relative;
+    relative.axis_ref = &relative_axis;
+    relative.continuous_update = true;
+    relative.distance = 0.25;
+    relative.velocity = 1.0;
+    relative.execute = true;
+    relative.call();
+    relative_axis.cycle();
+    relative.distance = 0.5;
+    relative.call();
+    for(int cycle = 0; cycle < 4000 && !relative.outputs.done; ++cycle) {
+        relative_axis.cycle();
+        relative.call();
+    }
+    if(!relative.outputs.done ||
+       !near(relative_axis.snapshot().command_position, 0.5, 1e-8)) {
+        return fail("D-20 MoveRelative ContinuousUpdate preserves command start");
+    }
+
+    axis::AxisModel latched_axis;
+    latched_axis.set_power(true);
+    fb::FbMoveAbsolute latched;
+    latched.axis_ref = &latched_axis;
+    latched.continuous_update = false;
+    latched.position = 0.25;
+    latched.velocity = 1.0;
+    latched.execute = true;
+    latched.call();
+    latched_axis.cycle();
+    latched.continuous_update = true;
+    latched.position = 0.5;
+    latched.call();
+    for(int cycle = 0; cycle < 4000 && !latched.outputs.done; ++cycle) {
+        latched_axis.cycle();
+        latched.call();
+    }
+    if(!latched.outputs.done ||
+       !near(latched_axis.snapshot().command_position, 0.25, 1e-8)) {
+        return fail("D-20 MoveAbsolute ContinuousUpdate permission is edge-latched");
+    }
+    return 0;
+}
+
 int check_power_loss_and_stop_lock()
 {
     axis::AxisModel failed;
@@ -395,6 +463,65 @@ int check_torque_acceleration_and_set_position()
     if(torque.in_torque || torque_axis.torque_command_id() != 0 ||
        !near(torque_axis.command_torque(), 0.0)) {
         return fail("D-09 motion takeover clears Torque owner");
+    }
+
+    axis::AxisModel ramp_axis;
+    ramp_axis.set_power(true);
+    fb::FbTorqueControl ramp;
+    ramp.axis_ref = &ramp_axis;
+    ramp.continuous_update = true;
+    ramp.torque = 2.0;
+    ramp.torque_ramp = 1000.0;
+    ramp.velocity = 4.0;
+    ramp.acceleration = 3.0;
+    ramp.deceleration = 2.0;
+    ramp.jerk = 1.0;
+    ramp.direction = axis::Direction::negative;
+    ramp.execute = true;
+    if(!ramp.set_cycle_time(1000000)) {
+        return fail("D-09 TorqueControl accepts task cycle period");
+    }
+    ramp.call();
+    if(ramp.in_torque || !near(ramp_axis.command_torque(), 0.0)) {
+        return fail("D-09 TorqueRamp starts from the live command setpoint");
+    }
+    ramp_axis.cycle();
+    ramp.call();
+    if(ramp.in_torque || !near(ramp_axis.command_torque(), -1.0)) {
+        return fail("D-09 TorqueRamp uses task-period units per second");
+    }
+    ramp_axis.cycle();
+    ramp.call();
+    const axis::AxisSnapshot &torque_snapshot = ramp_axis.snapshot();
+    if(!ramp.in_torque || !near(ramp_axis.command_torque(), -2.0) ||
+       !torque_snapshot.torque_mode ||
+       !near(torque_snapshot.torque_velocity_limit, 4.0) ||
+       !near(torque_snapshot.torque_acceleration_limit, 3.0) ||
+       !near(torque_snapshot.torque_deceleration_limit, 2.0) ||
+       !near(torque_snapshot.torque_jerk_limit, 1.0) ||
+       torque_snapshot.torque_direction != axis::Direction::negative) {
+        return fail("D-09 TorqueControl exports CST limits and direction");
+    }
+    ramp.torque = 1.0;
+    ramp.direction = axis::Direction::positive;
+    ramp.torque_ramp = 500.0;
+    ramp.call();
+    ramp_axis.cycle();
+    ramp.call();
+    if(ramp.in_torque || !near(ramp_axis.command_torque(), -1.5)) {
+        return fail("D-20 Torque ContinuousUpdate retargets active CST command");
+    }
+
+    axis::AxisModel buffered_axis;
+    buffered_axis.set_power(true);
+    fb::FbTorqueControl buffered;
+    buffered.axis_ref = &buffered_axis;
+    buffered.buffer_mode = axis::BufferMode::buffered;
+    buffered.execute = true;
+    buffered.call();
+    if(!buffered.outputs.error ||
+       buffered.outputs.error_id != rt::ErrorCode::unsupported) {
+        return fail("D-09 TorqueControl rejects undefined non-aborting CST sequencing");
     }
 
     axis::AxisModel acceleration_axis;
@@ -575,6 +702,9 @@ int check_superimposed_and_sync_out()
     phasing.slave_ref = &slave;
     phasing.phase_shift = 0.5;
     phasing.velocity = 0.25;
+    phasing.acceleration = 0.25;
+    phasing.deceleration = 0.25;
+    phasing.jerk = 0.25;
     phasing.execute = true;
     phasing.call();
     phasing.execute = false;
@@ -603,6 +733,79 @@ int check_superimposed_and_sync_out()
     return 0;
 }
 
+int check_power_direction_and_dynamic_overrides()
+{
+    axis::AxisModel gated_axis;
+    fb::FbPower power;
+    power.axis_ref = &gated_axis;
+    power.enable = true;
+    power.enable_positive = true;
+    power.enable_negative = false;
+    power.call();
+    if(!power.status || power.error) {
+        return fail("MC_Power directional enable powers the axis");
+    }
+
+    axis::AxisCommand negative =
+        move_command(axis::CommandKind::move_velocity, -1.0);
+    if(gated_axis.submit(negative).error() !=
+       rt::ErrorCode::precondition_failed) {
+        return fail("MC_Power rejects a command in a disabled direction");
+    }
+    const rt::Result<std::uint32_t> positive = gated_axis.submit(
+        move_command(axis::CommandKind::move_velocity, 1.0));
+    if(!positive) return fail("MC_Power accepts an enabled direction");
+    gated_axis.cycle();
+    power.enable_positive = false;
+    power.enable_negative = true;
+    power.call();
+    if(!gated_axis.powered() || gated_axis.snapshot().active_command_id != 0 ||
+       gated_axis.status() != axis::AxisStatus::standstill) {
+        return fail("MC_Power feed disable aborts only the forbidden active motion");
+    }
+    if(!gated_axis.submit(negative)) {
+        return fail("MC_Power permits the remaining enabled direction");
+    }
+
+    axis::AxisModel fast_axis;
+    axis::AxisModel limited_axis;
+    fast_axis.set_power(true);
+    limited_axis.set_power(true);
+    if(limited_axis.set_override(1.0, 0.25, 0.25) != rt::ErrorCode::ok) {
+        return fail("MC_SetOverride accepts AccFactor and JerkFactor");
+    }
+    axis::AxisCommand move = move_command(axis::CommandKind::move_absolute, 20.0);
+    move.velocity = 10.0;
+    move.acceleration = 2.0;
+    move.deceleration = 2.0;
+    move.jerk = 1.0;
+    if(!fast_axis.submit(move) || !limited_axis.submit(move)) {
+        return fail("dynamic override comparison commands start");
+    }
+    int fast_cycles = 0;
+    int limited_cycles = 0;
+    while(fast_axis.snapshot().active_command_id != 0 && fast_cycles < 10000) {
+        fast_axis.cycle();
+        ++fast_cycles;
+    }
+    while(limited_axis.snapshot().active_command_id != 0 &&
+          limited_cycles < 10000) {
+        limited_axis.cycle();
+        ++limited_cycles;
+    }
+    if(fast_cycles == 10000 || limited_cycles == 10000 ||
+       limited_cycles <= fast_cycles) {
+        return fail("AccFactor and JerkFactor scale planned motion dynamics");
+    }
+    if(limited_axis.set_override(1.0, 0.0, 1.0) !=
+           rt::ErrorCode::invalid_argument ||
+       limited_axis.set_override(1.0, 1.0, 0.0) !=
+           rt::ErrorCode::invalid_argument) {
+        return fail("zero AccFactor and JerkFactor are rejected");
+    }
+    return 0;
+}
+
 } // namespace
 
 int main()
@@ -611,11 +814,13 @@ int main()
     if(const int result = check_execute_families_keep_terminal()) return result;
     if(const int result = check_axis_error_is_not_command_aborted()) return result;
     if(const int result = check_continuous_update_permission_is_edge_latched()) return result;
+    if(const int result = check_position_continuous_update()) return result;
     if(const int result = check_power_loss_and_stop_lock()) return result;
     if(const int result = check_relative_additive_and_signed_inputs()) return result;
     if(const int result = check_torque_acceleration_and_set_position()) return result;
     if(const int result = check_runtime_error_and_enable_latch()) return result;
     if(const int result = check_superimposed_and_sync_out()) return result;
+    if(const int result = check_power_direction_and_dynamic_overrides()) return result;
     std::cout << "Part 1 C4 tests passed\n";
     return 0;
 }

@@ -61,13 +61,34 @@ void run_group(axis::AxisGroup &group, axis::AxisModel *axes, std::size_t count,
     }
 }
 
+rt::Result<std::uint32_t> submit_direct(axis::AxisGroup &group,
+                                        axis::GroupPosition target,
+                                        bool relative,
+                                        double velocity,
+                                        double acceleration,
+                                        double deceleration,
+                                        double jerk,
+                                        axis::BufferMode buffer_mode =
+                                            axis::BufferMode::aborting)
+{
+    axis::GroupCommand command{};
+    command.target = target;
+    command.relative = relative;
+    command.velocity = velocity;
+    command.acceleration = acceleration;
+    command.deceleration = deceleration;
+    command.jerk = jerk;
+    command.buffer_mode = buffer_mode;
+    return group.submit_direct(command);
+}
+
 rt::Result<std::uint32_t> start_direct(axis::AxisGroup &group, axis::AxisModel *axes)
 {
     axis::GroupPosition target{};
     target.size = 2;
     target.value[0] = 100.0;
     target.value[1] = 50.0;
-    return group.submit_direct(target, false, 0.1, 0.1, 0.1, 0.1);
+    return submit_direct(group, target, false, 0.1, 0.1, 0.1, 0.1);
 }
 
 // --- MC_GroupHome ---
@@ -80,14 +101,25 @@ int check_group_home_basic()
 
     fb::FbGroupHome home;
     home.group_ref = &group;
+    home.position.size = 3;
+    home.position.value[0] = 1.0;
+    home.position.value[1] = 2.0;
+    home.position.value[2] = 3.0;
+    home.coord_system = axis::CoordSystem::acs;
+    home.buffer_mode = axis::BufferMode::aborting;
     home.execute = true;
+    home.call();
+
+    if(home.outputs.done || !home.outputs.busy) return fail("group_home accepted");
+    group.cycle();
     home.call();
 
     if(!home.outputs.done || home.outputs.error) {
         return fail("group_home done");
     }
     for(int i = 0; i < 3; ++i) {
-        if(!axes[i].snapshot().homed) {
+        if(!axes[i].snapshot().homed ||
+           !near(axes[i].snapshot().command_position, static_cast<double>(i + 1), 1e-12)) {
             return fail("group_home axis homed");
         }
     }
@@ -96,7 +128,7 @@ int check_group_home_basic()
     return 0;
 }
 
-int check_group_home_rejects_moving()
+int check_group_home_aborts_moving()
 {
     axis::AxisModel axes[2];
     axis::AxisGroup group;
@@ -116,14 +148,55 @@ int check_group_home_rejects_moving()
 
     fb::FbGroupHome home;
     home.group_ref = &group;
+    home.position.size = 2;
+    home.position.value[0] = -1.0;
+    home.position.value[1] = -2.0;
+    home.buffer_mode = axis::BufferMode::aborting;
     home.execute = true;
     home.call();
-    if(!reports_error(home.outputs, rt::ErrorCode::invalid_argument) ||
-       home.outputs.command_accepted) {
-        return fail("group_home rejects moving");
+    group.cycle();
+    home.call();
+    if(!home.outputs.done || home.outputs.error ||
+       !near(axes[0].snapshot().command_position, -1.0, 1e-12) ||
+       !near(axes[1].snapshot().command_position, -2.0, 1e-12)) {
+        return fail("group_home aborting takeover");
     }
 
-    std::printf("  PASS group_home_rejects_moving\n");
+    std::printf("  PASS group_home_aborts_moving\n");
+    return 0;
+}
+
+int check_group_home_buffered()
+{
+    axis::AxisModel axes[2];
+    axis::AxisGroup group;
+    init_group(group, axes, 2);
+    axis::GroupCommand move{};
+    move.target.size = 2;
+    move.target.value[0] = 4.0;
+    move.target.value[1] = 2.0;
+    if(!group.submit_linear(move)) return fail("group_home buffered setup");
+
+    fb::FbGroupHome home;
+    home.group_ref = &group;
+    home.position.size = 2;
+    home.position.value[0] = 0.25;
+    home.position.value[1] = 0.5;
+    home.buffer_mode = axis::BufferMode::buffered;
+    home.execute = true;
+    home.call();
+    if(!home.outputs.command_accepted || home.outputs.done || home.outputs.active) {
+        return fail("group_home buffered accepted");
+    }
+    for(int i = 0; i < 128 && !home.outputs.done; ++i) {
+        group.cycle();
+        for(auto &axis : axes) axis.cycle();
+        home.call();
+    }
+    if(!home.outputs.done || !near(axes[0].snapshot().command_position, 0.25, 1e-12) ||
+       !near(axes[1].snapshot().command_position, 0.5, 1e-12)) {
+        return fail("group_home buffered completion");
+    }
     return 0;
 }
 
@@ -179,7 +252,7 @@ int check_move_direct_rejects_pending_superimposed_member()
     target.value[0] = 2.0;
     target.value[1] = 1.0;
     const rt::Result<std::uint32_t> direct =
-        group.submit_direct(target, false, 0.1, 0.1, 0.1, 0.1);
+        submit_direct(group, target, false, 0.1, 0.1, 0.1, 0.1);
     if(direct || direct.error() != rt::ErrorCode::invalid_argument ||
        group.status() != axis::GroupStatus::standby ||
        !axes[0].superimposed_active() ||
@@ -209,7 +282,7 @@ int check_coordinated_motion_rejects_active_direct()
         direct_target.value[0] = 10.0;
         direct_target.value[1] = 5.0;
         const rt::Result<std::uint32_t> direct =
-            group.submit_direct(direct_target, false, 0.1, 0.1, 0.1, 0.1);
+            submit_direct(group, direct_target, false, 0.1, 0.1, 0.1, 0.1);
         if(!direct) {
             return fail("coordinated after direct setup");
         }
@@ -349,14 +422,16 @@ int check_direct_management_owns_member_lifecycle()
         replacement.value[0] = 200.0;
         replacement.value[1] = 100.0;
         const rt::Result<std::uint32_t> reentrant =
-            group.submit_direct(replacement, false, 0.1, 0.1, 0.1, 0.1);
+            submit_direct(group, replacement, false, 0.1, 0.1, 0.1, 0.1,
+                          axis::BufferMode::buffered);
         if(group.set_group_override(0.0) != rt::ErrorCode::unsupported ||
-           group.group_override() != 1.0 || reentrant ||
-           reentrant.error() != rt::ErrorCode::invalid_argument ||
+           group.group_override() != 1.0 || !reentrant ||
+           !group.direct_command_busy(reentrant.value()) ||
+           group.direct_command_active(reentrant.value()) ||
            group.status() != axis::GroupStatus::moving || !group.direct_motion_active() ||
            axes[0].snapshot().active_command_id != x_id ||
            axes[1].snapshot().active_command_id != y_id) {
-            return fail("direct override and reentrant submit reject atomically");
+            return fail("direct override rejects and buffered direct queues");
         }
 
         if(group.interrupt(0.1, 0.1) != rt::ErrorCode::unsupported ||
@@ -425,7 +500,7 @@ int check_move_direct_preflight_is_atomic()
         const axis::AxisSnapshot x_before = axes[0].snapshot();
         const axis::AxisSnapshot y_before = axes[1].snapshot();
         const rt::Result<std::uint32_t> result =
-            group.submit_direct(target, false, 0.1, 0.1, 0.1, 0.1);
+            submit_direct(group, target, false, 0.1, 0.1, 0.1, 0.1);
         if(result || result.error() != rt::ErrorCode::out_of_range ||
            group.status() != axis::GroupStatus::standby || group.direct_motion_active() ||
            axes[0].status() != axis::AxisStatus::standstill ||
@@ -469,7 +544,7 @@ int check_move_direct_preflight_is_atomic()
         target.value[0] = 2.0;
         target.value[1] = 2.0;
         const rt::Result<std::uint32_t> result =
-            group.submit_direct(target, false, 0.1, 0.1, 0.1, 0.1);
+            submit_direct(group, target, false, 0.1, 0.1, 0.1, 0.1);
         if(result || result.error() != rt::ErrorCode::out_of_range ||
            group.status() != axis::GroupStatus::moving || group.direct_motion_active() ||
            axes[0].status() != axis::AxisStatus::synchronized_motion ||
@@ -611,7 +686,7 @@ int check_move_direct_absolute()
     replacement.size = 2;
     replacement.value[0] = 12.0;
     replacement.value[1] = 4.0;
-    if(!group.submit_direct(replacement, false, 1.0, 0.5, 0.5, 0.5)) {
+    if(!submit_direct(group, replacement, false, 1.0, 0.5, 0.5, 0.5)) {
         return fail("move_direct done latch replacement submit");
     }
     for(int i = 0; i < 5000 && group.status() != axis::GroupStatus::standby; ++i) {
@@ -683,7 +758,7 @@ int check_move_direct_relative()
     replacement.size = 2;
     replacement.value[0] = 1.0;
     replacement.value[1] = 1.0;
-    if(!group.submit_direct(replacement, true, 1.0, 0.5, 0.5, 0.5)) {
+    if(!submit_direct(group, replacement, true, 1.0, 0.5, 0.5, 0.5)) {
         return fail("move_direct_rel done latch replacement submit");
     }
     for(int i = 0; i < 5000 && group.status() != axis::GroupStatus::standby; ++i) {
@@ -718,7 +793,7 @@ int check_move_direct_non_coordinated()
     target.value[0] = 10.0;
     target.value[1] = 1.0;
 
-    const auto result = group.submit_direct(target, false, 1.0, 0.5, 0.5, 0.5);
+    const auto result = submit_direct(group, target, false, 1.0, 0.5, 0.5, 0.5);
     if(!result) {
         return fail("move_direct_nc submit");
     }
@@ -765,21 +840,33 @@ int check_group_set_override_basic()
     fb::FbGroupSetOverride ovr;
     ovr.group_ref = &group;
     ovr.vel_factor = 0.5;
-    ovr.execute = true;
+    ovr.acc_factor = 0.25;
+    ovr.jerk_factor = 0.125;
+    ovr.enable = true;
     ovr.call();
 
-    if(!ovr.outputs.done || ovr.outputs.error) {
-        return fail("group_override done");
+    if(!ovr.enabled || ovr.busy || ovr.error) {
+        return fail("group_override enabled");
     }
-    if(!near(group.group_override(), 0.5, 1e-12)) {
-        return fail("group_override value");
+    if(!near(group.group_override(), 0.5, 1e-12) ||
+       !near(group.group_acc_override(), 0.25, 1e-12) ||
+       !near(group.group_jerk_override(), 0.125, 1e-12)) {
+        return fail("group_override factors");
+    }
+
+    ovr.enable = false;
+    ovr.vel_factor = 0.75;
+    ovr.call();
+    if(ovr.enabled || ovr.busy || ovr.error ||
+       !near(group.group_override(), 0.5, 1e-12)) {
+        return fail("group_override disabled holds last value");
     }
 
     std::printf("  PASS group_set_override_basic\n");
     return 0;
 }
 
-int check_group_override_rejects_invalid()
+int check_group_override_clamps_inputs()
 {
     axis::AxisModel axes[2];
     axis::AxisGroup group;
@@ -788,24 +875,18 @@ int check_group_override_rejects_invalid()
     fb::FbGroupSetOverride ovr;
     ovr.group_ref = &group;
     ovr.vel_factor = 1.5;
-    ovr.execute = true;
+    ovr.acc_factor = -0.1;
+    ovr.jerk_factor = 2.0;
+    ovr.enable = true;
     ovr.call();
-    if(!reports_error(ovr.outputs, rt::ErrorCode::invalid_argument) ||
-       ovr.outputs.command_accepted) {
-        return fail("group_override rejects >1");
+    if(!ovr.enabled || ovr.error ||
+       !near(group.group_override(), 1.0, 1e-12) ||
+       !near(group.group_acc_override(), 0.0, 1e-12) ||
+       !near(group.group_jerk_override(), 1.0, 1e-12)) {
+        return fail("group_override clamps to valid range");
     }
 
-    ovr.execute = false;
-    ovr.call();
-    ovr.vel_factor = -0.1;
-    ovr.execute = true;
-    ovr.call();
-    if(!reports_error(ovr.outputs, rt::ErrorCode::invalid_argument) ||
-       ovr.outputs.command_accepted) {
-        return fail("group_override rejects negative");
-    }
-
-    std::printf("  PASS group_override_rejects_invalid\n");
+    std::printf("  PASS group_override_clamps_inputs\n");
     return 0;
 }
 
@@ -1187,10 +1268,10 @@ int check_management_fbs_reject_null_group()
     }
 
     fb::FbGroupSetOverride ovr;
-    ovr.execute = true;
+    ovr.enable = true;
     ovr.call();
-    if(!reports_error(ovr.outputs, rt::ErrorCode::invalid_argument) ||
-       ovr.outputs.command_accepted) {
+    if(!ovr.error || ovr.error_id != rt::ErrorCode::invalid_argument ||
+       ovr.enabled || ovr.busy) {
         return fail("null group override error");
     }
 
@@ -1469,6 +1550,27 @@ int check_interrupted_rejects_buffered()
 
 // --- FbGroupReadStatus interrupted ---
 
+int check_read_status_group_homing()
+{
+    axis::AxisModel axes[2];
+    axis::AxisGroup group;
+    init_group(group, axes, 2);
+    fb::FbGroupHome home;
+    home.group_ref = &group;
+    home.position.size = 2;
+    home.position.value[0] = 1.0;
+    home.position.value[1] = 2.0;
+    home.execute = true;
+    home.call();
+    fb::FbGroupReadStatus status;
+    status.group_ref = &group;
+    status.enable = true;
+    status.call();
+    if(!status.valid || !status.group_homing || status.standby)
+        return fail("read_status_group_homing");
+    return 0;
+}
+
 int check_read_status_interrupted()
 {
     axis::AxisModel axes[2];
@@ -1517,6 +1619,93 @@ int check_read_status_interrupted()
     return 0;
 }
 
+int check_direct_native_inputs()
+{
+    axis::AxisModel axes[3];
+    axis::AxisGroup group;
+    init_group(group, axes, 3);
+    if(group.set_workpiece_frame(10.0, 0.0, 0.0, 0.0) != rt::ErrorCode::ok) {
+        return fail("direct native: frame setup");
+    }
+    fb::FbMoveDirectAbsolute first;
+    first.group_ref = &group;
+    first.position.size = 3;
+    first.position.value[0] = 1.0;
+    first.coord_system = axis::CoordSystem::pcs;
+    first.velocity = 1.0;
+    first.acceleration = 0.5;
+    first.deceleration = 0.5;
+    first.jerk = 0.5;
+    first.execute = true;
+    first.call();
+    fb::FbMoveDirectRelative second;
+    second.group_ref = &group;
+    second.distance.size = 3;
+    second.distance.value[1] = 2.0;
+    second.buffer_mode = axis::BufferMode::buffered;
+    second.velocity = 1.0;
+    second.acceleration = 0.5;
+    second.deceleration = 0.5;
+    second.jerk = 0.5;
+    second.execute = true;
+    second.call();
+    if(first.outputs.error || second.outputs.error || !second.outputs.busy ||
+       second.outputs.active) {
+        return fail("direct native: coordinate and buffered acceptance");
+    }
+    for(int i = 0; i < 1000 && !second.outputs.done; ++i) {
+        group.cycle();
+        for(auto &axis : axes) axis.cycle();
+        first.call();
+        second.call();
+    }
+    if(!first.outputs.done || !second.outputs.done ||
+       !near(axes[0].snapshot().command_position, 11.0, 1e-9) ||
+       !near(axes[1].snapshot().command_position, 2.0, 1e-9)) {
+        return fail("direct native: queued execution and PCS conversion");
+    }
+
+    axis::GroupCommand predecessor{};
+    predecessor.target.size = 3;
+    predecessor.target.value[0] = 20.0;
+    predecessor.velocity = 1.0;
+    predecessor.acceleration = 0.5;
+    predecessor.deceleration = 0.5;
+    predecessor.jerk = 0.5;
+    if(!group.submit_linear(predecessor)) return fail("direct native: blend predecessor");
+    group.cycle();
+    for(auto &axis : axes) axis.cycle();
+    axis::GroupCommand blended{};
+    blended.target.size = 3;
+    blended.target.value[0] = 20.0;
+    blended.target.value[1] = 10.0;
+    blended.velocity = 1.0;
+    blended.acceleration = 0.5;
+    blended.deceleration = 0.5;
+    blended.jerk = 0.5;
+    blended.buffer_mode = axis::BufferMode::blending_low;
+    blended.transition_mode = axis::TransitionMode::max_corner_deviation;
+    blended.transition_velocity = 0.5;
+    blended.transition_parameter = 0.5;
+    const auto accepted = group.submit_direct(blended);
+    if(!accepted || !group.direct_command_busy(accepted.value())) {
+        return fail("direct native: blending enters lookahead");
+    }
+    for(int i = 0; i < 1000 && !group.direct_command_done(accepted.value()); ++i) {
+        group.cycle();
+        for(auto &axis : axes) axis.cycle();
+    }
+    if(!group.direct_command_done(accepted.value())) {
+        return fail("direct native: blended lifecycle");
+    }
+    blended.buffer_mode = axis::BufferMode::buffered;
+    if(group.submit_direct(blended).error() != rt::ErrorCode::unsupported) {
+        return fail("direct native: unsupported transition matrix");
+    }
+    std::printf("  PASS direct_native_inputs\n");
+    return 0;
+}
+
 } // anonymous namespace
 
 int main()
@@ -1524,7 +1713,8 @@ int main()
     std::printf("Part 4 management tests\n");
     int failures = 0;
     failures += check_group_home_basic();
-    failures += check_group_home_rejects_moving();
+    failures += check_group_home_aborts_moving();
+    failures += check_group_home_buffered();
     failures += check_group_home_rejects_standalone_member();
     failures += check_move_direct_rejects_pending_superimposed_member();
     failures += check_coordinated_motion_rejects_active_direct();
@@ -1535,7 +1725,7 @@ int main()
     failures += check_move_direct_relative();
     failures += check_move_direct_non_coordinated();
     failures += check_group_set_override_basic();
-    failures += check_group_override_rejects_invalid();
+    failures += check_group_override_clamps_inputs();
     failures += check_group_override_realtime_replan();
     failures += check_group_override_factor_zero_equivalent();
     failures += check_interrupt_continue_basic();
@@ -1547,7 +1737,9 @@ int main()
     failures += check_interrupt_reports_group_errorstop();
     failures += check_interrupted_accepts_aborting();
     failures += check_interrupted_rejects_buffered();
+    failures += check_read_status_group_homing();
     failures += check_read_status_interrupted();
+    failures += check_direct_native_inputs();
     std::printf("---\n%d failures\n", failures);
     return failures;
 }

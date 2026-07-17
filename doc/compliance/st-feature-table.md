@@ -27,7 +27,7 @@ L 系列只在以下条件同时成立时完成：
 | L1b3 | CHAR/STRING/日期时间类型 | implemented | `plcopen_core_st_l1b3_tests`；[矩阵](st-l1b3-semantics.md) |
 | L2a | AXIS_REF + 首批十个单轴 MC 绑定 | implemented（阶段切片） | `plcopen_core_st_l2a_tests`；不代表 L2 闭合 |
 | L2b | 用户 POU、参数、作用域、EN/ENO | implemented | `plcopen_core_st_l2b_tests`；[矩阵](st-l2b-semantics.md) |
-| L2c / Bind Complete | GROUP_REF + basic/Part1/Part4/Part5 全量绑定 | pending | [矩阵](st-l2c-semantics.md) |
+| L2c / Bind Complete | GROUP_REF + basic/Part1/Part4/Part5 全量绑定 | implemented | `plcopen_core_st_l2c_tests`；[矩阵](st-l2c-semantics.md) |
 | L3 | 定位变量、进程映像、RETAIN/PERSISTENT、force | pending | [矩阵](st-l3-semantics.md) |
 | L4a-d | 标准函数与 FB 闭合集 | pending | [矩阵](st-l4-semantics.md) |
 | L5 | 配置、资源、多任务、看门狗与恢复 | pending | [矩阵](st-l5-semantics.md) |
@@ -39,17 +39,17 @@ L 系列只在以下条件同时成立时完成：
 | 集合 | 当前证据 | 未闭合项 |
 |------|----------|----------|
 | grammar | L0 parser/黄金测试、L1b1/L1b2 TYPE、L1b3 字面量、L2b 用户 POU | L3/L5/L6 文法 pending |
-| types | L0/L1a、ENUM/SUBRANGE、ARRAY/STRUCT、字符/字符串/日期、AXIS_REF | GROUP_REF pending |
+| types | L0/L1a、ENUM/SUBRANGE、ARRAY/STRUCT、字符/字符串/日期、AXIS_REF/GROUP_REF 与 49 个公开绑定类型 | L3-L7 类型 pending |
 | operators | L0/L1a、枚举/子范围、聚合访问、字符串比较/日期算术 | L4 标准函数 pending |
 | conversions | `st-l1a-conversions.yaml` 210 格、枚举/字符显式转换 | 无 L1 pending |
-| pous | 内建 FB 调用机制；用户 FUNCTION/FB/PROGRAM、参数与 EN/ENO | L2c 标准 FB 完整绑定 pending |
+| pous | 内建 FB 调用机制；用户 FUNCTION/FB/PROGRAM、参数与 EN/ENO；134 个标准 FB 完整绑定 | L5/L6 执行模型 pending |
 | storage | 静态变量/实例区 | 映像、RETAIN/PERSISTENT、force、快照 pending |
 | tasks | 无 | L5 全部 pending |
 | sfc_qualifiers | 无 | N/S/R/L/D/P/SD/DS/SL 全部 pending |
 | functions | L1a 转换函数不计 L4 标准函数闭合 | L4 固定函数表全部 pending |
-| fbs | basic 10；Part1/2 首批 10 绑定 | Part1/2 余 35、Part4 68、Part5 11 pending |
-| pins | Part1/2 事实源与首批 10 binder 校验 | 完整 45/68/11 引脚 binder pending |
-| diagnostics | 基础集、range/string/date/alias fault 与稳定拒绝诊断 | L2c-L7 新稳定码与拒绝测试 pending |
+| fbs | basic 10 + Part1/2 45 + Part4 68 + Part5 11 = 134，全量已绑定 | L4d 标准函数/FB 总终验 pending |
+| pins | 1476/1476 pin 显式 authority、生成、注册与 native adapter 闭合 | 无 L2c pending |
+| diagnostics | 基础集、range/string/date/alias/binding fault 与稳定拒绝诊断 | L3-L7 新稳定码与拒绝测试 pending |
 
 ## 4. 排除项纪律
 

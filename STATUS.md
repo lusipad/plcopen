@@ -25,6 +25,9 @@ Halt/Wait 门面（KB-078）已交付，达到 68/68 有同名门面；C4 Part 1
 语义清零（KB-079）已交付，D-01～D-20 全部关闭；C5 Part 5 标准合同
 （KB-080）已交付，11/11 标准 FB 与 45 B + 102 E 软件声明闭合；C6
 能力对等验收（KB-081）已完成，核心能力逐项登记且不保留旧软件兼容层。
+ST 语言层随后完成 L1b1/L1b2/L1b3、L2b 与 L2c Bind Complete：
+`GROUP_REF`、basic 10 + Part 1/2 45 + Part 4 68 + Part 5 11 共 134 个 FB、
+1476 个 pin 已由显式 authority 生成并全部接入 native adapter，未解析项为 0。
 Feetech 4.8 未核，不进真机。
 商用门板 P#8 的 STO/SS1 集成责任与宣传边界已锁定，但安全实现/认证未解锁。
 P#5 分支覆盖门、P#2 轨迹精度软件证据和 P#7 文档主体也已关闭；八项硬指标
@@ -37,7 +40,7 @@ P#5 分支覆盖门、P#2 轨迹精度软件证据和 P#7 文档主体也已关�
 | v0.x 旧线（fork 自 i5cnc） | 2026-04 → 07 | Part 1/2 FB 面 45/45 收口于 v0.11.0，冻结为回放/迁移基线 |
 | R0-R4 新核重写 | 2026-07 | `core/` L0-L7 阶梯 + kin/stream 支撑库全部落地，与旧线 DoD 对照 PASS |
 | Phase B 纯软件 | 2026-07 | 坐标系/kinematics/轨迹流/cam/前瞻 v2/adapters（KB-034~041） |
-| **← 现在** | 2026-07-17 | PLCopen / Beckhoff 软件收束 C0～C6 已完成；Part 1 核心语义、Part 4 名称面与 Part 5 软件合同均闭合，逐项对等状态见 [能力矩阵](doc/compliance/plcopen-beckhoff-parity-matrix.md) |
+| **← 现在** | 2026-07-17 | PLCopen / Beckhoff 软件收束 C0～C6 与 ST-L2c Bind Complete 已完成；134/134 FB、1476/1476 pins 闭合，逐项对等状态见 [能力矩阵](doc/compliance/plcopen-beckhoff-parity-matrix.md) |
 
 ## 能力面（新核，默认消费面 `plcopen::plcopen`）
 
@@ -56,12 +59,12 @@ sink 门面，生产层无反向引用）。分层健康度见
 | L7 adapters | **外圈消费面之一**（绕过 L6，只消费 axis/state.h + rt/error.h）：Servo 窄接口 + ServoSim + 桥接（ADR-0004）、CiA402 状态机、CSP/CSV/CST bumpless 骨架、Feetech STS 协议 0 固定容量总线/Servo/Sim（无 IO；动态单位与 Status 位未核，不进真机） | KB-040/074 |
 | 支撑库 kin | 阶梯旁支撑库（依赖 geom/rt，被 L5 消费）：kinematics 插件 ABI + 合规 harness、龙门/SCARA 解析解、球腕 6R（Pieper + 8 分支 seed 选支、奇异 margin） | KB-037/041 |
 | 支撑库 stream | 阶梯旁支撑库（依赖 otg/rt，被 L5 消费）：B9 轨迹流滤波（OTG 在线重解、断流看门狗、solve_fixed_time rendezvous 跟踪律）、多关节聚合 | KB-035 |
-| st 语言层（批次 ST-L0+ST-L1a+ST-L2a） | **外圈消费面之一**（与 L7 adapters 平行、居 L6 之上，纯 sink：消费 fb/basic.h、fb/motion.h 与 rt/error.h，生产层无反向引用）。IEC 61131-3 ST：容错前端 + 确定性字节码 VM、16 标量类型与转换矩阵、AXIS_REF 宿主绑定、首批十个单轴 MC_* ST 门面；PinTable 由 Part 1 B3 YAML 生成。未承载引脚语义与 BufferMode 3/4/6 保持显式边界，不宣称完整合规 | KB-069/070/071 |
+| st 语言层（ST-L0/L1a/L1b/L2b/L2c） | **外圈消费面之一**（与 L7 adapters 平行、居 L6 之上，纯 sink）。IEC 61131-3 ST：容错前端、确定性字节码 VM、标量/枚举/子范围/聚合/字符串日期类型、用户 POU 与 134 个标准 FB 完整绑定；49 个公开绑定类型、AXIS/GROUP/序列/对象 typed registry 均只向 ST 暴露 1-based handle。L3-L7 仍 pending，不宣称完整 IEC 平台或 PLCopen 官方认证 | KB-069/070/071；[L 系列总账](doc/planning/l-series-work-breakdown.md) |
 | 工具面 | pyplcopen（单轴/流/PoseArmSim，三平台 wheel 远端绿，PyPI 发布作业已备待 publisher 注册，CycleConfig SI 换算）、18 份回放黄金语料、28 关节 @1kHz 预算基准 + 笛卡尔 IK 预算门、参考 executor demo（canonical `planning → committed trajectory → RT` 双域，ADR-0007，TSAN 零报告）、周期级 trace、**文档站已上线**（http://lusipad.com/plcopen/ ）、Conan recipe（vcpkg port 未发布，根目录 `vcpkg.json` 仅为 port 清单草稿）、ErrorCode 诊断文本 | — |
 
 ## 质量门禁现状
 
-- 测试：71 项 CTest（新增 Part 5 C5 专项；含商用精度、状态转换矩阵、st L2a、P4-B1/P4-B2/P4-B3/C3 与 Feetech 专项/fuzz）全绿。P#2 聚合门实测 Bezier 稳速波动 0.0775%、圆弧约 7.6e-12%、cam 相位 0 拍、blending 公差利用率 100%。本批 Windows line coverage **89.20%（36968/41443）**，高于 50% 门槛；零分配守卫和延迟基准由未插桩 CTest 强制，不进入动态插桩重跑。独立 WSL 全 `core/` line **92.9%（15941/17151）**、固定生产运动栈 branch **85.0%（7111/8368）** 的既有口径保持。P#7 五页指南与运维手册已接入文档站，`mkdocs build --strict` 通过。精度总账见[商用证据](doc/compliance/commercial-gate-evidence.md)，覆盖口径见[分支覆盖基线](doc/compliance/branch-coverage-baseline.md)
+- 测试：Windows Debug 与 WSL/GCC Release 的已实现层 81 项 CTest 均全绿（明确排除 L3-L7 五个未来 RED 合同目标）；含 ST L0-L2c、Part 1/4/5、商用精度、状态转换、零分配与 fuzz smoke。本批另有通用 ST 与 L2b 两路 100,000 次 fuzz 全绿。P#2 聚合门实测 Bezier 稳速波动 0.0775%、圆弧约 7.6e-12%、cam 相位 0 拍、blending 公差利用率 100%。既有 Windows line coverage **89.20%（36968/41443）**，高于 50% 门槛；零分配守卫和延迟基准由未插桩 CTest 强制，不进入动态插桩重跑。独立 WSL 全 `core/` line **92.9%（15941/17151）**、固定生产运动栈 branch **85.0%（7111/8368）** 的既有口径保持。P#7 五页指南与运维手册已接入文档站，`mkdocs build --strict` 通过。精度总账见[商用证据](doc/compliance/commercial-gate-evidence.md)，覆盖口径见[分支覆盖基线](doc/compliance/branch-coverage-baseline.md)
 - 回放：18 语料逐周期比对；声明变更零例外流程运行中
 - 分层：2026-07-12 include 图审计 **0 违规**（L0-L4 零 PLCopen 语义引用、无循环依赖、L4 不引 L3），见 [架构审查报告](doc/design/architecture-review-2026-07.md)
 - RT：静态扫描 27 文件（含 st vm/bind 与 Feetech adapter）+ 冻结窗口分配断言；DoD §5.3 的周期耗时对比通过（新核 = 旧线 9.3%）；分配 soak 以周期等效口径关闭（25.92 亿周期零分配，2026-07-11），墙钟 72h/抖动证据归 B7 真机报告

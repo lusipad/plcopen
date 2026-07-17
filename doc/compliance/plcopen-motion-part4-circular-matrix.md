@@ -1,6 +1,6 @@
 # PLCopen Motion Control Part 4 圆弧运动矩阵
 
-> 状态：**已批准（2026-07-05，维护者）；v1 已实现（KB-030）**。本文件是 Phase A3
+> 状态：**已批准（2026-07-05，维护者）；v1 与 14-pin 原生扩展已实现**。本文件是 Phase A3
 > （`MC_MoveCircularAbsolute` / `MC_MoveCircularRelative`）的验收规格
 > （normative），实现与验收测试以本矩阵为准。验收证据：
 > `plcopen_core_a3_circular_tests` + 回放场景 `core-group-circular`。
@@ -22,8 +22,10 @@
 | 圆弧定义模式 | 仅 `mcBorder`（起点-辅助点-终点三点过弧）；`mcCenter` / `mcRadius` 显式 `unsupported` | L2 `make_arc` 即三点构造；CENTER 的圆心一致性校验与 RADIUS 的双解选择留到 v2 |
 | 坐标系 | 仅 ACS（沿用 `KB-012` 口径），前两轴张成圆弧平面，其余轴线性跟随路径参数 | 与 linear 基线一致；MCS/PCS 属 Phase B1 |
 | 轴数 | 2-8 轴（≥2；第 3 轴起线性跟随） | 与 linear 的组语义一致 |
-| BufferMode | Aborting / Buffered；blending 显式拒绝 | 与 linear 基线一致，几何 blending 属 A4 |
-| Transition / Orientation | 仅零过渡 + `mcLinear`（沿用 linear 的拒绝矩阵） | 同上 |
+| BufferMode | Aborting / Buffered；tangent line→arc 支持 `blending_low/high` | 非切向连接显式降级并可查询 |
+| Transition | `mcTMNone` 或 blending 下 `mcTMMaxCornerDeviation`；`TransitionVelocity=0` 自动，正值限制连接结点速度 | 几何上界与速度上界独立进入窗口规划器 |
+| Orientation | `joint_space`、`shortest_path`、`constant` | 后两者要求 6D pose 插件及 MCS/PCS；分别走最短测地和保持段起点 TCP 姿态 |
+| Tolerance | `0` 关闭额外验收；正有限值检查 aux 在圆弧参数上的高维线性跟随残差 | 独立几何输入，不复用 `TransitionParameter` |
 | PathChoice | `mcCW` / `mcCCW` 输入公开；BORDER 模式下由三点唯一确定弧向，与输入不一致时显式报错 | 未定义组合不静默猜测 |
 
 ## 退化几何显式语义（A3 DoD / T8）
@@ -40,7 +42,7 @@
 
 | 功能块 | 必需输入 | 必需输出 | v1 支持边界 |
 |---|---|---|---|
-| `MC_MoveCircularAbsolute` | AxesGroup, Execute, CircMode, AuxPoint, EndPoint, PathChoice, Velocity, Acceleration, Deceleration, Jerk, CoordSystem, BufferMode, Transition*, OrientationMode | 与 linear FB 相同合同（Done/Busy/Active/CommandAccepted/CommandAborted/Error/ErrorID/CommandID） | BORDER、ACS、2-8 轴、Aborting/Buffered、零过渡 |
+| `MC_MoveCircularAbsolute` | AxesGroup, Execute, CircMode, AuxPoint, EndPoint, PathChoice, Velocity, Acceleration, Deceleration, Jerk, CoordSystem, BufferMode, Tolerance, Transition*, OrientationMode | 与 linear FB 相同合同（Done/Busy/Active/CommandAccepted/CommandAborted/Error/ErrorID/CommandID） | BORDER；joint-space 2-8 轴；pose 模式 6 轴 MCS/PCS；显式组合矩阵 |
 | `MC_MoveCircularRelative` | 同上，AuxPoint/EndPoint 为相对分量 | 同上 | 相对分量按命令触发时的承诺终点解析（与 linear relative 一致） |
 
 ## 跨切语义（提案）
@@ -57,6 +59,13 @@
 `AxisGroup::submit_circular` + `FbMoveCircularAbsolute/Relative`（`core/axis/group.h`、
 `core/fb/motion.h`）。组 cycle 路径按 path kind 采样：circular 以平面弧长为路径参数，
 linear 分支保持不变（既有回放语料字节级一致）。
+
+14-pin 原生扩展（2026-07-17）：`Tolerance`、`TransitionMode`、
+`TransitionVelocity`、`TransitionParameter`、`OrientationMode` 全部进入
+`GroupCommand`。正 `Tolerance` 以 aux 扫角占总扫角的比例为参数，独立
+验收第 3 维及更高成员（笛卡尔圆弧验收 z）的线性跟随残差；负值或非有限
+值拒绝。非法姿态枚举拒绝，合法但缺 pose 插件、坐标系或圆弧 blending
+组合未实现时显式 `unsupported`。
 
 ---
 

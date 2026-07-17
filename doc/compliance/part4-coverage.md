@@ -31,16 +31,16 @@
 | 9 | MC_GroupReadCommandPosition | **由 v2 入口承接** | `FbGroupReadPosition(Source=command)` (`core/fb/group.h`) | 同上 |
 | 10 | MC_GroupReadError | **已承接** | `FbGroupReadError` (`core/fb/group.h`) | 独立回读组 ErrorStop 锁存；记录细分未承载 |
 | 11 | MC_GroupStop | **已承接** | `FbGroupStop` (`core/fb/motion.h`) | |
-| 12 | MC_GroupHome | **已承接** | `FbGroupHome` (`core/fb/management.h`) | 并行回零全成员 |
+| 12 | MC_GroupHome | **已承接** | `FbGroupHome` (`core/fb/management.h`) | Position/CoordSystem 目标；Aborting/Buffered 真实组队列；GroupHoming 周期 |
 
 ### 组控制 FB
 
 | # | 标准 FB | 状态 | 实现 | 说明 |
 |---|---------|------|------|------|
-| 13 | MC_GroupSetOverride | **已承接** | `FbGroupSetOverride` (`core/fb/management.h`) | VelFactor ∈ [0,1]，factor=0 驻留 |
+| 13 | MC_GroupSetOverride | **已承接** | `FbGroupSetOverride` (`core/fb/management.h`) | Enable/Enabled 电平合同；Vel/Acc/Jerk 三因子夹紧到 `[0,1]`，VelFactor=0 驻留 |
 | 14 | MC_GroupInterrupt | **已承接** | `FbGroupInterrupt` (`core/fb/management.h`) | 保留暂停点 |
 | 15 | MC_GroupContinue | **已承接** | `FbGroupContinue` (`core/fb/management.h`) | 从暂停点重启 |
-| 16 | MC_GroupHalt | **已承接** | `FbGroupHalt` (`core/fb/management.h`) | 原路径受控到零回 standby，新 Aborting 运动可接管 |
+| 16 | MC_GroupHalt | **已承接** | `FbGroupHalt` (`core/fb/management.h`) | Aborting 原路径受控到零；Buffered 队列屏障；新 Aborting 运动可接管 |
 
 ### 协调运动 FB
 
@@ -64,10 +64,10 @@
 
 | # | 标准 FB | 状态 | 实现 | 说明 |
 |---|---------|------|------|------|
-| 25 | MC_SetKinTransform | **已承接** | `FbSetKinTransform` (`core/fb/path_table.h`) | 运动学插件安装 |
-| 26 | MC_ReadKinTransform | **已承接** | `FbReadKinTransform` (`core/fb/path_table.h`) | vendor ref 适配为插件非拥有引用 |
-| 27 | MC_SetCartesianTransform | **已承接** | `FbSetCartesianTransform` (`core/fb/path_table.h`) | 固定 6D RPY immediate 子集 |
-| 28 | MC_ReadCartesianTransform | **已承接** | `FbReadCartesianTransform` (`core/fb/path_table.h`) | 帧回读 |
+| 25 | MC_SetKinTransform | **已承接** | `FbSetKinTransform` (`core/fb/path_table.h`) | 运动学插件 immediate/queued 安装 |
+| 26 | MC_ReadKinTransform | **已承接** | `FbReadKinTransform` (`core/fb/path_table.h`) | tagged `KinTransformRef` 插件非拥有引用 |
+| 27 | MC_SetCartesianTransform | **已承接** | `FbSetCartesianTransform` (`core/fb/path_table.h`) | 六标量 6D RPY，CoordSystem 选择 PCS/TCS，支持 immediate/queued |
+| 28 | MC_ReadCartesianTransform | **已承接** | `FbReadCartesianTransform` (`core/fb/path_table.h`) | CoordSystem 选择 PCS/TCS 六标量 6D 帧回读 |
 
 ### 跟踪 FB
 

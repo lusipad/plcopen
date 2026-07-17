@@ -370,6 +370,33 @@ int check_mode_manager_bumpless()
     return 0;
 }
 
+int check_cst_setpoint_contract()
+{
+    axis::AxisModel axis;
+    axis.set_power(true);
+    axis::AxisCommand torque{};
+    torque.kind = axis::CommandKind::torque;
+    torque.value = -2.5;
+    torque.torque_ramp = 0.0;
+    torque.velocity = 4.0;
+    torque.acceleration = 3.0;
+    torque.deceleration = 2.0;
+    torque.jerk = 1.0;
+    torque.direction = axis::Direction::negative;
+    if(!axis.submit(torque)) return fail("CST command accepted");
+    const adapters::ServoSetpoints setpoints =
+        adapters::make_setpoints(axis.snapshot());
+    if(!setpoints.torque_mode || !near(setpoints.torque, -2.5, 1e-12) ||
+       !near(setpoints.torque_velocity_limit, 4.0, 1e-12) ||
+       !near(setpoints.torque_acceleration_limit, 3.0, 1e-12) ||
+       !near(setpoints.torque_deceleration_limit, 2.0, 1e-12) ||
+       !near(setpoints.torque_jerk_limit, 1.0, 1e-12) ||
+       setpoints.torque_direction != axis::Direction::negative) {
+        return fail("CST setpoint carries torque constraints to adapter");
+    }
+    return 0;
+}
+
 } // namespace
 
 int main()
@@ -377,7 +404,8 @@ int main()
     if(check_bridge_equivalence() != 0 || check_cia402_ladder() != 0 ||
        check_cia402_power_down_paths() != 0 ||
        check_cia402_rejections_and_reset_gates() != 0 ||
-       check_mode_manager_bumpless() != 0) {
+       check_mode_manager_bumpless() != 0 ||
+       check_cst_setpoint_contract() != 0) {
         return 1;
     }
     std::printf("PASS adapters tests\n");

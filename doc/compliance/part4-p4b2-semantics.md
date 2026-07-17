@@ -34,9 +34,9 @@ P4-B2 分两个可独立交付的纵向切片：
 | 工具 | `MC_GroupWriteToolData`、`MC_GroupReadToolData`、`MC_GroupSelectTool`、`MC_GroupReadTool` | ToolNumber、ToolData、ToolSource 与标准生命周期输出 |
 | 载荷 | `MC_GroupWritePayloadData`、`MC_GroupReadPayloadData`、`MC_GroupSelectPayload`、`MC_GroupReadPayload` | PayloadNumber、PayloadData、PayloadSource 与标准生命周期输出 |
 
-E 级 `VelOverride`、`AccOverride`、Jog 最大线性/角距离、Tool Write
-`ExecutionMode`、Busy/CommandAccepted/CommandID 等字段先在 C++ 门面保留或
-显式标记不支持，不作为本批“B 级功能完成”的依据。任何未承载 E 级分支继续
+E 级 `VelOverride`、`AccOverride` 与 GroupJog 最大线性/角距离已在 native
+门面承载；Tool Write `ExecutionMode`、Busy/CommandAccepted/CommandID 等其余字段仍
+显式标记不支持。任何未承载 E 级分支继续
 在 Part 4 声明表标否，不能因同名门面存在而宣称合规。
 
 ## 3. 数据模型与工具/载荷决策
@@ -73,7 +73,8 @@ E 级 `VelOverride`、`AccOverride`、Jog 最大线性/角距离、Tool Write
 | 软限位 | 每周期候选 ACS 设定先过现有成员软限位；将触限坐标目标速度降为 0 并受控停车，FB 报 `out_of_range` | 点动不能绕过唯一软限位状态 |
 | 抢占 | Jog 取得控制权时以 Aborting 语义接管普通组运动；之后任何非 Jog aborting 命令接管 Jog，原 FB 锁存 CommandAborted；Buffered/Blending 在 Jog active 时拒绝 | 持续命令没有自然终点，排队语义无定义 |
 | 两个 Jog FB 竞争 | 后一次成功 Enable 的 Jog 以 Aborting 接管前一个，前者 CommandAborted；同一 FB 每周期更新方向不产生新 CommandID | 单一写者、可预测接管，不让两个教导源叠加 |
-| override | P4-B2 不叠加 `MC_GroupSetOverride`；只消费 Jog 自身方向幅值，E 级 Vel/AccOverride 暂不支持 | 标准把全局 override 是否影响 Jog 留给供应商；避免重复缩放 |
+| override | `VelOverride`、`AccOverride` 均为 `[0,1]`；前者缩放目标速度，后者缩放加速与减速包络，逐周期更新。它们不叠加 `MC_GroupSetOverride` | 输入本身就是 Jog 专用倍率，避免与组路径倍率形成双真值 |
+| 最大距离 | `MC_GroupJog` 的正值 MaxLinearDistance/MaxAngularDistance 从本次 Enable 的 TCP 起点计量；线域用平移范数，角域用相对旋转 axis-angle，并把候选姿态精确裁到边界后停止对应域。0 禁用。ACS 非零距离上限、无 pose 插件的角上限显式 `unsupported` | 保证边界可观察且不把轴距离冒充 TCP 线/角距离 |
 | 停止/禁用/错误 | GroupStop 以其输入包络受控接管 Jog；GroupDisable 立即撤销会话；成员掉电/ErrorStop 使组 ErrorStop 且 Jog Error | 复用既有组生命周期与安全边界 |
 
 ## 5. 退化与拒绝规则
@@ -89,6 +90,8 @@ E 级 `VelOverride`、`AccOverride`、Jog 最大线性/角距离、Tool Write
 | GroupJog 使用 WCS/FCS/TCS；GroupJogVector 使用 ACS/WCS/FCS/TCS | `unsupported` |
 | MCS/PCS Jog 无对应 translational/pose kinematics | `precondition_failed` |
 | Direction 含 NaN/Inf，或 Dynamics 不完整/非法 | `invalid_argument` / `precondition_failed`，不产生运动 |
+| VelOverride/AccOverride 非有限或不在 `[0,1]`；距离非有限或为负 | `invalid_argument`，不取得控制权 |
+| ACS 使用非零最大距离；平移插件使用 MaxAngularDistance | `unsupported`，不猜测线/角域 |
 | Direction 全零或所有按键均未按/互相冲突 | 非错误；Enabled=true、Active=false、组 Standby |
 | Jog active 时请求 Buffered/Blending 命令 | `unsupported`，Jog 不受扰动 |
 | 工具/载荷选择改变时已有命令在队列 | 已有命令继续使用各自提交快照；只有之后提交命令使用新选择 |

@@ -706,15 +706,17 @@ int check_group_to_axis_path_sync()
         return fail("group-to-axis setup");
     }
 
+    fb::PathDescription description;
+    description.count = 2;
+    description.waypoints[0].target.size = 2;
+    description.waypoints[1].target.size = 2;
+    description.waypoints[1].target.value[0] = 3.0;
+    description.waypoints[1].target.value[1] = 4.0;
     fb::PathTable path;
-    path.count = 2;
-    path.waypoints[0].target.size = 2;
-    path.waypoints[1].target.size = 2;
-    path.waypoints[1].target.value[0] = 3.0;
-    path.waypoints[1].target.value[1] = 4.0;
     fb::FbPathSelect select;
     select.group_ref = &group;
-    select.table = &path;
+    select.path_data = &path;
+    select.path_description = &description;
     select.execute = true;
     select.call();
     if(!select.outputs.done) return fail("group-to-axis path select");

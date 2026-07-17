@@ -274,6 +274,125 @@ int check_parameter_facades()
     return 0;
 }
 
+int check_parameter_management_lifecycle()
+{
+    axis::AxisModel axis;
+    axis::MotionLimits limits{};
+    limits.max_velocity = 10.0;
+    limits.max_acceleration = 10.0;
+    limits.max_deceleration = 10.0;
+    limits.max_jerk = 10.0;
+    if(axis.configure_limits(limits) != rt::ErrorCode::ok ||
+       axis.set_power(true) != rt::ErrorCode::ok) {
+        return fail("management setup");
+    }
+
+    fb::FbWriteParameter queued;
+    queued.axis_ref = &axis;
+    queued.parameter_number = axis::AxisParameter::max_velocity_appl;
+    queued.value = 20.0;
+    queued.execution_mode = axis::ExecutionMode::queued;
+    queued.execute = true;
+    queued.call();
+    if(!queued.busy || queued.done || queued.error ||
+       !near(axis.read_parameter(axis::AxisParameter::max_velocity_appl).value(), 10.0,
+             1e-12)) {
+        return fail("queued numeric write is busy before cycle");
+    }
+    axis.cycle();
+    queued.call();
+    if(queued.busy || !queued.done || queued.error ||
+       !near(axis.read_parameter(axis::AxisParameter::max_velocity_appl).value(), 20.0,
+             1e-12)) {
+        return fail("queued numeric write completes after cycle");
+    }
+
+    fb::FbWriteBoolParameter invalid;
+    invalid.axis_ref = &axis;
+    invalid.parameter_number = axis::AxisParameter::max_jerk_appl;
+    invalid.value = true;
+    invalid.execution_mode = axis::ExecutionMode::queued;
+    invalid.execute = true;
+    invalid.call();
+    if(!invalid.busy || invalid.done || invalid.error) {
+        return fail("queued bool rejection starts busy");
+    }
+    axis.cycle();
+    invalid.call();
+    if(invalid.busy || invalid.done || !invalid.error ||
+       invalid.error_id != rt::ErrorCode::unsupported) {
+        return fail("queued bool rejection reports execution error");
+    }
+
+    fb::FbWriteParameter invalid_mode;
+    invalid_mode.axis_ref = &axis;
+    invalid_mode.parameter_number = axis::AxisParameter::max_velocity_appl;
+    invalid_mode.value = 30.0;
+    invalid_mode.execution_mode = static_cast<axis::ExecutionMode>(2);
+    invalid_mode.execute = true;
+    invalid_mode.call();
+    if(!invalid_mode.error || invalid_mode.busy || invalid_mode.done ||
+       invalid_mode.error_id != rt::ErrorCode::unsupported ||
+       !near(axis.read_parameter(axis::AxisParameter::max_velocity_appl).value(), 20.0,
+             1e-12)) {
+        return fail("undefined management execution mode rejected");
+    }
+
+    axis::AxisCommand motion{};
+    motion.kind = axis::CommandKind::move_absolute;
+    motion.value = 2.0;
+    motion.velocity = 0.25;
+    motion.acceleration = 1.0;
+    motion.deceleration = 1.0;
+    motion.jerk = 1.0;
+    if(!axis.submit(motion)) {
+        return fail("queued set position motion setup");
+    }
+    fb::FbSetPosition set_position;
+    set_position.axis_ref = &axis;
+    set_position.position = 7.0;
+    set_position.execution_mode = axis::ExecutionMode::queued;
+    set_position.execute = true;
+    set_position.call();
+    axis.cycle();
+    set_position.call();
+    if(!set_position.outputs.busy || set_position.outputs.done ||
+       near(axis.snapshot().command_position, 7.0, 1e-12)) {
+        return fail("queued set position waits for motion");
+    }
+    for(int cycle = 0; cycle < 4000 && !set_position.outputs.done; ++cycle) {
+        axis.cycle();
+        set_position.call();
+    }
+    if(!set_position.outputs.done || set_position.outputs.busy ||
+       !near(axis.snapshot().command_position, 7.0, 1e-12)) {
+        return fail("queued set position completes after motion");
+    }
+
+    fb::FbWriteParameter full[axis::AxisModel::QueueCapacity + 1];
+    axis::AxisCommand hold = motion;
+    hold.kind = axis::CommandKind::move_velocity;
+    hold.value = 1.0;
+    if(!axis.submit(hold)) {
+        return fail("management queue capacity motion setup");
+    }
+    for(std::size_t i = 0; i < axis::AxisModel::QueueCapacity + 1; ++i) {
+        full[i].axis_ref = &axis;
+        full[i].parameter_number = axis::AxisParameter::max_acceleration_appl;
+        full[i].value = 11.0 + static_cast<double>(i);
+        full[i].execution_mode = axis::ExecutionMode::queued;
+        full[i].execute = true;
+        full[i].call();
+    }
+    if(!full[axis::AxisModel::QueueCapacity - 1].busy ||
+       !full[axis::AxisModel::QueueCapacity].error ||
+       full[axis::AxisModel::QueueCapacity].error_id != rt::ErrorCode::capacity_exceeded) {
+        return fail("management queue capacity rejection");
+    }
+
+    return 0;
+}
+
 int check_state_read_facades()
 {
     axis::AxisModel axis;
@@ -299,14 +418,15 @@ int check_state_read_facades()
     axis::AxisCommand torque{};
     torque.kind = axis::CommandKind::torque;
     torque.value = 1.25;
-    if(!axis.submit(torque)) {
+    if(axis.set_actual_feedback(3.0, 0.0, 0.0, 0.75) != rt::ErrorCode::ok ||
+       !axis.submit(torque) || !near(axis.command_torque(), 1.25, 1e-12)) {
         return fail("torque setup");
     }
     fb::FbReadActualTorque actual_torque;
     actual_torque.axis_ref = &axis;
     actual_torque.enable = true;
     actual_torque.call();
-    if(!actual_torque.valid || !near(actual_torque.value, 1.25, 1e-12)) {
+    if(!actual_torque.valid || !near(actual_torque.value, 0.75, 1e-12)) {
         return fail("read actual torque");
     }
 
@@ -343,7 +463,7 @@ int check_state_read_facades()
         return fail("read status continuous motion");
     }
 
-    axis.trigger_error();
+    axis.trigger_error(rt::ErrorCode::infeasible);
     status.call();
     if(!status.valid || !status.error_stop || status.continuous_motion) {
         return fail("read status error stop");
@@ -353,12 +473,14 @@ int check_state_read_facades()
     axis_error.axis_ref = &axis;
     axis_error.enable = true;
     axis_error.call();
-    if(!axis_error.valid || !axis_error.axis_error) {
+    if(!axis_error.valid || !axis_error.axis_error ||
+       axis_error.axis_error_id != rt::ErrorCode::infeasible) {
         return fail("read axis error");
     }
     axis.reset_error();
     axis_error.call();
-    if(!axis_error.valid || axis_error.axis_error) {
+    if(!axis_error.valid || axis_error.axis_error ||
+       axis_error.axis_error_id != rt::ErrorCode::ok) {
         return fail("read axis error clears");
     }
 
@@ -561,7 +683,7 @@ int check_fb_error_paths()
 int main()
 {
     if(check_parameter_registry() != 0 || check_numeric_parameter_write_contract() != 0 ||
-       check_parameter_facades() != 0 ||
+       check_parameter_facades() != 0 || check_parameter_management_lifecycle() != 0 ||
        check_state_read_facades() != 0 || check_set_position() != 0 ||
        check_fb_error_paths() != 0) {
         return 1;

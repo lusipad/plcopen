@@ -57,7 +57,8 @@
 
 - [x] ST-L1b1 枚举 + 子范围语义矩阵起草 → 待维护者批准（实现不在本批）
 - [ ] （批后）ST-L1b 实现：测试先行 → 门禁 → 锚点哈希/回放逐位
-- [ ] ST-L2 / L2c 随 [L 系列工作拆解](l-series-work-breakdown.md)推进
+- [x] ST-L2c / Bind Complete：134/134 FB、1476/1476 pins 全绑定，
+  strict generator、typed registry、逐周期等价与零分配门通过（2026-07-17）
 
 ## 4. Codex 线观察点（不动手，只核对）
 

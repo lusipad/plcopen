@@ -22,6 +22,8 @@ constexpr const char *to_string(ErrorCode code)
         return "precondition_failed: the object is not in the required state";
     case ErrorCode::unsupported:
         return "unsupported: this operation is not implemented";
+    case ErrorCode::bytecode_version_mismatch:
+        return "bytecode_version_mismatch: recompile the ST source for this runtime";
     }
     return "unknown error code";
 }

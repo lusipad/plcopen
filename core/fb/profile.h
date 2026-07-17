@@ -23,6 +23,7 @@ public:
     std::size_t segment_count = 0;
     double time_scale = 1.0;
     bool continuous_update = false;
+    axis::BufferMode buffer_mode = axis::BufferMode::aborting;
     bool execute = false;
     MotionOutputs outputs{};
 
@@ -181,7 +182,7 @@ private:
             command.jerk = segment.jerk;
             command.min_duration_cycles = scaled_duration(segment.duration_cycles);
             command.buffer_mode =
-                i == 0 ? axis::BufferMode::aborting : axis::BufferMode::buffered;
+                i == 0 ? buffer_mode : axis::BufferMode::buffered;
         }
         const rt::ErrorCode preflight =
             axis_ref->preflight_position_sequence(commands.data(), segment_count);
@@ -334,7 +335,7 @@ protected:
             command.min_duration_cycles =
                 final_segment ? 0 : scaled_duration(segment.duration_cycles);
             command.buffer_mode =
-                i == 0 ? axis::BufferMode::aborting : axis::BufferMode::buffered;
+                i == 0 ? buffer_mode : axis::BufferMode::buffered;
             const rt::Result<std::uint32_t> accepted = axis_ref->submit(command);
             if(!accepted) {
                 fail(accepted.error());

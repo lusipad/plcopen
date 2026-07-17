@@ -129,7 +129,7 @@ int check_dense_window()
 
     // Full-stop baseline: identical geometry executed leg by leg (a buffered
     // join is kinematically identical to sequential runs: rest at每个拐角).
-    Rig baseline;
+    static Rig baseline;
     int baseline_cycles = 0;
     for(int i = 0; i <= Zigzag::Corners; ++i) {
         if(!baseline.group.submit_linear(make_move(zig.target_x[i], zig.target_y[i]))) {
@@ -142,7 +142,7 @@ int check_dense_window()
         baseline_cycles += leg_cycles;
     }
 
-    Rig rig;
+    static Rig rig;
     rig.group.submit_linear(make_move(zig.target_x[0], zig.target_y[0]));
     for(int i = 0; i < 5; ++i) {
         rig.group.cycle();
@@ -413,7 +413,7 @@ axis::GroupCommand make_arc_blend(double sx, double sy, double cx, double cy,
 int check_line_arc_line_window()
 {
     // Baseline: same three legs with full stops.
-    Rig baseline;
+    static Rig baseline;
     int baseline_cycles = 0;
     {
         baseline.group.submit_linear(make_move(1.0, 0.0));
@@ -428,7 +428,7 @@ int check_line_arc_line_window()
         baseline_cycles += run_to_standstill(baseline.group);
     }
 
-    Rig rig;
+    static Rig rig;
     rig.group.submit_linear(make_move(1.0, 0.0));
     for(int i = 0; i < 5; ++i) {
         rig.group.cycle();
@@ -505,7 +505,7 @@ int check_line_arc_line_window()
 int check_arc_centripetal_clamp()
 {
     // Small radius: the whole arc segment is clamped to sqrt(a*R).
-    Rig rig;
+    static Rig rig;
     rig.group.submit_linear(make_move(1.0, 0.0));
     for(int i = 0; i < 5; ++i) {
         rig.group.cycle();
@@ -540,7 +540,7 @@ int check_arc_centripetal_clamp()
 int check_arc_window_boundaries()
 {
     // Non-tangent arc: degrades to a buffered full-stop join, reported.
-    Rig rig;
+    static Rig rig;
     rig.group.submit_linear(make_move(1.0, 0.0));
     for(int i = 0; i < 5; ++i) {
         rig.group.cycle();
@@ -562,8 +562,9 @@ int check_arc_window_boundaries()
         return fail("degraded arc chain finishes");
     }
 
-    // Tolerance-band transition on an arc is v3 scope: unsupported.
-    Rig rig2;
+    // A tangent line-to-arc node consumes both the transition-geometry
+    // contract and its independent transition-velocity cap.
+    static Rig rig2;
     rig2.group.submit_linear(make_move(1.0, 0.0));
     for(int i = 0; i < 3; ++i) {
         rig2.group.cycle();
@@ -571,21 +572,44 @@ int check_arc_window_boundaries()
     axis::GroupCommand with_tolerance = make_arc_blend(1.0, 0.0, 1.0, 1.0, 1.0, true);
     with_tolerance.transition_mode = axis::TransitionMode::max_corner_deviation;
     with_tolerance.transition_parameter = 0.05;
-    rt::Result<std::uint32_t> rejected = rig2.group.submit_circular(with_tolerance);
-    if(rejected || rejected.error() != rt::ErrorCode::unsupported) {
-        return fail("arc tolerance transition unsupported");
+    with_tolerance.transition_velocity = 0.007;
+    rt::Result<std::uint32_t> transitioned = rig2.group.submit_circular(with_tolerance);
+    if(!transitioned ||
+       rig2.group.last_blend_degraded_command() == transitioned.value()) {
+        return fail("arc transition fields accepted");
+    }
+    double entry_velocity = 0.0;
+    for(int i = 0; i < 100000 && rig2.group.status() != axis::GroupStatus::standby; ++i) {
+        rig2.group.cycle();
+        if(rig2.group.motion_state().active_command_id == transitioned.value() &&
+           rig2.group.path_derivative(false) > 0.0) {
+            entry_velocity = rig2.group.path_derivative(false);
+            break;
+        }
+    }
+    if(entry_velocity <= 0.0 ||
+       entry_velocity > with_tolerance.transition_velocity + 1e-12) {
+        return fail("arc transition velocity caps planner node");
+    }
+    if(run_to_standstill(rig2.group) < 0) {
+        return fail("arc transition fields complete");
     }
 
     // Seeding a window from an active circular command is a v2 boundary.
+    static Rig rig3;
+    rig3.group.submit_linear(make_move(1.0, 0.0));
+    for(int i = 0; i < 3; ++i) {
+        rig3.group.cycle();
+    }
     axis::GroupCommand plain_arc = make_arc_blend(1.0, 0.0, 1.0, 1.0, 1.0, true);
     plain_arc.buffer_mode = axis::BufferMode::aborting;
-    if(!rig2.group.submit_circular(plain_arc)) {
+    if(!rig3.group.submit_circular(plain_arc)) {
         return fail("active arc setup");
     }
     for(int i = 0; i < 5; ++i) {
-        rig2.group.cycle();
+        rig3.group.cycle();
     }
-    rejected = rig2.group.submit_linear(make_blend(3.0, 1.0));
+    rt::Result<std::uint32_t> rejected = rig3.group.submit_linear(make_blend(3.0, 1.0));
     if(rejected || rejected.error() != rt::ErrorCode::unsupported) {
         return fail("blend onto active circular unsupported");
     }

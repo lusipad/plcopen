@@ -12,6 +12,7 @@ enum class ErrorCode
     infeasible,
     precondition_failed,
     unsupported,
+    bytecode_version_mismatch,
 };
 
 template <typename T> class Result

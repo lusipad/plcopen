@@ -249,6 +249,33 @@ void unsupported_constructs()
     }
 }
 
+void binding_type_prefix()
+{
+    const st::CompileResult plain = compile(
+        "TYPE UserValue : (zero); END_TYPE "
+        "PROGRAM p VAR value : UserValue; END_VAR END_PROGRAM");
+    check(plain.ok, "plain source installs binding type prefix");
+    if(plain.ok) {
+        st::TypeId user = st::invalid_type_id;
+        check(plain.program.types.find("MC_BUFFER_MODE", user) ==
+                      st::TypeError::ok &&
+                  user == st::binding_type::mc_buffer_mode,
+              "binding enum TypeId is stable without binding syntax");
+        check(plain.program.types.find("UserValue", user) ==
+                      st::TypeError::ok &&
+                  user == st::first_load_type_id + st::binding_type::count,
+              "user TypeId follows the fixed binding prefix");
+    }
+
+    const st::CompileResult collision = compile(
+        "TYPE MC_BUFFER_MODE : (zero); END_TYPE "
+        "PROGRAM p VAR value : INT; END_VAR END_PROGRAM");
+    check(!collision.ok,
+          "user type cannot shadow canonical binding type");
+    check(has_code(collision, st::DiagCode::sema_duplicate_identifier),
+          "binding type collision has stable duplicate diagnostic");
+}
+
 // --- strict typing (matrix 1.6-1.11) -----------------------------------------
 
 void strict_typing()
@@ -513,7 +540,7 @@ void capacities()
     // FB instance cap (anchor L0-3.11-fb).
     {
         std::string vars;
-        for(int i = 0; i < 300; ++i) {
+        for(int i = 0; i < 1025; ++i) {
             vars += "t";
             vars += std::to_string(i);
             vars += " : R_TRIG;\n";
@@ -551,6 +578,7 @@ int main()
     lexical_forms();
     recovery_diagnostics();
     unsupported_constructs();
+    binding_type_prefix();
     strict_typing();
     statement_semantics();
     fb_surface();

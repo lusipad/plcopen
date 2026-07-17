@@ -454,8 +454,9 @@ int check_direct_motion_public_state()
     target.size = 2;
     target.value[0] = 1.0;
     target.value[1] = -2.0;
-    const rt::Result<std::uint32_t> submitted =
-        group.submit_direct(target, false, 1.0, 1.0, 1.0, 1.0);
+    axis::GroupCommand direct{};
+    direct.target = target;
+    const rt::Result<std::uint32_t> submitted = group.submit_direct(direct);
     if (!submitted)
         return fail("direct state: submit");
 
@@ -827,6 +828,65 @@ int check_group_sw_limits_transaction()
     return 0;
 }
 
+int check_queued_configuration_writes()
+{
+    axis::AxisModel axes[2];
+    axis::AxisGroup group;
+    for(auto &axis : axes) { axis.set_power(true); group.add_axis(axis); }
+    group.enable();
+    axis::GroupCommand move{};
+    move.target.size = 2;
+    move.target.value[0] = 2.0;
+    move.target.value[1] = 1.0;
+    if(!group.submit_linear(move)) return fail("queued config setup");
+
+    fb::FbGroupWriteParameter parameter;
+    parameter.group_ref = &group;
+    parameter.parameter = axis::GroupParameter::dynamics_mode;
+    parameter.value = static_cast<double>(axis::DynamicsMode::percentage);
+    parameter.execution_mode = axis::ExecutionMode::queued;
+    parameter.execute = true;
+    parameter.call();
+    if(!parameter.outputs.command_accepted || parameter.outputs.done)
+        return fail("queued parameter accepted");
+    for(int i = 0; i < 128 && !parameter.outputs.done; ++i) {
+        group.cycle();
+        for(auto &axis : axes) axis.cycle();
+        parameter.call();
+    }
+    if(!parameter.outputs.done ||
+       group.read_group_parameter(axis::GroupParameter::dynamics_mode).value() !=
+           static_cast<double>(axis::DynamicsMode::percentage))
+        return fail("queued parameter applied");
+
+    axis::GroupCommand second{};
+    second.target.size = 2;
+    second.target.value[0] = 1.0;
+    second.target.value[1] = 0.5;
+    second.velocity = 50.0;
+    second.acceleration = 50.0;
+    second.deceleration = 50.0;
+    second.jerk = 50.0;
+    if(!group.submit_linear(second)) return fail("queued limits setup");
+    fb::FbGroupWriteSWLimits limits;
+    limits.group_ref = &group;
+    limits.limit_values.count = 2;
+    limits.limit_values.value[0] = {-3.0, 3.0, true, true};
+    limits.limit_values.value[1] = {-4.0, 4.0, true, true};
+    limits.execution_mode = axis::ExecutionMode::queued;
+    limits.execute = true;
+    limits.call();
+    for(int i = 0; i < 128 && !limits.outputs.done; ++i) {
+        group.cycle();
+        for(auto &axis : axes) axis.cycle();
+        limits.call();
+    }
+    const auto read = group.group_sw_limits();
+    if(!limits.outputs.done || !read || read.value().value[1].maximum != 4.0)
+        return fail("queued limits applied");
+    return 0;
+}
+
 int check_group_sw_limits_read_lifecycle()
 {
     fb::FbGroupReadSWLimits read;
@@ -1002,6 +1062,7 @@ int main()
     failures += check_invalid_public_state_queries();
     failures += check_parameters_and_dynamics();
     failures += check_group_sw_limits_transaction();
+    failures += check_queued_configuration_writes();
     failures += check_group_sw_limits_read_lifecycle();
     failures += check_dynamics_partial_updates_and_capacity();
     failures += check_default_dynamics_and_invalid_limits();
