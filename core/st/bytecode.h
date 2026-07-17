@@ -23,6 +23,7 @@ namespace plcopen::core::st
 {
 
 inline constexpr std::uint32_t kBytecodeFormatVersion = 6;
+inline constexpr std::uint32_t kCanonicalManifestVersion = 2;
 
 // Every opcode executes in O(1); loops exist only as structured jumps, so
 // WCET = per-instruction bound x instruction budget (matrix 3.1/3.6).
@@ -385,6 +386,13 @@ struct SfcRunnerStorage
     bool action_suppressed = false;
 };
 
+struct DebugRuntimeStorage
+{
+    const SourceMapEntry *last_entry = nullptr;
+    InstructionId last_instruction_id{};
+    std::uint32_t mapping = 0;
+};
+
 struct Program
 {
     std::uint32_t format_version = kBytecodeFormatVersion;
@@ -576,11 +584,25 @@ struct Program
                ~std::size_t{7U};
     }
 
+    bool needs_debug_runtime_storage() const noexcept
+    {
+        return debug_mode == DebugMode::enabled;
+    }
+
+    std::size_t debug_runtime_storage_offset() const
+    {
+        return (sfc_storage_offset() + sfc_runtime_bytes + 7U) &
+               ~std::size_t{7U};
+    }
+
     // Load-time footprint contract (matrix 3.2): callers place instances in
     // statically owned buffers of at least this size, 8-byte aligned.
     std::size_t required_bytes() const
     {
-        std::size_t bytes = sfc_storage_offset() + sfc_runtime_bytes;
+        std::size_t bytes = debug_runtime_storage_offset();
+        if(needs_debug_runtime_storage()) {
+            bytes += sizeof(DebugRuntimeStorage);
+        }
         for(const Program &program : programs) {
             bytes = std::max(bytes, program.required_bytes());
         }
@@ -895,7 +917,7 @@ inline std::string Program::canonical_manifest() const
 {
     std::string result;
     result.append("L2BA", 4);
-    bytecode_detail::append_u32(result, 2U);
+    bytecode_detail::append_u32(result, kCanonicalManifestVersion);
     bytecode_detail::append_program(result, *this, true);
     return result;
 }

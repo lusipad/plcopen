@@ -21,8 +21,7 @@ T30-T40、[机器可读特性集](../compliance/st-feature-set.yml) 与各批次
   运算。
 - **L2a 阶段切片已交付**（KB-071）：AXIS_REF 与首批十个单轴 MC 绑定；
   这不是 L2-bind-complete。
-- **L1b1/L1b2/L1b3/L2b/L2c 已实现；L3/L4/L5/L6/L7 矩阵已批准、代码
-  pending**。批准只解决语义歧义，不提升实现状态。
+- **L1b1/L1b2/L1b3/L2b/L2c/L3/L4/L5/L6/L7 已实现；L∀ 已收口，feature-set pending=0，门禁已过**。
 - [特性闭合总账](../compliance/st-feature-table.md) 已建立；最终完成必须
   由集合相等且 `pending=0` 证明。
 
@@ -68,15 +67,15 @@ L4a 可在 L2b 完成后与 L3 并行；L4c 必须等待 L1b3；L5 等待 L3；L
 | L1b3 | CHAR/WCHAR、定长 STRING/WSTRING、DATE/TOD/DT | L1b1 | UTF-8/Unicode、容量、整数公历 oracle | implemented |
 | L2b | FUNCTION/FB/PROGRAM、作用域、copy-back、IN_OUT、EN/ENO | L1b1 | 多 POU 调用图、别名、fault copy-back、结构 fuzz | implemented |
 | L2c / Bind Complete | GROUP_REF + basic 10、P1/2 45、P4 68、P5 11 全绑定 | L1b1、L2b | FB/pin 集合相等、ST↔C++ 逐周期等价、旧形态拒绝 | implemented |
-| L3 | %I/%Q/%M、端序/重叠、双缓冲、RETAIN/PERSISTENT、force | L1b2、L2b | 映像 oracle、快照原子性、force/持久化矩阵 | approved / pending |
-| L4a | ANY 消解、数学/算术/选择/比较函数 | L2b | 固定函数表逐函数边界与集合相等 | approved / pending |
-| L4b | SHL/SHR/ROL/ROR 位串函数 | L4a | 宽度边界与类型拒绝全绿 | approved / pending |
-| L4c | 定长字符串函数 | L1b3、L4a | Unicode 位置/容量逐函数矩阵 | approved / pending |
-| L4d | 日期时间函数、宿主 UTC 注入、FB 闭合集终验 | L1b3、L2c、L4a-c | function/FB/pin pending=0 | approved / pending |
-| L5 | CONFIGURATION/RESOURCE、多周期/事件任务、看门狗与恢复 | L3、L2b | 调度 oracle、fault 隔离、reset/restart、运动域隔离 | approved / pending |
-| L6 | 文本 SFC、分支/汇合、N/S/R/L/D/P/SD/DS/SL | L2b、L5 | 九限定符逐扫描 oracle、不安全网络诊断 | approved / pending |
-| L7 | seqlock 监控、force、断点/单步/trace | L3、L5、L6 | 0 torn read、暂停隔离、发布零成本 | approved / pending |
-| L∀ | 特性集、诊断、fuzz、跨平台与 RT 总验 | 全部 | 十二集合相等、pending=0、全门禁绿 | pending |
+| L3 | %I/%Q/%M、端序/重叠、双缓冲、RETAIN/PERSISTENT、force | L1b2、L2b | 映像 oracle、快照原子性、force/持久化矩阵 | implemented |
+| L4a | ANY 消解、数学/算术/选择/比较函数 | L2b | 固定函数表逐函数边界与集合相等 | implemented |
+| L4b | SHL/SHR/ROL/ROR 位串函数 | L4a | 宽度边界与类型拒绝全绿 | implemented |
+| L4c | 定长字符串函数 | L1b3、L4a | Unicode 位置/容量逐函数矩阵 | implemented |
+| L4d | 日期时间函数、宿主 UTC 注入、FB 闭合集终验 | L1b3、L2c、L4a-c | function/FB/pin pending=0 | implemented |
+| L5 | CONFIGURATION/RESOURCE、多周期/事件任务、看门狗与恢复 | L3、L2b | 调度 oracle、fault 隔离、reset/restart、运动域隔离 | implemented |
+| L6 | 文本 SFC、分支/汇合、N/S/R/L/D/P/SD/DS/SL | L2b、L5 | 九限定符逐扫描 oracle、不安全网络诊断 | implemented |
+| L7 | seqlock 监控、force、断点/单步/trace | L3、L5、L6 | 0 torn read、暂停隔离、发布零成本 | implemented |
+| L∀ | 特性集、诊断、fuzz、跨平台与 RT 总验 | 全部 | 十二集合相等、pending=0、全门禁绿 | implemented |
 
 ## L2-bind-complete 专项
 

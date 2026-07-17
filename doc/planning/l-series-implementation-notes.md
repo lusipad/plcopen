@@ -339,6 +339,31 @@
   fuzz 100,000。
 - 剩余 pending：2；仅 L7 调试/快照。
 
+### 2026-07-17 / ST-L7 / working tree
+
+- 目标矩阵与验收 ID：L7-A01 至 L7-A08、D01 至 D08；以
+  `st-l7-semantics.md` 与 `st_l7_tests.cpp` 为验收事实源。
+- feature-set 变更（pending → implemented）：`seqlock_snapshot` 与
+  `debugging_snapshot` 共 2 项；全局 pending 2 → 0。
+- 实际设计与矩阵一致处：调试会话只在 caller-owned 原子存储上发布快照和
+  trace；断点使用 O(1) bitmap，release artifact 不含 probe opcode；force
+  复用 L3 physical handle、owner/release receipt 与统一队列版本。
+- provenance 与 typed ID：L2b trusted provenance 保留 original source
+  line/column、leading trim 与 same-line sibling column；typed
+  `InstructionId` 区分 artifact/mapping/region/offset，SFC action/transition
+  region 与多 mapping 同 offset 不混淆。
+- 暂停/恢复与事务：pause park 当前事务且不提交半 scan Q shadow；paused/
+  fault snapshot 发布真实调用栈、active POU/SFC 状态；continue 只在 reset/
+  restart 后重新开放，预算余量和非目标 task/运动 RT 持续不受影响。
+- trace/容量：真实 scan/task/POU/SFC/FB/fault 事件进入 caller-owned
+  ring；overflow 丢最旧并递增 dropped；publish/trace exact N 接受、N-1
+  稳定拒绝；hit/pause/resume/step/fault/trace/force 热路径零分配。
+- 当前本地证据：Windows Debug/Release `plcopen_core_st_l7_tests` 通过；
+  Windows Release `plcopen_core_st_fuzz.exe --iterations 100000 --l7` 通过；
+  feature-set 结构校验已到 12 sets / 174 items / 0 pending。
+- 跨平台证据：WSL Clang ASan/UBSan L7 专项与 100k fuzz 0 报告；WSL GCC
+  TSan no-ASLR L7 专项 0 报告；Nightly 已接入 sanitizer fuzz 与独立 TSan。
+
 ## 5. 最终审计记录（完成时填写）
 
 | 证据 | 结果 |

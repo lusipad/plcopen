@@ -123,6 +123,7 @@ struct Rig
         st::CompileOptions options;
         options.source_name = "debug.st";
         options.debug_mode = mode;
+        runtime.unload();
         compiled = st::compile(source, options);
         if(!compiled.ok) {
             for(const st::Diagnostic &diagnostic : compiled.diagnostics) {

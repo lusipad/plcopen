@@ -93,6 +93,7 @@ struct Rig
 
     bool build(const std::string &source, const char *program = "main")
     {
+        instance.unload();
         compiled = st::compile(source);
         if(!compiled.ok) {
             for(const st::Diagnostic &diagnostic : compiled.diagnostics) {
@@ -1021,7 +1022,8 @@ void complete_canonical_artifact()
     check(artifact.size() > 20U && artifact[0] == 'L' &&
               artifact[1] == '2' && artifact[2] == 'B' &&
               artifact[3] == 'A' &&
-              static_cast<unsigned char>(artifact[4]) == 1U &&
+              static_cast<unsigned char>(artifact[4]) ==
+                  st::kCanonicalManifestVersion &&
               static_cast<unsigned char>(artifact[5]) == 0U &&
               static_cast<unsigned char>(artifact[6]) == 0U &&
               static_cast<unsigned char>(artifact[7]) == 0U,

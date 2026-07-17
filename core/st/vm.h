@@ -133,9 +133,6 @@ public:
         kin_transforms_ = nullptr;
         task_period_ns_ = 0;
         debug_hooks_ = nullptr;
-        debug_mapping_ = 0;
-        last_debug_entry_ = nullptr;
-        last_debug_instruction_id_ = {};
     }
 
     // Load domain. The program object must outlive the instance; the buffer
@@ -169,6 +166,11 @@ public:
         sfc_runner_ = ::new(static_cast<void *>(
             buffer + program.sfc_runner_storage_offset())) SfcRunnerStorage{};
         sfc_runtime_ = buffer + program.sfc_storage_offset();
+        if(program.needs_debug_runtime_storage()) {
+            ::new(static_cast<void *>(
+                buffer + program.debug_runtime_storage_offset()))
+                DebugRuntimeStorage{};
+        }
         if(program.initial_data.size() > program.vars_bytes) {
             return rt::ErrorCode::invalid_argument;
         }
@@ -628,18 +630,28 @@ public:
                          std::size_t mapping) noexcept
     {
         debug_hooks_ = hooks;
-        debug_mapping_ = mapping;
+        DebugRuntimeStorage *runtime = debug_runtime_storage();
+        if(hooks != nullptr && runtime != nullptr) {
+            runtime->mapping = static_cast<std::uint32_t>(mapping);
+        }
     }
 
     const Program *program() const noexcept { return program_; }
 
     const SourceMapEntry *last_debug_entry() const noexcept
     {
-        return last_debug_entry_;
+        if(const DebugRuntimeStorage *runtime = debug_runtime_storage()) {
+            return runtime->last_entry;
+        }
+        return nullptr;
     }
     const InstructionId &last_debug_instruction_id() const noexcept
     {
-        return last_debug_instruction_id_;
+        if(const DebugRuntimeStorage *runtime = debug_runtime_storage()) {
+            return runtime->last_instruction_id;
+        }
+        static const InstructionId empty{};
+        return empty;
     }
 
     bool read_variable(std::uint32_t offset, std::uint32_t size,
@@ -896,14 +908,17 @@ public:
                                            : &sfc_runner_->active_region->source_map;
                 if(probe >= map->entries.size())
                     return latch(ScanError::invalid_bytecode);
-                last_debug_entry_ = &map->entries[probe];
-                last_debug_instruction_id_ = last_debug_entry_->instruction_id;
-                last_debug_instruction_id_.mapping = debug_mapping_;
-                last_debug_instruction_id_.offset =
+                DebugRuntimeStorage *runtime = debug_runtime_storage();
+                if(runtime == nullptr)
+                    return latch(ScanError::invalid_bytecode);
+                runtime->last_entry = &map->entries[probe];
+                runtime->last_instruction_id = runtime->last_entry->instruction_id;
+                runtime->last_instruction_id.mapping = runtime->mapping;
+                runtime->last_instruction_id.offset =
                     static_cast<std::uint32_t>(instruction_pc_);
                 if(debug_hooks_ != nullptr &&
                    debug_hooks_->on_probe(
-                       debug_mapping_, map->entries[probe],
+                       runtime->mapping, map->entries[probe],
                        static_cast<std::uint32_t>(instruction_pc_))) {
                     pc = instruction_pc_;
                     ++remaining;
@@ -4187,6 +4202,24 @@ private:
         return static_cast<std::uint64_t>(value);
     }
 
+    DebugRuntimeStorage *debug_runtime_storage() noexcept
+    {
+        if(program_ == nullptr || vars_ == nullptr ||
+           !program_->needs_debug_runtime_storage())
+            return nullptr;
+        return reinterpret_cast<DebugRuntimeStorage *>(
+            vars_ + program_->debug_runtime_storage_offset());
+    }
+
+    const DebugRuntimeStorage *debug_runtime_storage() const noexcept
+    {
+        if(program_ == nullptr || vars_ == nullptr ||
+           !program_->needs_debug_runtime_storage())
+            return nullptr;
+        return reinterpret_cast<const DebugRuntimeStorage *>(
+            vars_ + program_->debug_runtime_storage_offset());
+    }
+
     ScanError latch(ScanError error)
     {
         if(sfc_runner_->active_region != nullptr &&
@@ -4231,9 +4264,6 @@ private:
     std::int64_t task_period_ns_ = 0;
     std::int64_t utc_dt_ns_ = 0;
     RuntimeDebugHooks *debug_hooks_ = nullptr;
-    std::uint32_t debug_mapping_ = 0;
-    const SourceMapEntry *last_debug_entry_ = nullptr;
-    InstructionId last_debug_instruction_id_{};
     AxisTargetStorage *axis_targets_ = nullptr;
     GroupTargetStorage *group_targets_ = nullptr;
     PathTableStorage *path_tables_ = nullptr;
