@@ -235,7 +235,9 @@ struct SfcTraceRecord
     std::uint32_t block = std::numeric_limits<std::uint32_t>::max();
     SfcEventKind kind = SfcEventKind::step_exit;
     std::uint8_t qualifier = 0;
-    std::uint8_t reserved[6]{};
+    // Cover the complete 8-byte-aligned record.  Leaving implicit tail
+    // padding makes byte-identical trace comparison compiler-dependent.
+    std::uint8_t reserved[10]{};
 };
 
 struct SfcRegionInfo
