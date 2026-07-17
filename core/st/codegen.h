@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <limits>
 #include <map>
 #include <vector>
 
@@ -44,7 +45,7 @@ public:
 
     bool run(Program &program)
     {
-        temp_top_ = static_cast<std::uint32_t>(sema_.vars.size());
+        temp_top_ = (sema_.vars_bytes + 7U) & ~7U;
         temp_high_ = temp_top_;
         for(const StmtIndex index : ast_.body) {
             emit_stmt(index);
@@ -53,14 +54,20 @@ public:
         if(failed_) {
             return false;
         }
+        analyze_worst_case(program);
         program.code = static_cast<std::vector<std::uint8_t> &&>(code_);
         program.constants =
             static_cast<std::vector<std::uint64_t> &&>(constants_);
+        program.string_constants =
+            static_cast<std::vector<std::uint8_t> &&>(string_constants_);
         program.vars = sema_.vars;
         program.fbs = sema_.fbs;
+        program.types = sema_.types;
+        program.initial_data = sema_.initial_data;
         program.stack_slots = static_cast<std::uint16_t>(max_depth_);
-        program.vars_bytes = temp_high_ * 8;
+        program.vars_bytes = temp_high_;
         program.fb_bytes = sema_.fb_bytes;
+        program.max_string_operation_cost = sema_.max_string_operation_cost;
         if(program.vars_bytes > limits_.max_vars_bytes) {
             fail(DiagCode::capacity_variables);
             return false;
@@ -88,7 +95,87 @@ private:
             fail(DiagCode::capacity_code);
             return;
         }
+        instruction_offsets_.push_back(static_cast<std::uint32_t>(code_.size()));
+        instruction_costs_.push_back(1U);
         code_.push_back(static_cast<std::uint8_t>(op));
+    }
+
+    void set_last_cost(std::uint32_t cost)
+    {
+        if(!instruction_costs_.empty()) {
+            instruction_costs_.back() = std::max(1U, cost);
+        }
+    }
+
+    std::uint32_t read_u32(std::size_t at) const
+    {
+        if(at + 4U > code_.size()) return 0;
+        return static_cast<std::uint32_t>(code_[at]) |
+               (static_cast<std::uint32_t>(code_[at + 1U]) << 8U) |
+               (static_cast<std::uint32_t>(code_[at + 2U]) << 16U) |
+               (static_cast<std::uint32_t>(code_[at + 3U]) << 24U);
+    }
+
+    std::size_t instruction_at(std::uint32_t byte_offset) const
+    {
+        const auto found = std::lower_bound(instruction_offsets_.begin(),
+                                            instruction_offsets_.end(),
+                                            byte_offset);
+        if(found == instruction_offsets_.end() || *found != byte_offset) {
+            return instruction_offsets_.size();
+        }
+        return static_cast<std::size_t>(found - instruction_offsets_.begin());
+    }
+
+    static std::uint64_t add_cost(std::uint64_t left, std::uint64_t right)
+    {
+        return right > std::numeric_limits<std::uint64_t>::max() - left
+                   ? std::numeric_limits<std::uint64_t>::max()
+                   : left + right;
+    }
+
+    void analyze_worst_case(Program &program) const
+    {
+        program.worst_case_bounded = true;
+        program.worst_case_instructions = 0;
+        const std::size_t count = instruction_offsets_.size();
+        if(count == 0 || instruction_costs_.size() != count) return;
+
+        for(std::size_t index = 0; index < count; ++index) {
+            const Op op = static_cast<Op>(code_[instruction_offsets_[index]]);
+            if(op != Op::jmp && op != Op::jmp_if_false) continue;
+            const std::uint32_t target = read_u32(
+                static_cast<std::size_t>(instruction_offsets_[index]) + 1U);
+            if(instruction_at(target) == count ||
+               target <= instruction_offsets_[index]) {
+                program.worst_case_bounded = false;
+                return;
+            }
+        }
+
+        std::vector<std::uint64_t> longest(count, 0);
+        for(std::size_t reverse = count; reverse-- > 0;) {
+            const Op op = static_cast<Op>(code_[instruction_offsets_[reverse]]);
+            std::uint64_t tail = 0;
+            if(op == Op::jmp || op == Op::jmp_if_false) {
+                const std::uint32_t target = read_u32(
+                    static_cast<std::size_t>(instruction_offsets_[reverse]) + 1U);
+                const std::size_t target_index = instruction_at(target);
+                if(target_index == count) {
+                    program.worst_case_bounded = false;
+                    program.worst_case_instructions = 0;
+                    return;
+                }
+                tail = longest[target_index];
+                if(op == Op::jmp_if_false && reverse + 1U < count) {
+                    tail = std::max(tail, longest[reverse + 1U]);
+                }
+            } else if(op != Op::halt && reverse + 1U < count) {
+                tail = longest[reverse + 1U];
+            }
+            longest[reverse] = add_cost(instruction_costs_[reverse], tail);
+        }
+        program.worst_case_instructions = longest[0];
     }
 
     void emit_u8(std::uint8_t value)
@@ -110,6 +197,12 @@ private:
         code_.push_back(static_cast<std::uint8_t>((value >> 16) & 0xFF));
         code_.push_back(static_cast<std::uint8_t>((value >> 24) & 0xFF));
         return at;
+    }
+
+    void emit_u64(std::uint64_t value)
+    {
+        emit_u32(static_cast<std::uint32_t>(value));
+        emit_u32(static_cast<std::uint32_t>(value >> 32U));
     }
 
     void patch_u32(std::size_t at, std::uint32_t value)
@@ -164,16 +257,53 @@ private:
         push();
     }
 
-    std::uint16_t alloc_temp()
+    std::uint32_t add_string_constant(const ExprInfo &note)
     {
-        const std::uint32_t slot = temp_top_++;
+        if(note.object_bytes.size() < 4U) {
+            fail(DiagCode::capacity_code);
+            return 0;
+        }
+        const TypeDesc *desc = sema_.types.get(note.type_id);
+        if(desc == nullptr ||
+           (desc->kind != TypeKind::string &&
+            desc->kind != TypeKind::wstring)) {
+            fail(DiagCode::capacity_code);
+            return 0;
+        }
+        const std::uint32_t length =
+            static_cast<std::uint32_t>(note.object_bytes[0]) |
+            (static_cast<std::uint32_t>(note.object_bytes[1]) << 8U) |
+            (static_cast<std::uint32_t>(note.object_bytes[2]) << 16U) |
+            (static_cast<std::uint32_t>(note.object_bytes[3]) << 24U);
+        const std::size_t object_size = 4U +
+            static_cast<std::size_t>(length) *
+                (desc->kind == TypeKind::wstring ? 4U : 1U);
+        if(object_size > note.object_bytes.size() ||
+           object_size >
+               std::numeric_limits<std::uint32_t>::max() -
+                   string_constants_.size()) {
+            fail(DiagCode::capacity_code);
+            return 0;
+        }
+        const std::uint32_t offset =
+            static_cast<std::uint32_t>(string_constants_.size());
+        string_constants_.insert(string_constants_.end(),
+                                 note.object_bytes.begin(),
+                                 note.object_bytes.begin() + object_size);
+        return offset;
+    }
+
+    std::uint32_t alloc_temp()
+    {
+        const std::uint32_t offset = (temp_top_ + 7U) & ~7U;
+        temp_top_ = offset + 8U;
         if(temp_top_ > temp_high_) {
             temp_high_ = temp_top_;
         }
-        if(temp_high_ * 8 > limits_.max_vars_bytes) {
+        if(temp_high_ > limits_.max_vars_bytes) {
             fail(DiagCode::capacity_variables);
         }
-        return static_cast<std::uint16_t>(slot);
+        return offset;
     }
 
     void release_temps(std::uint32_t watermark)
@@ -201,15 +331,29 @@ private:
         }
         switch(expr.kind) {
         case ExprKind::variable:
-            emit_op(Op::load_var);
-            emit_u16(note.slot);
-            push();
+            if(note.string_index != kNoExpr) {
+                emit_expr(note.string_index);
+                emit_op(Op::string_index);
+                emit_u32(note.offset);
+                emit_u32(note.storage_type_id);
+                const TypeDesc *desc = sema_.types.get(note.storage_type_id);
+                if(desc != nullptr) {
+                    set_last_cost(static_cast<std::uint32_t>(
+                        desc->string.capacity));
+                }
+                return;
+            }
+            emit_access(note, false);
             return;
         case ExprKind::pin_read:
-            emit_op(Op::fb_load_out);
-            emit_u16(note.fb_index);
-            emit_u8(note.pin_id);
-            push();
+            if(note.memory_access) {
+                emit_access(note, false);
+            } else {
+                emit_op(Op::fb_load_out);
+                emit_u16(note.fb_index);
+                emit_u8(note.pin_id);
+                push();
+            }
             return;
         case ExprKind::unary:
             emit_expr(expr.lhs);
@@ -235,6 +379,30 @@ private:
             }
             return;
         case ExprKind::binary: {
+            if(info(expr.lhs).type == Type::string_ ||
+               info(expr.lhs).type == Type::wstring ||
+               info(expr.rhs).type == Type::string_ ||
+               info(expr.rhs).type == Type::wstring) {
+                emit_op(Op::string_compare);
+                emit_u8(static_cast<std::uint8_t>(expr.binary_op));
+                emit_string_operand(info(expr.lhs));
+                emit_string_operand(info(expr.rhs));
+                const ExprInfo &left = info(expr.lhs);
+                const ExprInfo &right = info(expr.rhs);
+                const TypeDesc *left_desc = sema_.types.get(
+                    left.storage_type_id == invalid_type_id
+                        ? left.type_id : left.storage_type_id);
+                const TypeDesc *right_desc = sema_.types.get(
+                    right.storage_type_id == invalid_type_id
+                        ? right.type_id : right.storage_type_id);
+                if(left_desc != nullptr && right_desc != nullptr) {
+                    set_last_cost(static_cast<std::uint32_t>(std::max(
+                        left_desc->string.capacity,
+                        right_desc->string.capacity)));
+                }
+                push();
+                return;
+            }
             emit_expr(expr.lhs);
             emit_expr(expr.rhs);
             if(expr.binary_op == BinaryOp::power) {
@@ -256,6 +424,14 @@ private:
                         : (floaty ? 3 : 1);
                 emit_op(Op::time_scale);
                 emit_u8(sub);
+            } else if(note.type == Type::date || note.type == Type::tod ||
+                      note.type == Type::dt) {
+                emit_op(Op::date_arith);
+                const std::uint8_t base = note.type == Type::date ? 0
+                                          : note.type == Type::tod ? 2
+                                                                   : 4;
+                emit_u8(static_cast<std::uint8_t>(
+                    base + (expr.binary_op == BinaryOp::subtract ? 1 : 0)));
             } else {
                 emit_binary_op(expr.binary_op, info(expr.lhs).type);
             }
@@ -264,20 +440,98 @@ private:
         }
         case ExprKind::call: {
             // Conversion function (L1a 4.x): argument then lowering ops.
+            const std::string call_name = lower_name(expr.name);
+            if(call_name == "len") {
+                emit_op(Op::string_length);
+                emit_string_operand(info(expr.lhs));
+                const TypeDesc *desc = sema_.types.get(
+                    info(expr.lhs).storage_type_id == invalid_type_id
+                        ? info(expr.lhs).type_id
+                        : info(expr.lhs).storage_type_id);
+                if(desc != nullptr) {
+                    set_last_cost(static_cast<std::uint32_t>(
+                        desc->string.capacity));
+                }
+                push();
+                return;
+            }
             emit_expr(expr.lhs);
+            if(call_name == "l2b_alias_guard") {
+                emit_op(Op::alias_guard);
+                return;
+            }
+            if(call_name == "usint_to_char" ||
+               call_name == "char_to_usint" ||
+               call_name == "wchar_to_udint") {
+                return;
+            }
+            if(call_name == "udint_to_wchar") {
+                emit_op(Op::check_unicode);
+                return;
+            }
             ConvDesc desc;
             if(!resolve_conversion(lower_name(expr.name), desc)) {
-                fail(DiagCode::capacity_code); // sema guaranteed resolvable
+                const ExprInfo &arg = info(expr.lhs);
+                if(arg.type != note.type) {
+                    emit_op(Op::conv_wrap);
+                    emit_u8(static_cast<std::uint8_t>(note.type));
+                }
+                if(note.type_id >= first_load_type_id) {
+                    emit_op(Op::check_range);
+                    emit_u32(note.type_id);
+                }
                 return;
             }
             emit_conversion(desc);
             return;
         }
+        case ExprKind::aggregate_init:
+            fail(DiagCode::capacity_code);
+            return;
         default:
             // Constant literals always fold; reaching here is a compiler
             // defect surfaced as an explicit failure, never silent output.
             fail(DiagCode::capacity_code);
             return;
+        }
+    }
+
+    void emit_string_operand(const ExprInfo &note)
+    {
+        if(note.object_constant) {
+            emit_u8(1);
+            emit_u32(add_string_constant(note));
+            emit_u32(note.type_id);
+        } else {
+            emit_u8(0);
+            emit_u32(note.offset);
+            emit_u32(note.storage_type_id == invalid_type_id
+                         ? note.type_id
+                         : note.storage_type_id);
+        }
+    }
+
+    void emit_access(const ExprInfo &note, bool store)
+    {
+        for(const ExprInfo::DynamicIndex &index : note.dynamic_indices) {
+            emit_expr(index.expr);
+        }
+        emit_op(store ? Op::store_access : Op::load_access);
+        emit_u32(note.offset);
+        emit_u32(note.storage_type_id == invalid_type_id
+                     ? note.type_id
+                     : note.storage_type_id);
+        emit_u8(static_cast<std::uint8_t>(note.dynamic_indices.size()));
+        for(const ExprInfo::DynamicIndex &index : note.dynamic_indices) {
+            emit_u64(static_cast<std::uint64_t>(index.lower));
+            emit_u64(static_cast<std::uint64_t>(index.upper));
+            emit_u64(index.stride);
+        }
+        if(store) {
+            pop(static_cast<int>(note.dynamic_indices.size()) + 1);
+        } else {
+            pop(static_cast<int>(note.dynamic_indices.size()));
+            push();
         }
     }
 
@@ -481,10 +735,52 @@ private:
         const Stmt &stmt = ast_.stmts[static_cast<std::size_t>(index)];
         switch(stmt.kind) {
         case StmtKind::assign: {
+            const StmtInfo &target = stmt_info(index);
+            const TypeDesc *target_desc = sema_.types.get(target.type_id);
+            if(target_desc != nullptr &&
+               (target_desc->kind == TypeKind::string ||
+                target_desc->kind == TypeKind::wstring)) {
+                const ExprInfo &source = info(stmt.value);
+                if(source.object_constant) {
+                    emit_op(Op::string_copy_const);
+                    emit_u32(target.offset);
+                    emit_u32(target.type_id);
+                    emit_u32(add_string_constant(source));
+                    emit_u32(source.type_id);
+                } else {
+                    emit_op(Op::string_copy);
+                    emit_u32(target.offset);
+                    emit_u32(target.type_id);
+                    emit_u32(source.offset);
+                    emit_u32(source.storage_type_id == invalid_type_id
+                                 ? source.type_id
+                                 : source.storage_type_id);
+                }
+                const TypeDesc *source_desc = sema_.types.get(
+                    source.storage_type_id == invalid_type_id
+                        ? source.type_id
+                        : source.storage_type_id);
+                if(source_desc != nullptr) {
+                    set_last_cost(static_cast<std::uint32_t>(std::max(
+                        target_desc->string.capacity,
+                        source_desc->string.capacity)));
+                }
+                return;
+            }
+            if(target.aggregate_copy) {
+                emit_op(Op::copy_bytes);
+                emit_u32(target.offset);
+                emit_u32(target.source_offset);
+                emit_u32(target.copy_size);
+                return;
+            }
             emit_expr(stmt.value);
-            emit_op(Op::store_var);
-            emit_u16(stmt_info(index).slot);
-            pop();
+            ExprInfo access;
+            access.offset = target.offset;
+            access.type_id = target.type_id;
+            access.storage_type_id = target.type_id;
+            access.dynamic_indices = target.dynamic_indices;
+            emit_access(access, true);
             return;
         }
         case StmtKind::if_: emit_if(stmt); return;
@@ -493,6 +789,7 @@ private:
         case StmtKind::while_: emit_while(stmt); return;
         case StmtKind::repeat: emit_repeat(stmt); return;
         case StmtKind::fb_call: emit_fb_call(stmt, stmt_info(index)); return;
+        case StmtKind::output_commit: emit_output_commit(stmt); return;
         case StmtKind::exit_:
             if(!loops_.empty()) {
                 emit_op(Op::jmp);
@@ -547,13 +844,14 @@ private:
         }
     }
 
-    void emit_case(const Stmt &stmt, const StmtInfo &info)
+    void emit_case(const Stmt &stmt, const StmtInfo &case_info)
     {
         const std::uint32_t watermark = temp_top_;
-        const std::uint16_t selector = alloc_temp();
+        const std::uint32_t selector = alloc_temp();
         emit_expr(stmt.selector);
         emit_op(Op::store_var);
-        emit_u16(selector);
+        emit_u32(selector);
+        emit_u32(case_info.type_id);
         pop();
 
         std::vector<std::size_t> end_patches;
@@ -566,7 +864,8 @@ private:
             bool first = true;
             for(const CaseLabel &label : arm.labels) {
                 emit_op(Op::load_var);
-                emit_u16(selector);
+                emit_u32(selector);
+                emit_u32(case_info.type_id);
                 push();
                 if(label.high == kNoExpr) {
                     push_const(this->info(label.low).bits);
@@ -577,7 +876,8 @@ private:
                     emit_op(Op::cmp_ge_i);
                     pop();
                     emit_op(Op::load_var);
-                    emit_u16(selector);
+                    emit_u32(selector);
+                    emit_u32(case_info.type_id);
                     push();
                     push_const(this->info(label.high).bits);
                     emit_op(Op::cmp_le_i);
@@ -608,16 +908,18 @@ private:
     void emit_for(const Stmt &stmt, const StmtInfo &info)
     {
         const std::uint32_t watermark = temp_top_;
-        const std::uint16_t to_slot = alloc_temp();
-        const std::uint16_t by_slot = alloc_temp();
+        const std::uint32_t to_slot = alloc_temp();
+        const std::uint32_t by_slot = alloc_temp();
 
         emit_expr(stmt.from);
         emit_op(Op::store_var);
-        emit_u16(info.slot);
+        emit_u32(info.offset);
+        emit_u32(info.type_id);
         pop();
         emit_expr(stmt.to);
         emit_op(Op::store_var);
-        emit_u16(to_slot);
+        emit_u32(to_slot);
+        emit_u32(info.type_id);
         pop();
         bool by_needs_guard = false;
         if(stmt.by == kNoExpr) {
@@ -627,19 +929,21 @@ private:
             by_needs_guard = !this->info(stmt.by).is_const;
         }
         emit_op(Op::store_var);
-        emit_u16(by_slot);
+        emit_u32(by_slot);
+        emit_u32(info.type_id);
         pop();
         if(by_needs_guard) {
             emit_op(Op::for_guard);
-            emit_u16(by_slot);
+            emit_u32(by_slot);
         }
 
         loops_.emplace_back();
         const std::uint32_t loop_start = here();
         emit_op(Op::for_test);
-        emit_u16(info.slot);
-        emit_u16(to_slot);
-        emit_u16(by_slot);
+        emit_u32(info.offset);
+        emit_u32(to_slot);
+        emit_u32(by_slot);
+        emit_u32(info.type_id);
         push();
         emit_op(Op::jmp_if_false);
         pop();
@@ -648,8 +952,9 @@ private:
         const std::uint32_t step_at = here();
         emit_op(info.type == Type::int_ ? Op::for_step_int
                                         : Op::for_step_dint);
-        emit_u16(info.slot);
-        emit_u16(by_slot);
+        emit_u32(info.offset);
+        emit_u32(by_slot);
+        emit_u32(info.type_id);
         emit_op(Op::jmp);
         emit_u32(loop_start);
         patch_u32(exit_at, here());
@@ -715,6 +1020,39 @@ private:
         emit_u16(info.fb_index);
     }
 
+    void emit_output_commit(const Stmt &stmt)
+    {
+        std::uint16_t dynamic_count = 0;
+        for(std::size_t i = 1; i < stmt.params.size(); i += 2U) {
+            const ExprInfo &target = info(stmt.params[i].value);
+            for(const ExprInfo::DynamicIndex &index : target.dynamic_indices) {
+                emit_expr(index.expr);
+                ++dynamic_count;
+            }
+        }
+        emit_op(Op::commit_outputs);
+        emit_u16(static_cast<std::uint16_t>(stmt.params.size() / 2U));
+        emit_u16(dynamic_count);
+        set_last_cost(static_cast<std::uint32_t>(stmt.params.size() / 2U));
+        for(std::size_t i = 0; i < stmt.params.size(); i += 2U) {
+            const ExprInfo &source = info(stmt.params[i].value);
+            const ExprInfo &target = info(stmt.params[i + 1U].value);
+            emit_u32(source.offset);
+            emit_u32(source.storage_type_id == invalid_type_id
+                         ? source.type_id : source.storage_type_id);
+            emit_u32(target.offset);
+            emit_u32(target.storage_type_id == invalid_type_id
+                         ? target.type_id : target.storage_type_id);
+            emit_u8(static_cast<std::uint8_t>(target.dynamic_indices.size()));
+            for(const ExprInfo::DynamicIndex &index : target.dynamic_indices) {
+                emit_u64(static_cast<std::uint64_t>(index.lower));
+                emit_u64(static_cast<std::uint64_t>(index.upper));
+                emit_u64(index.stride);
+            }
+        }
+        pop(dynamic_count);
+    }
+
     const Ast &ast_;
     const SemaResult &sema_;
     std::vector<Diagnostic> &diagnostics_;
@@ -729,7 +1067,10 @@ private:
     };
 
     std::vector<std::uint8_t> code_;
+    std::vector<std::uint32_t> instruction_offsets_;
+    std::vector<std::uint32_t> instruction_costs_;
     std::vector<std::uint64_t> constants_;
+    std::vector<std::uint8_t> string_constants_;
     std::map<std::uint64_t, std::uint16_t> const_index_;
     std::vector<LoopCtx> loops_;
     std::uint32_t temp_top_ = 0;

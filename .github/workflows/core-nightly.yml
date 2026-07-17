@@ -97,3 +97,6 @@ jobs:
 
       - name: Run ST front-end fuzz (metric 5.2)
         run: ./build/core/plcopen_core_st_fuzz --iterations 100000
+
+      - name: Run ST multi-POU fuzz (L2b-A07)
+        run: ./build/core/plcopen_core_st_fuzz --iterations 100000 --l2b

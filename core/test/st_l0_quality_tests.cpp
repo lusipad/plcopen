@@ -153,7 +153,7 @@ void determinism()
     // literal parser (matrix 2.5).
     const unsigned long long hash = fnv1a(first.program);
     std::printf("determinism anchor hash: %llu\n", hash);
-    check(hash == 8149969011563308332ULL, "cross-platform anchor hash");
+    check(hash == 16885475011046341104ULL, "cross-platform anchor hash");
 
     // FOR bound temporaries and constant pool must not leak between
     // compiles of different sources (pool is value-keyed).
@@ -186,7 +186,7 @@ void determinism()
     if(l1a.ok) {
         const unsigned long long l1a_hash = fnv1a(l1a.program);
         std::printf("determinism anchor hash (l1a): %llu\n", l1a_hash);
-        check(l1a_hash == 4976297220763985794ULL,
+        check(l1a_hash == 12959811419021558448ULL,
               "cross-platform L1a anchor hash");
         for(int i = 0; i < 20; ++i) {
             const st::CompileResult again = st::compile(reference_l1a);

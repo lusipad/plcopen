@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <cstdlib>
+#include <limits>
 #include <string_view>
 
 #include "st/diag.h"
@@ -93,6 +94,11 @@ inline constexpr KeywordEntry kKeywords[] = {
     {"continue", TokenKind::kw_continue},
     {"return", TokenKind::kw_return},
     {"constant", TokenKind::kw_constant},
+    {"type", TokenKind::kw_type},
+    {"end_type", TokenKind::kw_end_type},
+    {"array", TokenKind::kw_array},
+    {"struct", TokenKind::kw_struct},
+    {"end_struct", TokenKind::kw_end_struct},
     {"and", TokenKind::kw_and},
     {"or", TokenKind::kw_or},
     {"xor", TokenKind::kw_xor},
@@ -114,6 +120,13 @@ inline constexpr KeywordEntry kKeywords[] = {
     {"word", TokenKind::kw_word},
     {"dword", TokenKind::kw_dword},
     {"lword", TokenKind::kw_lword},
+    {"char", TokenKind::kw_char},
+    {"wchar", TokenKind::kw_wchar},
+    {"string", TokenKind::kw_string},
+    {"wstring", TokenKind::kw_wstring},
+    {"date", TokenKind::kw_date},
+    {"time_of_day", TokenKind::kw_tod},
+    {"date_and_time", TokenKind::kw_dt},
 };
 
 struct UnsupportedEntry
@@ -139,20 +152,6 @@ inline constexpr UnsupportedEntry kUnsupported[] = {
     // (EN/ENO are call-mechanism parameter names owned by L2, not reserved
     // identifiers; they stay usable as variable names in L0.)
     // L1b composite/string/date universe
-    {"string", DiagCode::unsupported_l1},
-    {"wstring", DiagCode::unsupported_l1},
-    {"char", DiagCode::unsupported_l1},
-    {"wchar", DiagCode::unsupported_l1},
-    {"date", DiagCode::unsupported_l1},
-    {"time_of_day", DiagCode::unsupported_l1},
-    {"tod", DiagCode::unsupported_l1},
-    {"date_and_time", DiagCode::unsupported_l1},
-    {"dt", DiagCode::unsupported_l1},
-    {"struct", DiagCode::unsupported_l1},
-    {"end_struct", DiagCode::unsupported_l1},
-    {"array", DiagCode::unsupported_l1},
-    {"type", DiagCode::unsupported_l1},
-    {"end_type", DiagCode::unsupported_l1},
     // L3 process image / retention
     {"retain", DiagCode::unsupported_l3},
     {"non_retain", DiagCode::unsupported_l3},
@@ -212,6 +211,9 @@ public:
         }
         if(detail::is_digit(c)) {
             return lex_number(token, start);
+        }
+        if(c == '\'' || c == '"') {
+            return lex_string(token, start, c);
         }
         return lex_punct(token, start);
     }
@@ -288,6 +290,7 @@ private:
         token.kind = TokenKind::error;
         token.diag_payload = static_cast<std::uint16_t>(code);
         token.text = source_.substr(start, pos_ - start);
+
         return token;
     }
 
@@ -306,6 +309,24 @@ private:
             bad_underscore = true;
         }
         token.text = source_.substr(start, pos_ - start);
+
+        if(peek() == '#') {
+            TokenKind literal = TokenKind::error;
+            if(detail::ascii_iequals(token.text, "d") ||
+               detail::ascii_iequals(token.text, "date")) {
+                literal = TokenKind::date_literal;
+            } else if(detail::ascii_iequals(token.text, "tod") ||
+                      detail::ascii_iequals(token.text, "time_of_day")) {
+                literal = TokenKind::tod_literal;
+            } else if(detail::ascii_iequals(token.text, "dt") ||
+                      detail::ascii_iequals(token.text, "date_and_time")) {
+                literal = TokenKind::dt_literal;
+            }
+            if(literal != TokenKind::error) {
+                advance();
+                return lex_date_time(token, start, literal);
+            }
+        }
 
         // TIME literal prefixes: T#... / TIME#...
         if(peek() == '#' &&
@@ -692,6 +713,191 @@ private:
         return token;
     }
 
+    Token lex_string(Token token, std::size_t start, char quote)
+    {
+        advance();
+        const std::size_t payload = pos_;
+        while(!at_end() && peek() != quote && peek() != '\n' && peek() != '\r') {
+            advance();
+        }
+        if(at_end() || peek() != quote) {
+            return make_error(token, DiagCode::sema_invalid_string_literal,
+                              start);
+        }
+        token.kind = quote == '\'' ? TokenKind::string_literal
+                                    : TokenKind::wstring_literal;
+        token.text = source_.substr(payload, pos_ - payload);
+        advance();
+        return token;
+    }
+
+    bool read_fixed(unsigned digits, unsigned &value)
+    {
+        value = 0;
+        for(unsigned i = 0; i < digits; ++i) {
+            if(!detail::is_digit(peek())) {
+                return false;
+            }
+            value = value * 10U + static_cast<unsigned>(peek() - '0');
+            advance();
+        }
+        return true;
+    }
+
+    static constexpr bool leap_year(unsigned year)
+    {
+        return (year % 4U == 0U && year % 100U != 0U) || year % 400U == 0U;
+    }
+
+    static constexpr unsigned month_days(unsigned year, unsigned month)
+    {
+        constexpr unsigned days[] = {0,31,28,31,30,31,30,31,31,30,31,30,31};
+        return month == 2U && leap_year(year) ? 29U
+             : month <= 12U ? days[month] : 0U;
+    }
+
+    static constexpr std::int64_t civil_days(std::int64_t year,
+                                              unsigned month, unsigned day)
+    {
+        year -= month <= 2U ? 1 : 0;
+        const std::int64_t era = (year >= 0 ? year : year - 399) / 400;
+        const unsigned yoe = static_cast<unsigned>(year - era * 400);
+        const unsigned shifted = static_cast<unsigned>(
+            static_cast<int>(month) + (month > 2U ? -3 : 9));
+        const unsigned doy = (153U * shifted + 2U) / 5U + day - 1U;
+        const unsigned doe = yoe * 365U + yoe / 4U - yoe / 100U + doy;
+        return era * 146097 + static_cast<std::int64_t>(doe) - 719468;
+    }
+
+    void consume_date_tail()
+    {
+        while(!at_end()) {
+            const char c = peek();
+            if(c == ';' || c == ',' || c == ')' || c == ']' ||
+               c == ' ' || c == '\t' || c == '\r' || c == '\n') {
+                break;
+            }
+            advance();
+        }
+    }
+
+    Token date_error(Token token, std::size_t start, DiagCode code)
+    {
+        consume_date_tail();
+        return make_error(token, code, start);
+    }
+
+    Token lex_date_time(Token token, std::size_t start, TokenKind kind)
+    {
+        constexpr std::int64_t kSecondNs = 1000000000LL;
+        constexpr std::int64_t kDayNs = 86400LL * kSecondNs;
+        unsigned year = 0;
+        unsigned month = 0;
+        unsigned day = 0;
+        unsigned hour = 0;
+        unsigned minute = 0;
+        unsigned second = 0;
+        std::int64_t nanoseconds = 0;
+        if(kind != TokenKind::tod_literal) {
+            if(!read_fixed(4, year) || peek() != '-') {
+                return date_error(token, start, DiagCode::date_time_range_violation);
+            }
+            advance();
+            if(!read_fixed(2, month) || peek() != '-') {
+                return date_error(token, start, DiagCode::date_time_range_violation);
+            }
+            advance();
+            if(!read_fixed(2, day) || month < 1U || month > 12U ||
+               day < 1U || day > month_days(year, month)) {
+                return date_error(token, start, DiagCode::date_time_range_violation);
+            }
+            if(kind == TokenKind::date_literal) {
+                token.signed_value = civil_days(year, month, day);
+            } else {
+                if(peek() != '-') {
+                    return date_error(token, start, DiagCode::date_time_range_violation);
+                }
+                advance();
+            }
+        }
+        if(kind != TokenKind::date_literal) {
+            if(!read_fixed(2, hour) || peek() != ':') {
+                return date_error(token, start, DiagCode::date_time_range_violation);
+            }
+            advance();
+            if(!read_fixed(2, minute) || peek() != ':') {
+                return date_error(token, start, DiagCode::date_time_range_violation);
+            }
+            advance();
+            if(!read_fixed(2, second) || hour > 23U || minute > 59U ||
+               second > 59U) {
+                return date_error(token, start, DiagCode::date_time_range_violation);
+            }
+            unsigned fraction_digits = 0;
+            if(peek() == '.') {
+                advance();
+                while(detail::is_digit(peek()) && fraction_digits < 9U) {
+                    nanoseconds = nanoseconds * 10 + (peek() - '0');
+                    ++fraction_digits;
+                    advance();
+                }
+                if(fraction_digits == 0U || detail::is_digit(peek())) {
+                    return date_error(token, start, DiagCode::date_time_range_violation);
+                }
+                while(fraction_digits++ < 9U) {
+                    nanoseconds *= 10;
+                }
+            }
+            const std::int64_t tod =
+                (static_cast<std::int64_t>(hour) * 3600LL +
+                 static_cast<std::int64_t>(minute) * 60LL + second) *
+                    kSecondNs + nanoseconds;
+            if(kind == TokenKind::tod_literal) {
+                token.signed_value = tod;
+            } else {
+                const std::int64_t days = civil_days(year, month, day);
+                if(days >= 0) {
+                    const std::uint64_t limit = static_cast<std::uint64_t>(
+                        std::numeric_limits<std::int64_t>::max() - tod);
+                    if(static_cast<std::uint64_t>(days) >
+                       limit / static_cast<std::uint64_t>(kDayNs)) {
+                        return date_error(
+                            token, start,
+                            DiagCode::date_time_range_violation);
+                    }
+                    token.signed_value =
+                        days * kDayNs + tod;
+                } else {
+                    const std::uint64_t magnitude =
+                        static_cast<std::uint64_t>(-days);
+                    const std::uint64_t min_magnitude =
+                        static_cast<std::uint64_t>(
+                            std::numeric_limits<std::int64_t>::max()) + 1U;
+                    const std::uint64_t limit =
+                        min_magnitude + static_cast<std::uint64_t>(tod);
+                    if(magnitude >
+                       limit / static_cast<std::uint64_t>(kDayNs)) {
+                        return date_error(
+                            token, start,
+                            DiagCode::date_time_range_violation);
+                    }
+                    const std::uint64_t delta =
+                        magnitude * static_cast<std::uint64_t>(kDayNs) -
+                        static_cast<std::uint64_t>(tod);
+                    token.signed_value = delta == min_magnitude
+                        ? std::numeric_limits<std::int64_t>::min()
+                        : -static_cast<std::int64_t>(delta);
+                }
+            }
+        }
+        if(detail::is_alpha(peek()) || peek() == '+' || peek() == '-') {
+            return date_error(token, start, DiagCode::unsupported_l1b3_timezone);
+        }
+        token.kind = kind;
+        token.text = source_.substr(start, pos_ - start);
+        return token;
+    }
+
     Token time_error(Token token, std::size_t start)
     {
         // Consume the remaining literal-ish tail so recovery resumes cleanly.
@@ -759,6 +965,7 @@ private:
             break;
         case ';': token.kind = TokenKind::semicolon; break;
         case ',': token.kind = TokenKind::comma; break;
+        case '#': token.kind = TokenKind::hash; break;
         case '.':
             if(peek() == '.') {
                 advance();
@@ -769,6 +976,8 @@ private:
             break;
         case '(': token.kind = TokenKind::lparen; break;
         case ')': token.kind = TokenKind::rparen; break;
+        case '[': token.kind = TokenKind::lbracket; break;
+        case ']': token.kind = TokenKind::rbracket; break;
         case '+': token.kind = TokenKind::plus; break;
         case '-': token.kind = TokenKind::minus; break;
         case '*':

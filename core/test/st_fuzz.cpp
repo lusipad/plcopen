@@ -1,11 +1,13 @@
 // L0 front-end fuzz driver (approved st-l0-semantics 2.7, metric 5.2):
-// crash-free compilation of arbitrary input. Three deterministic modes per
-// iteration -- structured program generation, byte mutation of a valid seed,
-// and raw token soup -- driven by a fixed-seed xorshift PRNG so every run is
-// reproducible. The smoke tier runs in CTest; the nightly tier runs the
-// full budget under ASan/UBSan (workflow core-nightly).
+// crash-free compilation of arbitrary input. Successfully compiled programs
+// are loaded into fixed static storage and scanned with a finite instruction
+// budget. Three deterministic modes per iteration -- structured program
+// generation, byte mutation of a valid seed, and raw token soup -- driven by
+// a fixed-seed xorshift PRNG so every run is reproducible. The smoke tier runs
+// in CTest; the nightly tier runs the full budget under ASan/UBSan (workflow
+// core-nightly).
 //
-// Usage: st_fuzz [--iterations N] [--seed HEX]
+// Usage: st_fuzz [--iterations N] [--seed HEX] [--l2b]
 
 #include <cstdint>
 #include <cstdio>
@@ -13,7 +15,7 @@
 #include <cstring>
 #include <string>
 
-#include "st/compile.h"
+#include "st/st.h"
 
 namespace
 {
@@ -65,6 +67,30 @@ const char *const kFragments[] = {
     "'", "#", "%", "@", "\x01", "\xFF", "\x80",
 };
 
+constexpr std::size_t kRuntimeBufferBytes = 1024U * 1024U;
+constexpr std::int64_t kTaskPeriodNs = 1000000;
+constexpr std::int64_t kScanBudget = 10000;
+alignas(8) unsigned char runtime_buffer[kRuntimeBufferBytes];
+
+bool bounded_scan_error(plcopen::core::st::ScanError error)
+{
+    using plcopen::core::st::ScanError;
+    switch(error) {
+    case ScanError::ok:
+    case ScanError::division_by_zero:
+    case ScanError::for_step_zero:
+    case ScanError::budget_exceeded:
+    case ScanError::invalid_bytecode:
+    case ScanError::conversion_invalid:
+    case ScanError::range_violation:
+    case ScanError::string_capacity_exceeded:
+    case ScanError::date_time_range_violation:
+    case ScanError::alias_violation: return true;
+    case ScanError::not_loaded: return false;
+    }
+    return false;
+}
+
 std::string structured_program(Rng &rng)
 {
     std::string source = "PROGRAM f\nVAR\n";
@@ -115,6 +141,45 @@ std::string structured_program(Rng &rng)
     return source;
 }
 
+std::string structured_pou_project(Rng &rng)
+{
+    std::string source;
+    const int functions = 1 + static_cast<int>(rng.below(4));
+    for(int i = 0; i < functions; ++i) {
+        source += "FUNCTION F" + std::to_string(i) + " : DINT\n";
+        source += "VAR_INPUT X : DINT; END_VAR\n";
+        source += "F" + std::to_string(i) + " := ";
+        if(i == 0) {
+            source += "X";
+        } else {
+            source += "F" + std::to_string(i - 1) + "(X)";
+        }
+        source += " + " + std::to_string(rng.below(8)) + ";\n";
+        source += "END_FUNCTION\n";
+    }
+    source +=
+        "FUNCTION_BLOCK Accumulator\n"
+        "VAR_INPUT Step : DINT; END_VAR\n"
+        "VAR_OUTPUT Q : DINT; END_VAR\n"
+        "VAR N : DINT; END_VAR\n"
+        "N := N + Step; Q := N;\n"
+        "END_FUNCTION_BLOCK\n"
+        "PROGRAM Main\nVAR Out : DINT; ";
+    const int instances = 1 + static_cast<int>(rng.below(3));
+    for(int i = 0; i < instances; ++i) {
+        source += "A" + std::to_string(i) + " : Accumulator; ";
+    }
+    source += "END_VAR\n";
+    for(int i = 0; i < instances; ++i) {
+        source += "A" + std::to_string(i) + "(Step := F" +
+                  std::to_string(functions - 1) + "(" +
+                  std::to_string(rng.below(32)) + ")); ";
+    }
+    source += "Out := A" + std::to_string(instances - 1) +
+              ".Q;\nEND_PROGRAM\n";
+    return source;
+}
+
 std::string token_soup(Rng &rng)
 {
     std::string source;
@@ -154,6 +219,7 @@ int main(int argc, char **argv)
 {
     long long iterations = 3000;
     std::uint64_t seed = 0xC0DEF00DULL;
+    bool l2b_only = false;
     for(int i = 1; i < argc; ++i) {
         if(i + 1 < argc && std::strcmp(argv[i], "--iterations") == 0) {
             iterations = std::atoll(argv[i + 1]);
@@ -161,6 +227,8 @@ int main(int argc, char **argv)
         } else if(i + 1 < argc && std::strcmp(argv[i], "--seed") == 0) {
             seed = std::strtoull(argv[i + 1], nullptr, 16);
             ++i;
+        } else if(std::strcmp(argv[i], "--l2b") == 0) {
+            l2b_only = true;
         }
     }
 
@@ -168,15 +236,36 @@ int main(int argc, char **argv)
     long long compiled_ok = 0;
     for(long long i = 0; i < iterations; ++i) {
         std::string source;
-        switch(rng.below(3)) {
-        case 0: source = structured_program(rng); break;
-        case 1: source = token_soup(rng); break;
-        default: source = mutated_seed(rng); break;
+        if(l2b_only) {
+            source = structured_pou_project(rng);
+        } else {
+            switch(rng.below(3)) {
+            case 0: source = structured_program(rng); break;
+            case 1: source = token_soup(rng); break;
+            default: source = mutated_seed(rng); break;
+            }
         }
         const plcopen::core::st::CompileResult result =
             plcopen::core::st::compile(source);
         if(result.ok) {
             ++compiled_ok;
+            plcopen::core::st::Instance instance;
+            const plcopen::core::rt::ErrorCode loaded = instance.load(
+                result.program, runtime_buffer, sizeof(runtime_buffer),
+                kTaskPeriodNs);
+            if(loaded != plcopen::core::rt::ErrorCode::ok) {
+                std::printf("FUZZ_FAIL load at iteration %lld required=%zu error=%d\n",
+                            i, result.program.required_bytes(),
+                            static_cast<int>(loaded));
+                return 1;
+            }
+            const plcopen::core::st::ScanError scan =
+                instance.scan(kScanBudget);
+            if(!bounded_scan_error(scan)) {
+                std::printf("FUZZ_FAIL scan at iteration %lld error=%d\n", i,
+                            static_cast<int>(scan));
+                return 1;
+            }
         }
         // Crash-free is the contract; diagnostics content is not asserted
         // here. A defensive floor: a compile must always produce either a

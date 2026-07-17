@@ -103,7 +103,7 @@
 
 ## 实现记录（2026-07-11，KB-070）
 
-`core/st/` 增量交付：`conv.h`（转换矩阵单一事实源：sema 解析/codegen 下降/测试枚举/YAML dump 四方共用）+ 类型宇宙/白名单（`types.h`，规范槽位形式使全部加宽运行期零成本）+ 追加式指令扩展（iarith/cmp_u/bit_*/time_scale/power/conv_*——L0 字节码逐位不变，L0 锚点哈希保持，L1a 扩展锚点 4976297220763985794 入门禁）。验收证据：210 格逐格 + 手工决胜边界全绿、`st-l1a-conversions.yaml` 三方比对入 CTest、白名单 12 正 12 反、全宽度回卷边界表、fault 三型、fuzz 语料扩展。
+`core/st/` 增量交付：`conv.h`（转换矩阵单一事实源：sema 解析/codegen 下降/测试枚举/YAML dump 四方共用）+ 类型宇宙/白名单（`types.h`，规范槽位形式使全部加宽运行期零成本）+ 追加式指令扩展（iarith/cmp_u/bit_*/time_scale/power/conv_*）。L1b2 的 ABI-v2 字节偏移有意刷新代码流后，当前跨平台锚点为 L0 `16885475011046341104`、L1a `12959811419021558448`，Windows/Linux 相同且不保留旧 hash 兼容。验收证据：210 格逐格 + 手工决胜边界全绿、`st-l1a-conversions.yaml` 三方比对入 CTest、白名单 12 正 12 反、全宽度回卷边界表、fault 三型、fuzz 语料扩展。
 
 批准范围内的实现层澄清（均已落 KB-070）：
 

@@ -4,6 +4,8 @@
 #include <cstdint>
 #include <cstring>
 
+#include "st/type_desc.h"
+
 // L0 value-type universe (approved st-l0-semantics 1.2): six elementary
 // types. TIME is int64 nanoseconds end-to-end; quantization happens only at
 // timer consumption (matrix 3.4). The detail helpers below define the wrap
@@ -34,9 +36,73 @@ enum class Type : std::uint8_t
     dword = 14, // 32-bit bit string
     lword = 15, // 64-bit bit string
     axis_ref = 16, // opaque host-bound AxisModel handle (L2a)
+    char_ = 17,
+    wchar = 18,
+    string_ = 19,
+    wstring = 20,
+    date = 21,
+    tod = 22,
+    dt = 23,
 };
 
-inline constexpr int kTypeCount = 17;
+inline constexpr int kTypeCount = 24;
+
+constexpr TypeId type_id(Type type)
+{
+    switch(type) {
+    case Type::bool_: return builtin::bool_;
+    case Type::sint: return builtin::sint;
+    case Type::int_: return builtin::int_;
+    case Type::dint: return builtin::dint;
+    case Type::lint: return builtin::lint;
+    case Type::usint: return builtin::usint;
+    case Type::uint_: return builtin::uint_;
+    case Type::udint: return builtin::udint;
+    case Type::ulint: return builtin::ulint;
+    case Type::real: return builtin::real;
+    case Type::lreal: return builtin::lreal;
+    case Type::time: return builtin::time;
+    case Type::byte_: return builtin::byte_;
+    case Type::word: return builtin::word;
+    case Type::dword: return builtin::dword;
+    case Type::lword: return builtin::lword;
+    case Type::axis_ref: return invalid_type_id;
+    case Type::char_: return builtin::usint;
+    case Type::wchar: return builtin::udint;
+    case Type::date: return builtin::date;
+    case Type::tod: return builtin::tod;
+    case Type::dt: return builtin::dt;
+    case Type::string_:
+    case Type::wstring: return invalid_type_id;
+    }
+    return invalid_type_id;
+}
+
+constexpr Type type_from_id(TypeId id)
+{
+    switch(id) {
+    case builtin::bool_: return Type::bool_;
+    case builtin::sint: return Type::sint;
+    case builtin::int_: return Type::int_;
+    case builtin::dint: return Type::dint;
+    case builtin::lint: return Type::lint;
+    case builtin::usint: return Type::usint;
+    case builtin::uint_: return Type::uint_;
+    case builtin::udint: return Type::udint;
+    case builtin::ulint: return Type::ulint;
+    case builtin::real: return Type::real;
+    case builtin::lreal: return Type::lreal;
+    case builtin::time: return Type::time;
+    case builtin::date: return Type::date;
+    case builtin::tod: return Type::tod;
+    case builtin::dt: return Type::dt;
+    case builtin::byte_: return Type::byte_;
+    case builtin::word: return Type::word;
+    case builtin::dword: return Type::dword;
+    case builtin::lword: return Type::lword;
+    default: return Type::bool_;
+    }
+}
 
 constexpr bool is_signed_int(Type type)
 {
@@ -270,6 +336,13 @@ constexpr const char *to_string(Type type)
     case Type::dword: return "DWORD";
     case Type::lword: return "LWORD";
     case Type::axis_ref: return "AXIS_REF";
+    case Type::char_: return "CHAR";
+    case Type::wchar: return "WCHAR";
+    case Type::string_: return "STRING";
+    case Type::wstring: return "WSTRING";
+    case Type::date: return "DATE";
+    case Type::tod: return "TOD";
+    case Type::dt: return "DT";
     }
     return "?";
 }

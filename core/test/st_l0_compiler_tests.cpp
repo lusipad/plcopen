@@ -208,19 +208,21 @@ void recovery_diagnostics()
 
 void unsupported_constructs()
 {
+    // anchor L0-6-l1: the former L1 rejection representatives graduated in
+    // L1b and must no longer be routed through the L0 unsupported diagnostic.
+    check(compile("PROGRAM p VAR s : STRING; END_VAR END_PROGRAM").ok,
+          "L1b STRING graduated from unsupported boundary");
+    check(compile("TYPE A : ARRAY [1..3] OF INT; END_TYPE "
+                  "PROGRAM p VAR a : A; END_VAR END_PROGRAM")
+              .ok,
+          "L1b ARRAY graduated from unsupported boundary");
+
     struct UnsupportedCase
     {
         const char *source;
         st::DiagCode code;
     };
     const UnsupportedCase cases[] = {
-        // anchor L0-6-l1
-        {"PROGRAM p VAR s : STRING; END_VAR END_PROGRAM",
-         st::DiagCode::unsupported_l1},
-        // (CONTINUE and BYTE graduated to real constructs in L1a; STRING
-        // and ARRAY stay L1b representatives.)
-        {"PROGRAM p VAR a : ARRAY [1..3] OF INT; END_VAR END_PROGRAM",
-         st::DiagCode::unsupported_l1},
         // anchor L0-6-l2
         {"FUNCTION f : INT END_FUNCTION", st::DiagCode::unsupported_l2},
         {"PROGRAM p VAR_INPUT x : INT; END_VAR END_PROGRAM",

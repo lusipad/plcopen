@@ -13,38 +13,40 @@
 
 这 7 个新增文件（4 个 Motion/Annex 文件 + 3 份 Logic 指南）已全文检查。
 仓库的 C++ 运动内核能够承载传统 Motion 示例中的单轴、组运动、gear/cam、
-队列和 blending，但没有交付官方示例工程；ST 当前也不能直接运行这些示例。
+队列和 blending，但没有交付官方示例工程；ST 已具备用户 POU、聚合类型与
+多 PROGRAM，仍因 SFC、任务配置、完整标准函数/模拟量库等缺口不能直接运行
+全部官方示例。
 OOP Motion 的 `itfAxis`/`itfCommand` 接口族、方法返回 command object、属性和
 继承合同均未实现，不能用 C++ 类名相似来声称 PLCopen OOP 合规。
 
 Annex F 是 informative 示例集，不是新增强制 FB 标准。其 20 个示例单元中，
-现有 ST 能完整表达的只有纯标量组合逻辑子集；用户 POU、ARRAY/STRUCT、SFC、
-配置/任务及完整模拟量库仍缺失。
+现有 ST 已能表达标量、ARRAY/STRUCT 与用户 POU 组合逻辑；SFC、配置/任务及
+完整模拟量库仍缺失。
 
 ## 2. Annex F（46 页）
 
 | 条目 | 示例主题 | 判定 | 仓库证据与边界 |
 |------|----------|------|----------------|
-| F.1 | `WEIGH` 函数、BCD 转换与标定 | ❌ | ST 无用户定义 FUNCTION；当前仅单 PROGRAM（`core/st/README.md`） |
-| F.2 | `CMD_MONITOR` 命令监控、自动/手动模式、超时 | ⚠️ | BOOL/TIME、TON 与 CASE 可表达内部逻辑，但无用户 FB/多实例 POU |
-| F.3 | `FWD_REV_MON` 双向互锁与报警 | ⚠️ | 标量逻辑/定时器可表达；没有可复用用户 FB 声明和 LD/FBD 执行面 |
-| F.4 | `STACK_INT`，128 项堆栈与溢出/下溢 | ❌ | ST 尚无 ARRAY、用户 FB 和索引存储模型 |
+| F.1 | `WEIGH` 函数、BCD 转换与标定 | ⚠️ | 用户 FUNCTION 与标量转换已具备；BCD 和该命名示例函数未交付 |
+| F.2 | `CMD_MONITOR` 命令监控、自动/手动模式、超时 | ✅/⚠️ | BOOL/TIME、TON、CASE 与持久用户 FB/多实例可表达内部逻辑；项目 I/O/HMI 配置仍缺 |
+| F.3 | `FWD_REV_MON` 双向互锁与报警 | ✅/⚠️ | 可复用用户 FB 与定时逻辑已具备；LD/FBD 图形执行面不在范围 |
+| F.4 | `STACK_INT`，128 项堆栈与溢出/下溢 | ✅ | 1D ARRAY、动态索引、用户 FB 与持久实例已具备 |
 | F.5 | `MIX_2_BRIX` 顺序混料 | ❌ | 示例核心是 SFC；仓库明确无 SFC（`core/st/README.md`） |
 | F.6.1 | `LAG1` 一阶滤波 | ⚠️ | C++ 可实现数值式，ST 有 REAL/LREAL 运算；无标准化示例 FB |
-| F.6.2 | `DELAY` N 样本延迟 | ❌ | 依赖 ARRAY/历史缓冲和用户 FB |
-| F.6.3 | `AVERAGE` 滑动平均 | ❌ | 同上，缺数组及可复用实例 |
-| F.6.4 | `INTEGRAL` 积分 | ⚠️ | 标量状态可在 PROGRAM 中手写；无示例 FB、采样周期封装 |
-| F.6.5 | `DERIVATIVE` 微分 | ⚠️ | 同上，能手写但无库合同 |
+| F.6.2 | `DELAY` N 样本延迟 | ⚠️ | ARRAY/历史缓冲与用户 FB 已可表达；未交付同名示例库 |
+| F.6.3 | `AVERAGE` 滑动平均 | ⚠️ | ARRAY 与持久实例已可表达；未交付同名示例库 |
+| F.6.4 | `INTEGRAL` 积分 | ⚠️ | 可封装为持久用户 FB；无示例库与任务周期配置 |
+| F.6.5 | `DERIVATIVE` 微分 | ⚠️ | 可封装为持久用户 FB；无示例库合同 |
 | F.6.6 | `HYSTERESIS` | ✅/⚠️ | ST 标量逻辑可直接表达；未作为命名库 FB 交付 |
-| F.6.7 | `LIMITS_ALARM` | ⚠️ | 标量比较可表达；无用户 FB |
-| F.6.8 | `ANALOG_LIMITS` 结构 | ❌ | ST 尚无 STRUCT |
-| F.6.9 | `ANALOG_MONITOR` | ❌ | 依赖结构和多个用户 FB 组合 |
-| F.6.10 | `PID` 组合 | ❌ | 没有 PID/模拟量标准库，也无用户 FB 组合面 |
-| F.6.11 | `DIFFEQ` 差分方程 | ❌ | 依赖系数/历史 ARRAY |
+| F.6.7 | `LIMITS_ALARM` | ✅/⚠️ | 标量比较与用户 FB 可表达；未交付同名库 FB |
+| F.6.8 | `ANALOG_LIMITS` 结构 | ✅ | 自然布局 STRUCT 与嵌套初始化已具备 |
+| F.6.9 | `ANALOG_MONITOR` | ⚠️ | STRUCT 与多个用户 FB 可组合；同名示例库未交付 |
+| F.6.10 | `PID` 组合 | ⚠️ | 用户 FB 组合面已具备；PID/模拟量标准库未交付 |
+| F.6.11 | `DIFFEQ` 差分方程 | ⚠️ | 系数/历史 ARRAY 可表达；同名示例库未交付 |
 | F.6.12 | `RAMP` 时间斜坡 | ⚠️ | C++ 运动规划器有更强轨迹能力，但不是该 IEC 示例 FB；ST 无命名实现 |
 | F.6.13 | `TRANSFER` 无扰切换 | ⚠️ | C++ 接管/同步路径有连续性合同，不能替代该过程控制 FB |
-| F.7 | `GRAVEL` 配置、程序与 SFC | ❌ | 缺 CONFIGURATION/RESOURCE/TASK、多 PROGRAM、SFC |
-| F.8 | `AGV` 程序示例 | ❌ | 缺示例所需完整 POU/配置和图形语言面 |
+| F.7 | `GRAVEL` 配置、程序与 SFC | ❌ | 多 PROGRAM 已具备；仍缺 CONFIGURATION/RESOURCE/TASK 与 SFC |
+| F.8 | `AGV` 程序示例 | ⚠️ | 用户 POU/多 PROGRAM 已具备；配置、SFC/图形语言面和完整示例仍缺 |
 
 Annex F 只说明 IEC 61131-3 的组合表达方式；它不会把上述名称变成 PLCopen
 Motion FB，也不能用 C++ 内部的滤波器、规划器或状态机替代语言级示例交付。
@@ -92,10 +94,10 @@ Motion FB，也不能用 C++ 内部的滤波器、规划器或状态机替代语
 | 要点 | 判定 | 说明 |
 |------|------|------|
 | 外部接口、主信号、操作员交互先定义 | ⚠️ | C++ 公共 API 与 adapter 边界明确；没有 IEC 项目级 I/O 配置模型 |
-| 自顶向下分区并定义 POU | ⚠️ | 仓库模块分层清晰；ST 仅单 PROGRAM，无用户 POU |
+| 自顶向下分区并定义 POU | ✅ | ST 支持项目级用户 FUNCTION/FB 与多个命名 PROGRAM，作用域和实例模型已固定 |
 | 定义 scan 周期要求 | ✅/⚠️ | VM load 必须提供 `task_period_ns`，但无 IEC TASK 调度语法 |
 | CONFIGURATION/RESOURCE/TASK 绑定 | ❌ | L5 未实现 |
-| 纯符号编程、避免 jump、统一命名 | ✅/⚠️ | ST 无 GOTO/绝对地址，符号表与命名规则部分具备；多 POU 规则待 L2b |
+| 纯符号编程、避免 jump、统一命名 | ✅/⚠️ | ST 无 GOTO，大小写不敏感符号表与多 POU 规则已具备；未提供命名风格 lint |
 | 用 SFC 分解主序列 | ❌ | L6 未实现 |
 
 ### 5.3 软件评价（2 页）
@@ -112,7 +114,6 @@ PLCopen 认证流程完成。
 | M-01 | 未交付 PLCopen OOP Motion 的接口、属性、方法和 command object 模型 | 不得宣称 OOP Motion 合规 |
 | M-02 | OOP XML 示例库未纳入构建/导入/执行测试 | 官方示例不能在仓库复现 |
 | M-03 | 传统标签机/仓储示例没有端到端程序与时序 oracle | 底层能力不能证明应用示例行为 |
-| L-01 | Annex F 所需用户 FUNCTION/FB、多 POU、ARRAY/STRUCT 尚未完成 | 多数示例无法由当前 ST 编译执行 |
 | L-02 | SFC、CONFIGURATION/RESOURCE/TASK 缺失 | F.5/F.7/F.8、PackML 和七步法无法落地 |
 | L-03 | 无 Annex F 模拟量 FB 库（滤波、PID、差分、transfer） | 过程控制示例仅能零散手写 |
 | L-04 | 无 PackML 状态模型和 SFC 映射 | 机器级状态/OEE 互操作为空白 |

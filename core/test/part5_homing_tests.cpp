@@ -55,6 +55,13 @@ bool aborted_without_revival(const fb::MotionOutputs &outputs)
            !outputs.error;
 }
 
+bool outputs_cleared(const fb::MotionOutputs &outputs)
+{
+    return !outputs.done && !outputs.busy && !outputs.active && !outputs.command_accepted &&
+           !outputs.command_aborted && !outputs.error && outputs.error_id == rt::ErrorCode::ok &&
+           outputs.command_id == 0;
+}
+
 // --- MC_HomeDirect ---
 
 int check_step_direct_basic()
@@ -416,6 +423,49 @@ int check_finish_homing_null_axis()
     }
 
     std::printf("  PASS finish_homing_null_axis\n");
+    return 0;
+}
+
+int check_finish_homing_rejects_unsupported_buffer_mode()
+{
+    axis::AxisModel axis;
+    axis.set_power(true);
+    const axis::AxisSnapshot before = axis.snapshot();
+
+    fb::FbFinishHoming finish;
+    finish.axis_ref = &axis;
+    finish.buffer_mode = axis::BufferMode::blending_low;
+    finish.execute = true;
+    finish.call();
+
+    if (!finish.outputs.error || finish.outputs.error_id != rt::ErrorCode::unsupported ||
+        !same_snapshot(axis.snapshot(), before))
+    {
+        return fail("finish_homing rejects unsupported buffer mode");
+    }
+    return 0;
+}
+
+int check_finish_homing_clears_done_on_falling_edge()
+{
+    axis::AxisModel axis;
+    axis.set_power(true);
+
+    fb::FbFinishHoming finish;
+    finish.axis_ref = &axis;
+    finish.execute = true;
+    finish.call();
+    if (!finish.outputs.done)
+    {
+        return fail("finish_homing falling edge setup");
+    }
+
+    finish.execute = false;
+    finish.call();
+    if (!outputs_cleared(finish.outputs))
+    {
+        return fail("finish_homing falling edge clears done");
+    }
     return 0;
 }
 
@@ -851,6 +901,163 @@ int check_search_validation_matrix()
         }
     }
     std::printf("  PASS search_validation_matrix\n");
+    return 0;
+}
+
+int check_search_fbs_reject_unsupported_buffer_mode()
+{
+    {
+        axis::AxisModel axis;
+        axis.set_power(true);
+        fb::FbStepAbsoluteSwitch step;
+        step.axis_ref = &axis;
+        step.buffer_mode = axis::BufferMode::blending_low;
+        step.execute = true;
+        step.call();
+        if (!step.outputs.error || step.outputs.error_id != rt::ErrorCode::unsupported)
+            return fail("abs_switch rejects unsupported buffer mode");
+    }
+    {
+        axis::AxisModel axis;
+        axis.set_power(true);
+        fb::FbStepLimitSwitch step;
+        step.axis_ref = &axis;
+        step.buffer_mode = axis::BufferMode::blending_high;
+        step.execute = true;
+        step.call();
+        if (!step.outputs.error || step.outputs.error_id != rt::ErrorCode::unsupported)
+            return fail("limit_switch rejects unsupported buffer mode");
+    }
+    {
+        axis::AxisModel axis;
+        axis.set_power(true);
+        fb::FbStepReferencePulse step;
+        step.axis_ref = &axis;
+        step.buffer_mode = axis::BufferMode::blending_low;
+        step.execute = true;
+        step.call();
+        if (!step.outputs.error || step.outputs.error_id != rt::ErrorCode::unsupported)
+            return fail("reference_pulse rejects unsupported buffer mode");
+    }
+    return 0;
+}
+
+int check_search_error_clears_on_falling_edge()
+{
+    fb::FbStepAbsoluteSwitch step;
+    step.execute = true;
+    step.call();
+    if (!step.outputs.error)
+        return fail("search error falling edge setup");
+
+    step.execute = false;
+    step.call();
+    if (!outputs_cleared(step.outputs))
+        return fail("search falling edge clears error");
+    return 0;
+}
+
+int check_search_aborted_clears_on_falling_edge()
+{
+    axis::AxisModel axis;
+    axis.set_power(true);
+    fb::FbStepReferencePulse step;
+    step.axis_ref = &axis;
+    step.reference_signal.input = 1;
+    step.execute = true;
+    step.call();
+    const rt::Result<std::uint32_t> takeover = submit_takeover(axis, 1.0);
+    const rt::Result<std::uint32_t> replacement = axis.arm_touch_probe(1, false, 0.0, 0.0);
+    if (!takeover || !replacement)
+        return fail("search aborted falling edge setup");
+    step.call();
+    if (!step.outputs.command_aborted)
+    {
+        return fail("search aborted terminal setup");
+    }
+
+    step.execute = false;
+    step.call();
+    if (!outputs_cleared(step.outputs))
+        return fail("search falling edge clears aborted");
+    return 0;
+}
+
+int check_search_low_execute_error_is_one_cycle()
+{
+    axis::AxisModel axis;
+    axis.set_power(true);
+    fb::FbStepAbsoluteSwitch step;
+    step.axis_ref = &axis;
+    step.reference_signal.input = 0;
+    step.time_limit = 2;
+    step.execute = true;
+    step.call();
+    step.execute = false;
+    for (int cycle = 0; cycle < 10 && !step.outputs.error; ++cycle)
+    {
+        axis.cycle();
+        step.call();
+    }
+    if (!step.outputs.error || step.outputs.error_id != rt::ErrorCode::out_of_range)
+        return fail("search low execute error setup");
+
+    step.call();
+    if (!outputs_cleared(step.outputs))
+        return fail("search low execute error is one cycle");
+    return 0;
+}
+
+int check_search_buffered_queue_activates_without_early_probe()
+{
+    axis::AxisModel axis;
+    axis.set_power(true);
+    if (!submit_takeover(axis, 0.02))
+        return fail("search buffered queue motion setup");
+
+    fb::FbStepReferencePulse step;
+    step.axis_ref = &axis;
+    step.reference_signal.input = 0;
+    step.buffer_mode = axis::BufferMode::buffered;
+    step.execute = true;
+    step.call();
+    if (!step.outputs.busy || step.outputs.active || axis.probe_command_id(0) != 0)
+        return fail("search buffered queue stays inactive without probe");
+
+    for (int cycle = 0; cycle < 2000 && !step.outputs.active && !step.outputs.error; ++cycle)
+    {
+        axis.cycle();
+        step.call();
+    }
+    if (!step.outputs.active || step.outputs.error || axis.probe_command_id(0) == 0)
+        return fail("search buffered queue activates and arms probe");
+    return 0;
+}
+
+int check_search_buffered_queue_reports_abort()
+{
+    axis::AxisModel axis;
+    axis.set_power(true);
+    if (!submit_takeover(axis, 10.0))
+        return fail("search queued abort motion setup");
+
+    fb::FbStepReferencePulse step;
+    step.axis_ref = &axis;
+    step.reference_signal.input = 0;
+    step.buffer_mode = axis::BufferMode::buffered;
+    step.execute = true;
+    step.call();
+    if (!step.outputs.busy || step.outputs.active || axis.probe_command_id(0) != 0)
+        return fail("search queued abort pending setup");
+    if (!submit_takeover(axis, 1.0))
+        return fail("search queued abort takeover setup");
+
+    step.call();
+    if (!step.outputs.command_aborted || step.outputs.error || step.outputs.busy ||
+        step.outputs.active || axis.probe_command_id(0) != 0)
+    {
+        return fail("search buffered queue reports abort");
+    }
     return 0;
 }
 
@@ -1949,6 +2156,152 @@ int check_step_block_takeover()
     return 0;
 }
 
+int check_step_block_rejects_unsupported_buffer_mode()
+{
+    axis::AxisModel axis;
+    axis.set_power(true);
+    const axis::AxisSnapshot before = axis.snapshot();
+    fb::FbStepBlock step;
+    step.axis_ref = &axis;
+    step.buffer_mode = axis::BufferMode::blending_low;
+    step.execute = true;
+    step.call();
+    if (!step.outputs.error || step.outputs.error_id != rt::ErrorCode::unsupported ||
+        !same_snapshot(axis.snapshot(), before))
+    {
+        return fail("step_block rejects unsupported buffer mode");
+    }
+    return 0;
+}
+
+int check_step_block_rejects_invalid_direction()
+{
+    axis::AxisModel axis;
+    axis.set_power(true);
+    const axis::AxisSnapshot before = axis.snapshot();
+    fb::FbStepBlock step;
+    step.axis_ref = &axis;
+    step.direction = static_cast<axis::HomeDirection>(99);
+    step.execute = true;
+    step.call();
+    if (!step.outputs.error || step.outputs.error_id != rt::ErrorCode::invalid_argument ||
+        !same_snapshot(axis.snapshot(), before))
+    {
+        return fail("step_block rejects invalid direction");
+    }
+    return 0;
+}
+
+int check_step_block_rejects_null_axis()
+{
+    fb::FbStepBlock step;
+    step.execute = true;
+    step.call();
+    if (!step.outputs.error || step.outputs.error_id != rt::ErrorCode::invalid_argument)
+        return fail("step_block rejects null axis");
+    return 0;
+}
+
+int check_step_block_done_clears_on_falling_edge()
+{
+    axis::AxisModel axis;
+    axis.set_power(true);
+    fb::FbStepBlock step;
+    step.axis_ref = &axis;
+    step.velocity = 0.5;
+    step.detection_velocity_limit = 1.0;
+    step.execute = true;
+    step.call();
+    for (int cycle = 0; cycle < 2000 && !step.outputs.done && !step.outputs.error; ++cycle)
+    {
+        axis.cycle();
+        step.call();
+    }
+    if (!step.outputs.done)
+        return fail("step_block done falling edge setup");
+
+    step.execute = false;
+    step.call();
+    if (!outputs_cleared(step.outputs))
+        return fail("step_block falling edge clears done");
+    return 0;
+}
+
+int check_step_block_low_execute_error_is_one_cycle()
+{
+    axis::AxisModel axis;
+    axis.set_power(true);
+    fb::FbStepBlock step;
+    step.axis_ref = &axis;
+    step.velocity = 0.5;
+    step.torque_limit = 10.0;
+    step.time_limit = 1;
+    step.execute = true;
+    step.call();
+    if (!step.outputs.busy || step.outputs.error)
+        return fail("step_block low execute error owner setup");
+    step.execute = false;
+    step.call();
+    if (!step.outputs.error || step.outputs.error_id != rt::ErrorCode::out_of_range)
+        return fail("step_block low execute error setup");
+
+    step.call();
+    if (!outputs_cleared(step.outputs))
+        return fail("step_block low execute error is one cycle");
+    return 0;
+}
+
+int check_step_block_low_execute_aborted_is_one_cycle()
+{
+    axis::AxisModel axis;
+    axis.set_power(true);
+    fb::FbStepBlock step;
+    step.axis_ref = &axis;
+    step.velocity = 0.5;
+    step.torque_limit = 10.0;
+    step.execute = true;
+    step.call();
+    step.execute = false;
+    step.call();
+    if (!submit_takeover(axis, 1.0))
+        return fail("step_block low execute aborted setup");
+    step.call();
+    if (!step.outputs.command_aborted)
+        return fail("step_block low execute aborted terminal");
+
+    step.call();
+    if (!outputs_cleared(step.outputs))
+        return fail("step_block low execute aborted is one cycle");
+    return 0;
+}
+
+int check_step_block_buffered_queue_activates()
+{
+    axis::AxisModel axis;
+    axis.set_power(true);
+    if (!submit_takeover(axis, 0.02))
+        return fail("step_block buffered queue motion setup");
+
+    fb::FbStepBlock step;
+    step.axis_ref = &axis;
+    step.buffer_mode = axis::BufferMode::buffered;
+    step.velocity = 0.5;
+    step.torque_limit = 10.0;
+    step.execute = true;
+    step.call();
+    if (!step.outputs.busy || step.outputs.active)
+        return fail("step_block buffered queue stays inactive");
+
+    for (int cycle = 0; cycle < 2000 && !step.outputs.active && !step.outputs.error; ++cycle)
+    {
+        axis.cycle();
+        step.call();
+    }
+    if (!step.outputs.active || step.outputs.error)
+        return fail("step_block buffered queue activates");
+    return 0;
+}
+
 int check_step_distance_coded_unique_match()
 {
     fb::DistanceCodeMap map;
@@ -1983,6 +2336,12 @@ int check_step_distance_coded_unique_match()
         !near(axis.snapshot().command_position, 12.0, 1e-12))
     {
         return fail("distance_coded: unique match position");
+    }
+    step.execute = false;
+    step.call();
+    if (!outputs_cleared(step.outputs))
+    {
+        return fail("distance_coded: falling edge clears done");
     }
     std::printf("  PASS step_distance_coded_unique_match\n");
     return 0;
@@ -2320,6 +2679,119 @@ int check_step_distance_coded_input_validation_matrix()
     return 0;
 }
 
+int check_step_distance_coded_rejects_unsupported_buffer_mode()
+{
+    fb::DistanceCodeMap map;
+    map.entries[0] = {1.0, 10.0};
+    map.count = 1;
+    axis::AxisModel axis;
+    axis.set_power(true);
+    const axis::AxisSnapshot before = axis.snapshot();
+    fb::FbStepDistanceCoded step;
+    step.axis_ref = &axis;
+    step.bind_distance_code_map(&map);
+    step.buffer_mode = axis::BufferMode::blending_low;
+    step.execute = true;
+    step.call();
+    if (!step.outputs.error || step.outputs.error_id != rt::ErrorCode::unsupported ||
+        !same_snapshot(axis.snapshot(), before))
+    {
+        return fail("distance_coded rejects unsupported buffer mode");
+    }
+    return 0;
+}
+
+int check_step_distance_coded_rejects_invalid_direction()
+{
+    fb::DistanceCodeMap map;
+    map.entries[0] = {1.0, 10.0};
+    map.count = 1;
+    axis::AxisModel axis;
+    axis.set_power(true);
+    const axis::AxisSnapshot before = axis.snapshot();
+    fb::FbStepDistanceCoded step;
+    step.axis_ref = &axis;
+    step.bind_distance_code_map(&map);
+    step.direction = static_cast<axis::HomeDirection>(99);
+    step.execute = true;
+    step.call();
+    if (!step.outputs.error || step.outputs.error_id != rt::ErrorCode::invalid_argument ||
+        !same_snapshot(axis.snapshot(), before))
+    {
+        return fail("distance_coded rejects invalid direction");
+    }
+    return 0;
+}
+
+int check_step_distance_coded_rejects_null_axis()
+{
+    fb::DistanceCodeMap map;
+    map.entries[0] = {1.0, 10.0};
+    map.count = 1;
+    fb::FbStepDistanceCoded step;
+    step.bind_distance_code_map(&map);
+    step.execute = true;
+    step.call();
+    if (!step.outputs.error || step.outputs.error_id != rt::ErrorCode::invalid_argument)
+        return fail("distance_coded rejects null axis");
+    return 0;
+}
+
+int check_step_distance_coded_low_execute_aborted_is_one_cycle()
+{
+    fb::DistanceCodeMap map;
+    map.entries[0] = {1.0, 10.0};
+    map.count = 1;
+    axis::AxisModel axis;
+    axis.set_power(true);
+    fb::FbStepDistanceCoded step;
+    step.axis_ref = &axis;
+    step.bind_distance_code_map(&map);
+    step.execute = true;
+    step.call();
+    step.execute = false;
+    step.call();
+    if (!submit_takeover(axis, 1.0))
+        return fail("distance_coded low execute aborted setup");
+    step.call();
+    if (!step.outputs.command_aborted)
+        return fail("distance_coded low execute aborted terminal");
+
+    step.call();
+    if (!outputs_cleared(step.outputs))
+        return fail("distance_coded low execute aborted is one cycle");
+    return 0;
+}
+
+int check_step_distance_coded_buffered_queue_activates()
+{
+    fb::DistanceCodeMap map;
+    map.entries[0] = {1.0, 10.0};
+    map.count = 1;
+    axis::AxisModel axis;
+    axis.set_power(true);
+    if (!submit_takeover(axis, 0.02))
+        return fail("distance_coded buffered queue motion setup");
+
+    fb::FbStepDistanceCoded step;
+    step.axis_ref = &axis;
+    step.bind_distance_code_map(&map);
+    step.buffer_mode = axis::BufferMode::buffered;
+    step.execute = true;
+    step.call();
+    if (!step.outputs.busy || step.outputs.active || axis.probe_command_id(0) != 0)
+        return fail("distance_coded buffered queue stays inactive");
+
+    for (int cycle = 0; cycle < 2000 && !step.outputs.active && !step.outputs.error; ++cycle)
+    {
+        axis.cycle();
+        step.call();
+    }
+    if (!step.outputs.active || step.outputs.error || axis.probe_command_id(0) == 0)
+        return fail("distance_coded buffered queue activates and arms probe");
+    return 0;
+}
+
 int check_distance_coded_and_passive_limits()
 {
     fb::DistanceCodeMap map;
@@ -2466,6 +2938,58 @@ int check_home_absolute_zero_and_active_takeover()
     return 0;
 }
 
+int check_home_absolute_rejects_unsupported_buffer_mode()
+{
+    axis::AxisModel axis;
+    axis.set_power(true);
+    const axis::AxisSnapshot before = axis.snapshot();
+    double source = 1.0;
+    fb::FbHomeAbsolute home;
+    home.axis_ref = &axis;
+    home.bind_source(&source);
+    home.buffer_mode = axis::BufferMode::buffered;
+    home.execute = true;
+    home.call();
+    if (!home.outputs.error || home.outputs.error_id != rt::ErrorCode::unsupported ||
+        !same_snapshot(axis.snapshot(), before))
+    {
+        return fail("home_absolute rejects unsupported buffer mode");
+    }
+    return 0;
+}
+
+int check_home_absolute_rejects_null_axis()
+{
+    double source = 1.0;
+    fb::FbHomeAbsolute home;
+    home.bind_source(&source);
+    home.execute = true;
+    home.call();
+    if (!home.outputs.error || home.outputs.error_id != rt::ErrorCode::invalid_argument)
+        return fail("home_absolute rejects null axis");
+    return 0;
+}
+
+int check_home_absolute_clears_done_on_falling_edge()
+{
+    axis::AxisModel axis;
+    axis.set_power(true);
+    double source = 1.0;
+    fb::FbHomeAbsolute home;
+    home.axis_ref = &axis;
+    home.bind_source(&source);
+    home.execute = true;
+    home.call();
+    if (!home.outputs.done)
+        return fail("home_absolute falling edge setup");
+
+    home.execute = false;
+    home.call();
+    if (!outputs_cleared(home.outputs))
+        return fail("home_absolute falling edge clears done");
+    return 0;
+}
+
 int check_flying_switch_preserves_motion()
 {
     axis::AxisModel axis;
@@ -2606,6 +3130,133 @@ int check_flying_rejections_and_takeover()
         return fail("flying_pulse: second owner takes over");
     }
     std::printf("  PASS flying_rejections_and_takeover\n");
+    return 0;
+}
+
+int check_passive_homing_rejects_unsupported_buffer_mode()
+{
+    axis::AxisModel axis;
+    axis.set_power(true);
+    if (!submit_takeover(axis, 1.0))
+        return fail("passive unsupported buffer setup");
+    axis.cycle();
+    fb::FbStepReferenceFlyingRefPulse step;
+    step.axis_ref = &axis;
+    step.buffer_mode = axis::BufferMode::buffered;
+    step.execute = true;
+    step.call();
+    if (!step.outputs.error || step.outputs.error_id != rt::ErrorCode::unsupported)
+        return fail("passive homing rejects unsupported buffer mode");
+    return 0;
+}
+
+int check_passive_homing_rejects_null_axis()
+{
+    fb::FbStepReferenceFlyingSwitch step;
+    step.execute = true;
+    step.call();
+    if (!step.outputs.error || step.outputs.error_id != rt::ErrorCode::invalid_argument)
+        return fail("passive homing rejects null axis");
+    return 0;
+}
+
+int check_passive_homing_low_execute_done_is_one_cycle()
+{
+    axis::AxisModel axis;
+    axis.set_power(true);
+    if (!submit_takeover(axis, 10.0))
+        return fail("passive low execute done motion setup");
+    axis.cycle();
+    fb::FbStepReferenceFlyingRefPulse step;
+    step.axis_ref = &axis;
+    step.reference_signal.input = 0;
+    step.execute = true;
+    step.call();
+    step.execute = false;
+    step.call();
+    axis.set_digital_input(0, true);
+    axis.cycle();
+    step.call();
+    if (!step.outputs.done || step.outputs.error)
+        return fail("passive low execute done terminal");
+
+    step.call();
+    if (!outputs_cleared(step.outputs))
+        return fail("passive low execute done is one cycle");
+    return 0;
+}
+
+int check_passive_homing_low_execute_aborted_is_one_cycle()
+{
+    axis::AxisModel axis;
+    axis.set_power(true);
+    if (!submit_takeover(axis, 10.0))
+        return fail("passive low execute aborted motion setup");
+    axis.cycle();
+    fb::FbStepReferenceFlyingRefPulse step;
+    step.axis_ref = &axis;
+    step.reference_signal.input = 0;
+    step.execute = true;
+    step.call();
+    if (!step.outputs.busy || step.outputs.error)
+        return fail("passive low execute aborted owner setup");
+    step.execute = false;
+    step.call();
+    if (!step.outputs.busy || step.outputs.error || step.outputs.command_aborted)
+        return fail("passive low execute aborted retains owner");
+    fb::FbAbortPassiveHoming abort;
+    abort.axis_ref = &axis;
+    abort.execute = true;
+    abort.call();
+    step.call();
+    if (!step.outputs.command_aborted)
+        return fail("passive low execute aborted terminal");
+
+    step.call();
+    if (!outputs_cleared(step.outputs))
+        return fail("passive low execute aborted is one cycle");
+    return 0;
+}
+
+int check_passive_homing_low_execute_error_is_one_cycle()
+{
+    axis::AxisModel axis;
+    axis.set_power(true);
+    if (!submit_takeover(axis, 10.0))
+        return fail("passive low execute error motion setup");
+    axis.cycle();
+    fb::FbStepReferenceFlyingRefPulse step;
+    step.axis_ref = &axis;
+    step.reference_signal.input = 0;
+    step.time_limit = 1;
+    step.execute = true;
+    step.call();
+    if (!step.outputs.busy || step.outputs.error)
+        return fail("passive low execute error owner setup");
+    step.execute = false;
+    for (int cycle = 0; cycle < 4 && !step.outputs.error; ++cycle)
+        step.call();
+    if (!step.outputs.error || step.outputs.error_id != rt::ErrorCode::out_of_range)
+        return fail("passive low execute error terminal");
+
+    step.call();
+    if (!outputs_cleared(step.outputs))
+        return fail("passive low execute error is one cycle");
+    return 0;
+}
+
+int check_abort_passive_homing_null_axis_and_falling_edge()
+{
+    fb::FbAbortPassiveHoming abort;
+    abort.execute = true;
+    abort.call();
+    if (!abort.outputs.error || abort.outputs.error_id != rt::ErrorCode::invalid_argument)
+        return fail("abort passive homing rejects null axis");
+
+    abort.execute = false;
+    abort.call();
+    if (!outputs_cleared(abort.outputs))
+        return fail("abort passive homing falling edge clears error");
     return 0;
 }
 
@@ -2844,6 +3495,8 @@ int main()
     failures += check_finish_homing_no_park();
     failures += check_finish_homing_with_park();
     failures += check_finish_homing_null_axis();
+    failures += check_finish_homing_rejects_unsupported_buffer_mode();
+    failures += check_finish_homing_clears_done_on_falling_edge();
     failures += check_finish_homing_rejects_invalid_park_atomically();
     failures += check_finish_homing_rejects_soft_limit_park_atomically();
     failures += check_finish_homing_rejects_unpowered_and_errorstop_atomically();
@@ -2852,6 +3505,12 @@ int main()
     failures += check_step_abs_switch_escape();
     failures += check_search_validation_errors();
     failures += check_search_validation_matrix();
+    failures += check_search_fbs_reject_unsupported_buffer_mode();
+    failures += check_search_error_clears_on_falling_edge();
+    failures += check_search_aborted_clears_on_falling_edge();
+    failures += check_search_low_execute_error_is_one_cycle();
+    failures += check_search_buffered_queue_activates_without_early_probe();
+    failures += check_search_buffered_queue_reports_abort();
     failures += check_search_start_errors();
     failures += check_search_step_group_guard();
     failures += check_search_axis_error_and_reset();
@@ -2875,19 +3534,40 @@ int main()
     failures += check_step_block_validation_matrix();
     failures += check_step_block_limits();
     failures += check_step_block_takeover();
+    failures += check_step_block_rejects_unsupported_buffer_mode();
+    failures += check_step_block_rejects_invalid_direction();
+    failures += check_step_block_rejects_null_axis();
+    failures += check_step_block_done_clears_on_falling_edge();
+    failures += check_step_block_low_execute_error_is_one_cycle();
+    failures += check_step_block_low_execute_aborted_is_one_cycle();
+    failures += check_step_block_buffered_queue_activates();
     failures += check_step_distance_coded_unique_match();
     failures += check_step_distance_coded_rejects_map_ambiguity();
     failures += check_step_distance_coded_map_validation_matrix();
     failures += check_step_distance_coded_reverse_and_no_match();
     failures += check_step_distance_coded_cancel_and_takeover();
     failures += check_step_distance_coded_input_validation_matrix();
+    failures += check_step_distance_coded_rejects_unsupported_buffer_mode();
+    failures += check_step_distance_coded_rejects_invalid_direction();
+    failures += check_step_distance_coded_rejects_null_axis();
+    failures += check_step_distance_coded_low_execute_aborted_is_one_cycle();
+    failures += check_step_distance_coded_buffered_queue_activates();
     failures += check_distance_coded_and_passive_limits();
     failures += check_home_absolute_source_contract();
     failures += check_home_absolute_rejects_missing_and_nonfinite();
     failures += check_home_absolute_zero_and_active_takeover();
+    failures += check_home_absolute_rejects_unsupported_buffer_mode();
+    failures += check_home_absolute_rejects_null_axis();
+    failures += check_home_absolute_clears_done_on_falling_edge();
     failures += check_flying_switch_preserves_motion();
     failures += check_flying_pulse_and_abort();
     failures += check_flying_rejections_and_takeover();
+    failures += check_passive_homing_rejects_unsupported_buffer_mode();
+    failures += check_passive_homing_rejects_null_axis();
+    failures += check_passive_homing_low_execute_done_is_one_cycle();
+    failures += check_passive_homing_low_execute_aborted_is_one_cycle();
+    failures += check_passive_homing_low_execute_error_is_one_cycle();
+    failures += check_abort_passive_homing_null_axis_and_falling_edge();
     failures += check_flying_directional_edge_matrix();
     failures += check_flying_level_and_falling_modes();
     failures += check_passive_homing_validation_matrix();

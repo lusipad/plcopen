@@ -42,7 +42,7 @@ endif()
 
 # --- Mutation registry ---
 # Each mutation: FILE, ORIG, REPL, TEST (target name), LABEL (human-readable tag)
-set(MUT_COUNT 18)
+set(MUT_COUNT 20)
 
 # -- core/fb/basic.h (PLCopen standard FBs) --
 set(MUT_1_FILE  "core/fb/basic.h")
@@ -156,6 +156,19 @@ set(MUT_18_ORIG  "return size_ == Capacity;")
 set(MUT_18_REPL  "return size_ != Capacity;")
 set(MUT_18_TEST  "plcopen_core_rt_tests")
 set(MUT_18_LABEL "full-eq-to-neq")
+
+# -- core/st (compiler success contract and VM instruction budget) --
+set(MUT_19_FILE  "core/st/compile.h")
+set(MUT_19_ORIG  "result.ok = true;")
+set(MUT_19_REPL  "result.ok = false;")
+set(MUT_19_TEST  "plcopen_core_st_l0_compiler_tests")
+set(MUT_19_LABEL "st-compile-success-flip")
+
+set(MUT_20_FILE  "core/st/vm.h")
+set(MUT_20_ORIG  "if(remaining <= 0) {")
+set(MUT_20_REPL  "if(remaining < 0) {")
+set(MUT_20_TEST  "plcopen_core_st_l0_runtime_tests")
+set(MUT_20_LABEL "st-budget-boundary-off-by-one")
 
 # --- Run mutations ---
 message(STATUS "mutation-score: running ${MUT_COUNT} mutations...")

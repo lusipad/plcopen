@@ -328,6 +328,53 @@ void operator_surface()
           "mixed call forms rejected");
 }
 
+// Keep operands in variables so sema, codegen and every VM opcode lane are
+// exercised instead of disappearing into constant folding.
+void dynamic_operator_matrix()
+{
+    Rig rig;
+    check(rig.build(wrap(
+              "sa : SINT := 7; sb : SINT := 3; sr : SINT; "
+              "ua : USINT := 7; ub : USINT := 3; ur : USINT; "
+              "ra : REAL := 7.5; rb : REAL := 2.0; rr : REAL; "
+              "la : LREAL := 7.5; lb : LREAL := 2.0; lr : LREAL; "
+              "ba : BYTE := BYTE#16#A5; bb : BYTE := BYTE#16#3C; br : BYTE; "
+              "p : BOOL := TRUE; n : BOOL; q0 : BOOL; q1 : BOOL; q2 : BOOL; "
+              "q3 : BOOL; q4 : BOOL; q5 : BOOL; q6 : BOOL; q7 : BOOL; "
+              "t : TIME := T#3s; ti : TIME; tf : TIME; scale : INT := 2; "
+              "factor : LREAL := 2.5;",
+              "sr := sa + sb; sr := sa - sb; sr := sa * sb; "
+              "sr := sa / sb; sr := sa MOD sb; "
+              "ur := ua + ub; ur := ua - ub; ur := ua * ub; "
+              "ur := ua / ub; ur := ua MOD ub; "
+              "rr := ra + rb; rr := ra - rb; rr := ra * rb; rr := ra / rb; "
+              "lr := la + lb; lr := la - lb; lr := la * lb; lr := la / lb; "
+              "q0 := sa = sb; q1 := sa <> sb; q2 := sa < sb; "
+              "q3 := sa > sb; q4 := sa <= sb; q5 := sa >= sb; "
+              "q6 := ua < ub; q7 := ua >= ub; "
+              "n := NOT p; q0 := p AND n; q1 := p OR n; q2 := p XOR n; "
+              "br := ba AND bb; br := ba OR bb; br := ba XOR bb; "
+              "br := NOT ba; "
+              "ti := t * scale; ti := t / scale; "
+              "tf := t * factor; tf := t / factor;")),
+          "dynamic operator matrix builds");
+    check(rig.scan() == st::ScanError::ok,
+          "dynamic operator matrix scans");
+    check(rig.i64("sr") == 1 && rig.i64("ur") == 1,
+          "dynamic integer operators");
+    check(rig.f64("rr") == 3.75 && rig.f64("lr") == 3.75,
+          "dynamic floating operators");
+    check(rig.i64("q0") == 0 && rig.i64("q1") == 1 &&
+              rig.i64("q2") == 1 && rig.i64("q3") == 1 &&
+              rig.i64("q4") == 0 && rig.i64("q5") == 1 &&
+              rig.i64("q6") == 0 && rig.i64("q7") == 1,
+          "dynamic comparison and BOOL operators");
+    check(rig.i64("br") == 0x5A, "dynamic bit-string operators");
+    check(rig.i64("ti") == 1500000000LL &&
+              rig.i64("tf") == 1200000000LL,
+          "dynamic TIME scale operators");
+}
+
 } // namespace
 
 int main()
@@ -337,6 +384,7 @@ int main()
     typed_literals_constants();
     bitstrings();
     operator_surface();
+    dynamic_operator_matrix();
     if(failures) {
         std::printf("%d failure(s)\n", failures);
         return 1;

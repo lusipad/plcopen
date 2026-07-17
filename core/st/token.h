@@ -19,6 +19,11 @@ enum class TokenKind : std::uint8_t
     time_literal,  // nanoseconds in Token::signed_value
     bool_literal,  // TRUE/FALSE; value in Token::unsigned_value (0/1)
     typed_literal, // TYPE#... ; type in Token::literal_type (L1a 3.4)
+    string_literal,
+    wstring_literal,
+    date_literal,
+    tod_literal,
+    dt_literal,
 
     // punctuation
     assign,        // :=
@@ -27,8 +32,11 @@ enum class TokenKind : std::uint8_t
     comma,
     dot,
     dotdot,        // ..
+    hash,          // user type qualifier: Type#Member
     lparen,
     rparen,
+    lbracket,
+    rbracket,
     plus,
     minus,
     star,
@@ -76,6 +84,11 @@ enum class TokenKind : std::uint8_t
 
     // declaration qualifiers
     kw_constant,
+    kw_type,
+    kw_end_type,
+    kw_array,
+    kw_struct,
+    kw_end_struct,
 
     // type keywords
     kw_bool,
@@ -94,6 +107,13 @@ enum class TokenKind : std::uint8_t
     kw_word,
     kw_dword,
     kw_lword,
+    kw_char,
+    kw_wchar,
+    kw_string,
+    kw_wstring,
+    kw_date,
+    kw_tod,
+    kw_dt,
 
     // recognized-but-unsupported IEC keyword; payload in Token::diag_code
     unsupported_keyword,

@@ -1,0 +1,257 @@
+schema: plcopen-st-feature-set-v1
+approved: '2026-07-17'
+status_values: [implemented, pending, excluded]
+closure:
+  required_sets:
+    - grammar
+    - types
+    - operators
+    - conversions
+    - pous
+    - storage
+    - tasks
+    - sfc_qualifiers
+    - functions
+    - fbs
+    - pins
+    - diagnostics
+  invariant: declared == generated == registered == tested + excluded
+  complete_when: pending == 0 and every excluded item has scope_reason and rejection_test
+  compatibility: current source and bytecode only; no legacy source, opcode, hash, or binder aliases
+
+grammar:
+  - {id: program_single, status: implemented, test: core/test/st_l0_compiler_tests.cpp}
+  - {id: var_blocks, status: implemented, test: core/test/st_l0_compiler_tests.cpp}
+  - {id: assignment, status: implemented, test: core/test/st_l0_golden_tests.cpp}
+  - {id: if_elsif_else, status: implemented, test: core/test/st_l0_golden_tests.cpp}
+  - {id: case, status: implemented, test: core/test/st_l0_golden_tests.cpp}
+  - {id: for, status: implemented, test: core/test/st_l0_golden_tests.cpp}
+  - {id: while, status: implemented, test: core/test/st_l0_golden_tests.cpp}
+  - {id: repeat_until, status: implemented, test: core/test/st_l0_golden_tests.cpp}
+  - {id: exit_continue_return, status: implemented, test: core/test/st_l1a_types_tests.cpp}
+  - {id: type_enum_subrange, status: implemented, test: core/test/st_l1b1_tests.cpp}
+  - {id: type_array_struct, status: implemented, test: core/test/st_l1b2_tests.cpp}
+  - {id: string_date_literals, status: implemented, test: core/test/st_l1b3_tests.cpp}
+  - {id: user_pous, status: implemented, spec: st-l2b-semantics.md, test: core/test/st_l2b_tests.cpp}
+  - {id: located_variables, status: pending, spec: st-l3-semantics.md}
+  - {id: configuration_resource_task, status: pending, spec: st-l5-semantics.md}
+  - {id: sfc_text, status: pending, spec: st-l6-semantics.md}
+
+types:
+  - {id: BOOL, status: implemented, test: core/test/st_l0_runtime_tests.cpp}
+  - {id: SINT, status: implemented, test: core/test/st_l1a_types_tests.cpp}
+  - {id: INT, status: implemented, test: core/test/st_l0_runtime_tests.cpp}
+  - {id: DINT, status: implemented, test: core/test/st_l0_runtime_tests.cpp}
+  - {id: LINT, status: implemented, test: core/test/st_l1a_types_tests.cpp}
+  - {id: USINT, status: implemented, test: core/test/st_l1a_types_tests.cpp}
+  - {id: UINT, status: implemented, test: core/test/st_l1a_types_tests.cpp}
+  - {id: UDINT, status: implemented, test: core/test/st_l1a_types_tests.cpp}
+  - {id: ULINT, status: implemented, test: core/test/st_l1a_types_tests.cpp}
+  - {id: BYTE, status: implemented, test: core/test/st_l1a_types_tests.cpp}
+  - {id: WORD, status: implemented, test: core/test/st_l1a_types_tests.cpp}
+  - {id: DWORD, status: implemented, test: core/test/st_l1a_types_tests.cpp}
+  - {id: LWORD, status: implemented, test: core/test/st_l1a_types_tests.cpp}
+  - {id: REAL, status: implemented, test: core/test/st_l0_runtime_tests.cpp}
+  - {id: LREAL, status: implemented, test: core/test/st_l0_runtime_tests.cpp}
+  - {id: TIME, status: implemented, test: core/test/st_l0_runtime_tests.cpp}
+  - {id: ENUM, status: implemented, test: core/test/st_l1b1_tests.cpp}
+  - {id: SUBRANGE, status: implemented, test: core/test/st_l1b1_tests.cpp}
+  - {id: ARRAY, status: implemented, test: core/test/st_l1b2_tests.cpp}
+  - {id: STRUCT, status: implemented, test: core/test/st_l1b2_tests.cpp}
+  - {id: CHAR, status: implemented, test: core/test/st_l1b3_tests.cpp}
+  - {id: WCHAR, status: implemented, test: core/test/st_l1b3_tests.cpp}
+  - {id: STRING, status: implemented, test: core/test/st_l1b3_tests.cpp}
+  - {id: WSTRING, status: implemented, test: core/test/st_l1b3_tests.cpp}
+  - {id: DATE, status: implemented, test: core/test/st_l1b3_tests.cpp}
+  - {id: TOD, status: implemented, test: core/test/st_l1b3_tests.cpp}
+  - {id: DT, status: implemented, test: core/test/st_l1b3_tests.cpp}
+  - {id: AXIS_REF, status: implemented, test: core/test/st_l2a_tests.cpp}
+  - {id: GROUP_REF, status: pending, spec: st-l2c-semantics.md}
+
+operators:
+  - {id: arithmetic_add_sub_mul_div_mod, status: implemented, test: core/test/st_l0_runtime_tests.cpp}
+  - {id: unary_minus_not, status: implemented, test: core/test/st_l0_runtime_tests.cpp}
+  - {id: comparisons, status: implemented, test: core/test/st_l0_runtime_tests.cpp}
+  - {id: bool_and_or_xor, status: implemented, test: core/test/st_l0_runtime_tests.cpp}
+  - {id: bitstring_and_or_xor_not, status: implemented, test: core/test/st_l1a_types_tests.cpp}
+  - {id: power, status: implemented, test: core/test/st_l1a_types_tests.cpp}
+  - {id: time_scale, status: implemented, test: core/test/st_l1a_types_tests.cpp}
+  - {id: enum_compare_case, status: implemented, test: core/test/st_l1b1_tests.cpp}
+  - {id: subrange_compare, status: implemented, test: core/test/st_l1b1_tests.cpp}
+  - {id: array_index_member_access, status: implemented, test: core/test/st_l1b2_tests.cpp}
+  - {id: string_compare, status: implemented, test: core/test/st_l1b3_tests.cpp}
+  - {id: date_time_arithmetic, status: implemented, test: core/test/st_l1b3_tests.cpp}
+
+conversions:
+  - id: scalar_conversion_matrix
+    status: implemented
+    source: st-l1a-conversions.yaml
+    expected_count: 210
+    test: core/test/st_l1a_conversion_tests.cpp
+  - {id: TIME_TO_LINT, status: implemented, test: core/test/st_l1a_conversion_tests.cpp}
+  - {id: LINT_TO_TIME, status: implemented, test: core/test/st_l1a_conversion_tests.cpp}
+  - {id: enum_to_dint, status: implemented, test: core/test/st_l1b1_tests.cpp}
+  - {id: dint_to_enum, status: implemented, test: core/test/st_l1b1_tests.cpp}
+  - {id: char_integer_explicit, status: implemented, test: core/test/st_l1b3_tests.cpp}
+  - {id: wchar_integer_explicit, status: implemented, test: core/test/st_l1b3_tests.cpp}
+
+pous:
+  - {id: builtin_fb_instance, status: implemented, test: core/test/st_l0_runtime_tests.cpp}
+  - {id: FUNCTION, status: implemented, spec: st-l2b-semantics.md, test: core/test/st_l2b_tests.cpp}
+  - {id: FUNCTION_BLOCK, status: implemented, spec: st-l2b-semantics.md, test: core/test/st_l2b_tests.cpp}
+  - {id: PROGRAM_multi, status: implemented, spec: st-l2b-semantics.md, test: core/test/st_l2b_tests.cpp}
+  - {id: VAR_INPUT, status: implemented, spec: st-l2b-semantics.md, test: core/test/st_l2b_tests.cpp}
+  - {id: VAR_OUTPUT, status: implemented, spec: st-l2b-semantics.md, test: core/test/st_l2b_tests.cpp}
+  - {id: VAR_IN_OUT, status: implemented, spec: st-l2b-semantics.md, test: core/test/st_l2b_tests.cpp}
+  - {id: VAR_TEMP, status: implemented, spec: st-l2b-semantics.md, test: core/test/st_l2b_tests.cpp}
+  - {id: VAR_EXTERNAL, status: implemented, spec: st-l2b-semantics.md, test: core/test/st_l2b_tests.cpp}
+  - {id: EN_ENO, status: implemented, spec: st-l2b-semantics.md, test: core/test/st_l2b_tests.cpp}
+  - {id: static_call_graph, status: implemented, spec: st-l2b-semantics.md, test: core/test/st_l2b_tests.cpp}
+
+storage:
+  - {id: static_variable_image, status: implemented, test: core/test/st_l0_quality_tests.cpp}
+  - {id: static_fb_instances, status: implemented, test: core/test/st_l0_quality_tests.cpp}
+  - {id: process_image_I, status: pending, spec: st-l3-semantics.md}
+  - {id: process_image_Q, status: pending, spec: st-l3-semantics.md}
+  - {id: process_image_M, status: pending, spec: st-l3-semantics.md}
+  - {id: located_X_B_W_D_L, status: pending, spec: st-l3-semantics.md}
+  - {id: RETAIN, status: pending, spec: st-l3-semantics.md}
+  - {id: PERSISTENT, status: pending, spec: st-l3-semantics.md}
+  - {id: force_mask, status: pending, spec: st-l3-semantics.md}
+  - {id: seqlock_snapshot, status: pending, spec: st-l7-semantics.md}
+
+tasks:
+  - {id: CONFIGURATION, status: pending, spec: st-l5-semantics.md}
+  - {id: RESOURCE, status: pending, spec: st-l5-semantics.md}
+  - {id: periodic_task, status: pending, spec: st-l5-semantics.md}
+  - {id: event_task, status: pending, spec: st-l5-semantics.md}
+  - {id: priority_order, status: pending, spec: st-l5-semantics.md}
+  - {id: program_mapping, status: pending, spec: st-l5-semantics.md}
+  - {id: instruction_watchdog, status: pending, spec: st-l5-semantics.md}
+  - {id: wallclock_fault_injection, status: pending, spec: st-l5-semantics.md}
+  - {id: reset_restart, status: pending, spec: st-l5-semantics.md}
+
+sfc_qualifiers:
+  - {id: N, status: pending, spec: st-l6-semantics.md}
+  - {id: S, status: pending, spec: st-l6-semantics.md}
+  - {id: R, status: pending, spec: st-l6-semantics.md}
+  - {id: L, status: pending, spec: st-l6-semantics.md}
+  - {id: D, status: pending, spec: st-l6-semantics.md}
+  - {id: P, status: pending, spec: st-l6-semantics.md}
+  - {id: SD, status: pending, spec: st-l6-semantics.md}
+  - {id: DS, status: pending, spec: st-l6-semantics.md}
+  - {id: SL, status: pending, spec: st-l6-semantics.md}
+
+functions:
+  - {id: ABS, status: pending, spec: st-l4-semantics.md}
+  - {id: SQRT, status: pending, spec: st-l4-semantics.md}
+  - {id: LN, status: pending, spec: st-l4-semantics.md}
+  - {id: LOG, status: pending, spec: st-l4-semantics.md}
+  - {id: EXP, status: pending, spec: st-l4-semantics.md}
+  - {id: SIN, status: pending, spec: st-l4-semantics.md}
+  - {id: COS, status: pending, spec: st-l4-semantics.md}
+  - {id: TAN, status: pending, spec: st-l4-semantics.md}
+  - {id: ASIN, status: pending, spec: st-l4-semantics.md}
+  - {id: ACOS, status: pending, spec: st-l4-semantics.md}
+  - {id: ATAN, status: pending, spec: st-l4-semantics.md}
+  - {id: ADD, status: pending, spec: st-l4-semantics.md}
+  - {id: SUB, status: pending, spec: st-l4-semantics.md}
+  - {id: MUL, status: pending, spec: st-l4-semantics.md}
+  - {id: DIV, status: pending, spec: st-l4-semantics.md}
+  - {id: MOD, status: pending, spec: st-l4-semantics.md}
+  - {id: EXPT, status: pending, spec: st-l4-semantics.md}
+  - {id: MIN, status: pending, spec: st-l4-semantics.md}
+  - {id: MAX, status: pending, spec: st-l4-semantics.md}
+  - {id: LIMIT, status: pending, spec: st-l4-semantics.md}
+  - {id: SEL, status: pending, spec: st-l4-semantics.md}
+  - {id: MUX, status: pending, spec: st-l4-semantics.md}
+  - {id: GT, status: pending, spec: st-l4-semantics.md}
+  - {id: GE, status: pending, spec: st-l4-semantics.md}
+  - {id: EQ, status: pending, spec: st-l4-semantics.md}
+  - {id: LE, status: pending, spec: st-l4-semantics.md}
+  - {id: LT, status: pending, spec: st-l4-semantics.md}
+  - {id: NE, status: pending, spec: st-l4-semantics.md}
+  - {id: SHL, status: pending, spec: st-l4-semantics.md}
+  - {id: SHR, status: pending, spec: st-l4-semantics.md}
+  - {id: ROL, status: pending, spec: st-l4-semantics.md}
+  - {id: ROR, status: pending, spec: st-l4-semantics.md}
+  - {id: LEN, status: pending, spec: st-l4-semantics.md}
+  - {id: LEFT, status: pending, spec: st-l4-semantics.md}
+  - {id: RIGHT, status: pending, spec: st-l4-semantics.md}
+  - {id: MID, status: pending, spec: st-l4-semantics.md}
+  - {id: CONCAT, status: pending, spec: st-l4-semantics.md}
+  - {id: INSERT, status: pending, spec: st-l4-semantics.md}
+  - {id: DELETE, status: pending, spec: st-l4-semantics.md}
+  - {id: REPLACE, status: pending, spec: st-l4-semantics.md}
+  - {id: FIND, status: pending, spec: st-l4-semantics.md}
+  - {id: ADD_TIME, status: pending, spec: st-l4-semantics.md}
+  - {id: ADD_TOD_TIME, status: pending, spec: st-l4-semantics.md}
+  - {id: ADD_DT_TIME, status: pending, spec: st-l4-semantics.md}
+  - {id: SUB_TIME, status: pending, spec: st-l4-semantics.md}
+  - {id: SUB_DATE_DATE, status: pending, spec: st-l4-semantics.md}
+  - {id: SUB_TOD_TIME, status: pending, spec: st-l4-semantics.md}
+  - {id: SUB_DT_DT, status: pending, spec: st-l4-semantics.md}
+  - {id: MULTIME, status: pending, spec: st-l4-semantics.md}
+  - {id: DIVTIME, status: pending, spec: st-l4-semantics.md}
+  - {id: CONCAT_DATE_TOD, status: pending, spec: st-l4-semantics.md}
+
+fbs:
+  - id: iec_basic
+    status: implemented
+    expected_count: 10
+    items: [R_TRIG, F_TRIG, SR, RS, TON, TOF, TP, CTU, CTD, CTUD]
+    test: core/test/st_l0_runtime_tests.cpp
+  - id: plcopen_part1_part2
+    status: pending
+    expected_count: 45
+    source: plcopen-motion-part1-io.yml
+    implemented_subset_count: 10
+    implemented_subset_test: core/test/st_l2a_tests.cpp
+    spec: st-l2c-semantics.md
+  - id: plcopen_part4
+    status: pending
+    expected_count: 68
+    source: plcopen-part4-clause-audit.md
+    implementation_surface: core/fb
+    spec: st-l2c-semantics.md
+  - id: plcopen_part5
+    status: pending
+    expected_count: 11
+    source: plcopen-motion-part5-io.yml
+    spec: st-l2c-semantics.md
+
+pins:
+  - id: plcopen_part1_part2_pins
+    status: pending
+    source: plcopen-motion-part1-io.yml
+    expected_fbs: 45
+    spec: st-l2c-semantics.md
+  - id: plcopen_part4_pins
+    status: pending
+    source: plcopen-part4-clause-audit.md
+    expected_fbs: 68
+    spec: st-l2c-semantics.md
+  - id: plcopen_part5_pins
+    status: pending
+    source: plcopen-motion-part5-io.yml
+    expected_fbs: 11
+    spec: st-l2c-semantics.md
+
+diagnostics:
+  - {id: lexer_parser_sema_base, status: implemented, source: core/st/diag.h, test: core/test/st_l0_compiler_tests.cpp}
+  - {id: runtime_base, status: implemented, source: core/st/vm.h, test: core/test/st_l0_runtime_tests.cpp}
+  - {id: range_violation, status: implemented, test: core/test/st_l1b1_tests.cpp}
+  - {id: string_capacity_exceeded, status: implemented, test: core/test/st_l1b3_tests.cpp}
+  - {id: date_time_range_violation, status: implemented, test: core/test/st_l1b3_tests.cpp}
+  - {id: alias_violation, status: implemented, spec: st-l2b-semantics.md, test: core/test/st_l2b_tests.cpp}
+  - {id: binding_locked_duplicate_binding, status: pending, spec: st-l2c-semantics.md}
+  - {id: process_image_layout_retain, status: pending, spec: st-l3-semantics.md}
+  - {id: overload_and_function_range, status: pending, spec: st-l4-semantics.md}
+  - {id: task_faults, status: pending, spec: st-l5-semantics.md}
+  - {id: unsafe_sfc_network, status: pending, spec: st-l6-semantics.md}
+  - {id: debugging_snapshot, status: pending, spec: st-l7-semantics.md}
+  - id: legacy_source_opcode_hash
+    status: pending
+    scope_reason: new software; only the current compiler and bytecode format are supported
+    spec: st-l2c-semantics.md
+    rejection_test: pending

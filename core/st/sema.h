@@ -1,7 +1,9 @@
 #pragma once
 
+#include <algorithm>
 #include <cstdint>
 #include <cstring>
+#include <limits>
 #include <string>
 #include <vector>
 
@@ -48,20 +50,40 @@ constexpr bool is_int_family(Type type)
 struct ExprInfo
 {
     Type type = Type::bool_;
+    TypeId type_id = builtin::bool_;
+    TypeId storage_type_id = invalid_type_id;
     bool valid = false;
     bool is_const = false;
     std::uint64_t bits = 0;      // canonical folded value
-    std::uint16_t slot = 0;      // variable reads
+    std::uint32_t offset = 0;    // scalar/aggregate access base
+    std::uint16_t slot = 0;      // conversion lowering auxiliary
     std::uint16_t fb_index = 0;  // pin reads
     std::uint8_t pin_id = 0;
+    struct DynamicIndex
+    {
+        ExprIndex expr = kNoExpr;
+        std::int64_t lower = 0;
+        std::int64_t upper = 0;
+        std::uint64_t stride = 0;
+    };
+    std::vector<DynamicIndex> dynamic_indices;
+    bool memory_access = false;
+    bool object_constant = false;
+    std::vector<std::uint8_t> object_bytes;
+    ExprIndex string_index = kNoExpr;
 };
 
 struct StmtInfo
 {
-    std::uint16_t slot = 0;      // assign target / for control
+    std::uint32_t offset = 0;    // assign target / for control
     Type type = Type::bool_;     // assign target / for control type
+    TypeId type_id = builtin::bool_;
     std::uint16_t fb_index = 0;  // fb_call
     std::vector<std::uint8_t> param_pins;
+    std::vector<ExprInfo::DynamicIndex> dynamic_indices;
+    bool aggregate_copy = false;
+    std::uint32_t source_offset = 0;
+    std::uint32_t copy_size = 0;
 };
 
 struct SemaLimits
@@ -69,6 +91,12 @@ struct SemaLimits
     std::uint32_t max_vars_bytes = 16384;
     std::uint16_t max_fb_instances = 256;
     std::size_t max_diagnostics = 256;
+    std::uint16_t max_user_types = 256;
+    std::uint16_t max_enum_members = 256;
+    std::uint16_t max_type_name_bytes = 128;
+    std::uint32_t max_array_elements = 65536;
+    std::uint16_t max_struct_fields = 256;
+    std::uint16_t max_aggregate_depth = 16;
 };
 
 struct SemaResult
@@ -78,7 +106,12 @@ struct SemaResult
     std::vector<StmtInfo> stmts;
     std::vector<VarInfo> vars;
     std::vector<FbInfo> fbs;
+    TypeTable types;
+    std::vector<std::uint8_t> initial_data;
+    std::uint32_t vars_bytes = 0;
     std::uint32_t fb_bytes = 0;
+    std::uint32_t max_string_operation_cost = 0;
+    std::uint32_t string_constant_bytes = 0;
 };
 
 class Sema
@@ -96,6 +129,8 @@ public:
     {
         result_.exprs.resize(ast_.exprs.size());
         result_.stmts.resize(ast_.stmts.size());
+        precheck_string_pool();
+        declare_types();
         declare_vars();
         for(const StmtIndex index : ast_.body) {
             check_stmt(index);
@@ -105,10 +140,35 @@ public:
     }
 
 private:
+    void precheck_string_pool()
+    {
+        std::uint64_t total = 0;
+        for(const Expr &expr : ast_.exprs) {
+            if(expr.kind != ExprKind::literal_string &&
+               expr.kind != ExprKind::literal_wstring) {
+                continue;
+            }
+            std::vector<std::uint8_t> bytes;
+            std::vector<std::uint32_t> scalars;
+            if(!decode_utf8(expr.text, bytes, scalars)) {
+                continue;
+            }
+            total += 4U + (expr.kind == ExprKind::literal_wstring
+                               ? scalars.size() * 4ULL
+                               : bytes.size());
+            if(total > 65536U) {
+                diag(DiagCode::capacity_code, expr.line, expr.column,
+                     "string constant pool");
+                return;
+            }
+        }
+    }
+
     struct Expected
     {
         bool has = false;
         Type type = Type::bool_;
+        TypeId type_id = builtin::bool_;
     };
 
     static Expected none()
@@ -118,7 +178,12 @@ private:
 
     static Expected want(Type type)
     {
-        return {true, type};
+        return {true, type, st::type_id(type)};
+    }
+
+    static Expected want(Type type, TypeId id)
+    {
+        return {true, type, id};
     }
 
     void diag(DiagCode code, std::int32_t line, std::int32_t column,
@@ -154,6 +219,238 @@ private:
 
     // --- declarations -----------------------------------------------------
 
+    void type_diag(TypeError error, const UserTypeDecl &decl)
+    {
+        switch(error) {
+        case TypeError::duplicate_type:
+        case TypeError::duplicate_member:
+            diag(DiagCode::sema_duplicate_identifier, decl.line, decl.column,
+                 decl.name);
+            break;
+        case TypeError::value_out_of_range:
+        case TypeError::integer_sign_mismatch:
+        case TypeError::invalid_bounds:
+            diag(decl.kind == UserTypeKind::array
+                     ? DiagCode::sema_invalid_array_bounds
+                     : DiagCode::sema_range_violation,
+                 decl.line, decl.column, decl.name);
+            break;
+        case TypeError::invalid_dimensions:
+        case TypeError::size_overflow:
+            diag(DiagCode::sema_invalid_array_bounds, decl.line, decl.column,
+                 decl.name);
+            break;
+        case TypeError::recursive_type:
+            diag(DiagCode::sema_recursive_type, decl.line, decl.column,
+                 decl.name);
+            break;
+        default:
+            diag(DiagCode::sema_type_mismatch, decl.line, decl.column,
+                 decl.name);
+            break;
+        }
+    }
+
+    void declare_types()
+    {
+        if(has_type_cycle()) {
+            return;
+        }
+        std::size_t declared = 0;
+        for(const UserTypeDecl &decl : ast_.user_types) {
+            if(declared >= limits_.max_user_types ||
+               decl.name.size() > limits_.max_type_name_bytes ||
+               (decl.kind == UserTypeKind::enum_ &&
+                decl.enum_members.size() > limits_.max_enum_members)) {
+                diag(DiagCode::capacity_types, decl.line, decl.column,
+                     decl.name);
+                continue;
+            }
+            TypeId id = invalid_type_id;
+            TypeError error = TypeError::ok;
+            if(decl.kind == UserTypeKind::enum_) {
+                std::vector<EnumItem> items;
+                items.reserve(decl.enum_members.size());
+                std::int64_t next = 0;
+                bool overflow = false;
+                for(const EnumMemberDecl &member : decl.enum_members) {
+                    if(!member.explicit_value && overflow) {
+                        break;
+                    }
+                    const std::int64_t value = member.explicit_value
+                                                   ? member.value
+                                                   : next;
+                    items.push_back(
+                        {member.name, IntegerValue::signed_value(value)});
+                    overflow = value >= std::numeric_limits<std::int32_t>::max();
+                    if(!overflow) {
+                        next = value + 1;
+                    }
+                }
+                if(items.empty() || items.size() != decl.enum_members.size()) {
+                    error = TypeError::value_out_of_range;
+                } else {
+                    error = result_.types.add_enum(decl.name, builtin::dint,
+                                                   items, id);
+                }
+            } else if(decl.kind == UserTypeKind::subrange) {
+                error = result_.types.add_subrange(
+                    decl.name, st::type_id(decl.base), decl.range_lower,
+                    decl.range_upper, id);
+            } else if(decl.kind == UserTypeKind::array) {
+                if(decl.array_bounds.empty() || decl.array_bounds.size() > 3) {
+                    error = TypeError::invalid_dimensions;
+                } else {
+                    const TypeId element = resolve_type_ref(
+                        decl.element_type, decl.element_type_name, decl);
+                    error = element == invalid_type_id
+                                ? TypeError::invalid_type
+                                : result_.types.add_array(
+                                      decl.name, element, decl.array_bounds,
+                                      id);
+                }
+            } else {
+                if(decl.struct_fields.size() > limits_.max_struct_fields) {
+                    diag(DiagCode::capacity_exceeded, decl.line, decl.column,
+                         decl.name);
+                    continue;
+                }
+                std::vector<StructFieldSpec> fields;
+                fields.reserve(decl.struct_fields.size());
+                for(const StructFieldDecl &field : decl.struct_fields) {
+                    const TypeId type = resolve_type_ref(
+                        field.type, field.type_name, decl);
+                    if(type == invalid_type_id) {
+                        error = TypeError::invalid_type;
+                        break;
+                    }
+                    fields.push_back({field.name, type});
+                }
+                if(error == TypeError::ok) {
+                    error = result_.types.add_struct(decl.name, fields, id);
+                }
+            }
+            if(error != TypeError::ok) {
+                type_diag(error, decl);
+                continue;
+            }
+            const TypeDesc *added = result_.types.get(id);
+            if(added != nullptr && added->kind == TypeKind::array) {
+                std::uint64_t elements = 1;
+                for(const ArrayDimension &dimension :
+                    added->array.dimensions) {
+                    if(dimension.extent > limits_.max_array_elements /
+                                              elements) {
+                        elements = limits_.max_array_elements + 1ULL;
+                        break;
+                    }
+                    elements *= dimension.extent;
+                }
+                if(elements > limits_.max_array_elements) {
+                    diag(DiagCode::capacity_exceeded, decl.line, decl.column,
+                         decl.name);
+                }
+            }
+            if(aggregate_depth(id) > limits_.max_aggregate_depth) {
+                diag(DiagCode::capacity_exceeded, decl.line, decl.column,
+                     decl.name);
+            }
+            ++declared;
+        }
+    }
+
+    TypeId resolve_type_ref(Type builtin_type, const std::string &name,
+                            const UserTypeDecl &owner) const
+    {
+        if(name.empty()) {
+            return st::type_id(builtin_type);
+        }
+        if(lower_copy(name) == owner.lower) {
+            return result_.types.next_type_id();
+        }
+        TypeId id = invalid_type_id;
+        return result_.types.find(name, id) == TypeError::ok
+                   ? id
+                   : invalid_type_id;
+    }
+
+    std::uint16_t aggregate_depth(TypeId id) const
+    {
+        const TypeDesc *desc = result_.types.get(id);
+        if(desc == nullptr || (desc->kind != TypeKind::array &&
+                               desc->kind != TypeKind::struct_)) {
+            return 0;
+        }
+        std::uint16_t child = 0;
+        if(desc->kind == TypeKind::array) {
+            child = aggregate_depth(desc->array.element);
+        } else {
+            for(const StructField &field : desc->structure.fields) {
+                const std::uint16_t depth = aggregate_depth(field.type);
+                if(depth > child) {
+                    child = depth;
+                }
+            }
+        }
+        return static_cast<std::uint16_t>(child + 1U);
+    }
+
+    int user_type_index(const std::string &lower) const
+    {
+        for(std::size_t i = 0; i < ast_.user_types.size(); ++i) {
+            if(ast_.user_types[i].lower == lower) {
+                return static_cast<int>(i);
+            }
+        }
+        return -1;
+    }
+
+    bool cycle_visit(std::size_t index, std::vector<std::uint8_t> &state)
+    {
+        if(state[index] == 1) {
+            const UserTypeDecl &decl = ast_.user_types[index];
+            diag(DiagCode::sema_recursive_type, decl.line, decl.column,
+                 decl.name);
+            return true;
+        }
+        if(state[index] == 2) {
+            return false;
+        }
+        state[index] = 1;
+        const UserTypeDecl &decl = ast_.user_types[index];
+        std::vector<std::string> refs;
+        if(decl.kind == UserTypeKind::array &&
+           !decl.element_type_name.empty()) {
+            refs.push_back(lower_copy(decl.element_type_name));
+        } else if(decl.kind == UserTypeKind::struct_) {
+            for(const StructFieldDecl &field : decl.struct_fields) {
+                if(!field.type_name.empty()) {
+                    refs.push_back(lower_copy(field.type_name));
+                }
+            }
+        }
+        for(const std::string &ref : refs) {
+            const int target = user_type_index(ref);
+            if(target >= 0 && cycle_visit(static_cast<std::size_t>(target),
+                                          state)) {
+                return true;
+            }
+        }
+        state[index] = 2;
+        return false;
+    }
+
+    bool has_type_cycle()
+    {
+        std::vector<std::uint8_t> state(ast_.user_types.size(), 0);
+        for(std::size_t i = 0; i < ast_.user_types.size(); ++i) {
+            if(cycle_visit(i, state)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     void declare_vars()
     {
         std::uint32_t fb_offset = 0;
@@ -185,7 +482,8 @@ private:
                 result_.fbs.push_back(static_cast<FbInfo &&>(info));
                 continue;
             }
-            if((result_.vars.size() + 1) * 8 > limits_.max_vars_bytes) {
+            if((result_.vars.size() + 1U) * 8U >
+               limits_.max_vars_bytes) {
                 diag(DiagCode::capacity_variables, decl.line, decl.column,
                      decl.name);
                 continue;
@@ -194,16 +492,128 @@ private:
             info.name = decl.name;
             info.lower = decl.lower;
             info.type = decl.type;
+            info.type_id = st::type_id(decl.type);
+            if(decl.type == Type::string_ || decl.type == Type::wstring) {
+                if(decl.string_capacity < 1U || decl.string_capacity > 4096U) {
+                    diag(DiagCode::sema_string_capacity_exceeded, decl.line,
+                         decl.column, decl.name);
+                    continue;
+                }
+                if(ast_.user_types.size() + string_type_count_ >=
+                   limits_.max_user_types) {
+                    diag(DiagCode::capacity_types, decl.line, decl.column,
+                         decl.name);
+                    continue;
+                }
+                const std::string type_name =
+                    "__st_string_" + std::to_string(string_type_count_++);
+                const TypeError added =
+                    decl.type == Type::wstring
+                        ? result_.types.add_wstring(type_name,
+                                                    decl.string_capacity,
+                                                    info.type_id)
+                        : result_.types.add_string(type_name,
+                                                   decl.string_capacity,
+                                                   info.type_id);
+                if(added != TypeError::ok) {
+                    diag(DiagCode::capacity_types, decl.line, decl.column,
+                         decl.name);
+                    continue;
+                }
+            }
+            if(!decl.type_name.empty()) {
+                if(result_.types.find(decl.type_name, info.type_id) !=
+                   TypeError::ok) {
+                    diag(DiagCode::sema_unknown_identifier, decl.line,
+                         decl.column, decl.type_name);
+                    continue;
+                }
+                const TypeDesc *desc = result_.types.get(info.type_id);
+                if(desc == nullptr) {
+                    diag(DiagCode::sema_type_mismatch, decl.line, decl.column,
+                         decl.type_name);
+                    continue;
+                }
+                if(desc->kind == TypeKind::enum_ ||
+                   desc->kind == TypeKind::subrange) {
+                    const TypeId base = desc->kind == TypeKind::enum_
+                                            ? desc->enum_base
+                                            : desc->subrange.base;
+                    info.type = type_from_id(base);
+                }
+                if(desc->kind == TypeKind::enum_) {
+                    if(!desc->enum_items.empty()) {
+                        info.init_bits = static_cast<std::uint64_t>(
+                            desc->enum_items.front().value.as_signed());
+                    }
+                } else if(desc->kind == TypeKind::subrange &&
+                          desc->integer_sign == IntegerSign::signed_) {
+                    info.init_bits = static_cast<std::uint64_t>(
+                        desc->subrange.lower.as_signed());
+                } else if(desc->kind == TypeKind::subrange) {
+                    info.init_bits = desc->subrange.lower.as_unsigned();
+                }
+            }
             info.constant = decl.is_constant;
-            info.slot = static_cast<std::uint16_t>(result_.vars.size());
+            const TypeDesc *storage = result_.types.get(info.type_id);
+            if(storage == nullptr && info.type != Type::axis_ref) {
+                diag(DiagCode::sema_type_mismatch, decl.line, decl.column,
+                     decl.name);
+                continue;
+            }
+            const std::uint32_t alignment =
+                storage == nullptr ? 8U
+                : storage->alignment > 8 ? 8U : storage->alignment;
+            const std::uint64_t storage_size =
+                storage == nullptr ? 8U : storage->size;
+            const std::uint64_t aligned =
+                (static_cast<std::uint64_t>(result_.vars_bytes) +
+                 alignment - 1U) & ~(static_cast<std::uint64_t>(alignment) - 1U);
+            if(aligned > limits_.max_vars_bytes ||
+               storage_size > limits_.max_vars_bytes - aligned) {
+                diag(DiagCode::capacity_variables, decl.line, decl.column,
+                     decl.name);
+                continue;
+            }
+            info.offset = static_cast<std::uint32_t>(aligned);
+            result_.vars_bytes = static_cast<std::uint32_t>(aligned +
+                                                             storage_size);
+            result_.initial_data.resize(result_.vars_bytes, 0);
+            default_initialize(info.type_id, info.offset);
             if(decl.init != kNoExpr) {
-                if(decl.type == Type::axis_ref) {
+                if(info.type == Type::axis_ref) {
                     diag(DiagCode::sema_operand_type_invalid, decl.line,
                          decl.column, decl.name);
                     result_.vars.push_back(static_cast<VarInfo &&>(info));
                     continue;
                 }
-                if(check_expr(decl.init, want(decl.type))) {
+                if(storage != nullptr &&
+                   (storage->kind == TypeKind::string ||
+                    storage->kind == TypeKind::wstring)) {
+                    if(check_expr(decl.init, want(info.type, info.type_id))) {
+                        const ExprInfo &init = result_.exprs[
+                            static_cast<std::size_t>(decl.init)];
+                        if(!init.object_constant ||
+                           init.object_bytes.size() != storage->size) {
+                            diag(DiagCode::sema_not_const_expr, decl.line,
+                                 decl.column, decl.name);
+                        } else {
+                            std::memcpy(result_.initial_data.data() + info.offset,
+                                        init.object_bytes.data(),
+                                        init.object_bytes.size());
+                            info.initial_length =
+                                static_cast<std::uint32_t>(init.object_bytes[0]) |
+                                (static_cast<std::uint32_t>(init.object_bytes[1]) << 8U) |
+                                (static_cast<std::uint32_t>(init.object_bytes[2]) << 16U) |
+                                (static_cast<std::uint32_t>(init.object_bytes[3]) << 24U);
+                        }
+                    }
+                } else if(storage != nullptr &&
+                   (storage->kind == TypeKind::array ||
+                    storage->kind == TypeKind::struct_)) {
+                    initialize_value(decl.init, info.type_id, info.offset);
+                } else if(check_expr(decl.init,
+                                     want(info.type, info.type_id))) {
                     const ExprInfo &init = result_.exprs[
                         static_cast<std::size_t>(decl.init)];
                     if(!init.is_const) {
@@ -211,6 +621,8 @@ private:
                              decl.column, decl.name);
                     } else {
                         info.init_bits = init.bits;
+                        write_initial_scalar(info.offset, info.type_id,
+                                             init.bits);
                     }
                 }
             } else if(decl.is_constant) {
@@ -220,6 +632,192 @@ private:
             result_.vars.push_back(static_cast<VarInfo &&>(info));
         }
         result_.fb_bytes = fb_offset;
+    }
+
+    void write_initial_scalar(std::uint32_t offset, TypeId type_id,
+                              std::uint64_t bits)
+    {
+        const TypeDesc *desc = result_.types.get(type_id);
+        if(desc == nullptr || offset + desc->size > result_.initial_data.size()) {
+            return;
+        }
+        if(type_from_id(desc->kind == TypeKind::enum_ ? desc->enum_base
+                         : desc->kind == TypeKind::subrange
+                               ? desc->subrange.base
+                               : type_id) == Type::real) {
+            const float value = static_cast<float>(detail::bits_double(bits));
+            std::uint32_t raw = 0;
+            std::memcpy(&raw, &value, sizeof(raw));
+            for(std::uint32_t i = 0; i < 4; ++i) {
+                result_.initial_data[offset + i] =
+                    static_cast<std::uint8_t>(raw >> (i * 8U));
+            }
+            return;
+        }
+        for(std::uint64_t i = 0; i < desc->size && i < 8; ++i) {
+            result_.initial_data[offset + static_cast<std::size_t>(i)] =
+                static_cast<std::uint8_t>(bits >> (i * 8U));
+        }
+    }
+
+    void default_initialize(TypeId type_id, std::uint32_t offset)
+    {
+        const TypeDesc *desc = result_.types.get(type_id);
+        if(desc == nullptr) {
+            return;
+        }
+        if(desc->kind == TypeKind::enum_) {
+            if(!desc->enum_items.empty()) {
+                write_initial_scalar(
+                    offset, type_id,
+                    static_cast<std::uint64_t>(
+                        desc->enum_items.front().value.as_signed()));
+            }
+            return;
+        }
+        if(desc->kind == TypeKind::subrange) {
+            write_initial_scalar(
+                offset, type_id,
+                desc->integer_sign == IntegerSign::signed_
+                    ? static_cast<std::uint64_t>(
+                          desc->subrange.lower.as_signed())
+                    : desc->subrange.lower.as_unsigned());
+            return;
+        }
+        if(desc->kind == TypeKind::array) {
+            const TypeDesc *element = result_.types.get(desc->array.element);
+            if(element == nullptr || element->size == 0) {
+                return;
+            }
+            for(std::uint64_t at = 0; at < desc->size; at += element->size) {
+                default_initialize(desc->array.element,
+                                   offset + static_cast<std::uint32_t>(at));
+            }
+        } else if(desc->kind == TypeKind::struct_) {
+            for(const StructField &field : desc->structure.fields) {
+                default_initialize(field.type,
+                                   offset + static_cast<std::uint32_t>(field.offset));
+            }
+        }
+    }
+
+    bool initialize_value(ExprIndex index, TypeId type_id,
+                          std::uint32_t offset)
+    {
+        const TypeDesc *desc = result_.types.get(type_id);
+        if(desc == nullptr || index == kNoExpr) {
+            return false;
+        }
+        if(desc->kind == TypeKind::array) {
+            return initialize_array(index, *desc, 0, offset);
+        }
+        if(desc->kind == TypeKind::struct_) {
+            return initialize_struct(index, *desc, offset);
+        }
+        const Type base = type_from_id(
+            desc->kind == TypeKind::enum_ ? desc->enum_base
+            : desc->kind == TypeKind::subrange ? desc->subrange.base
+                                               : type_id);
+        if(!check_expr(index, want(base, type_id))) {
+            return false;
+        }
+        const ExprInfo &value = result_.exprs[static_cast<std::size_t>(index)];
+        if(!value.is_const) {
+            const Expr &at = ast_.exprs[static_cast<std::size_t>(index)];
+            diag(DiagCode::sema_not_const_expr, at.line, at.column,
+                 "initializer must be constant");
+            return false;
+        }
+        write_initial_scalar(offset, type_id, value.bits);
+        return true;
+    }
+
+    bool initialize_array(ExprIndex index, const TypeDesc &array,
+                          std::size_t dimension, std::uint32_t offset)
+    {
+        const Expr &expr = ast_.exprs[static_cast<std::size_t>(index)];
+        if(expr.kind != ExprKind::aggregate_init ||
+           dimension >= array.array.dimensions.size()) {
+            diag(DiagCode::sema_type_mismatch, expr.line, expr.column,
+                 array.name);
+            return false;
+        }
+        const ArrayDimension &dim = array.array.dimensions[dimension];
+        if(expr.items.size() > dim.extent) {
+            diag(DiagCode::sema_type_mismatch, expr.line, expr.column,
+                 "too many array initializer elements");
+            return false;
+        }
+        bool ok = true;
+        for(std::size_t i = 0; i < expr.items.size(); ++i) {
+            if(!expr.items[i].name.empty()) {
+                diag(DiagCode::sema_type_mismatch, expr.line, expr.column,
+                     "array initializer cannot name elements");
+                ok = false;
+                continue;
+            }
+            const std::uint32_t child =
+                offset + static_cast<std::uint32_t>(i * dim.stride);
+            if(dimension + 1U < array.array.dimensions.size()) {
+                ok = initialize_array(expr.items[i].value, array,
+                                      dimension + 1U, child) && ok;
+            } else {
+                ok = initialize_value(expr.items[i].value,
+                                      array.array.element, child) && ok;
+            }
+        }
+        return ok;
+    }
+
+    bool initialize_struct(ExprIndex index, const TypeDesc &structure,
+                           std::uint32_t offset)
+    {
+        const Expr &expr = ast_.exprs[static_cast<std::size_t>(index)];
+        if(expr.kind != ExprKind::aggregate_init) {
+            diag(DiagCode::sema_type_mismatch, expr.line, expr.column,
+                 structure.name);
+            return false;
+        }
+        bool named = false;
+        bool positional = false;
+        std::vector<bool> seen(structure.structure.fields.size(), false);
+        bool ok = true;
+        for(std::size_t i = 0; i < expr.items.size(); ++i) {
+            const InitItem &item = expr.items[i];
+            named = named || !item.name.empty();
+            positional = positional || item.name.empty();
+            if(named && positional) {
+                diag(DiagCode::sema_type_mismatch, expr.line, expr.column,
+                     "cannot mix positional and named struct initialization");
+                return false;
+            }
+            std::size_t field_index = i;
+            if(named) {
+                field_index = structure.structure.fields.size();
+                for(std::size_t f = 0;
+                    f < structure.structure.fields.size(); ++f) {
+                    if(lower_copy(structure.structure.fields[f].name) ==
+                       lower_copy(item.name)) {
+                        field_index = f;
+                        break;
+                    }
+                }
+            }
+            if(field_index >= structure.structure.fields.size() ||
+               seen[field_index]) {
+                diag(DiagCode::sema_type_mismatch, expr.line, expr.column,
+                     "unknown, duplicate, or excess struct initializer");
+                ok = false;
+                continue;
+            }
+            seen[field_index] = true;
+            const StructField &field =
+                structure.structure.fields[field_index];
+            ok = initialize_value(
+                     item.value, field.type,
+                     offset + static_cast<std::uint32_t>(field.offset)) && ok;
+        }
+        return ok;
     }
 
     int find_var(const std::string &lower) const
@@ -253,6 +851,140 @@ private:
         return -1;
     }
 
+    struct NamedConversion
+    {
+        Type from = Type::bool_;
+        TypeId from_id = builtin::bool_;
+        Type to = Type::bool_;
+        TypeId to_id = builtin::bool_;
+    };
+
+    bool resolve_named_conversion(const std::string &name,
+                                  NamedConversion &conversion) const
+    {
+        const std::string lower = lower_copy(name);
+        const std::size_t split = lower.find("_to_");
+        if(split == std::string::npos) {
+            return false;
+        }
+        TypeId from = invalid_type_id;
+        TypeId to = invalid_type_id;
+        if(result_.types.find(lower.substr(0, split), from) != TypeError::ok ||
+           result_.types.find(lower.substr(split + 4), to) != TypeError::ok) {
+            return false;
+        }
+        const TypeDesc *from_desc = result_.types.get(from);
+        const TypeDesc *to_desc = result_.types.get(to);
+        if(from_desc == nullptr || to_desc == nullptr) {
+            return false;
+        }
+        auto base_id = [](const TypeDesc &desc) {
+            if(desc.kind == TypeKind::enum_) {
+                return desc.enum_base;
+            }
+            if(desc.kind == TypeKind::subrange) {
+                return desc.subrange.base;
+            }
+            return desc.id;
+        };
+        const TypeId from_base = base_id(*from_desc);
+        const TypeId to_base = base_id(*to_desc);
+        if((from_desc->kind == TypeKind::enum_ && to != builtin::dint) ||
+           (to_desc->kind == TypeKind::enum_ && from != builtin::dint) ||
+           (from_desc->kind == TypeKind::subrange &&
+            (to_desc->kind != TypeKind::elementary ||
+             (!is_integer(type_from_id(to)) && to != from_base))) ||
+           (to_desc->kind == TypeKind::subrange &&
+            (from_desc->kind != TypeKind::elementary ||
+             !is_integer(type_from_id(from))))) {
+            return false;
+        }
+        if(from_desc->kind == TypeKind::elementary &&
+           to_desc->kind == TypeKind::elementary) {
+            return false; // handled by the fixed L1a conversion table
+        }
+        conversion.from_id = from;
+        conversion.to_id = to;
+        conversion.from = type_from_id(from_base);
+        conversion.to = type_from_id(to_base);
+        return true;
+    }
+
+    TypeId nominal_anchor(ExprIndex index) const
+    {
+        if(index == kNoExpr ||
+           static_cast<std::size_t>(index) >= ast_.exprs.size()) {
+            return invalid_type_id;
+        }
+        const Expr &expr = ast_.exprs[static_cast<std::size_t>(index)];
+        if(expr.kind == ExprKind::literal_enum) {
+            TypeId id = invalid_type_id;
+            result_.types.find(expr.name, id);
+            return id;
+        }
+        if(expr.kind == ExprKind::variable || expr.kind == ExprKind::pin_read) {
+            const int var = find_var(lower_copy(expr.name));
+            if(var >= 0) {
+                return access_result_type(
+                    result_.vars[static_cast<std::size_t>(var)].type_id,
+                    expr.access);
+            }
+        }
+        if(expr.kind == ExprKind::call) {
+            NamedConversion conversion;
+            if(resolve_named_conversion(expr.name, conversion)) {
+                return conversion.to_id;
+            }
+        }
+        return invalid_type_id;
+    }
+
+    TypeId access_result_type(TypeId type_id,
+                              const std::vector<AccessStep> &steps) const
+    {
+        for(const AccessStep &step : steps) {
+            const TypeDesc *desc = result_.types.get(type_id);
+            if(desc == nullptr) {
+                return invalid_type_id;
+            }
+            if(step.field) {
+                const StructField *field = nullptr;
+                if(result_.types.struct_field(type_id, step.name, field) !=
+                       TypeError::ok || field == nullptr) {
+                    return invalid_type_id;
+                }
+                type_id = field->type;
+            } else {
+                if(desc->kind != TypeKind::array) {
+                    return invalid_type_id;
+                }
+                type_id = desc->array.element;
+            }
+        }
+        return type_id;
+    }
+
+    Type value_type(TypeId id) const
+    {
+        const TypeDesc *desc = result_.types.get(id);
+        if(desc == nullptr) {
+            return Type::bool_;
+        }
+        if(desc->kind == TypeKind::enum_) {
+            return type_from_id(desc->enum_base);
+        }
+        if(desc->kind == TypeKind::subrange) {
+            return type_from_id(desc->subrange.base);
+        }
+        if(desc->kind == TypeKind::string) {
+            return Type::string_;
+        }
+        if(desc->kind == TypeKind::wstring) {
+            return Type::wstring;
+        }
+        return id < first_load_type_id ? type_from_id(id) : Type::bool_;
+    }
+
     // --- statements -------------------------------------------------------
 
     void check_stmt(StmtIndex index)
@@ -278,6 +1010,31 @@ private:
             --loop_depth_;
             break;
         case StmtKind::fb_call: check_fb_call(stmt, info); break;
+        case StmtKind::output_commit:
+            if(stmt.params.empty() || (stmt.params.size() & 1U) != 0U) {
+                diag(DiagCode::parse_expected_token, stmt.line, stmt.column,
+                     "L2B_COMMIT source/destination pairs");
+                break;
+            }
+            for(std::size_t i = 0; i < stmt.params.size(); i += 2U) {
+                if(!check_expr(stmt.params[i + 1U].value, Expected{})) {
+                    continue;
+                }
+                const Expr &destination = ast_.exprs[static_cast<std::size_t>(
+                    stmt.params[i + 1U].value)];
+                if(destination.kind != ExprKind::variable ||
+                   !result_.exprs[static_cast<std::size_t>(
+                       stmt.params[i + 1U].value)].memory_access) {
+                    diag(DiagCode::sema_not_assignable, destination.line,
+                         destination.column);
+                    continue;
+                }
+                const ExprInfo &target = result_.exprs[static_cast<std::size_t>(
+                    stmt.params[i + 1U].value)];
+                check_expr(stmt.params[i].value,
+                           want(target.type, target.type_id));
+            }
+            break;
         case StmtKind::exit_:
         case StmtKind::continue_:
             if(loop_depth_ == 0) {
@@ -292,12 +1049,6 @@ private:
 
     void check_assign(const Stmt &stmt, StmtInfo &info)
     {
-        const std::size_t dot = stmt.target.find('.');
-        if(dot != std::string::npos) {
-            diag(DiagCode::sema_not_assignable, stmt.line, stmt.column,
-                 "FB pins cannot be assigned; use a formal call");
-            return;
-        }
         const std::string lower = lower_copy(stmt.target);
         const int var = find_var(lower);
         if(var < 0) {
@@ -322,14 +1073,59 @@ private:
                  "VAR CONSTANT member");
             return;
         }
-        info.slot = result_.vars[static_cast<std::size_t>(var)].slot;
-        info.type = result_.vars[static_cast<std::size_t>(var)].type;
+        const VarInfo &target = result_.vars[static_cast<std::size_t>(var)];
+        info.offset = target.offset;
+        info.type = target.type;
+        info.type_id = target.type_id;
+        if(!resolve_access(stmt.target_access, info.offset, info.type,
+                           info.type_id, info.dynamic_indices, stmt.line,
+                           stmt.column)) {
+            return;
+        }
         if(info.type == Type::axis_ref) {
             diag(DiagCode::sema_operand_type_invalid, stmt.line, stmt.column,
                  stmt.target);
             return;
         }
-        check_expr(stmt.value, want(info.type));
+        const TypeDesc *desc = result_.types.get(info.type_id);
+        if(desc != nullptr && (desc->kind == TypeKind::string ||
+                               desc->kind == TypeKind::wstring)) {
+            if(check_expr(stmt.value, want(info.type, info.type_id))) {
+                const ExprInfo &source = result_.exprs[
+                    static_cast<std::size_t>(stmt.value)];
+                const TypeDesc *source_desc = result_.types.get(
+                    source.storage_type_id == invalid_type_id
+                        ? source.type_id
+                        : source.storage_type_id);
+                const std::uint64_t source_capacity =
+                    source_desc == nullptr ? 0U
+                                           : source_desc->string.capacity;
+                result_.max_string_operation_cost = std::max(
+                    result_.max_string_operation_cost,
+                    static_cast<std::uint32_t>(std::max(
+                        desc->string.capacity, source_capacity)));
+            }
+            return;
+        }
+        if(desc != nullptr && (desc->kind == TypeKind::array ||
+                               desc->kind == TypeKind::struct_)) {
+            if(!info.dynamic_indices.empty() ||
+               !check_expr(stmt.value, want(info.type, info.type_id))) {
+                return;
+            }
+            const ExprInfo &source = result_.exprs[
+                static_cast<std::size_t>(stmt.value)];
+            if(!source.dynamic_indices.empty()) {
+                diag(DiagCode::sema_type_mismatch, stmt.line, stmt.column,
+                     "dynamic aggregate copy is not supported in L1b2");
+                return;
+            }
+            info.aggregate_copy = true;
+            info.source_offset = source.offset;
+            info.copy_size = static_cast<std::uint32_t>(desc->size);
+            return;
+        }
+        check_expr(stmt.value, want(info.type, info.type_id));
     }
 
     void check_if(const Stmt &stmt)
@@ -348,17 +1144,28 @@ private:
     void check_case(const Stmt &stmt, StmtInfo &info)
     {
         Type selector = Type::dint;
+        TypeId selector_id = nominal_anchor(stmt.selector);
+        const TypeDesc *nominal = result_.types.get(selector_id);
         const Type anchored = anchor_type(stmt.selector, Type::dint);
-        if(anchored == Type::int_ || anchored == Type::dint) {
+        if(nominal != nullptr &&
+           (nominal->kind == TypeKind::enum_ ||
+            nominal->kind == TypeKind::subrange)) {
+            const TypeId base = nominal->kind == TypeKind::enum_
+                                    ? nominal->enum_base
+                                    : nominal->subrange.base;
+            selector = type_from_id(base);
+        } else if(anchored == Type::int_ || anchored == Type::dint) {
             selector = anchored;
+            selector_id = st::type_id(selector);
         } else {
             const Expr &sel =
                 ast_.exprs[static_cast<std::size_t>(stmt.selector)];
             diag(DiagCode::sema_operand_type_invalid, sel.line, sel.column,
                  "CASE selector must be INT or DINT");
         }
-        check_expr(stmt.selector, want(selector));
+        check_expr(stmt.selector, want(selector, selector_id));
         info.type = selector;
+        info.type_id = selector_id;
 
         struct Interval
         {
@@ -370,12 +1177,19 @@ private:
             for(const CaseLabel &label : arm.labels) {
                 std::int64_t low = 0;
                 std::int64_t high = 0;
-                if(!const_label(label.low, selector, low)) {
+                if(!const_label(label.low, selector, selector_id, low)) {
                     continue;
                 }
                 high = low;
                 if(label.high != kNoExpr) {
-                    if(!const_label(label.high, selector, high)) {
+                    if(nominal != nullptr && nominal->kind == TypeKind::enum_) {
+                        const Expr &at = ast_.exprs[
+                            static_cast<std::size_t>(label.high)];
+                        diag(DiagCode::sema_operand_type_invalid, at.line,
+                             at.column, "enum CASE labels cannot be ranges");
+                        continue;
+                    }
+                    if(!const_label(label.high, selector, selector_id, high)) {
                         continue;
                     }
                 }
@@ -401,12 +1215,13 @@ private:
         }
     }
 
-    bool const_label(ExprIndex index, Type selector, std::int64_t &value)
+    bool const_label(ExprIndex index, Type selector, TypeId selector_id,
+                     std::int64_t &value)
     {
         if(index == kNoExpr) {
             return false;
         }
-        if(!check_expr(index, want(selector))) {
+        if(!check_expr(index, want(selector, selector_id))) {
             return false;
         }
         const ExprInfo &info = result_.exprs[static_cast<std::size_t>(index)];
@@ -435,8 +1250,9 @@ private:
                      stmt.column, "FOR control must be INT or DINT");
                 control = Type::dint;
             } else {
-                info.slot = result_.vars[static_cast<std::size_t>(var)].slot;
+                info.offset = result_.vars[static_cast<std::size_t>(var)].offset;
                 info.type = control;
+                info.type_id = result_.vars[static_cast<std::size_t>(var)].type_id;
             }
         }
         for(const std::string &outer : control_stack_) {
@@ -593,11 +1409,40 @@ private:
         case ExprKind::literal_typed:
             anchor_found_ = true;
             return expr.literal_type;
+        case ExprKind::literal_enum: {
+            TypeId id = invalid_type_id;
+            if(result_.types.find(expr.name, id) == TypeError::ok) {
+                const TypeDesc *desc = result_.types.get(id);
+                if(desc != nullptr && desc->kind == TypeKind::enum_) {
+                    anchor_found_ = true;
+                    return type_from_id(desc->enum_base);
+                }
+            }
+            return Type::bool_;
+        }
+        case ExprKind::literal_string:
+            return Type::string_;
+        case ExprKind::literal_wstring:
+            return Type::wstring;
+        case ExprKind::literal_date:
+            anchor_found_ = true;
+            return Type::date;
+        case ExprKind::literal_tod:
+            anchor_found_ = true;
+            return Type::tod;
+        case ExprKind::literal_dt:
+            anchor_found_ = true;
+            return Type::dt;
         case ExprKind::call: {
             ConvDesc desc;
             if(resolve_conversion(lower_copy(expr.name), desc)) {
                 anchor_found_ = true;
                 return desc.to;
+            }
+            NamedConversion named;
+            if(resolve_named_conversion(expr.name, named)) {
+                anchor_found_ = true;
+                return named.to;
             }
             return Type::bool_;
         }
@@ -605,11 +1450,26 @@ private:
             const int var = find_var(lower_copy(expr.name));
             if(var >= 0) {
                 anchor_found_ = true;
-                return result_.vars[static_cast<std::size_t>(var)].type;
+                if(expr.access.empty()) {
+                    return result_.vars[static_cast<std::size_t>(var)].type;
+                }
+                return value_type(access_result_type(
+                    result_.vars[static_cast<std::size_t>(var)].type_id,
+                    expr.access));
             }
             return Type::bool_;
         }
         case ExprKind::pin_read: {
+            const int var = find_var(lower_copy(expr.name));
+            if(var >= 0) {
+                anchor_found_ = true;
+                if(expr.access.empty()) {
+                    return result_.vars[static_cast<std::size_t>(var)].type;
+                }
+                return value_type(access_result_type(
+                    result_.vars[static_cast<std::size_t>(var)].type_id,
+                    expr.access));
+            }
             const int fb = find_fb(lower_copy(expr.name));
             if(fb >= 0) {
                 const FbType type =
@@ -654,6 +1514,8 @@ private:
             }
             return anchor_walk(expr.rhs, saw_real, saw_time, saw_bool);
         }
+        case ExprKind::aggregate_init:
+            return Type::bool_;
         }
         return Type::bool_;
     }
@@ -670,6 +1532,19 @@ private:
         case ExprKind::literal_int: return literal_int(expr, info, expected);
         case ExprKind::literal_typed:
             return literal_typed(expr, info, expected);
+        case ExprKind::literal_enum:
+            return literal_enum(expr, info, expected);
+        case ExprKind::literal_string:
+        case ExprKind::literal_wstring:
+            return string_literal(expr, info, expected);
+        case ExprKind::literal_date:
+            return date_literal(expr, info, expected, Type::date,
+                                builtin::date);
+        case ExprKind::literal_tod:
+            return date_literal(expr, info, expected, Type::tod,
+                                builtin::tod);
+        case ExprKind::literal_dt:
+            return date_literal(expr, info, expected, Type::dt, builtin::dt);
         case ExprKind::call: return conversion_call(expr, info, expected);
         case ExprKind::literal_real: return literal_real(expr, info, expected);
         case ExprKind::literal_bool:
@@ -677,6 +1552,7 @@ private:
                 return mismatch(expr, expected.type, Type::bool_);
             }
             info.type = Type::bool_;
+            info.type_id = builtin::bool_;
             info.is_const = true;
             info.bits = expr.unsigned_value ? 1 : 0;
             info.valid = true;
@@ -686,6 +1562,7 @@ private:
                 return mismatch(expr, expected.type, Type::time);
             }
             info.type = Type::time;
+            info.type_id = builtin::time;
             info.is_const = true;
             info.bits = static_cast<std::uint64_t>(expr.signed_value);
             info.valid = true;
@@ -694,6 +1571,10 @@ private:
         case ExprKind::pin_read: return pin_read(expr, info, expected);
         case ExprKind::unary: return unary(expr, info, expected);
         case ExprKind::binary: return binary(expr, info, expected);
+        case ExprKind::aggregate_init:
+            diag(DiagCode::sema_type_mismatch, expr.line, expr.column,
+                 "aggregate initializer is only valid in a declaration");
+            return false;
         }
         return false;
     }
@@ -706,6 +1587,238 @@ private:
         note += to_string(actual);
         diag(DiagCode::sema_type_mismatch, expr.line, expr.column, note);
         return false;
+    }
+
+    bool nominal_mismatch(const Expr &expr, TypeId expected, TypeId actual)
+    {
+        const TypeDesc *want_desc = result_.types.get(expected);
+        const TypeDesc *got_desc = result_.types.get(actual);
+        std::string note = "expected ";
+        note += want_desc ? want_desc->name : "?";
+        note += ", got ";
+        note += got_desc ? got_desc->name : "?";
+        diag(DiagCode::sema_type_mismatch, expr.line, expr.column, note);
+        return false;
+    }
+
+    bool value_in_nominal(TypeId id, std::uint64_t bits) const
+    {
+        const TypeDesc *desc = result_.types.get(id);
+        if(desc == nullptr) {
+            return false;
+        }
+        if(desc->kind == TypeKind::enum_) {
+            for(const EnumItem &item : desc->enum_items) {
+                const std::uint64_t value = static_cast<std::uint64_t>(
+                    item.value.as_signed());
+                if(value == bits) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        if(desc->kind != TypeKind::subrange) {
+            return false;
+        }
+        if(desc->integer_sign == IntegerSign::signed_) {
+            const std::int64_t value = static_cast<std::int64_t>(bits);
+            return value >= desc->subrange.lower.as_signed() &&
+                   value <= desc->subrange.upper.as_signed();
+        }
+        return bits >= desc->subrange.lower.as_unsigned() &&
+               bits <= desc->subrange.upper.as_unsigned();
+    }
+
+    static void append_u32(std::vector<std::uint8_t> &bytes,
+                           std::uint32_t value)
+    {
+        bytes.push_back(static_cast<std::uint8_t>(value));
+        bytes.push_back(static_cast<std::uint8_t>(value >> 8U));
+        bytes.push_back(static_cast<std::uint8_t>(value >> 16U));
+        bytes.push_back(static_cast<std::uint8_t>(value >> 24U));
+    }
+
+    static bool decode_utf8(const std::string &text,
+                            std::vector<std::uint8_t> &bytes,
+                            std::vector<std::uint32_t> &scalars)
+    {
+        std::vector<std::uint8_t> escaped;
+        escaped.reserve(text.size());
+        for(std::size_t i = 0; i < text.size(); ++i) {
+            const std::uint8_t c = static_cast<std::uint8_t>(text[i]);
+            if(c != static_cast<std::uint8_t>('$')) {
+                escaped.push_back(c);
+                continue;
+            }
+            if(i + 1 >= text.size()) {
+                return false;
+            }
+            const char next = text[++i];
+            if(next == '$') {
+                escaped.push_back(static_cast<std::uint8_t>('$'));
+            } else if(next == 'N' || next == 'n') {
+                escaped.push_back(static_cast<std::uint8_t>('\n'));
+            } else {
+                return false;
+            }
+        }
+        for(std::size_t i = 0; i < escaped.size();) {
+            const std::uint8_t lead = escaped[i];
+            std::uint32_t scalar = 0;
+            std::size_t count = 0;
+            if(lead < 0x80U) {
+                scalar = lead;
+                count = 1;
+            } else if(lead >= 0xC2U && lead <= 0xDFU) {
+                scalar = lead & 0x1FU;
+                count = 2;
+            } else if(lead >= 0xE0U && lead <= 0xEFU) {
+                scalar = lead & 0x0FU;
+                count = 3;
+            } else if(lead >= 0xF0U && lead <= 0xF4U) {
+                scalar = lead & 0x07U;
+                count = 4;
+            } else {
+                return false;
+            }
+            if(i + count > escaped.size()) {
+                return false;
+            }
+            for(std::size_t j = 1; j < count; ++j) {
+                const std::uint8_t part = escaped[i + j];
+                if((part & 0xC0U) != 0x80U) {
+                    return false;
+                }
+                scalar = (scalar << 6U) | (part & 0x3FU);
+            }
+            if((count == 3 && lead == 0xE0U && escaped[i + 1] < 0xA0U) ||
+               (count == 3 && lead == 0xEDU && escaped[i + 1] >= 0xA0U) ||
+               (count == 4 && lead == 0xF0U && escaped[i + 1] < 0x90U) ||
+               (count == 4 && lead == 0xF4U && escaped[i + 1] >= 0x90U) ||
+               scalar > 0x10FFFFU ||
+               (scalar >= 0xD800U && scalar <= 0xDFFFU)) {
+                return false;
+            }
+            scalars.push_back(scalar);
+            i += count;
+        }
+        bytes.swap(escaped);
+        return true;
+    }
+
+    bool string_literal(const Expr &expr, ExprInfo &info, Expected expected)
+    {
+        std::vector<std::uint8_t> bytes;
+        std::vector<std::uint32_t> scalars;
+        if(!decode_utf8(expr.text, bytes, scalars)) {
+            diag(DiagCode::sema_invalid_string_literal, expr.line,
+                 expr.column);
+            return false;
+        }
+        const bool wide = expr.kind == ExprKind::literal_wstring;
+        if(expected.has && expected.type == (wide ? Type::wchar
+                                                   : Type::char_)) {
+            if((wide && scalars.size() != 1U) ||
+               (!wide && bytes.size() != 1U)) {
+                diag(DiagCode::sema_invalid_string_literal, expr.line,
+                     expr.column);
+                return false;
+            }
+            info.type = expected.type;
+            info.type_id = expected.type_id;
+            info.is_const = true;
+            info.bits = wide ? scalars[0] : bytes[0];
+            info.valid = true;
+            return true;
+        }
+        const Type string_type = wide ? Type::wstring : Type::string_;
+        if(!expected.has || expected.type != string_type) {
+            return mismatch(expr, expected.has ? expected.type : string_type,
+                            string_type);
+        }
+        const TypeDesc *desc = result_.types.get(expected.type_id);
+        if(desc == nullptr ||
+           desc->kind != (wide ? TypeKind::wstring : TypeKind::string)) {
+            return nominal_mismatch(expr, expected.type_id, invalid_type_id);
+        }
+        const std::size_t length = wide ? scalars.size() : bytes.size();
+        if(length > desc->string.capacity) {
+            diag(DiagCode::sema_string_capacity_exceeded, expr.line,
+                 expr.column);
+            return false;
+        }
+        const std::uint64_t added = 4U + (wide ? scalars.size() * 4ULL
+                                               : bytes.size());
+        if(added > 65536U - result_.string_constant_bytes) {
+            diag(DiagCode::capacity_code, expr.line, expr.column,
+                 "string constant pool");
+            return false;
+        }
+        result_.string_constant_bytes += static_cast<std::uint32_t>(added);
+        info.object_bytes.reserve(static_cast<std::size_t>(desc->size));
+        append_u32(info.object_bytes, static_cast<std::uint32_t>(length));
+        if(wide) {
+            for(const std::uint32_t scalar : scalars) {
+                append_u32(info.object_bytes, scalar);
+            }
+        } else {
+            info.object_bytes.insert(info.object_bytes.end(), bytes.begin(),
+                                     bytes.end());
+        }
+        info.object_bytes.resize(static_cast<std::size_t>(desc->size), 0);
+        info.type = string_type;
+        info.type_id = expected.type_id;
+        info.object_constant = true;
+        info.valid = true;
+        result_.max_string_operation_cost = std::max(
+            result_.max_string_operation_cost,
+            static_cast<std::uint32_t>(desc->string.capacity));
+        return true;
+    }
+
+    bool date_literal(const Expr &expr, ExprInfo &info, Expected expected,
+                      Type type, TypeId id)
+    {
+        if(expected.has && expected.type != type) {
+            return mismatch(expr, expected.type, type);
+        }
+        info.type = type;
+        info.type_id = id;
+        info.is_const = true;
+        info.bits = static_cast<std::uint64_t>(expr.signed_value);
+        info.valid = true;
+        return true;
+    }
+
+    bool literal_enum(const Expr &expr, ExprInfo &info, Expected expected)
+    {
+        TypeId id = invalid_type_id;
+        if(result_.types.find(expr.name, id) != TypeError::ok) {
+            diag(DiagCode::sema_unknown_identifier, expr.line, expr.column,
+                 expr.name);
+            return false;
+        }
+        const TypeDesc *desc = result_.types.get(id);
+        if(desc == nullptr || desc->kind != TypeKind::enum_) {
+            diag(DiagCode::sema_type_mismatch, expr.line, expr.column,
+                 expr.name + " is not an enum");
+            return false;
+        }
+        if(expected.has && expected.type_id != id) {
+            return nominal_mismatch(expr, expected.type_id, id);
+        }
+        IntegerValue value;
+        if(result_.types.enum_value(id, expr.pin, value) != TypeError::ok) {
+            diag(DiagCode::sema_unknown_identifier, expr.line, expr.column,
+                 expr.pin);
+            return false;
+        }
+        info.type = type_from_id(desc->enum_base);
+        info.type_id = id;
+        info.is_const = true;
+        info.bits = static_cast<std::uint64_t>(value.as_signed());
+        info.valid = true;
+        return true;
     }
 
     // Integer-payload literal adoption for any integer/bit-string target
@@ -745,8 +1858,7 @@ private:
             if(magnitude > smax + 1ULL) {
                 return out_of_range(expr);
             }
-            bits = static_cast<std::uint64_t>(
-                -static_cast<std::int64_t>(magnitude));
+            bits = 0ULL - magnitude;
             return true;
         }
         if(magnitude > smax) {
@@ -758,6 +1870,11 @@ private:
 
     bool literal_int(const Expr &expr, ExprInfo &info, Expected expected)
     {
+        const TypeDesc *nominal =
+            expected.has ? result_.types.get(expected.type_id) : nullptr;
+        if(nominal != nullptr && nominal->kind == TypeKind::enum_) {
+            return nominal_mismatch(expr, expected.type_id, builtin::dint);
+        }
         const Type target = expected.has ? expected.type : Type::dint;
         const std::uint64_t magnitude = expr.unsigned_value;
         const bool negative = expr.signed_value < 0; // parser-folded sign
@@ -777,6 +1894,7 @@ private:
                 info.bits = detail::double_bits(as_real);
             }
             info.type = target;
+            info.type_id = expected.has ? expected.type_id : st::type_id(target);
             info.is_const = true;
             info.valid = true;
             return true;
@@ -790,9 +1908,16 @@ private:
             return false;
         }
         info.type = target;
+        info.type_id = expected.has ? expected.type_id : st::type_id(target);
         info.is_const = true;
         info.bits = bits;
         info.valid = true;
+        if(nominal != nullptr && nominal->kind == TypeKind::subrange &&
+           !value_in_nominal(expected.type_id, bits)) {
+            diag(DiagCode::sema_range_violation, expr.line, expr.column,
+                 nominal->name);
+            return false;
+        }
         return true;
     }
 
@@ -836,8 +1961,17 @@ private:
             info.bits = bits;
         }
         info.type = expected.has ? expected.type : own;
+        info.type_id = expected.has ? expected.type_id : st::type_id(own);
         info.is_const = true;
         info.valid = true;
+        const TypeDesc *nominal =
+            expected.has ? result_.types.get(expected.type_id) : nullptr;
+        if(nominal != nullptr && nominal->kind == TypeKind::subrange &&
+           !value_in_nominal(expected.type_id, info.bits)) {
+            diag(DiagCode::sema_range_violation, expr.line, expr.column,
+                 nominal->name);
+            return false;
+        }
         return true;
     }
 
@@ -853,6 +1987,7 @@ private:
             return mismatch(expr, target, Type::lreal);
         }
         info.type = target;
+        info.type_id = expected.has ? expected.type_id : st::type_id(target);
         info.is_const = true;
         info.valid = true;
         return true;
@@ -871,6 +2006,113 @@ private:
     // at runtime (NaN/Inf into an integer) is left to the runtime.
     bool conversion_call(const Expr &expr, ExprInfo &info, Expected expected)
     {
+        const std::string conversion_name = lower_copy(expr.name);
+        if(conversion_name == "l2b_alias_guard") {
+            if(expected.has && expected.type != Type::dint) {
+                return mismatch(expr, expected.type, Type::dint);
+            }
+            if(!check_expr(expr.lhs, want(Type::dint))) return false;
+            info.type = Type::dint;
+            info.type_id = builtin::dint;
+            info.valid = true;
+            return true;
+        }
+        if(conversion_name == "len") {
+            if(expected.has && expected.type != Type::dint) {
+                return mismatch(expr, expected.type, Type::dint);
+            }
+            if(!check_expr(expr.lhs, Expected{})) return false;
+            const ExprInfo &argument =
+                result_.exprs[static_cast<std::size_t>(expr.lhs)];
+            const TypeDesc *desc = result_.types.get(
+                argument.storage_type_id == invalid_type_id
+                    ? argument.type_id
+                    : argument.storage_type_id);
+            if(desc == nullptr || (desc->kind != TypeKind::string &&
+                                   desc->kind != TypeKind::wstring)) {
+                diag(DiagCode::sema_type_mismatch, expr.line, expr.column,
+                     "LEN requires STRING or WSTRING");
+                return false;
+            }
+            info.type = Type::dint;
+            info.type_id = builtin::dint;
+            info.valid = true;
+            result_.max_string_operation_cost = std::max(
+                result_.max_string_operation_cost,
+                static_cast<std::uint32_t>(desc->string.capacity));
+            return true;
+        }
+        Type special_from = Type::bool_;
+        Type special_to = Type::bool_;
+        bool unicode_check = false;
+        if(conversion_name == "usint_to_char") {
+            special_from = Type::usint;
+            special_to = Type::char_;
+        } else if(conversion_name == "char_to_usint") {
+            special_from = Type::char_;
+            special_to = Type::usint;
+        } else if(conversion_name == "udint_to_wchar") {
+            special_from = Type::udint;
+            special_to = Type::wchar;
+            unicode_check = true;
+        } else if(conversion_name == "wchar_to_udint") {
+            special_from = Type::wchar;
+            special_to = Type::udint;
+        }
+        if(special_from != Type::bool_) {
+            if(expected.has && expected.type != special_to) {
+                return mismatch(expr, expected.type, special_to);
+            }
+            if(!check_expr(expr.lhs, want(special_from))) {
+                return false;
+            }
+            const ExprInfo &arg =
+                result_.exprs[static_cast<std::size_t>(expr.lhs)];
+            if(unicode_check && arg.is_const &&
+               (arg.bits > 0x10FFFFU ||
+                (arg.bits >= 0xD800U && arg.bits <= 0xDFFFU))) {
+                return out_of_range(expr);
+            }
+            info.type = special_to;
+            info.type_id = st::type_id(special_to);
+            info.valid = true;
+            if(arg.is_const) {
+                info.is_const = true;
+                info.bits = arg.bits;
+            }
+            return true;
+        }
+        NamedConversion named;
+        if(resolve_named_conversion(expr.name, named)) {
+            if(expected.has && expected.type_id != named.to_id &&
+               !(named.to_id >= first_load_type_id &&
+                 named.to == expected.type &&
+                 widens_to(named.to, expected.type))) {
+                return nominal_mismatch(expr, expected.type_id, named.to_id);
+            }
+            if(!check_expr(expr.lhs, want(named.from, named.from_id))) {
+                return false;
+            }
+            const ExprInfo &arg =
+                result_.exprs[static_cast<std::size_t>(expr.lhs)];
+            info.type = named.to;
+            info.type_id = named.to_id;
+            info.valid = true;
+            if(arg.is_const) {
+                const std::uint64_t converted = detail::canon(named.to,
+                                                               arg.bits);
+                if(named.to_id >= first_load_type_id &&
+                   !value_in_nominal(named.to_id, converted)) {
+                    const TypeDesc *desc = result_.types.get(named.to_id);
+                    diag(DiagCode::sema_range_violation, expr.line,
+                         expr.column, desc ? desc->name : expr.name);
+                    return false;
+                }
+                info.is_const = true;
+                info.bits = converted;
+            }
+            return true;
+        }
         ConvDesc desc;
         if(!resolve_conversion(lower_copy(expr.name), desc)) {
             diag(DiagCode::sema_unknown_identifier, expr.line, expr.column,
@@ -886,6 +2128,7 @@ private:
         }
         const ExprInfo &arg = result_.exprs[static_cast<std::size_t>(expr.lhs)];
         info.type = expected.has ? expected.type : desc.to;
+        info.type_id = expected.has ? expected.type_id : st::type_id(desc.to);
         info.fb_index = static_cast<std::uint16_t>(desc.to); // conv target
         info.pin_id = static_cast<std::uint8_t>(desc.kind);
         info.slot = desc.trunc ? 1 : 0;
@@ -953,6 +2196,101 @@ private:
         }
     }
 
+    bool resolve_access(const std::vector<AccessStep> &steps,
+                        std::uint32_t &offset, Type &type, TypeId &type_id,
+                        std::vector<ExprInfo::DynamicIndex> &dynamic,
+                        std::int32_t line, std::int32_t column)
+    {
+        for(const AccessStep &step : steps) {
+            const TypeDesc *desc = result_.types.get(type_id);
+            if(step.field) {
+                const StructField *field = nullptr;
+                if(desc == nullptr || desc->kind != TypeKind::struct_ ||
+                   result_.types.struct_field(type_id, step.name, field) !=
+                       TypeError::ok || field == nullptr) {
+                    diag(DiagCode::sema_type_mismatch, line, column,
+                         "field access requires a STRUCT member");
+                    return false;
+                }
+                offset += static_cast<std::uint32_t>(field->offset);
+                type_id = field->type;
+            } else {
+                if(desc == nullptr || desc->kind != TypeKind::array ||
+                   step.indices.size() != desc->array.dimensions.size()) {
+                    diag(DiagCode::sema_type_mismatch, line, column,
+                         "array subscript dimension mismatch");
+                    return false;
+                }
+                for(std::size_t i = 0; i < step.indices.size(); ++i) {
+                    const ExprIndex index = step.indices[i];
+                    Type index_type = anchor_type(index, Type::dint);
+                    TypeId index_id = nominal_anchor(index);
+                    const TypeDesc *index_desc = result_.types.get(index_id);
+                    if(index_desc != nullptr &&
+                       index_desc->kind == TypeKind::subrange) {
+                        index_type = type_from_id(index_desc->subrange.base);
+                    } else if(index_desc != nullptr &&
+                              index_desc->kind == TypeKind::enum_) {
+                        const Expr &at =
+                            ast_.exprs[static_cast<std::size_t>(index)];
+                        diag(DiagCode::sema_type_mismatch, at.line, at.column,
+                             "enum is not an array index");
+                        return false;
+                    } else {
+                        index_id = st::type_id(index_type);
+                    }
+                    if(!is_integer(index_type) ||
+                       !check_expr(index, want(index_type, index_id))) {
+                        const Expr &at =
+                            ast_.exprs[static_cast<std::size_t>(index)];
+                        diag(DiagCode::sema_type_mismatch, at.line, at.column,
+                             "array index must be integer");
+                        return false;
+                    }
+                    const ExprInfo &index_info =
+                        result_.exprs[static_cast<std::size_t>(index)];
+                    const ArrayDimension &dimension =
+                        desc->array.dimensions[i];
+                    if(index_info.is_const) {
+                        const std::int64_t value = is_unsigned_int(index_type)
+                            ? (index_info.bits > static_cast<std::uint64_t>(
+                                                     std::numeric_limits<std::int64_t>::max())
+                                   ? std::numeric_limits<std::int64_t>::max()
+                                   : static_cast<std::int64_t>(index_info.bits))
+                            : static_cast<std::int64_t>(index_info.bits);
+                        if(value < dimension.lower || value > dimension.upper) {
+                            const Expr &at =
+                                ast_.exprs[static_cast<std::size_t>(index)];
+                            diag(DiagCode::sema_index_out_of_range, at.line,
+                                 at.column);
+                            return false;
+                        }
+                        offset += static_cast<std::uint32_t>(
+                            static_cast<std::uint64_t>(value - dimension.lower) *
+                            dimension.stride);
+                    } else {
+                        dynamic.push_back({index, dimension.lower,
+                                           dimension.upper,
+                                           dimension.stride});
+                    }
+                }
+                type_id = desc->array.element;
+            }
+            const TypeDesc *next = result_.types.get(type_id);
+            if(next == nullptr) {
+                return false;
+            }
+            if(next->kind == TypeKind::enum_) {
+                type = type_from_id(next->enum_base);
+            } else if(next->kind == TypeKind::subrange) {
+                type = type_from_id(next->subrange.base);
+            } else if(type_id < first_load_type_id) {
+                type = type_from_id(type_id);
+            }
+        }
+        return true;
+    }
+
     bool variable(const Expr &expr, ExprInfo &info, Expected expected)
     {
         const std::string lower = lower_copy(expr.name);
@@ -968,16 +2306,104 @@ private:
             return false;
         }
         const VarInfo &decl = result_.vars[static_cast<std::size_t>(var)];
-        if(expected.has && decl.type != expected.type &&
-           !widens_to(decl.type, expected.type)) {
+        info.offset = decl.offset;
+        Type actual_type = decl.type;
+        TypeId actual_id = decl.type_id;
+        const TypeDesc *root_desc = result_.types.get(actual_id);
+        if(root_desc != nullptr &&
+           (root_desc->kind == TypeKind::string ||
+            root_desc->kind == TypeKind::wstring) &&
+           !expr.access.empty()) {
+            if(expr.access.size() != 1U || expr.access[0].field ||
+               expr.access[0].indices.size() != 1U) {
+                diag(DiagCode::sema_type_mismatch, expr.line, expr.column,
+                     "string index requires one subscript");
+                return false;
+            }
+            const ExprIndex index = expr.access[0].indices[0];
+            const Type index_type = anchor_type(index, Type::dint);
+            if(!is_integer(index_type) ||
+               !check_expr(index, want(index_type))) {
+                diag(DiagCode::sema_type_mismatch, expr.line, expr.column,
+                     "string index must be integer");
+                return false;
+            }
+            const ExprInfo &index_info =
+                result_.exprs[static_cast<std::size_t>(index)];
+            if(index_info.is_const) {
+                const std::int64_t value =
+                    static_cast<std::int64_t>(index_info.bits);
+                const std::uint64_t upper = decl.constant
+                    ? decl.initial_length
+                    : root_desc->string.capacity;
+                if(value < 1 || static_cast<std::uint64_t>(value) > upper) {
+                    const Expr &at = ast_.exprs[static_cast<std::size_t>(index)];
+                    diag(DiagCode::sema_index_out_of_range, at.line,
+                         at.column);
+                    return false;
+                }
+            }
+            result_.max_string_operation_cost = std::max(
+                result_.max_string_operation_cost,
+                static_cast<std::uint32_t>(root_desc->string.capacity));
+            actual_type = root_desc->kind == TypeKind::wstring
+                              ? Type::wchar
+                              : Type::char_;
+            actual_id = st::type_id(actual_type);
+            if(expected.has && expected.type != actual_type) {
+                return mismatch(expr, expected.type, actual_type);
+            }
+            info.type = actual_type;
+            info.type_id = actual_id;
+            info.storage_type_id = decl.type_id;
+            info.string_index = index;
+            info.valid = true;
+            info.memory_access = true;
+            return true;
+        }
+        if(!resolve_access(expr.access, info.offset, actual_type, actual_id,
+                           info.dynamic_indices, expr.line, expr.column)) {
+            return false;
+        }
+        const TypeDesc *decl_desc = result_.types.get(actual_id);
+        const TypeDesc *expected_desc =
+            expected.has ? result_.types.get(expected.type_id) : nullptr;
+        bool compatible = !expected.has ||
+                          (actual_id == expected.type_id &&
+                           actual_type == expected.type);
+        if(expected.has && !compatible && decl_desc != nullptr &&
+           expected_desc != nullptr &&
+           ((decl_desc->kind == TypeKind::string &&
+             expected_desc->kind == TypeKind::string) ||
+            (decl_desc->kind == TypeKind::wstring &&
+             expected_desc->kind == TypeKind::wstring))) {
+            compatible = true;
+        }
+        if(expected.has && !compatible && decl_desc != nullptr &&
+           decl_desc->kind == TypeKind::subrange &&
+           expected.type_id < first_load_type_id) {
+            compatible = actual_type == expected.type ||
+                         widens_to(actual_type, expected.type);
+        }
+        if(expected.has && !compatible && actual_id < first_load_type_id &&
+           expected.type_id < first_load_type_id) {
+            compatible = actual_type == expected.type ||
+                         widens_to(actual_type, expected.type);
+        }
+        if(expected.has && !compatible) {
             // Only whitelist widenings are implicit (L1a 3.1/3.2); the
             // canonical slot form makes an accepted widening a runtime no-op.
-            return mismatch(expr, expected.type, decl.type);
+            if(decl_desc != nullptr || expected_desc != nullptr) {
+                return nominal_mismatch(expr, expected.type_id, actual_id);
+            }
+            return mismatch(expr, expected.type, actual_type);
         }
-        info.type = expected.has ? expected.type : decl.type;
-        info.slot = decl.slot;
+        info.type = expected.has ? expected.type : actual_type;
+        info.type_id = expected.has ? expected.type_id : actual_id;
+        info.storage_type_id = actual_id;
         info.valid = true;
-        if(decl.constant) {
+        info.memory_access = true;
+        if(decl.constant && expr.access.empty()) {
             info.is_const = true;
             info.bits = decl.init_bits;
         }
@@ -986,6 +2412,9 @@ private:
 
     bool pin_read(const Expr &expr, ExprInfo &info, Expected expected)
     {
+        if(find_var(lower_copy(expr.name)) >= 0) {
+            return variable(expr, info, expected);
+        }
         const int fb = find_fb(lower_copy(expr.name));
         if(fb < 0) {
             diag(DiagCode::sema_unknown_identifier, expr.line, expr.column,
@@ -1010,6 +2439,7 @@ private:
             return mismatch(expr, expected.type, desc.type);
         }
         info.type = expected.has ? expected.type : desc.type;
+        info.type_id = expected.has ? expected.type_id : st::type_id(desc.type);
         info.fb_index = static_cast<std::uint16_t>(fb);
         info.pin_id = static_cast<std::uint8_t>(pin);
         info.valid = true;
@@ -1039,6 +2469,7 @@ private:
             const ExprInfo &operand =
                 result_.exprs[static_cast<std::size_t>(expr.lhs)];
             info.type = target;
+            info.type_id = st::type_id(target);
             info.valid = true;
             if(operand.is_const) {
                 info.is_const = true;
@@ -1049,6 +2480,11 @@ private:
             return true;
         }
         // negate
+        if(expected.has && expected.type_id >= first_load_type_id) {
+            diag(DiagCode::sema_type_mismatch, expr.line, expr.column,
+                 "unary arithmetic produces the base type");
+            return false;
+        }
         Expected inner = expected;
         if(!inner.has) {
             inner = want(anchor_type(expr.lhs, Type::dint));
@@ -1064,6 +2500,7 @@ private:
         const ExprInfo &operand =
             result_.exprs[static_cast<std::size_t>(expr.lhs)];
         info.type = inner.type;
+        info.type_id = inner.type_id;
         info.valid = true;
         if(operand.is_const) {
             info.is_const = true;
@@ -1163,6 +2600,7 @@ private:
                 return false;
             }
             info.type = target;
+            info.type_id = st::type_id(target);
             info.valid = true;
             fold_logical(expr, info, target);
             return true;
@@ -1170,6 +2608,95 @@ private:
         if(is_comparison(expr.binary_op)) {
             if(expected.has && expected.type != Type::bool_) {
                 return mismatch(expr, expected.type, Type::bool_);
+            }
+            const Type joined = join_anchors(expr.lhs, expr.rhs, Type::dint);
+            if(joined == Type::string_ || joined == Type::wstring) {
+                TypeId string_id = nominal_anchor(expr.lhs);
+                const TypeDesc *string_desc = result_.types.get(string_id);
+                if(string_desc == nullptr ||
+                   (string_desc->kind != TypeKind::string &&
+                    string_desc->kind != TypeKind::wstring)) {
+                    string_id = nominal_anchor(expr.rhs);
+                    string_desc = result_.types.get(string_id);
+                }
+                if(string_desc == nullptr ||
+                   string_desc->kind != (joined == Type::wstring
+                                              ? TypeKind::wstring
+                                              : TypeKind::string)) {
+                    diag(DiagCode::sema_type_mismatch, expr.line,
+                         expr.column, "string width mismatch");
+                    return false;
+                }
+                const bool lhs_ok =
+                    check_expr(expr.lhs, want(joined, string_id));
+                const bool rhs_ok =
+                    check_expr(expr.rhs, want(joined, string_id));
+                if(!lhs_ok || !rhs_ok) {
+                    return false;
+                }
+                info.type = Type::bool_;
+                info.type_id = builtin::bool_;
+                info.valid = true;
+                result_.max_string_operation_cost = std::max(
+                    result_.max_string_operation_cost,
+                    static_cast<std::uint32_t>(string_desc->string.capacity));
+                for(const ExprIndex operand : {expr.lhs, expr.rhs}) {
+                    const ExprInfo &operand_info = result_.exprs[
+                        static_cast<std::size_t>(operand)];
+                    const TypeDesc *operand_desc = result_.types.get(
+                        operand_info.storage_type_id == invalid_type_id
+                            ? operand_info.type_id
+                            : operand_info.storage_type_id);
+                    if(operand_desc != nullptr) {
+                        result_.max_string_operation_cost = std::max(
+                            result_.max_string_operation_cost,
+                            static_cast<std::uint32_t>(
+                                operand_desc->string.capacity));
+                    }
+                }
+                return true;
+            }
+            const TypeId left_nominal = nominal_anchor(expr.lhs);
+            const TypeId right_nominal = nominal_anchor(expr.rhs);
+            const TypeDesc *left_desc = result_.types.get(left_nominal);
+            const TypeDesc *right_desc = result_.types.get(right_nominal);
+            if((left_desc != nullptr && left_nominal >= first_load_type_id) ||
+               (right_desc != nullptr && right_nominal >= first_load_type_id)) {
+                if(left_desc == nullptr || right_desc == nullptr ||
+                   left_nominal != right_nominal) {
+                    return nominal_mismatch(expr, left_nominal,
+                                            right_nominal);
+                }
+                const bool ordering = expr.binary_op != BinaryOp::cmp_eq &&
+                                      expr.binary_op != BinaryOp::cmp_ne;
+                if(left_desc->kind == TypeKind::array ||
+                   left_desc->kind == TypeKind::struct_) {
+                    diag(DiagCode::sema_operand_type_invalid, expr.line,
+                         expr.column,
+                         "aggregate comparison is not defined");
+                    return false;
+                }
+                if(left_desc->kind == TypeKind::enum_ && ordering) {
+                    diag(DiagCode::sema_operand_type_invalid, expr.line,
+                         expr.column, "enum ordering is not defined");
+                    return false;
+                }
+                const Type operand = type_from_id(
+                    left_desc->kind == TypeKind::enum_
+                        ? left_desc->enum_base
+                        : left_desc->subrange.base);
+                const bool lhs_ok =
+                    check_expr(expr.lhs, want(operand, left_nominal));
+                const bool rhs_ok =
+                    check_expr(expr.rhs, want(operand, right_nominal));
+                if(!lhs_ok || !rhs_ok) {
+                    return false;
+                }
+                info.type = Type::bool_;
+                info.type_id = builtin::bool_;
+                info.valid = true;
+                fold_compare(expr, info, operand);
+                return true;
             }
             const Type operand = join_anchors(expr.lhs, expr.rhs, Type::dint);
             const bool ordering = expr.binary_op != BinaryOp::cmp_eq &&
@@ -1187,12 +2714,32 @@ private:
                 return false;
             }
             info.type = Type::bool_;
+            info.type_id = builtin::bool_;
             info.valid = true;
             fold_compare(expr, info, operand);
             return true;
         }
         if(expr.binary_op == BinaryOp::power) {
             return power_op(expr, info, expected);
+        }
+        const Type left_type = anchor_type(expr.lhs, Type::dint);
+        if((left_type == Type::date || left_type == Type::tod ||
+            left_type == Type::dt) &&
+           (expr.binary_op == BinaryOp::add ||
+            expr.binary_op == BinaryOp::subtract)) {
+            if(expected.has && expected.type != left_type) {
+                return mismatch(expr, expected.type, left_type);
+            }
+            const Type rhs_type = left_type == Type::date ? Type::dint
+                                                          : Type::time;
+            if(!check_expr(expr.lhs, want(left_type)) ||
+               !check_expr(expr.rhs, want(rhs_type))) {
+                return false;
+            }
+            info.type = left_type;
+            info.type_id = st::type_id(left_type);
+            info.valid = true;
+            return true;
         }
         if((expr.binary_op == BinaryOp::multiply ||
             expr.binary_op == BinaryOp::divide) &&
@@ -1201,6 +2748,14 @@ private:
             return time_scale(expr, info, expected);
         }
         // arithmetic
+        if(expected.has && expected.type_id >= first_load_type_id) {
+            const TypeDesc *desc = result_.types.get(expected.type_id);
+            if(desc != nullptr) {
+                diag(DiagCode::sema_type_mismatch, expr.line, expr.column,
+                     "arithmetic produces the base type");
+                return false;
+            }
+        }
         Expected operand = expected;
         if(!operand.has) {
             operand = want(join_anchors(expr.lhs, expr.rhs, Type::dint));
@@ -1216,6 +2771,7 @@ private:
             return false;
         }
         info.type = operand.type;
+        info.type_id = operand.type_id;
         info.valid = true;
 
         const ExprInfo &rhs = result_.exprs[static_cast<std::size_t>(expr.rhs)];
@@ -1263,6 +2819,7 @@ private:
             return false;
         }
         info.type = base;
+        info.type_id = st::type_id(base);
         info.valid = true;
         return true;
     }
@@ -1296,6 +2853,7 @@ private:
             }
         }
         info.type = Type::time;
+        info.type_id = builtin::time;
         info.valid = true;
         const ExprInfo &lhs =
             result_.exprs[static_cast<std::size_t>(expr.lhs)];
@@ -1488,6 +3046,7 @@ private:
     SemaResult result_;
     std::vector<std::string> control_stack_;
     int loop_depth_ = 0;
+    std::size_t string_type_count_ = 0;
     bool has_error_ = false;
     mutable bool anchor_found_ = false;
 };

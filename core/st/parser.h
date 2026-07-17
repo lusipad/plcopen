@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <limits>
 #include <string>
 #include <vector>
 
@@ -40,6 +41,9 @@ public:
 
     ParseResult parse()
     {
+        while(at(TokenKind::kw_type)) {
+            parse_user_type();
+        }
         parse_program();
         result_.ok = !has_error_;
         return static_cast<ParseResult &&>(result_);
@@ -197,6 +201,221 @@ private:
         }
     }
 
+    // --- user types (L1b1) -----------------------------------------------
+
+    static bool integer_type_token(TokenKind kind, Type &type)
+    {
+        switch(kind) {
+        case TokenKind::kw_sint: type = Type::sint; return true;
+        case TokenKind::kw_int: type = Type::int_; return true;
+        case TokenKind::kw_dint: type = Type::dint; return true;
+        case TokenKind::kw_lint: type = Type::lint; return true;
+        case TokenKind::kw_usint: type = Type::usint; return true;
+        case TokenKind::kw_uint: type = Type::uint_; return true;
+        case TokenKind::kw_udint: type = Type::udint; return true;
+        case TokenKind::kw_ulint: type = Type::ulint; return true;
+        default: return false;
+        }
+    }
+
+    bool parse_type_ref(Type &type, std::string &name)
+    {
+        if(integer_type_token(current_.kind, type)) {
+            bump();
+            return true;
+        }
+        switch(current_.kind) {
+        case TokenKind::kw_bool: type = Type::bool_; break;
+        case TokenKind::kw_real: type = Type::real; break;
+        case TokenKind::kw_lreal: type = Type::lreal; break;
+        case TokenKind::kw_time: type = Type::time; break;
+        case TokenKind::kw_byte: type = Type::byte_; break;
+        case TokenKind::kw_word: type = Type::word; break;
+        case TokenKind::kw_dword: type = Type::dword; break;
+        case TokenKind::kw_lword: type = Type::lword; break;
+        case TokenKind::identifier:
+            name.assign(current_.text.data(), current_.text.size());
+            bump();
+            return true;
+        default:
+            diag(DiagCode::parse_expected_type, current_);
+            return false;
+        }
+        bump();
+        return true;
+    }
+
+    bool parse_integer_value(Type base, IntegerValue &out)
+    {
+        const bool negative = eat(TokenKind::minus);
+        if(!at(TokenKind::int_literal)) {
+            diag(DiagCode::parse_expected_expression, current_,
+                 "integer constant");
+            return false;
+        }
+        const std::uint64_t magnitude = current_.unsigned_value;
+        bump();
+        if(is_unsigned_int(base)) {
+            if(negative) {
+                diag(DiagCode::sema_range_violation, current_,
+                     "unsigned bound cannot be negative");
+                return false;
+            }
+            out = IntegerValue::unsigned_value(magnitude);
+            return true;
+        }
+        if(negative) {
+            if(magnitude > 0x8000000000000000ULL) {
+                diag(DiagCode::sema_range_violation, current_);
+                return false;
+            }
+            out = IntegerValue::signed_value(
+                magnitude == 0x8000000000000000ULL
+                    ? std::numeric_limits<std::int64_t>::min()
+                    : -static_cast<std::int64_t>(magnitude));
+        } else {
+            if(magnitude > 0x7FFFFFFFFFFFFFFFULL) {
+                diag(DiagCode::sema_range_violation, current_);
+                return false;
+            }
+            out = IntegerValue::signed_value(
+                static_cast<std::int64_t>(magnitude));
+        }
+        return true;
+    }
+
+    void parse_user_type()
+    {
+        bump(); // TYPE
+        if(!at(TokenKind::identifier)) {
+            diag(DiagCode::parse_expected_token, current_, "type name");
+            recover_statement();
+            return;
+        }
+        UserTypeDecl decl;
+        decl.line = current_.line;
+        decl.column = current_.column;
+        decl.name.assign(current_.text.data(), current_.text.size());
+        decl.lower = lower_copy(current_.text);
+        bump();
+        if(!expect(TokenKind::colon, "':'")) {
+            recover_statement();
+            return;
+        }
+        if(eat(TokenKind::kw_array)) {
+            decl.kind = UserTypeKind::array;
+            if(!expect(TokenKind::lbracket, "'['")) {
+                recover_statement();
+                return;
+            }
+            if(eat(TokenKind::star)) {
+                diag(DiagCode::unsupported_l1b2_dynamic_array, current_);
+                recover_statement();
+                return;
+            }
+            do {
+                IntegerValue lower;
+                IntegerValue upper;
+                if(!parse_integer_value(Type::lint, lower) ||
+                   !expect(TokenKind::dotdot, "'..'") ||
+                   !parse_integer_value(Type::lint, upper)) {
+                    recover_statement();
+                    return;
+                }
+                decl.array_bounds.push_back(
+                    {lower.as_signed(), upper.as_signed()});
+            } while(eat(TokenKind::comma));
+            if(!expect(TokenKind::rbracket, "']'") ||
+               !expect(TokenKind::kw_of, "OF") ||
+               !parse_type_ref(decl.element_type,
+                               decl.element_type_name)) {
+                recover_statement();
+                return;
+            }
+        } else if(eat(TokenKind::kw_struct)) {
+            decl.kind = UserTypeKind::struct_;
+            while(!at(TokenKind::kw_end_struct) &&
+                  !at(TokenKind::end_of_input)) {
+                if(!at(TokenKind::identifier)) {
+                    diag(DiagCode::parse_expected_token, current_,
+                         "struct field");
+                    recover_statement();
+                    return;
+                }
+                StructFieldDecl field;
+                field.line = current_.line;
+                field.column = current_.column;
+                field.name.assign(current_.text.data(), current_.text.size());
+                field.lower = lower_copy(current_.text);
+                bump();
+                if(!expect(TokenKind::colon, "':'") ||
+                   !parse_type_ref(field.type, field.type_name) ||
+                   !expect(TokenKind::semicolon, "';'")) {
+                    recover_statement();
+                    return;
+                }
+                decl.struct_fields.push_back(
+                    static_cast<StructFieldDecl &&>(field));
+            }
+            expect(TokenKind::kw_end_struct, "END_STRUCT");
+        } else if(eat(TokenKind::lparen)) {
+            decl.kind = UserTypeKind::enum_;
+            while(!at(TokenKind::rparen) &&
+                  !at(TokenKind::end_of_input)) {
+                if(!at(TokenKind::identifier)) {
+                    diag(DiagCode::parse_expected_token, current_,
+                         "enum member");
+                    recover_statement();
+                    return;
+                }
+                EnumMemberDecl member;
+                member.line = current_.line;
+                member.column = current_.column;
+                member.name.assign(current_.text.data(), current_.text.size());
+                member.lower = lower_copy(current_.text);
+                bump();
+                if(eat(TokenKind::assign)) {
+                    IntegerValue value;
+                    if(!parse_integer_value(Type::dint, value)) {
+                        recover_statement();
+                        return;
+                    }
+                    member.explicit_value = true;
+                    member.value = value.as_signed();
+                }
+                decl.enum_members.push_back(
+                    static_cast<EnumMemberDecl &&>(member));
+                if(!eat(TokenKind::comma)) {
+                    break;
+                }
+            }
+            expect(TokenKind::rparen, "')'");
+        } else {
+            Type base = Type::dint;
+            if(!integer_type_token(current_.kind, base)) {
+                diag(DiagCode::parse_expected_type, current_,
+                     "integer subrange base");
+                recover_statement();
+                return;
+            }
+            decl.kind = UserTypeKind::subrange;
+            decl.base = base;
+            bump();
+            if(!expect(TokenKind::lparen, "'('") ||
+               !parse_integer_value(base, decl.range_lower) ||
+               !expect(TokenKind::dotdot, "'..'") ||
+               !parse_integer_value(base, decl.range_upper) ||
+               !expect(TokenKind::rparen, "')'")) {
+                recover_statement();
+                return;
+            }
+        }
+        eat(TokenKind::semicolon);
+        expect(TokenKind::kw_end_type, "END_TYPE");
+        eat(TokenKind::semicolon);
+        result_.ast.user_types.push_back(static_cast<UserTypeDecl &&>(decl));
+    }
+
     // --- program ----------------------------------------------------------
 
     void parse_program()
@@ -261,7 +480,11 @@ private:
                 continue;
             }
             if(eat(TokenKind::assign)) {
-                decl.init = parse_expression();
+                decl.init = (at(TokenKind::lbracket) ||
+                             (!decl.type_name.empty() &&
+                              at(TokenKind::lparen)))
+                                ? parse_aggregate_initializer()
+                                : parse_expression();
                 if(decl.init == kNoExpr) {
                     recover_statement();
                     continue;
@@ -273,9 +496,83 @@ private:
         expect(TokenKind::kw_end_var, "END_VAR");
     }
 
+    ExprIndex parse_aggregate_initializer()
+    {
+        const Token open = current_;
+        const TokenKind close = at(TokenKind::lbracket)
+                                    ? TokenKind::rbracket
+                                    : TokenKind::rparen;
+        bump();
+        Expr expr;
+        expr.kind = ExprKind::aggregate_init;
+        expr.line = open.line;
+        expr.column = open.column;
+        if(!at(close)) {
+            do {
+                InitItem item;
+                if(close == TokenKind::rparen &&
+                   at(TokenKind::identifier) &&
+                   peek_next().kind == TokenKind::assign) {
+                    item.name.assign(current_.text.data(),
+                                     current_.text.size());
+                    bump();
+                    bump();
+                }
+                item.value = (at(TokenKind::lbracket) ||
+                              at(TokenKind::lparen))
+                                 ? parse_aggregate_initializer()
+                                 : parse_expression();
+                if(item.value == kNoExpr) {
+                    return kNoExpr;
+                }
+                expr.items.push_back(static_cast<InitItem &&>(item));
+            } while(eat(TokenKind::comma));
+        }
+        if(!expect(close, close == TokenKind::rbracket ? "']'" : "')'")) {
+            return kNoExpr;
+        }
+        return result_.ast.add_expr(static_cast<Expr &&>(expr));
+    }
+
+    bool parse_access(std::vector<AccessStep> &steps)
+    {
+        while(at(TokenKind::dot) || at(TokenKind::lbracket)) {
+            AccessStep step;
+            if(eat(TokenKind::dot)) {
+                step.field = true;
+                if(!at(TokenKind::identifier)) {
+                    diag(DiagCode::parse_expected_token, current_,
+                         "field name");
+                    return false;
+                }
+                step.name.assign(current_.text.data(), current_.text.size());
+                bump();
+            } else {
+                bump();
+                do {
+                    const ExprIndex index = parse_expression();
+                    if(index == kNoExpr) {
+                        return false;
+                    }
+                    step.indices.push_back(index);
+                } while(eat(TokenKind::comma));
+                if(!expect(TokenKind::rbracket, "']'")) {
+                    return false;
+                }
+            }
+            steps.push_back(static_cast<AccessStep &&>(step));
+        }
+        return true;
+    }
+
     bool parse_type(VarDecl &decl)
     {
         switch(current_.kind) {
+        case TokenKind::kw_array:
+            diag(DiagCode::unsupported_l1, current_,
+                 "inline ARRAY declarations are not supported");
+            bump();
+            return false;
         case TokenKind::kw_bool: decl.type = Type::bool_; break;
         case TokenKind::kw_int: decl.type = Type::int_; break;
         case TokenKind::kw_dint: decl.type = Type::dint; break;
@@ -292,6 +589,34 @@ private:
         case TokenKind::kw_word: decl.type = Type::word; break;
         case TokenKind::kw_dword: decl.type = Type::dword; break;
         case TokenKind::kw_lword: decl.type = Type::lword; break;
+        case TokenKind::kw_char: decl.type = Type::char_; break;
+        case TokenKind::kw_wchar: decl.type = Type::wchar; break;
+        case TokenKind::kw_date: decl.type = Type::date; break;
+        case TokenKind::kw_tod: decl.type = Type::tod; break;
+        case TokenKind::kw_dt: decl.type = Type::dt; break;
+        case TokenKind::kw_string:
+        case TokenKind::kw_wstring: {
+            decl.wide_string = current_.kind == TokenKind::kw_wstring;
+            decl.type = decl.wide_string ? Type::wstring : Type::string_;
+            decl.string_capacity = 80;
+            bump();
+            if(eat(TokenKind::lbracket)) {
+                if(!at(TokenKind::int_literal) || current_.based ||
+                   current_.unsigned_value >
+                       std::numeric_limits<std::uint32_t>::max()) {
+                    diag(DiagCode::parse_expected_token, current_,
+                         "string capacity");
+                    return false;
+                }
+                decl.string_capacity =
+                    static_cast<std::uint32_t>(current_.unsigned_value);
+                bump();
+                if(!expect(TokenKind::rbracket, "']'")) {
+                    return false;
+                }
+            }
+            return true;
+        }
         case TokenKind::unsupported_keyword:
             diag(token_diag(current_), current_);
             bump();
@@ -320,6 +645,16 @@ private:
                 {"mc_reset", FbType::mc_reset},
             };
             const std::string lower = lower_copy(current_.text);
+            if(lower == "tod") {
+                decl.type = Type::tod;
+                bump();
+                return true;
+            }
+            if(lower == "dt") {
+                decl.type = Type::dt;
+                bump();
+                return true;
+            }
             if(lower == "axis_ref") {
                 decl.type = Type::axis_ref;
                 bump();
@@ -339,9 +674,9 @@ private:
                 bump();
                 return false;
             }
-            diag(DiagCode::parse_expected_type, current_);
+            decl.type_name = lower;
             bump();
-            return false;
+            return true;
         }
         default:
             diag(DiagCode::parse_expected_type, current_);
@@ -454,6 +789,9 @@ private:
             // order (approved st-l1a-semantics 5.4). Mixing forms is an
             // error; the form is decided by the first argument.
             stmt.kind = StmtKind::fb_call;
+            if(lower_copy(first) == "l2b_commit") {
+                stmt.kind = StmtKind::output_commit;
+            }
             stmt.instance = static_cast<std::string &&>(first);
             bump();
             if(!at(TokenKind::rparen)) {
@@ -492,22 +830,12 @@ private:
             return result_.ast.add_stmt(static_cast<Stmt &&>(stmt));
         }
 
-        if(at(TokenKind::dot)) {
-            // Assignment to a pin is rejected later by sema; parse the
-            // target as name.pin so the diagnostic lands precisely.
-            bump();
-            if(!at(TokenKind::identifier)) {
-                diag(DiagCode::parse_expected_token, current_, "pin name");
-                recover_statement();
-                return -2;
-            }
-            first += '.';
-            first.append(current_.text.data(), current_.text.size());
-            bump();
-        }
-
         stmt.kind = StmtKind::assign;
         stmt.target = static_cast<std::string &&>(first);
+        if(!parse_access(stmt.target_access)) {
+            recover_statement();
+            return -2;
+        }
         if(!expect(TokenKind::assign, "':='")) {
             recover_statement();
             return -2;
@@ -612,7 +940,9 @@ private:
     {
         while(!at(TokenKind::kw_else) && !at(TokenKind::kw_end_case) &&
               !at(TokenKind::end_of_input) && !at(TokenKind::int_literal) &&
-              !at(TokenKind::minus)) {
+              !at(TokenKind::minus) &&
+              !(at(TokenKind::identifier) &&
+                peek_next().kind == TokenKind::hash)) {
             if(is_block_end(current_.kind)) {
                 diag(DiagCode::parse_unexpected_token, current_,
                      "stray block end");
@@ -915,6 +1245,25 @@ private:
             expr.signed_value = current_.signed_value; // sign marker
             bump();
             return result_.ast.add_expr(static_cast<Expr &&>(expr));
+        case TokenKind::string_literal:
+        case TokenKind::wstring_literal:
+            expr.kind = current_.kind == TokenKind::string_literal
+                            ? ExprKind::literal_string
+                            : ExprKind::literal_wstring;
+            expr.text.assign(current_.text.data(), current_.text.size());
+            bump();
+            return result_.ast.add_expr(static_cast<Expr &&>(expr));
+        case TokenKind::date_literal:
+        case TokenKind::tod_literal:
+        case TokenKind::dt_literal:
+            expr.kind = current_.kind == TokenKind::date_literal
+                            ? ExprKind::literal_date
+                        : current_.kind == TokenKind::tod_literal
+                            ? ExprKind::literal_tod
+                            : ExprKind::literal_dt;
+            expr.signed_value = current_.signed_value;
+            bump();
+            return result_.ast.add_expr(static_cast<Expr &&>(expr));
         case TokenKind::lparen: {
             bump();
             ++nesting_;
@@ -932,12 +1281,13 @@ private:
         case TokenKind::identifier: {
             expr.name.assign(current_.text.data(), current_.text.size());
             bump();
-            if(eat(TokenKind::dot)) {
+            if(eat(TokenKind::hash)) {
                 if(!at(TokenKind::identifier)) {
-                    diag(DiagCode::parse_expected_token, current_, "pin name");
+                    diag(DiagCode::parse_expected_token, current_,
+                         "enum member");
                     return kNoExpr;
                 }
-                expr.kind = ExprKind::pin_read;
+                expr.kind = ExprKind::literal_enum;
                 expr.pin.assign(current_.text.data(), current_.text.size());
                 bump();
             } else if(at(TokenKind::lparen)) {
@@ -960,6 +1310,16 @@ private:
                 }
             } else {
                 expr.kind = ExprKind::variable;
+                if(at(TokenKind::dot)) {
+                    expr.kind = ExprKind::pin_read;
+                }
+                if(!parse_access(expr.access)) {
+                    return kNoExpr;
+                }
+                if(expr.kind == ExprKind::pin_read &&
+                   expr.access.size() == 1 && expr.access[0].field) {
+                    expr.pin = expr.access[0].name;
+                }
             }
             return result_.ast.add_expr(static_cast<Expr &&>(expr));
         }

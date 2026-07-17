@@ -249,10 +249,117 @@ void fault_machine()
     check(step.instance.fault() == st::ScanError::ok, "step fault resets");
 }
 
+st::ScanError scan_tampered(const st::Program &base,
+                            const std::vector<std::uint8_t> &code,
+                            const std::vector<std::uint64_t> &constants = {})
+{
+    st::Program program = base;
+    program.code = code;
+    program.constants = constants;
+    program.stack_slots = 4;
+    alignas(8) unsigned char buffer[4096] = {};
+    st::Instance instance;
+    if(instance.load(program, buffer, sizeof(buffer), kPeriodNs) !=
+       rt::ErrorCode::ok) {
+        return st::ScanError::not_loaded;
+    }
+    return instance.scan(32);
+}
+
+// Malformed bytecode is a load-domain input, but every malformed operand
+// still has to fail closed in scan() without reading outside the declared
+// variable image or evaluation stack.
+void invalid_bytecode_contract()
+{
+    const st::CompileResult compiled =
+        st::compile(wrap("x : INT;", "x := 1;"));
+    check(compiled.ok, "invalid-bytecode base program compiles");
+    if(!compiled.ok) {
+        return;
+    }
+    const auto op = [](st::Op value) {
+        return static_cast<std::uint8_t>(value);
+    };
+
+    check(scan_tampered(compiled.program, {op(st::Op::load_var)}) ==
+              st::ScanError::invalid_bytecode,
+          "truncated u16 operand rejected");
+    check(scan_tampered(compiled.program,
+                        {op(st::Op::push_const), 1, 0, op(st::Op::halt)},
+                        {7}) == st::ScanError::invalid_bytecode,
+          "constant index outside pool rejected");
+    check(scan_tampered(compiled.program,
+                        {op(st::Op::load_var), 1, 0, op(st::Op::halt)}) ==
+              st::ScanError::invalid_bytecode,
+          "load outside declared variable image rejected");
+    check(scan_tampered(compiled.program,
+                        {op(st::Op::push_const), 0, 0,
+                         op(st::Op::store_var), 1, 0, op(st::Op::halt)},
+                        {7}) == st::ScanError::invalid_bytecode,
+          "store outside declared variable image rejected");
+    check(scan_tampered(compiled.program,
+                        {op(st::Op::for_guard), 1, 0, op(st::Op::halt)}) ==
+              st::ScanError::invalid_bytecode,
+          "FOR guard outside variable image rejected");
+    check(scan_tampered(compiled.program,
+                        {op(st::Op::for_test), 0, 0, 0, 0, 1, 0,
+                         op(st::Op::halt)}) ==
+              st::ScanError::invalid_bytecode,
+          "FOR test outside variable image rejected");
+    check(scan_tampered(compiled.program,
+                        {op(st::Op::for_step_int), 1, 0, 0, 0,
+                         op(st::Op::halt)}) ==
+              st::ScanError::invalid_bytecode,
+          "FOR step outside variable image rejected");
+    check(scan_tampered(compiled.program,
+                        {op(st::Op::add_int), op(st::Op::halt)}) ==
+              st::ScanError::invalid_bytecode,
+          "stack underflow rejected");
+    check(scan_tampered(compiled.program, {0xFF}) ==
+              st::ScanError::invalid_bytecode,
+          "unknown opcode rejected");
+    check(scan_tampered(compiled.program,
+                        {op(st::Op::jmp), 0xFF, 0xFF, 0xFF, 0x7F}) ==
+              st::ScanError::invalid_bytecode,
+          "jump outside bytecode rejected");
+
+    const st::CompileResult fb_compiled =
+        st::compile(wrap("edge : R_TRIG;", "edge(CLK := TRUE);"));
+    check(fb_compiled.ok, "invalid-bytecode FB base program compiles");
+    if(fb_compiled.ok) {
+        check(scan_tampered(
+                  fb_compiled.program,
+                  {op(st::Op::push_const), 0, 0, op(st::Op::fb_store_in),
+                   0, 0, 0xFF, op(st::Op::halt)},
+                  {1}) == st::ScanError::invalid_bytecode,
+              "FB input pin outside table rejected");
+        check(scan_tampered(fb_compiled.program,
+                            {op(st::Op::fb_load_out), 0, 0, 0xFF,
+                             op(st::Op::halt)}) ==
+                  st::ScanError::invalid_bytecode,
+              "FB output pin outside table rejected");
+        check(scan_tampered(fb_compiled.program,
+                            {op(st::Op::fb_call), 1, 0,
+                             op(st::Op::halt)}) ==
+                  st::ScanError::invalid_bytecode,
+              "FB instance outside table rejected");
+    }
+}
+
 // --- instruction budget (matrix 3.6, metric 5.5, anchor L0-3.6-budget) -------
 
 void budget_boundary()
 {
+    const std::string halt_source = wrap("x : INT;", "");
+    Rig halt_zero;
+    Rig halt_one;
+    check(halt_zero.build(halt_source) && halt_one.build(halt_source),
+          "halt budget rigs build");
+    check(halt_zero.scan(0) == st::ScanError::budget_exceeded,
+          "halt needs more than zero budget");
+    check(halt_one.scan(1) == st::ScanError::ok,
+          "halt completes with one budget");
+
     const std::string source = wrap(
         "a : INT; b : INT;",
         "a := 1; b := a + 2; a := b * 3; IF a > 0 THEN b := b + 1; END_IF;");
@@ -451,6 +558,7 @@ int main()
     arithmetic();
     control_flow();
     fault_machine();
+    invalid_bytecode_contract();
     budget_boundary();
     timers();
     counters_edges();

@@ -1,5 +1,5 @@
 # E4 coverage gate: build with gcov, gate full-core line coverage, and report
-# production motion stack branch coverage against its 85% activation target.
+# production motion stack and ST branch coverage at 85%.
 #
 # Usage: cmake -P cmake/coverage_gate.cmake
 # Requires: g++ with gcov support, gcovr (pip install gcovr)
@@ -103,9 +103,35 @@ execute_process(
     WORKING_DIRECTORY "${ROOT}"
     RESULT_VARIABLE branch_rc)
 
+# Keep the language implementation independently accountable instead of
+# allowing unrelated core tests to hide weak ST branch coverage.
+message(STATUS "coverage-gate: computing ST branch coverage...")
+execute_process(
+    COMMAND ${GCOVR}
+        --root "${ROOT}"
+        "${BUILD}"
+        --filter "core/st/"
+        --exclude "core/test/"
+        --exclude-unreachable-branches
+        --exclude-throw-branches
+        --json-summary "${REPORT_DIR}/st-summary.json"
+        --fail-under-branch ${BRANCH_TARGET}
+        --print-summary
+    WORKING_DIRECTORY "${ROOT}"
+    RESULT_VARIABLE st_branch_rc)
+
+set(BRANCH_FAILURES)
 if(NOT branch_rc EQUAL 0)
-    message(FATAL_ERROR "coverage-gate: production motion stack branch coverage < ${BRANCH_TARGET}%")
+    list(APPEND BRANCH_FAILURES
+         "production motion stack branch coverage < ${BRANCH_TARGET}%")
+endif()
+if(NOT st_branch_rc EQUAL 0)
+    list(APPEND BRANCH_FAILURES "ST branch coverage < ${BRANCH_TARGET}%")
+endif()
+if(BRANCH_FAILURES)
+    string(REPLACE ";" "\n  - " branch_failure_text "${BRANCH_FAILURES}")
+    message(FATAL_ERROR "coverage-gate failed:\n  - ${branch_failure_text}")
 endif()
 
 message(STATUS
-    "coverage-gate: PASSED (full-core line >= ${LINE_THRESHOLD}%; production motion stack branch >= ${BRANCH_TARGET}%)")
+    "coverage-gate: PASSED (full-core line >= ${LINE_THRESHOLD}%; production motion stack and ST branch >= ${BRANCH_TARGET}%)")

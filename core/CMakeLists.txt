@@ -190,6 +190,61 @@ if(BUILD_TESTING AND PLCOPEN_BUILD_CORE_TESTS)
     plcopen_core_rt_compile_options(plcopen_core_st_l1a_conversion_tests)
     add_test(NAME plcopen_core_st_l1a_conversion_tests COMMAND plcopen_core_st_l1a_conversion_tests)
 
+    add_executable(plcopen_core_st_type_desc_tests test/st_type_desc_tests.cpp)
+    target_link_libraries(plcopen_core_st_type_desc_tests PRIVATE plcopen::core)
+    plcopen_core_rt_compile_options(plcopen_core_st_type_desc_tests)
+    add_test(NAME plcopen_core_st_type_desc_tests COMMAND plcopen_core_st_type_desc_tests)
+
+    add_executable(plcopen_core_st_l1b1_tests test/st_l1b1_tests.cpp)
+    target_link_libraries(plcopen_core_st_l1b1_tests PRIVATE plcopen::core)
+    plcopen_core_rt_compile_options(plcopen_core_st_l1b1_tests)
+    add_test(NAME plcopen_core_st_l1b1_tests COMMAND plcopen_core_st_l1b1_tests)
+
+    add_executable(plcopen_core_st_l1b2_tests test/st_l1b2_tests.cpp)
+    target_link_libraries(plcopen_core_st_l1b2_tests PRIVATE plcopen::core)
+    plcopen_core_rt_compile_options(plcopen_core_st_l1b2_tests)
+    add_test(NAME plcopen_core_st_l1b2_tests COMMAND plcopen_core_st_l1b2_tests)
+
+    add_executable(plcopen_core_st_l1b3_tests test/st_l1b3_tests.cpp)
+    target_link_libraries(plcopen_core_st_l1b3_tests PRIVATE plcopen::core)
+    plcopen_core_rt_compile_options(plcopen_core_st_l1b3_tests)
+    add_test(NAME plcopen_core_st_l1b3_tests COMMAND plcopen_core_st_l1b3_tests)
+
+    add_executable(plcopen_core_st_l2b_tests test/st_l2b_tests.cpp)
+    target_link_libraries(plcopen_core_st_l2b_tests PRIVATE plcopen::core)
+    plcopen_core_rt_compile_options(plcopen_core_st_l2b_tests)
+    add_test(NAME plcopen_core_st_l2b_tests COMMAND plcopen_core_st_l2b_tests)
+
+    add_executable(plcopen_core_st_l2c_tests test/st_l2c_tests.cpp)
+    target_link_libraries(plcopen_core_st_l2c_tests PRIVATE plcopen::core)
+    plcopen_core_rt_compile_options(plcopen_core_st_l2c_tests)
+    add_test(NAME plcopen_core_st_l2c_tests COMMAND plcopen_core_st_l2c_tests)
+
+    add_executable(plcopen_core_st_l3_tests test/st_l3_tests.cpp)
+    target_link_libraries(plcopen_core_st_l3_tests PRIVATE plcopen::core)
+    plcopen_core_rt_compile_options(plcopen_core_st_l3_tests)
+    add_test(NAME plcopen_core_st_l3_tests COMMAND plcopen_core_st_l3_tests)
+
+    add_executable(plcopen_core_st_l4_tests test/st_l4_tests.cpp)
+    target_link_libraries(plcopen_core_st_l4_tests PRIVATE plcopen::core)
+    plcopen_core_rt_compile_options(plcopen_core_st_l4_tests)
+    add_test(NAME plcopen_core_st_l4_tests COMMAND plcopen_core_st_l4_tests)
+
+    add_executable(plcopen_core_st_l5_tests test/st_l5_tests.cpp)
+    target_link_libraries(plcopen_core_st_l5_tests PRIVATE plcopen::core)
+    plcopen_core_rt_compile_options(plcopen_core_st_l5_tests)
+    add_test(NAME plcopen_core_st_l5_tests COMMAND plcopen_core_st_l5_tests)
+
+    add_executable(plcopen_core_st_l6_tests test/st_l6_tests.cpp)
+    target_link_libraries(plcopen_core_st_l6_tests PRIVATE plcopen::core)
+    plcopen_core_rt_compile_options(plcopen_core_st_l6_tests)
+    add_test(NAME plcopen_core_st_l6_tests COMMAND plcopen_core_st_l6_tests)
+
+    add_executable(plcopen_core_st_l7_tests test/st_l7_tests.cpp)
+    target_link_libraries(plcopen_core_st_l7_tests PRIVATE plcopen::core)
+    plcopen_core_rt_compile_options(plcopen_core_st_l7_tests)
+    add_test(NAME plcopen_core_st_l7_tests COMMAND plcopen_core_st_l7_tests)
+
     add_executable(plcopen_core_st_l2a_tests test/st_l2a_tests.cpp)
     target_link_libraries(plcopen_core_st_l2a_tests PRIVATE plcopen::core)
     plcopen_core_rt_compile_options(plcopen_core_st_l2a_tests)
@@ -199,11 +254,19 @@ if(BUILD_TESTING AND PLCOPEN_BUILD_CORE_TESTS)
                      -DEXE=$<TARGET_FILE:plcopen_core_st_l1a_conversion_tests>
                      "-DEMULATOR=${CMAKE_CROSSCOMPILING_EMULATOR}"
                      -P ${CMAKE_CURRENT_SOURCE_DIR}/../cmake/verify_st_l1a_conversions.cmake)
+    add_test(NAME plcopen_core_st_conformance_check
+             COMMAND ${CMAKE_COMMAND}
+                     -P ${CMAKE_CURRENT_SOURCE_DIR}/../cmake/verify_st_conformance.cmake)
+    add_test(NAME plcopen_core_st_feature_set_check
+             COMMAND ${CMAKE_COMMAND}
+                     -P ${CMAKE_CURRENT_SOURCE_DIR}/../cmake/verify_st_feature_set.cmake)
 
     add_executable(plcopen_core_st_fuzz test/st_fuzz.cpp)
     target_link_libraries(plcopen_core_st_fuzz PRIVATE plcopen::core)
     plcopen_core_rt_compile_options(plcopen_core_st_fuzz)
     add_test(NAME plcopen_core_st_fuzz_smoke COMMAND plcopen_core_st_fuzz --iterations 3000)
+    add_test(NAME plcopen_core_st_l2b_fuzz_smoke
+             COMMAND plcopen_core_st_fuzz --iterations 3000 --l2b)
 
     add_executable(plcopen_core_stream_tests test/stream_filter_tests.cpp)
     target_link_libraries(plcopen_core_stream_tests PRIVATE plcopen::core)

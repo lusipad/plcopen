@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "st/token.h"
+#include "st/type_desc.h"
 #include "st/types.h"
 
 // L0 AST (load domain, allocation allowed): index-based pools for
@@ -24,11 +25,31 @@ enum class ExprKind : std::uint8_t
     literal_bool,  // unsigned_value 0/1
     literal_time,  // signed_value ns
     literal_typed, // TYPE# literal: literal_type + int/real payload (L1a)
+    literal_enum,  // UserType#Member (L1b1; resolved by sema)
+    literal_string,
+    literal_wstring,
+    literal_date,
+    literal_tod,
+    literal_dt,
     variable,      // name
     pin_read,      // name '.' pin_name (FB output read)
     unary,         // op: minus / not
     binary,        // op token kind
     call,          // name '(' expr ')': conversion function (L1a 4.x)
+    aggregate_init,
+};
+
+struct AccessStep
+{
+    bool field = false;
+    std::string name;
+    std::vector<ExprIndex> indices;
+};
+
+struct InitItem
+{
+    std::string name; // empty for positional entries
+    ExprIndex value = kNoExpr;
 };
 
 enum class UnaryOp : std::uint8_t
@@ -71,11 +92,14 @@ struct Expr
 
     std::string name;      // variable / instance / conversion name
     std::string pin;       // pin name for pin_read
+    std::string text;      // raw string payload (without quotes)
 
     UnaryOp unary_op = UnaryOp::negate;
     BinaryOp binary_op = BinaryOp::add;
     ExprIndex lhs = kNoExpr;
     ExprIndex rhs = kNoExpr;
+    std::vector<AccessStep> access;
+    std::vector<InitItem> items;
 };
 
 enum class StmtKind : std::uint8_t
@@ -87,6 +111,7 @@ enum class StmtKind : std::uint8_t
     while_,
     repeat,
     fb_call,
+    output_commit,
     exit_,
     continue_,
     return_,
@@ -122,6 +147,7 @@ struct Stmt
 
     // assign
     std::string target;            // variable name (original spelling)
+    std::vector<AccessStep> target_access;
     ExprIndex value = kNoExpr;
 
     // if
@@ -156,7 +182,55 @@ struct VarDecl
     bool is_constant = false;  // VAR CONSTANT block member (L1a 2.5)
     Type type = Type::bool_;
     FbType fb_type = FbType::r_trig;
+    std::string type_name;    // non-empty for a user-defined type
+    std::uint32_t string_capacity = 0;
+    bool wide_string = false;
     ExprIndex init = kNoExpr;  // constant expression or kNoExpr
+    std::int32_t line = 0;
+    std::int32_t column = 0;
+};
+
+enum class UserTypeKind : std::uint8_t
+{
+    enum_,
+    subrange,
+    array,
+    struct_,
+};
+
+struct StructFieldDecl
+{
+    std::string name;
+    std::string lower;
+    Type type = Type::bool_;
+    std::string type_name;
+    std::int32_t line = 0;
+    std::int32_t column = 0;
+};
+
+struct EnumMemberDecl
+{
+    std::string name;
+    std::string lower;
+    bool explicit_value = false;
+    std::int64_t value = 0;
+    std::int32_t line = 0;
+    std::int32_t column = 0;
+};
+
+struct UserTypeDecl
+{
+    std::string name;
+    std::string lower;
+    UserTypeKind kind = UserTypeKind::enum_;
+    Type base = Type::dint;
+    std::vector<EnumMemberDecl> enum_members;
+    IntegerValue range_lower;
+    IntegerValue range_upper;
+    std::vector<ArrayBound> array_bounds;
+    Type element_type = Type::bool_;
+    std::string element_type_name;
+    std::vector<StructFieldDecl> struct_fields;
     std::int32_t line = 0;
     std::int32_t column = 0;
 };
@@ -164,6 +238,7 @@ struct VarDecl
 struct Ast
 {
     std::string program_name;
+    std::vector<UserTypeDecl> user_types;
     std::vector<VarDecl> vars;
     std::vector<StmtIndex> body;
     std::vector<Expr> exprs;

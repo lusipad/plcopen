@@ -1,201 +1,127 @@
-# L 系列（语言层）工作拆解（2026-07-12）
+# L 系列（语言层）工作拆解（2026-07-17 重基线）
 
 ## 本文档的性质
 
 | 是什么 | 不是什么 |
 |--------|----------|
-| 软件极致计划 L 系列批次表的**可执行拆解**：每批含范围、矩阵决策点、前置、任务级拆分、出口判据、规模标定 | 新的战略/范围决策——批次表与"完整级别=特性表机制"口径不变 |
-| 矩阵送批队列与审批等待期的填充策略 | 详细设计（归各语义矩阵与 st-runtime-design） |
-| issue/PR 级任务池来源 | 对 L3-L7 具体语义的预先承诺——每批仍以获批矩阵为准 |
+| L0-L7 已批准语义的可执行顺序、依赖和出口判据 | 实现完成声明；当前完成事实仍以 STATUS 与特性总账为准 |
+| `st-feature-set.yml` 闭合集的施工分批 | 旧版本 ST 源码/字节码兼容计划 |
+| issue/PR 级任务池和最终审计清单 | 把 pending 包装成 excluded 的减配清单 |
 
-依据：software-excellence-plan L/D 系列表、long-term-plan T30-T42、
-st-runtime-design（已裁决）、已批矩阵 st-l0/l1a-semantics、KB-069/070。
+依据：[ST 运行时设计](../design/core/st-runtime-design.md)、long-term-plan
+T30-T40、[机器可读特性集](../compliance/st-feature-set.yml) 与各批次语义矩阵。
+维护者于 2026-07-17 授权完成整个 L 系列，并明确这是全新软件，不考虑
+旧源码、旧字节码、旧 opcode、旧 hash 或旧 binder 的兼容性。
 
-## 当前事实基线（2026-07-12）
+## 当前事实基线（2026-07-17）
 
-- **L0 已交付**（KB-069）：容错前端 + 确定性栈机 VM + basic.h 十 FB 绑定；
-  50 黄金程序、10 万 fuzz、双平台+ARM64 字节码锚点哈希一致。
-- **L1a 已交付**（KB-070）：16 标量宇宙 + 无损加宽白名单 + 210 格转换
-  矩阵机读化（YAML↔实现↔测试三方比对入 CTest）+ TIME 乘除/**/CONTINUE/
-  非正式调用/VAR CONSTANT/类型化字面量。
-- **L2a 矩阵草案已送批**（st-l2a-semantics.md，a8a8df5）：AXIS_REF +
-  单轴 MC 十块绑定，**待维护者裁决**。
-- 机制资产（后续批次直接复用）：机读矩阵→锚点校验管线（conformance
-  yaml ×2 + 转换矩阵三方比对）、双锚点哈希门、fuzz 生成器、fault 状态
-  机、加载期静态布局合同、诊断稳定码体系。
+- **L0 已交付**（KB-069）：容错前端、确定性 VM、basic 10 绑定、黄金/
+  fuzz/跨平台锚点门。
+- **L1a 已交付**（KB-070）：16 标量、无损加宽、210 格转换矩阵与补充
+  运算。
+- **L2a 阶段切片已交付**（KB-071）：AXIS_REF 与首批十个单轴 MC 绑定；
+  这不是 L2-bind-complete。
+- **L1b1/L1b2/L1b3/L2b 已实现；L2c/L3/L4/L5/L6/L7 矩阵已批准、代码
+  pending**。批准只解决语义歧义，不提升实现状态。
+- [特性闭合总账](../compliance/st-feature-table.md) 已建立；最终完成必须
+  由集合相等且 `pending=0` 证明。
 
-## 拆分规则
+## 执行纪律
 
-沿用 phase-b 拆解规则（语义矩阵先行 + 纯软件判据），追加语言层四条：
+1. **当前版本自洽，不背兼容包袱**：实现可替换旧 opcode/source/hash；
+   编译器版本提升、黄金程序重编译和锚点同批刷新即可。禁止为了旧产物
+   保留双路径、别名或迁移解释器。
+2. **强类型替换临时路线**：L1b1 落地后删除 BufferMode/Direction 的
+   临时 INT 编码，事实源、binder、黄金程序只保留 canonical 枚举签名。
+3. **闭合集驱动**：grammar/type/operator/conversion/POU/storage/task/SFC/
+   function/FB/pin/diagnostic 全部由 `st-feature-set.yml` 对账，满足
+   `declared == generated == registered == tested + excluded`。
+4. **excluded 收严**：仅明确范围外能力可 excluded，且必须同时有
+   `scope_reason`、稳定拒绝诊断和 rejection test；缺任一项仍算 pending。
+5. **测试先行**：每批先加入本批矩阵验收测试和 feature-set verifier 的
+   红灯，再实现；周期路径继续满足 RT 五禁、回放与跨平台门禁。
+6. **实现笔记不断档**：每批在
+   [l-series-implementation-notes.md](l-series-implementation-notes.md)
+   登记决策、偏差、刷新锚点、测试证据和下批依赖。
 
-1. **字节码兼容纪律**：指令只追加；既有锚点哈希改变 = 必须同提交刷新
-   并在提交信息声明（至今 L1a 做到零刷新）。
-2. **机读矩阵驱动**：凡"逐格/逐函数/逐引脚"面（转换、标准库、MC 引脚）
-   一律 YAML 单一镜像 + 实现 dump 比对入 CTest，禁止只写散测试。
-3. **诊断码只增不改号**；unsupported 构造必须带归属批次码。
-4. **锚点哈希风险面**：改 codegen 的批次在矩阵验收表里预登记"锚点
-   刷新与否"；能追加就不重排。
-5. **源码兼容纪律**（2026-07-12 CEO 评审补）：已批语法永不失效——
-   后续批次只加不改（如 BufferMode 的 INT 编码在枚举糖落地后永久有效）；
-   任何源码级破坏 = 声明变更级事件。
-6. **大批次止损条件**：L2b/L3/L6 的矩阵必须含吞吐检查点与止损条款
-   （连续两周期实际/估计比 >2× 即回矩阵重切范围）——L0 当量外推对
-   大批次非线性，估计只作参考。
+## 主线顺序
 
-规模标定（按已交付批实测）：**1 L0 当量 ≈ 7000 行/一个工作日**（含
-测试与文档）；L1a ≈ 0.4 L0。下表估计均以 L0 当量计，偏差 ±50% 属正常。
+```text
+已交付：L0 → L1a → L1b1 → L1b2 → L1b3 → L2b（另含 L2a-stage）
+                                              │
+                                              ├→ L2c / Bind Complete
+                                              ├→ L3 → L5 → L6 → L7
+                                              └→ L4a → L4b → L4c → L4d
 
-## 批次总表与排序
-
+最终：L∀ verifier + feature table pending=0 + 全平台门禁
 ```
-已交付   L0 ── L1a
-待裁决   L2a（矩阵已送批）
-主线序   L2a → L1b1 → L2b → L4a → L3 → L5 → L2c → L4b/c → L6 → L7
-贯穿     L∀（特性表总账随每批更新；MatIEC oracle 待人工法务背书）
-触发     D1 LSP（L2b 后）· D2 WASM（任意时点，独立小批）· L1b2/3 按需
-```
 
-排序理由：
-- **L2a 最先**：身份闭环件（ST 直驱 MC），机制全复用、增量最小、
-  对外演示价值最高（文档站首页示例的素材）。
-- **L1b1（枚举+子范围）提前于 L2b**：枚举是 MC_BUFFER_MODE 等语法糖
-  的前置，子范围便宜；ARRAY/STRUCT/STRING 拆到 L1b2/3 按需后置——
-  L2b 用户 POU 不依赖它们。
-- **L2b 在 L4 前**：标准函数库的 ANY 消解要与用户 FUNCTION 的调用
-  形态一起钉，先有 POU 调用框架再铺函数面。
-- **L3 在 L5 前**：任务模型的扫描边界一致性以进程映像双缓冲为载体。
-- **L6/L7 收尾**：SFC 复用 VM 与 POU 资产；调试面吃 L3 force 与
-  符号表资产。
+L4a 可在 L2b 完成后与 L3 并行；L4c 必须等待 L1b3；L5 等待 L3；L6
+等待 L2b/L5；L7 复用 L3 force、L5 task 状态和 L6 source map。
 
-## 逐批拆解
+## 批次拆解
 
-### L2a：MC_* 绑定 + AXIS_REF（矩阵已送批，≈0.4 L0）
+| 批次 | 范围 | 前置 | 核心出口 | 当前状态 |
+|------|------|------|----------|----------|
+| L1b1 | ENUM、SUBRANGE、range fault、枚举 CASE | L1a | [L1b1 验收 8 项](../compliance/st-l1b1-semantics.md)；bytecode v2；22 黄金程序 | implemented |
+| L1b2 | 1-3 维 ARRAY、STRUCT、初始化/复制/布局/索引 | L1b1 | descriptor 布局、22 黄金程序、GCC/ASan/UBSan | implemented |
+| L1b3 | CHAR/WCHAR、定长 STRING/WSTRING、DATE/TOD/DT | L1b1 | UTF-8/Unicode、容量、整数公历 oracle | implemented |
+| L2b | FUNCTION/FB/PROGRAM、作用域、copy-back、IN_OUT、EN/ENO | L1b1 | 多 POU 调用图、别名、fault copy-back、结构 fuzz | implemented |
+| L2c / Bind Complete | GROUP_REF + basic 10、P1/2 45、P4 68、P5 11 全绑定 | L1b1、L2b | FB/pin 集合相等、ST↔C++ 逐周期等价、旧形态拒绝 | approved / pending |
+| L3 | %I/%Q/%M、端序/重叠、双缓冲、RETAIN/PERSISTENT、force | L1b2、L2b | 映像 oracle、快照原子性、force/持久化矩阵 | approved / pending |
+| L4a | ANY 消解、数学/算术/选择/比较函数 | L2b | 固定函数表逐函数边界与集合相等 | approved / pending |
+| L4b | SHL/SHR/ROL/ROR 位串函数 | L4a | 宽度边界与类型拒绝全绿 | approved / pending |
+| L4c | 定长字符串函数 | L1b3、L4a | Unicode 位置/容量逐函数矩阵 | approved / pending |
+| L4d | 日期时间函数、宿主 UTC 注入、FB 闭合集终验 | L1b3、L2c、L4a-c | function/FB/pin pending=0 | approved / pending |
+| L5 | CONFIGURATION/RESOURCE、多周期/事件任务、看门狗与恢复 | L3、L2b | 调度 oracle、fault 隔离、reset/restart、运动域隔离 | approved / pending |
+| L6 | 文本 SFC、分支/汇合、N/S/R/L/D/P/SD/DS/SL | L2b、L5 | 九限定符逐扫描 oracle、不安全网络诊断 | approved / pending |
+| L7 | seqlock 监控、force、断点/单步/trace | L3、L5、L6 | 0 torn read、暂停隔离、发布零成本 | approved / pending |
+| L∀ | 特性集、诊断、fuzz、跨平台与 RT 总验 | 全部 | 十二集合相等、pending=0、全门禁绿 | pending |
 
-| 项 | 内容 |
-|----|------|
-| 范围 | AXIS_REF 句柄类型 + 单轴 MC 十块（Power/MoveAbs/Rel/Additive/Velocity/Halt/Stop/Reset/Home/SetOverride）+ 宿主 bind_axis API |
-| 矩阵决策点 | 已在草案：L2 三拆、INT 编码 BufferMode/Direction、未绑定=FB 错误路径、规划域声明、指令预算≠时间预算 |
-| 前置 | 矩阵人批 |
-| 任务拆分 | ⓪ 矩阵修订：AXIS_REF 生命周期条款（悬空绑定/轴销毁/名字复用 = 宿主合同显式化，Codex 评审输入）① mc_pins 引脚表（机读）② AXIS_REF 类型/sema 拒绝面 ③ FbType 扩展 + 实例区静态断言 ④ bind_axis/重绑定语义 ⑤ 端到端黄金场景 ×6 ⑥ ST↔C++ setpoint 逐位等价门 ⑦ executor 集成冒烟 ⑧ fuzz 扩语料 + docs/KB |
-| 出口判据 | 矩阵 6.1-6.7 全绿；既有锚点哈希不变 |
-| 难点 | T34（半边）；无新算法面 |
+## L2-bind-complete 专项
 
-### L1b1：枚举 + 子范围（矩阵草案已起草，待维护者批准，≈0.3 L0）
+L2a 现有十块只是可执行切片，完整绑定必须一次对清：
 
-| 项 | 内容 |
-|----|------|
-| 范围 | `TYPE E : (a,b,c); END_TYPE` 枚举（底型/显式值/比较/CASE 选择子）、子范围 `INT (0..100)`（编译期全查 + 运行时检查口径声明） |
-| 矩阵决策点 | 枚举底型与转换格扩展（枚举↔INT 显式？）；子范围违例语义（fault vs 截断——T32-⑤ 提案"运行时检查可配"要钉成单一口径）；TYPE 声明块位置 |
-| 前置 | 无；草案见 [st-l1b1-semantics.md](../compliance/st-l1b1-semantics.md)，实现等待维护者批准 |
-| 出口判据 | MC_BUFFER_MODE 等枚举糖可在 L2a 绑定上补挂；CASE 枚举选择子黄金用例 |
-| 难点 | T32-⑤ |
+| 集合 | 数量 | 事实源/表 | 施工要求 |
+|------|-----:|-----------|----------|
+| IEC basic | 10 | `core/fb/basic.h` | 已实现，继续纳入集合门 |
+| Part 1/2 | 45 | `plcopen-motion-part1-io.yml`（43 clause rows，双变体展开） | 补齐余 35，全部 pin 从源生成 |
+| Part 4 | 68 | Part 4 合规矩阵 + `core/fb/` 名称面 | 建机器展开器，禁止手抄第二表 |
+| Part 5 | 11 | `plcopen-motion-part5-io.yml` | 绑定全部软件可验证 pin |
 
-### L2b：用户 POU（矩阵待起草，≈1 L0，语言层剩余最大件）
+`excluded` 只能覆盖硬件时间戳、驱动执行或认证等软件范围外责任；已有
+C++ 门面、公开 pin 或可软件验证行为不能 excluded。
 
-| 项 | 内容 |
-|----|------|
-| 范围 | FUNCTION（返回值/无状态）、FUNCTION_BLOCK（用户实例态）、多 PROGRAM 编译单元、VAR_INPUT/OUTPUT/IN_OUT、EN/ENO、递归编译期禁止 |
-| 矩阵决策点 | VAR_IN_OUT 别名规则（L0 无指针的前提下=受限引用，别名分析口径）；EN/ENO 链式使能精确语义（EN=FALSE 时输出保持还是清零——标准松散处钉死）；调用栈静态定界（无递归→编译期展开每 POU 帧，栈深进容量表）；FUNCTION 在表达式中的调用与转换函数名字空间共存；实例内存树布局 |
-| 前置 | 无硬前置；建议 L1b1 后（枚举可作形参类型） |
-| 任务拆分 | ① 矩阵（决策点多，预计送批 2 轮）② 语法/AST 多 POU ③ 符号表分层（全局/POU 局部）④ 调用帧 codegen + CALL_POU 指令 ⑤ IN_OUT 别名 sema ⑥ EN/ENO ⑦ 黄金程序 ≥20 ⑧ fuzz 结构化生成器升级（多 POU）|
-| 出口判据 | 用户 FB 含 basic.h/MC 成员实例的嵌套场景；锚点哈希预登记为"追加不刷新"；**收口即采纳信号检查点**（T1 裁决：pip/stars/询盘/冷用户，零信号则 L3-L7 降优先级重议） |
-| 难点 | T34 主体 + T40 增量接口按 POU 粒度真正生效 |
+## 每批统一施工模板
 
-### L4a：标准函数库第一批（矩阵待起草，≈0.5 L0）
+1. 在 feature-set 将目标项保持 pending，并加入失败的集合/锚点测试。
+2. 实现 parser/sema/codegen/VM/binder 中最小必要路径。
+3. 增加黄金、边界、fault、容量、fuzz 与跨平台确定性证据。
+4. 更新 feature-set 为 implemented；生成表必须与注册表/测试集合相等。
+5. 运行 ST 专项、全 CTest、RT scan、clang-tidy、覆盖率、回放、文档严格
+   构建及 Windows/Linux/ARM64 远端门禁。
+6. 将实际偏差与锚点刷新写入实现笔记；不得用文档批准代替代码证据。
 
-| 项 | 内容 |
-|----|------|
-| 范围 | 选择/比较/算术：ABS/MIN/MAX/LIMIT/SEL/MUX + ADD/SUB/MUL/DIV 函数形态；**ANY 消解机制在此落地**（L1a 推迟的唯一机制债） |
-| 矩阵决策点 | ANY_NUM/ANY_INT 消解规则（实参实际类型直通，无隐式提升——与白名单一致）；变参 MIN/MAX 的参数数上限；机读函数表 schema（复用转换矩阵管线） |
-| 前置 | L2b（函数调用框架） |
-| 出口判据 | 逐函数边界用例机读驱动；T31 管线首跑 |
+## L∀ 最终验收
 
-### L3：进程映像子系统（矩阵待起草，≈0.8 L0，全新子系统）
+- 机器集合覆盖 grammar/types/operators/conversions/pous/storage/tasks/
+  sfc_qualifiers/functions/fbs/pins/diagnostics。
+- `pending=0`，所有 excluded 有稳定拒绝测试；basic 10 + 45 + 68 + 11
+  展开无缺项。
+- ST 全黄金、结构化 fuzz、ASan/UBSan、零分配、指令预算、调度/映像/SFC
+  oracle 和 ST↔C++ 等价门全绿。
+- Windows/Linux/ARM64 同源编译结果与规范布局一致；数学 libm 格按声明
+  容差比较。
+- 旧源码、旧 opcode、旧 bytecode version 和旧绑定形态均由稳定拒绝测试
+  覆盖，不存在兼容分支。
 
-| 项 | 内容 |
-|----|------|
-| 范围 | %I/%Q/%M 定位变量、映像区加载期布局、扫描边界双缓冲（输入首读定/输出尾写出）、RETAIN 快照合同（核不做文件 IO，镜像交 executor，格式版本化）、force（掩码写映像，优先级高于程序写） |
-| 矩阵决策点 | 地址文法子集（%IX0.0/%IW2 位/字节/字寻址各做到哪）；映像与 FB 绑定面的关系（MC 轴 IO 走既有通道不进映像——边界要钉）；RETAIN 快照的原子性与版本迁移口径；force 生效点（扫描边界）与解除语义 |
-| 前置 | 无硬前置；建议 L2b 后（GVL/映像符号跨 POU 可见性一起定） |
-| 出口判据 | executor 集成：RT 线程搬运映像双缓冲的冒烟（ADR-0007 形态扩展）；force/RETAIN 独立小矩阵验收 |
-| 难点 | T33（★★★，"当前不存在的子系统"） |
+## 范围外项
 
-### L5：任务模型 v1（矩阵待起草，≈0.3 L0）
-
-范围=任务配置语法子集 + 周期任务与运动周期的配比声明 + 扫描看门狗
-时间档（指令预算之外的 executor 侧墙钟档）+ 跨任务一致性口径（快照
-原语可选、默认无同步显式声明）。前置 L3（映像边界）。难点 T35。
-v1 显式单任务执行、多任务语法收下但仅一个激活——矩阵钉清楚。
-
-### L2c：GROUP_REF + 组 FB 绑定（≈0.3 L0，机制复制）
-
-L2a 的组版：GROUP_REF、AddAxisToGroup 形态裁决（宿主绑定 vs ST 内
-建组——提案宿主绑定，与 AXIS_REF 同哲学）、组 FB 十余块扩表。
-前置 L2a。
-
-### L4b/c：标准库第二三批（各 ≈0.3-0.5 L0）
-
-L4b=移位/位串/边沿函数族；L4c=定长字符串 RT 语义（T31 单独声明面，
-依赖 L1b3 STRING 类型）。机制同 L4a 扩表。
-
-### L1b2/3：ARRAY/STRUCT（≈0.6 L0）与 STRING/日期族（≈0.5 L0）
-
-按需插入：L1b2 在 L3 前有增益（映像区数组）；L1b3 在 L4c 前必须。
-ARRAY 决策点：多维/边界检查口径（编译期全查+运行时 fault）/初始化
-文法；STRUCT：布局确定性（声明序+对齐口径入矩阵——跨平台字节码
-一致性延伸到布局）。日期族决策：DATE/TOD/DT 底型与 TIME 关系，
-或显式声明不做（RTC 非目标的延伸）——留矩阵裁决。
-
-### L6：SFC 文本形式（矩阵待起草，≈1 L0）
-
-步自动机字节码（复用 VM）、动作限定符逐个矩阵化（N/S/R/L/D/P/SD/
-DS/SL——时间限定符挂定时器，复用 TON 机制）、同时分支/汇合求值序
-（标准歧义处实现定义要声明）、不安全网络编译诊断。前置 L2b（动作体
-=POU 语句面）。难点 T36（★★★）。
-
-### L7：调试监控面（≈0.4 L0）
-
-seqlock 变量监控（X3 资产 + 既有符号表）、force（L3 资产）、断点=
-字节码陷阱指令（仅调试构建，发布构建零成本声明）。前置 L3。难点 T38；
-在线变更仍显式远期。
-
-### L∀：一致性总账（贯穿，每批固定尾项）
-
-- **特性表总账**：`doc/compliance/st-feature-table.md`（待建）——
-  61131-3 特性表机制的"我们声明支持"总表，每批收口时更新；这是
-  "完整级别"四个字的唯一收口物。
-- **MatIEC 黑盒 oracle**：ADR-0003 模式，**门控在人工法务背书**
-  （运行 GPL 软件零义务口径）——解锁后加双跑对照层，不阻塞任何批。
-- fuzz 生成器随每批扩语料（已成惯例）。
-
-## 人批点排布（审批等待期填充）
-
-| 送批队列 | 等待期填充项 |
-|---------|-------------|
-| L2a（已送批） | AxisGroup 拆分第 2 批（window 簇）——非语言层，随时可做 |
-| L1b1 矩阵（L2a 开工后起草） | L2a 实现本体 |
-| L2b 矩阵（预计 2 轮裁决，最早送） | L1b1 实现 + AxisGroup 第 3 批 |
-| L3 矩阵 | L2b 实现（最大件，吞吐充足） |
-
-## 并行/穿插项（非语言层）
-
-| 项 | 性质 |
-|----|------|
-| AxisGroup 拆分 2-5 批（window/cartesian/pose/path_table 簇） | 穿插缓冲任务，每批半天级，回放逐位门 |
-| **pyplcopen ST 暴露批** | st.compile/Instance/bind_axis 的 Python 面——孪生里原样跑 ST（st-runtime-design §1 承诺）与 T2 MuJoCo 闭环联动；建议 L2a 后（带 MC 绑定一起暴露才有演示价值），≈0.2 L0 |
-| **语言层对抗性探测轮** | L2a 收口后一轮（plcopen-adversarial-probe 方法论）：折叠 vs 运行时、平台对、预算边界、恢复路径的跨域对照——KB-051/wrap_double 两案都证明"写测试的人想不到的格子"要系统猎杀 |
-| **st 模块入变异抽查 + 覆盖盲区盘点** | E3/E4 延伸：mutation 抽查清单加 st/；下一次 Coverage 定时跑首次含 st 面，跌破 90% 即按模块补盲区 |
-| **文档站 ST 教程**（Z3′ 联动） | "ST 直驱 MC"快速开始进文档站首页——L2a 的采纳出口 |
-| D2 WASM Playground | 独立小批（T41：CI 锁 wasm32 编译目标先行——半天级可随时插），任意时点可插 |
-| 运动侧补遗批（Y7b/Y4b/Y3′/X5/E5，见软件极致计划补遗节） | 与语言层主线无依赖，可交错排 |
-| PyPI publisher 注册 + tag / 台架决策 / Part4 原文核对 / Ruckig ADR-0003 / MatIEC 法务口径 | **人专属**，全部不阻塞上表 |
-
-## 硬件/人工延后清单
-
-墙钟 72h + 抖动（B7）、真栈 B5/台架 B6、灯塔环境——语言层全部批次
-均纯软件可验收，不受此清单阻塞。
+IL、LD/FBD/SFC 图形编辑器、在线变更、动态 POU/数组、时区数据库、系统
+IO、IDE、认证与品牌私有扩展不属于 L0-L7 已批准软件范围。它们不得阻塞
+L 系列，但必须在 feature-set 以带拒绝测试的 excluded 表达，不能消失。
 
 ---
 
-*创建：2026-07-12。批次收口只强制更新 ROADMAP/STATUS/KB；本文随
-复盘修订（与软件极致计划同为参考资料，不承载现状）。*
+*创建：2026-07-12；2026-07-17 按全 L 系列授权、无兼容裁决与闭合集
+要求重基线。本文承载施工计划，不承载完成声明。*
