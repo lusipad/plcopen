@@ -25,7 +25,7 @@ Halt/Wait 门面（KB-078）已交付，达到 68/68 有同名门面；C4 Part 1
 语义清零（KB-079）已交付，D-01～D-20 全部关闭；C5 Part 5 标准合同
 （KB-080）已交付，11/11 标准 FB 与 45 B + 102 E 软件声明闭合；C6
 能力对等验收（KB-081）已完成，核心能力逐项登记且不保留旧软件兼容层。
-ST 语言层随后完成 L1b1/L1b2/L1b3、L2b 与 L2c Bind Complete：
+ST 语言层随后完成 L1b1/L1b2/L1b3、L2b/L2c、L3/L4/L5/L6/L7 与 L∀ 闭合：
 `GROUP_REF`、basic 10 + Part 1/2 45 + Part 4 68 + Part 5 11 共 134 个 FB、
 1476 个 pin 已由显式 authority 生成并全部接入 native adapter，未解析项为 0。
 Feetech 4.8 未核，不进真机。
@@ -59,7 +59,7 @@ sink 门面，生产层无反向引用）。分层健康度见
 | L7 adapters | **外圈消费面之一**（绕过 L6，只消费 axis/state.h + rt/error.h）：Servo 窄接口 + ServoSim + 桥接（ADR-0004）、CiA402 状态机、CSP/CSV/CST bumpless 骨架、Feetech STS 协议 0 固定容量总线/Servo/Sim（无 IO；动态单位与 Status 位未核，不进真机） | KB-040/074 |
 | 支撑库 kin | 阶梯旁支撑库（依赖 geom/rt，被 L5 消费）：kinematics 插件 ABI + 合规 harness、龙门/SCARA 解析解、球腕 6R（Pieper + 8 分支 seed 选支、奇异 margin） | KB-037/041 |
 | 支撑库 stream | 阶梯旁支撑库（依赖 otg/rt，被 L5 消费）：B9 轨迹流滤波（OTG 在线重解、断流看门狗、solve_fixed_time rendezvous 跟踪律）、多关节聚合 | KB-035 |
-| st 语言层（ST-L0/L1a/L1b/L2b/L2c） | **外圈消费面之一**（与 L7 adapters 平行、居 L6 之上，纯 sink）。IEC 61131-3 ST：容错前端、确定性字节码 VM、标量/枚举/子范围/聚合/字符串日期类型、用户 POU 与 134 个标准 FB 完整绑定；49 个公开绑定类型、AXIS/GROUP/序列/对象 typed registry 均只向 ST 暴露 1-based handle。L3-L7 仍 pending，不宣称完整 IEC 平台或 PLCopen 官方认证 | KB-069/070/071；[L 系列总账](doc/planning/l-series-work-breakdown.md) |
+| st 语言层（ST-L0/L1a/L1b/L2b/L2c） | **外圈消费面之一**（与 L7 adapters 平行、居 L6 之上，纯 sink）。IEC 61131-3 ST：容错前端、确定性字节码 VM、标量/枚举/子范围/聚合/字符串日期类型、用户 POU 与 134 个标准 FB 完整绑定；49 个公开绑定类型、AXIS/GROUP/序列/对象 typed registry 均只向 ST 暴露 1-based handle。L3-L7 已完成并按 L 系列总账闭合；仍不宣称完整 IEC 平台或 PLCopen 官方认证 | KB-069/070/071；[L 系列总账](doc/planning/l-series-work-breakdown.md) |
 | 工具面 | pyplcopen（单轴/流/PoseArmSim，三平台 wheel 远端绿，PyPI 发布作业已备待 publisher 注册，CycleConfig SI 换算）、18 份回放黄金语料、28 关节 @1kHz 预算基准 + 笛卡尔 IK 预算门、参考 executor demo（canonical `planning → committed trajectory → RT` 双域，ADR-0007，TSAN 零报告）、周期级 trace、**文档站已上线**（http://lusipad.com/plcopen/ ）、Conan recipe（vcpkg port 未发布，根目录 `vcpkg.json` 仅为 port 清单草稿）、ErrorCode 诊断文本 | — |
 
 ## 质量门禁现状
