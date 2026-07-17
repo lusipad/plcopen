@@ -1220,7 +1220,7 @@ public:
                 if(desc->kind == TypeKind::wstring) {
                     stack_[sp - 1] = read_le32(
                         execution_vars_ + offset + 4U +
-                        (static_cast<std::uint32_t>(index) - 1U) * 4U);
+                        (static_cast<std::size_t>(index) - 1U) * 4U);
                 } else {
                     stack_[sp - 1] = execution_vars_[offset + 4U +
                         static_cast<std::uint32_t>(index) - 1U];
@@ -2502,24 +2502,27 @@ public:
                                 unit < needle_units && match; ++unit) {
                                 const std::uint32_t hay_value = width == 4U
                                     ? read_le32(objects[0] + 4U +
-                                                (pos + unit) * 4U)
+                                                (static_cast<std::size_t>(pos) +
+                                                 unit) * 4U)
                                     : objects[0][4U + pos + unit];
                                 const std::uint32_t needle_value = width == 4U
-                                    ? read_le32(objects[1] + 4U + unit * 4U)
+                                    ? read_le32(objects[1] + 4U +
+                                                static_cast<std::size_t>(unit) *
+                                                    4U)
                                     : objects[1][4U + unit];
                                 match = hay_value == needle_value;
                             }
                             if(match) {
                                 if(width == 4U) {
-                                    answer = static_cast<std::int64_t>(pos + 1U);
+                                    answer = static_cast<std::int64_t>(pos) + 1;
                                 } else {
                                     std::uint32_t byte = 0, scalar_pos = 0,
                                                   codepoint = 0;
                                     while(byte < pos && next_utf8(
                                         objects[0] + 4U, hay_units, byte,
                                         codepoint)) ++scalar_pos;
-                                    answer = static_cast<std::int64_t>(
-                                        scalar_pos + 1U);
+                                    answer =
+                                        static_cast<std::int64_t>(scalar_pos) + 1;
                                 }
                             }
                         }
@@ -3623,18 +3626,19 @@ private:
         const BindingTargetKind kind = reference_kind(type, type_id);
         if(kind == BindingTargetKind::invalid) return true;
         if(value == 0) return true;
-        const void *target = reinterpret_cast<const void *>(
-            static_cast<std::uintptr_t>(value));
+        const std::uintptr_t target = static_cast<std::uintptr_t>(value);
         if(kind == BindingTargetKind::axis) {
             for(std::size_t slot = 0; slot < axis_targets_->size(); ++slot) {
-                if((*axis_targets_)[slot] == target) {
+                if(reinterpret_cast<std::uintptr_t>((*axis_targets_)[slot]) ==
+                   target) {
                     value = static_cast<std::int64_t>(slot + 1U);
                     return true;
                 }
             }
         } else {
             for(std::size_t slot = 0; slot < group_targets_->size(); ++slot) {
-                if((*group_targets_)[slot] == target) {
+                if(reinterpret_cast<std::uintptr_t>((*group_targets_)[slot]) ==
+                   target) {
                     value = static_cast<std::int64_t>(slot + 1U);
                     return true;
                 }
@@ -3983,7 +3987,8 @@ private:
         if(desc.kind == TypeKind::wstring) {
             for(std::uint32_t i = 0; i < length; ++i) {
                 const std::uint32_t scalar =
-                    read_le32(object + 4U + i * 4U);
+                    read_le32(object + 4U +
+                              static_cast<std::size_t>(i) * 4U);
                 if(scalar > 0x10FFFFU ||
                    (scalar >= 0xD800U && scalar <= 0xDFFFU)) {
                     return false;
@@ -4020,8 +4025,10 @@ private:
                                              ? left_length
                                              : right_length;
             for(std::uint32_t i = 0; i < common; ++i) {
-                const std::uint32_t a = read_le32(left + 4U + i * 4U);
-                const std::uint32_t b = read_le32(right + 4U + i * 4U);
+                const std::size_t byte_offset =
+                    static_cast<std::size_t>(i) * 4U;
+                const std::uint32_t a = read_le32(left + 4U + byte_offset);
+                const std::uint32_t b = read_le32(right + 4U + byte_offset);
                 if(a != b) {
                     return a < b ? -1 : 1;
                 }

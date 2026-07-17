@@ -51,8 +51,8 @@ void dump(const st::CompileResult &result, const char *name)
                     diagnostic.message.c_str());
 }
 
-std::string source(std::string task,
-                   std::string mapping = "PROGRAM P0 WITH Main : P;")
+std::string source(const std::string &task,
+                   const std::string &mapping = "PROGRAM P0 WITH Main : P;")
 {
     return "PROGRAM P\nVAR N : DINT; END_VAR N := N + 1; END_PROGRAM\n"
            "CONFIGURATION Plant\nRESOURCE R0 ON PLC\n" +

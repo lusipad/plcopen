@@ -188,13 +188,7 @@ protected:
     {
         const bool rising = execute && !last_execute_;
         last_execute_ = execute;
-        if(!execute) {
-            done = false;
-            busy = false;
-            error = false;
-            error_id = rt::ErrorCode::ok;
-            tracked_command_id_ = 0;
-        } else if(rising) {
+        if(!execute || rising) {
             done = false;
             busy = false;
             error = false;

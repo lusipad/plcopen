@@ -196,7 +196,8 @@ struct Rig
         std::vector<std::uint32_t> result;
         result.reserve(length);
         for(std::uint32_t i = 0; i < length; ++i) {
-            result.push_back(read_u32(bytes.data() + 4U + i * 4U));
+            result.push_back(read_u32(
+                bytes.data() + 4U + static_cast<std::size_t>(i) * 4U));
         }
         return result;
     }

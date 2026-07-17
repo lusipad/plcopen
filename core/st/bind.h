@@ -18,15 +18,15 @@ inline void fb_init(FbType type, unsigned char *storage,
     if(!generated::st_binding_default_construct(type, storage)) return;
     switch(type) {
     case FbType::ton:
-        static_cast<fb::TON *>(static_cast<void *>(storage))
+        reinterpret_cast<fb::TON *>(storage)
             ->set_cycle_time(task_period_ns);
         break;
     case FbType::tof:
-        static_cast<fb::TOF *>(static_cast<void *>(storage))
+        reinterpret_cast<fb::TOF *>(storage)
             ->set_cycle_time(task_period_ns);
         break;
     case FbType::tp:
-        static_cast<fb::TP *>(static_cast<void *>(storage))
+        reinterpret_cast<fb::TP *>(storage)
             ->set_cycle_time(task_period_ns);
         break;
     default: break;
@@ -105,13 +105,13 @@ inline void fb_cycle(FbType type, unsigned char *storage,
     // the timer's installed value through its direct cycle entry.
     switch(type) {
     case FbType::ton:
-        static_cast<fb::TON *>(static_cast<void *>(storage))->cycle();
+        reinterpret_cast<fb::TON *>(storage)->cycle();
         return;
     case FbType::tof:
-        static_cast<fb::TOF *>(static_cast<void *>(storage))->cycle();
+        reinterpret_cast<fb::TOF *>(storage)->cycle();
         return;
     case FbType::tp:
-        static_cast<fb::TP *>(static_cast<void *>(storage))->cycle();
+        reinterpret_cast<fb::TP *>(storage)->cycle();
         return;
     default: break;
     }

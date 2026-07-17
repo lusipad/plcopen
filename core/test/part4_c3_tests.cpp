@@ -386,7 +386,8 @@ int check_coordinated_orientation_modes()
     invalid.position.size = 6;
     invalid.position.value[0] = 0.1;
     invalid.coord_system = axis::CoordSystem::mcs;
-    invalid.orientation_mode = static_cast<axis::OrientationMode>(99);
+    invalid.orientation_mode = static_cast<axis::OrientationMode>( // NOLINT(clang-analyzer-optin.core.EnumCastOutOfRange)
+        99);
     invalid.execute = true;
     invalid.call();
     if(!invalid.outputs.error ||

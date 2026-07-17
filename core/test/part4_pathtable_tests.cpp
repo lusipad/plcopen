@@ -1217,7 +1217,8 @@ int check_set_kin_transform_rejects_invalid_tag()
     init_group(group, axes, 2);
     fb::FbSetKinTransform transform;
     transform.group_ref = &group;
-    transform.kin_transform.kind = static_cast<axis::KinTransformKind>(99);
+    transform.kin_transform.kind = static_cast<axis::KinTransformKind>( // NOLINT(clang-analyzer-optin.core.EnumCastOutOfRange)
+        99);
     transform.execute = true;
     transform.call();
     if(!transform.outputs.error ||

@@ -1532,8 +1532,8 @@ def scalar_store_body(pin: Pin, accessor: str,
         return lines
     if "*" in pin.native_type:
         lines.extend([
-            "        target = reinterpret_cast<Accessor::value_type>(",
-            "            static_cast<std::uintptr_t>(bits));",
+            "        target =",
+            "            st_binding_pointer_from_bits<Accessor::value_type>(bits);",
             "        return true;",
         ])
     elif pin.st_type in FLOAT_PIN_TYPES:
@@ -1639,7 +1639,7 @@ def render_native_cpp(fbs: list[Fb]) -> str:
     invoke_cases: list[str] = []
     accessor_rows: list[str] = []
     construct_assertions: list[str] = []
-    capability_cases: list[str] = []
+    capability_rows: list[str] = []
     store_cases: list[str] = []
     load_cases: list[str] = []
     store_object_cases: list[str] = []
@@ -2142,15 +2142,15 @@ def render_native_cpp(fbs: list[Fb]) -> str:
                 )
                 fb_load_cases.append("    }")
 
-        capability_cases.append(
-            f"    case {enum_value}: return {{0x{store_mask:016x}ULL, "
+        capability_rows.append(
+            f"    {{0x{store_mask:016x}ULL, "
             f"0x{load_mask:016x}ULL, "
             f"0x{store_object_mask:016x}ULL, "
             f"0x{load_object_mask:016x}ULL, "
             f"0x{store_sequence_mask:016x}ULL, "
             f"0x{load_sequence_mask:016x}ULL, "
             f"0x{store_tagged_reference_mask:016x}ULL, "
-            f"0x{load_tagged_reference_mask:016x}ULL}};"
+            f"0x{load_tagged_reference_mask:016x}ULL}},"
         )
         if fb_store_cases:
             store_cases.extend([
@@ -2324,14 +2324,19 @@ def render_native_cpp(fbs: list[Fb]) -> str:
         "    std::uint64_t load_tagged_reference = 0U;",
         "};",
         "",
+        "inline constexpr std::array<StBindingNativeCapabilityMasks,",
+        "    static_cast<std::size_t>(StBindingFbType::count)>",
+        "    kStBindingNativeCapabilities = {{",
+        *capability_rows,
+        "}};",
+        "",
         "constexpr StBindingNativeCapabilityMasks",
         "st_binding_native_capabilities(StBindingFbType type) noexcept",
         "{",
-        "    switch(type) {",
-        *capability_cases,
-        "    case StBindingFbType::count: break;",
-        "    }",
-        "    return {};",
+        "    const auto index = static_cast<std::size_t>(type);",
+        "    return index < kStBindingNativeCapabilities.size()",
+        "        ? kStBindingNativeCapabilities[index]",
+        "        : StBindingNativeCapabilityMasks{};",
         "}",
         "",
         "constexpr bool st_binding_capability_has(std::uint64_t mask,",
@@ -2441,6 +2446,19 @@ def render_native_cpp(fbs: list[Fb]) -> str:
         "    std::uint64_t bits = 0U;",
         "    std::memcpy(&bits, &value, sizeof(bits));",
         "    return bits;",
+        "}",
+        "",
+        "template <typename Pointer>",
+        "inline Pointer st_binding_pointer_from_bits(",
+        "    std::uint64_t bits) noexcept",
+        "{",
+        "    static_assert(std::is_pointer_v<Pointer>);",
+        "    const auto address = static_cast<std::uintptr_t>(bits);",
+        "    Pointer value = nullptr;",
+        "    static_assert(sizeof(value) == sizeof(address)); // NOLINT(bugprone-sizeof-expression)",
+        "    std::memcpy(static_cast<void *>(&value), &address, // NOLINT(bugprone-multi-level-implicit-pointer-conversion)",
+        "                sizeof(value)); // NOLINT(bugprone-sizeof-expression)",
+        "    return value;",
         "}",
         "",
         "template <typename T>",

@@ -306,7 +306,8 @@ private:
             static_cast<std::uint32_t>(string_constants_.size());
         string_constants_.insert(string_constants_.end(),
                                  note.object_bytes.begin(),
-                                 note.object_bytes.begin() + object_size);
+                                 note.object_bytes.begin() +
+                                     static_cast<std::ptrdiff_t>(object_size));
         return offset;
     }
 
@@ -556,9 +557,6 @@ private:
             emit_conversion(desc);
             return;
         }
-        case ExprKind::aggregate_init:
-            fail(DiagCode::capacity_code);
-            return;
         default:
             // Constant literals always fold; reaching here is a compiler
             // defect surfaced as an explicit failure, never silent output.

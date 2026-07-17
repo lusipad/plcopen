@@ -350,7 +350,7 @@ enum class GroupCommandKind
     write_tool_data,
 };
 
-struct GroupCommand
+struct GroupCommand // NOLINT(clang-analyzer-optin.performance.Padding)
 {
     GroupCommandKind kind = GroupCommandKind::motion;
     GroupPosition target{};

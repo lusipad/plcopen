@@ -2187,7 +2187,8 @@ int check_step_block_rejects_invalid_direction()
     const axis::AxisSnapshot before = axis.snapshot();
     fb::FbStepBlock step;
     step.axis_ref = &axis;
-    step.direction = static_cast<axis::HomeDirection>(99);
+    step.direction = static_cast<axis::HomeDirection>( // NOLINT(clang-analyzer-optin.core.EnumCastOutOfRange)
+        99);
     step.execute = true;
     step.call();
     if (!step.outputs.error || step.outputs.error_id != rt::ErrorCode::invalid_argument ||
@@ -2718,7 +2719,8 @@ int check_step_distance_coded_rejects_invalid_direction()
     fb::FbStepDistanceCoded step;
     step.axis_ref = &axis;
     step.bind_distance_code_map(&map);
-    step.direction = static_cast<axis::HomeDirection>(99);
+    step.direction = static_cast<axis::HomeDirection>( // NOLINT(clang-analyzer-optin.core.EnumCastOutOfRange)
+        99);
     step.execute = true;
     step.call();
     if (!step.outputs.error || step.outputs.error_id != rt::ErrorCode::invalid_argument ||

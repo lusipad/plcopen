@@ -213,7 +213,9 @@ struct Rig
         }
         std::vector<std::uint32_t> result;
         for(std::uint32_t index = 0; index < length; ++index) {
-            result.push_back(read_u32(bytes.data() + 4U + index * 4U));
+            result.push_back(read_u32(
+                bytes.data() + 4U +
+                static_cast<std::size_t>(index) * 4U));
         }
         return result;
     }
@@ -491,17 +493,35 @@ void shifts_and_rotates()
                                {"LWORD", 64, "LWORD#1"}};
     for(const WidthCase &test : cases) {
         const std::string prefix = test.type;
-        const std::string vars =
-            "x : " + prefix + " := " + test.one + "; a : " + prefix +
-            "; b : " + prefix + "; c : " + prefix + "; d : " + prefix +
-            "; e : " + prefix + "; f : " + prefix + ";";
+        std::string vars = "x : ";
+        vars += prefix;
+        vars += " := ";
+        vars += test.one;
+        vars += "; a : ";
+        vars += prefix;
+        vars += "; b : ";
+        vars += prefix;
+        vars += "; c : ";
+        vars += prefix;
+        vars += "; d : ";
+        vars += prefix;
+        vars += "; e : ";
+        vars += prefix;
+        vars += "; f : ";
+        vars += prefix;
+        vars += ";";
         const std::string width = std::to_string(test.width);
-        const std::string body =
-            "a := SHL(x, 0); b := SHL(x, " +
-            std::to_string(test.width - 1) + "); c := SHL(x, " + width +
-            "); d := SHR(x, " + std::to_string(test.width + 1) +
-            "); e := ROL(x, " + width + "); f := ROR(x, " +
-            std::to_string(test.width + 1) + ");";
+        std::string body = "a := SHL(x, 0); b := SHL(x, ";
+        body += std::to_string(test.width - 1);
+        body += "); c := SHL(x, ";
+        body += width;
+        body += "); d := SHR(x, ";
+        body += std::to_string(test.width + 1);
+        body += "); e := ROL(x, ";
+        body += width;
+        body += "); f := ROR(x, ";
+        body += std::to_string(test.width + 1);
+        body += ");";
         Rig rig;
         if(!rig.build(unit(vars, body)) || rig.scan() != st::ScanError::ok) {
             fail(test.type);

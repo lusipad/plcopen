@@ -535,7 +535,8 @@ private:
         }
         decl.location_byte = static_cast<std::uint32_t>(byte);
         if(decl.location_width == 'X') {
-            if(index >= text.size() || text[index++] != '.') return false;
+            if(index >= text.size() || text[index] != '.') return false;
+            ++index;
             unsigned bit = 0;
             if(index >= text.size()) return false;
             while(index < text.size() && text[index] >= '0' &&

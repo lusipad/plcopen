@@ -316,7 +316,9 @@ public:
             const std::uint32_t key = breakpoint_key(mapping, *entry);
             for(std::size_t index = 0; index < breakpoints_.size(); ++index) {
                 if(breakpoints_[index] == key) {
-                    breakpoints_.erase(breakpoints_.begin() + index);
+                    breakpoints_.erase(
+                        breakpoints_.begin() +
+                        static_cast<std::ptrdiff_t>(index));
                     clear_breakpoint(key);
                     removed = true;
                     break;
@@ -431,16 +433,14 @@ public:
                 publish_words_[1].load(std::memory_order_acquire);
             const std::uint64_t fault =
                 publish_words_[2].load(std::memory_order_acquire);
-            const std::uint64_t entry_bits =
-                publish_words_[3].load(std::memory_order_acquire);
+            const SourceMapEntry *active =
+                published_entry_.load(std::memory_order_relaxed);
             const std::uint32_t active_mapping = static_cast<std::uint32_t>(
                 publish_words_[4].load(std::memory_order_acquire));
             const std::uint32_t active_instruction =
                 static_cast<std::uint32_t>(
                     publish_words_[5].load(std::memory_order_acquire));
             const std::uint8_t state = static_cast<std::uint8_t>(state_bits);
-            const std::uint8_t snapshot_kind =
-                static_cast<std::uint8_t>(state_bits >> 8U);
             std::array<std::uint64_t,
                        (kMaxDebugSfcSteps + 63U) / 64U> sfc_bits{};
             for(std::size_t word = 0; word < sfc_state_word_count_; ++word)
@@ -469,9 +469,6 @@ public:
             snapshot.value_bytes = value_bytes_;
             snapshot.task_state = static_cast<TaskState>(state);
             snapshot.fault = static_cast<TaskFault>(fault);
-            const SourceMapEntry *active =
-                reinterpret_cast<const SourceMapEntry *>(
-                    static_cast<std::uintptr_t>(entry_bits));
             if(active != nullptr) {
                 std::string_view path = active->call_path;
                 std::size_t begin = 0;
@@ -1008,10 +1005,7 @@ private:
             std::memory_order_relaxed);
         const SourceMapEntry *active =
             current_entry_.load(std::memory_order_acquire);
-        publish_words_[3].store(
-            static_cast<std::uint64_t>(reinterpret_cast<std::uintptr_t>(
-                active)),
-            std::memory_order_relaxed);
+        published_entry_.store(active, std::memory_order_relaxed);
         publish_words_[4].store(
             current_mapping_.load(std::memory_order_relaxed),
             std::memory_order_relaxed);
@@ -1167,6 +1161,7 @@ private:
     std::atomic<std::uint8_t> observed_task_state_{
         static_cast<std::uint8_t>(TaskState::idle)};
     std::atomic<std::uint64_t> observed_release_count_{0};
+    std::atomic<const SourceMapEntry *> published_entry_{nullptr};
     std::atomic<const SourceMapEntry *> current_entry_{nullptr};
     std::atomic<std::uint32_t> current_mapping_{UINT32_MAX};
     std::atomic<std::uint32_t> current_instruction_{0};

@@ -2341,7 +2341,7 @@ private:
             result_type = Type::bool_;
             result_id = builtin::bool_;
         } else if(function == StandardFunction::sel || function == StandardFunction::mux) {
-            const std::size_t first = function == StandardFunction::sel ? 1U : 1U;
+            constexpr std::size_t first = 1U;
             result_type = standard_join(expr, first, Type::dint, compatible);
             if(!compatible ||
                !check_expr(expr.arguments[0],

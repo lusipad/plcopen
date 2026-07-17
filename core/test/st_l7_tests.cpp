@@ -66,8 +66,8 @@ void check(bool condition, const char *name)
     if(!condition) fail(name);
 }
 
-std::string debug_configuration(std::string body,
-                                std::string declarations =
+std::string debug_configuration(const std::string &body,
+                                const std::string &declarations =
                                     "X : DINT; Y : DINT; Z : DINT;")
 {
     return "PROGRAM Main\nVAR " + declarations +

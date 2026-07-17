@@ -164,7 +164,7 @@ struct Rig
 
 int check_public_facades_compile()
 {
-    static_assert(sizeof(axis::AxisGroup) <= 64 * 1024,
+    static_assert(sizeof(axis::AxisGroup) <= std::size_t{64} * 1024,
                   "AxisGroup must remain safe for ordinary stack construction");
     static_assert(std::is_default_constructible<fb::FbGroupWriteToolData>::value);
     static_assert(std::is_default_constructible<fb::FbGroupReadToolData>::value);

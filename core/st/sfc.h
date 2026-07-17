@@ -681,6 +681,7 @@ inline bool validate_graph(NetworkDraft &draft, std::string_view source,
             std::vector<bool> used(convergence.sources.size(), false);
             std::vector<std::size_t> exits;
             std::vector<std::size_t> stops;
+            stops.reserve(convergence.sources.size());
             for(const std::string &name : convergence.sources)
                 stops.push_back(steps[name]);
             bool unique = true;

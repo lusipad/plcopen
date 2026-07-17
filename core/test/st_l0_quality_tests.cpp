@@ -290,8 +290,9 @@ void interpreter_throughput()
         std::chrono::duration_cast<std::chrono::microseconds>(stop - start)
             .count();
     std::printf("throughput: ~1e6 instructions in %lld us\n", us);
-#ifdef NDEBUG
-    // Metric 5.9 gate applies to Release; Debug numbers are reported only.
+#if defined(NDEBUG) && !defined(PLCOPEN_CROSS_COMPILED_TEST)
+    // Metric 5.9 gates native Release runs; Debug and cross-emulated numbers
+    // are reported only because emulator overhead is not target performance.
     check(us <= 100000, "1e6 instructions within 100 ms (Release)");
 #endif
 }

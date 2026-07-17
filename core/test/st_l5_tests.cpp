@@ -545,11 +545,14 @@ void resource_image_remaps_initial_values_and_rejects_bad_overlap()
 
     for(const char area : {'Q', 'M'}) {
         const std::string location = std::string("%") + area + "D0";
+        std::string local_programs = "PROGRAM A\nVAR V AT ";
+        local_programs += location;
+        local_programs +=
+            " : DWORD; END_VAR\nEND_PROGRAM\nPROGRAM B\nVAR V AT ";
+        local_programs += location;
+        local_programs += " : DWORD; END_VAR\nEND_PROGRAM\n";
         const st::CompileResult local_exact = st::compile(configuration(
-            "PROGRAM A\nVAR V AT " + location +
-                " : DWORD; END_VAR\nEND_PROGRAM\n"
-            "PROGRAM B\nVAR V AT " + location +
-                " : DWORD; END_VAR\nEND_PROGRAM\n",
+            local_programs,
             "RESOURCE R0 ON PLC\n"
             "TASK T(INTERVAL := T#1ms, PRIORITY := 0, BUDGET := 100);\n"
             "PROGRAM A0 WITH T : A;\nPROGRAM B0 WITH T : B;\n"

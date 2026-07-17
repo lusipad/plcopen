@@ -159,7 +159,8 @@ public:
                     return load_failed();
             }
             runtime.write_stamps.assign(
-                (runtime.image_program.process_image.output_bytes +
+                (static_cast<std::size_t>(
+                     runtime.image_program.process_image.output_bytes) +
                  runtime.image_program.process_image.memory_bytes) * 8U,
                 0);
             runtime.write_owners.assign(runtime.write_stamps.size(), 0);
@@ -660,7 +661,8 @@ private:
                 runtime.image_program.initial_data.insert(
                     runtime.image_program.initial_data.end(),
                     program.initial_data.begin() + var.var_offset,
-                    program.initial_data.begin() + required);
+                    program.initial_data.begin() +
+                        static_cast<std::ptrdiff_t>(required));
             }
         }
         return true;

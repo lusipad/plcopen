@@ -3205,7 +3205,6 @@ class AxisModel
         {
         case CommandKind::move_velocity:
         case CommandKind::torque:
-            return direction_enabled(command.value);
         case CommandKind::move_relative:
         case CommandKind::move_additive:
         case CommandKind::move_continuous_relative:

@@ -1488,9 +1488,12 @@ struct Expansion
             }
             if(!done.empty() && lower != "return;" &&
                contains_word(owner.body, "return")) {
-                result += "IF NOT " + done + " THEN " +
-                          debug_directive(owner, statement_origin) + emitted +
-                          " END_IF;";
+                result += "IF NOT ";
+                result += done;
+                result += " THEN ";
+                result += debug_directive(owner, statement_origin);
+                result += emitted;
+                result += " END_IF;";
             } else {
                 result += debug_directive(owner, statement_origin) + emitted;
             }

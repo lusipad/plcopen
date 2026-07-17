@@ -72,7 +72,8 @@ const char *const kFragments[] = {
     "'", "#", "%", "@", "\x01", "\xFF", "\x80",
 };
 
-constexpr std::size_t kRuntimeBufferBytes = 1024U * 1024U;
+constexpr std::size_t kRuntimeBufferBytes =
+    std::size_t{1024U} * std::size_t{1024U};
 constexpr std::int64_t kTaskPeriodNs = 1000000;
 constexpr std::int64_t kScanBudget = 10000;
 alignas(8) unsigned char runtime_buffer[kRuntimeBufferBytes];

@@ -311,9 +311,10 @@ public:
         std::uint64_t version = 0;
         if(!get(cursor, end, version, 4)) return SnapshotError::malformed;
         if(version != 1U) return SnapshotError::version_mismatch;
-        if(cursor == end || *cursor++ != static_cast<unsigned char>(kind)) {
+        if(cursor == end || *cursor != static_cast<unsigned char>(kind)) {
             return SnapshotError::malformed;
         }
+        ++cursor;
         std::uint64_t fingerprint = 0;
         std::uint64_t count = 0;
         if(!get(cursor, end, fingerprint, 8) ||
