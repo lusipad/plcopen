@@ -10,6 +10,14 @@ target_include_directories(
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
         $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/plcopen>)
 target_compile_features(plcopen_core INTERFACE cxx_std_17)
+target_compile_options(
+    plcopen_core
+    INTERFACE
+        "$<$<CXX_COMPILER_ID:MSVC>:/fp:strict>"
+        "$<$<CXX_COMPILER_ID:GNU>:-fno-fast-math>"
+        "$<$<CXX_COMPILER_ID:GNU>:-ffp-contract=off>"
+        "$<$<CXX_COMPILER_ID:GNU>:-frounding-math>"
+        "$<$<CXX_COMPILER_ID:Clang,AppleClang>:-ffp-model=strict>")
 set_target_properties(plcopen_core PROPERTIES EXPORT_NAME plcopen)
 
 function(plcopen_core_rt_compile_options target)
@@ -193,6 +201,13 @@ if(BUILD_TESTING AND PLCOPEN_BUILD_CORE_TESTS)
     target_link_libraries(plcopen_core_st_l1a_conversion_tests PRIVATE plcopen::core)
     plcopen_core_rt_compile_options(plcopen_core_st_l1a_conversion_tests)
     add_test(NAME plcopen_core_st_l1a_conversion_tests COMMAND plcopen_core_st_l1a_conversion_tests)
+
+    add_executable(plcopen_core_st_numeric_semantics_tests
+                   test/st_numeric_semantics_tests.cpp)
+    target_link_libraries(plcopen_core_st_numeric_semantics_tests PRIVATE plcopen::core)
+    plcopen_core_rt_compile_options(plcopen_core_st_numeric_semantics_tests)
+    add_test(NAME plcopen_core_st_numeric_semantics_tests
+             COMMAND plcopen_core_st_numeric_semantics_tests)
 
     add_executable(plcopen_core_st_type_desc_tests test/st_type_desc_tests.cpp)
     target_link_libraries(plcopen_core_st_type_desc_tests PRIVATE plcopen::core)
