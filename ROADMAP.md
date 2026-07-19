@@ -13,13 +13,15 @@ sprint 记录）在 [doc/archive/roadmap-history.md](doc/archive/roadmap-history
    `st::Program`；[Windows CI](https://github.com/lusipad/plcopen/actions/runs/29680604789)
    与 [Linux CI](https://github.com/lusipad/plcopen/actions/runs/29680604785) 均通过，
    包括 Linux/Clang 81 文件 `clang-tidy`、GCC 与 ARM64。
-2. **P1 CI 时长恢复**：`0195739` 已把 11 项 fuzz CTest 统一移到原生
+2. **P1 CI 时长恢复（已完成）**：`0195739` 已把 11 项 fuzz CTest 统一移到原生
    Nightly，日常门只跑 79 项非 fuzz 测试；[Linux CI](https://github.com/lusipad/plcopen/actions/runs/29682295508)
    中 ARM/QEMU 测试由 28 分 40 秒降至 4 分 57 秒，[Core Nightly](https://github.com/lusipad/plcopen/actions/runs/29682299843)
-   11/11 fuzz 仅用 5.30 秒并全绿。剩余工作是并行化 22 分 17 秒的全量
-   `clang-tidy`，以不降低覆盖面的方式继续恢复反馈速度。
+   11/11 fuzz 仅用 5.30 秒并全绿。`7336379` 在不减少 81 个 TU 或检查项的
+   前提下把全量 `clang-tidy` 改为 8 路并行；[远端复验](https://github.com/lusipad/plcopen/actions/runs/29687354905)
+   E2 由 22 分 17 秒降至 10 分 31 秒，Linux 总时长由 27 分 59 秒降至
+   16 分 46 秒。
 3. **无外部前置的软件队列**：A1 浮点数值语义合同 → A2 T30 WCET 度量
-   → G1 治理文档；P1 关闭后默认从 A1 开始。
+   → G1 治理文档；当前默认从 A1 开始。
 4. **F 轨 EtherCAT**：仍是最大的剩余软件块和商用指标 #1/#4 的上游；
    ADR-0006 许可证人工核验与台架决策完成后立即插队，按 F1→F2→F3 推进。
 5. **完成面守护**：PLCopen/Beckhoff C0→C6 与 ST L0→L7、L∀ 已完成；只

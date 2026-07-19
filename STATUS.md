@@ -68,13 +68,13 @@ sink 门面，生产层无反向引用）。分层健康度见
 - 回放：18 语料逐周期比对；声明变更零例外流程运行中
 - 分层：2026-07-12 include 图审计 **0 违规**（L0-L4 零 PLCopen 语义引用、无循环依赖、L4 不引 L3），见 [架构审查报告](doc/design/architecture-review-2026-07.md)
 - RT：静态扫描 27 文件（含 st vm/bind 与 Feetech adapter）+ 冻结窗口分配断言；DoD §5.3 的周期耗时对比通过（新核 = 旧线 9.3%）；分配 soak 以周期等效口径关闭（25.92 亿周期零分配，2026-07-11），墙钟 72h/抖动证据归 B7 真机报告
-- CI（最新 `main` `0195739`，截至 2026-07-19）：[Windows CI](https://github.com/lusipad/plcopen/actions/runs/29682295510)、[Linux CI](https://github.com/lusipad/plcopen/actions/runs/29682295508) 与手动复验的 [Core Nightly](https://github.com/lusipad/plcopen/actions/runs/29682299843) 均通过。11 项 fuzz 已从日常 CTest/coverage 分流到原生 Nightly：ARM/QEMU 测试由 28 分 40 秒降至 4 分 57 秒，Nightly fuzz 11/11 用时 5.30 秒；Linux 总时长降至 27 分 59 秒，当前最长路径是 22 分 17 秒的串行 `clang-tidy`。此前 Mutation 18/18、Coverage Gate 与 Wheels 的通过证据继续保留。`main` 仍无 branch protection/ruleset，这些是 workflow 证据而非技术强制的 required checks。触发边界见 [CI gate 矩阵](doc/compliance/ci-gates.md)
+- CI（最新 `main` `7336379`，截至 2026-07-19）：[Windows CI](https://github.com/lusipad/plcopen/actions/runs/29687354884)、[Linux CI](https://github.com/lusipad/plcopen/actions/runs/29687354905) 与手动复验的 [Core Nightly](https://github.com/lusipad/plcopen/actions/runs/29682299843) 均通过。11 项 fuzz 已从日常 CTest/coverage 分流到原生 Nightly：ARM/QEMU 测试由 28 分 40 秒降至 4 分 57 秒，Nightly fuzz 11/11 用时 5.30 秒；全量 81 TU `clang-tidy` 改为 8 路并行后由 22 分 17 秒降至 10 分 31 秒，Linux 总时长由 27 分 59 秒降至 16 分 46 秒。此前 Mutation 18/18、Coverage Gate 与 Wheels 的通过证据继续保留。`main` 仍无 branch protection/ruleset，这些是 workflow 证据而非技术强制的 required checks。触发边界见 [CI gate 矩阵](doc/compliance/ci-gates.md)
 
 ## 进行中 / 待办
 
 | 项 | 状态 |
 |----|------|
-| **CI 反馈时长** | **P1 部分完成并远端复验**：ARM/QEMU 测试 28:40 → 4:57；剩余全量 `clang-tidy` 并行化（当前 22:17） |
+| **CI 反馈时长** | **P1 已完成并远端复验**：ARM/QEMU 测试 28:40 → 4:57；全量 `clang-tidy` 22:17 → 10:31；Linux 总时长 27:59 → 16:46 |
 | 抽查评审 | 2026-07-05 批次核心提交（OTG/流/kin/adapters）开放抽查，证据链在各提交信息；非合入门槛 |
 | v0.x EOL 窗口 | v1.0.0-alpha 已发布（2026-07-06）；旧线 90 天 P0-only 窗口至 2026-10-04 |
 | 硬件阶段（B5 真栈/B6 台架/B7 RT 报告） | 等台架或灯塔环境；参考 executor 双域已落地（ADR-0007，TSAN 零报告），真机测量链待硬件 |
