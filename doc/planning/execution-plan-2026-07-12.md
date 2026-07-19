@@ -88,9 +88,11 @@
 
 ## 6. 当前队列与后备批次
 
-- **P0（本地已修）**：`st_l0_runtime_tests.cpp` 的无谓按值复制已改为只读
-  引用；ST 定向测试与 WSL/Clang 81 文件门通过，待提交和远端复验。
-- **当前无外部前置队列**：A1 浮点数值语义合同（0.3 L0）→ A2 T30 WCET
+- **P0（已完成）**：`17932de` 已把 `st_l0_runtime_tests.cpp` 的无谓按值复制
+  改为只读引用；Windows/Linux 远端通过，包括 Clang 81 文件门、GCC 与 ARM64。
+- **P1（当前）**：11 项 fuzz 已从日常 CTest/coverage 分流到原生 Nightly，
+  消除 ARM/QEMU 约 24.8 分钟放大；剩余全量 `clang-tidy` 并行化。
+- **后续无外部前置队列**：A1 浮点数值语义合同（0.3 L0）→ A2 T30 WCET
   度量工具（0.2 L0）→ G1 治理文档批（0.2 L0）。
 - **条件插队**：ADR-0006 许可证核验与台架决策完成后，F1→F2→F3。
 - Y/P/Z/E 四线候选见[软件极致计划](software-excellence-plan.md)

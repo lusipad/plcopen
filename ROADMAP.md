@@ -9,15 +9,19 @@ sprint 记录）在 [doc/archive/roadmap-history.md](doc/archive/roadmap-history
 
 优先级只在本节声明一次，下列各节只承载明细，不再各自宣称"当前/最高"：
 
-1. **P0 主线复绿**：`7cf8d94` 的 Windows、Linux/GCC 与 ARM64 已通过，
-   Linux/Clang 因测试辅助函数无谓按值复制 `st::Program` 失败；本地修复后
-   ST 定向测试与 81 文件 `clang-tidy` 门均通过，待提交并由远端复验。最新
-   `main` 全绿后才进入新功能批。
-2. **无外部前置的软件队列**：A1 浮点数值语义合同 → A2 T30 WCET 度量
-   → G1 治理文档；当前默认从 A1 开始。
-3. **F 轨 EtherCAT**：仍是最大的剩余软件块和商用指标 #1/#4 的上游；
+1. **P0 主线复绿（已完成）**：`17932de` 已修复测试辅助函数无谓按值复制
+   `st::Program`；[Windows CI](https://github.com/lusipad/plcopen/actions/runs/29680604789)
+   与 [Linux CI](https://github.com/lusipad/plcopen/actions/runs/29680604785) 均通过，
+   包括 Linux/Clang 81 文件 `clang-tidy`、GCC 与 ARM64。
+2. **P1 CI 时长恢复**：Linux push 门已由约 12 分钟回退到约 34 分钟；本批
+   已把 11 项 fuzz CTest 统一移到原生 Nightly，日常门只跑 79 项非 fuzz
+   测试，消除 ARM/QEMU 约 24.8 分钟放大。剩余工作是并行化全量
+   `clang-tidy`，以不降低覆盖面的方式恢复反馈速度。
+3. **无外部前置的软件队列**：A1 浮点数值语义合同 → A2 T30 WCET 度量
+   → G1 治理文档；P1 关闭后默认从 A1 开始。
+4. **F 轨 EtherCAT**：仍是最大的剩余软件块和商用指标 #1/#4 的上游；
    ADR-0006 许可证人工核验与台架决策完成后立即插队，按 F1→F2→F3 推进。
-4. **完成面守护**：PLCopen/Beckhoff C0→C6 与 ST L0→L7、L∀ 已完成；只
+5. **完成面守护**：PLCopen/Beckhoff C0→C6 与 ST L0→L7、L∀ 已完成；只
    维护能力矩阵、特性表和限制注册表不漂移，不扩张到 IDE、Safety、CNC。
    商用门板已关闭的软件面保持不回退，台架、部署、认证和日历证据不以
    软件模拟冒充。

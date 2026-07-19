@@ -29,11 +29,11 @@ jobs:
       - name: Verify replay fixtures
         run: cmake -P cmake/verify_replay_fixtures.cmake
 
-      - name: Clean build and run full CTest suite
-        run: .\build.ps1 -Clean -Test
+      - name: Clean build and run regular CTest suite
+        run: .\build.ps1 -Clean -Test -ExcludeFuzz
 
       - name: Collect coverage
-        run: .\coverage.ps1
+        run: .\coverage.ps1 -ExcludeFuzz
 
       - name: Upload coverage report
         uses: actions/upload-artifact@v7

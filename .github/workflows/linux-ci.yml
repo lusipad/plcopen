@@ -55,7 +55,7 @@ jobs:
         run: cmake --build build --parallel
 
       - name: Test
-        run: ctest --test-dir build --output-on-failure
+        run: ctest --test-dir build --output-on-failure -LE fuzz
 
       - name: Print core benchmark baseline
         run: ctest --test-dir build --output-on-failure -R plcopen_core_benchmark -V
@@ -144,4 +144,4 @@ jobs:
       - name: Test (via QEMU user-mode)
         run: >
           ctest --test-dir build-arm64 --output-on-failure
-          -E "(benchmark|jitter_harness)"
+          -E "(benchmark|jitter_harness)" -LE fuzz

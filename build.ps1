@@ -11,6 +11,9 @@ param(
     
     [Parameter()]
     [switch]$Test,
+
+    [Parameter()]
+    [switch]$ExcludeFuzz,
     
     [Parameter()]
     [switch]$Install
@@ -202,6 +205,9 @@ function Invoke-Tests {
         "--build-config", $Configuration,
         "--show-only=json-v1"
     )
+    if ($ExcludeFuzz) {
+        $CTestListArgs += @("-LE", "fuzz")
+    }
 
     $CTestListResult = & ctest @CTestListArgs 2>&1
     if ($LASTEXITCODE -ne 0) {
@@ -227,6 +233,9 @@ function Invoke-Tests {
         "--build-config", $Configuration,
         "--output-on-failure"
     )
+    if ($ExcludeFuzz) {
+        $CTestArgs += @("-LE", "fuzz")
+    }
 
     Write-Info "Test command: ctest $($CTestArgs -join ' ')"
     $Result = & ctest @CTestArgs 2>&1

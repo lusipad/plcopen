@@ -420,6 +420,20 @@ if(BUILD_TESTING AND PLCOPEN_BUILD_CORE_TESTS)
     add_test(NAME plcopen_core_part4_c3_fuzz_smoke
              COMMAND plcopen_core_part4_c3_fuzz --iterations 2000)
 
+    set_tests_properties(
+        plcopen_core_otg_fuzz_smoke
+        plcopen_core_st_fuzz_smoke
+        plcopen_core_st_l2b_fuzz_smoke
+        plcopen_core_st_l5_fuzz_smoke
+        plcopen_core_st_l6_fuzz_smoke
+        plcopen_core_st_l7_fuzz_smoke
+        plcopen_core_feetech_fuzz_smoke
+        plcopen_core_part4_p4b1_fuzz_smoke
+        plcopen_core_part4_p4b2_fuzz_smoke
+        plcopen_core_part4_p4b3_fuzz_smoke
+        plcopen_core_part4_c3_fuzz_smoke
+        PROPERTIES LABELS fuzz)
+
     add_executable(plcopen_core_part5_homing_tests test/part5_homing_tests.cpp)
     target_link_libraries(plcopen_core_part5_homing_tests PRIVATE plcopen::core)
     plcopen_core_rt_compile_options(plcopen_core_part5_homing_tests)

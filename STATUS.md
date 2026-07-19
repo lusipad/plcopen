@@ -68,13 +68,13 @@ sink 门面，生产层无反向引用）。分层健康度见
 - 回放：18 语料逐周期比对；声明变更零例外流程运行中
 - 分层：2026-07-12 include 图审计 **0 违规**（L0-L4 零 PLCopen 语义引用、无循环依赖、L4 不引 L3），见 [架构审查报告](doc/design/architecture-review-2026-07.md)
 - RT：静态扫描 27 文件（含 st vm/bind 与 Feetech adapter）+ 冻结窗口分配断言；DoD §5.3 的周期耗时对比通过（新核 = 旧线 9.3%）；分配 soak 以周期等效口径关闭（25.92 亿周期零分配，2026-07-11），墙钟 72h/抖动证据归 B7 真机报告
-- CI（最新 `main` `7cf8d94`，截至 2026-07-19）：Windows CI、Linux/GCC 与 ARM64 通过；Linux/Clang 因 `st_l0_runtime_tests.cpp` 两处测试辅助函数无谓按值复制 `st::Program`，在 `performance-unnecessary-value-param` 门失败。本地改为只读引用后，Windows ST 定向测试与 WSL/Clang 81 文件完整门禁均通过；仍待提交和远端复验，故最新主线暂未全绿。此前 Mutation 18/18、Core Nightly、Coverage Gate 与 Wheels 的通过证据继续保留，但不能替代最新提交复绿。`main` 仍无 branch protection/ruleset，这些是 workflow 证据而非技术强制的 required checks。触发边界见 [CI gate 矩阵](doc/compliance/ci-gates.md)
+- CI（最新 `main` `17932de`，截至 2026-07-19）：[Windows CI](https://github.com/lusipad/plcopen/actions/runs/29680604789) 与 [Linux CI](https://github.com/lusipad/plcopen/actions/runs/29680604785) 均通过；Linux/Clang 的 `performance-unnecessary-value-param` 失败已通过只读引用修复，81 文件 `clang-tidy`、GCC 与 ARM64 已远端复验。当前质量风险转为反馈时长：Linux push 门约 34 分钟，其中 ARM/QEMU 三个高迭代 ST fuzz smoke 合计约 24.8 分钟，另有串行 `clang-tidy` 约 23 分钟；不影响本次复绿结论，但应作为下一批 CI 优化。此前 Mutation 18/18、Core Nightly、Coverage Gate 与 Wheels 的通过证据继续保留。`main` 仍无 branch protection/ruleset，这些是 workflow 证据而非技术强制的 required checks。触发边界见 [CI gate 矩阵](doc/compliance/ci-gates.md)
 
 ## 进行中 / 待办
 
 | 项 | 状态 |
 |----|------|
-| **最新 main 复绿** | **P0 本地已修**：ST 定向测试与 81 文件 `clang-tidy` 门通过；待提交、远端复验后进入 A1 |
+| **CI 反馈时长** | **P1**：11 项 fuzz 已从日常 CTest/coverage 分流到原生 Nightly；剩余全量 `clang-tidy` 并行化 |
 | 抽查评审 | 2026-07-05 批次核心提交（OTG/流/kin/adapters）开放抽查，证据链在各提交信息；非合入门槛 |
 | v0.x EOL 窗口 | v1.0.0-alpha 已发布（2026-07-06）；旧线 90 天 P0-only 窗口至 2026-10-04 |
 | 硬件阶段（B5 真栈/B6 台架/B7 RT 报告） | 等台架或灯塔环境；参考 executor 双域已落地（ADR-0007，TSAN 零报告），真机测量链待硬件 |

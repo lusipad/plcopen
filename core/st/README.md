@@ -69,5 +69,5 @@ ARRAY、自然布局 STRUCT、嵌套聚合初始化/复制；AXIS_REF 宿主绑�
 `..._type_desc_tests`、`..._l1b1_tests`、`..._l1b2_tests`（ABI-v2 类型描述、
 各 22 黄金程序）、`..._l1b3_tests`（Unicode/定长字符串/整数公历）、
 `..._l2b_tests`（多 POU、调用/实例布局、别名、WCI、确定性 artifact 与零分配）、
-`plcopen_core_st_fuzz`（单 PROGRAM 与 L2b CTest 冒烟各 3k，Nightly 各 10 万 +
-ASan/UBSan）。
+`plcopen_core_st_fuzz`（单 PROGRAM、L2b、L5、L6、L7 的 `fuzz` 标签 CTest
+冒烟各 3k，仅由 Nightly CI 执行；Nightly 另以 ASan/UBSan 各跑 10 万）。

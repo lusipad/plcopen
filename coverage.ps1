@@ -14,7 +14,10 @@ param(
     [string]$BuildDir = "build",
 
     [Parameter()]
-    [string]$OutputDir = "out/coverage"
+    [string]$OutputDir = "out/coverage",
+
+    [Parameter()]
+    [switch]$ExcludeFuzz
 )
 
 $ErrorActionPreference = "Stop"
@@ -81,8 +84,8 @@ function Get-CMakeGenerator {
 }
 
 # Coverage runs every deterministic core executable (family test suites,
-# oracle/fuzz, replay regression, demos); a single suite badly understates
-# the surface now that acceptance tests are split per family.
+# oracle/fuzz, replay regression, demos) by default; PR CI passes
+# -ExcludeFuzz because fuzz execution belongs to Core Nightly.
 # Wall-clock and allocation-budget gates are excluded: under dynamic coverage
 # instrumentation they measure the collector rather than the production
 # budget (VS 18.7 also makes the frozen-window allocation guard return nonzero).
@@ -108,7 +111,10 @@ function Get-CoverageExecutables {
             continue
         }
         $Found = Get-ChildItem -Path $Dir -File -Filter 'plcopen_core_*.exe' -ErrorAction SilentlyContinue |
-            Where-Object { $ExcludedFromCoverage -notcontains $_.BaseName }
+            Where-Object {
+                $ExcludedFromCoverage -notcontains $_.BaseName -and
+                (-not $ExcludeFuzz -or $_.BaseName -notmatch '_fuzz($|_)')
+            }
         if ($Found) {
             return @($Found | Sort-Object Name | Select-Object -ExpandProperty FullName)
         }
