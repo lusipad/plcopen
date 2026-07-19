@@ -3,7 +3,7 @@
 > 本页是"现在在哪"的唯一入口，每个批次收口时更新。术语见
 > [CONTEXT.md](CONTEXT.md)；边界细节见
 > [已知边界注册表](doc/compliance/known-boundaries.md)。
-> 最后更新：**2026-07-17**。
+> 最后更新：**2026-07-19**。
 
 ## 一句话
 
@@ -14,7 +14,7 @@
 （http://lusipad.com/plcopen/ ，Pages 2026-07-11 启用）。**executor
 双域已落地**（ADR-0007：规划域产帧、RT 域仅消费承诺轨迹，TSAN 零
 报告）。S0 纯软件面仅剩 PyPI 发布（Trusted Publishing 作业已备，
-publisher 注册与 tag 为人专属）；S1-S3 另依赖硬件、用户和日历时间。**L 系列语言层已启动（2026-07-11 维护者拍板）**，
+publisher 注册与 tag 为人专属）；S1-S3 另依赖硬件、用户和日历时间。**L 系列语言层已闭合（2026-07-18）**，
 批次 ST-L0（KB-069）、ST-L1a（标量宇宙 + 转换矩阵机读化，KB-070）与
 ST-L2a-Bind 首批十个单轴 MC 块（KB-071）均已交付；Part 5 P5-B 六个缺失
 门面（KB-072）已补齐；Part 4 P4-B1 十九项管理/回读门面（KB-073）与
@@ -40,7 +40,7 @@ P#5 分支覆盖门、P#2 轨迹精度软件证据和 P#7 文档主体也已关�
 | v0.x 旧线（fork 自 i5cnc） | 2026-04 → 07 | Part 1/2 FB 面 45/45 收口于 v0.11.0，冻结为回放/迁移基线 |
 | R0-R4 新核重写 | 2026-07 | `core/` L0-L7 阶梯 + kin/stream 支撑库全部落地，与旧线 DoD 对照 PASS |
 | Phase B 纯软件 | 2026-07 | 坐标系/kinematics/轨迹流/cam/前瞻 v2/adapters（KB-034~041） |
-| **← 现在** | 2026-07-17 | PLCopen / Beckhoff 软件收束 C0～C6 与 ST-L2c Bind Complete 已完成；134/134 FB、1476/1476 pins 闭合，逐项对等状态见 [能力矩阵](doc/compliance/plcopen-beckhoff-parity-matrix.md) |
+| **← 现在** | 2026-07-19 | PLCopen / Beckhoff 软件收束 C0～C6 与 ST L0～L7、L∀ 已完成；134/134 FB、1476/1476 pins、feature-set `pending=0`，逐项对等状态见 [能力矩阵](doc/compliance/plcopen-beckhoff-parity-matrix.md) |
 
 ## 能力面（新核，默认消费面 `plcopen::plcopen`）
 
@@ -59,21 +59,22 @@ sink 门面，生产层无反向引用）。分层健康度见
 | L7 adapters | **外圈消费面之一**（绕过 L6，只消费 axis/state.h + rt/error.h）：Servo 窄接口 + ServoSim + 桥接（ADR-0004）、CiA402 状态机、CSP/CSV/CST bumpless 骨架、Feetech STS 协议 0 固定容量总线/Servo/Sim（无 IO；动态单位与 Status 位未核，不进真机） | KB-040/074 |
 | 支撑库 kin | 阶梯旁支撑库（依赖 geom/rt，被 L5 消费）：kinematics 插件 ABI + 合规 harness、龙门/SCARA 解析解、球腕 6R（Pieper + 8 分支 seed 选支、奇异 margin） | KB-037/041 |
 | 支撑库 stream | 阶梯旁支撑库（依赖 otg/rt，被 L5 消费）：B9 轨迹流滤波（OTG 在线重解、断流看门狗、solve_fixed_time rendezvous 跟踪律）、多关节聚合 | KB-035 |
-| st 语言层（ST-L0/L1a/L1b/L2b/L2c） | **外圈消费面之一**（与 L7 adapters 平行、居 L6 之上，纯 sink）。IEC 61131-3 ST：容错前端、确定性字节码 VM、标量/枚举/子范围/聚合/字符串日期类型、用户 POU 与 134 个标准 FB 完整绑定；49 个公开绑定类型、AXIS/GROUP/序列/对象 typed registry 均只向 ST 暴露 1-based handle。L3-L7 已完成并按 L 系列总账闭合；仍不宣称完整 IEC 平台或 PLCopen 官方认证 | KB-069/070/071；[L 系列总账](doc/planning/l-series-work-breakdown.md) |
+| st 语言层（ST L0-L7、L∀） | **外圈消费面之一**（与 L7 adapters 平行、居 L6 之上，纯 sink）。IEC 61131-3 ST：容错前端、确定性字节码 VM、标量/枚举/子范围/聚合/字符串日期类型、用户 POU 与 134 个标准 FB 完整绑定；49 个公开绑定类型、AXIS/GROUP/序列/对象 typed registry 均只向 ST 暴露 1-based handle。L3-L7 已完成并按 L 系列总账闭合；仍不宣称完整 IEC 平台或 PLCopen 官方认证 | KB-069/070/071；[L 系列总账](doc/planning/l-series-work-breakdown.md) |
 | 工具面 | pyplcopen（单轴/流/PoseArmSim，三平台 wheel 远端绿，PyPI 发布作业已备待 publisher 注册，CycleConfig SI 换算）、18 份回放黄金语料、28 关节 @1kHz 预算基准 + 笛卡尔 IK 预算门、参考 executor demo（canonical `planning → committed trajectory → RT` 双域，ADR-0007，TSAN 零报告）、周期级 trace、**文档站已上线**（http://lusipad.com/plcopen/ ）、Conan recipe（vcpkg port 未发布，根目录 `vcpkg.json` 仅为 port 清单草稿）、ErrorCode 诊断文本 | — |
 
 ## 质量门禁现状
 
-- 测试：Windows Debug 与 WSL/GCC Release 的已实现层 81 项 CTest 均全绿（明确排除 L3-L7 五个未来 RED 合同目标）；含 ST L0-L2c、Part 1/4/5、商用精度、状态转换、零分配与 fuzz smoke。本批另有通用 ST 与 L2b 两路 100,000 次 fuzz 全绿。P#2 聚合门实测 Bezier 稳速波动 0.0775%、圆弧约 7.6e-12%、cam 相位 0 拍、blending 公差利用率 100%。既有 Windows line coverage **89.20%（36968/41443）**，高于 50% 门槛；零分配守卫和延迟基准由未插桩 CTest 强制，不进入动态插桩重跑。独立 WSL 全 `core/` line **92.9%（15941/17151）**、固定生产运动栈 branch **85.0%（7111/8368）** 的既有口径保持。P#7 五页指南与运维手册已接入文档站，`mkdocs build --strict` 通过。精度总账见[商用证据](doc/compliance/commercial-gate-evidence.md)，覆盖口径见[分支覆盖基线](doc/compliance/branch-coverage-baseline.md)
+- 测试：当前 Windows Debug 配置登记 90 项 CTest；ST L3-L7 已纳入完成态测试，不再作为未来 RED 目标排除。2026-07-19 最新远端 Linux/GCC 的 build/test、消费面、Python 与文档生成均通过。P#2 聚合门实测 Bezier 稳速波动 0.0775%、圆弧约 7.6e-12%、cam 相位 0 拍、blending 公差利用率 100%。既有 Windows line coverage **89.20%（36968/41443）**，高于 50% 门槛；零分配守卫和延迟基准由未插桩 CTest 强制，不进入动态插桩重跑。独立 WSL 全 `core/` line **92.9%（15941/17151）**、固定生产运动栈 branch **85.0%（7111/8368）** 的既有口径保持。P#7 五页指南与运维手册已接入文档站，`mkdocs build --strict` 通过。精度总账见[商用证据](doc/compliance/commercial-gate-evidence.md)，覆盖口径见[分支覆盖基线](doc/compliance/branch-coverage-baseline.md)
 - 回放：18 语料逐周期比对；声明变更零例外流程运行中
 - 分层：2026-07-12 include 图审计 **0 违规**（L0-L4 零 PLCopen 语义引用、无循环依赖、L4 不引 L3），见 [架构审查报告](doc/design/architecture-review-2026-07.md)
 - RT：静态扫描 27 文件（含 st vm/bind 与 Feetech adapter）+ 冻结窗口分配断言；DoD §5.3 的周期耗时对比通过（新核 = 旧线 9.3%）；分配 soak 以周期等效口径关闭（25.92 亿周期零分配，2026-07-11），墙钟 72h/抖动证据归 B7 真机报告
-- CI（远端基线 `23fd571`，截至 2026-07-11）：Windows/Linux 主线通过，Mutation 18/18 通过；KB-068 修复后远端复验完成——Core Nightly（07-11 定时：OTG 1M fuzz、50M-cycle allocation soak、time-optimal 1M fuzz 三作业拆分后全绿）、Coverage Gate 与 Wheels（07-11 手动重触发）全部通过。`main` 仍无 branch protection/ruleset，这些是 workflow 证据而非技术强制的 required checks。触发边界见 [CI gate 矩阵](doc/compliance/ci-gates.md)
+- CI（最新 `main` `7cf8d94`，截至 2026-07-19）：Windows CI、Linux/GCC 与 ARM64 通过；Linux/Clang 因 `st_l0_runtime_tests.cpp` 两处测试辅助函数无谓按值复制 `st::Program`，在 `performance-unnecessary-value-param` 门失败。本地改为只读引用后，Windows ST 定向测试与 WSL/Clang 81 文件完整门禁均通过；仍待提交和远端复验，故最新主线暂未全绿。此前 Mutation 18/18、Core Nightly、Coverage Gate 与 Wheels 的通过证据继续保留，但不能替代最新提交复绿。`main` 仍无 branch protection/ruleset，这些是 workflow 证据而非技术强制的 required checks。触发边界见 [CI gate 矩阵](doc/compliance/ci-gates.md)
 
 ## 进行中 / 待办
 
 | 项 | 状态 |
 |----|------|
+| **最新 main 复绿** | **P0 本地已修**：ST 定向测试与 81 文件 `clang-tidy` 门通过；待提交、远端复验后进入 A1 |
 | 抽查评审 | 2026-07-05 批次核心提交（OTG/流/kin/adapters）开放抽查，证据链在各提交信息；非合入门槛 |
 | v0.x EOL 窗口 | v1.0.0-alpha 已发布（2026-07-06）；旧线 90 天 P0-only 窗口至 2026-10-04 |
 | 硬件阶段（B5 真栈/B6 台架/B7 RT 报告） | 等台架或灯塔环境；参考 executor 双域已落地（ADR-0007，TSAN 零报告），真机测量链待硬件 |
@@ -81,7 +82,7 @@ sink 门面，生产层无反向引用）。分层健康度见
 | **KB-051 组接管速度断崖** | **已修复（Y7，2026-07-08）**：linear 组级 aborting 接管速度连续；circular/笛卡尔接管扩展仍按 KB-051 适用范围声明另批 |
 | Part 4 管理/路径表/变换 FB | **已交付**（GroupHome/MoveDirect/GroupSetOverride/GroupInterrupt·Continue + PathSelect/MovePath/SetKinTransform/ReadCartesianTransform，验收测试已接入 CTest） |
 | Part 5 回零 FB | **C5 软件合同已关闭（KB-080）**：11/11 标准 FB、45 B + 102 E 机读声明与软件语义均有测试；真机堵转、编码器、多圈、时间戳、正式批准仍是独立边界 |
-| ST-L1b1 枚举/子范围 | **语义矩阵草案已起草，待维护者批准**：显式枚举转换、子范围 `range_violation` fault、重复枚举值/CASE 规则仍属待裁决；批准前不实现 |
+| 下一软件批 A1 | 浮点数值语义合同：钉死 FMA/舍入口径，建立跨平台运行值容差与禁止项；主线复绿后启动 |
 | Y2 epsilon 政策 | **已声明化**（KB-057：段时长钳零 + 复验，整数量化天然覆盖） |
 | Y2 Ruckig 对照 | **人工门控**（ADR-0003：需先审查上游许可证，不进 R1） |
 

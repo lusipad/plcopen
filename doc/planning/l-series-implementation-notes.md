@@ -225,8 +225,8 @@
 - 本地门禁：Windows Debug 与 WSL/GCC Release 已实现层均为 81/81 CTest；
   L0-L2c 相关回归、strict generators、RT scan 27 files、1000 frozen scans、
   ASAN quality、`mkdocs build --strict` 与两路 fuzz 100,000/100,000 均通过；
-  L3-L7 五个未来 RED 合同目标不计入本批。Clang、ARM64 与远端门提交后补录。
-- 剩余 pending 与下一批前置：85；L3 进程映像/存储与 L4a 标准函数可并行。
+  当时 L3-L7 五个未来 RED 合同目标不计入本批；Clang、ARM64 与远端门提交后补录。
+- 当时剩余 pending 与下一批前置：85；L3 进程映像/存储与 L4a 标准函数可并行。
 
 ### 2026-07-17 / ST-L3 / working tree
 

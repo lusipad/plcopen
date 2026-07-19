@@ -120,9 +120,9 @@
 真实用户反馈（与 VISION 解锁纪律同源）。G-code/ST 仍属 Phase D 门控，
 不进本计划。
 
-## L 系列：IEC 61131-3 语言层（2026-07-07 维护者定调完整级入列，自研）
+## 已完成：L 系列 IEC 61131-3 语言层（2026-07-18 收口）
 
-> 定位：PLCopen 扎实化收口后的**下一里程碑主项**。裁决：自研（MatIEC
+> 定位：PLCopen 扎实化收口后的里程碑主项。裁决：自研（MatIEC
 > 仅作黑盒 oracle，ADR-0003 模式）；设计见
 > [st-runtime-design](../design/core/st-runtime-design.md)；难点
 > T30-T39 已全量识别。IL 显式不做；在线变更显式远期。
@@ -135,14 +135,14 @@
 | # | 批次 | 内容 | 难点映射 |
 |---|------|------|---------|
 | L0 | ST 子集 + VM 地基 | **已交付（2026-07-11，KB-069）**：表达式/控制流/基本类型/VAR/直调 FB 面（basic.h 十 FB，MC_* 归 L2）；字节码 VM（零分配/指令预算看门狗）；确定性代码生成（跨平台锚点哈希门）；解析器自始容错（T40，增量接口形态留位） | T30/T37/T40 |
-| L1 | 类型系统全量 | **L1a 已交付（2026-07-11，KB-070）**：标量宇宙 + 210 格转换矩阵机读化 + 加宽白名单（ANY 消解推 L4）；**L1b 待起草**：ARRAY/STRUCT/枚举/子范围/STRING/日期族 | T32 |
-| L2 | POU 与实例模型 | FUNCTION/FB/PROGRAM、IN_OUT 引用、EN/ENO、MC_* 绑定表 + AXIS_REF | T34 |
-| L3 | 进程映像子系统 | %I/%Q/%M、扫描边界双缓冲、RETAIN 持久化合同、force | T33 |
-| L4 | 标准函数/FB 库全量 | 机读矩阵驱动逐函数交付（含定长字符串 RT 语义） | T31 |
-| L5 | 任务模型 v1 | 单任务 + 扫描看门狗 + 跨任务一致性口径声明（多任务随 executor） | T35 |
-| L6 | SFC 执行语义 | 步自动机字节码、限定符矩阵、不安全网络编译诊断 | T36 |
-| L7 | 调试监控面 | seqlock 变量监控、force、断点（调试构建） | T38 |
-| L∀ | 一致性验证体系 | 逐条款机读矩阵 + MatIEC 黑盒 oracle + 解析器 fuzz——随 L0 起步贯穿全程 | T39 |
+| L1 | 类型系统全量 | **已交付**：标量、枚举、子范围、聚合、STRING/WSTRING 与日期时间族 | T32 |
+| L2 | POU 与实例模型 | **已交付**：FUNCTION/FB/PROGRAM、IN_OUT、EN/ENO 与 134 FB/1476 pins Bind Complete | T34 |
+| L3 | 进程映像子系统 | **已交付**：%I/%Q/%M、扫描边界双缓冲、RETAIN/PERSISTENT、force | T33 |
+| L4 | 标准函数/FB 库全量 | **已交付**：51 个固定标准函数与精确预算 | T31 |
+| L5 | 任务模型 v1 | **已交付**：CONFIGURATION/RESOURCE、多周期/事件任务、看门狗与恢复 | T35 |
+| L6 | SFC 执行语义 | **已交付**：文本 SFC、分支/汇合、九限定符与不安全网络诊断 | T36 |
+| L7 | 调试监控面 | **已交付**：seqlock 监控、force、断点/单步/trace | T38 |
+| L∀ | 一致性验证体系 | **已交付**：十二集合相等、feature-set `pending=0`、跨平台完成态门 | T39 |
 
 ## D 系列：开发者工具面（2026-07-07 立案，骑在 L 系列与 trace 资产上）
 
@@ -223,15 +223,14 @@ LD/FBD/SFC 图形画布、HMI、TC6-XML 工程交换、cam 表图形编辑器。
 | 对抗性探测轮 | `.claude/skills/plcopen-adversarial-probe` | 已固化为技能 |
 | **算法合同集（权威）** | [algorithm-contracts.md](../design/core/algorithm-contracts.md) | **已批准**（2026-07-07 维护者裁决，六合同 + 落地顺序） |
 | Y0 oracle | [otg-oracle-design.md](../design/core/otg-oracle-design.md) | 设计已备（测试层免批） |
-| ST 运行时 | [st-runtime-design.md](../design/core/st-runtime-design.md) | 已裁决选项 A：L 系列为扎实化收口后的下一里程碑主项 |
+| ST 运行时 | [st-runtime-design.md](../design/core/st-runtime-design.md) | 已按选项 A 完成 L0-L7 与 L∀ 收口 |
 
-## 推荐起手（待复盘拍板）
+## 当前推荐起手（2026-07-19 重基线）
 
-**（2026-07-07 重排）Y7 → P 系列（Part 4 剩余 + Part 5）→ 对抗性
-探测轮 → **Y0（先立标尺）→ Y2 完整 OTG → Y4 定时同步** → P 系列 →
-E 系列 → 【PLCopen 扎实化收口】→ Y3 TOPP（落地顺序 = 合同文档终节：
-Y7→Y0→Y2→Y4→T24→Y3→H2；最关键三件 = Y2/Y4/T24 解析校验）；
-与 L 系列的相对排序收口复盘时由维护者定**。
+P0 的 ST 定向测试与 81 文件 `clang-tidy` 门已在本地通过，待提交和远端
+复验；复绿后执行 **A1 浮点数值语义合同 → A2 T30 WCET 度量 → G1 治理
+文档**。ADR-0006 许可证核验与台架决策完成后，F 轨
+F1→F2→F3 插队；其余 Y/D/E/R 候选仍由 ROADMAP 复盘定序。
 
 ---
 

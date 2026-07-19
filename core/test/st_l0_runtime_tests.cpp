@@ -409,7 +409,7 @@ st::ScanError scan_tampered(const st::Program &base,
     return instance.scan(32);
 }
 
-st::ScanError scan_tampered_program(st::Program program,
+st::ScanError scan_tampered_program(const st::Program &program,
                                     std::int64_t budget = kBigBudget)
 {
     alignas(8) unsigned char buffer[65536] = {};
@@ -426,7 +426,7 @@ void sweep_malformed_bytecode(const st::Program &base)
     for(std::size_t size = 0U; size < base.code.size(); ++size) {
         st::Program truncated = base;
         truncated.code.resize(size);
-        (void)scan_tampered_program(std::move(truncated));
+        (void)scan_tampered_program(truncated);
     }
     for(std::size_t index = 0U; index < base.code.size(); ++index) {
         for(const std::uint8_t replacement : {
@@ -435,48 +435,48 @@ void sweep_malformed_bytecode(const st::Program &base)
                 std::uint8_t{0xFFU}}) {
             st::Program mutated = base;
             mutated.code[index] = replacement;
-            (void)scan_tampered_program(std::move(mutated));
+            (void)scan_tampered_program(mutated);
         }
     }
 }
 
 void sweep_malformed_metadata(const st::Program &base)
 {
-    const auto scan = [](st::Program program) {
-        (void)scan_tampered_program(std::move(program), 256);
+    const auto scan = [](const st::Program &program) {
+        (void)scan_tampered_program(program, 256);
     };
     st::Program mutated = base;
     mutated.constants.clear();
-    scan(std::move(mutated));
+    scan(mutated);
     for(std::size_t size = 0; size < base.string_constants.size(); ++size) {
         mutated = base;
         mutated.string_constants.resize(size);
-        scan(std::move(mutated));
+        scan(mutated);
     }
     for(const std::uint16_t slots : {std::uint16_t{0}, std::uint16_t{1}}) {
         mutated = base;
         mutated.stack_slots = slots;
-        scan(std::move(mutated));
+        scan(mutated);
     }
     for(const std::uint32_t bytes :
         {std::uint32_t{0}, std::uint32_t{1}, base.vars_bytes / 2U}) {
         mutated = base;
         mutated.vars_bytes = bytes;
         mutated.initial_data.clear();
-        scan(std::move(mutated));
+        scan(mutated);
     }
     mutated = base;
     mutated.fbs.clear();
     mutated.fb_bytes = 0;
-    scan(std::move(mutated));
+    scan(mutated);
     for(std::size_t index = 0; index < base.vars.size(); ++index) {
         mutated = base;
         mutated.vars[index].offset = mutated.vars_bytes + 1U;
         mutated.initial_data.clear();
-        scan(std::move(mutated));
+        scan(mutated);
         mutated = base;
         mutated.vars[index].type_id = st::invalid_type_id;
-        scan(std::move(mutated));
+        scan(mutated);
     }
     if(!base.sfc_networks.empty()) {
         for(std::size_t network = 0; network < base.sfc_networks.size();
@@ -489,23 +489,23 @@ void sweep_malformed_metadata(const st::Program &base)
                                    .transitions[transition]
                                    .condition;
                 region.code.clear();
-                scan(std::move(mutated));
+                scan(mutated);
                 mutated = base;
                 mutated.sfc_networks[network]
                     .transitions[transition]
                     .condition.stack_slots = 0;
-                scan(std::move(mutated));
+                scan(mutated);
             }
             for(std::size_t action = 0;
                 action < base.sfc_networks[network].actions.size(); ++action) {
                 mutated = base;
                 mutated.sfc_networks[network].actions[action].region.code.clear();
-                scan(std::move(mutated));
+                scan(mutated);
                 mutated = base;
                 mutated.sfc_networks[network]
                     .actions[action]
                     .region.stack_slots = 0;
-                scan(std::move(mutated));
+                scan(mutated);
             }
         }
     }
@@ -810,7 +810,7 @@ void opcode_operand_failure_matrix()
                     program.code.push_back(static_cast<std::uint8_t>(raw));
                     program.code.insert(program.code.end(), payload_size, fill);
                     program.code.push_back(byte(st::Op::halt));
-                    (void)scan_tampered_program(std::move(program), 64);
+                    (void)scan_tampered_program(program, 64);
                 }
             }
         }

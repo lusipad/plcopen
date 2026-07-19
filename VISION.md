@@ -31,8 +31,8 @@
 
 | 控制方式 | 面向 | 状态 |
 |---------|------|------|
-| PLCopen FB 面（Part 1/2/4） | 工业自动化 / PLC | 门面已建、条款级合规补齐进行中（不宣称合规，逐条审计见 [doc/compliance/](doc/compliance/plcopen-conformance-audit.md)） |
-| ST 语言面（IEC 61131-3 运行时） | PLC 工程师 / 61131 生态 | 批次 ST-L0/ST-L1a 已交付（KB-069/070），L 系列推进中 |
+| PLCopen FB 面（Part 1/2/4/5） | 工业自动化 / PLC | C0-C6 软件收束完成；正式 B/E/V 声明、真机证据与认证仍未完成（逐条审计见 [doc/compliance/](doc/compliance/plcopen-conformance-audit.md)） |
+| ST 语言面（IEC 61131-3 运行时） | PLC 工程师 / 61131 生态 | L0-L7、L∀ 声明集已闭合；134 个 FB、1476 个 pin、feature-set `pending=0` |
 | 位姿/笛卡尔命令面 | 工业机械臂 / 龙门 / SCARA | 已完成 |
 | 流式执行面（混合指令帧） | 机器人 / 人形 / RL 策略 | 建设中 |
 | Python 面 | 仿真 / 数字孪生 / 教学 | 已有，扩展中 |
@@ -96,7 +96,7 @@ plcopen 站在两个世界的交叉点上：**学习栈下面的工业级确定�
                 ↑
   第 3 层：工业通信适配（Modbus / OPC UA / EtherNet/IP）
                 ↑
-  第 2 层：多语言编程支持（ST（L 系列 ST-L0/ST-L1a 已交付）/ SFC）
+  第 2 层：多语言编程支持（ST / SFC 运行时声明集已交付）
                 ↑
   第 1 层：完整 IEC 61131-3 标准功能块库（定时器 / 计数器 / 逻辑 / 数学）
                 ↑
@@ -136,11 +136,10 @@ Part 4 线性/圆弧/blending/前瞻、坐标系栈、kinematics（龙门/SCARA/
 
 **动机**：让非 C++ 开发者也能用这套基础设施
 
-**现状（已部分交付）**：
-- ST（Structured Text）：确定性字节码 VM 已交付（L 系列批次
-  ST-L0/ST-L1a，KB-069/070）；剩余批次（ST-L1b 复合类型、ST-L2 POU 与
-  MC_* 绑定等）见
-  [L 系列工作拆解](doc/planning/l-series-work-breakdown.md)
+**现状（声明集已闭合）**：
+- ST（Structured Text）：L0-L7 与 L∀ 已完成，覆盖确定性字节码 VM、类型、
+  POU/134 个标准 FB、进程映像、标准函数、任务、文本 SFC 与调试监控；
+  完成态证据见 [L 系列工作拆解](doc/planning/l-series-work-breakdown.md)
 - Python 绑定：pyplcopen 已存在（pybind11，三平台 wheel），扩面由
   用户反馈驱动
 - Lua 脚本：未立项（无用户信号）
@@ -179,12 +178,12 @@ Part 4 线性/圆弧/blending/前瞻、坐标系栈、kinematics（龙门/SCARA/
 | 能力 | 解锁条件（任一满足即启动评估） | 当前状态 |
 |------|--------------------------------|----------|
 | S 曲线（Jerk 受限） | v0.2 稳定后 OR 1 个用户 issue | 已完成单轴与 homing 基线 |
-| MC_Home 完整实现 | v0.2 稳定后 | runtime 子集已交付；标准回零面 5/11、合规未闭合（见 ROADMAP P5-B 批次） |
+| MC_Home 完整实现 | v0.2 稳定后 | C5 已关闭 Part 5 的 11/11 标准 FB 与软件合同；真机与认证证据仍独立 |
 | 多轴凸轮/齿轮 | 1 个用户 issue + 有测试硬件 | 已有模拟可测基础；硬件扩展仍受此条件约束 |
 | Python 绑定 | ≥3 个"Python 能调吗"询问 | 已有最小单轴仿真 facade；扩面仍由反馈驱动 |
-| IEC 61131-3 标准功能块库 | v0.3 后 OR 用户明确需要 | 基础标准 FB 已完成；完整函数库尚未立项 |
-| ST 编译器 MVP | ~~≥5 个用户要求 + 有合作者~~ **2026-07-07 维护者解锁**（AI 吞吐使成本论据反转；完整语言层 = "扎实的 plcopen"的组成部分） | L 系列进行中：ST-L0/ST-L1a 已交付（KB-069/070） |
-| SFC / LD / FBD 语言层 | SFC 执行语义随 L 系列批次 ST-L6（批次编号，非 core 分层 L6 fb）；LD/FBD 图形层仍随层 4 编辑器 | SFC 已随 ST 解锁；LD/FBD 未解锁 |
+| IEC 61131-3 标准功能块库 | v0.3 后 OR 用户明确需要 | basic 10 + Part 1/2 45 + Part 4 68 + Part 5 11 已接入 ST；范围外项见 feature table |
+| ST 编译器 MVP | ~~≥5 个用户要求 + 有合作者~~ **2026-07-07 维护者解锁**（AI 吞吐使成本论据反转；完整语言层 = "扎实的 plcopen"的组成部分） | L0-L7、L∀ 已于 2026-07-18 闭合 |
+| SFC / LD / FBD 语言层 | SFC 执行语义随 L 系列批次 ST-L6（批次编号，非 core 分层 L6 fb）；LD/FBD 图形层仍随层 4 编辑器 | 文本 SFC 已实现；LD/FBD 图形层未解锁 |
 | PLCopen Part 6（液压） | 1 个流体动力行业用户需求 | 未解锁 |
 | PLCopen Safety FB 族 | 有认证语境的集成方合作（无认证的安全 FB 不做） | 未解锁；P#8 已仅锁定 [STO/SS1 集成责任边界](doc/compliance/sto-ss1-integration-boundary.md)，不实现任何 SF 能力 |
 | PLCopen XML / TC6 | 随 LD/FBD 编辑器 | 未解锁 |
@@ -294,5 +293,5 @@ plcopen 如果能成为"工业自动化的 SQLite"——被嵌入、被信赖、
 
 ---
 
-*本文档最后更新：2026-07-12（定位补"两个世界交叉点"、合规口径对齐诚实边界、生态阶梯注记与 L 系列现状校准）*
+*本文档最后更新：2026-07-19（C0-C6 与 L 系列完成态口径对齐；战略与解锁条件未改）*
 *下次复盘：2027-04（或更早，如发生重大方向变化）*

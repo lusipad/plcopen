@@ -22,12 +22,12 @@
 | [ai-collaboration.md](ai-collaboration.md) | AI-First 工程体系（战略部分；操作流程已迁入 `.claude/skills/`） | 现行 |
 | [v1.0.0-alpha-release-draft.md](v1.0.0-alpha-release-draft.md) | v1.0.0-alpha 发布草案与人工检查单 | T3 草案，待人工发布 |
 | [r1-rt-report-template.md](r1-rt-report-template.md) | 72h PREEMPT_RT 报告模板（B7 硬件阶段使用） | 模板，待真机 |
-| [software-excellence-plan.md](software-excellence-plan.md) | 软件极致候选清单（Y 算法/P 标准面/Z 采纳/E 证据四线） | 候选，复盘定序 |
-- [L 系列工作拆解](l-series-work-breakdown.md) —— 语言层批次的可执行拆解：范围/矩阵决策点/前置/出口判据/规模标定 + 送批队列填充策略（2026-07-12）
+| [software-excellence-plan.md](software-excellence-plan.md) | 软件极致候选清单（Y 算法/P 标准面/Z 采纳/E 证据四线） | 2026-07-19 重基线；当前起手见文末 |
+- [L 系列工作拆解](l-series-work-breakdown.md) —— L0-L7、L∀ 已闭合的范围、依赖、出口判据与完成态证据（2026-07-17 重基线）
 - [PLCopen 合规补齐计划](plcopen-conformance-plan.md) —— 原文审计后的 P 系列重构：P1-A 结构缺口 → L2a 引脚表（即合规面）→ 可提交认证声明（2026-07-12）
-- [**主计划：从这里到商用级**](master-plan.md) —— 复盘第一入口：剩余工作按 AI 能力边界四栏分类（全自主/起草待批/人专属/买不到）+ 依赖链总图 + 人侧杠杆排序（2026-07-12）
+- [**主计划：从这里到商用级**](master-plan.md) —— 复盘第一入口：剩余工作按 AI 能力边界四栏分类 + 依赖链总图 + 人侧杠杆排序（2026-07-19 重基线）
 - [采纳与推广计划](adoption-plan.md) —— 开源本位的 90 天推广序列：人群分层/渠道三选/证据即内容/灯塔口径/P0 人专属五件（2026-07-12）
-- [**执行计划清单**](execution-plan-2026-07-12.md) —— ROADMAP「当前承诺」的任务级勾选账：商用门板队列 / S2 Feetech / 送批线 / Codex 线观察点 / 人专属四件（2026-07-12）
+- [**执行计划清单**](execution-plan-2026-07-12.md) —— ROADMAP「当前承诺」的任务级勾选账：P0 复绿 / A1→A2→G1 / F 轨条件插队 / 人专属前置（2026-07-19 重基线）
 | [full-project-review-2026-07-09.md](full-project-review-2026-07-09.md) | 全项目 Review：架构热点、门禁漂移、公共 API 合同与修复队列 | 已执行，P1/P2 修复批输入 |
 | [axis-group-split-plan-2026-07-09.md](axis-group-split-plan-2026-07-09.md) | `AxisGroup` 按行为簇拆分计划与验收顺序 | 现行，下一批迁移输入 |
 
@@ -36,4 +36,4 @@
 
 ---
 
-*本索引最后更新：2026-07-12（执行计划清单）*
+*本索引最后更新：2026-07-19（L 系列闭合与当前队列重基线）*
