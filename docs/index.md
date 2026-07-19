@@ -7,9 +7,10 @@ in your controller, or put it under your learning stack.**
 
 !!! note "v0.20.0 release candidate"
     The source, wheels, sdist, nightly, coverage, mutation, and documentation
-    gates are green. PyPI publication is not live yet: `pip install pyplcopen`
-    becomes available after the maintainer configures Trusted Publishing and
-    pushes the `v0.20.0` tag. Until then, install from source.
+    gates are green, and the PyPI trusted publisher plus GitHub environment are
+    configured. `pip install pyplcopen` becomes available after the authorized
+    `v0.20.0` tag triggers publication. Until then, install from source. See the
+    [v0.20.0 release record](releases/v0.20.0.md).
 
 ## One Kernel, Multiple Control Styles
 
@@ -138,7 +139,8 @@ reference executor.
 - [Known boundaries](https://github.com/lusipad/plcopen/blob/main/doc/compliance/known-boundaries.md) — declared limits
 - [Architecture](https://github.com/lusipad/plcopen/blob/main/doc/design/core/architecture.md) — design docs
 - [CHANGELOG](https://github.com/lusipad/plcopen/blob/main/CHANGELOG.md) — version history
-- [v0.20.0 release draft](https://github.com/lusipad/plcopen/blob/main/doc/planning/v0.20.0-release-draft.md) — release form, verified gates, and remaining human actions
+- [v0.20.0 release record](releases/v0.20.0.md) — install, highlights, artifacts, verification, and known limits
+- [v0.20.0 release checklist](https://github.com/lusipad/plcopen/blob/main/doc/planning/v0.20.0-release-draft.md) — release form, verified gates, and remaining actions
 
 ## License
 

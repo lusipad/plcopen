@@ -47,10 +47,10 @@ jobs:
           path: dist/*.tar.gz
 
   # PyPI 发布（Trusted Publishing / OIDC，无 token secret）。
-  # 人专属前置（未完成前本作业必然失败，属预期）：维护者在 PyPI 注册
+  # 首次发布的人专属前置（未完成前本作业必然失败）：维护者在 PyPI 注册
   # trusted publisher（project: pyplcopen, owner: lusipad, repo: plcopen,
   # workflow: wheels.yml, environment: pypi）并在仓库建 pypi environment。
-  # 仅 tag 推送触发；tag 本身是人专属动作，构成双重人工门。
+  # 仅 tag 推送触发；维护者明确授权版本与目标提交后，AI 可代为推送 tag。
   publish_pypi:
     name: Publish to PyPI
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
