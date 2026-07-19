@@ -14,6 +14,11 @@
 行为边界：[已知边界注册表](doc/compliance/known-boundaries.md)
 · 商用八项：[证据总账](doc/compliance/commercial-gate-evidence.md)
 
+> **当前发布候选：v0.20.0。** Windows、Linux、Wheels、Nightly、Coverage、
+> Mutation 与 Docs 发布门禁已全部通过；正式发布仍等待 PyPI Trusted
+> Publisher、GitHub `pypi` environment 和维护者 tag。交付形式与检查单见
+> [v0.20.0 发布草案](doc/planning/v0.20.0-release-draft.md)。
+
 ---
 
 ## 这是什么
@@ -51,6 +56,7 @@ IEC 61131-3 全语言成熟编译器（看 MatIEC——我们的 ST 层是**运�
 
 | 领域 | 状态 | 当前结论 |
 |------|------|----------|
+| v0.20.0 发布候选 | 🟢 已验证 | 七组发布门禁全绿；版本、CHANGELOG、C++/Python 包元数据已对齐，尚未打 tag 或正式发布 |
 | 新核重写 R0-R4 | ✅ 完成 | `core/` 已成为默认消费面，旧线进入 P0-only 冻结期 |
 | Phase B 纯软件 | ✅ 完成 | 坐标系、运动学、轨迹流、cam、前瞻、适配器骨架全部落地 |
 | 核心算法 | 🟢 主体完成 | jerk-limited OTG、固定时长求解、TOPP、oracle、周期执行均已实现 |
@@ -149,13 +155,13 @@ st 语言层与 adapters 平行位于外圈。结构/运行时/生态三张全�
 
 ## 合规：我们把审计挂在明面上
 
-"支持 PLCopen"谁都能写，我们选择公开逐条对照：Part 1 的 43 个 FB
-**门面全量**，但条款级审计（2026-07-12）发现 B 级 I/O 齐备 22/43
-（P1-A 批次此后已补 4 项结构缺口，其余命名/形态缺口归 L2a 引脚层）、
-D-01~D-20 生命周期问题 16 项开放（D-05/D-12/D-13/D-15 已关）——全部
-登记在[条款矩阵](doc/compliance/plcopen-part1-clause-matrix.md)
-与[全量审计](doc/compliance/plcopen-conformance-audit.md)，补齐批次
-公开排期于[合规计划](doc/planning/plcopen-conformance-plan.md)。
+"支持 PLCopen"谁都能写，我们选择公开逐条对照：Part 1 的 43/43 门面
+已落地，C4 已关闭 D-01～D-20 生命周期缺口；Part 4 有 68/68 同名门面，
+Part 5 已关闭 11/11 标准 FB 与 45 B + 102 E 机读声明。正式 B/E/V 供应商
+声明、部分 Part 4 E/O 字段、真机证据与 PLCopen 认证仍未完成，逐项状态
+登记在[条款矩阵](doc/compliance/plcopen-part1-clause-matrix.md)、
+[能力对等矩阵](doc/compliance/plcopen-beckhoff-parity-matrix.md)与
+[全量审计](doc/compliance/plcopen-conformance-audit.md)。
 **不宣称尚未验证的合规**——这比一枚"兼容"徽章更值得信。
 
 ---
@@ -174,6 +180,7 @@ D-01~D-20 生命周期问题 16 项开放（D-05/D-12/D-13/D-15 已关）——�
 | 从 v0.x 迁移 | [doc/migration-v0-to-v1.md](doc/migration-v0-to-v1.md) |
 | 生产集成与运维 | [文档站生产指南](docs/index.md) · [运维手册](docs/operations.md) |
 | 版本变化 | [CHANGELOG.md](CHANGELOG.md) |
+| v0.20.0 怎么发布、还缺什么 | [发布草案与人工检查单](doc/planning/v0.20.0-release-draft.md) |
 | AI/人协作规范与工程技能 | [CLAUDE.md](CLAUDE.md) · [AGENTS.md](AGENTS.md) · `.claude/skills/` |
 
 ---

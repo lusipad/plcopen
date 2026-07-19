@@ -8,6 +8,12 @@ dependencies, no dynamic linking — just `#include` and go.
 - C++17 compiler (GCC 9+, Clang 10+, MSVC 2022+)
 - CMake 3.21+
 
+!!! note "Release candidate"
+    The commands below target `v0.20.0`. The candidate has passed all release
+    gates, but the tag does not exist until the maintainer performs the final
+    release. Before then, use a source checkout of the current branch or `main`
+    after this release PR merges.
+
 ## Option A: vcpkg (planned)
 
 An overlay port (`ports/plcopen/` with a `portfile.cmake`) is not yet

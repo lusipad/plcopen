@@ -1,5 +1,10 @@
 # Phase B 纯软件工作拆解（软件先行，真机延后）
 
+> **归档状态说明（2026-07-19）**：BS1-BS6 已全部完成，本页保留启动时
+> 基线、任务拆分和验收记录，不再承载当前版本或当前能力。活跃版本为
+> `v0.20.0` pre-1.0 发布候选；当前事实以根 [STATUS](../../STATUS.md) 与
+> [ROADMAP](../../ROADMAP.md) 为准。
+
 ## 本文档的性质
 
 | 是什么 | 不是什么 |
@@ -10,9 +15,9 @@
 
 依据：`long-term-plan.md` §3.2（B1-B9 范围与降级线）、§4.4（单人 + AI 收窄终点）、`robot-integration.md`（B9 蓝图与效果指标）、`rewrite-plan.md`（L0-L7 分层与 RT 禁令）、`ai-collaboration.md`（风险分级与门禁）。
 
-## 当前事实基线（2026-07-05 本地核对）
+## 启动时事实基线（2026-07-05，历史记录）
 
-- R0-R4 重写冲刺软件面已收口：v0.x FB 面与 pyplcopen 面全量由新核承接，全量 CTest 26 项通过，黄金回放回归上线，core 合并行覆盖 85.37%。剩余 R4.8（EOL 公告）/ R4.9（`v1.0.0-alpha` 发布）为人工项，不阻塞 Phase B 软件开发。
+- R0-R4 重写冲刺软件面当时已收口：v0.x FB 面与 pyplcopen 面全量由新核承接，全量 CTest 26 项通过，黄金回放回归上线，core 合并行覆盖 85.37%。R4.9 后续曾以 `v1.0.0-alpha` 发布，现明确归为历史实验预览；当前版本线已校准为 `v0.20.0`。
 - DoD §5.3 对照门禁 **PASS**（legacy 43ms / core 4ms = 0.093）：此前"新核规划成本 15×"系 `set_power` 每周期 abort 缺陷的误归因，已修复（见 r4-evidence-package.md 复测节）。`plan_time_optimal` 单次 ~5-10µs，满足事件驱动规划与 B9 每周期在线重解的预算。
 - 新核能力面：A9 OTG v1（零边界加速度全状态域 + 非零初始加速度）、A3 圆弧 v1、A4 公差带 blending v1、A5 前瞻 v1（含圆弧切向直通）、gear/cam/combine 同步、superimposed、组 FB 面。
 - 尚无：坐标系栈（仅 ACS）、kinematics、轨迹流接口、cam 高阶曲线、EtherCAT、真机证据。

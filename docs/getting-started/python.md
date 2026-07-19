@@ -1,17 +1,31 @@
 # Python Digital Twin
 
-Build a motion simulation in Python — zero C++ toolchain required.
+Build a motion simulation in Python. Published wheels require no C++
+toolchain; a source install requires a C++17 compiler and CMake >= 3.21.
 
 ## Install
 
+`v0.20.0` wheels and the sdist have passed the release-candidate build, but
+the package is not on PyPI yet. Until the maintainer configures Trusted
+Publishing and pushes the release tag, install from the repository:
+
 ```bash
-pip install pyplcopen
+git clone https://github.com/lusipad/plcopen.git
+cd plcopen
+pip install .
+```
+
+After `v0.20.0` is published, the normal install is:
+
+```bash
+pip install pyplcopen==0.20.0
 ```
 
 !!! note
-    Pre-built wheels are available for Windows, Linux, and macOS
-    (Python 3.10-3.13). If no wheel matches your platform, pip will build
-    from source (requires a C++17 compiler and CMake >= 3.21).
+    Release-candidate wheels passed on Windows, Linux, and macOS for
+    Python 3.10-3.13. They become publicly installable after the PyPI
+    Trusted Publisher and `v0.20.0` tag are created. If no wheel matches
+    your platform, pip builds from source.
 
 ## Single-Axis Motion (5 minutes)
 

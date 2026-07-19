@@ -9,13 +9,15 @@
 
 新核 `core/` 主体能力已落地（R0-R4 重写 + Phase B 纯软件 + 位姿闭环 +
 软件收尾批，KB-034~081）。`v1.0.0-alpha`（2026-07-06）保留为历史实验性
-预览，当前版本线已校准回 pre-1.0，**正在准备 v0.20.0 正式发布候选**。
-Part 4 管理/路径表/变换 + Part 5 回零 FB 已交付。周期质量门已复绿（2026-07-11
-远端复验：Nightly/Coverage/Wheels 全通过）。**文档站已上线**
+预览，当前版本线已校准回 pre-1.0，**v0.20.0 发布候选已完成版本、资料与
+全套门禁验证，尚未打 tag 或正式发布**。Part 4 管理/路径表/变换 + Part 5
+回零 FB 已交付。2026-07-19 候选门禁 Windows/Linux/Wheels/Nightly/
+Coverage/Mutation/Docs 全通过。**文档站已上线**
 （http://lusipad.com/plcopen/ ，Pages 2026-07-11 启用）。**executor
 双域已落地**（ADR-0007：规划域产帧、RT 域仅消费承诺轨迹，TSAN 零
-报告）。S0 纯软件面正在收口 v0.20.0 发布门禁；PyPI Trusted Publishing
-作业已备，publisher 注册与 tag 为人专属。S1-S3 另依赖硬件、用户和日历时间。**L 系列语言层已闭合（2026-07-18）**，
+报告）。S0 纯软件发布准备已收口；PyPI Trusted Publishing 作业已备，
+publisher 注册、GitHub `pypi` environment、tag 与 GitHub Release 为人专属。
+S1-S3 另依赖硬件、用户和日历时间。**L 系列语言层已闭合（2026-07-18）**，
 批次 ST-L0（KB-069）、ST-L1a（标量宇宙 + 转换矩阵机读化，KB-070）与
 ST-L2a-Bind 首批十个单轴 MC 块（KB-071）均已交付；Part 5 P5-B 六个缺失
 门面（KB-072）已补齐；Part 4 P4-B1 十九项管理/回读门面（KB-073）与
@@ -65,18 +67,18 @@ sink 门面，生产层无反向引用）。分层健康度见
 
 ## 质量门禁现状
 
-- 测试：当前 Windows Debug 配置登记 91 项 CTest，其中日常门运行 80 项非 fuzz 测试；ST L3-L7 已纳入完成态测试，不再作为未来 RED 目标排除。2026-07-19 最新远端 Linux/GCC 的 build/test、消费面、Python 与文档生成均通过。A1 [浮点数值语义合同](doc/design/core/floating-point-semantics.md)已在 Windows、Linux GCC/Clang 与 ARM64/QEMU 复验。P#2 聚合门实测 Bezier 稳速波动 0.0775%、圆弧约 7.6e-12%、cam 相位 0 拍、blending 公差利用率 100%。既有 Windows line coverage **89.20%（36968/41443）**，高于 50% 门槛；零分配守卫和延迟基准由未插桩 CTest 强制，不进入动态插桩重跑。独立 WSL 全 `core/` line **92.9%（15941/17151）**、固定生产运动栈 branch **85.0%（7111/8368）** 的既有口径保持。P#7 五页指南与运维手册已接入文档站，`mkdocs build --strict` 通过。精度总账见[商用证据](doc/compliance/commercial-gate-evidence.md)，覆盖口径见[分支覆盖基线](doc/compliance/branch-coverage-baseline.md)
+- 测试：当前 Windows Debug 配置登记 91 项 CTest，其中日常门运行 80 项非 fuzz 测试；本地全量 91/91（含 11 fuzz）通过。2026-07-19 候选 Coverage Gate 实测全 `core/` line **95.5%（43925/45983）**、固定生产运动栈 branch **85.0%（9184/10811）**、`core/st` branch **85.1%（14187/16663）**，均达到硬门。A1 [浮点数值语义合同](doc/design/core/floating-point-semantics.md)已在 Windows、Linux GCC/Clang 与 ARM64/QEMU 复验。P#2 聚合门实测 Bezier 稳速波动 0.0775%、圆弧约 7.6e-12%、cam 相位 0 拍、blending 公差利用率 100%。P#7 五页指南与运维手册已接入文档站，`mkdocs build --strict` 通过。精度总账见[商用证据](doc/compliance/commercial-gate-evidence.md)，覆盖口径见[分支覆盖基线](doc/compliance/branch-coverage-baseline.md)
 - 回放：18 语料逐周期比对；声明变更零例外流程运行中
 - 分层：2026-07-12 include 图审计 **0 违规**（L0-L4 零 PLCopen 语义引用、无循环依赖、L4 不引 L3），见 [架构审查报告](doc/design/architecture-review-2026-07.md)
 - RT：静态扫描 27 文件（含 st vm/bind 与 Feetech adapter）+ 冻结窗口分配断言；DoD §5.3 的周期耗时对比通过（新核 = 旧线 9.3%）；分配 soak 以周期等效口径关闭（25.92 亿周期零分配，2026-07-11），墙钟 72h/抖动证据归 B7 真机报告
-- CI（最新 `main` `805a363`，截至 2026-07-19）：[Windows CI](https://github.com/lusipad/plcopen/actions/runs/29688920738)、[Linux CI](https://github.com/lusipad/plcopen/actions/runs/29688920705)、[三平台 Wheels](https://github.com/lusipad/plcopen/actions/runs/29688932738) 与此前手动复验的 [Core Nightly](https://github.com/lusipad/plcopen/actions/runs/29682299843) 均通过。11 项 fuzz 已从日常 CTest/coverage 分流到原生 Nightly，Nightly fuzz 11/11 用时 5.30 秒；最新 80 项非 fuzz 基线中 ARM/QEMU 测试 4 分 28 秒。全量 82 TU `clang-tidy` 保持 8 路并行，最新 E2 10 分 43 秒，Linux 总时长 16 分 55 秒；优化前分别为 22 分 17 秒与 27 分 59 秒。此前 Mutation 18/18 与 Coverage Gate 的通过证据继续保留。`main` 仍无 branch protection/ruleset，这些是 workflow 证据而非技术强制的 required checks。触发边界见 [CI gate 矩阵](doc/compliance/ci-gates.md)
+- CI（v0.20.0 候选 `5a5cf81`，截至 2026-07-19）：[Windows CI](https://github.com/lusipad/plcopen/actions/runs/29692190516)、[Linux CI](https://github.com/lusipad/plcopen/actions/runs/29692190521)、[三平台 Wheels + sdist](https://github.com/lusipad/plcopen/actions/runs/29692204896)、[Core Nightly](https://github.com/lusipad/plcopen/actions/runs/29692206177)、[Coverage Gate](https://github.com/lusipad/plcopen/actions/runs/29692207269)、[Mutation Score Gate](https://github.com/lusipad/plcopen/actions/runs/29692208327) 与 [Documentation](https://github.com/lusipad/plcopen/actions/runs/29692209416) 全部通过；Mutation 20/20，Nightly 7/7 job。Windows 用时 13:45，Linux 16:29，Nightly 20:56。11 项 fuzz 只进入 Nightly，普通 PR 仅跑 80 项非 fuzz 测试；PR 分支不再同时触发 push 与 pull_request 两套 Windows/Linux 主门禁。升级后的 Windows/Linux/Wheels/Docs 仓库可控 Actions 无 Node 20 弃用注解。`main` 仍无 branch protection/ruleset，这些是 workflow 证据而非技术强制的 required checks。触发边界见 [CI gate 矩阵](doc/compliance/ci-gates.md)
 
 ## 进行中 / 待办
 
 | 项 | 状态 |
 |----|------|
-| **v0.20.0 发布候选** | **进行中**：版本面、CHANGELOG、C++/Python 发布元数据与 Release notes 已进入收口；待当前提交的 Windows/Linux/Wheels/Nightly/Coverage/Mutation/Docs 远端门禁复验，tag 与 PyPI publisher 注册由维护者执行 |
-| **CI 反馈时长** | **P1 已完成，A1 后最新远端复验仍稳定**：ARM/QEMU 测试 28:40 → 4:28；82 TU 全量 `clang-tidy` 22:17 → 10:43；Linux 总时长 27:59 → 16:55 |
+| **v0.20.0 发布候选** | **已验证，待人工发布**：版本面、CHANGELOG、C++/Python 发布元数据、Release notes 与七组远端门禁均已收口；剩余 PyPI Trusted Publisher、GitHub `pypi` environment、annotated tag 与 GitHub Release 均由维护者执行 |
+| **CI 反馈时长** | **P1 已完成，候选复验稳定**：普通 PR 不跑 fuzz 且不重复触发两套主门禁；Windows 13:45，Linux 16:29，重型 sanitizer/fuzz 留在 20:56 的 Nightly |
 | 抽查评审 | 2026-07-05 批次核心提交（OTG/流/kin/adapters）开放抽查，证据链在各提交信息；非合入门槛 |
 | 旧 `src/` v0.11 线 EOL 窗口 | v1.0.0-alpha 实验预览已发布（2026-07-06）；旧 `src/` 线 90 天 P0-only 窗口至 2026-10-04，不影响新核采用 v0.20.0 版本号 |
 | 硬件阶段（B5 真栈/B6 台架/B7 RT 报告） | 等台架或灯塔环境；参考 executor 双域已落地（ADR-0007，TSAN 零报告），真机测量链待硬件 |

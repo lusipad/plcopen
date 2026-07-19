@@ -20,7 +20,7 @@
 | [phase-b-software-work-breakdown.md](phase-b-software-work-breakdown.md) | Phase B 纯软件拆解（BS1-BS6 已全部完成）+ 硬件延后清单与触发条件 | 已收口，留触发清单 |
 | [robot-integration.md](robot-integration.md) | 机器人集成蓝图：形态可行性、参考架构、差距→计划映射 | 现行 |
 | [ai-collaboration.md](ai-collaboration.md) | AI-First 工程体系（战略部分；操作流程已迁入 `.claude/skills/`） | 现行 |
-| [v0.20.0-release-draft.md](v0.20.0-release-draft.md) | v0.20.0 发布定位、资产与人工检查单 | T3 草案，待人工 tag/发布 |
+| [v0.20.0-release-draft.md](v0.20.0-release-draft.md) | v0.20.0 发布定位、资产、已验证门禁与人工检查单 | 候选已验证，待 PyPI/GitHub 环境与人工 tag/发布 |
 | [v1.0.0-alpha-release-draft.md](v1.0.0-alpha-release-draft.md) | v1.0.0-alpha 实验预览发布记录 | 历史记录 |
 | [r1-rt-report-template.md](r1-rt-report-template.md) | 72h PREEMPT_RT 报告模板（B7 硬件阶段使用） | 模板，待真机 |
 | [software-excellence-plan.md](software-excellence-plan.md) | 软件极致候选清单（Y 算法/P 标准面/Z 采纳/E 证据四线） | 2026-07-19 重基线；当前起手见文末 |

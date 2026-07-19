@@ -166,6 +166,14 @@ All notable changes to this project will be documented in this file.
   预览，不再用 1.0 版本号暗示 ABI、硬件验证、PLCopen 认证或商用成熟度；
   CMake、Python、Conan 与 vcpkg 元数据统一为 0.20.0。
 
+### For contributors
+
+- 普通 PR 的 Windows/Linux 主门禁不再因 feature-branch `push` 与
+  `pull_request` 重复运行；11 项重型 fuzz 保留在 Core Nightly，日常门只跑
+  80 项非 fuzz 测试。
+- Wheels 与 Docs 工作流升级到受支持的 Actions 运行时，发布候选的
+  Windows/Linux/Wheels/Docs 运行中不再产生 Node 20 弃用注解。
+
 ## [1.0.0-alpha] - 2026-07-06
 
 ### Added

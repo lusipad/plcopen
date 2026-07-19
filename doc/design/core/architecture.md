@@ -27,35 +27,35 @@
         OUTER RING -- two parallel pure-sink consumer facades
         (audited: no production layer includes them back)
 +----------------------------------+   +----------------------------------+
-| st  (6355)  IEC 61131-3 ST layer |   | L7 adapters  (353)               |
+| st  IEC 61131-3 ST layer         |   | L7 adapters                      |
 | compiler front end + bytecode vm |   | Servo narrow iface (ADR-0004),   |
-| ST-L0+L1a shipped (KB-069/070);  |   | CiA402 FSM, CSP/CSV/CST modes;   |
-| bytecode anchor-hash gate in CI  |   | Feetech STS: S2 protocol shipped |
+| L0-L7 + L∀ closed; 134 FB /      |   | CiA402 FSM, CSP/CSV/CST modes;   |
+| 1476 pins; completion gates in CI|   | Feetech STS: S2 protocol shipped |
 +----------------+-----------------+   +----------------+-----------------+
                  |                                      |
                  | fb/basic.h + rt/error.h              | axis/state.h
                  | (exactly these two)                  | + rt/error.h
                  v                                      | (bypasses L6)
 +------------------------------------+                  |
-| L6 fb    4396   75x Fb* facades    |                  |
-| Execute/Done/Busy/CommandAborted   |                  |
+| L6 fb    PLCopen-style facades     |                  |
+| Part 1: 43, Part 4: 68, Part 5: 11 |                  |
 +----------------+-------------------+                  |
                  |             +------------------------+
                  v             v
 +---------------------------------------------+
-| L5 axis   6664  axis / group state machines |
-| group.h 4245 + state.h 2158                 +--+
+| L5 axis   axis / group state machines       |
+| coordinate, kinematics, stream integration  +--+
 +---------------------------------------------+  |
-| L4 exec    529  cyclic sampling, gear / cam |  |  SUPPORT LIBS (pocket):
+| L4 exec    cyclic sampling, gear / cam      |  |  SUPPORT LIBS (pocket):
 +---------------------------------------------+  |  consumed by L5 only;
-| L3 plan   1217  lookahead scan + blending   |  |  deps point inward only
+| L3 plan   lookahead scan + blending         |  |  deps point inward only
 +---------------------------------------------+  |
-| L2 geom   1049  line / arc / spline, frames |  |  +------------------------+
-+---------------------------------------------+  +->| kin      731  FK / IK  |
-| L1 otg    1612  jerk-limited OTG solver     |  |  | gantry / SCARA / 6R    |
+| L2 geom   line / arc / spline, frames       |  |  +------------------------+
++---------------------------------------------+  +->| kin           FK / IK  |
+| L1 otg    jerk-limited OTG solver           |  |  | gantry / SCARA / 6R    |
 +---------------------------------------------+  |  | deps: geom, rt         |
-| L0 rt      409  cycle time, static vectors, |  |  +------------------------+
-|                 SPSC rings, error codes     |  +->| stream  1216  streaming|
+| L0 rt      cycle time, static vectors,      |  |  +------------------------+
+|                 SPSC rings, error codes     |  +->| stream        streaming|
 +---------------------------------------------+     | OTG-filtered input (B9)|
                                                     | deps: otg, rt          |
                                                     +------------------------+
@@ -183,21 +183,21 @@
 
 ---
 
-## 分层职责表（行数 = 2026-07-12 实测 `wc -l`，含同日 P1-A3/A4 提交；本表为行数的权威口径）
+## 分层职责表（2026-07-19；行数不含 `core/st/generated/`）
 
 | 层/模块 | 目录 | 行数 | 一句话职责 | 关键 KB / 状态 |
 |---------|------|------|-----------|----------------|
-| L0 rt | [`core/rt`](../../../core/rt/README.md) | 409 | 整型周期时间域、定长容器、SPSC 环、错误码——RT 纪律的地基 | — |
-| L1 otg | [`core/otg`](../../../core/otg/README.md) | 1612 | 单自由度 jerk-limited 时间最优 / 定时（solve_fixed_time）求解器，纯函数 | KB-026/034；Y2/Y4 已交付 |
+| L0 rt | [`core/rt`](../../../core/rt/README.md) | 412 | 整型周期时间域、定长容器、SPSC 环、错误码——RT 纪律的地基 | — |
+| L1 otg | [`core/otg`](../../../core/otg/README.md) | 1623 | 单自由度 jerk-limited 时间最优 / 定时（solve_fixed_time）求解器，纯函数 | KB-026/034；Y2/Y4 已交付 |
 | L2 geom | [`core/geom`](../../../core/geom/README.md) | 1049 | 直线/三点圆弧/Bezier 段几何、刚体帧（含完整 RPY 原语）、弧长参数化 | KB-030/036 |
 | L3 plan | [`core/plan`](../../../core/plan/README.md) | 1217 | 路径缓冲、前瞻扫描（jerk 精确可达）、blending 决策；TOPP 标量路径律影子（topp.h / topp_jerk.h / topp_executor.h） | KB-031/032/033 |
 | L4 exec | [`core/exec`](../../../core/exec/README.md) | 529 | 周期采样、gear/cam 同步（C0 + C2 样条重建、在线换表）、cam 运动规律生成器、叠加 | KB-038/046 |
-| L5 axis | [`core/axis`](../../../core/axis/README.md) | 6664 | 单轴/组状态机、命令生命周期、坐标系栈、kinematics 级联、双空间限速、流会话、姿态编程面、笛卡尔管线、回读面 | KB-035~037/041~044/047~050 |
-| L6 fb | [`core/fb`](../../../core/fb/README.md) | 4396 | 75 个 `Fb*` PLCopen 门面（12 个头），Execute/Done/Busy/CommandAborted 契约 | 覆盖口径见下方诚实声明 |
-| L7 adapters | [`core/adapters`](../../../core/adapters/README.md) | 766 | Servo 窄接口 + 桥接（ADR-0004）、ServoSim、CiA402 状态机、CSP/CSV/CST 模式管理、Feetech STS 协议 0 总线/Servo/Sim；真机仍受 4.8 门控 | KB-040/074 |
+| L5 axis | [`core/axis`](../../../core/axis/README.md) | 11912 | 单轴/组状态机、命令生命周期、坐标系栈、kinematics 级联、双空间限速、流会话、姿态编程面、笛卡尔管线、回读面 | KB-035~037/041~044/047~050 |
+| L6 fb | [`core/fb`](../../../core/fb/README.md) | 8366 | Part 1/2 43、Part 4 68、Part 5 11 个标准门面与基础 FB，统一 Execute/Done/Busy/CommandAborted 契约 | 覆盖口径见下方诚实声明 |
+| L7 adapters | [`core/adapters`](../../../core/adapters/README.md) | 896 | Servo 窄接口 + 桥接（ADR-0004）、ServoSim、CiA402 状态机、CSP/CSV/CST 模式管理、Feetech STS 协议 0 总线/Servo/Sim；真机仍受 4.8 门控 | KB-040/074 |
 | 支撑库 kin | [`core/kin`](../../../core/kin/README.md) | 731 | FK/IK：龙门/SCARA/6R + 腕奇异带、位姿原语；依赖 geom/rt，仅被 L5 消费 | KB-039/041/045 |
-| 支撑库 stream | [`core/stream`](../../../core/stream/README.md) | 1216 | 轨迹流会话 + OTG 在线滤波（B9）；T24 快路径（默认关）；依赖 otg/rt，仅被 L5 消费 | KB-035/037/064 |
-| st 语言层（外圈） | [`core/st`](../../../core/st/README.md) | 6355 | IEC 61131-3 ST 编译前端 + 字节码 VM（15 个头）；纯 sink，仅消费 `fb/basic.h` + `rt/error.h` | KB-069/070（ST-L0+ST-L1a 已交付）；字节码锚点哈希入门禁 |
+| 支撑库 stream | [`core/stream`](../../../core/stream/README.md) | 1229 | 轨迹流会话 + OTG 在线滤波（B9）；T24 快路径（默认关）；依赖 otg/rt，仅被 L5 消费 | KB-035/037/064 |
+| st 语言层（外圈） | [`core/st`](../../../core/st/README.md) | 24647 | IEC 61131-3 ST 编译前端 + 字节码 VM；L0-L7 与 L∀ 闭合，134 FB / 1476 pins；纯 sink，仅消费 `fb/basic.h` + `rt/error.h` | KB-069~071；完成态集合与锚点门禁已接入 CI |
 
 **L6 覆盖诚实口径**（对外一律用此口径）：Part 1 门面 43/43，但
 B 级 I/O 齐备 22/43 是 2026-07-12 的审计时点 C++ 字段面；P1-A 与 C4
@@ -214,9 +214,9 @@ Part 5 C5 已完成 11/11 标准门面、45 B + 102 E 机读声明与可软件�
 [Part 5/6 审计](../../compliance/plcopen-part5-part6-audit.md)）。
 
 **体量巨石**（处置口径见
-[体检报告 §2](../architecture-review-2026-07.md)）：`axis/group.h`
-4245 行为重构队列首位；`axis/state.h` 2158 为观察项；`st/sema.h`
-1484 已设拆分预算；`otg/time_optimal.h` 1332 不主动动。
+[体检报告 §2](../architecture-review-2026-07.md)）：截至 2026-07-19，
+`axis/group.h` 7744 行、`axis/state.h` 3907 行、`st/sema.h` 3584 行，均应在
+后续变更时控制增量；`otg/time_optimal.h` 1332 行，不为行数主动重构。
 
 **已知边界**：KB-051 的 linear 组级 aborting 接管速度连续性已由 Y7
 修复；circular/笛卡尔接管扩展仍开放（见

@@ -9,22 +9,29 @@ sprint 记录）在 [doc/archive/roadmap-history.md](doc/archive/roadmap-history
 
 优先级只在本节声明一次，下列各节只承载明细，不再各自宣称"当前/最高"：
 
-1. **P0 v0.20.0 发布候选（进行中）**：把过早的 1.0 版本信号校准回
-   pre-1.0，统一 CMake/Python/Conan/vcpkg 版本面，更新 Release notes 与
-   GitHub Actions 运行时，并复验 Windows/Linux/Wheels/Nightly/Coverage/
-   Mutation/Docs。交付形态为 GitHub source/header-only Release + PyPI
-   三平台 wheels/sdist；tag 与 PyPI publisher 注册仍是人专属动作。
+1. **P0 v0.20.0 发布候选（已验证，待人工发布）**：版本信号已校准回
+   pre-1.0，CMake/Python/Conan/vcpkg 版本面与 Release notes 已同步；
+   [Windows](https://github.com/lusipad/plcopen/actions/runs/29692190516)、
+   [Linux](https://github.com/lusipad/plcopen/actions/runs/29692190521)、
+   [Wheels](https://github.com/lusipad/plcopen/actions/runs/29692204896)、
+   [Nightly](https://github.com/lusipad/plcopen/actions/runs/29692206177)、
+   [Coverage](https://github.com/lusipad/plcopen/actions/runs/29692207269)、
+   [Mutation](https://github.com/lusipad/plcopen/actions/runs/29692208327) 与
+   [Docs](https://github.com/lusipad/plcopen/actions/runs/29692209416) 全绿。
+   交付形态为 GitHub source/header-only Release + PyPI 三平台 wheels/sdist；
+   剩余 PyPI publisher、GitHub `pypi` environment、tag 与 Release 为人专属。
 2. **P0 主线复绿（已完成）**：`17932de` 已修复测试辅助函数无谓按值复制
    `st::Program`；[Windows CI](https://github.com/lusipad/plcopen/actions/runs/29680604789)
    与 [Linux CI](https://github.com/lusipad/plcopen/actions/runs/29680604785) 均通过，
    包括 Linux/Clang 81 文件 `clang-tidy`、GCC 与 ARM64。
 3. **P1 CI 时长恢复（已完成）**：`0195739` 已把 11 项 fuzz CTest 统一移到原生
-   Nightly，日常门只跑 79 项非 fuzz 测试；[Linux CI](https://github.com/lusipad/plcopen/actions/runs/29682295508)
+   Nightly，日常门当前只跑 80 项非 fuzz 测试；[Linux CI](https://github.com/lusipad/plcopen/actions/runs/29682295508)
    中 ARM/QEMU 测试由 28 分 40 秒降至 4 分 57 秒，[Core Nightly](https://github.com/lusipad/plcopen/actions/runs/29682299843)
    11/11 fuzz 仅用 5.30 秒并全绿。`7336379` 在不减少 81 个 TU 或检查项的
    前提下把全量 `clang-tidy` 改为 8 路并行；[远端复验](https://github.com/lusipad/plcopen/actions/runs/29687354905)
    E2 由 22 分 17 秒降至 10 分 31 秒，Linux 总时长由 27 分 59 秒降至
-   16 分 46 秒。
+   16 分 46 秒；v0.20.0 候选复验 Linux 为 16 分 29 秒。PR 分支现仅由
+   `pull_request` 触发，不再与 feature-branch `push` 重复运行主门禁。
 4. **A1 浮点数值语义合同（已完成）**：`805a363` 已向 header-only consumer
    传递严格浮点选项，并以[数值语义合同](doc/design/core/floating-point-semantics.md)
    和跨平台运行值测试钉死 FMA、舍入、特殊值与超越函数容差；
@@ -63,7 +70,7 @@ soak 周期等效）；剩余仅人专属动作（PyPI publisher 注册 + 发布
 | 5a | P-Part4 剩余 FB | 管理组矩阵 + 路径表/变换 + P4-B2/P4-B3/C3 已实现 | ✅ Part 4 v2.0 **68/68 同名门面齐全**（KB-078）；旧 Position 回读包装已在 C6 删除，接口/语义边界逐项登记，见 [完整条款审计](doc/compliance/plcopen-part4-clause-audit.md) |
 | 5b | P-Part5 回零规程 | MC_Step* 标准回零步 FB 面（数字输入通道模拟验收） | ✅ **C5 软件合同关闭**（KB-080）：11/11 标准 FB、45 B + 102 E 机读声明及软件语义闭合；硬件/认证边界不冒充 |
 | 4b | **信号通道并行项 + Z 系列全量**（拷问后拉入） | T1 pip wheel + Z3 文档站 + Z2 单位层 + Z4 包管理 + Z5 诊断 | **Z3 文档站已上线**（http://lusipad.com/plcopen/ ，Pages 2026-07-11 启用）；Wheels 三平台远端绿 + PyPI Trusted Publishing 作业已备——剩余人专属：PyPI publisher 注册 + 发布 tag |
-| 6 | E 系列证据 | ARM64 CI + clang-tidy 零 P0 + 变异分数门 | **已复绿（2026-07-11 远端复验）**：Mutation 18/18、Coverage Gate（gcovr 90% 门）、Core Nightly 三作业全部通过 |
+| 6 | E 系列证据 | ARM64 CI + clang-tidy 零 P0 + 变异分数门 | **已复绿（2026-07-19 v0.20.0 候选复验）**：Mutation 20/20、Coverage 全核 line 95.5% / 运动栈 branch 85.0% / ST branch 85.1%、Core Nightly 7/7 job 通过 |
 | 7 | 台架采购决策 | 下单或共建协议（S1 之门，与本里程碑并行） | **人工** |
 | 8 | 72h soak 回写 | 保存完整结束日志并回写 DoD 表 | **周期等效口径关闭（2026-07-11）**：07-06 墙钟版证据链断裂如实登记；25.92 亿冻结周期（72h@1kHz ×10）Release 零分配 PASS 回写 DoD；墙钟 72h 归 B7。口径调整开放维护者复核 |
 | 9 | Part 4 原文核对 | 坐标矩阵 3 项线下核实 | ✅ **已完成并升级为 🟢 AI 全自主**（2026-07-12）：规格 PDF 公开免费、`pdftotext` 可直读——**全面原文审计已出**（[plcopen-conformance-audit](doc/compliance/plcopen-conformance-audit.md)），推翻两条覆盖率声明 + 一条认证假设 |
@@ -176,4 +183,4 @@ VS Code 扩展与 D2 WASM Playground，挂在 L 系列拆解的触发表。）
 
 ---
 
-*最后更新：2026-07-19（L 系列闭合归档 + 当前队列重基线 + 最新主线门禁状态）*
+*最后更新：2026-07-19（v0.20.0 候选七组门禁收口 + CI 触发边界同步）*
