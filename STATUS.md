@@ -64,17 +64,17 @@ sink 门面，生产层无反向引用）。分层健康度见
 
 ## 质量门禁现状
 
-- 测试：当前 Windows Debug 配置登记 90 项 CTest；ST L3-L7 已纳入完成态测试，不再作为未来 RED 目标排除。2026-07-19 最新远端 Linux/GCC 的 build/test、消费面、Python 与文档生成均通过。P#2 聚合门实测 Bezier 稳速波动 0.0775%、圆弧约 7.6e-12%、cam 相位 0 拍、blending 公差利用率 100%。既有 Windows line coverage **89.20%（36968/41443）**，高于 50% 门槛；零分配守卫和延迟基准由未插桩 CTest 强制，不进入动态插桩重跑。独立 WSL 全 `core/` line **92.9%（15941/17151）**、固定生产运动栈 branch **85.0%（7111/8368）** 的既有口径保持。P#7 五页指南与运维手册已接入文档站，`mkdocs build --strict` 通过。精度总账见[商用证据](doc/compliance/commercial-gate-evidence.md)，覆盖口径见[分支覆盖基线](doc/compliance/branch-coverage-baseline.md)
+- 测试：当前 Windows Debug 配置登记 91 项 CTest，其中日常门运行 80 项非 fuzz 测试；ST L3-L7 已纳入完成态测试，不再作为未来 RED 目标排除。2026-07-19 最新远端 Linux/GCC 的 build/test、消费面、Python 与文档生成均通过。A1 [浮点数值语义合同](doc/design/core/floating-point-semantics.md)已在 Windows、Linux GCC/Clang 与 ARM64/QEMU 复验。P#2 聚合门实测 Bezier 稳速波动 0.0775%、圆弧约 7.6e-12%、cam 相位 0 拍、blending 公差利用率 100%。既有 Windows line coverage **89.20%（36968/41443）**，高于 50% 门槛；零分配守卫和延迟基准由未插桩 CTest 强制，不进入动态插桩重跑。独立 WSL 全 `core/` line **92.9%（15941/17151）**、固定生产运动栈 branch **85.0%（7111/8368）** 的既有口径保持。P#7 五页指南与运维手册已接入文档站，`mkdocs build --strict` 通过。精度总账见[商用证据](doc/compliance/commercial-gate-evidence.md)，覆盖口径见[分支覆盖基线](doc/compliance/branch-coverage-baseline.md)
 - 回放：18 语料逐周期比对；声明变更零例外流程运行中
 - 分层：2026-07-12 include 图审计 **0 违规**（L0-L4 零 PLCopen 语义引用、无循环依赖、L4 不引 L3），见 [架构审查报告](doc/design/architecture-review-2026-07.md)
 - RT：静态扫描 27 文件（含 st vm/bind 与 Feetech adapter）+ 冻结窗口分配断言；DoD §5.3 的周期耗时对比通过（新核 = 旧线 9.3%）；分配 soak 以周期等效口径关闭（25.92 亿周期零分配，2026-07-11），墙钟 72h/抖动证据归 B7 真机报告
-- CI（最新 `main` `7336379`，截至 2026-07-19）：[Windows CI](https://github.com/lusipad/plcopen/actions/runs/29687354884)、[Linux CI](https://github.com/lusipad/plcopen/actions/runs/29687354905) 与手动复验的 [Core Nightly](https://github.com/lusipad/plcopen/actions/runs/29682299843) 均通过。11 项 fuzz 已从日常 CTest/coverage 分流到原生 Nightly：ARM/QEMU 测试由 28 分 40 秒降至 4 分 57 秒，Nightly fuzz 11/11 用时 5.30 秒；全量 81 TU `clang-tidy` 改为 8 路并行后由 22 分 17 秒降至 10 分 31 秒，Linux 总时长由 27 分 59 秒降至 16 分 46 秒。此前 Mutation 18/18、Coverage Gate 与 Wheels 的通过证据继续保留。`main` 仍无 branch protection/ruleset，这些是 workflow 证据而非技术强制的 required checks。触发边界见 [CI gate 矩阵](doc/compliance/ci-gates.md)
+- CI（最新 `main` `805a363`，截至 2026-07-19）：[Windows CI](https://github.com/lusipad/plcopen/actions/runs/29688920738)、[Linux CI](https://github.com/lusipad/plcopen/actions/runs/29688920705)、[三平台 Wheels](https://github.com/lusipad/plcopen/actions/runs/29688932738) 与此前手动复验的 [Core Nightly](https://github.com/lusipad/plcopen/actions/runs/29682299843) 均通过。11 项 fuzz 已从日常 CTest/coverage 分流到原生 Nightly，Nightly fuzz 11/11 用时 5.30 秒；最新 80 项非 fuzz 基线中 ARM/QEMU 测试 4 分 28 秒。全量 82 TU `clang-tidy` 保持 8 路并行，最新 E2 10 分 43 秒，Linux 总时长 16 分 55 秒；优化前分别为 22 分 17 秒与 27 分 59 秒。此前 Mutation 18/18 与 Coverage Gate 的通过证据继续保留。`main` 仍无 branch protection/ruleset，这些是 workflow 证据而非技术强制的 required checks。触发边界见 [CI gate 矩阵](doc/compliance/ci-gates.md)
 
 ## 进行中 / 待办
 
 | 项 | 状态 |
 |----|------|
-| **CI 反馈时长** | **P1 已完成并远端复验**：ARM/QEMU 测试 28:40 → 4:57；全量 `clang-tidy` 22:17 → 10:31；Linux 总时长 27:59 → 16:46 |
+| **CI 反馈时长** | **P1 已完成，A1 后最新远端复验仍稳定**：ARM/QEMU 测试 28:40 → 4:28；82 TU 全量 `clang-tidy` 22:17 → 10:43；Linux 总时长 27:59 → 16:55 |
 | 抽查评审 | 2026-07-05 批次核心提交（OTG/流/kin/adapters）开放抽查，证据链在各提交信息；非合入门槛 |
 | v0.x EOL 窗口 | v1.0.0-alpha 已发布（2026-07-06）；旧线 90 天 P0-only 窗口至 2026-10-04 |
 | 硬件阶段（B5 真栈/B6 台架/B7 RT 报告） | 等台架或灯塔环境；参考 executor 双域已落地（ADR-0007，TSAN 零报告），真机测量链待硬件 |
@@ -82,7 +82,8 @@ sink 门面，生产层无反向引用）。分层健康度见
 | **KB-051 组接管速度断崖** | **已修复（Y7，2026-07-08）**：linear 组级 aborting 接管速度连续；circular/笛卡尔接管扩展仍按 KB-051 适用范围声明另批 |
 | Part 4 管理/路径表/变换 FB | **已交付**（GroupHome/MoveDirect/GroupSetOverride/GroupInterrupt·Continue + PathSelect/MovePath/SetKinTransform/ReadCartesianTransform，验收测试已接入 CTest） |
 | Part 5 回零 FB | **C5 软件合同已关闭（KB-080）**：11/11 标准 FB、45 B + 102 E 机读声明与软件语义均有测试；真机堵转、编码器、多圈、时间戳、正式批准仍是独立边界 |
-| 下一软件批 A1 | 浮点数值语义合同：钉死 FMA/舍入口径，建立跨平台运行值容差与禁止项；主线复绿后启动 |
+| A1 浮点数值语义合同 | **已完成（`805a363`）**：严格编译选项传递、运行环境禁止项、跨平台基本运算与超越函数容差均已合同化并远端复验 |
+| 下一软件批 A2 | T30 WCET 度量工具：每指令成本表、静态无环路径长度与调用深度上界 |
 | Y2 epsilon 政策 | **已声明化**（KB-057：段时长钳零 + 复验，整数量化天然覆盖） |
 | Y2 Ruckig 对照 | **人工门控**（ADR-0003：需先审查上游许可证，不进 R1） |
 

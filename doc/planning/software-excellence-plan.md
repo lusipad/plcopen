@@ -230,8 +230,10 @@ LD/FBD/SFC 图形画布、HMI、TC6-XML 工程交换、cam 表图形编辑器。
 P0 已由 `17932de` 完成，Windows/Linux 远端全绿。**P1 CI 时长恢复**已由
 `0195739` 将 11 项 fuzz 分流到原生 Nightly，再由 `7336379` 将全量 81 TU
 `clang-tidy` 改为 8 路并行并远端复验：ARM/QEMU 测试 28:40 → 4:57，
-E2 22:17 → 10:31，Linux 总时长 27:59 → 16:46。下一步执行
-**A1 浮点数值语义合同 → A2 T30 WCET 度量 → G1 治理文档**。ADR-0006
+E2 22:17 → 10:31，Linux 总时长 27:59 → 16:46。`805a363` 随后完成
+[A1 浮点数值语义合同](../design/core/floating-point-semantics.md)，严格选项、
+运行值测试及 Windows/Linux/ARM64/三平台 Wheels 证据均已闭合。下一步执行
+**A2 T30 WCET 度量 → G1 治理文档**。ADR-0006
 许可证核验与台架决策完成后，F 轨
 F1→F2→F3 插队；其余 Y/D/E/R 候选仍由 ROADMAP 复盘定序。
 

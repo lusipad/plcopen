@@ -3,14 +3,14 @@
 本页记录 GitHub Actions gate 的触发条件和证明对象，避免把"能力存在"
 误写成"每个 PR 必跑"。`STATUS.md` 只引用本矩阵，不重复展开长句。
 
-> 远端证据截至 2026-07-19（基线 `7336379`）：Windows/Linux 主线、
-> Coverage、Mutation、Core Nightly、Wheels 全部通过；
+> 远端证据截至 2026-07-19：最新主线基线 `805a363` 的 Windows/Linux 与
+> Wheels 通过；最近的 Coverage、Mutation、Core Nightly 证据也均通过；
 > Pages 已启用且站点 200（http://lusipad.com/plcopen/ ）。
 
 | Gate | Workflow | 触发 | 证明对象 | Release blocking |
 |------|----------|------|----------|------------------|
-| Windows 主线 | `.github/workflows/windows-ci.yml` | `push`、`pull_request`、`workflow_dispatch` | RT scan、Part 1/2 与 Part 5 I/O matrix、replay fixture、79 项非 fuzz CTest（含 Part 5 C5、ST conformance 锚点及转换矩阵三方比对）、排除 fuzz 可执行文件的 Windows coverage artifact（延迟门基准豁免插桩重跑，预算门仍在 CTest 强制）、installed/fetchcontent consumer | 是 |
-| Linux 主线 | `.github/workflows/linux-ci.yml` | `push`、`pull_request`、`workflow_dispatch` | gcc/clang Release 构建、RT scan、Part 1/2 matrix、replay fixture、79 项非 fuzz CTest（含 ST conformance 锚点、两个字节码锚点哈希及转换矩阵跨平台复验）、benchmark baseline、81 TU 全量 clang-tidy gate（8 worker 并行，不减少检查项）、ARM64/QEMU 非 fuzz 测试（matrix_check 经 CMAKE_CROSSCOMPILING_EMULATOR 执行）、Python binding、consumer smoke、API docs 生成 | 是 |
+| Windows 主线 | `.github/workflows/windows-ci.yml` | `push`、`pull_request`、`workflow_dispatch` | RT scan、Part 1/2 与 Part 5 I/O matrix、replay fixture、80 项非 fuzz CTest（含 Part 5 C5、ST conformance 锚点、转换矩阵三方比对与 [A1 数值语义合同](../design/core/floating-point-semantics.md)）、排除 fuzz 可执行文件的 Windows coverage artifact（延迟门基准豁免插桩重跑，预算门仍在 CTest 强制）、installed/fetchcontent consumer | 是 |
+| Linux 主线 | `.github/workflows/linux-ci.yml` | `push`、`pull_request`、`workflow_dispatch` | gcc/clang Release 构建、RT scan、Part 1/2 matrix、replay fixture、80 项非 fuzz CTest（含 ST conformance 锚点、两个字节码锚点哈希、转换矩阵与 A1 数值语义跨平台复验）、benchmark baseline、82 TU 全量 clang-tidy gate（8 worker 并行，不减少检查项）、ARM64/QEMU 非 fuzz 测试（matrix_check 经 CMAKE_CROSSCOMPILING_EMULATOR 执行）、Python binding、consumer smoke、API docs 生成 | 是 |
 | Coverage Gate | `.github/workflows/coverage.yml` | 每周一 `03:47 UTC`、`workflow_dispatch` | `cmake/coverage_gate.cmake` + gcovr 8.6；全 `core/` line >= 90%、生产运动栈 `rt/otg/geom/plan/exec/axis/fb/kin/stream` branch >= 85%、`core/st` 独立 branch >= 85% 均为硬门；上传三份 JSON summary，口径与首测见 `branch-coverage-baseline.md` | 周期质量门；发布前按需手动确认 |
 | Mutation Score Gate | `.github/workflows/mutation-score.yml` | 每周一 `03:17 UTC`、`workflow_dispatch` | `cmake/mutation_score_gate.cmake`，20 项登记 mutation（含 ST 编译成功契约与 VM 指令预算边界），总 kill score >= 70% | 周期质量门；发布前按需手动确认 |
 | Core Nightly | `.github/workflows/core-nightly.yml` | 每日 `02:23 UTC`、`workflow_dispatch` | **七个独立 job**：11 项统一 fuzz smoke、1,000,000 轮 deterministic OTG fuzz、A2 allocation 50,000,000-cycle soak、1,000,000 轮 time-optimal OTG fuzz、executor/ST L3/L5 TSAN、ST 五模式各 100,000 输入 ASan/UBSan、ST L7 独立 TSAN；单项失败不跳过其余项 | 周期质量门；不替代主线 CI |

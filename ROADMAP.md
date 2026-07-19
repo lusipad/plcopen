@@ -20,11 +20,17 @@ sprint 记录）在 [doc/archive/roadmap-history.md](doc/archive/roadmap-history
    前提下把全量 `clang-tidy` 改为 8 路并行；[远端复验](https://github.com/lusipad/plcopen/actions/runs/29687354905)
    E2 由 22 分 17 秒降至 10 分 31 秒，Linux 总时长由 27 分 59 秒降至
    16 分 46 秒。
-3. **无外部前置的软件队列**：A1 浮点数值语义合同 → A2 T30 WCET 度量
-   → G1 治理文档；当前默认从 A1 开始。
-4. **F 轨 EtherCAT**：仍是最大的剩余软件块和商用指标 #1/#4 的上游；
+3. **A1 浮点数值语义合同（已完成）**：`805a363` 已向 header-only consumer
+   传递严格浮点选项，并以[数值语义合同](doc/design/core/floating-point-semantics.md)
+   和跨平台运行值测试钉死 FMA、舍入、特殊值与超越函数容差；
+   [Windows CI](https://github.com/lusipad/plcopen/actions/runs/29688920738)、
+   [Linux CI](https://github.com/lusipad/plcopen/actions/runs/29688920705) 与
+   [三平台 Wheels](https://github.com/lusipad/plcopen/actions/runs/29688932738) 复验通过。
+4. **无外部前置的软件队列**：A2 T30 WCET 度量 → G1 治理文档；当前默认
+   从 A2 开始。
+5. **F 轨 EtherCAT**：仍是最大的剩余软件块和商用指标 #1/#4 的上游；
    ADR-0006 许可证人工核验与台架决策完成后立即插队，按 F1→F2→F3 推进。
-5. **完成面守护**：PLCopen/Beckhoff C0→C6 与 ST L0→L7、L∀ 已完成；只
+6. **完成面守护**：PLCopen/Beckhoff C0→C6 与 ST L0→L7、L∀ 已完成；只
    维护能力矩阵、特性表和限制注册表不漂移，不扩张到 IDE、Safety、CNC。
    商用门板已关闭的软件面保持不回退，台架、部署、认证和日历证据不以
    软件模拟冒充。
@@ -109,7 +115,7 @@ native adapter，feature-set `pending=0`。批次证据与范围外项见
 | **P#2** | 精度证据套件：Bezier/圆弧稳速波动 <0.1% + cam 相位 <1 周期 + blending 汇总断言 + 八项证据总账 | **完成（2026-07-15）**：0.0775% / 约 7.6e-12% / 0 拍 / 公差利用率 100%；KB-075 声明升级 65 点弧长表 | 指标 #2 软件面关闭；总账见商用证据页 |
 | **P#7** | 文档四件套 + 运维手册（全 FB 参考/实时集成/调优/TwinCAT·CODESYS 迁移/故障处置） | **完成（2026-07-15）**：5 页指南接入文档站，严格构建通过 | 指标 #7 软件文档主体关闭；现场/认证材料仍按总账管理 |
 | G1 | 治理文档批：CONTRIBUTING + GOVERNANCE（决策/继任声明）+ SECURITY.md（含 ST 不可信输入面威胁模型与资源上限声明）；GitHub org 迁移列人专属 | 0.2 L0 | 采纳信任面（bus factor 声明化） |
-| A1 | 浮点数值语义合同：编译旗标钉死（FMA 收缩/舍入）+ 跨平台运行值容差/禁止项 + 双平台运行值对照测试 | 0.3 L0 | "确定性 VM"从字节码级升为数值级诚实 |
+| A1 | 浮点数值语义合同：编译旗标钉死（FMA 收缩/舍入）+ 跨平台运行值容差/禁止项 + 双平台运行值对照测试 | 0.3 L0 | **完成（2026-07-19，`805a363`）**：严格选项传递到 consumer，Windows/Linux/ARM64 数值测试与三平台 Wheels 通过；[合同](doc/design/core/floating-point-semantics.md) |
 | A2 | T30 WCET 度量工具：每指令成本表 + 静态无环路径长度 + 调用深度上界（compile 产物附带） | 0.2 L0 | T30 既有承诺兑现 |
 
 **2026-07-12 生态调研追加裁决**：竞品 Intel RTmotion 确认存在（Apache

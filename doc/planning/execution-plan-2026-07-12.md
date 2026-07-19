@@ -94,8 +94,10 @@
   原生 Nightly 并远端复验，ARM/QEMU 测试 28:40 → 4:57；`7336379` 在保持
   81 TU 与完整检查项的前提下将 `clang-tidy` 改为 8 路并行，远端 E2
   22:17 → 10:31，Linux 总时长 27:59 → 16:46。
-- **后续无外部前置队列**：A1 浮点数值语义合同（0.3 L0）→ A2 T30 WCET
-  度量工具（0.2 L0）→ G1 治理文档批（0.2 L0）。
+- **A1（已完成）**：`805a363` 交付[浮点数值语义合同](../design/core/floating-point-semantics.md)、
+  consumer 严格编译选项与跨平台运行值测试；Windows/Linux/ARM64 与三平台
+  Wheels 远端复验通过。
+- **后续无外部前置队列**：A2 T30 WCET 度量工具（0.2 L0）→ G1 治理文档批（0.2 L0）。
 - **条件插队**：ADR-0006 许可证核验与台架决策完成后，F1→F2→F3。
 - Y/P/Z/E 四线候选见[软件极致计划](software-excellence-plan.md)
 - OOP 裁决、OPC UA 触发条件修正——[合规计划人专属项](plcopen-conformance-plan.md)，随复盘
