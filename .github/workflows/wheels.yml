@@ -18,7 +18,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - uses: pypa/cibuildwheel@v2.22
+      - uses: pypa/cibuildwheel@v4.1.0
         env:
           CIBW_BUILD: "cp310-* cp311-* cp312-* cp313-*"
           CIBW_SKIP: "*-musllinux_*"
