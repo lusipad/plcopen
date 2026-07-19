@@ -1023,6 +1023,185 @@ int check_joint_group()
     return 0;
 }
 
+// Full dropout ladder: tracking → extrapolation → stopping → stopped, then
+// recovery to tracking. Exercises Mode transitions and the extrapolation
+// velocity decay.
+int check_full_dropout_ladder()
+{
+    const std::int64_t timeout = 10;
+    const std::int64_t extrapolation = 20;
+    stream::StreamFilterConfig config = test_config(timeout, extrapolation);
+
+    stream::StreamFilter1D filter;
+    if(filter.configure(config) != rt::ErrorCode::ok ||
+       filter.reset({0.0, 0.0, 0.0}) != rt::ErrorCode::ok) {
+        return fail("dropout_ladder setup");
+    }
+
+    // Push initial targets to get into tracking with nonzero velocity.
+    if(filter.push_target(position_target(0.0, 1)) != rt::ErrorCode::ok ||
+       filter.push_target(velocity_target(0.1, 0.01, 11)) != rt::ErrorCode::ok) {
+        return fail("dropout_ladder: initial targets");
+    }
+
+    // Cycle until we're tracking with velocity established.
+    for(int i = 0; i < 15; ++i) {
+        filter.cycle();
+    }
+    if(filter.mode() != stream::StreamFilter1D::Mode::tracking) {
+        return fail("dropout_ladder: not tracking after initial ramp");
+    }
+
+    // Now stop pushing targets — wait for dropout.
+    int entered_extrapolation = 0;
+    int entered_stopping = 0;
+    int entered_stopped = 0;
+    for(int i = 0; i < 200; ++i) {
+        const otg::State1D state = filter.cycle();
+        if(!std::isfinite(state.position) || !std::isfinite(state.velocity)) {
+            return fail("dropout_ladder: non-finite state");
+        }
+        if(filter.mode() == stream::StreamFilter1D::Mode::extrapolating &&
+           entered_extrapolation == 0) {
+            entered_extrapolation = 1;
+        }
+        if(filter.mode() == stream::StreamFilter1D::Mode::stopping &&
+           entered_stopping == 0) {
+            entered_stopping = 1;
+        }
+        if(filter.mode() == stream::StreamFilter1D::Mode::stopped) {
+            entered_stopped = 1;
+            break;
+        }
+    }
+    if(!entered_extrapolation || !entered_stopping || !entered_stopped) {
+        return fail("dropout_ladder: didn't traverse all modes");
+    }
+    if(filter.dropout_count() < 1) {
+        return fail("dropout_ladder: dropout not counted");
+    }
+
+    // Recovery: push a fresh target and verify re-entry to tracking.
+    const otg::State1D rest_state = filter.cycle();
+    if(filter.push_target(velocity_target(rest_state.position + 0.5, 0.01,
+                                          filter.now_cycles() + 5)) != rt::ErrorCode::ok) {
+        return fail("dropout_ladder: recovery target rejected");
+    }
+    filter.cycle();
+    if(filter.mode() != stream::StreamFilter1D::Mode::tracking) {
+        return fail("dropout_ladder: recovery did not re-enter tracking");
+    }
+    return 0;
+}
+
+// Reset with nonzero velocity triggers immediate stopping (the engage-from-
+// motion path).
+int check_engage_from_motion()
+{
+    stream::StreamFilterConfig config = test_config(50, 10);
+    stream::StreamFilter1D filter;
+    if(filter.configure(config) != rt::ErrorCode::ok) {
+        return fail("engage_motion setup");
+    }
+
+    // Reset with nonzero velocity — should enter stopping immediately.
+    if(filter.reset({1.0, 0.2, 0.0}) != rt::ErrorCode::ok) {
+        return fail("engage_motion: reset rejected");
+    }
+
+    // Mode should transition through stopping to stopped.
+    bool saw_stopping = false;
+    bool saw_stopped = false;
+    for(int i = 0; i < 500; ++i) {
+        const otg::State1D state = filter.cycle();
+        if(!std::isfinite(state.position) || !std::isfinite(state.velocity)) {
+            return fail("engage_motion: non-finite state");
+        }
+        if(filter.mode() == stream::StreamFilter1D::Mode::stopping) {
+            saw_stopping = true;
+        }
+        if(filter.mode() == stream::StreamFilter1D::Mode::stopped) {
+            saw_stopped = true;
+            break;
+        }
+    }
+    if(!saw_stopping || !saw_stopped) {
+        return fail("engage_motion: did not stop");
+    }
+    return 0;
+}
+
+// Non-finite velocity in push_target should be rejected.
+int check_nonfinite_velocity_push()
+{
+    stream::StreamFilterConfig config = test_config(50, 10);
+    stream::StreamFilter1D filter;
+    if(filter.configure(config) != rt::ErrorCode::ok ||
+       filter.reset({0.0, 0.0, 0.0}) != rt::ErrorCode::ok) {
+        return fail("nonfinite_vel setup");
+    }
+
+    stream::StreamTarget bad{};
+    bad.position = 1.0;
+    bad.velocity = std::numeric_limits<double>::infinity();
+    bad.has_velocity = true;
+    bad.timestamp_cycles = 1;
+    if(filter.push_target(bad) != rt::ErrorCode::invalid_argument) {
+        return fail("nonfinite_vel: infinite velocity not rejected");
+    }
+
+    bad.velocity = std::numeric_limits<double>::quiet_NaN();
+    bad.timestamp_cycles = 2;
+    if(filter.push_target(bad) != rt::ErrorCode::invalid_argument) {
+        return fail("nonfinite_vel: NaN velocity not rejected");
+    }
+    return 0;
+}
+
+// Dropout with zero extrapolation: goes directly to stopping (no
+// extrapolation phase).
+int check_dropout_zero_extrapolation()
+{
+    stream::StreamFilterConfig config = test_config(5, 0);
+    stream::StreamFilter1D filter;
+    if(filter.configure(config) != rt::ErrorCode::ok ||
+       filter.reset({0.0, 0.0, 0.0}) != rt::ErrorCode::ok) {
+        return fail("zero_extrap setup");
+    }
+
+    if(filter.push_target(velocity_target(0.5, 0.05, 1)) != rt::ErrorCode::ok) {
+        return fail("zero_extrap: initial target");
+    }
+
+    // Cycle past timeout without extrapolation.
+    for(int i = 0; i < 3; ++i) {
+        filter.cycle();
+    }
+    if(filter.mode() != stream::StreamFilter1D::Mode::tracking) {
+        return fail("zero_extrap: not tracking initially");
+    }
+
+    // Cycle well past timeout.
+    for(int i = 0; i < 50; ++i) {
+        filter.cycle();
+    }
+
+    // Should have skipped extrapolation and gone to stopping/stopped.
+    bool saw_stop = false;
+    for(int i = 0; i < 500; ++i) {
+        filter.cycle();
+        if(filter.mode() == stream::StreamFilter1D::Mode::stopping ||
+           filter.mode() == stream::StreamFilter1D::Mode::stopped) {
+            saw_stop = true;
+            break;
+        }
+    }
+    if(!saw_stop) {
+        return fail("zero_extrap: did not enter stopping");
+    }
+    return 0;
+}
+
 } // namespace
 
 int main()
@@ -1041,6 +1220,10 @@ int main()
        check_ramp_phase_lag(false, "ramp lag differencing") != 0 ||
        check_timestamp_rejection() != 0 || check_position_envelope() != 0 ||
        check_overspeed_target_velocity() != 0 || check_dropout_and_recovery() != 0 ||
+       check_full_dropout_ladder() != 0 ||
+       check_engage_from_motion() != 0 ||
+       check_nonfinite_velocity_push() != 0 ||
+       check_dropout_zero_extrapolation() != 0 ||
        check_joint_group() != 0) {
         return 1;
     }

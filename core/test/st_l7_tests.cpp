@@ -341,6 +341,55 @@ void attach_rejects_unknown_task_and_reattaches_cleanly()
           "L7 session reattaches with reset lifecycle state");
 }
 
+void detached_debug_api_boundary_matrix()
+{
+    st::DebugSession debug;
+    st::BreakpointId breakpoint = 0;
+    st::DebugStop stop{};
+    st::DebugSnapshot snapshot{};
+    st::DebugSnapshotEntry entry{};
+    unsigned char bytes[8]{};
+    st::ForceReceipt receipt{};
+    st::DebugTraceRecord trace{};
+    st::DebugTraceReport report{};
+    check(debug.add_watch(st::SymbolId{1}) ==
+                  st::DebugError::invalid_argument &&
+              debug.add_breakpoint("debug.st", 1, 1, breakpoint) ==
+                  st::DebugError::invalid_argument &&
+              debug.add_breakpoint_instruction(0, breakpoint) ==
+                  st::DebugError::invalid_argument &&
+              debug.remove_breakpoint_at("debug.st", 1, 1) ==
+                  st::DebugError::invalid_argument &&
+              debug.breakpoint_count() == 0,
+          "L7 detached breakpoint and watch APIs reject requests");
+    check(debug.poll_stop(stop) == st::DebugError::invalid_argument &&
+              debug.control(st::DebugCommand::continue_) ==
+                  st::DebugError::invalid_argument,
+          "L7 detached stop-control APIs reject requests");
+    check(debug.read_snapshot(snapshot, &entry, 1, bytes, sizeof(bytes), 1) ==
+                  st::DebugError::invalid_argument &&
+              debug.read_snapshot(snapshot, nullptr, 0, bytes,
+                                  sizeof(bytes), 1) ==
+                  st::DebugError::invalid_argument &&
+              debug.read_snapshot(snapshot, &entry, 1, nullptr, 0, 1) ==
+                  st::DebugError::invalid_argument,
+          "L7 detached snapshot API validates session and storage");
+    check(debug.write_symbol(st::SymbolId{1}, st::builtin::dint, bytes,
+                             sizeof(bytes)) ==
+                  st::DebugError::permission_denied &&
+              debug.queue_force(st::SymbolId{1}, st::builtin::dint, bytes,
+                                sizeof(bytes), receipt) ==
+                  st::DebugError::invalid_argument &&
+              debug.release_force(st::SymbolId{1}, receipt) ==
+                  st::DebugError::invalid_argument,
+          "L7 detached write and force APIs preserve their contracts");
+    check(debug.read_trace(nullptr, 0, report) ==
+                  st::DebugError::invalid_argument &&
+              debug.read_trace(&trace, 1, report) ==
+                  st::DebugError::invalid_argument,
+          "L7 detached trace API rejects requests");
+}
+
 void snapshot_supports_symbols_larger_than_sixty_four_bytes()
 {
     Rig rig;
@@ -1489,6 +1538,7 @@ int main()
     seqlock_snapshot_is_consistent_and_bounded();
     stable_symbol_ids_use_qualified_names();
     attach_rejects_unknown_task_and_reattaches_cleanly();
+    detached_debug_api_boundary_matrix();
     snapshot_supports_symbols_larger_than_sixty_four_bytes();
     breakpoints_map_source_and_deduplicate();
     step_in_over_out_follow_source_and_call_depth();

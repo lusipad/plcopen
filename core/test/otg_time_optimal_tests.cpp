@@ -1103,6 +1103,153 @@ int check_fixed_time_fuzz(int iterations)
     return 0;
 }
 
+// Targeted tests for the solve_fixed_time fallback candidates. These are
+// cases where the direct quintic (candidate 1) and split-optimal (1a) fail,
+// forcing the solver into idle-insertion (1c), inner quintic (1b), 3-cubic
+// (1d), 4-cubic (1e), or quintic-cubic hybrid (1f) paths.
+int check_fixed_time_idle_insertion()
+{
+    // Velocity-reversal cases produce an optimal profile with a v=0, a=0
+    // segment boundary (the turnaround). Requesting extra cycles should
+    // insert idle time at that point (candidate 1c).
+    const otg::Limits1D limits{3.0, 2.0, 2.0, 2.5};
+    struct Case {
+        const char *name;
+        otg::State1D from;
+        otg::Target1D to;
+        std::int64_t extra;
+    };
+    const Case cases[] = {
+        {"idle-reversal-1", {0.0, 2.5, 0.0}, {0.5, 0.0, 0.0}, 5},
+        {"idle-reversal-2", {0.0, -2.0, 0.0}, {-0.3, 0.0, 0.0}, 8},
+        {"idle-reversal-3", {0.0, 2.9, 0.0}, {0.2, -0.5, 0.0}, 3},
+        {"idle-v0-exceed", {0.0, 3.5, 0.0}, {0.5, 0.0, 0.0}, 10},
+        {"idle-long-return", {0.0, 2.0, 0.0}, {-5.0, 0.0, 0.0}, 15},
+    };
+    for(const Case &c : cases) {
+        const rt::Result<otg::Profile1D> opt =
+            otg::plan_time_optimal(c.from, c.to, limits);
+        if(!opt) continue;
+        const std::int64_t target = opt.value().duration_cycles() + c.extra;
+        const rt::Result<otg::Profile1D> result =
+            otg::solve_fixed_time(c.from, c.to, limits, target);
+        if(!result) {
+            std::printf("FAIL %s: fixed-time error=%d\n", c.name,
+                        static_cast<int>(result.error()));
+            return 1;
+        }
+        if(result.value().duration_cycles() != target) {
+            std::printf("FAIL %s: duration %lld != target %lld\n", c.name,
+                        static_cast<long long>(result.value().duration_cycles()),
+                        static_cast<long long>(target));
+            return 1;
+        }
+        if(verify_profile(c.name, result.value(), c.from, c.to, limits) != 0) {
+            return 1;
+        }
+    }
+    std::printf("solve_fixed_time idle insertion: OK\n");
+    return 0;
+}
+
+int check_fixed_time_tight_jerk_fuzz(int iterations)
+{
+    // Tight jerk limits force the solver through 3-cubic/4-cubic/quintic-cubic
+    // candidates that the standard fuzz (with loose limits) never reaches.
+    Lcg rng{0xC0DE1234u};
+    int solved = 0;
+    int tried_short = 0;
+
+    for(int i = 0; i < iterations; ++i) {
+        // Random tight limits: jerk is 0.3-0.8x acceleration for stress.
+        const double max_a = rng.range(0.5, 3.0);
+        const double max_j = rng.range(0.15, 0.6) * max_a;
+        const otg::Limits1D limits{rng.range(1.0, 5.0), max_a, max_a, max_j};
+
+        const otg::State1D from{rng.range(-5.0, 5.0),
+                                rng.range(-1.5, 1.5),
+                                rng.range(-0.7, 0.7) * max_a};
+        const double at_sign = rng.range(0.0, 1.0) > 0.5 ? 1.0 : -1.0;
+        const double at = at_sign * rng.range(0.0, 0.5) * max_a;
+        const otg::Target1D to{rng.range(-5.0, 5.0),
+                               rng.range(-1.5, 1.5), at};
+
+        const rt::Result<otg::Profile1D> opt =
+            otg::plan_time_optimal(from, to, limits);
+        if(!opt) continue;
+
+        // Try T_min + small extras (1-5) to stress the short-time candidates.
+        for(int extra = 1; extra <= 5; ++extra) {
+            const std::int64_t target = opt.value().duration_cycles() + extra;
+            ++tried_short;
+            const rt::Result<otg::Profile1D> result =
+                otg::solve_fixed_time(from, to, limits, target);
+            if(!result) continue;
+            if(result.value().duration_cycles() != target) {
+                std::printf("FAIL tight-jerk-fuzz i=%d extra=%d duration mismatch\n",
+                            i, extra);
+                return 1;
+            }
+            const otg::State1D finish = otg::sample(
+                result.value(),
+                rt::CycleTick::from_cycles(result.value().duration_cycles()));
+            if(std::fabs(finish.position - to.position) > 1e-6 ||
+               std::fabs(finish.velocity - to.velocity) > 1e-6) {
+                std::printf("FAIL tight-jerk-fuzz i=%d extra=%d pv endpoint\n", i, extra);
+                return 1;
+            }
+            ++solved;
+        }
+    }
+    std::printf("solve_fixed_time tight-jerk fuzz: %d/%d solved\n", solved, tried_short);
+    return 0;
+}
+
+// Fuzz that targets very short fixed-time durations (3-12 cycles) where
+// the single quintic is more likely to violate limits and the cubic
+// candidates kick in.
+int check_fixed_time_very_short_fuzz(int iterations)
+{
+    Lcg rng{0xD0D0FADEu};
+    int solved = 0;
+
+    for(int i = 0; i < iterations; ++i) {
+        const double max_a = rng.range(1.0, 4.0);
+        const double max_j = rng.range(0.5, 2.0);
+        const otg::Limits1D limits{rng.range(2.0, 6.0), max_a, max_a, max_j};
+
+        const otg::State1D from{rng.range(-3.0, 3.0),
+                                rng.range(-2.0, 2.0),
+                                rng.range(-0.95, 0.95) * max_a};
+        const double at = rng.range(-0.95, 0.95) * max_a;
+        const otg::Target1D to{rng.range(-3.0, 3.0),
+                               rng.range(-2.0, 2.0), at};
+
+        // Target durations in the 3-12 cycle range where cubics dominate.
+        const std::int64_t target =
+            static_cast<std::int64_t>(rng.range(3.0, 12.0));
+        const rt::Result<otg::Profile1D> result =
+            otg::solve_fixed_time(from, to, limits, target);
+        if(!result) continue;
+        if(result.value().duration_cycles() != target) {
+            std::printf("FAIL very-short-fuzz i=%d duration %lld != %lld\n", i,
+                        static_cast<long long>(result.value().duration_cycles()),
+                        static_cast<long long>(target));
+            return 1;
+        }
+        if(verify_profile("very-short-fuzz", result.value(), from, to, limits) != 0) {
+            std::printf("  i=%d target=%lld from=(%.4f,%.4f,%.4f) to=(%.4f,%.4f,%.4f)\n",
+                        i, static_cast<long long>(target),
+                        from.position, from.velocity, from.acceleration,
+                        to.position, to.velocity, to.acceleration);
+            return 1;
+        }
+        ++solved;
+    }
+    std::printf("solve_fixed_time very-short fuzz: %d/%d solved\n", solved, iterations);
+    return 0;
+}
+
 int parse_iterations(int argc, char **argv)
 {
     int iterations = 5000;
@@ -1128,6 +1275,9 @@ int main(int argc, char **argv)
        check_nonzero_target_accel_cases() != 0 || check_pin_boundary_cases() != 0 ||
        check_fixed_time_basic() != 0 ||
        check_fixed_time_short_profile() != 0 ||
+       check_fixed_time_idle_insertion() != 0 ||
+       check_fixed_time_tight_jerk_fuzz(quality_iterations) != 0 ||
+       check_fixed_time_very_short_fuzz(quality_iterations) != 0 ||
        check_nonzero_target_velocity_quality() != 0 || check_bump_zone_quality() != 0 ||
        check_fuzz_bump_zone(quality_iterations) != 0 ||
        check_fuzz_nonzero_target(quality_iterations) != 0 ||

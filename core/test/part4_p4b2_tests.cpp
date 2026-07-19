@@ -704,6 +704,53 @@ int check_jog_validation_matrix()
     if(rig.group.write_jogging_dynamics(dynamics) != rt::ErrorCode::ok) {
         return fail("jog validation: restore dynamics");
     }
+    const double nan = std::numeric_limits<double>::quiet_NaN();
+    for(int field = 0; field < 4; ++field) {
+        axis::JogCommandOptions options{};
+        if(field == 0) options.velocity_override = nan;
+        if(field == 1) options.acceleration_override = nan;
+        if(field == 2) options.max_linear_distance = nan;
+        if(field == 3) options.max_angular_distance = nan;
+        if(rig.group.begin_jog(axis::CoordSystem::acs, direction, options)
+               .error() != rt::ErrorCode::invalid_argument) {
+            return fail("jog validation: nonfinite options");
+        }
+    }
+    for(int field = 0; field < 4; ++field) {
+        axis::JogCommandOptions options{};
+        if(field == 0) options.velocity_override = -0.1;
+        if(field == 1) options.acceleration_override = -0.1;
+        if(field == 2) options.max_linear_distance = -0.1;
+        if(field == 3) options.max_angular_distance = -0.1;
+        if(rig.group.begin_jog(axis::CoordSystem::acs, direction, options)
+               .error() != rt::ErrorCode::invalid_argument) {
+            return fail("jog validation: negative options");
+        }
+    }
+    axis::JogCommandOptions options{};
+    options.velocity_override = 1.1;
+    if(rig.group.begin_jog(axis::CoordSystem::acs, direction, options).error() !=
+       rt::ErrorCode::invalid_argument) {
+        return fail("jog validation: velocity override upper bound");
+    }
+    options = {};
+    options.acceleration_override = 1.1;
+    if(rig.group.begin_jog(axis::CoordSystem::acs, direction, options).error() !=
+       rt::ErrorCode::invalid_argument) {
+        return fail("jog validation: acceleration override upper bound");
+    }
+    options = {};
+    options.max_linear_distance = 1.0;
+    if(rig.group.begin_jog(axis::CoordSystem::acs, direction, options).error() !=
+       rt::ErrorCode::unsupported) {
+        return fail("jog validation: ACS linear distance limit");
+    }
+    options = {};
+    options.max_angular_distance = 1.0;
+    if(rig.group.begin_jog(axis::CoordSystem::acs, direction, options).error() !=
+       rt::ErrorCode::unsupported) {
+        return fail("jog validation: ACS angular distance limit");
+    }
     direction.size = 1;
     if(rig.group.begin_jog(axis::CoordSystem::acs, direction).error() !=
        rt::ErrorCode::invalid_argument) {

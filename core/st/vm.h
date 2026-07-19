@@ -2440,6 +2440,50 @@ public:
                     if(!valid_string_object(objects[i], *descs[i]))
                         return latch(ScanError::invalid_bytecode);
                 }
+                const auto valid_signature = [&]() {
+                    const auto string_at = [&](std::uint8_t index) {
+                        return index < argc && string_arg[index];
+                    };
+                    const auto scalar_at = [&](std::uint8_t index) {
+                        return index < argc && !string_arg[index];
+                    };
+                    switch(function) {
+                    case StandardFunction::len:
+                        return argc == 1U && string_at(0);
+                    case StandardFunction::left:
+                    case StandardFunction::right:
+                        return argc == 2U && string_at(0) && scalar_at(1);
+                    case StandardFunction::mid:
+                    case StandardFunction::delete_:
+                        return argc == 3U && string_at(0) && scalar_at(1) &&
+                               scalar_at(2);
+                    case StandardFunction::concat:
+                        if(argc < 2U) return false;
+                        for(std::uint8_t i = 0; i < argc; ++i)
+                            if(!string_at(i)) return false;
+                        return true;
+                    case StandardFunction::insert:
+                        return argc == 3U && string_at(0) && string_at(1) &&
+                               scalar_at(2);
+                    case StandardFunction::replace:
+                        return argc == 4U && string_at(0) && string_at(1) &&
+                               scalar_at(2) && scalar_at(3);
+                    case StandardFunction::find:
+                        return argc == 2U && string_at(0) && string_at(1);
+                    default:
+                        return false;
+                    }
+                };
+                const bool scalar_result = function == StandardFunction::len ||
+                                           function == StandardFunction::find;
+                if(!valid_signature() ||
+                   scalar_result !=
+                       (destination == std::numeric_limits<std::uint32_t>::max()))
+                    return latch(ScanError::invalid_bytecode);
+                for(std::uint8_t i = 0; i < argc; ++i) {
+                    if(string_arg[i] && (objects[i] == nullptr || descs[i] == nullptr))
+                        return latch(ScanError::invalid_bytecode);
+                }
                 const TypeDesc *destination_desc =
                     destination == std::numeric_limits<std::uint32_t>::max()
                         ? nullptr : program_->types.get(destination_id);

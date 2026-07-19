@@ -4,7 +4,9 @@
 
 #include "axis/group.h"
 #include "axis/state.h"
+#include "fb/io.h"
 #include "fb/motion.h"
+#include "fb/parameter.h"
 
 namespace
 {
@@ -1119,6 +1121,382 @@ int check_motion_rejection_propagation()
     return 0;
 }
 
+int check_read_fb_all_states_coverage()
+{
+    axis::AxisModel axis;
+
+    fb::FbReadStatus status;
+    status.axis_ref = &axis;
+    status.enable = true;
+
+    fb::FbReadMotionState motion_state;
+    motion_state.axis_ref = &axis;
+    motion_state.enable = true;
+
+    fb::FbReadAxisInfo axis_info;
+    axis_info.axis_ref = &axis;
+    axis_info.enable = true;
+
+    fb::FbReadActualPosition read_pos;
+    read_pos.axis_ref = &axis;
+    read_pos.enable = true;
+
+    fb::FbReadActualVelocity read_vel;
+    read_vel.axis_ref = &axis;
+    read_vel.enable = true;
+
+    fb::FbReadActualTorque read_trq;
+    read_trq.axis_ref = &axis;
+    read_trq.enable = true;
+
+    const auto read_all = [&]() {
+        status.call();
+        motion_state.call();
+        axis_info.call();
+        read_pos.call();
+        read_vel.call();
+        read_trq.call();
+    };
+
+    // Disabled state
+    read_all();
+    if(!status.valid || !status.disabled) return fail("read status disabled");
+    if(!axis_info.valid) return fail("read axis info disabled");
+    if(!read_pos.valid) return fail("read position disabled");
+
+    // Standstill state
+    axis.set_power(true);
+    read_all();
+    if(!status.valid || !status.standstill) return fail("read status standstill");
+
+    // Discrete motion state
+    axis.submit(make_move(axis::CommandKind::move_absolute, 10.0, 0.1));
+    axis.cycle();
+    read_all();
+    if(!status.valid || !status.discrete_motion) return fail("read status discrete motion");
+    if(!motion_state.valid) return fail("read motion state discrete");
+
+    // Continuous motion state: need a proper velocity command
+    {
+        axis::AxisCommand vel_cmd{};
+        vel_cmd.kind = axis::CommandKind::move_velocity;
+        vel_cmd.value = 1.0;
+        vel_cmd.velocity = 0.5;
+        vel_cmd.acceleration = 1.0;
+        vel_cmd.deceleration = 1.0;
+        vel_cmd.jerk = 1.0;
+        vel_cmd.buffer_mode = axis::BufferMode::aborting;
+        axis.submit(vel_cmd);
+    }
+    axis.cycle();
+    read_all();
+    if(!status.valid || !status.continuous_motion) {
+        return fail("read status continuous motion coverage");
+    }
+
+    // Stopping state
+    {
+        axis::AxisCommand stop_cmd{};
+        stop_cmd.kind = axis::CommandKind::stop;
+        stop_cmd.deceleration = 1.0;
+        stop_cmd.jerk = 1.0;
+        axis.submit(stop_cmd);
+    }
+    axis.cycle();
+    read_all();
+    if(!status.valid || !status.stopping) return fail("read status stopping");
+
+    // Run to standstill
+    for(int i = 0; i < 500; ++i) axis.cycle();
+    read_all();
+    if(!status.valid || !status.standstill) return fail("read status back to standstill");
+
+    // Error stop state
+    axis.trigger_error();
+    read_all();
+    if(!status.valid || !status.error_stop) return fail("read status error stop");
+
+    // Enable=false clears outputs
+    status.enable = false;
+    status.call();
+    if(status.valid || status.disabled || status.standstill || status.error_stop) {
+        return fail("read status enable=false clears");
+    }
+
+    // Null axis error path
+    fb::FbReadStatus null_status;
+    null_status.enable = true;
+    null_status.call();
+    if(!null_status.error) return fail("read status null axis error");
+
+    fb::FbReadMotionState null_ms;
+    null_ms.enable = true;
+    null_ms.call();
+    if(!null_ms.error) return fail("read motion state null axis error");
+
+    fb::FbReadAxisInfo null_ai;
+    null_ai.enable = true;
+    null_ai.call();
+    if(!null_ai.error) return fail("read axis info null axis error");
+
+    // FbReadParameter: multiple parameter numbers
+    fb::FbReadParameter read_param;
+    read_param.axis_ref = &axis;
+    read_param.enable = true;
+    read_param.parameter_number = axis::AxisParameter::commanded_position;
+    read_param.call();
+    if(!read_param.valid) return fail("read parameter commanded position");
+
+    read_param.parameter_number = axis::AxisParameter::sw_limit_pos;
+    read_param.call();
+    if(!read_param.valid) return fail("read parameter sw limit pos");
+
+    read_param.parameter_number = axis::AxisParameter::sw_limit_neg;
+    read_param.call();
+    if(!read_param.valid) return fail("read parameter sw limit neg");
+
+    // FbReadBoolParameter
+    fb::FbReadBoolParameter read_bool;
+    read_bool.axis_ref = &axis;
+    read_bool.enable = true;
+    read_bool.parameter_number = axis::AxisParameter::enable_limit_pos;
+    read_bool.call();
+    if(!read_bool.valid) return fail("read bool parameter");
+
+    // FbWriteParameter with queued execution mode
+    axis.reset_error();
+    fb::FbWriteParameter write_param;
+    write_param.axis_ref = &axis;
+    write_param.parameter_number = axis::AxisParameter::sw_limit_pos;
+    write_param.value = 100.0;
+    write_param.execution_mode = axis::ExecutionMode::queued;
+    write_param.execute = true;
+    write_param.call();
+    for(int i = 0; i < 10; ++i) {
+        axis.cycle();
+        write_param.call();
+    }
+
+    // FbWriteParameter: unsupported execution mode
+    fb::FbWriteParameter bad_exec;
+    bad_exec.axis_ref = &axis;
+    bad_exec.execution_mode = static_cast<axis::ExecutionMode>(99);
+    bad_exec.execute = true;
+    bad_exec.call();
+    if(!bad_exec.error) return fail("write param unsupported exec mode");
+
+    // FbWriteBoolParameter
+    fb::FbWriteBoolParameter write_bool;
+    write_bool.axis_ref = &axis;
+    write_bool.parameter_number = axis::AxisParameter::enable_limit_pos;
+    write_bool.value = true;
+    write_bool.execution_mode = axis::ExecutionMode::immediately;
+    write_bool.execute = true;
+    write_bool.call();
+    if(write_bool.error) return fail("write bool parameter");
+
+    // FbWriteBoolParameter: unsupported execution mode
+    fb::FbWriteBoolParameter bad_bool_exec;
+    bad_bool_exec.axis_ref = &axis;
+    bad_bool_exec.execution_mode = static_cast<axis::ExecutionMode>(99);
+    bad_bool_exec.execute = true;
+    bad_bool_exec.call();
+    if(!bad_bool_exec.error) return fail("write bool param unsupported exec mode");
+
+    return 0;
+}
+
+int check_torque_input_validation()
+{
+    const double nan = std::numeric_limits<double>::quiet_NaN();
+    for(int field = 0; field < 6; ++field) {
+        axis::AxisModel axis;
+        axis.set_power(true);
+        fb::FbTorqueControl torque;
+        torque.axis_ref = &axis;
+        torque.torque = 1.0;
+        if(field == 0) torque.torque = nan;
+        if(field == 1) torque.torque_ramp = nan;
+        if(field == 2) torque.velocity = nan;
+        if(field == 3) torque.acceleration = nan;
+        if(field == 4) torque.deceleration = nan;
+        if(field == 5) torque.jerk = nan;
+        torque.execute = true;
+        torque.call();
+        if(!torque.outputs.error ||
+           torque.outputs.error_id != rt::ErrorCode::invalid_argument) {
+            return fail("torque nonfinite input validation");
+        }
+    }
+    for(int field = 0; field < 5; ++field) {
+        axis::AxisModel axis;
+        axis.set_power(true);
+        fb::FbTorqueControl torque;
+        torque.axis_ref = &axis;
+        torque.torque = 1.0;
+        if(field == 0) torque.torque_ramp = -1.0;
+        if(field == 1) torque.velocity = -1.0;
+        if(field == 2) torque.acceleration = -1.0;
+        if(field == 3) torque.deceleration = -1.0;
+        if(field == 4) torque.jerk = -1.0;
+        torque.execute = true;
+        torque.call();
+        if(!torque.outputs.error ||
+           torque.outputs.error_id != rt::ErrorCode::invalid_argument) {
+            return fail("torque negative input validation");
+        }
+    }
+    {
+        axis::AxisModel axis;
+        axis.set_power(true);
+        fb::FbTorqueControl torque;
+        torque.axis_ref = &axis;
+        torque.torque = 1.0;
+        torque.direction = axis::Direction::shortest_way;
+        torque.execute = true;
+        torque.call();
+        if(!torque.outputs.error ||
+           torque.outputs.error_id != rt::ErrorCode::unsupported) {
+            return fail("torque direction validation");
+        }
+    }
+    {
+        axis::AxisModel axis;
+        axis.set_power(true);
+        fb::FbTorqueControl torque;
+        torque.axis_ref = &axis;
+        torque.torque = 1.0;
+        torque.buffer_mode = axis::BufferMode::buffered;
+        torque.execute = true;
+        torque.call();
+        if(!torque.outputs.error ||
+           torque.outputs.error_id != rt::ErrorCode::unsupported) {
+            return fail("torque buffer mode validation");
+        }
+    }
+    for(const axis::Direction direction : {
+            axis::Direction::positive, axis::Direction::negative}) {
+        axis::AxisModel axis;
+        axis.set_power(true);
+        fb::FbTorqueControl torque;
+        torque.axis_ref = &axis;
+        torque.torque = -1.0;
+        torque.direction = direction;
+        torque.execute = true;
+        torque.call();
+        const double expected = direction == axis::Direction::positive ? 1.0 : -1.0;
+        if(torque.outputs.error || axis.command_torque() != expected) {
+            return fail("torque direction normalization");
+        }
+    }
+    {
+        axis::AxisModel axis;
+        axis.set_power(true);
+        fb::FbTorqueControl torque;
+        torque.axis_ref = &axis;
+        torque.torque = 1.0;
+        torque.torque_ramp = (std::numeric_limits<double>::max)();
+        if(!torque.set_cycle_time((std::numeric_limits<std::int64_t>::max)()) ||
+           torque.set_cycle_time(0)) {
+            return fail("torque cycle time validation");
+        }
+        torque.execute = true;
+        torque.call();
+        if(!torque.outputs.error ||
+           torque.outputs.error_id != rt::ErrorCode::out_of_range) {
+            return fail("torque ramp overflow validation");
+        }
+    }
+    for(int field = 0; field < 8; ++field) {
+        axis::AxisModel axis;
+        axis.set_power(true);
+        fb::FbTorqueControl torque;
+        torque.axis_ref = &axis;
+        torque.continuous_update = true;
+        torque.torque = 1.0;
+        torque.execute = true;
+        torque.call();
+        if(torque.outputs.error) return fail("torque continuous setup");
+        if(field == 0) torque.torque = 2.0;
+        if(field == 1) torque.torque_ramp = 0.1;
+        if(field == 2) torque.velocity = 0.1;
+        if(field == 3) torque.acceleration = 0.1;
+        if(field == 4) torque.deceleration = 0.1;
+        if(field == 5) torque.jerk = 0.1;
+        if(field == 6) torque.direction = axis::Direction::positive;
+        if(field == 7) torque.buffer_mode = axis::BufferMode::buffered;
+        torque.call();
+        if(field < 7 && torque.outputs.error) {
+            return fail("torque continuous update");
+        }
+        if(field == 7 && !torque.outputs.error) {
+            return fail("torque continuous buffer update");
+        }
+    }
+    {
+        axis::AxisModel axis;
+        axis.set_power(true);
+        axis::AxisCommand active{};
+        active.kind = axis::CommandKind::torque;
+        active.value = 1.0;
+        active.buffer_mode = axis::BufferMode::aborting;
+        const rt::Result<std::uint32_t> accepted = axis.submit(active);
+        if(!accepted) return fail("torque update setup");
+        const auto rejected_update = [&](axis::AxisCommand command,
+                                         std::uint32_t id) {
+            return axis.update_active_torque(id, command) ==
+                   rt::ErrorCode::invalid_argument;
+        };
+        axis::AxisCommand update = active;
+        if(!rejected_update(update, 0) ||
+           !rejected_update(update, accepted.value() + 1)) {
+            return fail("torque update command id validation");
+        }
+        update.kind = axis::CommandKind::move_absolute;
+        if(!rejected_update(update, accepted.value())) {
+            return fail("torque update kind validation");
+        }
+        for(int field = 0; field < 7; ++field) {
+            update = active;
+            if(field == 0) update.value = nan;
+            if(field == 1) update.torque_ramp = nan;
+            if(field == 2) update.velocity = nan;
+            if(field == 3) update.acceleration = nan;
+            if(field == 4) update.deceleration = nan;
+            if(field == 5) update.jerk = nan;
+            if(field == 6) update.end_velocity = nan;
+            if(!rejected_update(update, accepted.value())) {
+                return fail("torque update finite validation");
+            }
+        }
+        for(int field = 0; field < 4; ++field) {
+            update = active;
+            if(field == 0) update.velocity = -1.0;
+            if(field == 1) update.acceleration = -1.0;
+            if(field == 2) update.deceleration = -1.0;
+            if(field == 3) update.jerk = -1.0;
+            if(!rejected_update(update, accepted.value())) {
+                return fail("torque update dynamics validation");
+            }
+        }
+        update = active;
+        update.direction = static_cast<axis::Direction>(99);
+        if(!rejected_update(update, accepted.value())) {
+            return fail("torque update direction enum");
+        }
+        update.direction = axis::Direction::shortest_way;
+        if(!rejected_update(update, accepted.value())) {
+            return fail("torque update direction validation");
+        }
+        update = active;
+        update.buffer_mode = axis::BufferMode::buffered;
+        if(!rejected_update(update, accepted.value())) {
+            return fail("torque update buffer validation");
+        }
+    }
+    return 0;
+}
+
 } // namespace
 
 int main()
@@ -1137,7 +1515,9 @@ int main()
        check_motion_power_abort_observation() != 0 ||
        check_motion_takeover_observation() != 0 ||
        check_motion_invalid_updates() != 0 ||
-       check_motion_rejection_propagation() != 0) {
+       check_motion_rejection_propagation() != 0 ||
+       check_torque_input_validation() != 0 ||
+       check_read_fb_all_states_coverage() != 0) {
         return 1;
     }
     std::printf("PASS r3 motion family tests\n");

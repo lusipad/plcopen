@@ -21511,8 +21511,7 @@ inline bool st_binding_store_scalar(StBindingFbType type,
                                     std::uint16_t pin, void *storage,
                                     std::uint64_t bits) noexcept
 {
-    if(storage == nullptr || !st_binding_can_store_scalar(type, pin))
-        return false;
+    if(storage == nullptr) return false;
     switch(type) {
     case StBindingFbType::r_trig:
         switch(pin) {
@@ -27825,8 +27824,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
     // binding_ref loads expose transient native pointer bits only.
     // A VM boundary must reverse-resolve an existing ST handle before
     // writing the result to stack or variable storage.
-    if(storage == nullptr || !st_binding_can_load_scalar(type, pin))
-        return false;
+    if(storage == nullptr) return false;
     switch(type) {
     case StBindingFbType::r_trig:
         switch(pin) {
@@ -27835,7 +27833,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
         default: return false;
@@ -27847,7 +27845,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
         default: return false;
@@ -27859,7 +27857,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
         default: return false;
@@ -27871,7 +27869,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
         default: return false;
@@ -27883,7 +27881,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 3U: {
@@ -27904,7 +27902,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 3U: {
@@ -27925,7 +27923,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 3U: {
@@ -27946,7 +27944,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 4U: {
@@ -27967,7 +27965,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 4U: {
@@ -27988,7 +27986,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 6U: {
@@ -27996,7 +27994,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 7U: {
@@ -28026,7 +28024,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 5U: {
@@ -28034,7 +28032,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 6U: {
@@ -28042,7 +28040,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 7U: {
@@ -28072,7 +28070,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 5U: {
@@ -28080,7 +28078,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 6U: {
@@ -28088,7 +28086,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 7U: {
@@ -28096,7 +28094,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 8U: {
@@ -28104,7 +28102,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 9U: {
@@ -28134,7 +28132,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 5U: {
@@ -28142,7 +28140,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 6U: {
@@ -28150,7 +28148,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 7U: {
@@ -28158,7 +28156,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 8U: {
@@ -28188,7 +28186,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 6U: {
@@ -28196,7 +28194,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 7U: {
@@ -28204,7 +28202,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 8U: {
@@ -28212,7 +28210,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 9U: {
@@ -28220,7 +28218,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 10U: {
@@ -28250,7 +28248,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 11U: {
@@ -28258,7 +28256,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 12U: {
@@ -28266,7 +28264,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 13U: {
@@ -28274,7 +28272,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 14U: {
@@ -28282,7 +28280,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 15U: {
@@ -28312,7 +28310,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 10U: {
@@ -28320,7 +28318,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 11U: {
@@ -28328,7 +28326,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 12U: {
@@ -28336,7 +28334,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 13U: {
@@ -28344,7 +28342,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 14U: {
@@ -28374,7 +28372,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 10U: {
@@ -28382,7 +28380,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 11U: {
@@ -28390,7 +28388,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 12U: {
@@ -28398,7 +28396,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 13U: {
@@ -28406,7 +28404,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 14U: {
@@ -28436,7 +28434,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 9U: {
@@ -28444,7 +28442,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 10U: {
@@ -28452,7 +28450,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 11U: {
@@ -28460,7 +28458,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 12U: {
@@ -28498,7 +28496,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 5U: {
@@ -28506,7 +28504,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 6U: {
@@ -28514,7 +28512,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 7U: {
@@ -28522,7 +28520,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 8U: {
@@ -28552,7 +28550,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 10U: {
@@ -28560,7 +28558,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 11U: {
@@ -28568,7 +28566,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 12U: {
@@ -28576,7 +28574,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 13U: {
@@ -28584,7 +28582,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 14U: {
@@ -28614,7 +28612,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 12U: {
@@ -28622,7 +28620,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 13U: {
@@ -28630,7 +28628,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 14U: {
@@ -28638,7 +28636,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 15U: {
@@ -28646,7 +28644,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 16U: {
@@ -28676,7 +28674,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 11U: {
@@ -28684,7 +28682,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 12U: {
@@ -28692,7 +28690,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 13U: {
@@ -28700,7 +28698,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 14U: {
@@ -28708,7 +28706,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 15U: {
@@ -28738,7 +28736,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 12U: {
@@ -28746,7 +28744,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 13U: {
@@ -28754,7 +28752,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 14U: {
@@ -28762,7 +28760,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 15U: {
@@ -28770,7 +28768,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 16U: {
@@ -28800,7 +28798,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 9U: {
@@ -28808,7 +28806,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 10U: {
@@ -28816,7 +28814,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 11U: {
@@ -28824,7 +28822,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 12U: {
@@ -28832,7 +28830,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 13U: {
@@ -28862,7 +28860,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 9U: {
@@ -28870,7 +28868,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 10U: {
@@ -28878,7 +28876,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 11U: {
@@ -28886,7 +28884,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 12U: {
@@ -28894,7 +28892,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 13U: {
@@ -28924,7 +28922,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 9U: {
@@ -28932,7 +28930,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 10U: {
@@ -28940,7 +28938,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 11U: {
@@ -28948,7 +28946,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 12U: {
@@ -28956,7 +28954,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 13U: {
@@ -28986,7 +28984,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 6U: {
@@ -28994,7 +28992,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 7U: {
@@ -29002,7 +29000,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 8U: {
@@ -29032,7 +29030,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 6U: {
@@ -29040,7 +29038,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 7U: {
@@ -29048,7 +29046,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 8U: {
@@ -29078,7 +29076,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 4U: {
@@ -29086,7 +29084,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 5U: {
@@ -29094,7 +29092,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 6U: {
@@ -29132,7 +29130,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 4U: {
@@ -29140,7 +29138,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 5U: {
@@ -29148,7 +29146,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 6U: {
@@ -29165,7 +29163,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
         default: return false;
@@ -29186,7 +29184,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 6U: {
@@ -29194,7 +29192,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 7U: {
@@ -29202,7 +29200,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 8U: {
@@ -29232,7 +29230,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 6U: {
@@ -29240,7 +29238,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 7U: {
@@ -29248,7 +29246,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 8U: {
@@ -29278,7 +29276,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 4U: {
@@ -29286,7 +29284,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 5U: {
@@ -29294,7 +29292,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 6U: {
@@ -29311,7 +29309,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
         default: return false;
@@ -29332,7 +29330,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 4U: {
@@ -29340,7 +29338,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 5U: {
@@ -29348,7 +29346,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 6U: {
@@ -29365,7 +29363,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
         default: return false;
@@ -29386,7 +29384,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 6U: {
@@ -29394,7 +29392,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 7U: {
@@ -29402,7 +29400,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 8U: {
@@ -29432,7 +29430,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 3U: {
@@ -29440,7 +29438,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 4U: {
@@ -29448,7 +29446,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 5U: {
@@ -29486,7 +29484,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 3U: {
@@ -29494,7 +29492,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 4U: {
@@ -29502,7 +29500,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 5U: {
@@ -29540,7 +29538,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 3U: {
@@ -29548,7 +29546,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 4U: {
@@ -29556,7 +29554,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 5U: {
@@ -29594,7 +29592,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 3U: {
@@ -29602,7 +29600,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 4U: {
@@ -29610,7 +29608,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 5U: {
@@ -29627,7 +29625,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 7U: {
@@ -29635,7 +29633,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 8U: {
@@ -29643,7 +29641,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 9U: {
@@ -29651,7 +29649,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 10U: {
@@ -29659,7 +29657,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 11U: {
@@ -29667,7 +29665,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 12U: {
@@ -29675,7 +29673,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 13U: {
@@ -29683,7 +29681,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
         default: return false;
@@ -29704,7 +29702,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 4U: {
@@ -29712,7 +29710,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 5U: {
@@ -29720,7 +29718,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 6U: {
@@ -29737,7 +29735,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 8U: {
@@ -29745,7 +29743,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 9U: {
@@ -29753,7 +29751,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 10U: {
@@ -29761,7 +29759,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 11U: {
@@ -29769,7 +29767,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
         default: return false;
@@ -29790,7 +29788,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 3U: {
@@ -29798,7 +29796,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 4U: {
@@ -29806,7 +29804,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 5U: {
@@ -29823,7 +29821,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 7U: {
@@ -29831,7 +29829,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 8U: {
@@ -29839,7 +29837,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 9U: {
@@ -29847,7 +29845,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 10U: {
@@ -29855,7 +29853,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 11U: {
@@ -29863,7 +29861,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 12U: {
@@ -29871,7 +29869,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 13U: {
@@ -29879,7 +29877,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 14U: {
@@ -29887,7 +29885,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
         default: return false;
@@ -29908,7 +29906,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 3U: {
@@ -29916,7 +29914,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 4U: {
@@ -29924,7 +29922,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 5U: {
@@ -29963,7 +29961,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 3U: {
@@ -29971,7 +29969,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 4U: {
@@ -29979,7 +29977,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 5U: {
@@ -30009,7 +30007,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 8U: {
@@ -30017,7 +30015,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 9U: {
@@ -30025,7 +30023,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 10U: {
@@ -30063,7 +30061,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 7U: {
@@ -30071,7 +30069,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 8U: {
@@ -30079,7 +30077,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 9U: {
@@ -30087,7 +30085,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 10U: {
@@ -30133,7 +30131,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 4U: {
@@ -30141,7 +30139,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 5U: {
@@ -30149,7 +30147,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 6U: {
@@ -30188,7 +30186,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 9U: {
@@ -30196,7 +30194,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 10U: {
@@ -30204,7 +30202,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 11U: {
@@ -30251,7 +30249,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 15U: {
@@ -30259,7 +30257,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 16U: {
@@ -30267,7 +30265,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 17U: {
@@ -30275,7 +30273,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 18U: {
@@ -30283,7 +30281,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 19U: {
@@ -30300,7 +30298,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
         default: return false;
@@ -30321,7 +30319,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 3U: {
@@ -30329,7 +30327,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 4U: {
@@ -30337,7 +30335,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 5U: {
@@ -30376,7 +30374,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 12U: {
@@ -30384,7 +30382,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 13U: {
@@ -30392,7 +30390,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 14U: {
@@ -30400,7 +30398,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 15U: {
@@ -30408,7 +30406,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 16U: {
@@ -30438,7 +30436,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 3U: {
@@ -30446,7 +30444,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 4U: {
@@ -30454,7 +30452,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 5U: {
@@ -30493,7 +30491,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 16U: {
@@ -30501,7 +30499,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 17U: {
@@ -30509,7 +30507,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 18U: {
@@ -30517,7 +30515,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 19U: {
@@ -30525,7 +30523,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 20U: {
@@ -30533,7 +30531,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 21U: {
@@ -30572,7 +30570,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 10U: {
@@ -30580,7 +30578,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 11U: {
@@ -30588,7 +30586,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 12U: {
@@ -30596,7 +30594,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 13U: {
@@ -30604,7 +30602,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 14U: {
@@ -30651,7 +30649,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 10U: {
@@ -30659,7 +30657,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 11U: {
@@ -30667,7 +30665,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 12U: {
@@ -30675,7 +30673,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 13U: {
@@ -30683,7 +30681,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 14U: {
@@ -30739,7 +30737,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 14U: {
@@ -30747,7 +30745,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 15U: {
@@ -30755,7 +30753,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 16U: {
@@ -30763,7 +30761,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 17U: {
@@ -30771,7 +30769,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 18U: {
@@ -30810,7 +30808,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 5U: {
@@ -30818,7 +30816,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 6U: {
@@ -30826,7 +30824,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 7U: {
@@ -30856,7 +30854,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 4U: {
@@ -30864,7 +30862,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 5U: {
@@ -30872,7 +30870,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 6U: {
@@ -30902,7 +30900,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 3U: {
@@ -30910,7 +30908,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 4U: {
@@ -30918,7 +30916,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 5U: {
@@ -30948,7 +30946,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 5U: {
@@ -30956,7 +30954,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 6U: {
@@ -30964,7 +30962,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 7U: {
@@ -31011,7 +31009,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 3U: {
@@ -31019,7 +31017,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 4U: {
@@ -31027,7 +31025,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 5U: {
@@ -31074,7 +31072,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 3U: {
@@ -31082,7 +31080,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 4U: {
@@ -31090,7 +31088,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 5U: {
@@ -31120,7 +31118,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 3U: {
@@ -31128,7 +31126,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 4U: {
@@ -31136,7 +31134,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 5U: {
@@ -31166,7 +31164,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 6U: {
@@ -31174,7 +31172,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 7U: {
@@ -31182,7 +31180,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 8U: {
@@ -31190,7 +31188,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 9U: {
@@ -31198,7 +31196,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 10U: {
@@ -31206,7 +31204,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 11U: {
@@ -31236,7 +31234,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 3U: {
@@ -31244,7 +31242,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 4U: {
@@ -31252,7 +31250,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 5U: {
@@ -31282,7 +31280,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 5U: {
@@ -31290,7 +31288,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 6U: {
@@ -31298,7 +31296,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 7U: {
@@ -31306,7 +31304,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 8U: {
@@ -31314,7 +31312,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 9U: {
@@ -31330,7 +31328,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 11U: {
@@ -31360,7 +31358,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 11U: {
@@ -31368,7 +31366,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 12U: {
@@ -31376,7 +31374,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 13U: {
@@ -31384,7 +31382,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 14U: {
@@ -31392,7 +31390,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 15U: {
@@ -31408,7 +31406,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 17U: {
@@ -31438,7 +31436,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 6U: {
@@ -31446,7 +31444,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 7U: {
@@ -31454,7 +31452,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 8U: {
@@ -31462,7 +31460,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 9U: {
@@ -31470,7 +31468,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 10U: {
@@ -31486,7 +31484,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 12U: {
@@ -31516,13 +31514,13 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 3U: {
         using Accessor = StBindingNativePinAccessor<StBindingFbType::mc_read_kin_transform, 3U>;
         const auto value = Accessor::load();
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 4U: {
@@ -31530,7 +31528,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 5U: {
@@ -31560,13 +31558,13 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 4U: {
         using Accessor = StBindingNativePinAccessor<StBindingFbType::mc_read_cartesian_transform, 4U>;
         const auto value = Accessor::load();
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 5U: {
@@ -31574,7 +31572,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 6U: {
@@ -31652,13 +31650,13 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 4U: {
         using Accessor = StBindingNativePinAccessor<StBindingFbType::mc_read_coordinate_transform, 4U>;
         const auto value = Accessor::load();
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 5U: {
@@ -31666,7 +31664,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 6U: {
@@ -31696,7 +31694,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 3U: {
@@ -31704,7 +31702,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 4U: {
@@ -31712,7 +31710,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 5U: {
@@ -31742,7 +31740,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 3U: {
@@ -31750,7 +31748,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 4U: {
@@ -31758,7 +31756,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 5U: {
@@ -31788,7 +31786,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 7U: {
@@ -31796,7 +31794,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 8U: {
@@ -31804,7 +31802,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 9U: {
@@ -31812,7 +31810,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 10U: {
@@ -31828,7 +31826,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 12U: {
@@ -31858,13 +31856,13 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 5U: {
         using Accessor = StBindingNativePinAccessor<StBindingFbType::mc_group_read_position, 5U>;
         const auto value = Accessor::load();
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 6U: {
@@ -31872,7 +31870,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 7U: {
@@ -31902,7 +31900,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 5U: {
@@ -31910,7 +31908,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 6U: {
@@ -31918,7 +31916,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 7U: {
@@ -31956,7 +31954,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 5U: {
@@ -31964,7 +31962,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 6U: {
@@ -31972,7 +31970,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 7U: {
@@ -32010,7 +32008,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 3U: {
@@ -32018,7 +32016,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 4U: {
@@ -32026,7 +32024,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 5U: {
@@ -32043,7 +32041,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 7U: {
@@ -32051,7 +32049,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 8U: {
@@ -32059,7 +32057,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 9U: {
@@ -32067,7 +32065,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 10U: {
@@ -32075,7 +32073,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 11U: {
@@ -32083,7 +32081,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 12U: {
@@ -32091,7 +32089,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 13U: {
@@ -32120,7 +32118,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 4U: {
@@ -32128,7 +32126,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 5U: {
@@ -32136,7 +32134,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 6U: {
@@ -32225,7 +32223,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 4U: {
@@ -32233,7 +32231,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 5U: {
@@ -32241,7 +32239,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 6U: {
@@ -32279,7 +32277,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 6U: {
@@ -32287,7 +32285,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 7U: {
@@ -32295,7 +32293,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 8U: {
@@ -32303,7 +32301,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 9U: {
@@ -32319,7 +32317,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 11U: {
@@ -32349,7 +32347,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 7U: {
@@ -32357,7 +32355,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 8U: {
@@ -32365,7 +32363,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 9U: {
@@ -32395,7 +32393,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 3U: {
@@ -32403,7 +32401,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 4U: {
@@ -32411,7 +32409,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 5U: {
@@ -32473,7 +32471,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 7U: {
@@ -32481,7 +32479,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 8U: {
@@ -32489,7 +32487,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 9U: {
@@ -32519,7 +32517,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 3U: {
@@ -32527,7 +32525,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 4U: {
@@ -32535,7 +32533,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 5U: {
@@ -32597,13 +32595,13 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 3U: {
         using Accessor = StBindingNativePinAccessor<StBindingFbType::mc_group_read_status, 3U>;
         const auto value = Accessor::load();
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 4U: {
@@ -32611,7 +32609,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 5U: {
@@ -32628,7 +32626,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 7U: {
@@ -32636,7 +32634,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 8U: {
@@ -32644,7 +32642,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 9U: {
@@ -32652,7 +32650,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 10U: {
@@ -32660,7 +32658,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 11U: {
@@ -32668,7 +32666,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
         default: return false;
@@ -32689,13 +32687,13 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 3U: {
         using Accessor = StBindingNativePinAccessor<StBindingFbType::mc_group_read_error, 3U>;
         const auto value = Accessor::load();
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 4U: {
@@ -32703,7 +32701,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 5U: {
@@ -32742,7 +32740,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 3U: {
@@ -32750,7 +32748,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 4U: {
@@ -32758,7 +32756,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 5U: {
@@ -32788,7 +32786,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 3U: {
@@ -32796,7 +32794,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 4U: {
@@ -32804,7 +32802,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 5U: {
@@ -32834,7 +32832,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 5U: {
@@ -32842,7 +32840,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 6U: {
@@ -32850,7 +32848,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 7U: {
@@ -32880,7 +32878,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 5U: {
@@ -32888,7 +32886,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 6U: {
@@ -32896,7 +32894,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 7U: {
@@ -32904,7 +32902,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 8U: {
@@ -32934,7 +32932,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 6U: {
@@ -32942,7 +32940,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 7U: {
@@ -32950,7 +32948,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 8U: {
@@ -32958,7 +32956,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 9U: {
@@ -32974,7 +32972,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 11U: {
@@ -32982,7 +32980,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 12U: {
@@ -33012,7 +33010,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 5U: {
@@ -33020,7 +33018,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 6U: {
@@ -33028,7 +33026,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 7U: {
@@ -33058,7 +33056,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 3U: {
@@ -33066,7 +33064,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 4U: {
@@ -33074,7 +33072,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 5U: {
@@ -33104,7 +33102,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 14U: {
@@ -33112,7 +33110,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 15U: {
@@ -33120,7 +33118,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 16U: {
@@ -33128,7 +33126,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 17U: {
@@ -33136,7 +33134,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 18U: {
@@ -33144,7 +33142,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 19U: {
@@ -33182,7 +33180,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 14U: {
@@ -33190,7 +33188,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 15U: {
@@ -33198,7 +33196,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 16U: {
@@ -33206,7 +33204,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 17U: {
@@ -33214,7 +33212,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 18U: {
@@ -33222,7 +33220,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 19U: {
@@ -33260,7 +33258,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 18U: {
@@ -33268,7 +33266,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 19U: {
@@ -33276,7 +33274,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 20U: {
@@ -33284,7 +33282,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 21U: {
@@ -33292,7 +33290,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 22U: {
@@ -33300,7 +33298,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 23U: {
@@ -33338,7 +33336,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 18U: {
@@ -33346,7 +33344,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 19U: {
@@ -33354,7 +33352,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 20U: {
@@ -33362,7 +33360,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 21U: {
@@ -33370,7 +33368,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 22U: {
@@ -33378,7 +33376,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 23U: {
@@ -33416,7 +33414,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 13U: {
@@ -33424,7 +33422,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 14U: {
@@ -33432,7 +33430,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 15U: {
@@ -33440,7 +33438,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 16U: {
@@ -33448,7 +33446,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 17U: {
@@ -33456,7 +33454,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 18U: {
@@ -33494,7 +33492,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 13U: {
@@ -33502,7 +33500,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 14U: {
@@ -33510,7 +33508,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 15U: {
@@ -33518,7 +33516,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 16U: {
@@ -33526,7 +33524,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 17U: {
@@ -33534,7 +33532,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 18U: {
@@ -33572,7 +33570,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 5U: {
@@ -33580,7 +33578,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 6U: {
@@ -33588,7 +33586,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 7U: {
@@ -33596,7 +33594,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 8U: {
@@ -33604,7 +33602,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 9U: {
@@ -33642,7 +33640,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 5U: {
@@ -33650,7 +33648,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 6U: {
@@ -33658,7 +33656,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 7U: {
@@ -33688,7 +33686,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 8U: {
@@ -33696,7 +33694,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 9U: {
@@ -33704,7 +33702,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 10U: {
@@ -33712,7 +33710,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 11U: {
@@ -33720,7 +33718,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 12U: {
@@ -33750,7 +33748,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 6U: {
@@ -33758,7 +33756,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 7U: {
@@ -33766,7 +33764,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 8U: {
@@ -33796,7 +33794,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 10U: {
@@ -33804,7 +33802,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 11U: {
@@ -33812,7 +33810,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 12U: {
@@ -33820,7 +33818,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 13U: {
@@ -33850,7 +33848,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 7U: {
@@ -33858,7 +33856,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 8U: {
@@ -33866,7 +33864,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 9U: {
@@ -33874,7 +33872,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 10U: {
@@ -33904,7 +33902,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 11U: {
@@ -33912,7 +33910,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 12U: {
@@ -33920,7 +33918,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 13U: {
@@ -33950,7 +33948,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 3U: {
@@ -33958,7 +33956,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 4U: {
@@ -33966,7 +33964,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 5U: {
@@ -34028,7 +34026,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 3U: {
@@ -34036,13 +34034,13 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 4U: {
         using Accessor = StBindingNativePinAccessor<StBindingFbType::mc_group_read_rigid_body_dynamic, 4U>;
         const auto value = Accessor::load();
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 5U: {
@@ -34050,7 +34048,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 6U: {
@@ -34088,7 +34086,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 5U: {
@@ -34096,7 +34094,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 6U: {
@@ -34104,7 +34102,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 7U: {
@@ -34112,7 +34110,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 8U: {
@@ -34142,7 +34140,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 6U: {
@@ -34150,7 +34148,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 7U: {
@@ -34158,7 +34156,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 8U: {
@@ -34166,7 +34164,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 9U: {
@@ -34182,7 +34180,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 11U: {
@@ -34212,7 +34210,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 4U: {
@@ -34220,7 +34218,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 5U: {
@@ -34228,7 +34226,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 6U: {
@@ -34258,7 +34256,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 4U: {
@@ -34266,7 +34264,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 5U: {
@@ -34274,7 +34272,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 6U: {
@@ -34304,7 +34302,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 4U: {
@@ -34312,7 +34310,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 5U: {
@@ -34320,7 +34318,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 6U: {
@@ -34358,7 +34356,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 5U: {
@@ -34366,7 +34364,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 6U: {
@@ -34374,7 +34372,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 7U: {
@@ -34382,7 +34380,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 8U: {
@@ -34412,7 +34410,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 4U: {
@@ -34420,7 +34418,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 5U: {
@@ -34428,7 +34426,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 6U: {
@@ -34458,7 +34456,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 4U: {
@@ -34466,7 +34464,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 5U: {
@@ -34474,7 +34472,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 6U: {
@@ -34482,7 +34480,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 7U: {
@@ -34512,7 +34510,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 4U: {
@@ -34520,13 +34518,13 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 5U: {
         using Accessor = StBindingNativePinAccessor<StBindingFbType::mc_group_read_payload, 5U>;
         const auto value = Accessor::load();
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 6U: {
@@ -34534,7 +34532,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 7U: {
@@ -34572,7 +34570,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 6U: {
@@ -34580,7 +34578,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 7U: {
@@ -34588,7 +34586,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 8U: {
@@ -34611,7 +34609,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
         default: return false;
@@ -34641,7 +34639,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 10U: {
@@ -34649,7 +34647,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 11U: {
@@ -34657,7 +34655,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 12U: {
@@ -34665,7 +34663,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 13U: {
@@ -34682,7 +34680,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
         default: return false;
@@ -34712,7 +34710,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 13U: {
@@ -34720,7 +34718,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 14U: {
@@ -34728,7 +34726,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 15U: {
@@ -34736,7 +34734,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 16U: {
@@ -34753,7 +34751,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
         default: return false;
@@ -34783,7 +34781,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 7U: {
@@ -34791,7 +34789,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 8U: {
@@ -34799,7 +34797,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 9U: {
@@ -34807,7 +34805,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 10U: {
@@ -34815,7 +34813,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 11U: {
@@ -34854,7 +34852,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 8U: {
@@ -34862,7 +34860,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 9U: {
@@ -34870,7 +34868,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 10U: {
@@ -34878,7 +34876,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 11U: {
@@ -34886,7 +34884,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 12U: {
@@ -34925,7 +34923,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 8U: {
@@ -34933,7 +34931,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 9U: {
@@ -34941,7 +34939,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 10U: {
@@ -34949,7 +34947,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 11U: {
@@ -34957,7 +34955,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 12U: {
@@ -34987,7 +34985,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 12U: {
@@ -34995,7 +34993,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 13U: {
@@ -35003,7 +35001,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 14U: {
@@ -35011,7 +35009,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 15U: {
@@ -35019,7 +35017,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 16U: {
@@ -35049,7 +35047,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 11U: {
@@ -35057,7 +35055,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 12U: {
@@ -35065,7 +35063,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 13U: {
@@ -35073,7 +35071,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 14U: {
@@ -35081,7 +35079,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 15U: {
@@ -35111,7 +35109,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 12U: {
@@ -35119,7 +35117,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 13U: {
@@ -35127,7 +35125,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 14U: {
@@ -35135,7 +35133,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 15U: {
@@ -35143,7 +35141,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 16U: {
@@ -35173,7 +35171,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 11U: {
@@ -35181,7 +35179,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 12U: {
@@ -35189,7 +35187,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 13U: {
@@ -35197,7 +35195,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 14U: {
@@ -35205,7 +35203,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 15U: {
@@ -35235,7 +35233,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 9U: {
@@ -35243,7 +35241,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 10U: {
@@ -35251,7 +35249,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 11U: {
@@ -35259,7 +35257,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 12U: {
@@ -35267,7 +35265,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 13U: {
@@ -35297,7 +35295,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 5U: {
@@ -35305,7 +35303,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 6U: {
@@ -35313,7 +35311,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 7U: {
@@ -35321,7 +35319,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 8U: {
@@ -35329,7 +35327,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 9U: {
@@ -35359,7 +35357,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 4U: {
@@ -35367,7 +35365,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 5U: {
@@ -35375,7 +35373,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 6U: {
@@ -35383,7 +35381,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 7U: {
@@ -35391,7 +35389,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 8U: {
@@ -35421,7 +35419,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 9U: {
@@ -35429,7 +35427,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 10U: {
@@ -35437,7 +35435,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 11U: {
@@ -35445,7 +35443,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 12U: {
@@ -35453,7 +35451,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 13U: {
@@ -35483,7 +35481,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 9U: {
@@ -35491,7 +35489,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 10U: {
@@ -35499,7 +35497,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 11U: {
@@ -35507,7 +35505,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 12U: {
@@ -35515,7 +35513,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 13U: {
@@ -35545,7 +35543,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 8U: {
@@ -35553,7 +35551,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 9U: {
@@ -35561,7 +35559,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 10U: {
@@ -35569,7 +35567,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 11U: {
@@ -35577,7 +35575,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 12U: {
@@ -35607,7 +35605,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 3U: {
@@ -35615,7 +35613,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 4U: {
@@ -35623,7 +35621,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 5U: {
@@ -35631,7 +35629,7 @@ inline bool st_binding_load_scalar(StBindingFbType type,
         const auto &instance =
             *static_cast<const Accessor::fb_type *>(storage);
         const auto &value = Accessor::get(instance);
-        bits = value ? 1U : 0U;
+        bits = static_cast<std::uint64_t>(value);
         return true;
     }
     case 6U: {
@@ -35656,8 +35654,7 @@ inline bool st_binding_store_object(StBindingFbType type,
                                     TypeId type_id,
                                     std::uint32_t size) noexcept
 {
-    if(storage == nullptr || bytes == nullptr ||
-       !st_binding_can_store_object(type, pin)) return false;
+    if(storage == nullptr || bytes == nullptr) return false;
     switch(type) {
     case StBindingFbType::mc_add_axis_to_group:
         switch(pin) {
@@ -36116,8 +36113,7 @@ inline bool st_binding_load_object(StBindingFbType type,
                                    TypeId type_id,
                                    std::uint32_t size) noexcept
 {
-    if(storage == nullptr || bytes == nullptr ||
-       !st_binding_can_load_object(type, pin)) return false;
+    if(storage == nullptr || bytes == nullptr) return false;
     switch(type) {
     case StBindingFbType::mc_read_axis_group_info:
         switch(pin) {
@@ -36324,8 +36320,7 @@ inline bool st_binding_store_sequence(
     StBindingFbType type, std::uint16_t pin, void *storage,
     StBindingNativeSequenceValue value) noexcept
 {
-    if(storage == nullptr ||
-       !st_binding_can_store_sequence(type, pin)) return false;
+    if(storage == nullptr) return false;
     switch(type) {
     case StBindingFbType::mc_position_profile:
         switch(pin) {
@@ -36512,8 +36507,7 @@ inline bool st_binding_load_sequence(
 {
     // This extracts native registry keys only. The VM/load domain
     // must reverse-resolve them before exposing an ST handle.
-    if(storage == nullptr ||
-       !st_binding_can_load_sequence(type, pin)) return false;
+    if(storage == nullptr) return false;
     switch(type) {
     case StBindingFbType::mc_position_profile:
         switch(pin) {
@@ -36688,8 +36682,7 @@ inline bool st_binding_store_tagged_reference(
     TypeId type_id,
     StBindingNativeTaggedReferenceValue value) noexcept
 {
-    if(storage == nullptr ||
-       !st_binding_can_store_tagged_reference(type, pin)) return false;
+    if(storage == nullptr) return false;
     switch(type) {
     case StBindingFbType::mc_set_kin_transform:
         switch(pin) {
@@ -36730,8 +36723,7 @@ inline bool st_binding_load_tagged_reference(
     TypeId type_id,
     StBindingNativeTaggedReferenceValue &value) noexcept
 {
-    if(storage == nullptr ||
-       !st_binding_can_load_tagged_reference(type, pin)) return false;
+    if(storage == nullptr) return false;
     switch(type) {
     case StBindingFbType::mc_read_kin_transform:
         switch(pin) {

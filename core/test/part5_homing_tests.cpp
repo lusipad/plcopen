@@ -884,6 +884,11 @@ int check_search_validation_matrix()
         if (!rejects(member, nan))
             return fail("search validation matrix is atomic");
     }
+    if (!rejects(&fb::HomingSearchFb::torque_limit, nan) ||
+        !rejects(&fb::HomingSearchFb::torque_limit, -1.0))
+    {
+        return fail("search torque limit validation is atomic");
+    }
     {
         axis::AxisModel axis;
         axis.set_power(true);
@@ -899,6 +904,28 @@ int check_search_validation_matrix()
         {
             return fail("search validation matrix is atomic");
         }
+    }
+    {
+        axis::AxisModel axis;
+        axis.set_power(true);
+        fb::FbStepLimitSwitch step;
+        step.axis_ref = &axis;
+        step.direction = static_cast<axis::HomeDirection>(99);
+        step.execute = true;
+        step.call();
+        if (!step.outputs.error || step.outputs.error_id != rt::ErrorCode::invalid_argument)
+            return fail("limit search rejects direction enum");
+    }
+    {
+        axis::AxisModel axis;
+        axis.set_power(true);
+        fb::FbStepLimitSwitch step;
+        step.axis_ref = &axis;
+        step.limit_switch_mode = static_cast<axis::SwitchMode>(99);
+        step.execute = true;
+        step.call();
+        if (!step.outputs.error || step.outputs.error_id != rt::ErrorCode::invalid_argument)
+            return fail("limit search rejects switch mode enum");
     }
     std::printf("  PASS search_validation_matrix\n");
     return 0;

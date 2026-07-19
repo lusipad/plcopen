@@ -1350,6 +1350,102 @@ void lower_layer_source_regression()
     }
 }
 
+void runtime_public_boundary_matrix()
+{
+    st::ConfigurationRuntime unloaded;
+    st::TaskStatus task{};
+    st::ResourceStatus resource{};
+    std::int64_t value = 0;
+    unsigned char bytes[16]{};
+    std::size_t written = 0;
+    std::uint64_t version = 0;
+    check(unloaded.boundary(0) == rt::ErrorCode::invalid_argument &&
+              unloaded.run(1) == rt::ErrorCode::invalid_argument &&
+              unloaded.run(-1) == rt::ErrorCode::invalid_argument,
+          "L5 unloaded scheduler APIs reject execution");
+    check(unloaded.task_status(nullptr, nullptr, task) ==
+                  rt::ErrorCode::invalid_argument &&
+              unloaded.resource_status(nullptr, resource) ==
+                  rt::ErrorCode::invalid_argument &&
+              unloaded.value_i64(nullptr, nullptr, nullptr, value) ==
+                  rt::ErrorCode::invalid_argument,
+          "L5 unloaded lookup APIs reject null names");
+    check(unloaded.output_snapshot(nullptr, bytes, sizeof(bytes), written,
+                                   version) ==
+                  rt::ErrorCode::invalid_argument &&
+              unloaded.memory_snapshot(nullptr, bytes, sizeof(bytes), written,
+                                       version) ==
+                  rt::ErrorCode::invalid_argument &&
+              unloaded.submit_input(nullptr, bytes, sizeof(bytes), 1) ==
+                  rt::ErrorCode::invalid_argument,
+          "L5 unloaded image APIs reject unknown resources");
+    check(unloaded.report_wallclock_exceeded(nullptr, nullptr) ==
+                  rt::ErrorCode::invalid_argument &&
+              unloaded.reset_task(nullptr, nullptr) ==
+                  rt::ErrorCode::invalid_argument &&
+              unloaded.restart_task(nullptr, nullptr) ==
+                  rt::ErrorCode::invalid_argument &&
+              unloaded.report_resource_fault(nullptr,
+                                              st::ResourceFault::none) ==
+                  rt::ErrorCode::invalid_argument &&
+              unloaded.force_queue_version(nullptr) == 0,
+          "L5 unloaded control APIs reject unknown targets");
+    check(unloaded.artifact_pou_name(0).empty() &&
+              unloaded.artifact_sfc_name(0, 0).empty() &&
+              unloaded.artifact_sfc_action_name(0, 0, 0).empty(),
+          "L5 unloaded artifact names are empty");
+
+    Rig rig;
+    check(rig.build(one_periodic(
+              "Main", "VAR X : DINT; Q AT %QB0 : BYTE; END_VAR",
+              "X := X + 1; Q := BYTE#1;")),
+          "L5 public-boundary runtime builds");
+    check(rig.runtime.boundary(0, nullptr, 1) ==
+                  rt::ErrorCode::invalid_argument &&
+              rig.runtime.boundary(0) == rt::ErrorCode::ok &&
+              rig.runtime.boundary(0) == rt::ErrorCode::invalid_argument,
+          "L5 boundary validates event storage and monotonic ticks");
+    check(rig.runtime.task_status(nullptr, "main", task) ==
+                  rt::ErrorCode::invalid_argument &&
+              rig.runtime.task_status("r0", nullptr, task) ==
+                  rt::ErrorCode::invalid_argument &&
+              rig.runtime.task_status("r0", "missing", task) ==
+                  rt::ErrorCode::invalid_argument &&
+              rig.runtime.resource_status("missing", resource) ==
+                  rt::ErrorCode::invalid_argument,
+          "L5 status lookup validates resource and task names");
+    check(rig.runtime.value_i64(nullptr, "p0", "x", value) ==
+                  rt::ErrorCode::invalid_argument &&
+              rig.runtime.value_i64("r0", nullptr, "x", value) ==
+                  rt::ErrorCode::invalid_argument &&
+              rig.runtime.value_i64("r0", "p0", nullptr, value) ==
+                  rt::ErrorCode::invalid_argument &&
+              rig.runtime.value_i64("r0", "missing", "x", value) ==
+                  rt::ErrorCode::invalid_argument &&
+              rig.runtime.value_i64("r0", "p0", "missing", value) ==
+                  rt::ErrorCode::invalid_argument,
+          "L5 value lookup validates every name boundary");
+    check(rig.runtime.output_snapshot("missing", bytes, sizeof(bytes),
+                                      written, version) ==
+                  rt::ErrorCode::invalid_argument &&
+              rig.runtime.memory_snapshot("missing", bytes, sizeof(bytes),
+                                          written, version) ==
+                  rt::ErrorCode::invalid_argument &&
+              rig.runtime.submit_input("missing", bytes, sizeof(bytes), 1) ==
+                  rt::ErrorCode::invalid_argument,
+          "L5 image lookup rejects unknown resources");
+    check(rig.runtime.report_wallclock_exceeded("r0", "missing") ==
+                  rt::ErrorCode::invalid_argument &&
+              rig.runtime.reset_task("r0", "missing") ==
+                  rt::ErrorCode::invalid_argument &&
+              rig.runtime.restart_task("missing", "main") ==
+                  rt::ErrorCode::invalid_argument &&
+              rig.runtime.report_resource_fault("r0",
+                                                st::ResourceFault::none) ==
+                  rt::ErrorCode::invalid_argument,
+          "L5 task and resource control rejects invalid requests");
+}
+
 } // namespace
 
 int main()
@@ -1388,6 +1484,7 @@ int main()
     compilation_and_schedule_are_deterministic();
     cycle_path_is_zero_allocation();
     lower_layer_source_regression();
+    runtime_public_boundary_matrix();
     if(failures != 0) {
         std::printf("%d failure(s)\n", failures);
         return 1;

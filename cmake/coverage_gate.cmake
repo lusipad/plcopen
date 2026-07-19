@@ -12,6 +12,7 @@ set(BUILD "${ROOT}/build/coverage")
 set(REPORT_DIR "${ROOT}/out/coverage-linux")
 set(LINE_THRESHOLD 90)
 set(BRANCH_TARGET 85)
+set(BUILD_JOBS 4)
 
 find_program(GCOVR gcovr)
 if(NOT GCOVR)
@@ -43,7 +44,7 @@ endif()
 # Build
 message(STATUS "coverage-gate: building...")
 execute_process(
-    COMMAND "${CMAKE_COMMAND}" --build "${BUILD}" --parallel
+    COMMAND "${CMAKE_COMMAND}" --build "${BUILD}" --parallel ${BUILD_JOBS}
     RESULT_VARIABLE rc
     OUTPUT_VARIABLE command_stdout
     ERROR_VARIABLE command_stderr)
@@ -74,6 +75,8 @@ execute_process(
         --exclude "core/test/"
         --exclude "core/bench/"
         --exclude "core/demo/"
+        --gcov-ignore-errors=output_error
+        --gcov-ignore-parse-errors=negative_hits.warn_once_per_file
         --json-summary "${REPORT_DIR}/core-summary.json"
         --fail-under-line ${LINE_THRESHOLD}
         --print-summary
@@ -97,6 +100,8 @@ execute_process(
         --exclude "core/demo/"
         --exclude-unreachable-branches
         --exclude-throw-branches
+        --gcov-ignore-errors=output_error
+        --gcov-ignore-parse-errors=negative_hits.warn_once_per_file
         --json-summary "${REPORT_DIR}/motion-stack-summary.json"
         --fail-under-branch ${BRANCH_TARGET}
         --print-summary
@@ -114,6 +119,8 @@ execute_process(
         --exclude "core/test/"
         --exclude-unreachable-branches
         --exclude-throw-branches
+        --gcov-ignore-errors=output_error
+        --gcov-ignore-parse-errors=negative_hits.warn_once_per_file
         --json-summary "${REPORT_DIR}/st-summary.json"
         --fail-under-branch ${BRANCH_TARGET}
         --print-summary

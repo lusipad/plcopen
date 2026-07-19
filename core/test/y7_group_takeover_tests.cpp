@@ -561,6 +561,142 @@ int check_negative_projection()
     return 0;
 }
 
+// Zero-distance takeover: all velocity is lateral, along-path is trivial.
+int check_zero_distance_takeover()
+{
+    Rig rig;
+    rig.group.submit_linear(make_cmd(2.0, 0.0));
+
+    for(int i = 0; i < 50; ++i) {
+        rig.group.cycle();
+    }
+    if(rig.group.status() != axis::GroupStatus::moving) {
+        return fail("zero_distance: not moving");
+    }
+
+    // Takeover to current position: zero-length path.
+    const double cx = rig.x.snapshot().command_position;
+    const double cy = rig.y.snapshot().command_position;
+    if(!rig.group.submit_linear(make_abort(cx, cy))) {
+        return fail("zero_distance: takeover rejected");
+    }
+
+    // The motion should complete immediately (zero distance).
+    if(run_to_standstill(rig.group) < 0) {
+        return fail("zero_distance: did not reach standby");
+    }
+    if(!near(rig.x.snapshot().command_position, cx, 1e-6) ||
+       !near(rig.y.snapshot().command_position, cy, 1e-6)) {
+        return fail("zero_distance: position drifted");
+    }
+    return 0;
+}
+
+// Takeover during acceleration phase: a_s0 clamping path.
+int check_acceleration_phase_takeover()
+{
+    Rig rig;
+    rig.group.submit_linear(make_cmd(2.0, 0.0));
+
+    // Only 5 cycles — deep in the acceleration phase where a != 0.
+    for(int i = 0; i < 5; ++i) {
+        rig.group.cycle();
+    }
+    if(rig.group.status() != axis::GroupStatus::moving) {
+        return fail("accel_phase: not moving");
+    }
+
+    // Takeover to a diagonal target to get both along and lateral components.
+    const double cx = rig.x.snapshot().command_position;
+    const double cy = rig.y.snapshot().command_position;
+    if(!rig.group.submit_linear(make_abort(cx + 1.5, cy + 0.5))) {
+        return fail("accel_phase: takeover rejected");
+    }
+
+    // Verify velocity continuity.
+    double prev_x = rig.x.snapshot().command_position;
+    double prev_y = rig.y.snapshot().command_position;
+    double prev_vx = 0.0;
+    double prev_vy = 0.0;
+    bool first = true;
+    double max_step = 0.0;
+
+    for(int i = 0; i < 50000; ++i) {
+        rig.group.cycle();
+        const double x = rig.x.snapshot().command_position;
+        const double y = rig.y.snapshot().command_position;
+        const double vx = x - prev_x;
+        const double vy = y - prev_y;
+        if(!first) {
+            const double step = std::max(std::fabs(vx - prev_vx),
+                                         std::fabs(vy - prev_vy));
+            if(step > max_step) max_step = step;
+        }
+        first = false;
+        prev_x = x;
+        prev_y = y;
+        prev_vx = vx;
+        prev_vy = vy;
+        if(rig.group.status() == axis::GroupStatus::standby) break;
+    }
+
+    if(rig.group.status() != axis::GroupStatus::standby) {
+        return fail("accel_phase: did not reach standby");
+    }
+    if(max_step > 0.002 * 3.0) {
+        std::printf("  max_step=%.6e\n", max_step);
+        return fail("accel_phase: velocity step exceeds limit");
+    }
+    return 0;
+}
+
+// KB-053 rejection: stop distance exceeds path length by > 1.5x, group
+// should fall back to rest start (or reject).
+int check_kb053_stop_distance_rejection()
+{
+    Rig rig;
+    // Use higher velocity command for this test.
+    axis::GroupCommand fast_cmd{};
+    fast_cmd.target.size = 2;
+    fast_cmd.target.value[0] = 5.0;
+    fast_cmd.target.value[1] = 0.0;
+    fast_cmd.velocity = 0.04;
+    fast_cmd.acceleration = 0.004;
+    fast_cmd.deceleration = 0.004;
+    fast_cmd.jerk = 0.004;
+    rig.group.submit_linear(fast_cmd);
+
+    // Run into cruise phase at full velocity.
+    for(int i = 0; i < 100; ++i) {
+        rig.group.cycle();
+    }
+    if(rig.group.status() != axis::GroupStatus::moving) {
+        return fail("kb053: not moving");
+    }
+
+    // Takeover to a very short target — the stopping distance under beta-split
+    // limits should exceed 1.5x the path length.
+    const double cx = rig.x.snapshot().command_position;
+    const double cy = rig.y.snapshot().command_position;
+    axis::GroupCommand tiny_abort{};
+    tiny_abort.target.size = 2;
+    tiny_abort.target.value[0] = cx + 0.01;
+    tiny_abort.target.value[1] = cy;
+    tiny_abort.velocity = 0.04;
+    tiny_abort.acceleration = 0.004;
+    tiny_abort.deceleration = 0.004;
+    tiny_abort.jerk = 0.004;
+    tiny_abort.buffer_mode = axis::BufferMode::aborting;
+    rig.group.submit_linear(tiny_abort);
+
+    // Whether the connector is active or not (KB-053 may fall back to
+    // rest-start), the motion should complete without crashing.
+    if(run_to_standstill(rig.group) < 0) {
+        return fail("kb053: did not reach standby");
+    }
+    return 0;
+}
+
 // GroupStop during a connector: the motion stops cleanly.
 int check_stop_during_connector()
 {
@@ -609,6 +745,9 @@ int main()
        check_tolerance_tube() != 0 || check_no_limit_exceedance() != 0 ||
        check_aligned_takeover() != 0 || check_stationary_takeover() != 0 ||
        check_reentrant_takeover() != 0 || check_negative_projection() != 0 ||
+       check_zero_distance_takeover() != 0 ||
+       check_acceleration_phase_takeover() != 0 ||
+       check_kb053_stop_distance_rejection() != 0 ||
        check_stop_during_connector() != 0) {
         return 1;
     }

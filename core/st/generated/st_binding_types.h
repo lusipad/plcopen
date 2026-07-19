@@ -421,184 +421,66 @@ inline TypeError install_binding_types(TypeTable &types)
 {
     if(types.next_type_id() != first_load_type_id)
         return generated::st_binding_installed_types_match(types) ? TypeError::ok : TypeError::duplicate_type;
-    TypeId id = invalid_type_id; TypeError error = TypeError::ok;
-    error = types.add_enum("MC_BUFFER_MODE", builtin::dint, {EnumItem{"aborting", IntegerValue::signed_value(0)}, EnumItem{"buffered", IntegerValue::signed_value(1)}, EnumItem{"blending_low", IntegerValue::signed_value(2)}, EnumItem{"blending_high", IntegerValue::signed_value(5)}}, id);
-    if(error != TypeError::ok || id != 65536U)
-        return error == TypeError::ok ? TypeError::duplicate_type : error;
-    error = types.add_enum("MC_DIRECTION", builtin::dint, {EnumItem{"current", IntegerValue::signed_value(0)}, EnumItem{"positive", IntegerValue::signed_value(1)}, EnumItem{"negative", IntegerValue::signed_value(-1)}, EnumItem{"shortest_way", IntegerValue::signed_value(2)}}, id);
-    if(error != TypeError::ok || id != 65537U)
-        return error == TypeError::ok ? TypeError::duplicate_type : error;
-    error = types.add_enum("MC_HOME_DIRECTION", builtin::dint, {EnumItem{"positive", IntegerValue::signed_value(0)}, EnumItem{"negative", IntegerValue::signed_value(1)}, EnumItem{"switch_positive", IntegerValue::signed_value(2)}, EnumItem{"switch_negative", IntegerValue::signed_value(3)}}, id);
-    if(error != TypeError::ok || id != 65538U)
-        return error == TypeError::ok ? TypeError::duplicate_type : error;
-    error = types.add_enum("MC_SWITCH_MODE", builtin::dint, {EnumItem{"on", IntegerValue::signed_value(0)}, EnumItem{"off", IntegerValue::signed_value(1)}, EnumItem{"rising_edge", IntegerValue::signed_value(2)}, EnumItem{"falling_edge", IntegerValue::signed_value(3)}, EnumItem{"edge_positive", IntegerValue::signed_value(4)}, EnumItem{"edge_negative", IntegerValue::signed_value(5)}}, id);
-    if(error != TypeError::ok || id != 65539U)
-        return error == TypeError::ok ? TypeError::duplicate_type : error;
-    error = types.add_opaque_ref("AXIS_REF", id);
-    if(error != TypeError::ok || id != 65540U)
-        return error == TypeError::ok ? TypeError::duplicate_type : error;
-    error = types.add_opaque_ref("GROUP_REF", id);
-    if(error != TypeError::ok || id != 65541U)
-        return error == TypeError::ok ? TypeError::duplicate_type : error;
-    error = types.add_struct("MC_IDENT_IN_GROUP", {StructFieldSpec{"index", 9U}}, id);
-    if(error != TypeError::ok || id != 65542U)
-        return error == TypeError::ok ? TypeError::duplicate_type : error;
-    error = types.add_enum("MC_AXIS_PARAMETER", builtin::dint, {EnumItem{"commanded_position", IntegerValue::signed_value(0)}, EnumItem{"sw_limit_pos", IntegerValue::signed_value(1)}, EnumItem{"sw_limit_neg", IntegerValue::signed_value(2)}, EnumItem{"enable_limit_pos", IntegerValue::signed_value(3)}, EnumItem{"enable_limit_neg", IntegerValue::signed_value(4)}, EnumItem{"enable_pos_lag_monitoring", IntegerValue::signed_value(5)}, EnumItem{"max_position_lag", IntegerValue::signed_value(6)}, EnumItem{"max_velocity_system", IntegerValue::signed_value(7)}, EnumItem{"max_velocity_appl", IntegerValue::signed_value(8)}, EnumItem{"actual_velocity", IntegerValue::signed_value(9)}, EnumItem{"commanded_velocity", IntegerValue::signed_value(10)}, EnumItem{"max_acceleration_system", IntegerValue::signed_value(11)}, EnumItem{"max_acceleration_appl", IntegerValue::signed_value(12)}, EnumItem{"max_deceleration_system", IntegerValue::signed_value(13)}, EnumItem{"max_deceleration_appl", IntegerValue::signed_value(14)}, EnumItem{"max_jerk_system", IntegerValue::signed_value(15)}, EnumItem{"max_jerk_appl", IntegerValue::signed_value(16)}}, id);
-    if(error != TypeError::ok || id != 65543U)
-        return error == TypeError::ok ? TypeError::duplicate_type : error;
-    error = types.add_enum("MC_CIRC_MODE", builtin::dint, {EnumItem{"border", IntegerValue::signed_value(0)}, EnumItem{"center", IntegerValue::signed_value(1)}, EnumItem{"radius", IntegerValue::signed_value(2)}}, id);
-    if(error != TypeError::ok || id != 65544U)
-        return error == TypeError::ok ? TypeError::duplicate_type : error;
-    error = types.add_enum("MC_CIRC_PATH_CHOICE", builtin::dint, {EnumItem{"clockwise", IntegerValue::signed_value(0)}, EnumItem{"counter_clockwise", IntegerValue::signed_value(1)}}, id);
-    if(error != TypeError::ok || id != 65545U)
-        return error == TypeError::ok ? TypeError::duplicate_type : error;
-    error = types.add_enum("MC_COMBINE_MODE", builtin::dint, {EnumItem{"add_axes", IntegerValue::signed_value(0)}, EnumItem{"sub_axes", IntegerValue::signed_value(1)}}, id);
-    if(error != TypeError::ok || id != 65546U)
-        return error == TypeError::ok ? TypeError::duplicate_type : error;
-    error = types.add_enum("MC_COORD_SYSTEM", builtin::dint, {EnumItem{"acs", IntegerValue::signed_value(0)}, EnumItem{"mcs", IntegerValue::signed_value(1)}, EnumItem{"wcs", IntegerValue::signed_value(2)}, EnumItem{"pcs", IntegerValue::signed_value(3)}, EnumItem{"fcs", IntegerValue::signed_value(4)}, EnumItem{"tcs", IntegerValue::signed_value(5)}}, id);
-    if(error != TypeError::ok || id != 65547U)
-        return error == TypeError::ok ? TypeError::duplicate_type : error;
-    error = types.add_enum("MC_EXECUTION_MODE", builtin::dint, {EnumItem{"immediately", IntegerValue::signed_value(0)}, EnumItem{"queued", IntegerValue::signed_value(1)}}, id);
-    if(error != TypeError::ok || id != 65548U)
-        return error == TypeError::ok ? TypeError::duplicate_type : error;
-    error = types.add_enum("MC_GROUP_VALUE_SOURCE", builtin::dint, {EnumItem{"commanded", IntegerValue::signed_value(0)}, EnumItem{"actual", IntegerValue::signed_value(1)}, EnumItem{"set", IntegerValue::signed_value(2)}}, id);
-    if(error != TypeError::ok || id != 65549U)
-        return error == TypeError::ok ? TypeError::duplicate_type : error;
-    error = types.add_enum("MC_MASTER_VALUE_SOURCE", builtin::dint, {EnumItem{"command", IntegerValue::signed_value(0)}, EnumItem{"actual", IntegerValue::signed_value(1)}}, id);
-    if(error != TypeError::ok || id != 65550U)
-        return error == TypeError::ok ? TypeError::duplicate_type : error;
-    error = types.add_enum("MC_PATH_MODE", builtin::dint, {EnumItem{"non_periodic", IntegerValue::signed_value(0)}, EnumItem{"periodic", IntegerValue::signed_value(1)}}, id);
-    if(error != TypeError::ok || id != 65551U)
-        return error == TypeError::ok ? TypeError::duplicate_type : error;
-    error = types.add_enum("MC_TRANSITION_MODE", builtin::dint, {EnumItem{"none", IntegerValue::signed_value(0)}, EnumItem{"start_velocity", IntegerValue::signed_value(1)}, EnumItem{"constant_velocity", IntegerValue::signed_value(2)}, EnumItem{"corner_distance", IntegerValue::signed_value(3)}, EnumItem{"max_corner_deviation", IntegerValue::signed_value(4)}}, id);
-    if(error != TypeError::ok || id != 65552U)
-        return error == TypeError::ok ? TypeError::duplicate_type : error;
-    error = types.add_opaque_ref("MC_PATH_TABLE", id);
-    if(error != TypeError::ok || id != 65553U)
-        return error == TypeError::ok ? TypeError::duplicate_type : error;
-    error = types.add_ref("MC_INPUT_REF", 65540U, id);
-    if(error != TypeError::ok || id != 65554U)
-        return error == TypeError::ok ? TypeError::duplicate_type : error;
-    error = types.add_ref("MC_OUTPUT_REF", 65540U, id);
-    if(error != TypeError::ok || id != 65555U)
-        return error == TypeError::ok ? TypeError::duplicate_type : error;
-    error = types.add_struct("MC_REFERENCE_SIGNAL_REF", {StructFieldSpec{"input", 9U}}, id);
-    if(error != TypeError::ok || id != 65556U)
-        return error == TypeError::ok ? TypeError::duplicate_type : error;
-    error = types.add_array("__ST_BINDING_MC_TOOL_DATA_VALUE", 11U, {ArrayBound{0, 5}}, id);
-    if(error != TypeError::ok || id != 65557U)
-        return error == TypeError::ok ? TypeError::duplicate_type : error;
-    error = types.add_struct("MC_TOOL_DATA", {StructFieldSpec{"value", 65557U}}, id);
-    if(error != TypeError::ok || id != 65558U)
-        return error == TypeError::ok ? TypeError::duplicate_type : error;
-    error = types.add_array("__ST_BINDING_MC_GROUP_POSITION_VALUE", 11U, {ArrayBound{0, 7}}, id);
-    if(error != TypeError::ok || id != 65559U)
-        return error == TypeError::ok ? TypeError::duplicate_type : error;
-    error = types.add_struct("MC_GROUP_POSITION", {StructFieldSpec{"value", 65559U}, StructFieldSpec{"size", 9U}}, id);
-    if(error != TypeError::ok || id != 65560U)
-        return error == TypeError::ok ? TypeError::duplicate_type : error;
-    error = types.add_struct("MC_PAYLOAD_DATA", {StructFieldSpec{"center", 65558U}, StructFieldSpec{"mass", 11U}, StructFieldSpec{"ix", 11U}, StructFieldSpec{"iy", 11U}, StructFieldSpec{"iz", 11U}}, id);
-    if(error != TypeError::ok || id != 65561U)
-        return error == TypeError::ok ? TypeError::duplicate_type : error;
-    error = types.add_array("__ST_BINDING_MC_JOG_BOOLEAN_ARRAY_VALUE", 1U, {ArrayBound{0, 7}}, id);
-    if(error != TypeError::ok || id != 65562U)
-        return error == TypeError::ok ? TypeError::duplicate_type : error;
-    error = types.add_struct("MC_JOG_BOOLEAN_ARRAY", {StructFieldSpec{"value", 65562U}, StructFieldSpec{"count", 9U}}, id);
-    if(error != TypeError::ok || id != 65563U)
-        return error == TypeError::ok ? TypeError::duplicate_type : error;
-    error = types.add_struct("__ST_BINDING_MC_GROUP_S_W_LIMITS_ELEMENT", {StructFieldSpec{"minimum", 11U}, StructFieldSpec{"maximum", 11U}, StructFieldSpec{"minimum_enabled", 1U}, StructFieldSpec{"maximum_enabled", 1U}}, id);
-    if(error != TypeError::ok || id != 65564U)
-        return error == TypeError::ok ? TypeError::duplicate_type : error;
-    error = types.add_array("__ST_BINDING_MC_GROUP_S_W_LIMITS_VALUE", 65564U, {ArrayBound{0, 7}}, id);
-    if(error != TypeError::ok || id != 65565U)
-        return error == TypeError::ok ? TypeError::duplicate_type : error;
-    error = types.add_struct("MC_GROUP_S_W_LIMITS", {StructFieldSpec{"value", 65565U}, StructFieldSpec{"count", 9U}}, id);
-    if(error != TypeError::ok || id != 65566U)
-        return error == TypeError::ok ? TypeError::duplicate_type : error;
-    error = types.add_struct("__ST_BINDING_MC_RIGID_BODY_DYNAMIC_ELEMENT", {StructFieldSpec{"center_of_gravity", 65558U}, StructFieldSpec{"mass", 11U}, StructFieldSpec{"ix", 11U}, StructFieldSpec{"iy", 11U}, StructFieldSpec{"iz", 11U}}, id);
-    if(error != TypeError::ok || id != 65567U)
-        return error == TypeError::ok ? TypeError::duplicate_type : error;
-    error = types.add_array("MC_RIGID_BODY_DYNAMIC", 65567U, {ArrayBound{0, 8}}, id);
-    if(error != TypeError::ok || id != 65568U)
-        return error == TypeError::ok ? TypeError::duplicate_type : error;
-    error = types.add_array("MC_TU_C_NUMERATOR", 4U, {ArrayBound{0, 7}}, id);
-    if(error != TypeError::ok || id != 65569U)
-        return error == TypeError::ok ? TypeError::duplicate_type : error;
-    error = types.add_array("MC_TU_C_DENOMINATOR", 4U, {ArrayBound{0, 7}}, id);
-    if(error != TypeError::ok || id != 65570U)
-        return error == TypeError::ok ? TypeError::duplicate_type : error;
-    error = types.add_opaque_ref("MC_CAM_SWITCH_TABLE_VIEW", id);
-    if(error != TypeError::ok || id != 65571U)
-        return error == TypeError::ok ? TypeError::duplicate_type : error;
-    error = types.add_opaque_ref("MC_CAM_TABLE_VIEW", id);
-    if(error != TypeError::ok || id != 65572U)
-        return error == TypeError::ok ? TypeError::duplicate_type : error;
-    error = types.add_opaque_ref("MC_TIME_POSITION", id);
-    if(error != TypeError::ok || id != 65573U)
-        return error == TypeError::ok ? TypeError::duplicate_type : error;
-    error = types.add_opaque_ref("MC_TIME_VELOCITY", id);
-    if(error != TypeError::ok || id != 65574U)
-        return error == TypeError::ok ? TypeError::duplicate_type : error;
-    error = types.add_opaque_ref("MC_TIME_ACCELERATION", id);
-    if(error != TypeError::ok || id != 65575U)
-        return error == TypeError::ok ? TypeError::duplicate_type : error;
-    error = types.add_struct("__ST_BINDING_MC_DH_PARAMETER_ARRAY_ELEMENT", {StructFieldSpec{"theta", 11U}, StructFieldSpec{"d", 11U}, StructFieldSpec{"a", 11U}, StructFieldSpec{"alpha", 11U}}, id);
-    if(error != TypeError::ok || id != 65576U)
-        return error == TypeError::ok ? TypeError::duplicate_type : error;
-    error = types.add_array("__ST_BINDING_MC_DH_PARAMETER_ARRAY_VALUE", 65576U, {ArrayBound{0, 7}}, id);
-    if(error != TypeError::ok || id != 65577U)
-        return error == TypeError::ok ? TypeError::duplicate_type : error;
-    error = types.add_struct("MC_DH_PARAMETER_ARRAY", {StructFieldSpec{"value", 65577U}, StructFieldSpec{"count", 9U}}, id);
-    if(error != TypeError::ok || id != 65578U)
-        return error == TypeError::ok ? TypeError::duplicate_type : error;
-    error = types.add_struct("__ST_BINDING_MC_JOINT_INFO_ARRAY_ELEMENT", {StructFieldSpec{"zero_position", 11U}, StructFieldSpec{"direction_clockwise", 1U}}, id);
-    if(error != TypeError::ok || id != 65579U)
-        return error == TypeError::ok ? TypeError::duplicate_type : error;
-    error = types.add_array("__ST_BINDING_MC_JOINT_INFO_ARRAY_VALUE", 65579U, {ArrayBound{0, 7}}, id);
-    if(error != TypeError::ok || id != 65580U)
-        return error == TypeError::ok ? TypeError::duplicate_type : error;
-    error = types.add_struct("MC_JOINT_INFO_ARRAY", {StructFieldSpec{"value", 65580U}, StructFieldSpec{"count", 9U}}, id);
-    if(error != TypeError::ok || id != 65581U)
-        return error == TypeError::ok ? TypeError::duplicate_type : error;
-    error = types.add_array("MC_AXIS_VELOCITY_ARRAY", 11U, {ArrayBound{0, 7}}, id);
-    if(error != TypeError::ok || id != 65582U)
-        return error == TypeError::ok ? TypeError::duplicate_type : error;
-    error = types.add_array("MC_AXIS_ACCELERATION_ARRAY", 11U, {ArrayBound{0, 7}}, id);
-    if(error != TypeError::ok || id != 65583U)
-        return error == TypeError::ok ? TypeError::duplicate_type : error;
-    error = types.add_array("MC_AXIS_DECELERATION_ARRAY", 11U, {ArrayBound{0, 7}}, id);
-    if(error != TypeError::ok || id != 65584U)
-        return error == TypeError::ok ? TypeError::duplicate_type : error;
-    error = types.add_array("MC_AXIS_JERK_ARRAY", 11U, {ArrayBound{0, 7}}, id);
-    if(error != TypeError::ok || id != 65585U)
-        return error == TypeError::ok ? TypeError::duplicate_type : error;
-    error = types.add_enum("MC_ORIENTATION_MODE", builtin::dint, {EnumItem{"joint_space", IntegerValue::signed_value(0)}, EnumItem{"shortest_path", IntegerValue::signed_value(1)}, EnumItem{"constant", IntegerValue::signed_value(2)}}, id);
-    if(error != TypeError::ok || id != 65586U)
-        return error == TypeError::ok ? TypeError::duplicate_type : error;
-    error = types.add_opaque_ref("MC_KIN_TRANSFORM_REF", id);
-    if(error != TypeError::ok || id != 65587U)
-        return error == TypeError::ok ? TypeError::duplicate_type : error;
-    error = types.add_opaque_ref("MC_PATH_DESCRIPTION", id);
-    if(error != TypeError::ok || id != 65588U)
-        return error == TypeError::ok ? TypeError::duplicate_type : error;
-    error = types.add_enum("MC_SYNC_MODE", builtin::dint, {EnumItem{"shortest", IntegerValue::signed_value(0)}, EnumItem{"catch_up", IntegerValue::signed_value(1)}, EnumItem{"slow_down", IntegerValue::signed_value(2)}}, id);
-    if(error != TypeError::ok || id != 65589U)
-        return error == TypeError::ok ? TypeError::duplicate_type : error;
-    error = types.add_enum("MC_CAM_START_MODE", builtin::dint, {EnumItem{"absolute", IntegerValue::signed_value(0)}, EnumItem{"relative", IntegerValue::signed_value(1)}, EnumItem{"ramp_in", IntegerValue::signed_value(2)}}, id);
-    if(error != TypeError::ok || id != 65590U)
-        return error == TypeError::ok ? TypeError::duplicate_type : error;
-    error = types.add_enum("MC_CAM_AXIS_DIRECTION", builtin::dint, {EnumItem{"both", IntegerValue::signed_value(0)}, EnumItem{"positive", IntegerValue::signed_value(1)}, EnumItem{"negative", IntegerValue::signed_value(2)}}, id);
-    if(error != TypeError::ok || id != 65591U)
-        return error == TypeError::ok ? TypeError::duplicate_type : error;
-    error = types.add_enum("MC_CAM_SWITCH_MODE", builtin::dint, {EnumItem{"position", IntegerValue::signed_value(0)}, EnumItem{"time", IntegerValue::signed_value(1)}}, id);
-    if(error != TypeError::ok || id != 65592U)
-        return error == TypeError::ok ? TypeError::duplicate_type : error;
-    error = types.add_opaque_ref("MC_CAM_SWITCH_OUTPUTS_VIEW", id);
-    if(error != TypeError::ok || id != 65593U)
-        return error == TypeError::ok ? TypeError::duplicate_type : error;
-    error = types.add_opaque_ref("MC_CAM_TRACK_OPTIONS_VIEW", id);
-    if(error != TypeError::ok || id != 65594U)
-        return error == TypeError::ok ? TypeError::duplicate_type : error;
+    TypeId id = invalid_type_id;
+    (void)types.add_enum("MC_BUFFER_MODE", builtin::dint, {EnumItem{"aborting", IntegerValue::signed_value(0)}, EnumItem{"buffered", IntegerValue::signed_value(1)}, EnumItem{"blending_low", IntegerValue::signed_value(2)}, EnumItem{"blending_high", IntegerValue::signed_value(5)}}, id);
+    (void)types.add_enum("MC_DIRECTION", builtin::dint, {EnumItem{"current", IntegerValue::signed_value(0)}, EnumItem{"positive", IntegerValue::signed_value(1)}, EnumItem{"negative", IntegerValue::signed_value(-1)}, EnumItem{"shortest_way", IntegerValue::signed_value(2)}}, id);
+    (void)types.add_enum("MC_HOME_DIRECTION", builtin::dint, {EnumItem{"positive", IntegerValue::signed_value(0)}, EnumItem{"negative", IntegerValue::signed_value(1)}, EnumItem{"switch_positive", IntegerValue::signed_value(2)}, EnumItem{"switch_negative", IntegerValue::signed_value(3)}}, id);
+    (void)types.add_enum("MC_SWITCH_MODE", builtin::dint, {EnumItem{"on", IntegerValue::signed_value(0)}, EnumItem{"off", IntegerValue::signed_value(1)}, EnumItem{"rising_edge", IntegerValue::signed_value(2)}, EnumItem{"falling_edge", IntegerValue::signed_value(3)}, EnumItem{"edge_positive", IntegerValue::signed_value(4)}, EnumItem{"edge_negative", IntegerValue::signed_value(5)}}, id);
+    (void)types.add_opaque_ref("AXIS_REF", id);
+    (void)types.add_opaque_ref("GROUP_REF", id);
+    (void)types.add_struct("MC_IDENT_IN_GROUP", {StructFieldSpec{"index", 9U}}, id);
+    (void)types.add_enum("MC_AXIS_PARAMETER", builtin::dint, {EnumItem{"commanded_position", IntegerValue::signed_value(0)}, EnumItem{"sw_limit_pos", IntegerValue::signed_value(1)}, EnumItem{"sw_limit_neg", IntegerValue::signed_value(2)}, EnumItem{"enable_limit_pos", IntegerValue::signed_value(3)}, EnumItem{"enable_limit_neg", IntegerValue::signed_value(4)}, EnumItem{"enable_pos_lag_monitoring", IntegerValue::signed_value(5)}, EnumItem{"max_position_lag", IntegerValue::signed_value(6)}, EnumItem{"max_velocity_system", IntegerValue::signed_value(7)}, EnumItem{"max_velocity_appl", IntegerValue::signed_value(8)}, EnumItem{"actual_velocity", IntegerValue::signed_value(9)}, EnumItem{"commanded_velocity", IntegerValue::signed_value(10)}, EnumItem{"max_acceleration_system", IntegerValue::signed_value(11)}, EnumItem{"max_acceleration_appl", IntegerValue::signed_value(12)}, EnumItem{"max_deceleration_system", IntegerValue::signed_value(13)}, EnumItem{"max_deceleration_appl", IntegerValue::signed_value(14)}, EnumItem{"max_jerk_system", IntegerValue::signed_value(15)}, EnumItem{"max_jerk_appl", IntegerValue::signed_value(16)}}, id);
+    (void)types.add_enum("MC_CIRC_MODE", builtin::dint, {EnumItem{"border", IntegerValue::signed_value(0)}, EnumItem{"center", IntegerValue::signed_value(1)}, EnumItem{"radius", IntegerValue::signed_value(2)}}, id);
+    (void)types.add_enum("MC_CIRC_PATH_CHOICE", builtin::dint, {EnumItem{"clockwise", IntegerValue::signed_value(0)}, EnumItem{"counter_clockwise", IntegerValue::signed_value(1)}}, id);
+    (void)types.add_enum("MC_COMBINE_MODE", builtin::dint, {EnumItem{"add_axes", IntegerValue::signed_value(0)}, EnumItem{"sub_axes", IntegerValue::signed_value(1)}}, id);
+    (void)types.add_enum("MC_COORD_SYSTEM", builtin::dint, {EnumItem{"acs", IntegerValue::signed_value(0)}, EnumItem{"mcs", IntegerValue::signed_value(1)}, EnumItem{"wcs", IntegerValue::signed_value(2)}, EnumItem{"pcs", IntegerValue::signed_value(3)}, EnumItem{"fcs", IntegerValue::signed_value(4)}, EnumItem{"tcs", IntegerValue::signed_value(5)}}, id);
+    (void)types.add_enum("MC_EXECUTION_MODE", builtin::dint, {EnumItem{"immediately", IntegerValue::signed_value(0)}, EnumItem{"queued", IntegerValue::signed_value(1)}}, id);
+    (void)types.add_enum("MC_GROUP_VALUE_SOURCE", builtin::dint, {EnumItem{"commanded", IntegerValue::signed_value(0)}, EnumItem{"actual", IntegerValue::signed_value(1)}, EnumItem{"set", IntegerValue::signed_value(2)}}, id);
+    (void)types.add_enum("MC_MASTER_VALUE_SOURCE", builtin::dint, {EnumItem{"command", IntegerValue::signed_value(0)}, EnumItem{"actual", IntegerValue::signed_value(1)}}, id);
+    (void)types.add_enum("MC_PATH_MODE", builtin::dint, {EnumItem{"non_periodic", IntegerValue::signed_value(0)}, EnumItem{"periodic", IntegerValue::signed_value(1)}}, id);
+    (void)types.add_enum("MC_TRANSITION_MODE", builtin::dint, {EnumItem{"none", IntegerValue::signed_value(0)}, EnumItem{"start_velocity", IntegerValue::signed_value(1)}, EnumItem{"constant_velocity", IntegerValue::signed_value(2)}, EnumItem{"corner_distance", IntegerValue::signed_value(3)}, EnumItem{"max_corner_deviation", IntegerValue::signed_value(4)}}, id);
+    (void)types.add_opaque_ref("MC_PATH_TABLE", id);
+    (void)types.add_ref("MC_INPUT_REF", 65540U, id);
+    (void)types.add_ref("MC_OUTPUT_REF", 65540U, id);
+    (void)types.add_struct("MC_REFERENCE_SIGNAL_REF", {StructFieldSpec{"input", 9U}}, id);
+    (void)types.add_array("__ST_BINDING_MC_TOOL_DATA_VALUE", 11U, {ArrayBound{0, 5}}, id);
+    (void)types.add_struct("MC_TOOL_DATA", {StructFieldSpec{"value", 65557U}}, id);
+    (void)types.add_array("__ST_BINDING_MC_GROUP_POSITION_VALUE", 11U, {ArrayBound{0, 7}}, id);
+    (void)types.add_struct("MC_GROUP_POSITION", {StructFieldSpec{"value", 65559U}, StructFieldSpec{"size", 9U}}, id);
+    (void)types.add_struct("MC_PAYLOAD_DATA", {StructFieldSpec{"center", 65558U}, StructFieldSpec{"mass", 11U}, StructFieldSpec{"ix", 11U}, StructFieldSpec{"iy", 11U}, StructFieldSpec{"iz", 11U}}, id);
+    (void)types.add_array("__ST_BINDING_MC_JOG_BOOLEAN_ARRAY_VALUE", 1U, {ArrayBound{0, 7}}, id);
+    (void)types.add_struct("MC_JOG_BOOLEAN_ARRAY", {StructFieldSpec{"value", 65562U}, StructFieldSpec{"count", 9U}}, id);
+    (void)types.add_struct("__ST_BINDING_MC_GROUP_S_W_LIMITS_ELEMENT", {StructFieldSpec{"minimum", 11U}, StructFieldSpec{"maximum", 11U}, StructFieldSpec{"minimum_enabled", 1U}, StructFieldSpec{"maximum_enabled", 1U}}, id);
+    (void)types.add_array("__ST_BINDING_MC_GROUP_S_W_LIMITS_VALUE", 65564U, {ArrayBound{0, 7}}, id);
+    (void)types.add_struct("MC_GROUP_S_W_LIMITS", {StructFieldSpec{"value", 65565U}, StructFieldSpec{"count", 9U}}, id);
+    (void)types.add_struct("__ST_BINDING_MC_RIGID_BODY_DYNAMIC_ELEMENT", {StructFieldSpec{"center_of_gravity", 65558U}, StructFieldSpec{"mass", 11U}, StructFieldSpec{"ix", 11U}, StructFieldSpec{"iy", 11U}, StructFieldSpec{"iz", 11U}}, id);
+    (void)types.add_array("MC_RIGID_BODY_DYNAMIC", 65567U, {ArrayBound{0, 8}}, id);
+    (void)types.add_array("MC_TU_C_NUMERATOR", 4U, {ArrayBound{0, 7}}, id);
+    (void)types.add_array("MC_TU_C_DENOMINATOR", 4U, {ArrayBound{0, 7}}, id);
+    (void)types.add_opaque_ref("MC_CAM_SWITCH_TABLE_VIEW", id);
+    (void)types.add_opaque_ref("MC_CAM_TABLE_VIEW", id);
+    (void)types.add_opaque_ref("MC_TIME_POSITION", id);
+    (void)types.add_opaque_ref("MC_TIME_VELOCITY", id);
+    (void)types.add_opaque_ref("MC_TIME_ACCELERATION", id);
+    (void)types.add_struct("__ST_BINDING_MC_DH_PARAMETER_ARRAY_ELEMENT", {StructFieldSpec{"theta", 11U}, StructFieldSpec{"d", 11U}, StructFieldSpec{"a", 11U}, StructFieldSpec{"alpha", 11U}}, id);
+    (void)types.add_array("__ST_BINDING_MC_DH_PARAMETER_ARRAY_VALUE", 65576U, {ArrayBound{0, 7}}, id);
+    (void)types.add_struct("MC_DH_PARAMETER_ARRAY", {StructFieldSpec{"value", 65577U}, StructFieldSpec{"count", 9U}}, id);
+    (void)types.add_struct("__ST_BINDING_MC_JOINT_INFO_ARRAY_ELEMENT", {StructFieldSpec{"zero_position", 11U}, StructFieldSpec{"direction_clockwise", 1U}}, id);
+    (void)types.add_array("__ST_BINDING_MC_JOINT_INFO_ARRAY_VALUE", 65579U, {ArrayBound{0, 7}}, id);
+    (void)types.add_struct("MC_JOINT_INFO_ARRAY", {StructFieldSpec{"value", 65580U}, StructFieldSpec{"count", 9U}}, id);
+    (void)types.add_array("MC_AXIS_VELOCITY_ARRAY", 11U, {ArrayBound{0, 7}}, id);
+    (void)types.add_array("MC_AXIS_ACCELERATION_ARRAY", 11U, {ArrayBound{0, 7}}, id);
+    (void)types.add_array("MC_AXIS_DECELERATION_ARRAY", 11U, {ArrayBound{0, 7}}, id);
+    (void)types.add_array("MC_AXIS_JERK_ARRAY", 11U, {ArrayBound{0, 7}}, id);
+    (void)types.add_enum("MC_ORIENTATION_MODE", builtin::dint, {EnumItem{"joint_space", IntegerValue::signed_value(0)}, EnumItem{"shortest_path", IntegerValue::signed_value(1)}, EnumItem{"constant", IntegerValue::signed_value(2)}}, id);
+    (void)types.add_opaque_ref("MC_KIN_TRANSFORM_REF", id);
+    (void)types.add_opaque_ref("MC_PATH_DESCRIPTION", id);
+    (void)types.add_enum("MC_SYNC_MODE", builtin::dint, {EnumItem{"shortest", IntegerValue::signed_value(0)}, EnumItem{"catch_up", IntegerValue::signed_value(1)}, EnumItem{"slow_down", IntegerValue::signed_value(2)}}, id);
+    (void)types.add_enum("MC_CAM_START_MODE", builtin::dint, {EnumItem{"absolute", IntegerValue::signed_value(0)}, EnumItem{"relative", IntegerValue::signed_value(1)}, EnumItem{"ramp_in", IntegerValue::signed_value(2)}}, id);
+    (void)types.add_enum("MC_CAM_AXIS_DIRECTION", builtin::dint, {EnumItem{"both", IntegerValue::signed_value(0)}, EnumItem{"positive", IntegerValue::signed_value(1)}, EnumItem{"negative", IntegerValue::signed_value(2)}}, id);
+    (void)types.add_enum("MC_CAM_SWITCH_MODE", builtin::dint, {EnumItem{"position", IntegerValue::signed_value(0)}, EnumItem{"time", IntegerValue::signed_value(1)}}, id);
+    (void)types.add_opaque_ref("MC_CAM_SWITCH_OUTPUTS_VIEW", id);
+    (void)types.add_opaque_ref("MC_CAM_TRACK_OPTIONS_VIEW", id);
     return generated::st_binding_installed_types_match(types) ? TypeError::ok : TypeError::duplicate_type;
 }
 

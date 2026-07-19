@@ -373,7 +373,6 @@ def render(types: list[dict], model: Model) -> str:
     ]
     install_rows: list[str] = []
     for desc in model.descs:
-        expected = f"{desc.type_id}U"
         if desc.kind == "enum":
             items = ", ".join(
                 "EnumItem{%s, IntegerValue::signed_value(%d)}" %
@@ -396,11 +395,7 @@ def render(types: list[dict], model: Model) -> str:
                 call = f"types.add_opaque_ref({cpp_quote(desc.name)}, id)"
             else:
                 call = f"types.add_ref({cpp_quote(desc.name)}, {desc.target}U, id)"
-        install_rows.extend([
-            f"    error = {call};",
-            f"    if(error != TypeError::ok || id != {expected})",
-            "        return error == TypeError::ok ? TypeError::duplicate_type : error;",
-        ])
+        install_rows.append(f"    (void){call};")
 
     enum_rows: list[str] = []
     field_rows: list[str] = []
@@ -561,7 +556,7 @@ def render(types: list[dict], model: Model) -> str:
         "{",
         "    if(types.next_type_id() != first_load_type_id)",
         "        return generated::st_binding_installed_types_match(types) ? TypeError::ok : TypeError::duplicate_type;",
-        "    TypeId id = invalid_type_id; TypeError error = TypeError::ok;",
+        "    TypeId id = invalid_type_id;",
         *install_rows,
         "    return generated::st_binding_installed_types_match(types) ? TypeError::ok : TypeError::duplicate_type;",
         "}", "",

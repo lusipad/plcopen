@@ -211,6 +211,81 @@ int check_digital_cam_switch()
         return fail("cam switch rejects more than eight actions");
     }
 
+    const auto rejects_action = [&](fb::CamSwitchAction action,
+                                    rt::ErrorCode expected) {
+        invalid_switches.clear();
+        invalid_switches.push(action);
+        invalid.switches = invalid_switches.view();
+        invalid.call();
+        return invalid.error && invalid.error_id == expected;
+    };
+    fb::CamSwitchAction invalid_action{};
+    invalid_action.track_number = 0;
+    if(!rejects_action(invalid_action, rt::ErrorCode::unsupported)) {
+        return fail("cam switch rejects zero track");
+    }
+    invalid_action = {};
+    invalid_action.track_number = 1;
+    invalid_action.off_position = NAN;
+    if(!rejects_action(invalid_action, rt::ErrorCode::invalid_argument)) {
+        return fail("cam switch rejects nonfinite off position");
+    }
+    invalid_action = {};
+    invalid_action.track_number = 1;
+    invalid_action.period = NAN;
+    if(!rejects_action(invalid_action, rt::ErrorCode::invalid_argument)) {
+        return fail("cam switch rejects nonfinite period");
+    }
+    invalid_action = {};
+    invalid_action.track_number = 1;
+    invalid_action.axis_direction =
+        static_cast<fb::CamSwitchAction::AxisDirection>(99);
+    if(!rejects_action(invalid_action, rt::ErrorCode::invalid_argument)) {
+        return fail("cam switch rejects direction enum");
+    }
+    invalid_action = {};
+    invalid_action.track_number = 1;
+    invalid_action.cam_switch_mode = static_cast<fb::CamSwitchAction::Mode>(99);
+    if(!rejects_action(invalid_action, rt::ErrorCode::invalid_argument)) {
+        return fail("cam switch rejects mode enum");
+    }
+    invalid_action = {};
+    invalid_action.track_number = 1;
+    invalid_action.cam_switch_mode = fb::CamSwitchAction::Mode::time;
+    invalid_action.duration_ns = 0;
+    if(!rejects_action(invalid_action, rt::ErrorCode::invalid_argument)) {
+        return fail("cam switch rejects time duration");
+    }
+    invalid_action = {};
+    invalid_action.track_number = 1;
+    invalid_switches.clear();
+    invalid_switches.push(invalid_action);
+    invalid.switches = invalid_switches.view();
+    invalid.value_source = static_cast<axis::MasterValueSource>(99);
+    invalid.call();
+    if(!invalid.error || invalid.error_id != rt::ErrorCode::invalid_argument) {
+        return fail("cam switch rejects value source enum");
+    }
+    invalid.value_source = axis::MasterValueSource::command;
+    invalid.call(0);
+    if(!invalid.error || invalid.error_id != rt::ErrorCode::invalid_argument) {
+        return fail("cam switch rejects task period");
+    }
+    bool short_outputs[1]{};
+    invalid.outputs = {short_outputs, 0};
+    invalid.call();
+    if(!invalid.error || invalid.error_id != rt::ErrorCode::invalid_argument) {
+        return fail("cam switch rejects short output view");
+    }
+    invalid.outputs = {};
+    fb::CamTrackOption short_options[1]{};
+    invalid.track_options = {short_options, 0};
+    invalid.call();
+    if(!invalid.error || invalid.error_id != rt::ErrorCode::invalid_argument) {
+        return fail("cam switch rejects short option view");
+    }
+    invalid.track_options = {};
+
     // Standard E fields live on the multi-track structures, not as singular
     // FB outputs. Actual-source compensation predicts the switching edge.
     bool output_levels[axis::AxisModel::DigitalOutputCount]{};
@@ -269,6 +344,36 @@ int check_digital_cam_switch()
     extended.call(1000000);
     if(output_levels[0]) {
         return fail("time cam releases after duration");
+    }
+
+    const auto periodic_time_crossing = [&](double trigger, double previous,
+                                            double current, double velocity) {
+        fb::CamSwitchAction action{};
+        action.track_number = 1;
+        action.on_position = trigger;
+        action.period = 4.0;
+        action.axis_direction = fb::CamSwitchAction::AxisDirection::both;
+        action.cam_switch_mode = fb::CamSwitchAction::Mode::time;
+        action.duration_ns = 1000000;
+        fb::CamSwitchTable<1> table;
+        table.push(action);
+        fb::FbDigitalCamSwitch timed;
+        timed.axis_ref = &axis;
+        timed.switches = table.view();
+        timed.value_source = axis::MasterValueSource::actual;
+        timed.enable = true;
+        axis.set_actual_feedback(previous, velocity);
+        timed.call(1000000);
+        axis.set_actual_feedback(current, velocity);
+        timed.call(1000000);
+        return axis.digital_output(0).value();
+    };
+    if(!periodic_time_crossing(1.5, 1.0, 2.0, 1.0) ||
+       !periodic_time_crossing(0.1, 3.8, 4.2, 1.0) ||
+       !periodic_time_crossing(1.5, 2.0, 1.0, -1.0) ||
+       !periodic_time_crossing(3.9, 0.2, -0.2, -1.0) ||
+       periodic_time_crossing(1.5, 1.0, 2.0, 0.0)) {
+        return fail("periodic time cam covers both directions and wrap paths");
     }
 
     return 0;

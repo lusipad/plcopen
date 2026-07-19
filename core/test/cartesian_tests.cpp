@@ -929,6 +929,103 @@ int check_cartesian_window()
     }
 }
 
+int check_cartesian_window_boundaries()
+{
+    static const kin::Scara scara(0.4, 0.3, true);
+    const geom::Vec3 a{0.45, 0.15, 0.10};
+    const geom::Vec3 b{0.42, 0.22, 0.12};
+    for(int scenario = 0; scenario < 15; ++scenario) {
+        TriRig rig;
+        axis::ToolData tool{};
+        axis::PayloadData payload{};
+        if(rig.group.set_kinematics(&scara) != rt::ErrorCode::ok ||
+           ((scenario == 12 || scenario == 14) &&
+            rig.group.write_tool_data(1, tool) != rt::ErrorCode::ok) ||
+           (scenario == 13 &&
+            rig.group.write_payload_data(1, payload) != rt::ErrorCode::ok)) {
+            return fail("window boundary setup");
+        }
+        const double approach_values[3] = {a.x, a.y, a.z};
+        axis::GroupCommand approach = command_for(3, approach_values);
+        approach.coord_system = axis::CoordSystem::mcs;
+        if(!rig.group.submit_linear(approach) || settle(rig.group) != 0) {
+            return fail("window boundary approach");
+        }
+        const double leg_values[3] = {b.x, b.y, b.z};
+        axis::GroupCommand leg = command_for(3, leg_values);
+        leg.coord_system = axis::CoordSystem::mcs;
+        leg.interpolation_space = axis::InterpolationSpace::cartesian;
+        if(!rig.group.submit_linear(leg)) {
+            return fail("window boundary active leg");
+        }
+        for(int tick = 0; tick < 5; ++tick) rig.group.cycle();
+        if(((scenario == 12 || scenario == 14) &&
+            rig.group.select_tool(1) != rt::ErrorCode::ok) ||
+           (scenario == 13 &&
+            rig.group.select_payload(1) != rt::ErrorCode::ok)) {
+            return fail("window boundary active selection");
+        }
+
+        geom::Vec3 target{0.34, 0.28, 0.14};
+        if(scenario == 2) target = b;
+        if(scenario == 3) target = a;
+        if(scenario == 4 || scenario == 7) target = b + (b - a);
+        if(scenario == 14) target = geom::Vec3{5.0, 5.0, 5.0};
+        const double target_values[3] = {target.x, target.y, target.z};
+        axis::GroupCommand successor = command_for(3, target_values);
+        successor.coord_system = scenario == 0 ? axis::CoordSystem::acs
+                                                : axis::CoordSystem::mcs;
+        successor.interpolation_space = axis::InterpolationSpace::cartesian;
+        successor.buffer_mode = axis::BufferMode::blending_low;
+        successor.transition_mode = axis::TransitionMode::max_corner_deviation;
+        successor.transition_parameter = 0.015;
+        successor.relative = scenario == 1;
+        if(scenario == 5) successor.command_id = 900;
+        if(scenario == 6) successor.transition_velocity = 0.005;
+        if(scenario == 7) successor.transition_velocity = 1e-6;
+        if(scenario == 8) {
+            successor.velocity = 0.02;
+            successor.acceleration = 0.004;
+            successor.deceleration = 0.004;
+            successor.jerk = 0.004;
+        }
+        if(scenario == 9) successor.transition_parameter = 1e-14;
+        if(scenario == 10) successor.coord_system = axis::CoordSystem::pcs;
+        if(scenario == 11) {
+            successor.acceleration = 0.003;
+            successor.deceleration = 0.004;
+        }
+        const rt::Result<std::uint32_t> result =
+            rig.group.submit_linear(successor);
+        if((scenario == 0 || scenario == 1) &&
+           result.error() != rt::ErrorCode::unsupported) {
+            return fail("window boundary rejects unsupported shape");
+        }
+        if((scenario == 2 || scenario == 3) &&
+           (!result || rig.group.last_blend_degraded_command() != result.value())) {
+            return fail("window boundary reports degradation");
+        }
+        if(scenario == 9 &&
+           (!result || rig.group.last_blend_degraded_command() != result.value())) {
+            return fail("window boundary reports tiny-corner degradation");
+        }
+        if(scenario >= 4 && scenario != 14 && !result) {
+            return fail("window boundary accepts successor");
+        }
+        if(scenario == 5 && result.value() != 900) {
+            return fail("window boundary preserves command id");
+        }
+        if((scenario == 12 || scenario == 13) &&
+           rig.group.last_blend_degraded_command() != result.value()) {
+            return fail("window boundary reports selection degradation");
+        }
+        if(scenario == 14 && result.error() != rt::ErrorCode::infeasible) {
+            return fail("window boundary rejects unreachable selected tool target");
+        }
+    }
+    return 0;
+}
+
 // Cartesian v2-C on the pose pipeline: the whole chain rides one geodesic —
 // every mid-chain orientation shares the fixed relative rotation axis.
 int check_pose_cartesian_blend()
@@ -1034,6 +1131,96 @@ int check_pose_cartesian_blend()
         }
     }
     return fail("pose blend settle");
+}
+
+int check_pose_cartesian_blend_boundaries()
+{
+    static const kin::SphericalWrist6R arm(0.3, 0.4, 0.35, 0.08);
+    for(int scenario = 0; scenario < 13; ++scenario) {
+        PoseRig rig;
+        if(rig.group.set_pose_kinematics(&arm, 0.0, 3.0) != rt::ErrorCode::ok) {
+            return fail("pose blend boundary setup");
+        }
+        const double q0[6] = {0.3, 0.6, 1.0, -0.4, 0.9, 0.2};
+        if(!rig.group.submit_linear(command_for(6, q0)) || settle(rig.group) != 0) {
+            return fail("pose blend boundary approach");
+        }
+        double joints[6]{};
+        for(std::size_t i = 0; i < 6; ++i) joints[i] = rig.position(i);
+        kin::Pose6 start_pose{};
+        arm.forward(joints, start_pose);
+        double roll = 0.0;
+        double pitch = 0.0;
+        double yaw = 0.0;
+        geom::extract_rpy(start_pose.rotation, roll, pitch, yaw);
+        const geom::Vec3 p0{start_pose.position[0], start_pose.position[1],
+                            start_pose.position[2]};
+        const geom::Vec3 corner{p0.x - 0.1, p0.y + 0.06, p0.z + 0.04};
+        const double leg_target[6] = {corner.x, corner.y, corner.z,
+                                      roll, pitch, yaw};
+        axis::GroupCommand leg = command_for(6, leg_target);
+        leg.coord_system = axis::CoordSystem::mcs;
+        leg.interpolation_space = axis::InterpolationSpace::cartesian;
+        if(!rig.group.submit_linear(leg)) {
+            return fail("pose blend boundary active leg");
+        }
+        for(int tick = 0; tick < 10; ++tick) rig.group.cycle();
+
+        geom::Vec3 target{p0.x - 0.05, p0.y + 0.16, p0.z + 0.02};
+        if(scenario == 2) target = corner;
+        if(scenario == 3) target = p0;
+        if(scenario == 4) target = corner + (corner - p0);
+        const double target_values[6] = {target.x, target.y, target.z,
+                                         roll, pitch,
+                                         scenario == 7 ? yaw + 3.14159265358979323846
+                                                       : yaw + 0.2};
+        axis::GroupCommand successor = command_for(6, target_values);
+        successor.coord_system = scenario == 0 ? axis::CoordSystem::acs
+                                                : axis::CoordSystem::mcs;
+        successor.interpolation_space = axis::InterpolationSpace::cartesian;
+        successor.buffer_mode = axis::BufferMode::blending_high;
+        successor.transition_mode = axis::TransitionMode::max_corner_deviation;
+        successor.transition_parameter = scenario == 5 ? 10.0 : 0.015;
+        successor.relative = scenario == 1;
+        if(scenario == 6) {
+            successor.orientation_mode = axis::OrientationMode::constant;
+        }
+        if(scenario == 8) successor.command_id = 901;
+        if(scenario == 9) successor.coord_system = axis::CoordSystem::pcs;
+        if(scenario == 10) successor.transition_velocity = 1e-6;
+        if(scenario == 11) {
+            successor.velocity = 0.005;
+            successor.acceleration = 0.001;
+            successor.deceleration = 0.003;
+            successor.jerk = 0.001;
+        }
+        if(scenario == 12) {
+            successor.velocity = 0.02;
+            successor.acceleration = 0.004;
+            successor.deceleration = 0.004;
+            successor.jerk = 0.004;
+        }
+        const rt::Result<std::uint32_t> result =
+            rig.group.submit_linear(successor);
+        if((scenario == 0 || scenario == 1) &&
+           result.error() != rt::ErrorCode::unsupported) {
+            return fail("pose blend boundary rejects unsupported shape");
+        }
+        if((scenario == 2 || scenario == 3) &&
+           (!result || rig.group.last_blend_degraded_command() != result.value())) {
+            return fail("pose blend boundary reports degradation");
+        }
+        if(((scenario >= 4 && scenario <= 6) || scenario >= 8) && !result) {
+            return fail("pose blend boundary accepts finite successor");
+        }
+        if(scenario == 8 && result.value() != 901) {
+            return fail("pose blend boundary preserves command id");
+        }
+        if(scenario == 7 && result.error() != rt::ErrorCode::invalid_argument) {
+            return fail("pose blend boundary rejects half turn");
+        }
+    }
+    return 0;
 }
 
 // Circumcenter of three XY points (test-side oracle).
@@ -1736,7 +1923,9 @@ int main()
     failures += check_pose_geodesic();
     failures += check_cartesian_blend();
     failures += check_cartesian_window();
+    failures += check_cartesian_window_boundaries();
     failures += check_pose_cartesian_blend();
+    failures += check_pose_cartesian_blend_boundaries();
     failures += check_scara_cartesian_arc();
     failures += check_buffered_scara_cartesian_arc();
     failures += check_pose_cartesian_arc();

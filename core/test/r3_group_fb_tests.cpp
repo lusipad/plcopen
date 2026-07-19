@@ -536,6 +536,62 @@ int check_group_parameter_and_dynamics_validation()
     {
         return fail("group parameter rejects unsupported values");
     }
+    if (group.write_group_parameter(
+            axis::GroupParameter::dynamics_mode,
+            static_cast<double>(axis::DynamicsMode::absolute)) !=
+            rt::ErrorCode::ok ||
+        group.write_group_parameter(
+            axis::GroupParameter::transition_reference_point,
+            static_cast<double>(axis::TransitionReferencePoint::end_point)) !=
+            rt::ErrorCode::ok)
+    {
+        return fail("group parameter accepts supported values");
+    }
+
+    axis::AxisModel queued_x;
+    axis::AxisModel queued_y;
+    axis::AxisGroup queued_group;
+    queued_x.set_power(true);
+    queued_y.set_power(true);
+    if (queued_group.add_axis(queued_x) != rt::ErrorCode::ok ||
+        queued_group.add_axis(queued_y) != rt::ErrorCode::ok ||
+        queued_group.enable() != rt::ErrorCode::ok ||
+        queued_group.submit_group_parameter(
+                axis::GroupParameter::dynamics_mode,
+                nan,
+                axis::ExecutionMode::queued).error() != rt::ErrorCode::invalid_argument ||
+        !queued_group.submit_group_parameter(
+            axis::GroupParameter::dynamics_mode,
+            static_cast<double>(axis::DynamicsMode::absolute),
+            axis::ExecutionMode::queued) ||
+        !queued_group.submit_group_parameter(
+            axis::GroupParameter::dynamics_mode,
+            static_cast<double>(axis::DynamicsMode::percentage),
+            axis::ExecutionMode::queued) ||
+        queued_group.submit_group_parameter(
+                axis::GroupParameter::dynamics_mode,
+                7.0,
+                axis::ExecutionMode::queued).error() != rt::ErrorCode::invalid_argument ||
+        queued_group.submit_group_parameter(
+                axis::GroupParameter::transition_reference_point,
+                static_cast<double>(axis::TransitionReferencePoint::start_point),
+                axis::ExecutionMode::queued).error() != rt::ErrorCode::unsupported ||
+        !queued_group.submit_group_parameter(
+            axis::GroupParameter::transition_reference_point,
+            static_cast<double>(axis::TransitionReferencePoint::end_point),
+            axis::ExecutionMode::queued) ||
+        queued_group.submit_group_parameter(
+                axis::GroupParameter::transition_reference_point,
+                7.0,
+                axis::ExecutionMode::queued).error() != rt::ErrorCode::invalid_argument ||
+        queued_group.submit_group_parameter(
+                // NOLINTNEXTLINE(clang-analyzer-optin.core.EnumCastOutOfRange)
+                static_cast<axis::GroupParameter>(99),
+                0.0,
+                axis::ExecutionMode::queued).error() != rt::ErrorCode::unsupported)
+    {
+        return fail("queued group parameter validation matrix");
+    }
 
     axis::PathDynamics update{};
     for (int field = 0; field < 4; ++field)
