@@ -9,7 +9,7 @@ sprint 记录）在 [doc/archive/roadmap-history.md](doc/archive/roadmap-history
 
 优先级只在本节声明一次，下列各节只承载明细，不再各自宣称"当前/最高"：
 
-1. **P0 v0.20.0 发布候选（已验证，待人工发布）**：版本信号已校准回
+1. **P0 v0.20.0 发布候选（已验证，待授权发布）**：版本信号已校准回
    pre-1.0，CMake/Python/Conan/vcpkg 版本面与 Release notes 已同步；
    [Windows](https://github.com/lusipad/plcopen/actions/runs/29692190516)、
    [Linux](https://github.com/lusipad/plcopen/actions/runs/29692190521)、
@@ -19,7 +19,8 @@ sprint 记录）在 [doc/archive/roadmap-history.md](doc/archive/roadmap-history
    [Mutation](https://github.com/lusipad/plcopen/actions/runs/29692208327) 与
    [Docs](https://github.com/lusipad/plcopen/actions/runs/29692209416) 全绿。
    交付形态为 GitHub source/header-only Release + PyPI 三平台 wheels/sdist；
-   剩余 PyPI publisher、GitHub `pypi` environment、tag 与 Release 为人专属。
+   PyPI publisher 与 GitHub `pypi` environment 已配置，剩余 tag 与 Release
+   可在维护者明确授权后由 AI 执行。
 2. **P0 主线复绿（已完成）**：`17932de` 已修复测试辅助函数无谓按值复制
    `st::Program`；[Windows CI](https://github.com/lusipad/plcopen/actions/runs/29680604789)
    与 [Linux CI](https://github.com/lusipad/plcopen/actions/runs/29680604785) 均通过，
@@ -53,8 +54,8 @@ sprint 记录）在 [doc/archive/roadmap-history.md](doc/archive/roadmap-history
 ## 已完成里程碑：PLCopen 扎实化（2026-Q3，2026-07-12 归档）
 
 收口项全部关闭（AxisGroup 第 1 批、executor 双域 ADR-0007、Pages 上线、
-soak 周期等效）；剩余仅人专属动作（PyPI publisher 注册 + 发布 tag，
-台架采购决策）。下表保留为交付记录。
+soak 周期等效）；发布账号前置已完成，tag / Release 待明确授权，台架采购
+决策仍为人专属。下表保留为交付记录。
 
 2026-07-07 维护者定调"先把 plcopen 做好做扎实，其他领域自然继续"。
 人形/EtherCAT/孪生三轨设计资产已完成并待命（见软件极致计划），实现
@@ -69,7 +70,7 @@ soak 周期等效）；剩余仅人专属动作（PyPI publisher 注册 + 发布
 | 4c | Y4 solve_fixed_time 一等原语（评审三关键，紧跟 Y2） | 同步 + cycle-exact 量化（删 KB-050 尾段补丁）+ 流追赶汇合同一求解；终态 ≤1e-9（T43） | **求解器 + KB-050 集成 + 流 rendezvous 已交付**（KB-056：8 候选族 + below_tmin multi-cubic；KB-050：匀速骑行/退避梯子删除；KB-035：流跟踪律 solve_fixed_time rendezvous 优先——38/38 pass）；组同步切换待下批 |
 | 5a | P-Part4 剩余 FB | 管理组矩阵 + 路径表/变换 + P4-B2/P4-B3/C3 已实现 | ✅ Part 4 v2.0 **68/68 同名门面齐全**（KB-078）；旧 Position 回读包装已在 C6 删除，接口/语义边界逐项登记，见 [完整条款审计](doc/compliance/plcopen-part4-clause-audit.md) |
 | 5b | P-Part5 回零规程 | MC_Step* 标准回零步 FB 面（数字输入通道模拟验收） | ✅ **C5 软件合同关闭**（KB-080）：11/11 标准 FB、45 B + 102 E 机读声明及软件语义闭合；硬件/认证边界不冒充 |
-| 4b | **信号通道并行项 + Z 系列全量**（拷问后拉入） | T1 pip wheel + Z3 文档站 + Z2 单位层 + Z4 包管理 + Z5 诊断 | **Z3 文档站已上线**（http://lusipad.com/plcopen/ ，Pages 2026-07-11 启用）；Wheels 三平台远端绿 + PyPI Trusted Publishing 作业已备——剩余人专属：PyPI publisher 注册 + 发布 tag |
+| 4b | **信号通道并行项 + Z 系列全量**（拷问后拉入） | T1 pip wheel + Z3 文档站 + Z2 单位层 + Z4 包管理 + Z5 诊断 | **Z3 文档站已上线**（http://lusipad.com/plcopen/ ，Pages 2026-07-11 启用）；Wheels 三平台远端绿，PyPI publisher 与 GitHub environment 已配置——剩余 tag / Release 待维护者明确授权 |
 | 6 | E 系列证据 | ARM64 CI + clang-tidy 零 P0 + 变异分数门 | **已复绿（2026-07-19 v0.20.0 候选复验）**：Mutation 20/20、Coverage 全核 line 95.5% / 运动栈 branch 85.0% / ST branch 85.1%、Core Nightly 7/7 job 通过 |
 | 7 | 台架采购决策 | 下单或共建协议（S1 之门，与本里程碑并行） | **人工** |
 | 8 | 72h soak 回写 | 保存完整结束日志并回写 DoD 表 | **周期等效口径关闭（2026-07-11）**：07-06 墙钟版证据链断裂如实登记；25.92 亿冻结周期（72h@1kHz ×10）Release 零分配 PASS 回写 DoD；墙钟 72h 归 B7。口径调整开放维护者复核 |
@@ -183,4 +184,4 @@ VS Code 扩展与 D2 WASM Playground，挂在 L 系列拆解的触发表。）
 
 ---
 
-*最后更新：2026-07-19（v0.20.0 候选七组门禁收口 + CI 触发边界同步）*
+*最后更新：2026-07-20（v0.20.0 发布授权规则与账号前置状态同步）*

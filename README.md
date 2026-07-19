@@ -15,9 +15,10 @@
 · 商用八项：[证据总账](doc/compliance/commercial-gate-evidence.md)
 
 > **当前发布候选：v0.20.0。** Windows、Linux、Wheels、Nightly、Coverage、
-> Mutation 与 Docs 发布门禁已全部通过；正式发布仍等待 PyPI Trusted
-> Publisher、GitHub `pypi` environment 和维护者 tag。交付形式与检查单见
-> [v0.20.0 发布草案](doc/planning/v0.20.0-release-draft.md)。
+> Mutation 与 Docs 发布门禁已全部通过；PyPI Trusted Publisher 与 GitHub
+> `pypi` environment 已配置，正式发布等待授权 tag。版本内容见
+> [v0.20.0 发布记录](docs/releases/v0.20.0.md)，操作步骤见
+> [发布检查单](doc/planning/v0.20.0-release-draft.md)。
 
 ---
 
@@ -65,7 +66,7 @@ IEC 61131-3 全语言成熟编译器（看 MatIEC——我们的 ST 层是**运�
 | PLCopen Part 5 | 🟡 软件合同闭合 | C5 已关闭 11/11 标准 FB 与 45 B + 102 E 软件声明；真机与认证证据仍独立 |
 | PLCopen Part 6 | ⛔ 未解锁 | 等流体动力行业真实需求 |
 | ST 语言层 | ✅ 声明集闭合 | L0-L7、L∀ 已完成；134 个 FB、1476 个 pin，feature-set `pending=0` |
-| Python/文档/包 | 🟢 大体完成 | 文档站和三平台 wheel 已有；PyPI 正式发布被账号动作阻塞 |
+| Python/文档/包 | 🟢 发布前置完成 | 文档站和三平台 wheel 已有；PyPI publisher/environment 已配置，等待授权 tag 发布 |
 | EtherCAT | 🔴 未开工 | 最大剩余软件块，也是实时台架和实际部署的前置 |
 | 真机/人形/孪生 | 🟠 设计或局部实现 | Feetech 纯软件层完成；真机、MuJoCo、完整 H/F/T 轨尚未闭环 |
 | 用户采纳 | 🔴 尚未形成 | 灯塔用户、现场案例、外部贡献者和有效下载信号仍不足 |
@@ -180,7 +181,8 @@ Part 5 已关闭 11/11 标准 FB 与 45 B + 102 E 机读声明。正式 B/E/V �
 | 从 v0.x 迁移 | [doc/migration-v0-to-v1.md](doc/migration-v0-to-v1.md) |
 | 生产集成与运维 | [文档站生产指南](docs/index.md) · [运维手册](docs/operations.md) |
 | 版本变化 | [CHANGELOG.md](CHANGELOG.md) |
-| v0.20.0 怎么发布、还缺什么 | [发布草案与人工检查单](doc/planning/v0.20.0-release-draft.md) |
+| v0.20.0 对使用者意味着什么 | [正式发布记录](docs/releases/v0.20.0.md) |
+| v0.20.0 怎么发布、还缺什么 | [发布检查单](doc/planning/v0.20.0-release-draft.md) |
 | AI/人协作规范与工程技能 | [CLAUDE.md](CLAUDE.md) · [AGENTS.md](AGENTS.md) · `.claude/skills/` |
 
 ---

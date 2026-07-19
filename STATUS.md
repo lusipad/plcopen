@@ -3,7 +3,7 @@
 > 本页是"现在在哪"的唯一入口，每个批次收口时更新。术语见
 > [CONTEXT.md](CONTEXT.md)；边界细节见
 > [已知边界注册表](doc/compliance/known-boundaries.md)。
-> 最后更新：**2026-07-19**。
+> 最后更新：**2026-07-20**。
 
 ## 一句话
 
@@ -15,8 +15,9 @@
 Coverage/Mutation/Docs 全通过。**文档站已上线**
 （http://lusipad.com/plcopen/ ，Pages 2026-07-11 启用）。**executor
 双域已落地**（ADR-0007：规划域产帧、RT 域仅消费承诺轨迹，TSAN 零
-报告）。S0 纯软件发布准备已收口；PyPI Trusted Publishing 作业已备，
-publisher 注册、GitHub `pypi` environment、tag 与 GitHub Release 为人专属。
+报告）。S0 纯软件发布准备已收口；PyPI publisher 已由维护者注册，GitHub
+`pypi` environment 已验证存在。tag 与 GitHub Release 待维护者明确授权后，
+可由 AI 代为执行。
 S1-S3 另依赖硬件、用户和日历时间。**L 系列语言层已闭合（2026-07-18）**，
 批次 ST-L0（KB-069）、ST-L1a（标量宇宙 + 转换矩阵机读化，KB-070）与
 ST-L2a-Bind 首批十个单轴 MC 块（KB-071）均已交付；Part 5 P5-B 六个缺失
@@ -77,7 +78,7 @@ sink 门面，生产层无反向引用）。分层健康度见
 
 | 项 | 状态 |
 |----|------|
-| **v0.20.0 发布候选** | **已验证，待人工发布**：版本面、CHANGELOG、C++/Python 发布元数据、Release notes 与七组远端门禁均已收口；剩余 PyPI Trusted Publisher、GitHub `pypi` environment、annotated tag 与 GitHub Release 均由维护者执行 |
+| **v0.20.0 发布候选** | **已验证，待授权发布**：版本面、CHANGELOG、C++/Python 发布元数据、Release notes 与七组远端门禁均已收口；PyPI Trusted Publisher 与 GitHub `pypi` environment 已配置，剩余 annotated tag 与 GitHub Release 可在维护者明确授权后由 AI 执行 |
 | **CI 反馈时长** | **P1 已完成，候选复验稳定**：普通 PR 不跑 fuzz 且不重复触发两套主门禁；Windows 13:45，Linux 16:29，重型 sanitizer/fuzz 留在 20:56 的 Nightly |
 | 抽查评审 | 2026-07-05 批次核心提交（OTG/流/kin/adapters）开放抽查，证据链在各提交信息；非合入门槛 |
 | 旧 `src/` v0.11 线 EOL 窗口 | v1.0.0-alpha 实验预览已发布（2026-07-06）；旧 `src/` 线 90 天 P0-only 窗口至 2026-10-04，不影响新核采用 v0.20.0 版本号 |

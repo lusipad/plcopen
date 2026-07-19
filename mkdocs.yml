@@ -39,6 +39,8 @@ nav:
     - Python Digital Twin: getting-started/python.md
     - C++ Embedded: getting-started/cpp.md
     - Algorithm White-Box: getting-started/algorithms.md
+  - Releases:
+    - v0.20.0: releases/v0.20.0.md
   - References:
     - Function-block reference: references/fb-reference.md
     - Real-time integration: guides/realtime-integration.md

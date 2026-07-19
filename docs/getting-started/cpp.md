@@ -10,9 +10,9 @@ dependencies, no dynamic linking — just `#include` and go.
 
 !!! note "Release candidate"
     The commands below target `v0.20.0`. The candidate has passed all release
-    gates, but the tag does not exist until the maintainer performs the final
-    release. Before then, use a source checkout of the current branch or `main`
-    after this release PR merges.
+    gates, but the tag does not exist until the authorized release action is
+    performed. Before then, use a source checkout of the current branch or
+    `main` after the release-documentation PR merges.
 
 ## Option A: vcpkg (planned)
 

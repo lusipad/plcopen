@@ -6,8 +6,8 @@ toolchain; a source install requires a C++17 compiler and CMake >= 3.21.
 ## Install
 
 `v0.20.0` wheels and the sdist have passed the release-candidate build, but
-the package is not on PyPI yet. Until the maintainer configures Trusted
-Publishing and pushes the release tag, install from the repository:
+the package is not on PyPI yet. Trusted Publishing is configured; until the
+authorized release tag triggers publication, install from the repository:
 
 ```bash
 git clone https://github.com/lusipad/plcopen.git
@@ -24,8 +24,8 @@ pip install pyplcopen==0.20.0
 !!! note
     Release-candidate wheels passed on Windows, Linux, and macOS for
     Python 3.10-3.13. They become publicly installable after the PyPI
-    Trusted Publisher and `v0.20.0` tag are created. If no wheel matches
-    your platform, pip builds from source.
+    `v0.20.0` tag is published. If no wheel matches your platform, pip builds
+    from source.
 
 ## Single-Axis Motion (5 minutes)
 

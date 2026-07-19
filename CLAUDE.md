@@ -35,7 +35,8 @@ ctest --test-dir build --build-config Release --output-on-failure
 |--------|------|
 | **语义批准** | 新行为先写语义矩阵，人批准后实现；批准记录写进矩阵状态头 |
 | **声明变更** | 改变既有周期路径输出必须声明：KB 登记 + 回放基线重录 + 提交信息注明；未声明变更 = 回放零差异 |
-| **人专属动作** | LICENSE/NOTICE/PROVENANCE、发布 tag、对外承诺：AI 只起草，落地仅人 |
+| **需明确授权的发布动作** | 发布 tag / GitHub Release：维护者明确指定版本与目标提交后，AI 可执行；未获明确授权时只起草与验证 |
+| **人专属动作** | LICENSE/NOTICE/PROVENANCE、账号注册/签署、对外承诺：AI 只起草，落地仅人 |
 
 合入由门禁裁决；人按需抽查 `git log`（每个提交自带证据与 KB 引用），
 错了回滚。门禁是守门员，git 是回退键。
