@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.20.0] - 2026-07-19
+
 ### Added
 
 - Part 5 C5（KB-080）完成 11 个回零/在线参考 FB 的标准合同收口：只保留
@@ -157,6 +159,20 @@ All notable changes to this project will be documented in this file.
   消除）。逐周期单次逆解执行，失败 = 组 errorstop；GroupStop 沿复合几何
   停车；位姿组维持 KB-049 链。新黄金场景 core-group-cartesian-window
   （18 语料）；组对象增肥暴露的两处测试栈溢出以 static 台修复。
+
+### Changed
+
+- 将当前稳定开发线校准为 `v0.20.0`：保留 `v1.0.0-alpha` 作为历史实验性
+  预览，不再用 1.0 版本号暗示 ABI、硬件验证、PLCopen 认证或商用成熟度；
+  CMake、Python、Conan 与 vcpkg 元数据统一为 0.20.0。
+
+### For contributors
+
+- 普通 PR 的 Windows/Linux 主门禁不再因 feature-branch `push` 与
+  `pull_request` 重复运行；11 项重型 fuzz 保留在 Core Nightly，日常门只跑
+  80 项非 fuzz 测试。
+- Wheels 与 Docs 工作流升级到受支持的 Actions 运行时，发布候选的
+  Windows/Linux/Wheels/Docs 运行中不再产生 Node 20 弃用注解。
 
 ## [1.0.0-alpha] - 2026-07-06
 

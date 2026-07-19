@@ -5,11 +5,17 @@
 **Modern C++ PLCopen motion-control kernel + IEC 61131-3 ST runtime. Embed it
 in your controller, or put it under your learning stack.**
 
+!!! note "v0.20.0 release candidate"
+    The source, wheels, sdist, nightly, coverage, mutation, and documentation
+    gates are green. PyPI publication is not live yet: `pip install pyplcopen`
+    becomes available after the maintainer configures Trusted Publishing and
+    pushes the `v0.20.0` tag. Until then, install from source.
+
 ## One Kernel, Multiple Control Styles
 
 | Control Style | What You Get | Entry Point |
 |---|---|---|
-| Python digital twin | `pip install pyplcopen` | [Python guide](getting-started/python.md) |
+| Python digital twin | Source install now; `pip install pyplcopen==0.20.0` after publication | [Python guide](getting-started/python.md) |
 | C++ embedded library | `find_package(plcopen)` or `FetchContent` | [C++ guide](getting-started/cpp.md) |
 | IEC 61131-3 ST | `compile()` → bytecode VM → cyclic `scan()` | [core/st/README.md](https://github.com/lusipad/plcopen/blob/main/core/st/README.md) |
 | Algorithm white-box | Compliance matrices, oracles, known boundaries | [Algorithm guide](getting-started/algorithms.md) |
@@ -53,35 +59,35 @@ systems / kinematics / trajectory streaming) without platform lock-in.
         OUTER RING -- two parallel pure-sink consumer facades
         (audited: no production layer includes them back)
 +----------------------------------+   +----------------------------------+
-| st  (6355)  IEC 61131-3 ST layer |   | L7 adapters  (353)               |
+| st  IEC 61131-3 ST layer         |   | L7 adapters                      |
 | compiler front end + bytecode vm |   | Servo narrow iface (ADR-0004),   |
-| ST-L0+L1a shipped (KB-069/070);  |   | CiA402 FSM, CSP/CSV/CST modes;   |
-| bytecode anchor-hash gate in CI  |   | Feetech STS: S2 protocol shipped |
+| L0-L7 + L∀ closed; 134 FB /      |   | CiA402 FSM, CSP/CSV/CST modes;   |
+| 1476 pins; completion gates in CI|   | Feetech STS: S2 protocol shipped |
 +----------------+-----------------+   +----------------+-----------------+
                  |                                      |
                  | fb/basic.h + rt/error.h              | axis/state.h
                  | (exactly these two)                  | + rt/error.h
                  v                                      | (bypasses L6)
 +------------------------------------+                  |
-| L6 fb    4396   75x Fb* facades    |                  |
-| Execute/Done/Busy/CommandAborted   |                  |
+| L6 fb    PLCopen-style facades     |                  |
+| Part 1: 43, Part 4: 68, Part 5: 11 |                  |
 +----------------+-------------------+                  |
                  |             +------------------------+
                  v             v
 +---------------------------------------------+
-| L5 axis   6664  axis / group state machines |
-| group.h 4245 + state.h 2158                 +--+
+| L5 axis   axis / group state machines       |
+| coordinate, kinematics, stream integration  +--+
 +---------------------------------------------+  |
-| L4 exec    529  cyclic sampling, gear / cam |  |  SUPPORT LIBS (pocket):
+| L4 exec    cyclic sampling, gear / cam      |  |  SUPPORT LIBS (pocket):
 +---------------------------------------------+  |  consumed by L5 only;
-| L3 plan   1217  lookahead scan + blending   |  |  deps point inward only
+| L3 plan   lookahead scan + blending         |  |  deps point inward only
 +---------------------------------------------+  |
-| L2 geom   1049  line / arc / spline, frames |  |  +------------------------+
-+---------------------------------------------+  +->| kin      731  FK / IK  |
-| L1 otg    1612  jerk-limited OTG solver     |  |  | gantry / SCARA / 6R    |
+| L2 geom   line / arc / spline, frames       |  |  +------------------------+
++---------------------------------------------+  +->| kin           FK / IK  |
+| L1 otg    jerk-limited OTG solver           |  |  | gantry / SCARA / 6R    |
 +---------------------------------------------+  |  | deps: geom, rt         |
-| L0 rt      409  cycle time, static vectors, |  |  +------------------------+
-|                 SPSC rings, error codes     |  +->| stream  1216  streaming|
+| L0 rt      cycle time, static vectors,      |  |  +------------------------+
+|                 SPSC rings, error codes     |  +->| stream        streaming|
 +---------------------------------------------+     | OTG-filtered input (B9)|
                                                     | deps: otg, rt          |
                                                     +------------------------+
@@ -132,6 +138,7 @@ reference executor.
 - [Known boundaries](https://github.com/lusipad/plcopen/blob/main/doc/compliance/known-boundaries.md) — declared limits
 - [Architecture](https://github.com/lusipad/plcopen/blob/main/doc/design/core/architecture.md) — design docs
 - [CHANGELOG](https://github.com/lusipad/plcopen/blob/main/CHANGELOG.md) — version history
+- [v0.20.0 release draft](https://github.com/lusipad/plcopen/blob/main/doc/planning/v0.20.0-release-draft.md) — release form, verified gates, and remaining human actions
 
 ## License
 

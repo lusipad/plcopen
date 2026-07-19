@@ -72,6 +72,8 @@ TouchProbe 捕获的是触发周期的 `actual_position`；数字 IO 固定为�
 
 ## 重要边界
 
-- 75 个 `Fb*` 门面不等于 PLCopen 完整合规：Part 1/4/5 的条款缺口见审计。
+- `core/fb` 当前包含 126 个 `Fb*` 类型，其中标准消费面按 Part 1/2 43、
+  Part 4 68、Part 5 11 记账；类型或同名门面存在不等于 PLCopen 完整合规，
+  正式声明、部分 E/O 字段、真机与认证边界见逐项审计。
 - `BufferMode`、TransitionMode、坐标系和非 ACS 组合按矩阵显式拒绝。
 - `core/fb` 是语义门面，规划计算仍发生在 `AxisModel`/`AxisGroup` 的规划域。

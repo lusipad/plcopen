@@ -8,11 +8,12 @@
 - **包名 `pyplcopen`**（与模块名一致；内核命名议题已收回，不再造名）；
 - 构建：`pyproject.toml`（scikit-build-core 驱动既有 CMake）+
   cibuildwheel GitHub Actions 工作流（win/linux/mac × py3.10-3.13）；
-- 版本：跟随内核 SemVer（当前 1.0.0a1 —— PEP 440 的 alpha 表记）；
+- 版本：跟随内核 SemVer（当前发布候选为 0.20.0；1.0 等待 ABI、硬件与
+  采纳证据成熟后再讨论）；
 - 内容物：现有 AxisSim/PoseArmSim/流接口/cam 工具全量 + README 快速
   开始（中文为主 + 英文摘要节）；
-- **发布动作属人**（PyPI token，人专属清单已有）；CI 先出 artifact
-  供本地验证，token 到位即发；
+- **发布动作属人**（PyPI Trusted Publisher 注册 + release tag）；CI 先出
+  artifact 供验证，publisher 与仓库 `pypi` environment 到位后由 tag 发布；
 - 验收：三平台 wheel 构建绿 + 干净环境 `pip install` 后跑通 smoke
   片段（Z0 冷用户测试首次执行）。
 

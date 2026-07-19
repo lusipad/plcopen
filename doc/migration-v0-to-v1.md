@@ -1,6 +1,8 @@
-# v0.x → v1.0 迁移指南（旧 `src/` 线 → 新核 `core/`）
+# 旧 `src/` 线 → 新核 `core/` 迁移指南
 
-状态：随 `v1.0.0-alpha` 草案发布，对应 [rewrite-plan](archive/rewrite-plan.md) §5 DoD 第 5 条。
+状态：最初随 `v1.0.0-alpha` 实验预览发布；当前新核版本线已校准为
+`v0.20.0` pre-1.0。本文件名保留为历史迁移语境，不代表项目已作出 1.0
+稳定性承诺。
 语义仲裁以 [doc/compliance/](compliance/) 矩阵与黄金回放 diff 为准；本文只描述消费面变化，不新增语义承诺。
 
 ## 版本与维护口径
@@ -8,11 +10,11 @@
 | 线 | 最后功能版本 | 维护政策 |
 |----|--------------|----------|
 | 旧 `src/`（v0.x） | `v0.11.0` | P0-only 维护窗口（见 [EOL 公告草案](archive/r4-evidence-package.md)），窗口结束后仅保留 tag 作回放基线 |
-| 新核 `core/`（v1.x） | `v1.0.0-alpha`（草案） | 活跃开发线，默认消费面 |
+| 新核 `core/` | `v0.20.0`（发布候选） | 活跃开发线，默认消费面；1.0 稳定承诺尚未作出 |
 
 ## 构建与 CMake 消费
 
-| 项 | v0.x | v1.0 |
+| 项 | v0.x | 新 `core/` |
 |----|------|------|
 | 包目标 | `plcopen::plcopen`（编译产物库） | `plcopen::plcopen`（header-only `INTERFACE`，即 `plcopen::core`） |
 | 链接产物 | `plcopen.dll` / `libplcopen.so`，需要 `PATH` / `LD_LIBRARY_PATH` | 无产物、无运行时路径注入 |
@@ -26,7 +28,7 @@
 
 ## 运行模型
 
-| 项 | v0.x | v1.0 |
+| 项 | v0.x | 新 `core/` |
 |----|------|------|
 | 命名空间 | `plcopen` | `plcopen::core`（子空间 `axis` / `fb` / `rt` 等） |
 | 轴生命周期 | `Scheduler::newAxis()` 集中创建，`Scheduler::runCycle()` 推进 | `axis::AxisModel` / `axis::AxisGroup` 值语义对象，调用方按周期显式 `cycle()` |
@@ -38,9 +40,9 @@
 
 ## 功能块映射
 
-已在 `v1.0.0-alpha` 提供（头文件 `fb/motion.h`、`fb/basic.h`）：
+已在新核提供，并随 `v0.20.0` 发布候选交付（头文件 `fb/motion.h`、`fb/basic.h`）：
 
-| v0.x | v1.0 | 备注 |
+| v0.x | 新 `core/` | 备注 |
 |------|------|------|
 | `FbPower` | `fb::FbPower` | 输出 `status` / `valid` / `error` |
 | `FbReset` | `fb::FbReset` | |

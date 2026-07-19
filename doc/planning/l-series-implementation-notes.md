@@ -1,5 +1,10 @@
 # L 系列实现笔记
 
+> **完成态说明（2026-07-19）**：L0-L7 与 L∀ 已全部闭合，134 FB、1476 pins、
+> feature-set `pending=0`，Windows/Linux/ARM64 与最终发布候选门禁均通过。
+> 下文各批次中的“待提交后执行”是实施当时的时间切片，保留用于追溯，
+> 不代表当前仍待验证；最终证据见第 5 节与根 [STATUS](../../STATUS.md)。
+
 > 用途：记录 L0-L7 实施过程中的实际决策、偏差、锚点刷新、验证证据与
 > 下一批依赖。语义以 `doc/compliance/st-l*-semantics.md` 为准；状态以
 > `st-feature-set.yml` 与 `st-feature-table.md` 为准。本文件不能单独证明完成。
