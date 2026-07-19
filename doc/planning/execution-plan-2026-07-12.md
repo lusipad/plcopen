@@ -90,8 +90,9 @@
 
 - **P0（已完成）**：`17932de` 已把 `st_l0_runtime_tests.cpp` 的无谓按值复制
   改为只读引用；Windows/Linux 远端通过，包括 Clang 81 文件门、GCC 与 ARM64。
-- **P1（当前）**：11 项 fuzz 已从日常 CTest/coverage 分流到原生 Nightly，
-  消除 ARM/QEMU 约 24.8 分钟放大；剩余全量 `clang-tidy` 并行化。
+- **P1（当前）**：`0195739` 已把 11 项 fuzz 从日常 CTest/coverage 分流到
+  原生 Nightly 并远端复验，ARM/QEMU 测试 28:40 → 4:57；剩余全量
+  `clang-tidy` 并行化（当前 22:17）。
 - **后续无外部前置队列**：A1 浮点数值语义合同（0.3 L0）→ A2 T30 WCET
   度量工具（0.2 L0）→ G1 治理文档批（0.2 L0）。
 - **条件插队**：ADR-0006 许可证核验与台架决策完成后，F1→F2→F3。

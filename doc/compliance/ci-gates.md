@@ -3,7 +3,7 @@
 本页记录 GitHub Actions gate 的触发条件和证明对象，避免把"能力存在"
 误写成"每个 PR 必跑"。`STATUS.md` 只引用本矩阵，不重复展开长句。
 
-> 远端证据截至 2026-07-19（基线 `17932de`）：Windows/Linux 主线、
+> 远端证据截至 2026-07-19（基线 `0195739`）：Windows/Linux 主线、
 > Coverage、Mutation、Core Nightly、Wheels 全部通过；
 > Pages 已启用且站点 200（http://lusipad.com/plcopen/ ）。
 
