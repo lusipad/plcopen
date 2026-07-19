@@ -9,28 +9,33 @@ sprint 记录）在 [doc/archive/roadmap-history.md](doc/archive/roadmap-history
 
 优先级只在本节声明一次，下列各节只承载明细，不再各自宣称"当前/最高"：
 
-1. **P0 主线复绿（已完成）**：`17932de` 已修复测试辅助函数无谓按值复制
+1. **P0 v0.20.0 发布候选（进行中）**：把过早的 1.0 版本信号校准回
+   pre-1.0，统一 CMake/Python/Conan/vcpkg 版本面，更新 Release notes 与
+   GitHub Actions 运行时，并复验 Windows/Linux/Wheels/Nightly/Coverage/
+   Mutation/Docs。交付形态为 GitHub source/header-only Release + PyPI
+   三平台 wheels/sdist；tag 与 PyPI publisher 注册仍是人专属动作。
+2. **P0 主线复绿（已完成）**：`17932de` 已修复测试辅助函数无谓按值复制
    `st::Program`；[Windows CI](https://github.com/lusipad/plcopen/actions/runs/29680604789)
    与 [Linux CI](https://github.com/lusipad/plcopen/actions/runs/29680604785) 均通过，
    包括 Linux/Clang 81 文件 `clang-tidy`、GCC 与 ARM64。
-2. **P1 CI 时长恢复（已完成）**：`0195739` 已把 11 项 fuzz CTest 统一移到原生
+3. **P1 CI 时长恢复（已完成）**：`0195739` 已把 11 项 fuzz CTest 统一移到原生
    Nightly，日常门只跑 79 项非 fuzz 测试；[Linux CI](https://github.com/lusipad/plcopen/actions/runs/29682295508)
    中 ARM/QEMU 测试由 28 分 40 秒降至 4 分 57 秒，[Core Nightly](https://github.com/lusipad/plcopen/actions/runs/29682299843)
    11/11 fuzz 仅用 5.30 秒并全绿。`7336379` 在不减少 81 个 TU 或检查项的
    前提下把全量 `clang-tidy` 改为 8 路并行；[远端复验](https://github.com/lusipad/plcopen/actions/runs/29687354905)
    E2 由 22 分 17 秒降至 10 分 31 秒，Linux 总时长由 27 分 59 秒降至
    16 分 46 秒。
-3. **A1 浮点数值语义合同（已完成）**：`805a363` 已向 header-only consumer
+4. **A1 浮点数值语义合同（已完成）**：`805a363` 已向 header-only consumer
    传递严格浮点选项，并以[数值语义合同](doc/design/core/floating-point-semantics.md)
    和跨平台运行值测试钉死 FMA、舍入、特殊值与超越函数容差；
    [Windows CI](https://github.com/lusipad/plcopen/actions/runs/29688920738)、
    [Linux CI](https://github.com/lusipad/plcopen/actions/runs/29688920705) 与
    [三平台 Wheels](https://github.com/lusipad/plcopen/actions/runs/29688932738) 复验通过。
-4. **无外部前置的软件队列**：A2 T30 WCET 度量 → G1 治理文档；当前默认
-   从 A2 开始。
-5. **F 轨 EtherCAT**：仍是最大的剩余软件块和商用指标 #1/#4 的上游；
+5. **无外部前置的软件队列**：v0.20.0 收口后从 A2 T30 WCET 度量 → G1
+   治理文档继续。
+6. **F 轨 EtherCAT**：仍是最大的剩余软件块和商用指标 #1/#4 的上游；
    ADR-0006 许可证人工核验与台架决策完成后立即插队，按 F1→F2→F3 推进。
-6. **完成面守护**：PLCopen/Beckhoff C0→C6 与 ST L0→L7、L∀ 已完成；只
+7. **完成面守护**：PLCopen/Beckhoff C0→C6 与 ST L0→L7、L∀ 已完成；只
    维护能力矩阵、特性表和限制注册表不漂移，不扩张到 IDE、Safety、CNC。
    商用门板已关闭的软件面保持不回退，台架、部署、认证和日历证据不以
    软件模拟冒充。

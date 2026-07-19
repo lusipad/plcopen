@@ -20,7 +20,7 @@ FetchContent (Option C) or install + `find_package` (Option D).
 
 ```bash
 conan create /path/to/plcopen
-conan install . --requires=plcopen/1.0.0-alpha
+conan install . --requires=plcopen/0.20.0
 ```
 
 ## Option C: FetchContent (quickest)
@@ -33,7 +33,7 @@ include(FetchContent)
 FetchContent_Declare(
   plcopen
   GIT_REPOSITORY https://github.com/lusipad/plcopen.git
-  GIT_TAG v1.0.0-alpha)
+  GIT_TAG v0.20.0)
 FetchContent_MakeAvailable(plcopen)
 
 add_executable(my_controller main.cpp)
