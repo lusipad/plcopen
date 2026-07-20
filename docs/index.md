@@ -5,18 +5,17 @@
 **Modern C++ PLCopen motion-control kernel + IEC 61131-3 ST runtime. Embed it
 in your controller, or put it under your learning stack.**
 
-!!! note "v0.20.0 release candidate"
-    The source, wheels, sdist, nightly, coverage, mutation, and documentation
-    gates are green, and the PyPI trusted publisher plus GitHub environment are
-    configured. `pip install pyplcopen` becomes available after the authorized
-    `v0.20.0` tag triggers publication. Until then, install from source. See the
+!!! success "v0.20.0 released"
+    `v0.20.0` was published on 2026-07-20. Get the C++ source/header-only
+    package from the [GitHub Release](https://github.com/lusipad/plcopen/releases/tag/v0.20.0),
+    or install the Python package with `pip install pyplcopen==0.20.0`. See the
     [v0.20.0 release record](releases/v0.20.0.md).
 
 ## One Kernel, Multiple Control Styles
 
 | Control Style | What You Get | Entry Point |
 |---|---|---|
-| Python digital twin | Source install now; `pip install pyplcopen==0.20.0` after publication | [Python guide](getting-started/python.md) |
+| Python digital twin | `pip install pyplcopen==0.20.0` | [Python guide](getting-started/python.md) |
 | C++ embedded library | `find_package(plcopen)` or `FetchContent` | [C++ guide](getting-started/cpp.md) |
 | IEC 61131-3 ST | `compile()` → bytecode VM → cyclic `scan()` | [core/st/README.md](https://github.com/lusipad/plcopen/blob/main/core/st/README.md) |
 | Algorithm white-box | Compliance matrices, oracles, known boundaries | [Algorithm guide](getting-started/algorithms.md) |

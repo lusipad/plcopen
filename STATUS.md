@@ -9,15 +9,16 @@
 
 新核 `core/` 主体能力已落地（R0-R4 重写 + Phase B 纯软件 + 位姿闭环 +
 软件收尾批，KB-034~081）。`v1.0.0-alpha`（2026-07-06）保留为历史实验性
-预览，当前版本线已校准回 pre-1.0，**v0.20.0 发布候选已完成版本、资料与
-全套门禁验证，尚未打 tag 或正式发布**。Part 4 管理/路径表/变换 + Part 5
+预览，当前版本线已校准回 pre-1.0，**v0.20.0 已于 2026-07-20 正式发布**：
+[GitHub Release](https://github.com/lusipad/plcopen/releases/tag/v0.20.0) 与
+[PyPI](https://pypi.org/project/pyplcopen/0.20.0/) 均已上线。Part 4 管理/路径表/变换 + Part 5
 回零 FB 已交付。2026-07-19 候选门禁 Windows/Linux/Wheels/Nightly/
 Coverage/Mutation/Docs 全通过。**文档站已上线**
 （http://lusipad.com/plcopen/ ，Pages 2026-07-11 启用）。**executor
 双域已落地**（ADR-0007：规划域产帧、RT 域仅消费承诺轨迹，TSAN 零
-报告）。S0 纯软件发布准备已收口；PyPI publisher 已由维护者注册，GitHub
-`pypi` environment 已验证存在。tag 与 GitHub Release 待维护者明确授权后，
-可由 AI 代为执行。
+报告）。S0 纯软件发布准备与发布执行均已收口；tag `v0.20.0` 固定到
+`7788a85`，tag 工作流已通过 Trusted Publishing 发布 20 个 wheels 与 1 个
+sdist。
 S1-S3 另依赖硬件、用户和日历时间。**L 系列语言层已闭合（2026-07-18）**，
 批次 ST-L0（KB-069）、ST-L1a（标量宇宙 + 转换矩阵机读化，KB-070）与
 ST-L2a-Bind 首批十个单轴 MC 块（KB-071）均已交付；Part 5 P5-B 六个缺失
@@ -44,7 +45,7 @@ P#5 分支覆盖门、P#2 轨迹精度软件证据和 P#7 文档主体也已关�
 | v0.x 旧线（fork 自 i5cnc） | 2026-04 → 07 | Part 1/2 FB 面 45/45 收口于 v0.11.0，冻结为回放/迁移基线 |
 | R0-R4 新核重写 | 2026-07 | `core/` L0-L7 阶梯 + kin/stream 支撑库全部落地，与旧线 DoD 对照 PASS |
 | Phase B 纯软件 | 2026-07 | 坐标系/kinematics/轨迹流/cam/前瞻 v2/adapters（KB-034~041） |
-| **← 现在** | 2026-07-19 | PLCopen / Beckhoff 软件收束 C0～C6 与 ST L0～L7、L∀ 已完成；134/134 FB、1476/1476 pins、feature-set `pending=0`，逐项对等状态见 [能力矩阵](doc/compliance/plcopen-beckhoff-parity-matrix.md) |
+| **← 现在** | 2026-07-20 | v0.20.0 已正式发布；PLCopen / Beckhoff 软件收束 C0～C6 与 ST L0～L7、L∀ 已完成；134/134 FB、1476/1476 pins、feature-set `pending=0`，逐项对等状态见 [能力矩阵](doc/compliance/plcopen-beckhoff-parity-matrix.md) |
 
 ## 能力面（新核，默认消费面 `plcopen::plcopen`）
 
@@ -64,7 +65,7 @@ sink 门面，生产层无反向引用）。分层健康度见
 | 支撑库 kin | 阶梯旁支撑库（依赖 geom/rt，被 L5 消费）：kinematics 插件 ABI + 合规 harness、龙门/SCARA 解析解、球腕 6R（Pieper + 8 分支 seed 选支、奇异 margin） | KB-037/041 |
 | 支撑库 stream | 阶梯旁支撑库（依赖 otg/rt，被 L5 消费）：B9 轨迹流滤波（OTG 在线重解、断流看门狗、solve_fixed_time rendezvous 跟踪律）、多关节聚合 | KB-035 |
 | st 语言层（ST L0-L7、L∀） | **外圈消费面之一**（与 L7 adapters 平行、居 L6 之上，纯 sink）。IEC 61131-3 ST：容错前端、确定性字节码 VM、标量/枚举/子范围/聚合/字符串日期类型、用户 POU 与 134 个标准 FB 完整绑定；49 个公开绑定类型、AXIS/GROUP/序列/对象 typed registry 均只向 ST 暴露 1-based handle。L3-L7 已完成并按 L 系列总账闭合；仍不宣称完整 IEC 平台或 PLCopen 官方认证 | KB-069/070/071；[L 系列总账](doc/planning/l-series-work-breakdown.md) |
-| 工具面 | pyplcopen（单轴/流/PoseArmSim，三平台 wheel 远端绿，PyPI 发布作业已备待 publisher 注册，CycleConfig SI 换算）、18 份回放黄金语料、28 关节 @1kHz 预算基准 + 笛卡尔 IK 预算门、参考 executor demo（canonical `planning → committed trajectory → RT` 双域，ADR-0007，TSAN 零报告）、周期级 trace、**文档站已上线**（http://lusipad.com/plcopen/ ）、Conan recipe（vcpkg port 未发布，根目录 `vcpkg.json` 仅为 port 清单草稿）、ErrorCode 诊断文本 | — |
+| 工具面 | pyplcopen（单轴/流/PoseArmSim，`0.20.0` 的 Windows/Linux/macOS wheels + sdist 已发布到 PyPI，CycleConfig SI 换算）、18 份回放黄金语料、28 关节 @1kHz 预算基准 + 笛卡尔 IK 预算门、参考 executor demo（canonical `planning → committed trajectory → RT` 双域，ADR-0007，TSAN 零报告）、周期级 trace、**文档站已上线**（http://lusipad.com/plcopen/ ）、Conan recipe（vcpkg port 未发布，根目录 `vcpkg.json` 仅为 port 清单草稿）、ErrorCode 诊断文本 | — |
 
 ## 质量门禁现状
 
@@ -72,13 +73,13 @@ sink 门面，生产层无反向引用）。分层健康度见
 - 回放：18 语料逐周期比对；声明变更零例外流程运行中
 - 分层：2026-07-12 include 图审计 **0 违规**（L0-L4 零 PLCopen 语义引用、无循环依赖、L4 不引 L3），见 [架构审查报告](doc/design/architecture-review-2026-07.md)
 - RT：静态扫描 27 文件（含 st vm/bind 与 Feetech adapter）+ 冻结窗口分配断言；DoD §5.3 的周期耗时对比通过（新核 = 旧线 9.3%）；分配 soak 以周期等效口径关闭（25.92 亿周期零分配，2026-07-11），墙钟 72h/抖动证据归 B7 真机报告
-- CI（v0.20.0 候选 `5a5cf81`，截至 2026-07-19）：[Windows CI](https://github.com/lusipad/plcopen/actions/runs/29692190516)、[Linux CI](https://github.com/lusipad/plcopen/actions/runs/29692190521)、[三平台 Wheels + sdist](https://github.com/lusipad/plcopen/actions/runs/29692204896)、[Core Nightly](https://github.com/lusipad/plcopen/actions/runs/29692206177)、[Coverage Gate](https://github.com/lusipad/plcopen/actions/runs/29692207269)、[Mutation Score Gate](https://github.com/lusipad/plcopen/actions/runs/29692208327) 与 [Documentation](https://github.com/lusipad/plcopen/actions/runs/29692209416) 全部通过；Mutation 20/20，Nightly 7/7 job。Windows 用时 13:45，Linux 16:29，Nightly 20:56。11 项 fuzz 只进入 Nightly，普通 PR 仅跑 80 项非 fuzz 测试；PR 分支不再同时触发 push 与 pull_request 两套 Windows/Linux 主门禁。升级后的 Windows/Linux/Wheels/Docs 仓库可控 Actions 无 Node 20 弃用注解。`main` 仍无 branch protection/ruleset，这些是 workflow 证据而非技术强制的 required checks。触发边界见 [CI gate 矩阵](doc/compliance/ci-gates.md)
+- CI（v0.20.0）：候选 `5a5cf81` 的 [Windows CI](https://github.com/lusipad/plcopen/actions/runs/29692190516)、[Linux CI](https://github.com/lusipad/plcopen/actions/runs/29692190521)、[三平台 Wheels + sdist](https://github.com/lusipad/plcopen/actions/runs/29692204896)、[Core Nightly](https://github.com/lusipad/plcopen/actions/runs/29692206177)、[Coverage Gate](https://github.com/lusipad/plcopen/actions/runs/29692207269)、[Mutation Score Gate](https://github.com/lusipad/plcopen/actions/runs/29692208327) 与 [Documentation](https://github.com/lusipad/plcopen/actions/runs/29692209416) 全部通过；最终 tag 提交 `7788a85` 的 Windows/Linux/Documentation 主线门禁 0 annotations，[tag Wheels/PyPI run](https://github.com/lusipad/plcopen/actions/runs/29709944703) 5/5 job 全绿。Mutation 20/20，Nightly 7/7 job。11 项 fuzz 只进入 Nightly，普通 PR 仅跑 80 项非 fuzz 测试；PR 分支不再同时触发 push 与 pull_request 两套 Windows/Linux 主门禁。`main` 仍无 branch protection/ruleset，这些是 workflow 证据而非技术强制的 required checks。触发边界见 [CI gate 矩阵](doc/compliance/ci-gates.md)
 
 ## 进行中 / 待办
 
 | 项 | 状态 |
 |----|------|
-| **v0.20.0 发布候选** | **已验证，待授权发布**：版本面、CHANGELOG、C++/Python 发布元数据、Release notes 与七组远端门禁均已收口；PyPI Trusted Publisher 与 GitHub `pypi` environment 已配置，剩余 annotated tag 与 GitHub Release 可在维护者明确授权后由 AI 执行 |
+| **v0.20.0** | **已发布（2026-07-20）**：annotated tag 固定到 `7788a85`；GitHub Release 为 Latest、非 prerelease；PyPI 已上线 20 个 wheels 与 1 个 sdist，公开 wheel 下载校验通过 |
 | **CI 反馈时长** | **P1 已完成，候选复验稳定**：普通 PR 不跑 fuzz 且不重复触发两套主门禁；Windows 13:45，Linux 16:29，重型 sanitizer/fuzz 留在 20:56 的 Nightly |
 | 抽查评审 | 2026-07-05 批次核心提交（OTG/流/kin/adapters）开放抽查，证据链在各提交信息；非合入门槛 |
 | 旧 `src/` v0.11 线 EOL 窗口 | v1.0.0-alpha 实验预览已发布（2026-07-06）；旧 `src/` 线 90 天 P0-only 窗口至 2026-10-04，不影响新核采用 v0.20.0 版本号 |
