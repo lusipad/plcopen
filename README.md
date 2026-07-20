@@ -14,11 +14,11 @@
 行为边界：[已知边界注册表](doc/compliance/known-boundaries.md)
 · 商用八项：[证据总账](doc/compliance/commercial-gate-evidence.md)
 
-> **当前发布候选：v0.20.0。** Windows、Linux、Wheels、Nightly、Coverage、
-> Mutation 与 Docs 发布门禁已全部通过；PyPI Trusted Publisher 与 GitHub
-> `pypi` environment 已配置，正式发布等待授权 tag。版本内容见
-> [v0.20.0 发布记录](docs/releases/v0.20.0.md)，操作步骤见
-> [发布检查单](doc/planning/v0.20.0-release-draft.md)。
+> **当前版本：[v0.20.0](https://github.com/lusipad/plcopen/releases/tag/v0.20.0)。**
+> 2026-07-20 已正式发布；C++ source/header-only 包由 GitHub Release 交付，
+> Python 3.10～3.13 的 Windows、Linux、macOS wheels 与 sdist 已发布到
+> [PyPI](https://pypi.org/project/pyplcopen/0.20.0/)。版本内容见
+> [v0.20.0 发布记录](docs/releases/v0.20.0.md)。
 
 ---
 
@@ -57,7 +57,7 @@ IEC 61131-3 全语言成熟编译器（看 MatIEC——我们的 ST 层是**运�
 
 | 领域 | 状态 | 当前结论 |
 |------|------|----------|
-| v0.20.0 发布候选 | 🟢 已验证 | 七组发布门禁全绿；版本、CHANGELOG、C++/Python 包元数据已对齐，尚未打 tag 或正式发布 |
+| v0.20.0 | ✅ 已发布 | 七组候选门禁、最终 `main` 门禁与 tag 发布工作流全绿；GitHub Release、20 个 wheels 与 1 个 sdist 已上线 |
 | 新核重写 R0-R4 | ✅ 完成 | `core/` 已成为默认消费面，旧线进入 P0-only 冻结期 |
 | Phase B 纯软件 | ✅ 完成 | 坐标系、运动学、轨迹流、cam、前瞻、适配器骨架全部落地 |
 | 核心算法 | 🟢 主体完成 | jerk-limited OTG、固定时长求解、TOPP、oracle、周期执行均已实现 |
@@ -66,7 +66,7 @@ IEC 61131-3 全语言成熟编译器（看 MatIEC——我们的 ST 层是**运�
 | PLCopen Part 5 | 🟡 软件合同闭合 | C5 已关闭 11/11 标准 FB 与 45 B + 102 E 软件声明；真机与认证证据仍独立 |
 | PLCopen Part 6 | ⛔ 未解锁 | 等流体动力行业真实需求 |
 | ST 语言层 | ✅ 声明集闭合 | L0-L7、L∀ 已完成；134 个 FB、1476 个 pin，feature-set `pending=0` |
-| Python/文档/包 | 🟢 发布前置完成 | 文档站和三平台 wheel 已有；PyPI publisher/environment 已配置，等待授权 tag 发布 |
+| Python/文档/包 | ✅ 已发布 | 文档站已上线；`pyplcopen==0.20.0` 已在 PyPI 提供三平台 wheels 与 sdist |
 | EtherCAT | 🔴 未开工 | 最大剩余软件块，也是实时台架和实际部署的前置 |
 | 真机/人形/孪生 | 🟠 设计或局部实现 | Feetech 纯软件层完成；真机、MuJoCo、完整 H/F/T 轨尚未闭环 |
 | 用户采纳 | 🔴 尚未形成 | 灯塔用户、现场案例、外部贡献者和有效下载信号仍不足 |
@@ -113,10 +113,11 @@ assert axis.stream_mode() == "stopped"
 axis.stream_disengage()
 ```
 
-安装 Python 绑定（需要 C++17 编译器 + CMake ≥ 3.21）：
+安装 Python 绑定：
 
 ```bash
-pip install .          # 从仓库源码构建安装
+pip install pyplcopen==0.20.0
+# 或在需要源码构建时：pip install .（需要 C++17 编译器 + CMake ≥ 3.21）
 ```
 
 更多用法（单轴/流/位姿/凸轮/SI 单位转换）见

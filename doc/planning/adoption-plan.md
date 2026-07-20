@@ -28,7 +28,7 @@
 
 | 阶段 | 触发条件 | 动作 | 归属 |
 |------|---------|------|------|
-| P0 | 立即 | PyPI publisher 已注册；tag / Release 待维护者明确授权后可由 AI 执行；GitHub org 迁移、Sponsors 开通、NLnet/STF 申请提交（AI 起草申请文本） | 账号与签署人专属；发布动作明确授权后 AI 可执行 |
+| P0 | 立即 | `v0.20.0` GitHub Release 与 PyPI 包已发布；剩余 GitHub org 迁移、Sponsors 开通、NLnet/STF 申请提交（AI 起草申请文本） | 发布已完成；账号与签署动作仍属人专属 |
 | P1 | L2a 落地 | 文档站首页 → landing（三条五分钟路径：pip / C++ embed / ST 直驱运动示例） | AI |
 | P2 | D2 WASM | Show HN 发帖 + 知乎长文 + B站演示视频（零安装可玩是发帖成败分水岭） | 内容 AI 起草、发布人专属 |
 | P3 | T2 MuJoCo | 机器人社区推独有主张："碰真机前把真实执行层放进仿真回路" | 同上 |
