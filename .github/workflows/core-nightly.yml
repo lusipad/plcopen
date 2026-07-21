@@ -94,6 +94,9 @@ jobs:
       - name: Build dual-domain executor demo
         run: cmake --build build --target plcopen_core_rt_executor_demo --parallel
 
+      - name: Build X5 IPC concurrency contract tests
+        run: cmake --build build --target plcopen_core_ipc_transport_tests --parallel
+
       - name: Build ST L3 process-image concurrency tests
         run: cmake --build build --target plcopen_core_st_l3_tests --parallel
 
@@ -108,6 +111,11 @@ jobs:
           ./build/core/plcopen_core_rt_executor_demo
           --cycles 20000 --period-ns 250000 --trace /tmp/tsan_trace.bin
 
+      - name: Run X5 IPC contract under ThreadSanitizer
+        run: >
+          setarch $(uname -m) -R
+          ./build/core/plcopen_core_ipc_transport_tests
+
       - name: Run ST L3 process image under ThreadSanitizer
         run: >
           setarch $(uname -m) -R
@@ -117,6 +125,48 @@ jobs:
         run: >
           setarch $(uname -m) -R
           ./build/core/plcopen_core_st_l5_tests
+
+  executor-ipc-process:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Configure explicit process integration
+        run: >
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+          -DPLCOPEN_ENABLE_PROCESS_INTEGRATION_TESTS=ON
+
+      - name: Build X5 process harness
+        run: cmake --build build --target plcopen_core_ipc_executor_demo --parallel
+
+      - name: Run X5 shared-memory process roundtrip
+        run: >
+          ctest --test-dir build --output-on-failure
+          -R '^plcopen_core_ipc_executor_process$' -L ipc
+
+  executor-ipc-process-windows:
+    runs-on: windows-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Configure explicit process integration
+        run: >
+          cmake -S . -B build
+          -DPLCOPEN_ENABLE_PROCESS_INTEGRATION_TESTS=ON
+
+      - name: Build X5 process harness
+        run: cmake --build build --config Release --target plcopen_core_ipc_executor_demo --parallel
+
+      - name: Run X5 shared-memory process roundtrip
+        run: >
+          ctest --test-dir build -C Release --output-on-failure
+          -R '^plcopen_core_ipc_executor_process$' -L ipc
 
   st-frontend-fuzz-sanitized:
     runs-on: ubuntu-latest

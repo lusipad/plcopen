@@ -39,6 +39,12 @@ if(BUILD_TESTING AND PLCOPEN_BUILD_CORE_TESTS)
     plcopen_core_rt_compile_options(plcopen_core_rt_tests)
     add_test(NAME plcopen_core_rt_tests COMMAND plcopen_core_rt_tests)
 
+    add_executable(plcopen_core_ipc_transport_tests test/ipc_transport_tests.cpp)
+    target_link_libraries(plcopen_core_ipc_transport_tests PRIVATE plcopen::core)
+    plcopen_core_rt_compile_options(plcopen_core_ipc_transport_tests)
+    add_test(NAME plcopen_core_ipc_transport_tests
+             COMMAND plcopen_core_ipc_transport_tests)
+
     add_executable(plcopen_core_otg_fuzz test/otg_fuzz.cpp)
     target_link_libraries(plcopen_core_otg_fuzz PRIVATE plcopen::core)
     plcopen_core_rt_compile_options(plcopen_core_otg_fuzz)
@@ -233,6 +239,11 @@ if(BUILD_TESTING AND PLCOPEN_BUILD_CORE_TESTS)
     target_link_libraries(plcopen_core_st_l2b_tests PRIVATE plcopen::core)
     plcopen_core_rt_compile_options(plcopen_core_st_l2b_tests)
     add_test(NAME plcopen_core_st_l2b_tests COMMAND plcopen_core_st_l2b_tests)
+
+    add_executable(plcopen_core_st_wcet_tests test/st_wcet_tests.cpp)
+    target_link_libraries(plcopen_core_st_wcet_tests PRIVATE plcopen::core)
+    plcopen_core_rt_compile_options(plcopen_core_st_wcet_tests)
+    add_test(NAME plcopen_core_st_wcet_tests COMMAND plcopen_core_st_wcet_tests)
 
     add_executable(plcopen_core_st_l2c_tests test/st_l2c_tests.cpp)
     target_link_libraries(plcopen_core_st_l2c_tests PRIVATE plcopen::core)
@@ -477,6 +488,24 @@ if(BUILD_TESTING AND PLCOPEN_BUILD_CORE_TESTS)
     plcopen_core_rt_compile_options(plcopen_core_benchmark)
     add_test(NAME plcopen_core_benchmark COMMAND plcopen_core_benchmark)
     set_tests_properties(plcopen_core_benchmark PROPERTIES LABELS benchmark)
+endif()
+
+if((WIN32 OR (UNIX AND NOT APPLE)) AND
+   (PLCOPEN_BUILD_DEMOS OR PLCOPEN_ENABLE_PROCESS_INTEGRATION_TESTS))
+    add_executable(plcopen_core_ipc_executor_demo demo/ipc_executor_demo.cpp)
+    target_link_libraries(plcopen_core_ipc_executor_demo PRIVATE plcopen::core)
+    if(UNIX AND NOT APPLE)
+        target_link_libraries(plcopen_core_ipc_executor_demo PRIVATE rt)
+    endif()
+    if(BUILD_TESTING AND PLCOPEN_ENABLE_PROCESS_INTEGRATION_TESTS)
+        add_test(NAME plcopen_core_ipc_executor_process
+                 COMMAND plcopen_core_ipc_executor_demo --cycles 2000)
+        set_tests_properties(plcopen_core_ipc_executor_process PROPERTIES
+            LABELS "integration;ipc"
+            TIMEOUT 45
+            PASS_REGULAR_EXPRESSION "IPC_EXECUTOR PASS"
+            FAIL_REGULAR_EXPRESSION "IPC_EXECUTOR FAIL")
+    endif()
 endif()
 
 if(PLCOPEN_BUILD_DEMOS)

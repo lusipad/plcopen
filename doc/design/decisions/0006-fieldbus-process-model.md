@@ -16,7 +16,7 @@ socket），且 DC 分布时钟要与 executor 周期对齐。fieldbus 仓库以
 | 选项 | 延迟 | 合规隔离 | 复杂度 |
 |------|------|---------|--------|
 | (i) 同进程 dlopen 插件 | 最低 | 弱（同进程 GPL 组合争议区） | 插件 ABI 要稳定（KB-037 跨 DSO 议题合流） |
-| (ii) 独立总线进程 + 共享内存 IPC | +一跳（数十 µs，可预算） | **最干净**（进程边界，各自许可证独立分发） | 共享内存同步语义（seqlock/双缓冲待独立验证；参考 executor 当前仅验证进程内双向 SPSC 单写者） |
+| (ii) 独立总线进程 + 共享内存 IPC | +一跳（数十 µs，可预算） | **最干净**（进程边界，各自许可证独立分发） | X5 已验证固定 ABI setpoint/feedback SPSC + 状态双缓冲软件形态；DC、权限收窄与真栈预算仍待 F/B7 |
 | (iii) 用户 executor 直接链接 GPL 栈 | 最低 | 责任转嫁集成方 | 零——但把合规难题留给每个用户 |
 
 ## 裁决：**双形态——(i/iii) 同进程直连为性能默认，(ii) IPC 为分发合规形态**
@@ -42,6 +42,15 @@ socket），且 DC 分布时钟要与 executor 周期对齐。fieldbus 仓库以
    最终对外许可表述属人专属动作。
 4. 虚拟从站 CI（F2）：进程内模拟 CiA402 从站走全状态机 + PDO 往返，
    无硬件冒烟；真机验证收窄为 S1 纯验证。
+
+### X5 软件形态落地（2026-07-21）
+
+`core/adapters/ipc_transport.h` 与 `core/rt/ipc_channel.h` 已把上述 `Servo`
+消息模型落实为版本化固定宽度 ABI：setpoint/feedback 各一条共享 SPSC，
+状态使用 seqlock 双缓冲；owner 在映射生命周期内不可转让，writer 崩溃后
+由宿主重建映射。显式 Windows/Linux parent/child harness 验证全字段往返与
+未 commit 状态不可见；默认单元门仍为纯内存。该证据不覆盖 DC 锁相、真栈
+停车、同机恶意 peer 隔离、许可证结论或硬实时预算。
 
 ## 后果
 

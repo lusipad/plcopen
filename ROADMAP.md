@@ -5,7 +5,7 @@
 [doc/planning/](doc/planning/README.md)，历史里程碑（v0.2 → v0.11 全部
 sprint 记录）在 [doc/archive/roadmap-history.md](doc/archive/roadmap-history.md)。
 
-## 当前承诺（2026-07-20，唯一优先级声明）
+## 当前承诺（2026-07-21，唯一优先级声明）
 
 优先级只在本节声明一次，下列各节只承载明细，不再各自宣称"当前/最高"：
 
@@ -28,7 +28,7 @@ sprint 记录）在 [doc/archive/roadmap-history.md](doc/archive/roadmap-history
    与 [Linux CI](https://github.com/lusipad/plcopen/actions/runs/29680604785) 均通过，
    包括 Linux/Clang 81 文件 `clang-tidy`、GCC 与 ARM64。
 3. **P1 CI 时长恢复（已完成）**：`0195739` 已把 11 项 fuzz CTest 统一移到原生
-   Nightly，日常门当前只跑 80 项非 fuzz 测试；[Linux CI](https://github.com/lusipad/plcopen/actions/runs/29682295508)
+   Nightly，A2/X5 新增专项后日常门当前跑 82 项非 fuzz 测试；[Linux CI](https://github.com/lusipad/plcopen/actions/runs/29682295508)
    中 ARM/QEMU 测试由 28 分 40 秒降至 4 分 57 秒，[Core Nightly](https://github.com/lusipad/plcopen/actions/runs/29682299843)
    11/11 fuzz 仅用 5.30 秒并全绿。`7336379` 在不减少 81 个 TU 或检查项的
    前提下把全量 `clang-tidy` 改为 8 路并行；[远端复验](https://github.com/lusipad/plcopen/actions/runs/29687354905)
@@ -41,8 +41,16 @@ sprint 记录）在 [doc/archive/roadmap-history.md](doc/archive/roadmap-history
    [Windows CI](https://github.com/lusipad/plcopen/actions/runs/29688920738)、
    [Linux CI](https://github.com/lusipad/plcopen/actions/runs/29688920705) 与
    [三平台 Wheels](https://github.com/lusipad/plcopen/actions/runs/29688932738) 复验通过。
-5. **无外部前置的软件队列**：v0.20.0 已收口，接下来从 A2 T30 WCET
-   度量 → G1 治理文档继续。
+5. **无外部前置的软件队列**：v0.20.0、A2 T30 WCET、G1 治理与 X5
+   executor IPC 软件形态均已收口。X5 保留 ADR-0007 进程内承诺环，只在
+   `Servo` 边界新增固定 ABI SPSC + 状态双缓冲；Windows/Linux 两进程与
+   Linux TSan 本地通过，两平台 Nightly 首轮待推送。E5 基准趋势管线的软件
+   实现也已完成——四类指标由 Linux/GCC
+   Release 同机 base/head 成对比较，结果保留 90 天且不回灌门禁，CI 只测
+   本仓库、零外部 benchmark 依赖。当前只欠推送后的首次 bootstrap 和随后
+   一次真实 base/head 远端证据，证据闭环前不把 E5 写成完全交付。AxisGroup
+   第 1-5 批行为簇拆分已全部完成，`group.h` 7744→4487 行；共享调度边界按设计
+   保留，不再作为该架构债挂账。
 6. **F 轨 EtherCAT**：仍是最大的剩余软件块和商用指标 #1/#4 的上游；
    ADR-0006 许可证人工核验与台架决策完成后立即插队，按 F1→F2→F3 推进。
 7. **完成面守护**：PLCopen/Beckhoff C0→C6 与 ST L0→L7、L∀ 已完成；只
@@ -65,7 +73,7 @@ soak 周期等效）；发布账号前置已完成，tag / Release 待明确授�
 
 | # | 任务 | DoD | 状态 |
 |---|------|-----|------|
-| 1 | Y7 组接管修复 | 公差管语义 v2.1：标量承接 + 横向衰减 + β 分割；circular/笛卡尔待曲率项另批 | **已交付**（KB-051） |
+| 1 | Y7/Y7b1/Y7b2a 组接管修复 | 公差管语义 v2.4：linear + plain joint-domain circular 的解析承接，并允许 plain Cartesian LINE 来源以真实成员输出历史接到 joint LINE/circular；Cartesian 目标等其余形态留后续 Y7b2b | **已交付**（KB-051/086/087，30 个顶层测试函数） |
 | 2 | 对抗性探测轮 | 组/FB 语义面系统扫描，发现即 KB/修复 | **已交付**（KB-052/053/054） |
 | 3 | Y0 最优性 oracle（评审定序提前：先立标尺再修算法） | 切换结构枚举表（第一交付物）+ 双 oracle + Ruckig 黑盒对照，excess_cycles 分域基线入趋势 | **主 oracle 已交付**：678 结构表 + Newton 打靶 + 4 域基线；副 oracle / Ruckig 对照随 Y2 |
 | 4 | Y2 完整 OTG（评审三关键） | state-to-state 任意目标状态（非零 at）+ 钉边界 + epsilon 政策声明化；Ruckig 黑盒对照 | **软件全交付**（KB-055 非零 at + 12 固定 + 50k fuzz；KB-057 epsilon 政策声明化；Y0 oracle 678 结构表 + 4 域基线）；Ruckig 对照待 ADR-0003 人工审批 |
@@ -129,9 +137,10 @@ native adapter，feature-set `pending=0`。批次证据与范围外项见
 | **P#5** | 分支覆盖首测 → 公开合同补盲 → workflow 加 85% 分支门 | **完成（2026-07-14）**：固定生产运动栈 73.4% → 85.0%（6004/7062，精确 85.006%），同提交启用 `--fail-under-branch 85` | 指标 #5 软件门关闭 |
 | **P#2** | 精度证据套件：Bezier/圆弧稳速波动 <0.1% + cam 相位 <1 周期 + blending 汇总断言 + 八项证据总账 | **完成（2026-07-15）**：0.0775% / 约 7.6e-12% / 0 拍 / 公差利用率 100%；KB-075 声明升级 65 点弧长表 | 指标 #2 软件面关闭；总账见商用证据页 |
 | **P#7** | 文档四件套 + 运维手册（全 FB 参考/实时集成/调优/TwinCAT·CODESYS 迁移/故障处置） | **完成（2026-07-15）**：5 页指南接入文档站，严格构建通过 | 指标 #7 软件文档主体关闭；现场/认证材料仍按总账管理 |
-| G1 | 治理文档批：CONTRIBUTING + GOVERNANCE（决策/继任声明）+ SECURITY.md（含 ST 不可信输入面威胁模型与资源上限声明）；GitHub org 迁移列人专属 | 0.2 L0 | 采纳信任面（bus factor 声明化） |
+| G1 | 治理文档批：CONTRIBUTING + GOVERNANCE（决策/继任声明）+ SECURITY.md（含 ST 不可信输入面威胁模型与资源上限声明）；GitHub org 迁移列人专属 | 0.2 L0 | **完成（2026-07-21）**：三份根文档、公开入口和 issue 对齐点同步；bus factor=1、无指定继任者、无 SLA/LTS，私密漏洞报告/org 迁移保留为人侧动作 |
 | A1 | 浮点数值语义合同：编译旗标钉死（FMA 收缩/舍入）+ 跨平台运行值容差/禁止项 + 双平台运行值对照测试 | 0.3 L0 | **完成（2026-07-19，`805a363`）**：严格选项传递到 consumer，Windows/Linux/ARM64 数值测试与三平台 Wheels 通过；[合同](doc/design/core/floating-point-semantics.md) |
-| A2 | T30 WCET 度量工具：每指令成本表 + 静态无环路径长度 + 调用深度上界（compile 产物附带） | 0.2 L0 | T30 既有承诺兑现 |
+| A2 | T30 WCET 度量工具：每指令成本表 + 静态无环路径长度 + 调用深度上界（compile 产物附带） | 0.2 L0 | **完成（2026-07-20）**：87-opcode 预算/时间分类、无分配机读报告、对象输入 exact-budget 修复与 Release 环境化 `observed_*` 校准；不改变 VM budget，不声称 certified WCET；[合同](doc/compliance/st-wcet-semantics.md) |
+| X5 | executor ↔ fieldbus IPC 软件形态：固定 ABI Servo setpoint/feedback SPSC + 状态双缓冲；默认纯内存门、显式两进程门 | 0.2 L0 | **软件实现完成、远端证据待闭环（2026-07-21）**：owner 映射期不可转让、NaN/Inf 整帧拒绝、Windows/Linux 父子进程与 Linux TSan 本地通过；[合同](doc/compliance/executor-ipc-semantics.md) |
 
 **2026-07-12 生态调研追加裁决**：竞品 Intel RTmotion 确认存在（Apache
 2.0、活跃、Part 1/2、零 Part 4）——VISION 竞争表已校准，"生态位无人"
@@ -150,7 +159,9 @@ D/H/F 候选优先级。**main 强制门禁（branch protection + required check
 
 候选清单已立案为[软件极致计划](doc/planning/software-excellence-plan.md)
 （Y 算法 / P 标准面 / Z 采纳 / E 证据四线 + **2026-07-12 计划补遗**：
-Y7b 组接管扩展 / Y4b 组同步切换 / Y3′ 影子换主 / X5 executor IPC 形态 /
+Y7b1 circular 接管（已完成）/ Y7b2a Cartesian LINE 来源桥接（joint LINE/circular，已完成）/
+Y7b2b Cartesian 目标接管（固定 fraction A 与 B v0 `K=6` 已 NO-GO；`K=40` 仅留候选压缩/holdout/WCET planning spike）/ Y4b 组同步切换 /
+Y3′ 影子换主 / X5 executor IPC 形态（已完成）/
 E5 基准趋势管线 / Z0′ 冷用户首轮 / Z3′ 文档站内容）；语言层批次的可
 执行拆解见 [L 系列工作拆解](doc/planning/l-series-work-breakdown.md)
 （含 pyplcopen ST 暴露、语言层探测轮等并行项）。已完成项与当前缺口
@@ -163,7 +174,7 @@ E5 基准趋势管线 / Z0′ 冷用户首轮 / Z3′ 文档站内容）；语�
 
 剩余工作的完整账（含 AI 能做/不能做的分栏、依赖链、人侧杠杆排序）见
 [**主计划**](doc/planning/master-plan.md)——复盘第一入口。**一句话**：
-L 系列与四项商用软件门关闭后，剩余软件存货重估约 8-9 L0；F 轨
+L 系列、四项商用软件门与 X5 关闭后，剩余软件存货重估约 8 L0；F 轨
 EtherCAT 仍是最后一块大软件且是 #1/#4 的前置；**存货耗尽那天，项目速度
 = 维护者的速度**——所以
 人专属四件（台架决策 ★★★ / ADR-0006 许可证核验 ★★ / R 系列设备 /
@@ -186,4 +197,4 @@ VS Code 扩展与 D2 WASM Playground，挂在 L 系列拆解的触发表。）
 
 ---
 
-*最后更新：2026-07-20（v0.20.0 发布授权规则与账号前置状态同步）*
+*最后更新：2026-07-21（Y7b2b K6/K40 与候选压缩裁决同步）*

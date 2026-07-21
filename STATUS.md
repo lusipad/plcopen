@@ -3,7 +3,7 @@
 > 本页是"现在在哪"的唯一入口，每个批次收口时更新。术语见
 > [CONTEXT.md](CONTEXT.md)；边界细节见
 > [已知边界注册表](doc/compliance/known-boundaries.md)。
-> 最后更新：**2026-07-20**。
+> 最后更新：**2026-07-21**。
 
 ## 一句话
 
@@ -65,15 +65,15 @@ sink 门面，生产层无反向引用）。分层健康度见
 | 支撑库 kin | 阶梯旁支撑库（依赖 geom/rt，被 L5 消费）：kinematics 插件 ABI + 合规 harness、龙门/SCARA 解析解、球腕 6R（Pieper + 8 分支 seed 选支、奇异 margin） | KB-037/041 |
 | 支撑库 stream | 阶梯旁支撑库（依赖 otg/rt，被 L5 消费）：B9 轨迹流滤波（OTG 在线重解、断流看门狗、solve_fixed_time rendezvous 跟踪律）、多关节聚合 | KB-035 |
 | st 语言层（ST L0-L7、L∀） | **外圈消费面之一**（与 L7 adapters 平行、居 L6 之上，纯 sink）。IEC 61131-3 ST：容错前端、确定性字节码 VM、标量/枚举/子范围/聚合/字符串日期类型、用户 POU 与 134 个标准 FB 完整绑定；49 个公开绑定类型、AXIS/GROUP/序列/对象 typed registry 均只向 ST 暴露 1-based handle。L3-L7 已完成并按 L 系列总账闭合；仍不宣称完整 IEC 平台或 PLCopen 官方认证 | KB-069/070/071；[L 系列总账](doc/planning/l-series-work-breakdown.md) |
-| 工具面 | pyplcopen（单轴/流/PoseArmSim，`0.20.0` 的 Windows/Linux/macOS wheels + sdist 已发布到 PyPI，CycleConfig SI 换算）、18 份回放黄金语料、28 关节 @1kHz 预算基准 + 笛卡尔 IK 预算门、参考 executor demo（canonical `planning → committed trajectory → RT` 双域，ADR-0007，TSAN 零报告）、周期级 trace、**文档站已上线**（http://lusipad.com/plcopen/ ）、Conan recipe（vcpkg port 未发布，根目录 `vcpkg.json` 仅为 port 清单草稿）、ErrorCode 诊断文本 | — |
+| 工具面 | pyplcopen（单轴/流/PoseArmSim，`0.20.0` 的 Windows/Linux/macOS wheels + sdist 已发布到 PyPI，CycleConfig SI 换算）、18 份回放黄金语料、28 关节 @1kHz 预算基准 + 笛卡尔 IK 预算门、参考 executor demo（canonical `planning → committed trajectory → RT` 双域，ADR-0007，TSAN 零报告）、X5 固定 ABI Servo IPC（默认纯内存合同 + 显式 Windows/Linux 两进程 harness）、周期级 trace、**文档站已上线**（http://lusipad.com/plcopen/ ）、Conan recipe（vcpkg port 未发布，根目录 `vcpkg.json` 仅为 port 清单草稿）、ErrorCode 诊断文本 | — |
 
 ## 质量门禁现状
 
-- 测试：当前 Windows Debug 配置登记 91 项 CTest，其中日常门运行 80 项非 fuzz 测试；本地全量 91/91（含 11 fuzz）通过。2026-07-19 候选 Coverage Gate 实测全 `core/` line **95.5%（43925/45983）**、固定生产运动栈 branch **85.0%（9184/10811）**、`core/st` branch **85.1%（14187/16663）**，均达到硬门。A1 [浮点数值语义合同](doc/design/core/floating-point-semantics.md)已在 Windows、Linux GCC/Clang 与 ARM64/QEMU 复验。P#2 聚合门实测 Bezier 稳速波动 0.0775%、圆弧约 7.6e-12%、cam 相位 0 拍、blending 公差利用率 100%。P#7 五页指南与运维手册已接入文档站，`mkdocs build --strict` 通过。精度总账见[商用证据](doc/compliance/commercial-gate-evidence.md)，覆盖口径见[分支覆盖基线](doc/compliance/branch-coverage-baseline.md)
+- 测试：当前 Windows Debug 配置登记 93 项 CTest，其中日常门运行 82 项非 fuzz 测试；2026-07-21 本地全量 93/93（含 11 fuzz）通过。X5 [executor IPC 合同](doc/compliance/executor-ipc-semantics.md)的 Windows 显式进程门 2/2、Linux/GCC 2/2 与 Linux TSan 纯内存并发门均通过；默认配置确认不注册进程测试，Windows/Linux Nightly 首轮证据待推送。A2 [WCET 软件度量合同](doc/compliance/st-wcet-semantics.md)新增 87-opcode 成本/时间分类、无分配机读报告与 Release 环境化观测，且不形成 certified WCET 声明。E5 [基准趋势管线](doc/design/benchmark-trend-pipeline.md)已在本地完成四类机读指标、严格零依赖比较器和 Linux 同机 base/head report-only 比较；Linux 自对拍 9/9 对 PASS，远端首次 bootstrap/后续真实提交比较仍待推送后取证。2026-07-19 候选 Coverage Gate 实测全 `core/` line **95.5%（43925/45983）**、固定生产运动栈 branch **85.0%（9184/10811）**、`core/st` branch **85.1%（14187/16663）**，均达到硬门。A1 [浮点数值语义合同](doc/design/core/floating-point-semantics.md)已在 Windows、Linux GCC/Clang 与 ARM64/QEMU 复验。P#2 聚合门实测 Bezier 稳速波动 0.0775%、圆弧约 7.6e-12%、cam 相位 0 拍、blending 公差利用率 100%。P#7 五页指南与运维手册已接入文档站，`mkdocs build --strict` 通过。精度总账见[商用证据](doc/compliance/commercial-gate-evidence.md)，覆盖口径见[分支覆盖基线](doc/compliance/branch-coverage-baseline.md)
 - 回放：18 语料逐周期比对；声明变更零例外流程运行中
 - 分层：2026-07-12 include 图审计 **0 违规**（L0-L4 零 PLCopen 语义引用、无循环依赖、L4 不引 L3），见 [架构审查报告](doc/design/architecture-review-2026-07.md)
-- RT：静态扫描 27 文件（含 st vm/bind 与 Feetech adapter）+ 冻结窗口分配断言；DoD §5.3 的周期耗时对比通过（新核 = 旧线 9.3%）；分配 soak 以周期等效口径关闭（25.92 亿周期零分配，2026-07-11），墙钟 72h/抖动证据归 B7 真机报告
-- CI（v0.20.0）：候选 `5a5cf81` 的 [Windows CI](https://github.com/lusipad/plcopen/actions/runs/29692190516)、[Linux CI](https://github.com/lusipad/plcopen/actions/runs/29692190521)、[三平台 Wheels + sdist](https://github.com/lusipad/plcopen/actions/runs/29692204896)、[Core Nightly](https://github.com/lusipad/plcopen/actions/runs/29692206177)、[Coverage Gate](https://github.com/lusipad/plcopen/actions/runs/29692207269)、[Mutation Score Gate](https://github.com/lusipad/plcopen/actions/runs/29692208327) 与 [Documentation](https://github.com/lusipad/plcopen/actions/runs/29692209416) 全部通过；最终 tag 提交 `7788a85` 的 Windows/Linux/Documentation 主线门禁 0 annotations，[tag Wheels/PyPI run](https://github.com/lusipad/plcopen/actions/runs/29709944703) 5/5 job 全绿。Mutation 20/20，Nightly 7/7 job。11 项 fuzz 只进入 Nightly，普通 PR 仅跑 80 项非 fuzz 测试；PR 分支不再同时触发 push 与 pull_request 两套 Windows/Linux 主门禁。`main` 仍无 branch protection/ruleset，这些是 workflow 证据而非技术强制的 required checks。触发边界见 [CI gate 矩阵](doc/compliance/ci-gates.md)
+- RT：静态扫描 29 文件（含 st vm/bind、Feetech adapter 与 X5 OS-free IPC 原语）+ 冻结窗口分配断言；DoD §5.3 的周期耗时对比通过（新核 = 旧线 9.3%）；分配 soak 以周期等效口径关闭（25.92 亿周期零分配，2026-07-11），墙钟 72h/抖动证据归 B7 真机报告
+- CI（v0.20.0）：候选 `5a5cf81` 的 [Windows CI](https://github.com/lusipad/plcopen/actions/runs/29692190516)、[Linux CI](https://github.com/lusipad/plcopen/actions/runs/29692190521)、[三平台 Wheels + sdist](https://github.com/lusipad/plcopen/actions/runs/29692204896)、[Core Nightly](https://github.com/lusipad/plcopen/actions/runs/29692206177)、[Coverage Gate](https://github.com/lusipad/plcopen/actions/runs/29692207269)、[Mutation Score Gate](https://github.com/lusipad/plcopen/actions/runs/29692208327) 与 [Documentation](https://github.com/lusipad/plcopen/actions/runs/29692209416) 全部通过；最终 tag 提交 `7788a85` 的 Windows/Linux/Documentation 主线门禁 0 annotations，[tag Wheels/PyPI run](https://github.com/lusipad/plcopen/actions/runs/29709944703) 5/5 job 全绿。Mutation 20/20，Nightly 7/7 job。11 项 fuzz 只进入 Nightly；A2/X5 新增专项后，普通 PR 当前跑 82 项非 fuzz 测试，新版 Nightly 配置为 9 job 但尚未形成远端首轮证据。PR 分支不再同时触发 push 与 pull_request 两套 Windows/Linux 主门禁。`main` 仍无 branch protection/ruleset，这些是 workflow 证据而非技术强制的 required checks。触发边界见 [CI gate 矩阵](doc/compliance/ci-gates.md)
 
 ## 进行中 / 待办
 
@@ -85,11 +85,15 @@ sink 门面，生产层无反向引用）。分层健康度见
 | 旧 `src/` v0.11 线 EOL 窗口 | v1.0.0-alpha 实验预览已发布（2026-07-06）；旧 `src/` 线 90 天 P0-only 窗口至 2026-10-04，不影响新核采用 v0.20.0 版本号 |
 | 硬件阶段（B5 真栈/B6 台架/B7 RT 报告） | 等台架或灯塔环境；参考 executor 双域已落地（ADR-0007，TSAN 零报告），真机测量链待硬件 |
 | 72h 分配断言 soak | **周期等效口径关闭（2026-07-11）**：07-06 墙钟版证据链断裂（无结束日志，如实登记）；改交付 2,592,000,000 冻结周期（72h@1kHz ×10）Release 零分配 PASS；真实 72h 墙钟连续运行归 B7 真机 RT 报告。口径调整开放维护者复核 |
-| **KB-051 组接管速度断崖** | **已修复（Y7，2026-07-08）**：linear 组级 aborting 接管速度连续；circular/笛卡尔接管扩展仍按 KB-051 适用范围声明另批 |
+| **KB-051/086/087 组接管速度断崖** | **Y7/Y7b1/Y7b2a 已修复（2026-07-21）**：plain ACS joint-domain linear/circular 的 aborting 接管均按实时成员状态进入有界公差管；plain Cartesian LINE 来源也可用统一 odometer 的真实成员输出历史连续接到 plain joint-domain LINE/circular 目标，不扩 kinematics ABI。Y7b2b 固定 fraction A 与 B v0 `K=6` 均已 NO-GO；`K=40` 因成本、覆盖与 holdout 缺口只保留 planning/WCET spike。Cartesian 目标默认继续 rest-start，未获生产实现授权；Cartesian ARC/chain/window 来源和动态 PCS/tracking 仍不消费该 bridge |
 | Part 4 管理/路径表/变换 FB | **已交付**（GroupHome/MoveDirect/GroupSetOverride/GroupInterrupt·Continue + PathSelect/MovePath/SetKinTransform/ReadCartesianTransform，验收测试已接入 CTest） |
 | Part 5 回零 FB | **C5 软件合同已关闭（KB-080）**：11/11 标准 FB、45 B + 102 E 机读声明与软件语义均有测试；真机堵转、编码器、多圈、时间戳、正式批准仍是独立边界 |
 | A1 浮点数值语义合同 | **已完成（`805a363`）**：严格编译选项传递、运行环境禁止项、跨平台基本运算与超越函数容差均已合同化并远端复验 |
-| 下一软件批 A2 | T30 WCET 度量工具：每指令成本表、静态无环路径长度与调用深度上界 |
+| A2 T30 WCET 度量 | **已完成（2026-07-20）**：87-opcode 版本锚定成本表、静态无环工作量与调用/实例深度、无分配 `WcetReport`、原生 FB/线性字节校准要求和 Release `observed_*` 基准均已落地；`fb_store_object` 低报已修，VM budget/字节码不变，真机 certified WCET 明确不声明 |
+| G1 治理文档 | **已完成（2026-07-21）**：[贡献流程](CONTRIBUTING.md)、[单维护者决策/继任声明](GOVERNANCE.md)与[安全政策](SECURITY.md)已落地；ST 不可信输入面和默认资源上限公开，bus factor=1、无指定继任者、无 SLA/LTS 如实声明；私密漏洞报告与 GitHub org 迁移仍为人侧动作 |
+| E5 基准趋势管线 | **软件实现完成、远端证据待闭环（2026-07-21）**：OTG 完整样本账 + ST 混合指令成本 + 笛卡尔 IK + 64 段窗口重规划统一入 schema v1 JSON；同 runner 9 对 AB/BA、二次确认、90 天 artifact 与只读 report-only PR 边界已接入 Linux workflow。本地工具 15/15、Windows/Linux record、Linux 自对拍通过；首次 bootstrap 和随后一次真实 base/head 远端比较尚待推送 |
+| X5 executor IPC | **软件实现完成、远端证据待闭环（2026-07-21）**：固定 ABI Servo setpoint/feedback SPSC + 状态双缓冲、一次性 owner claim、整帧 NaN/Inf 拒绝与完整 lifecycle 已落地；默认纯内存门、Windows/Linux 两进程和 Linux TSan 本地通过，两平台 Nightly 首轮待推送；不声称恶意 peer 隔离、DC/真栈/硬实时或许可证结论 |
+| AxisGroup 架构债 | **第 1-5 批全部完成（2026-07-21）**：connector、joint look-ahead、Cartesian path/window、frame/pose/kinematics 与 MoveDirect lifecycle/path 各自形成明确 owner；第 2-5 批累计 75 个 `AxisGroup` 方法原样迁出，`group.h` 7744→4487 行；93/93、RT scan、18/2409 replay 与 find_package/FetchContent consumer 全绿。共享 queue/status/error 与 management 调度按设计保留在 `AxisGroup` |
 | Y2 epsilon 政策 | **已声明化**（KB-057：段时长钳零 + 复验，整数量化天然覆盖） |
 | Y2 Ruckig 对照 | **人工门控**（ADR-0003：需先审查上游许可证，不进 R1） |
 

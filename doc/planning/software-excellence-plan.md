@@ -81,7 +81,7 @@
 | Y3 | reachability TOPP（两层，评审定界） | **第一层加速度级 TOPP-RA**：沿路径离散点递推可达/可控速度集（每点小 LP），速度/加速度/曲率/关节/笛卡尔限速统一进路径参数化（arXiv:1707.07239）；**第二层 jerk-aware 扩展**：状态 v → (v,a)。**先影子后换主**（附注 #3）：首次落地 = 窗口版 oracle 量化 excess_cycles，数字定去留；前置工程 = geom 路径导数合同（q_s/q_ss/q_sss 逐段解析）。**不做 clothoid/min-snap/MPC**；五次 Bezier blending 保留 | 规划域（允许 ms 级，周期路径只采样）；`window_replan_us` 基准指标，矩阵先声明预算 |
 | Y4 | **solve_fixed_time 一等原语**（评审三关键之一；拱顶石——同步/cycle-exact 量化/流追赶/接管汇入同一求解，附注 #1）+ 拐角剖面化 | `T_sync = max(T_min[i])` 后逐轴 `solve_fixed_time(axis, T_sync)`——最优结构插入合法巡航/等待段或直接固定时长可行剖面；验收 duration==T_sync、终态 p/v/a ≤1e-9、全程在限（难点 T43）。相位同步变体、拐角内曲率约束变速穿越随批 | 周期路径零新增（仍是采样）；无此能力"全身同时到达"不成立 |
 | Y5 | 笛卡尔管线对称收官 | 位姿组窗口化、任意空间弧平面、全圆/CENTER/RADIUS、twist 回读 | 沿用 KB-044 机制与门 |
-| **Y7** | **组接管连续性修复**（KB-051，正确性级，插队最前；**linear 范围已批**） | 公差管语义 v2.1（ṡ₀/a_s0 标量承接 + 横向 OTG 衰减 + β 限值分割 + R_tube）；circular/笛卡尔扩展待曲率链式项另批；验收 = 逐周期全向量 v/a/j ≤ 全额限值 | 规划域 |
+| **Y7** | **组接管连续性修复**（KB-051/086/087，正确性级） | 公差管语义 v2.4：linear 与 plain joint-domain circular 已交付；Y7b2a 又允许 plain Cartesian LINE 来源以真实成员输出历史接到 joint LINE/circular。圆弧逐成员 residual、链式/端点复验及 connector 生命周期保持既有合同；Cartesian 目标等其余形态留 Y7b2b | 规划域；来源 bridge 不新增周期 IK |
 | Y6 | 刚体动力学前馈 | 重力/惯量模型前馈扭矩（RNEA），对刚体仿真 oracle 验证 | 周期路径新增 ~1-3µs/6R，矩阵定硬门（≤10µs 提案） |
 
 **性能纪律（写进每份 Y 矩阵验收表）**：平滑与最优性花规划域的钱；
@@ -174,11 +174,11 @@ LD/FBD/SFC 图形画布、HMI、TC6-XML 工程交换、cam 表图形编辑器。
 
 | # | 批次 | 内容 | 来源/前置 |
 |---|------|------|----------|
-| Y7b | 组接管扩展：circular/笛卡尔 | KB-051 适用范围的另一半——circular 与笛卡尔组的 aborting 接管速度连续；**前置 = geom 路径导数合同**（曲率链式项 q̈=q_ss·ṡ²+q_s·s̈ 显式进矩阵，同时是 Y3 前置） | KB-051 声明边界；Y7 矩阵批准时明确"另批" |
+| Y7b | 组接管扩展 | **Y7b1 circular 与 Y7b2a 来源桥接已完成（2026-07-21，KB-086/087）**：plain Cartesian LINE 来源可按真实成员输出历史接到 joint LINE/circular，不需要 Jacobian。**Y7b2b 固定 fraction A 与 B v0 `K=6` 均已 NO-GO**；`K=40` 的候选 replay 项升至 6.67 倍仍有覆盖缺口且无 holdout，只保留“预注册绝对 tube/coverage/WCET → 候选 set-cover/Pareto → analytic holdout”的 planning spike。Cartesian 目标继续 rest-start，未获生产实现授权 | KB-051/086/087；[Y7b1 计划](y7b1-circular-takeover-plan.md)；[Y7b2 计划](y7b2-cartesian-takeover-plan.md) |
 | Y4b | 组同步切换 | Y4 solve_fixed_time 的组级消费：多轴同步切换（T_sync 逐轴定时解）接入组路径执行 | ROADMAP 4c"组同步切换待下批"挂账 |
 | Y3′ | TOPP-RA 影子→换主裁决批 | 影子模式 excess_cycles 数据积累后的主路径采用裁决 + 独立门禁（含回放声明变更评估） | 算法评审终局"先影子后换主"；数据驱动，非日历驱动 |
-| X5 | executor IPC 形态验证 | 跨进程共享内存 seqlock/双缓冲的承诺轨迹交接——ADR-0006 合规形态（分发场景）与 ADR-0007 开放项的软件验证；TSAN/进程对拍证据 | ADR-0006/0007 显式开放项；**F 轨（EtherCAT IPC 形态）的真正软件前置** |
-| E5 | 基准趋势管线（**CI 常驻**） | 基准数字（OTG excess_cycles vs 自有 oracle、ST 每指令成本、cartesian_ik_us、窗口重规划耗时）统一入趋势：历史留存 + 退化比对门。**CI 只测我们自己**——零外部依赖是门禁纪律（不让别人的仓库能弄红我们的 CI） | Y0"基线入趋势"与 ST 5.9"入趋势"的基础设施补课 |
+| X5 | executor IPC 形态验证 | **完成（2026-07-21）**：保留 ADR-0007 进程内承诺环，在 `Servo` 边界交付固定 ABI setpoint/feedback SPSC + 状态双缓冲；owner 映射期不可转让，默认纯内存门、Windows/Linux 显式进程对拍与 Linux TSan 已通过，远端 Nightly 首轮待推送 | ADR-0006/0007 显式开放项；**F 轨（EtherCAT IPC 形态）的真正软件前置** |
+| E5 | 基准趋势管线（**CI 常驻**） | 基准数字（OTG excess_cycles vs 自有 oracle、ST 每指令成本、cartesian_ik_us、窗口重规划耗时）统一入趋势：历史留存 + report-only 退化比对。**CI 只测我们自己**——零外部依赖是信任边界（不执行或下载别人的 benchmark） | Y0"基线入趋势"与 ST 5.9"入趋势"的基础设施补课 |
 | E6 | 竞品对拍报告（**手动批次，不进 CI**） | 与 Intel RTmotion（Apache 2.0，可编译）黑盒对拍：算法质量（相对自有 oracle 的 excess_cycles 三路对照）/ 性能（规划耗时、内存、体积）/ 语义合规（逐周期 setpoint 对拍）。**先跑 30 分钟探针**（接口能否对齐、哪些域对不上），探针决定是否值得做。**三条铁律**：① 可能会输，输了如实发（"我们在 X 域慢 15%，原因 Y，修复计划 Z"比赢更建立信任）；② 没有对手的能力（Part 4）只列清单，**不宣称胜出**——没得比不叫赢；③ Beckhoff/CODESYS 闭源不可编译对拍，只能做公开规格对照，黑盒对照需 EULA 人工核验（多数商业 EULA 禁止发布 benchmark，**属人专属**） | 2026-07-12 维护者定调"不能盲目号称自己赢了"；对拍报告本身是最强推广内容 |
 | Z0′ | 冷用户测试首轮 | Pages + 三平台 wheel 已具备——干净环境从 README/文档站走到跑通，失败即缺陷登记（流程首次实跑） | Z0 既定流程，触发条件已满足 |
 | Z3′ | 文档站内容批 | 三条用户旅程 ×30 分钟教程（原 DoD 未完成，站上线的只是既有 docs）；**含 ST 旅程**（L2a 后"ST 直驱 MC"是首页示例素材） | Z3 DoD 余量 + L 系列联动 |
@@ -216,7 +216,7 @@ LD/FBD/SFC 图形画布、HMI、TC6-XML 工程交换、cam 表图形编辑器。
 
 | 项 | 方案文档 | 状态 |
 |----|---------|------|
-| Y7 组接管修复 | [group-takeover-semantics.md](../compliance/group-takeover-semantics.md) | **已批准并交付**（KB-051） |
+| Y7/Y7b1/Y7b2a 组接管修复 | [group-takeover-semantics.md](../compliance/group-takeover-semantics.md) / [Cartesian 来源矩阵](../compliance/cartesian-takeover-semantics.md) | **linear + joint-domain circular + plain Cartesian LINE 来源到 joint LINE/circular 已交付**（KB-051/086/087）；Y7b2b 固定 fraction A 与 B v0 `K=6` 均已 NO-GO，`K=40` 只保留候选压缩/set-cover、analytic holdout 与 WCET planning spike；Cartesian 目标保持 rest-start，未获生产实现授权 |
 | P-Part5 回零 | [part5-homing-semantics.md](../compliance/part5-homing-semantics.md) | **已批准并交付**（25 测试） |
 | P-Part4 管理组 | [part4-management-semantics.md](../compliance/part4-management-semantics.md) | **已批准并交付**（27 测试） |
 | P-Part4 路径表/变换（第二批） | [part4-pathtable-semantics.md](../compliance/part4-pathtable-semantics.md) | **已批准并交付**（24 测试） |
@@ -226,17 +226,28 @@ LD/FBD/SFC 图形画布、HMI、TC6-XML 工程交换、cam 表图形编辑器。
 | Y0 oracle | [otg-oracle-design.md](../design/core/otg-oracle-design.md) | 设计已备（测试层免批） |
 | ST 运行时 | [st-runtime-design.md](../design/core/st-runtime-design.md) | 已按选项 A 完成 L0-L7 与 L∀ 收口 |
 
-## 当前推荐起手（2026-07-19 重基线）
+## 当前推荐起手（2026-07-21 重基线）
 
 P0 已由 `17932de` 完成，Windows/Linux 远端全绿。**P1 CI 时长恢复**已由
 `0195739` 将 11 项 fuzz 分流到原生 Nightly，再由 `7336379` 将全量 81 TU
 `clang-tidy` 改为 8 路并行并远端复验：ARM/QEMU 测试 28:40 → 4:57，
 E2 22:17 → 10:31，Linux 总时长 27:59 → 16:46。`805a363` 随后完成
 [A1 浮点数值语义合同](../design/core/floating-point-semantics.md)，严格选项、
-运行值测试及 Windows/Linux/ARM64/三平台 Wheels 证据均已闭合。下一步执行
-**A2 T30 WCET 度量 → G1 治理文档**。ADR-0006
-许可证核验与台架决策完成后，F 轨
-F1→F2→F3 插队；其余 Y/D/E/R 候选仍由 ROADMAP 复盘定序。
+运行值测试及 Windows/Linux/ARM64/三平台 Wheels 证据均已闭合。A2 T30
+WCET 软件度量随后完成 87-opcode 成本表、无分配报告与环境化 Release
+观测；G1 又完成贡献、决策/继任和 ST 安全边界公开。X5 于 2026-07-21
+完成 `Servo` 边界固定 ABI IPC、不可转让 owner、整帧非有限值拒绝、
+Windows/Linux 父子进程与 Linux TSan 本地证据；远端两平台 Nightly 首轮
+要等推送。E5 基准趋势管线的
+软件实现于 2026-07-21 完成：OTG 完整样本账、ST 混合指令成本、笛卡尔 IK
+与 64 段窗口重规划进入同机 base/head 成对门和 90 天 JSON 历史；本地
+自对拍已通过，尚待推送后的首次 bootstrap 与随后一次真实远端比较闭环。
+AxisGroup 第 1-5 批 connector、joint look-ahead、Cartesian path/window、
+frame/pose/kinematics 与 MoveDirect lifecycle/path 已于 2026-07-21 全部完成；
+共享调度边界按设计保留。Y7b1 随后关闭 joint-domain circular 接管，Y7b2a
+又关闭 plain Cartesian LINE 来源到 joint LINE/circular 的断崖；其余 Cartesian 形态仍按
+独立语义门推进。ADR-0006 许可证核验与台架决策完成后，
+F 轨 F1→F2→F3 插队；其余 Y/D/E/R 候选仍由 ROADMAP 复盘定序。
 
 ---
 

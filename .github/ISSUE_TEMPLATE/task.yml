@@ -13,16 +13,12 @@ body:
     validations:
       required: true
 
-  - type: dropdown
-    id: risk
+  - type: textarea
+    id: alignment
     attributes:
-      label: Risk level
-      description: Use the project T0-T3 change policy from CLAUDE.md.
-      options:
-        - T0 - docs, comments, demos, tests, formatting, CI scripts
-        - T1 - non-RT implementation, tooling, pyplcopen, build config
-        - T2 - RT path, OTG/planner algorithms, state semantics, public API
-        - T3 - license, provenance, release tags, external safety claims
+      label: Maintainer alignment or human-only boundary
+      description: State whether this needs semantic approval, a declared replay change, release authorization, or a human-only action from CLAUDE.md. Write "none" if none applies.
+      placeholder: "Example: Semantic matrix approval required before implementation; no release or legal action."
     validations:
       required: true
 

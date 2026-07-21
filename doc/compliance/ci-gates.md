@@ -9,11 +9,12 @@
 
 | Gate | Workflow | 触发 | 证明对象 | Release blocking |
 |------|----------|------|----------|------------------|
-| Windows 主线 | `.github/workflows/windows-ci.yml` | `main` push、`pull_request`、`workflow_dispatch` | RT scan、Part 1/2 与 Part 5 I/O matrix、replay fixture、80 项非 fuzz CTest（含 Part 5 C5、ST conformance 锚点、转换矩阵三方比对与 [A1 数值语义合同](../design/core/floating-point-semantics.md)）、排除 fuzz 可执行文件的 Windows coverage artifact（延迟门基准豁免插桩重跑，预算门仍在 CTest 强制）、installed/fetchcontent consumer | 是 |
-| Linux 主线 | `.github/workflows/linux-ci.yml` | `main` push、`pull_request`、`workflow_dispatch` | gcc/clang Release 构建、RT scan、Part 1/2 matrix、replay fixture、80 项非 fuzz CTest（含 ST conformance 锚点、两个字节码锚点哈希、转换矩阵与 A1 数值语义跨平台复验）、benchmark baseline、82 TU 全量 clang-tidy gate（8 worker 并行，不减少检查项）、ARM64/QEMU 非 fuzz 测试（matrix_check 经 CMAKE_CROSSCOMPILING_EMULATOR 执行）、Python binding、consumer smoke、API docs 生成 | 是 |
+| Windows 主线 | `.github/workflows/windows-ci.yml` | `main` push、`pull_request`、`workflow_dispatch` | RT scan、Part 1/2 与 Part 5 I/O matrix、replay fixture、82 项非 fuzz CTest（含 Part 5 C5、ST conformance 锚点、转换矩阵三方比对、[A1 数值语义合同](../design/core/floating-point-semantics.md)、[A2 WCET 软件度量](st-wcet-semantics.md)与 [X5 纯内存 IPC 合同](executor-ipc-semantics.md)）、排除 fuzz 可执行文件的 Windows coverage artifact（延迟门基准豁免插桩重跑，预算门仍在 CTest 强制）、installed/fetchcontent consumer | 是 |
+| Linux 主线 | `.github/workflows/linux-ci.yml` | `main` push、`pull_request`、`workflow_dispatch` | gcc/clang Release 构建、RT scan、Part 1/2 matrix、replay fixture、82 项非 fuzz CTest（含 ST conformance 锚点、两个字节码锚点哈希、转换矩阵、A1 数值语义、A2 WCET 与 X5 纯内存 IPC 报告复验）、带平台/编译器身份的 benchmark 输出、83 TU 全量 clang-tidy gate（8 worker 并行，不减少检查项）、ARM64/QEMU 非 fuzz 测试（matrix_check 经 CMAKE_CROSSCOMPILING_EMULATOR 执行）、Python binding、consumer smoke、API docs 生成 | 是 |
+| E5 基准趋势观测 | `.github/workflows/linux-ci.yml` 的 `benchmark-trend` job | `main` push、`pull_request`、`workflow_dispatch` | 同一 Linux/GCC Release runner 重新构建 base/head；OTG excess 采用确定性零退化比较，ST 混合负载每指令成本、笛卡尔 IK 与 64 段窗口重规划采用 9 对 AB/BA + 二次确认；schema v1 JSON artifact 保留 90 天。首次无 base 工具时只 record bootstrap，不冒充比较；非零比较结果写入 job summary 但不阻断 CI | 否（报告型证据） |
 | Coverage Gate | `.github/workflows/coverage.yml` | 每周一 `03:47 UTC`、`workflow_dispatch` | `cmake/coverage_gate.cmake` + gcovr 8.6；全 `core/` line >= 90%、生产运动栈 `rt/otg/geom/plan/exec/axis/fb/kin/stream` branch >= 85%、`core/st` 独立 branch >= 85% 均为硬门；上传三份 JSON summary，口径与首测见 `branch-coverage-baseline.md` | 周期质量门；发布前按需手动确认 |
 | Mutation Score Gate | `.github/workflows/mutation-score.yml` | 每周一 `03:17 UTC`、`workflow_dispatch` | `cmake/mutation_score_gate.cmake`，20 项登记 mutation（含 ST 编译成功契约与 VM 指令预算边界），总 kill score >= 70% | 周期质量门；发布前按需手动确认 |
-| Core Nightly | `.github/workflows/core-nightly.yml` | 每日 `02:23 UTC`、`workflow_dispatch` | **七个独立 job**：11 项统一 fuzz smoke、1,000,000 轮 deterministic OTG fuzz、A2 allocation 50,000,000-cycle soak、1,000,000 轮 time-optimal OTG fuzz、executor/ST L3/L5 TSAN、ST 五模式各 100,000 输入 ASan/UBSan、ST L7 独立 TSAN；单项失败不跳过其余项 | 周期质量门；不替代主线 CI |
+| Core Nightly | `.github/workflows/core-nightly.yml` | 每日 `02:23 UTC`、`workflow_dispatch` | **九个独立 job**：11 项统一 fuzz smoke、1,000,000 轮 deterministic OTG fuzz、A2 allocation 50,000,000-cycle soak、1,000,000 轮 time-optimal OTG fuzz、executor/ST L3/L5/X5 TSAN、X5 Linux/Windows 两进程共享内存对拍、ST 五模式各 100,000 输入 ASan/UBSan、ST L7 独立 TSAN；单项失败不跳过其余项 | 周期质量门；不替代主线 CI |
 | Wheels | `.github/workflows/wheels.yml` | tag `v*`、`workflow_dispatch` | cibuildwheel 三平台 wheel、sdist artifact、`ci/smoke_test.py`；tag 推送额外触发 `publish_pypi`（Trusted Publishing，PyPI 侧 publisher 注册完成前该作业失败属预期） | 发布包门 |
 | Documentation | `.github/workflows/docs.yml` | `main` 分支 `docs/**` 或 `mkdocs.yml` 变更、`workflow_dispatch` | MkDocs 构建并推 `gh-pages`；Pages 已启用（2026-07-11），站点 http://lusipad.com/plcopen/ | 文档发布门 |
 
@@ -21,8 +22,14 @@
 
 - PR 合入判断默认看 Windows 主线和 Linux 主线；11 项 `fuzz` 标签 CTest
   只由 Core Nightly 执行，不进入日常 CTest 或 Windows coverage。
+- X5 的默认 `plcopen_core_ipc_transport_tests` 只使用进程内内存和线程；
+  `plcopen_core_ipc_executor_process` 只有显式打开
+  `PLCOPEN_ENABLE_PROCESS_INTEGRATION_TESTS` 才注册，并仅在 Nightly 运行。
 - feature branch 的 `push` 不再触发 Windows/Linux 主线；同一 PR 只保留
   `pull_request` 运行，避免重复占用 runner。`main` push 和手动触发不变。
+- E5 只消费当前 job 自行构建的 base/head，不下载历史 artifact；历史 JSON
+  只供审计和画趋势，不能作为高权限 workflow 的可执行或基线输入。比较器、
+  策略和完整合同见[基准趋势管线](../design/benchmark-trend-pipeline.md)。
 - `main` 当前无 branch protection/ruleset；上表记录的是 workflow 证据与项目政策，不代表 GitHub 已强制 required checks。
 - 发布签核需要按发布内容确认 Wheels、Documentation，以及必要的周期质量门最近一次结果。
 - `STATUS.md` 中的测试数量、RT scan 文件数、回放数量应来自本地命令或 CI 输出，不手写推断值。

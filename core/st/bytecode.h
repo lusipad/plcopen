@@ -25,8 +25,10 @@ namespace plcopen::core::st
 inline constexpr std::uint32_t kBytecodeFormatVersion = 6;
 inline constexpr std::uint32_t kCanonicalManifestVersion = 2;
 
-// Every opcode executes in O(1); loops exist only as structured jumps, so
-// WCET = per-instruction bound x instruction budget (matrix 3.1/3.6).
+// Every opcode charges at least one VM work unit.  String/object operations
+// may charge a bounded dynamic amount; byte copies and native FB dispatch also
+// carry a separate platform timing class in st/wcet.h.  Work-unit bounds must
+// not be presented as a wall-clock WCET without target calibration.
 enum class Op : std::uint8_t
 {
     halt = 0,
@@ -201,6 +203,7 @@ struct PouInfo
     std::string lower;
     std::uint32_t frame_bytes = 0;
     bool worst_case_bounded = true;
+    // Historical field name; the value is a VM work-unit upper bound.
     std::uint64_t worst_case_instructions = 0;
 };
 
@@ -247,6 +250,7 @@ struct SfcRegionInfo
     std::vector<std::uint64_t> constants;
     std::uint16_t stack_slots = 0;
     bool worst_case_bounded = true;
+    // Historical field name; the value is a VM work-unit upper bound.
     std::uint64_t worst_case_instructions = 0;
     std::uint32_t result_offset = std::numeric_limits<std::uint32_t>::max();
     SourceMap source_map;
@@ -418,6 +422,7 @@ struct Program
     std::uint16_t max_call_depth = 1;
     std::uint16_t max_instance_depth = 1;
     bool worst_case_bounded = true;
+    // Historical field name; use make_wcet_report() for explicit terminology.
     std::uint64_t worst_case_instructions = 0;
     std::uint32_t layout_bytes = 0;
     std::vector<Program> programs;

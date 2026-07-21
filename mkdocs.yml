@@ -50,4 +50,7 @@ nav:
     - Compliance: https://github.com/lusipad/plcopen/tree/main/doc/compliance
     - Architecture: https://github.com/lusipad/plcopen/blob/main/doc/design/core/architecture.md
     - Known Boundaries: https://github.com/lusipad/plcopen/blob/main/doc/compliance/known-boundaries.md
+    - Contributing: https://github.com/lusipad/plcopen/blob/main/CONTRIBUTING.md
+    - Governance: https://github.com/lusipad/plcopen/blob/main/GOVERNANCE.md
+    - Security: https://github.com/lusipad/plcopen/blob/main/SECURITY.md
     - Changelog: https://github.com/lusipad/plcopen/blob/main/CHANGELOG.md

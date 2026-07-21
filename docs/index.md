@@ -116,6 +116,11 @@ smoothness are never disturbed. Held by construction (four SPSC queues are
 the only cross-domain sharing), verified with zero TSAN findings on the
 reference executor.
 
+X5 additionally validates an optional process boundary below `Servo`: fixed-ABI
+setpoint/feedback SPSC rings plus a bounded status snapshot, with explicit
+Windows/Linux process tests. The default in-process executor shape above is
+unchanged; the process harness is not a security, license, or real-time claim.
+
 ```
   your C++ app / IEC 61131-3 ST program        VLA / LeRobot / teleop
               | MC_* function blocks                | trajectory stream
@@ -137,6 +142,9 @@ reference executor.
 - [Compliance matrices](https://github.com/lusipad/plcopen/tree/main/doc/compliance) — normative specs and per-clause audits
 - [Known boundaries](https://github.com/lusipad/plcopen/blob/main/doc/compliance/known-boundaries.md) — declared limits
 - [Architecture](https://github.com/lusipad/plcopen/blob/main/doc/design/core/architecture.md) — design docs
+- [Contributing](https://github.com/lusipad/plcopen/blob/main/CONTRIBUTING.md) — workflow, gates, commits, and PR evidence
+- [Governance](https://github.com/lusipad/plcopen/blob/main/GOVERNANCE.md) — decision authority and succession status
+- [Security](https://github.com/lusipad/plcopen/blob/main/SECURITY.md) — vulnerability reporting and ST trust boundaries
 - [CHANGELOG](https://github.com/lusipad/plcopen/blob/main/CHANGELOG.md) — version history
 - [v0.20.0 release record](releases/v0.20.0.md) — install, highlights, artifacts, verification, and known limits
 - [v0.20.0 release checklist](https://github.com/lusipad/plcopen/blob/main/doc/planning/v0.20.0-release-draft.md) — release form, verified gates, and remaining actions

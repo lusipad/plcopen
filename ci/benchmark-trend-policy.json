@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "sample_pairs": 9,
+  "thresholds": {
+    "warn_ratio": 1.1,
+    "fail_ratio_median": 1.2,
+    "fail_ratio_pair_min": 1.1,
+    "fail_ratio_pair_count": 7
+  },
+  "line_limits": {
+    "max_length": 512
+  }
+}

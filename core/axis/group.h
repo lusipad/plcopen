@@ -3,9 +3,12 @@
 #include <array>
 #include <cmath>
 #include <cstdint>
-#include <memory>
 
+#include "axis/group_cartesian.h"
+#include "axis/group_direct_path.h"
+#include "axis/group_pose_frames.h"
 #include "axis/group_takeover_connector.h"
+#include "axis/group_window.h"
 #include "axis/state.h"
 #include "geom/frame.h"
 #include "geom/geometry.h"
@@ -312,29 +315,6 @@ enum class OrientationMode
     joint_space,
     shortest_path,
     constant,
-};
-
-// Internal: precomputed Cartesian segment geometry, resolved by the
-// submit_linear pre-validation. Not a user input.
-struct CartesianSegment
-{
-    bool pose = false;
-    bool angle_driven = false;
-    bool arc_path = false;
-    geom::ArcSegment arc{};
-    bool chain = false;
-    double line1 = 0.0;
-    double line2 = 0.0;
-    geom::Vec3 dir1{};
-    geom::Vec3 dir2{};
-    geom::Vec3 exit_point{};
-    geom::QuinticBlendSegment corner{};
-    geom::Vec3 start{};
-    geom::Vec3 delta{};
-    double rotation_start[3][3] = {{1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 0.0, 1.0}};
-    double axis[3] = {0.0, 0.0, 1.0};
-    double angle = 0.0;
-    double length = 0.0;
 };
 
 enum class GroupCommandKind
@@ -999,8 +979,8 @@ public:
             for(std::size_t i = 0; i < 6; ++i) {
                 jog_cartesian_start_[i] = current.value[i];
             }
-            jog_tool_offset_ = tool_offset_;
-            jog_pose_tool_inverse_ = pose_tool_inverse_;
+            pose_frames_.jog_tool_offset_ = pose_frames_.tool_offset_;
+            pose_frames_.jog_pose_tool_inverse_ = pose_frames_.pose_tool_inverse_;
             jog_cart_velocity_.fill(0.0);
             jog_cart_acceleration_.fill(0.0);
         }
@@ -1254,8 +1234,8 @@ public:
 
     rt::ErrorCode disable()
     {
-        if(direct_active_) {
-            last_aborted_direct_id_ = direct_command_id_;
+        if(direct_path_.direct_active_) {
+            direct_path_.last_aborted_direct_id_ = direct_path_.direct_command_id_;
             abort_direct_members();
         }
         abort_motion();
@@ -1275,11 +1255,11 @@ public:
 
     // MC_GroupStop: controlled deceleration along the original path. The halt
     // profile re-plans the path parameter from its current sampled state to
-    // the minimal braking point, so members stay collinear on the commanded
-    // line while stopping (KB-027).
+    // the minimal braking point (KB-027); a live circular takeover also
+    // re-plans its member residuals instead of dropping the tolerance tube.
     rt::ErrorCode stop(double deceleration = 1.0, double jerk = 1.0)
     {
-        if(cart_window_active_ && !cart_window_stopping_) {
+        if(cartesian_.window_active_ && !cartesian_.window_stopping_) {
             return cart_window_stop(deceleration, jerk);
         }
         if(status_ == GroupStatus::disabled || status_ == GroupStatus::errorstop ||
@@ -1301,17 +1281,17 @@ public:
             last_aborted_jog_id_ = jog_command_id_;
             return release_jog(jog_command_id_);
         }
-        if(direct_active_) {
+        if(direct_path_.direct_active_) {
             return stop_direct_members(deceleration, jerk);
         }
         queue_.clear();
-        if(window_active_) {
+        if(joint_window_.active_) {
             // Controlled stop along the committed window geometry (KB-032):
             // one halt profile over the composite arc length; not-yet-started
             // commands are cleared (they never execute), the geometry is kept
             // for braking. Mirrors the KB-027 clamp trick: the halt target may
             // lie past the path end, sampling clamps at the terminal point.
-            if(window_stop_) {
+            if(joint_window_.stopping_) {
                 return rt::ErrorCode::ok;
             }
             double s_live = 0.0;
@@ -1324,7 +1304,7 @@ public:
                 status_ = GroupStatus::standby;
                 return rt::ErrorCode::ok;
             }
-            const WindowSegment &seg = window_[window_index_];
+            const WindowSegment &seg = joint_window_.segments_[joint_window_.index_];
             const otg::Limits1D halt_limits{seg.limits.max_velocity,
                                             seg.limits.max_acceleration, deceleration, jerk};
             double brake_velocity = v_live;
@@ -1348,10 +1328,10 @@ public:
                 status_ = GroupStatus::standby;
                 return rt::ErrorCode::ok;
             }
-            window_stop_ = true;
-            window_stop_profile_ = halt.value();
-            window_stop_origin_ = s_live;
-            window_tick_ = 0;
+            joint_window_.stopping_ = true;
+            joint_window_.stop_profile_ = halt.value();
+            joint_window_.stop_origin_ = s_live;
+            joint_window_.tick_ = 0;
             status_ = GroupStatus::stopping;
             return rt::ErrorCode::ok;
         }
@@ -1363,6 +1343,42 @@ public:
 
         const otg::State1D state =
             otg::sample(active_profile_, rt::CycleTick::from_cycles(active_tick_));
+        if(connector_.vector_mode()) {
+            const otg::Limits1D stop_limits{
+                active_command_.velocity, active_command_.acceleration,
+                deceleration, jerk};
+            std::array<double, MaxAxes> output_velocity{};
+            std::array<double, MaxAxes> output_acceleration{};
+            current_member_output_state(output_velocity, output_acceleration);
+            otg::Profile1D halt_profile{};
+            std::int64_t halt_duration = 0;
+            const rt::ErrorCode planned =
+                active_kind_ == GroupPathKind::circular
+                    ? connector_.plan_circular_stop(
+                          stop_limits, active_path_length_, axes_.size(),
+                          active_start_, active_finish_, active_arc_,
+                          active_profile_, active_tick_, output_velocity,
+                          output_acceleration, halt_profile, halt_duration)
+                    : connector_.plan_linear_vector_stop(
+                          stop_limits, active_path_length_, axes_.size(),
+                          active_start_, active_finish_, active_profile_,
+                          active_tick_, output_velocity, output_acceleration,
+                          halt_profile, halt_duration);
+            if(planned == rt::ErrorCode::ok) {
+                active_profile_ = halt_profile;
+                active_tick_ = 0;
+                active_duration_ = halt_duration;
+                status_ = GroupStatus::stopping;
+                return rt::ErrorCode::ok;
+            }
+            // A finite path, continuity and the requested stop envelope cannot
+            // all be preserved when the remaining segment is too short. Freeze at
+            // the last commanded point and report the planning error instead
+            // of snapping the residual back to the base arc.
+            abort_motion();
+            status_ = GroupStatus::standby;
+            return planned;
+        }
         if(state.velocity <= 0.0) {
             abort_motion();
             status_ = GroupStatus::standby;
@@ -1550,14 +1566,17 @@ public:
            deceleration <= 0.0 || !std::isfinite(jerk) || jerk <= 0.0) {
             return rt::ErrorCode::invalid_argument;
         }
-        if(direct_active_) {
+        if(direct_path_.direct_active_) {
             return rt::ErrorCode::unsupported;
         }
-        if(cart_window_active_ || cart_window_stopping_) {
+        if(cartesian_.window_active_ || cartesian_.window_stopping_) {
             return rt::ErrorCode::unsupported;
         }
-        if(window_active_) {
-            if(window_stop_) {
+        if(connector_.active()) {
+            return rt::ErrorCode::unsupported;
+        }
+        if(joint_window_.active_) {
+            if(joint_window_.stopping_) {
                 return rt::ErrorCode::ok;
             }
             double s_live = 0.0;
@@ -1570,7 +1589,7 @@ public:
                 status_ = GroupStatus::interrupted;
                 return rt::ErrorCode::ok;
             }
-            const WindowSegment &seg = window_[window_index_];
+            const WindowSegment &seg = joint_window_.segments_[joint_window_.index_];
             const otg::Limits1D halt_limits{seg.limits.max_velocity,
                                             seg.limits.max_acceleration, deceleration, jerk};
             double brake_velocity = v_live;
@@ -1594,10 +1613,10 @@ public:
                 status_ = GroupStatus::interrupted;
                 return rt::ErrorCode::ok;
             }
-            window_stop_ = true;
-            window_stop_profile_ = halt.value();
-            window_stop_origin_ = s_live;
-            window_tick_ = 0;
+            joint_window_.stopping_ = true;
+            joint_window_.stop_profile_ = halt.value();
+            joint_window_.stop_origin_ = s_live;
+            joint_window_.tick_ = 0;
             interrupting_ = true;
             interrupted_window_ = true;
             interrupted_plain_ = false;
@@ -1701,7 +1720,7 @@ public:
             return rt::ErrorCode::ok;
         }
         if(interrupted_window_) {
-            if(!window_active_ || window_.empty()) {
+            if(!joint_window_.active_ || joint_window_.segments_.empty()) {
                 interrupted_window_ = false;
                 interrupted_plain_ = false;
                 status_ = GroupStatus::standby;
@@ -1709,17 +1728,17 @@ public:
                 start_next_queued();
                 return rt::ErrorCode::ok;
             }
-            window_stop_ = false;
-            window_in_curve_ = false;
-            window_tick_ = 0;
+            joint_window_.stopping_ = false;
+            joint_window_.in_curve_ = false;
+            joint_window_.tick_ = 0;
             for(std::size_t i = 0; i < axes_.size(); ++i) {
-                window_[window_index_].entry[i] = axes_[i]->snapshot().command_position;
+                joint_window_.segments_[joint_window_.index_].entry[i] = axes_[i]->snapshot().command_position;
             }
-            for(std::size_t s = window_index_; s < window_.size(); ++s) {
-                window_[s].limits.max_velocity *= group_override_;
-                window_[s].limits.max_acceleration *= group_acc_override_;
-                window_[s].limits.max_deceleration *= group_acc_override_;
-                window_[s].limits.max_jerk *= group_jerk_override_;
+            for(std::size_t s = joint_window_.index_; s < joint_window_.segments_.size(); ++s) {
+                joint_window_.segments_[s].limits.max_velocity *= group_override_;
+                joint_window_.segments_[s].limits.max_acceleration *= group_acc_override_;
+                joint_window_.segments_[s].limits.max_deceleration *= group_acc_override_;
+                joint_window_.segments_[s].limits.max_jerk *= group_jerk_override_;
             }
             bool late = false;
             if(!window_rebuild(late)) {
@@ -1759,7 +1778,10 @@ public:
         if(status_ == GroupStatus::disabled || status_ == GroupStatus::errorstop) {
             return rt::ErrorCode::invalid_argument;
         }
-        if(direct_active_) {
+        if(direct_path_.direct_active_) {
+            return rt::ErrorCode::unsupported;
+        }
+        if(connector_.active()) {
             return rt::ErrorCode::unsupported;
         }
         const double previous = group_override_;
@@ -1775,10 +1797,10 @@ public:
         if(status_ != GroupStatus::moving) {
             return rt::ErrorCode::ok;
         }
-        if(cart_window_active_) {
+        if(cartesian_.window_active_) {
             return rt::ErrorCode::ok;
         }
-        if(window_active_ && !window_stop_) {
+        if(joint_window_.active_ && !joint_window_.stopping_) {
             if(factor == 0.0) {
                 const rt::ErrorCode paused = interrupt(active_command_.deceleration,
                                                         active_command_.jerk);
@@ -1788,12 +1810,12 @@ public:
                     group_jerk_override_ = previous_jerk;
                     return paused;
                 }
-                window_override_paused_ = true;
+                joint_window_.override_paused_ = true;
                 status_ = GroupStatus::moving;
                 return rt::ErrorCode::ok;
             }
-            if(window_override_paused_) {
-                window_override_paused_ = false;
+            if(joint_window_.override_paused_) {
+                joint_window_.override_paused_ = false;
                 status_ = GroupStatus::interrupted;
                 group_override_ = 1.0;
                 const rt::ErrorCode resumed = continue_motion();
@@ -1805,41 +1827,41 @@ public:
                 }
                 return set_group_override(factor, acc_factor, jerk_factor);
             }
-            for(std::size_t s = window_index_ + 1; s < window_.size(); ++s) {
+            for(std::size_t s = joint_window_.index_ + 1; s < joint_window_.segments_.size(); ++s) {
                 if(previous > 0.0) {
-                    window_[s].limits.max_velocity =
-                        window_[s].limits.max_velocity * (factor / previous);
+                    joint_window_.segments_[s].limits.max_velocity =
+                        joint_window_.segments_[s].limits.max_velocity * (factor / previous);
                 } else {
                     double v = active_command_.velocity * factor;
-                    if(window_[s].kind == WindowKind::arc) {
+                    if(joint_window_.segments_[s].kind == WindowKind::arc) {
                         const double junction = std::fmin(
-                            window_[s].limits.max_acceleration,
-                            window_[s].limits.max_deceleration);
+                            joint_window_.segments_[s].limits.max_acceleration,
+                            joint_window_.segments_[s].limits.max_deceleration);
                         const double centripetal =
-                            std::sqrt(junction * window_[s].arc_geom.radius);
+                            std::sqrt(junction * joint_window_.segments_[s].arc_geom.radius);
                         if(centripetal < v) {
                             v = centripetal;
                         }
                     }
-                    window_[s].limits.max_velocity = v;
+                    joint_window_.segments_[s].limits.max_velocity = v;
                 }
-                window_[s].limits.max_acceleration =
+                joint_window_.segments_[s].limits.max_acceleration =
                     previous_acc > 0.0
-                        ? window_[s].limits.max_acceleration *
+                        ? joint_window_.segments_[s].limits.max_acceleration *
                               (acc_factor / previous_acc)
                         : active_command_.acceleration * acc_factor;
-                window_[s].limits.max_deceleration =
+                joint_window_.segments_[s].limits.max_deceleration =
                     previous_acc > 0.0
-                        ? window_[s].limits.max_deceleration *
+                        ? joint_window_.segments_[s].limits.max_deceleration *
                               (acc_factor / previous_acc)
                         : active_command_.deceleration * acc_factor;
-                window_[s].limits.max_jerk =
+                joint_window_.segments_[s].limits.max_jerk =
                     previous_jerk > 0.0
-                        ? window_[s].limits.max_jerk *
+                        ? joint_window_.segments_[s].limits.max_jerk *
                               (jerk_factor / previous_jerk)
                         : active_command_.jerk * jerk_factor;
             }
-            if(window_index_ + 1 < window_.size()) {
+            if(joint_window_.index_ + 1 < joint_window_.segments_.size()) {
                 bool late = false;
                 window_rebuild(late);
             }
@@ -1920,81 +1942,7 @@ public:
     // MoveDirect remains independent-member PTP for Aborting/Buffered. An
     // explicit blending transition is a coordinated line and therefore enters
     // the existing A4/A5 look-ahead planner instead of being silently ignored.
-    rt::Result<std::uint32_t> submit_direct(GroupCommand command)
-    {
-        const bool blending = command.buffer_mode == BufferMode::blending_low ||
-                              command.buffer_mode == BufferMode::blending_high;
-        if(status_ != GroupStatus::standby && status_ != GroupStatus::moving) {
-            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
-        }
-        if(command.target.size != axes_.size() || !finite(command.target) ||
-           !std::isfinite(command.velocity) || command.velocity <= 0.0 ||
-           !std::isfinite(command.acceleration) || command.acceleration <= 0.0 ||
-           !std::isfinite(command.deceleration) || command.deceleration <= 0.0 ||
-           !std::isfinite(command.jerk) || command.jerk <= 0.0 ||
-           !std::isfinite(command.transition_velocity) ||
-           command.transition_velocity < 0.0 ||
-           command.transition_velocity > command.velocity ||
-           !std::isfinite(command.transition_parameter)) {
-            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
-        }
-        if(blending) {
-            if(command.transition_mode != TransitionMode::max_corner_deviation) {
-                return rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported);
-            }
-            if(command.transition_parameter <= 0.0) {
-                return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
-            }
-            command.kind = GroupCommandKind::motion;
-            command.direct_semantics = true;
-            return submit_linear(command);
-        }
-        if(command.buffer_mode != BufferMode::aborting &&
-           command.buffer_mode != BufferMode::buffered) {
-            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported);
-        }
-        if(command.transition_mode != TransitionMode::none) {
-            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported);
-        }
-        if(command.transition_velocity != 0.0 || command.transition_parameter != 0.0) {
-            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
-        }
-        const rt::ErrorCode framed = apply_coordinate_frame(command);
-        if(framed != rt::ErrorCode::ok) {
-            return rt::Result<std::uint32_t>::failure(framed);
-        }
-        command = normalize(command);
-        command.kind = GroupCommandKind::direct;
-        command.direct_semantics = true;
-        command.command_id = next_command_id_++;
-        if(!members_ready_for_group_motion()) {
-            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
-        }
-        const rt::ErrorCode limited = preflight_member_targets(command.target);
-        if(limited != rt::ErrorCode::ok) {
-            return rt::Result<std::uint32_t>::failure(limited);
-        }
-        if(command.buffer_mode == BufferMode::aborting) {
-            abort_wait();
-            abort_halt();
-            abort_direct_members();
-            abort_motion();
-        }
-        if(command.buffer_mode == BufferMode::aborting ||
-           (!active_ && !direct_active_ && !window_active_ &&
-            !wait_blocks_motion_start())) {
-            const rt::ErrorCode started = start_direct(command);
-            if(started != rt::ErrorCode::ok) {
-                return rt::Result<std::uint32_t>::failure(started);
-            }
-        } else {
-            const rt::ErrorCode queued = queue_.push_back(command);
-            if(queued != rt::ErrorCode::ok) {
-                return rt::Result<std::uint32_t>::failure(queued);
-            }
-        }
-        return rt::Result<std::uint32_t>::success(command.command_id);
-    }
+    rt::Result<std::uint32_t> submit_direct(GroupCommand command);
 
     // Legacy direct entry retained for internal callers; the public FB uses
     // submit_group_home so Position/CoordSystem/BufferMode enter the group
@@ -2106,67 +2054,19 @@ public:
         return active_management_id_ == command_id;
     }
 
-    bool direct_motion_active() const
-    {
-        return direct_active_;
-    }
-
-    bool direct_command_done(std::uint32_t command_id) const
-    {
-        return command_id != 0 && command_id == last_completed_direct_id_;
-    }
-
-    bool direct_command_aborted(std::uint32_t command_id) const
-    {
-        return command_id != 0 && command_id == last_aborted_direct_id_;
-    }
-
-    bool direct_command_active(std::uint32_t command_id) const
-    {
-        if(direct_active_ && direct_command_id_ == command_id) return true;
-        if(active_ && active_command_.direct_semantics &&
-           active_command_.command_id == command_id) return true;
-        return window_active_ && !window_.empty() &&
-               window_[window_index_].kind == WindowKind::direct_line &&
-               window_[window_index_].command_id == command_id;
-    }
-
-    bool direct_command_busy(std::uint32_t command_id) const
-    {
-        if(direct_command_active(command_id)) return true;
-        for(std::size_t i = 0; i < queue_.size(); ++i) {
-            if(queue_[i].direct_semantics &&
-               queue_[i].command_id == command_id) return true;
-        }
-        if(window_active_) {
-            for(std::size_t i = window_index_; i < window_.size(); ++i) {
-                if(window_[i].kind == WindowKind::direct_line &&
-                   window_[i].command_id == command_id) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
-    std::uint32_t last_completed_direct_command() const
-    {
-        return last_completed_direct_id_;
-    }
-
-    std::uint32_t last_aborted_direct_command() const
-    {
-        return last_aborted_direct_id_;
-    }
+    bool direct_motion_active() const;
+    bool direct_command_done(std::uint32_t command_id) const;
+    bool direct_command_aborted(std::uint32_t command_id) const;
+    bool direct_command_active(std::uint32_t command_id) const;
+    bool direct_command_busy(std::uint32_t command_id) const;
+    std::uint32_t last_completed_direct_command() const;
+    std::uint32_t last_aborted_direct_command() const;
 
     // Approved coordinate matrix (B1 v1): the workpiece frame (PCS over MCS)
     // and the tool offset are group configuration; they may only change at
     // standby with an empty queue — changing frames mid-motion has no
     // defined semantics.
-    rt::ErrorCode set_workpiece_frame(double x, double y, double z, double rot_z)
-    {
-        return set_workpiece_frame_rpy(x, y, z, 0.0, 0.0, rot_z);
-    }
+    rt::ErrorCode set_workpiece_frame(double x, double y, double z, double rot_z);
 
     // Orientation batch (approved matrix, decision #4): the full rigid
     // workpiece frame; the Z-only setter above stays as its special case.
@@ -2175,21 +2075,7 @@ public:
                                           double z,
                                           double roll,
                                           double pitch,
-                                          double yaw)
-    {
-        if(status_ != GroupStatus::standby || !queue_.empty() || !std::isfinite(x) ||
-           !std::isfinite(y) || !std::isfinite(z) || !std::isfinite(roll) ||
-           !std::isfinite(pitch) || !std::isfinite(yaw)) {
-            return rt::ErrorCode::invalid_argument;
-        }
-        cancel_tracking();
-        workpiece_frame_ = geom::make_rpy_transform(x, y, z, roll, pitch, yaw);
-        const double echo[6] = {x, y, z, roll, pitch, yaw};
-        for(int i = 0; i < 6; ++i) {
-            workpiece_frame_rpy_[i] = echo[i];
-        }
-        return rt::ErrorCode::ok;
-    }
+                                          double yaw);
 
     // Orientation batch (approved matrix, decision #5): the flange-to-TCP
     // rigid transform for the pose pipeline (the translational pipeline
@@ -2199,65 +2085,20 @@ public:
                                          double z,
                                          double roll,
                                          double pitch,
-                                         double yaw)
-    {
-        if(numbered_tool_mode_) return rt::ErrorCode::precondition_failed;
-        if(status_ != GroupStatus::standby || !queue_.empty() || !std::isfinite(x) ||
-           !std::isfinite(y) || !std::isfinite(z) || !std::isfinite(roll) ||
-           !std::isfinite(pitch) || !std::isfinite(yaw)) {
-            return rt::ErrorCode::invalid_argument;
-        }
-        pose_tool_ = geom::make_rpy_transform(x, y, z, roll, pitch, yaw);
-        pose_tool_inverse_ = geom::invert(pose_tool_);
-        const double echo[6] = {x, y, z, roll, pitch, yaw};
-        for(int i = 0; i < 6; ++i) {
-            tool_transform_rpy_[i] = echo[i];
-        }
-        return rt::ErrorCode::ok;
-    }
+                                         double yaw);
 
     // Orientation batch (approved matrix, decisions #2/#3): the 6-DOF pose
     // plugin, mutually exclusive with the translational plugin.
     rt::ErrorCode set_pose_kinematics(const kin::PoseKinematics *plugin,
                                       double min_singularity_margin,
-                                      double max_joint_step)
-    {
-        if(status_ != GroupStatus::standby || !queue_.empty() ||
-           !std::isfinite(min_singularity_margin) || min_singularity_margin < 0.0 ||
-           !std::isfinite(max_joint_step) || max_joint_step <= 0.0) {
-            return rt::ErrorCode::invalid_argument;
-        }
-        if(plugin != nullptr && (kinematics_ != nullptr || axes_.size() != 6 ||
-                                 plugin->joint_count() != 6)) {
-            return rt::ErrorCode::invalid_argument;
-        }
-        pose_kinematics_ = plugin;
-        pose_min_margin_ = min_singularity_margin;
-        pose_max_joint_step_ = max_joint_step;
-        return rt::ErrorCode::ok;
-    }
+                                      double max_joint_step);
 
     // Readback batch (approved matrix decision #7): configuration getters
     // echo the original set values — never a matrix-to-RPY inversion of a
     // configured frame.
-    void workpiece_frame_rpy(double out[6]) const
-    {
-        for(int i = 0; i < 6; ++i) {
-            out[i] = workpiece_frame_rpy_[i];
-        }
-    }
-
-    void tool_transform_rpy(double out[6]) const
-    {
-        for(int i = 0; i < 6; ++i) {
-            out[i] = tool_transform_rpy_[i];
-        }
-    }
-
-    geom::Vec3 tool_offset() const
-    {
-        return tool_offset_;
-    }
+    void workpiece_frame_rpy(double out[6]) const;
+    void tool_transform_rpy(double out[6]) const;
+    geom::Vec3 tool_offset() const;
 
     // Readback batch (approved matrix decisions #1-#3): per-frame Cartesian
     // and pose readback, a pure const query mirroring the submit-side
@@ -2270,99 +2111,9 @@ public:
     rt::ErrorCode read_cartesian(CoordSystem cs,
                                  PositionSource source,
                                  GroupPosition &out,
-                                 bool *gimbal_lock = nullptr) const
-    {
-        if(gimbal_lock != nullptr) {
-            *gimbal_lock = false;
-        }
-        switch(cs) {
-        case CoordSystem::acs:
-        case CoordSystem::mcs:
-        case CoordSystem::pcs:
-            break;
-        default:
-            return rt::ErrorCode::unsupported;
-        }
-        if(axes_.size() == 0 || status_ == GroupStatus::disabled) {
-            return rt::ErrorCode::invalid_argument;
-        }
-        out.size = axes_.size();
-        double joints[MaxAxes] = {};
-        for(std::size_t i = 0; i < axes_.size(); ++i) {
-            const AxisSnapshot &snapshot = axes_[i]->snapshot();
-            joints[i] = source == PositionSource::actual ? snapshot.actual_position
-                                                         : snapshot.command_position;
-            out.value[i] = joints[i];
-        }
-        if(cs == CoordSystem::acs) {
-            return rt::ErrorCode::ok;
-        }
+                                 bool *gimbal_lock = nullptr) const;
 
-        if(pose_kinematics_ != nullptr) {
-            kin::Pose6 flange{};
-            pose_kinematics_->forward(joints, flange);
-            geom::RigidTransform pose{};
-            pose.translation = geom::Vec3{flange.position[0], flange.position[1],
-                                          flange.position[2]};
-            for(int i = 0; i < 3; ++i) {
-                for(int j = 0; j < 3; ++j) {
-                    pose.rotation[i][j] = flange.rotation[i][j];
-                }
-            }
-            const geom::RigidTransform &tool = active_tool_transform_applies()
-                                                   ? active_pose_tool_
-                                                   : pose_tool_;
-            pose = geom::compose(pose, tool);
-            if(cs == CoordSystem::pcs) {
-                pose = geom::compose(geom::invert(workpiece_frame_), pose);
-            }
-            out.value[0] = pose.translation.x;
-            out.value[1] = pose.translation.y;
-            out.value[2] = pose.translation.z;
-            double roll = 0.0;
-            double pitch = 0.0;
-            double yaw = 0.0;
-            const bool gimbal = geom::extract_rpy(pose.rotation, roll, pitch, yaw);
-            out.value[3] = roll;
-            out.value[4] = pitch;
-            out.value[5] = yaw;
-            if(gimbal_lock != nullptr) {
-                *gimbal_lock = gimbal;
-            }
-            return rt::ErrorCode::ok;
-        }
-
-        geom::Vec3 point{};
-        if(kinematics_ != nullptr) {
-            const rt::ErrorCode forwarded =
-                kinematics_->forward(joints, axes_.size(), point);
-            if(forwarded != rt::ErrorCode::ok) {
-                return forwarded;
-            }
-        } else {
-            point = cartesian_part(out);
-        }
-        point = point + (active_tool_transform_applies() ? active_tool_offset_
-                                                         : tool_offset_);
-        if(cs == CoordSystem::pcs) {
-            point = geom::transform_point(geom::invert(workpiece_frame_), point);
-        }
-        store_cartesian_part(out, point);
-        return rt::ErrorCode::ok;
-    }
-
-    rt::ErrorCode set_tool_offset(double x, double y, double z)
-    {
-        if(numbered_tool_mode_) return rt::ErrorCode::precondition_failed;
-        if(status_ != GroupStatus::standby || !queue_.empty()) {
-            return rt::ErrorCode::invalid_argument;
-        }
-        if(!std::isfinite(x) || !std::isfinite(y) || !std::isfinite(z)) {
-            return rt::ErrorCode::invalid_argument;
-        }
-        tool_offset_ = geom::Vec3{x, y, z};
-        return rt::ErrorCode::ok;
-    }
+    rt::ErrorCode set_tool_offset(double x, double y, double z);
 
     // BS3.6 (approved kinematics matrix follow-up): conservative dual-space
     // velocity limiting. With a kinematics plugin the segment interpolates
@@ -2370,15 +2121,7 @@ public:
     // joint-space chord is sampled through the forward solution and the
     // command velocity is scaled down so the worst sampled Cartesian speed
     // stays under this limit (0 disables; linear segments only in v1).
-    rt::ErrorCode set_cartesian_velocity_limit(double limit)
-    {
-        if(status_ != GroupStatus::standby || !queue_.empty() || !std::isfinite(limit) ||
-           limit < 0.0) {
-            return rt::ErrorCode::invalid_argument;
-        }
-        cartesian_velocity_limit_ = limit;
-        return rt::ErrorCode::ok;
-    }
+    rt::ErrorCode set_cartesian_velocity_limit(double limit);
 
     // Approved kinematics matrix (B2 v1): the plugin upgrades the declared
     // identity ACS<->MCS mapping to a real mechanism. The caller owns the
@@ -2386,22 +2129,7 @@ public:
     // count to equal both the Cartesian coordinate count (2 or 3) and the
     // group axis count; the 6R batch lifts this.
     rt::ErrorCode set_kinematics(const kin::Kinematics *plugin,
-                                  double min_singularity_margin = 0.0)
-    {
-        if(status_ != GroupStatus::standby || !queue_.empty() ||
-           !std::isfinite(min_singularity_margin) || min_singularity_margin < 0.0) {
-            return rt::ErrorCode::invalid_argument;
-        }
-        if(plugin != nullptr &&
-           (pose_kinematics_ != nullptr || plugin->joint_count() != axes_.size() ||
-            plugin->cartesian_count() != plugin->joint_count() ||
-            plugin->cartesian_count() < 2 || plugin->cartesian_count() > 3)) {
-            return rt::ErrorCode::invalid_argument;
-        }
-        kinematics_ = plugin;
-        kinematics_min_margin_ = min_singularity_margin;
-        return rt::ErrorCode::ok;
-    }
+                                 double min_singularity_margin = 0.0);
 
     rt::Result<std::uint32_t> submit_kinematics(
         const KinTransformRef &kin_transform,
@@ -2430,37 +2158,13 @@ public:
         return enqueue_management(command, mode);
     }
 
-    const kin::Kinematics *kinematics_plugin() const { return kinematics_; }
-    const kin::PoseKinematics *pose_kinematics_plugin() const { return pose_kinematics_; }
-    KinTransformRef kin_transform() const
-    {
-        if(pose_kinematics_ != nullptr) {
-            return {KinTransformKind::pose, nullptr, pose_kinematics_};
-        }
-        if(kinematics_ != nullptr) {
-            return {KinTransformKind::kinematics, kinematics_, nullptr};
-        }
-        return {};
-    }
+    const kin::Kinematics *kinematics_plugin() const;
+    const kin::PoseKinematics *pose_kinematics_plugin() const;
+    KinTransformRef kin_transform() const;
 
     rt::ErrorCode set_coordinate_transform(CoordSystem coordinate_system,
                                            const ToolData &transform,
-                                           ExecutionMode execution_mode)
-    {
-        if(execution_mode != ExecutionMode::immediately) return rt::ErrorCode::unsupported;
-        if(coordinate_system == CoordSystem::pcs) {
-            return set_workpiece_frame_rpy(transform.value[0], transform.value[1],
-                                           transform.value[2], transform.value[3],
-                                           transform.value[4], transform.value[5]);
-        }
-        if(coordinate_system == CoordSystem::tcs) {
-            return set_tool_transform_rpy(transform.value[0], transform.value[1],
-                                          transform.value[2], transform.value[3],
-                                          transform.value[4], transform.value[5]);
-        }
-        return rt::ErrorCode::unsupported;
-    }
-
+                                           ExecutionMode execution_mode);
     rt::Result<std::uint32_t> submit_coordinate_transform(
         CoordSystem coordinate_system,
         const ToolData &transform,
@@ -2481,180 +2185,13 @@ public:
         command.tool_data = transform;
         return enqueue_management(command, execution_mode);
     }
-
     rt::ErrorCode coordinate_transform(CoordSystem coordinate_system,
-                                       ToolData &transform) const
-    {
-        if(coordinate_system == CoordSystem::pcs) {
-            workpiece_frame_rpy(transform.value.data());
-            return rt::ErrorCode::ok;
-        }
-        if(coordinate_system == CoordSystem::tcs) {
-            tool_transform_rpy(transform.value.data());
-            return rt::ErrorCode::ok;
-        }
-        return rt::ErrorCode::unsupported;
-    }
-
+                                       ToolData &transform) const;
     rt::ErrorCode transform_position(const GroupPosition &position,
                                      CoordSystem source,
                                      CoordSystem target,
                                      GroupPosition &output,
-                                     bool &singular_position) const
-    {
-        singular_position = false;
-        if(position.size != axes_.size() || axes_.empty()) {
-            return rt::ErrorCode::invalid_argument;
-        }
-        for(std::size_t i = 0; i < position.size; ++i) {
-            if(!std::isfinite(position.value[i])) return rt::ErrorCode::invalid_argument;
-        }
-        const auto supported = [](CoordSystem system) {
-            return system == CoordSystem::acs || system == CoordSystem::mcs ||
-                   system == CoordSystem::pcs;
-        };
-        if(!supported(source) || !supported(target)) return rt::ErrorCode::unsupported;
-        if(source == target) {
-            output = position;
-            return rt::ErrorCode::ok;
-        }
-
-        GroupPosition mcs = position;
-        if(source == CoordSystem::acs) {
-            if(pose_kinematics_ != nullptr) {
-                kin::Pose6 flange{};
-                pose_kinematics_->forward(position.value.data(), flange);
-                geom::RigidTransform transform{};
-                transform.translation = {flange.position[0], flange.position[1],
-                                         flange.position[2]};
-                for(int row = 0; row < 3; ++row) {
-                    for(int column = 0; column < 3; ++column) {
-                        transform.rotation[row][column] = flange.rotation[row][column];
-                    }
-                }
-                const geom::RigidTransform &tool = active_tool_transform_applies()
-                                                       ? active_pose_tool_
-                                                       : pose_tool_;
-                transform = geom::compose(transform, tool);
-                mcs.value[0] = transform.translation.x;
-                mcs.value[1] = transform.translation.y;
-                mcs.value[2] = transform.translation.z;
-                geom::extract_rpy(transform.rotation, mcs.value[3], mcs.value[4],
-                                  mcs.value[5]);
-            } else {
-                geom::Vec3 point{};
-                if(kinematics_ != nullptr) {
-                    const rt::ErrorCode result = kinematics_->forward(
-                        position.value.data(), position.size, point);
-                    if(result != rt::ErrorCode::ok) return result;
-                } else {
-                    point = {position.value[0], position.value[1], position.value[2]};
-                }
-                point = point + (active_tool_transform_applies() ? active_tool_offset_
-                                                                 : tool_offset_);
-                mcs.value[0] = point.x;
-                mcs.value[1] = point.y;
-                mcs.value[2] = point.z;
-            }
-        } else if(source == CoordSystem::pcs) {
-            if(pose_kinematics_ != nullptr) {
-                geom::RigidTransform transform = geom::make_rpy_transform(
-                    position.value[0], position.value[1], position.value[2],
-                    position.value[3], position.value[4], position.value[5]);
-                transform = geom::compose(workpiece_frame_, transform);
-                mcs.value[0] = transform.translation.x;
-                mcs.value[1] = transform.translation.y;
-                mcs.value[2] = transform.translation.z;
-                geom::extract_rpy(transform.rotation, mcs.value[3], mcs.value[4],
-                                  mcs.value[5]);
-            } else {
-                const geom::Vec3 point = geom::transform_point(
-                    workpiece_frame_, {position.value[0], position.value[1],
-                                       position.value[2]});
-                mcs.value[0] = point.x;
-                mcs.value[1] = point.y;
-                mcs.value[2] = point.z;
-            }
-        }
-
-        if(target == CoordSystem::mcs) {
-            output = mcs;
-            return rt::ErrorCode::ok;
-        }
-        if(target == CoordSystem::pcs) {
-            output = mcs;
-            if(pose_kinematics_ != nullptr) {
-                geom::RigidTransform transform = geom::make_rpy_transform(
-                    mcs.value[0], mcs.value[1], mcs.value[2], mcs.value[3],
-                    mcs.value[4], mcs.value[5]);
-                transform = geom::compose(geom::invert(workpiece_frame_), transform);
-                output.value[0] = transform.translation.x;
-                output.value[1] = transform.translation.y;
-                output.value[2] = transform.translation.z;
-                geom::extract_rpy(transform.rotation, output.value[3], output.value[4],
-                                  output.value[5]);
-            } else {
-                const geom::Vec3 point = geom::transform_point(
-                    geom::invert(workpiece_frame_),
-                    {mcs.value[0], mcs.value[1], mcs.value[2]});
-                output.value[0] = point.x;
-                output.value[1] = point.y;
-                output.value[2] = point.z;
-            }
-            return rt::ErrorCode::ok;
-        }
-
-        output = mcs;
-        if(pose_kinematics_ != nullptr) {
-            geom::RigidTransform tcp = geom::make_rpy_transform(
-                mcs.value[0], mcs.value[1], mcs.value[2], mcs.value[3], mcs.value[4],
-                mcs.value[5]);
-            const geom::RigidTransform &tool_inverse = active_tool_transform_applies()
-                                                           ? active_pose_tool_inverse_
-                                                           : pose_tool_inverse_;
-            const geom::RigidTransform flange = geom::compose(tcp, tool_inverse);
-            kin::Pose6 pose{};
-            pose.position[0] = flange.translation.x;
-            pose.position[1] = flange.translation.y;
-            pose.position[2] = flange.translation.z;
-            for(int row = 0; row < 3; ++row) {
-                for(int column = 0; column < 3; ++column) {
-                    pose.rotation[row][column] = flange.rotation[row][column];
-                }
-            }
-            double seed[MaxAxes] = {};
-            for(std::size_t i = 0; i < axes_.size(); ++i) {
-                seed[i] = axes_[i]->snapshot().command_position;
-            }
-            const rt::ErrorCode result = pose_kinematics_->inverse(
-                pose, seed, pose_max_joint_step_, output.value.data());
-            if(result != rt::ErrorCode::ok) return result;
-            singular_position =
-                pose_kinematics_->singularity_margin(output.value.data()) < pose_min_margin_;
-        } else {
-            const geom::Vec3 tool = active_tool_transform_applies() ? active_tool_offset_
-                                                                    : tool_offset_;
-            const geom::Vec3 point{mcs.value[0] - tool.x, mcs.value[1] - tool.y,
-                                   mcs.value[2] - tool.z};
-            if(kinematics_ != nullptr) {
-                double seed[MaxAxes] = {};
-                for(std::size_t i = 0; i < axes_.size(); ++i) {
-                    seed[i] = axes_[i]->snapshot().command_position;
-                }
-                const rt::ErrorCode result = kinematics_->inverse(
-                    point, seed, axes_.size(), output.value.data());
-                if(result != rt::ErrorCode::ok) return result;
-                singular_position = kinematics_->singularity_margin(
-                                        output.value.data(), axes_.size()) <
-                                    kinematics_min_margin_;
-            } else {
-                output.value[0] = point.x;
-                output.value[1] = point.y;
-                output.value[2] = point.z;
-            }
-        }
-        return rt::ErrorCode::ok;
-    }
+                                     bool &singular_position) const;
 
     rt::ErrorCode set_group_position(const GroupPosition &position,
                                      bool relative,
@@ -2690,11 +2227,11 @@ public:
     // configured value. Default stays the full 64 (replay guard).
     rt::ErrorCode set_window_depth(std::size_t depth)
     {
-        if(status_ != GroupStatus::standby || !queue_.empty() || window_active_ ||
+        if(status_ != GroupStatus::standby || !queue_.empty() || joint_window_.active_ ||
            depth < 2 || depth > WindowCapacity) {
             return rt::ErrorCode::invalid_argument;
         }
-        window_depth_ = depth;
+        joint_window_.depth_ = depth;
         return rt::ErrorCode::ok;
     }
 
@@ -2709,7 +2246,7 @@ public:
         }
         command.tool_number = selected_tool_;
         command.payload_number = selected_payload_;
-        command.tool_inverse = pose_tool_inverse_;
+        command.tool_inverse = pose_frames_.pose_tool_inverse_;
         const rt::ErrorCode dynamics = resolve_dynamics(command);
         if(dynamics != rt::ErrorCode::ok) {
             return rt::Result<std::uint32_t>::failure(dynamics);
@@ -2728,7 +2265,7 @@ public:
         // MoveDirect is driven by member base profiles. Until a coordinated
         // takeover can cancel every member atomically, accepting a path here
         // would leave AxisGroup::cycle() and AxisModel::cycle() as two writers.
-        if(direct_active_ && !halt_takeover) {
+        if(direct_path_.direct_active_ && !halt_takeover) {
             return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
         }
         if((status_ != GroupStatus::standby && status_ != GroupStatus::moving &&
@@ -2762,7 +2299,7 @@ public:
             }
             command.dynamic_pcs = true;
             pending_dynamic_pcs_ = true;
-            pending_dynamic_reference_frame_ = workpiece_frame_;
+            pose_frames_.pending_dynamic_reference_frame_ = pose_frames_.workpiece_frame_;
         }
         // Cartesian-interpolation batch (approved matrix): resolve the
         // opt-in segment before the frame collapse — pre-validation either
@@ -2779,7 +2316,7 @@ public:
                command.transition_parameter > 0.0) {
                 // v3 window (approved addendum): translational plugin groups;
                 // pose groups keep the KB-049 single-successor chain.
-                if(kinematics_ != nullptr) {
+                if(pose_frames_.kinematics_ != nullptr) {
                     return submit_cartesian_window(command);
                 }
                 return submit_cartesian_blend(command);
@@ -2840,13 +2377,16 @@ public:
         }
 
         if(command.buffer_mode == BufferMode::aborting) {
-            // Y7 (KB-051): capture the pre-takeover velocity vector before
-            // abort_motion() destroys it. Only plain linear motions qualify
-            // for the connector (approved v2.1 scope = linear group only).
-            if(active_ && !window_active_ && !cart_window_active_) {
-                capture_takeover_velocity();
+            // Y7/Y7b1/Y7b2a: capture the live member state before
+            // abort_motion() destroys an eligible joint path or a plain
+            // Cartesian LINE source. The target kind below is also part of
+            // the Cartesian-source scope gate.
+            if(active_ && !joint_window_.active_ && !cartesian_.window_active_) {
+                capture_takeover_velocity(
+                    command.path_kind == GroupPathKind::linear &&
+                    !command.dynamic_pcs);
             }
-            if(halt_takeover && direct_active_) abort_direct_members();
+            if(halt_takeover && direct_path_.direct_active_) abort_direct_members();
             abort_halt();
             abort_wait();
             abort_motion();
@@ -2858,7 +2398,7 @@ public:
         }
 
         if(command.buffer_mode == BufferMode::aborting ||
-           (!active_ && !window_active_ && !wait_blocks_motion_start())) {
+           (!active_ && !joint_window_.active_ && !wait_blocks_motion_start())) {
             const rt::ErrorCode started = start(command);
             if(started != rt::ErrorCode::ok) {
                 return rt::Result<std::uint32_t>::failure(started);
@@ -2890,7 +2430,7 @@ public:
         }
         command.tool_number = selected_tool_;
         command.payload_number = selected_payload_;
-        command.tool_inverse = pose_tool_inverse_;
+        command.tool_inverse = pose_frames_.pose_tool_inverse_;
         const rt::ErrorCode dynamics = resolve_dynamics(command);
         if(dynamics != rt::ErrorCode::ok) {
             return rt::Result<std::uint32_t>::failure(dynamics);
@@ -2906,7 +2446,7 @@ public:
             interrupted_window_ = false;
             interrupting_ = false;
         }
-        if(direct_active_ && !halt_takeover) {
+        if(direct_path_.direct_active_ && !halt_takeover) {
             return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
         }
         if((status_ != GroupStatus::standby && status_ != GroupStatus::moving &&
@@ -2959,7 +2499,7 @@ public:
             }
             command.dynamic_pcs = true;
             pending_dynamic_pcs_ = true;
-            pending_dynamic_reference_frame_ = workpiece_frame_;
+            pose_frames_.pending_dynamic_reference_frame_ = pose_frames_.workpiece_frame_;
         }
         if(command.circ_mode != CircMode::border) {
             // CENTER/RADIUS are declared unsupported in v1, not approximated.
@@ -2982,13 +2522,13 @@ public:
                 command.command_id = next_command_id_++;
             }
             if(command.buffer_mode == BufferMode::aborting) {
-                if(halt_takeover && direct_active_) abort_direct_members();
+                if(halt_takeover && direct_path_.direct_active_) abort_direct_members();
                 abort_halt();
                 abort_wait();
                 abort_motion();
             }
             if(command.buffer_mode == BufferMode::aborting ||
-               (!active_ && !window_active_ && !wait_blocks_motion_start())) {
+               (!active_ && !joint_window_.active_ && !wait_blocks_motion_start())) {
                 const rt::ErrorCode started = start(command);
                 if(started != rt::ErrorCode::ok) {
                     return rt::Result<std::uint32_t>::failure(started);
@@ -3004,7 +2544,7 @@ public:
         // Orientation batch (approved matrix, decision #6): the pose pipeline
         // carries no joint-domain circular semantics; ACS arcs stay available
         // (decision #8 passthrough).
-        if(pose_kinematics_ != nullptr && command.coord_system != CoordSystem::acs) {
+        if(pose_frames_.pose_kinematics_ != nullptr && command.coord_system != CoordSystem::acs) {
             return rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported);
         }
         const rt::ErrorCode framed = apply_coordinate_frame(command);
@@ -3093,12 +2633,19 @@ public:
             return submit_blend_arc(command, start_point);
         }
         if(aborting) {
-            if(halt_takeover && direct_active_) abort_direct_members();
+            // Y7b1/Y7b2a-2: geometry is fully validated before the live plain
+            // path is captured, so an invalid arc never disturbs the active
+            // command. Dynamic PCS targets do not open the Cartesian source gate.
+            if(active_ && !joint_window_.active_ &&
+               !cartesian_.window_active_) {
+                capture_takeover_velocity(!command.dynamic_pcs);
+            }
+            if(halt_takeover && direct_path_.direct_active_) abort_direct_members();
             abort_halt();
             abort_wait();
             abort_motion();
         }
-        if(aborting || (!active_ && !window_active_ && !wait_blocks_motion_start())) {
+        if(aborting || (!active_ && !joint_window_.active_ && !wait_blocks_motion_start())) {
             const rt::ErrorCode started = start(command);
             if(started != rt::ErrorCode::ok) {
                 return rt::Result<std::uint32_t>::failure(started);
@@ -3118,7 +2665,7 @@ public:
     // error that tripped the cycle-path errorstop, ok when none did.
     rt::ErrorCode last_cartesian_error() const
     {
-        return last_cartesian_error_;
+        return cartesian_.last_error_;
     }
 
     rt::ErrorCode group_error() const
@@ -3142,8 +2689,8 @@ public:
         }
         double velocity = 0.0;
         double acceleration = 0.0;
-        if(direct_active_) {
-            result.active_command_id = direct_command_id_;
+        if(direct_path_.direct_active_) {
+            result.active_command_id = direct_path_.direct_command_id_;
             result.in_position = false;
             result.standstill = false;
             for(std::size_t i = 0; i < axes_.size(); ++i) {
@@ -3156,8 +2703,8 @@ public:
                     acceleration = snapshot.command_acceleration;
                 }
             }
-        } else if(window_active_ && !window_.empty()) {
-            result.active_command_id = window_[window_index_].command_id;
+        } else if(joint_window_.active_ && !joint_window_.segments_.empty()) {
+            result.active_command_id = joint_window_.segments_[joint_window_.index_].command_id;
             result.in_position = false;
             result.standstill = false;
             double position = 0.0;
@@ -3184,7 +2731,7 @@ public:
 
     double path_derivative(bool acceleration) const
     {
-        if(window_active_ && !window_.empty()) {
+        if(joint_window_.active_ && !joint_window_.segments_.empty()) {
             double position = 0.0;
             double velocity = 0.0;
             double accel = 0.0;
@@ -3228,30 +2775,30 @@ public:
                                                             : GroupCommandState::active;
             return rt::Result<GroupCommandInfo>::success(result);
         }
-        if(cart_window_active_) {
+        if(cartesian_.window_active_) {
             return rt::Result<GroupCommandInfo>::failure(
                 rt::ErrorCode::unsupported);
         }
-        if(direct_active_ && command_id == direct_command_id_) {
+        if(direct_path_.direct_active_ && command_id == direct_path_.direct_command_id_) {
             GroupCommandInfo result{};
             result.state = GroupCommandState::active;
             return rt::Result<GroupCommandInfo>::success(result);
         }
-        if(window_active_) {
-            for(std::size_t i = window_index_; i < window_.size(); ++i) {
-                if(window_[i].command_id != command_id) continue;
+        if(joint_window_.active_) {
+            for(std::size_t i = joint_window_.index_; i < joint_window_.segments_.size(); ++i) {
+                if(joint_window_.segments_[i].command_id != command_id) continue;
                 GroupCommandInfo result{};
-                result.state = i == window_index_ ? GroupCommandState::active
+                result.state = i == joint_window_.index_ ? GroupCommandState::active
                                                   : GroupCommandState::accepted;
-                if(i == window_index_) {
-                    result.elapsed_cycles = window_tick_;
+                if(i == joint_window_.index_) {
+                    result.elapsed_cycles = joint_window_.tick_;
                     result.remaining_cycles =
-                        window_[i].profile.duration_cycles() - window_tick_;
+                        joint_window_.segments_[i].profile.duration_cycles() - joint_window_.tick_;
                     double position = 0.0;
                     double velocity = 0.0;
                     double acceleration = 0.0;
                     window_live_state(position, velocity, acceleration);
-                    const double length = window_[i].line_length();
+                    const double length = joint_window_.segments_[i].line_length();
                     result.remaining_distance = length > position
                                                     ? length - position
                                                     : 0.0;
@@ -3302,8 +2849,8 @@ public:
         }
         for(std::size_t i = 0; i < axes_.size(); ++i) {
             if(!axes_[i]->powered() || axes_[i]->status() == AxisStatus::errorstop) {
-                if(direct_active_) {
-                    last_aborted_direct_id_ = direct_command_id_;
+                if(direct_path_.direct_active_) {
+                    direct_path_.last_aborted_direct_id_ = direct_path_.direct_command_id_;
                     abort_direct_members();
                 }
                 abort_motion();
@@ -3318,7 +2865,7 @@ public:
             return;
         }
 
-        if(direct_active_) {
+        if(direct_path_.direct_active_) {
             bool all_done = true;
             for(std::size_t i = 0; i < axes_.size(); ++i) {
                 if(axes_[i]->status() != AxisStatus::standstill) {
@@ -3327,24 +2874,24 @@ public:
                 }
             }
             if(all_done) {
-                if(direct_stopping_) {
-                    abort_direct(direct_command_id_);
+                if(direct_path_.direct_stopping_) {
+                    abort_direct(direct_path_.direct_command_id_);
                 } else {
-                    complete_direct(direct_command_id_);
+                    complete_direct(direct_path_.direct_command_id_);
                 }
-                direct_active_ = false;
-                direct_stopping_ = false;
+                direct_path_.direct_active_ = false;
+                direct_path_.direct_stopping_ = false;
                 status_ = GroupStatus::standby;
                 start_next_queued();
             }
             return;
         }
 
-        if(cart_window_active_) {
+        if(cartesian_.window_active_) {
             cart_window_cycle();
             return;
         }
-        if(window_active_) {
+        if(joint_window_.active_) {
             window_cycle();
             return;
         }
@@ -3378,12 +2925,17 @@ public:
         if(active_kind_ == GroupPathKind::circular) {
             // Arc-length parameterized sampling: the first two axes trace the
             // arc, remaining axes follow the path parameter linearly.
+            std::array<double, MaxAxes> connector_offsets{};
+            connector_.sample_lateral_offsets(active_tick_, connector_offsets,
+                                              axes_.size());
             const geom::Vec3 point = geom::sample(active_arc_, ratio * active_path_length_);
-            axes_[0]->set_synchronized_position(point.x);
-            axes_[1]->set_synchronized_position(point.y);
+            axes_[0]->set_synchronized_position(point.x + connector_offsets[0]);
+            axes_[1]->set_synchronized_position(point.y + connector_offsets[1]);
             for(std::size_t i = 2; i < axes_.size(); ++i) {
                 const double position =
-                    active_start_[i] + (active_finish_[i] - active_start_[i]) * ratio;
+                    active_start_[i] +
+                    (active_finish_[i] - active_start_[i]) * ratio +
+                    connector_offsets[i];
                 axes_[i]->set_synchronized_position(position);
             }
         } else if(active_kind_ == GroupPathKind::cartesian_linear) {
@@ -3395,12 +2947,22 @@ public:
             // along-path position plus the lateral decay offset. After
             // the lateral profile completes, its position is zero and
             // the motion continues as pure along-path interpolation.
-            const double lat_offset =
-                connector_.sample_lateral_offset(active_tick_);
+            const bool vector_connector = connector_.vector_mode();
+            std::array<double, MaxAxes> connector_offsets{};
+            double lat_offset = 0.0;
+            if(vector_connector) {
+                connector_.sample_lateral_offsets(active_tick_,
+                                                  connector_offsets,
+                                                  axes_.size());
+            } else {
+                lat_offset = connector_.sample_lateral_offset(active_tick_);
+            }
             for(std::size_t i = 0; i < axes_.size(); ++i) {
                 double position =
                     active_start_[i] + (active_finish_[i] - active_start_[i]) * ratio;
-                if(lat_offset != 0.0) {
+                if(vector_connector) {
+                    position += connector_offsets[i];
+                } else if(lat_offset != 0.0) {
                     position += connector_.lateral_dir(i) * lat_offset;
                 }
                 axes_[i]->set_synchronized_position(position);
@@ -3486,113 +3048,16 @@ private:
         }
         return rt::ErrorCode::ok;
     }
-
     rt::ErrorCode validate_kinematics(const KinTransformRef &transform,
                                       double min_singularity_margin,
-                                      double max_joint_step) const
-    {
-        if(!std::isfinite(min_singularity_margin) || min_singularity_margin < 0.0) {
-            return rt::ErrorCode::invalid_argument;
-        }
-        switch(transform.kind) {
-        case KinTransformKind::none:
-            return transform.kinematics == nullptr && transform.pose == nullptr
-                       ? rt::ErrorCode::ok
-                       : rt::ErrorCode::invalid_argument;
-        case KinTransformKind::pose:
-            if(transform.pose == nullptr || transform.kinematics != nullptr) {
-                return rt::ErrorCode::invalid_argument;
-            }
-            if(!std::isfinite(max_joint_step) || max_joint_step <= 0.0 ||
-               axes_.size() != 6 ||
-               transform.pose->joint_count() != 6) {
-                return rt::ErrorCode::invalid_argument;
-            }
-            return rt::ErrorCode::ok;
-        case KinTransformKind::kinematics:
-            if(transform.kinematics == nullptr || transform.pose != nullptr ||
-               transform.kinematics->joint_count() != axes_.size() ||
-               transform.kinematics->cartesian_count() !=
-                   transform.kinematics->joint_count() ||
-               transform.kinematics->cartesian_count() < 2 ||
-               transform.kinematics->cartesian_count() > 3) {
-                return rt::ErrorCode::invalid_argument;
-            }
-            return rt::ErrorCode::ok;
-        default:
-            return rt::ErrorCode::invalid_argument;
-        }
-    }
-
+                                      double max_joint_step) const;
     rt::ErrorCode apply_kinematics(const KinTransformRef &transform,
                                    double min_singularity_margin,
-                                   double max_joint_step)
-    {
-        const rt::ErrorCode valid = validate_kinematics(
-            transform, min_singularity_margin, max_joint_step);
-        if(valid != rt::ErrorCode::ok) return valid;
-        if(transform.kind == KinTransformKind::none) {
-            kinematics_ = nullptr;
-            pose_kinematics_ = nullptr;
-            kinematics_min_margin_ = 0.0;
-            pose_min_margin_ = 0.0;
-            pose_max_joint_step_ = 0.01;
-        } else if(transform.kind == KinTransformKind::kinematics) {
-            kinematics_ = transform.kinematics;
-            kinematics_min_margin_ = min_singularity_margin;
-            pose_kinematics_ = nullptr;
-            pose_min_margin_ = 0.0;
-            pose_max_joint_step_ = 0.01;
-        } else {
-            pose_kinematics_ = transform.pose;
-            pose_min_margin_ = min_singularity_margin;
-            pose_max_joint_step_ = max_joint_step;
-            kinematics_ = nullptr;
-            kinematics_min_margin_ = 0.0;
-        }
-        return rt::ErrorCode::ok;
-    }
-
+                                   double max_joint_step);
     rt::ErrorCode validate_coordinate_transform(CoordSystem coordinate_system,
-                                                const ToolData &transform) const
-    {
-        if(coordinate_system != CoordSystem::pcs && coordinate_system != CoordSystem::tcs) {
-            return rt::ErrorCode::unsupported;
-        }
-        if(coordinate_system == CoordSystem::tcs && numbered_tool_mode_) {
-            return rt::ErrorCode::precondition_failed;
-        }
-        for(double value : transform.value) {
-            if(!std::isfinite(value)) return rt::ErrorCode::invalid_argument;
-        }
-        return rt::ErrorCode::ok;
-    }
-
+                                                const ToolData &transform) const;
     rt::ErrorCode apply_coordinate_transform(CoordSystem coordinate_system,
-                                             const ToolData &transform)
-    {
-        const rt::ErrorCode valid = validate_coordinate_transform(
-            coordinate_system, transform);
-        if(valid != rt::ErrorCode::ok) return valid;
-        if(coordinate_system == CoordSystem::pcs) {
-            cancel_tracking();
-            workpiece_frame_ = geom::make_rpy_transform(
-                transform.value[0], transform.value[1], transform.value[2],
-                transform.value[3], transform.value[4], transform.value[5]);
-            for(int i = 0; i < 6; ++i) {
-                workpiece_frame_rpy_[i] = transform.value[i];
-            }
-            return rt::ErrorCode::ok;
-        }
-        pose_tool_ = geom::make_rpy_transform(
-            transform.value[0], transform.value[1], transform.value[2],
-            transform.value[3], transform.value[4], transform.value[5]);
-        pose_tool_inverse_ = geom::invert(pose_tool_);
-        for(int i = 0; i < 6; ++i) {
-            tool_transform_rpy_[i] = transform.value[i];
-        }
-        return rt::ErrorCode::ok;
-    }
+                                             const ToolData &transform);
 
     rt::Result<std::uint32_t> complete_immediate(rt::ErrorCode result)
     {
@@ -3803,9 +3268,9 @@ private:
             solved[i] = seed[i];
         }
         rt::ErrorCode result = rt::ErrorCode::ok;
-        if(pose_kinematics_ != nullptr) {
+        if(pose_frames_.pose_kinematics_ != nullptr) {
             const geom::RigidTransform flange =
-                geom::compose(tcp, active_pose_tool_inverse_);
+                geom::compose(tcp, pose_frames_.active_pose_tool_inverse_);
             kin::Pose6 pose{};
             pose.position[0] = flange.translation.x;
             pose.position[1] = flange.translation.y;
@@ -3815,12 +3280,12 @@ private:
                     pose.rotation[row][column] = flange.rotation[row][column];
                 }
             }
-            result = pose_kinematics_->inverse(
-                pose, seed, pose_max_joint_step_, solved);
+            result = pose_frames_.pose_kinematics_->inverse(
+                pose, seed, pose_frames_.pose_max_joint_step_, solved);
         } else {
-            const geom::Vec3 flange = tcp.translation - active_tool_offset_;
-            if(kinematics_ != nullptr) {
-                result = kinematics_->inverse(flange, seed, axes_.size(), solved);
+            const geom::Vec3 flange = tcp.translation - pose_frames_.active_tool_offset_;
+            if(pose_frames_.kinematics_ != nullptr) {
+                result = pose_frames_.kinematics_->inverse(flange, seed, axes_.size(), solved);
             } else {
                 if(axes_.size() > 0) solved[0] = flange.x;
                 if(axes_.size() > 1) solved[1] = flange.y;
@@ -3843,9 +3308,9 @@ private:
         for(std::size_t i = 0; i < axes_.size(); ++i) {
             joints[i] = axes_[i]->snapshot().command_position;
         }
-        if(pose_kinematics_ != nullptr) {
+        if(pose_frames_.pose_kinematics_ != nullptr) {
             kin::Pose6 flange{};
-            pose_kinematics_->forward(joints, flange);
+            pose_frames_.pose_kinematics_->forward(joints, flange);
             geom::RigidTransform flange_transform{};
             flange_transform.translation =
                 {flange.position[0], flange.position[1], flange.position[2]};
@@ -3854,12 +3319,12 @@ private:
                     flange_transform.rotation[row][column] = flange.rotation[row][column];
                 }
             }
-            tcp = geom::compose(flange_transform, active_pose_tool_);
+            tcp = geom::compose(flange_transform, pose_frames_.active_pose_tool_);
             return true;
         }
         geom::Vec3 point{};
-        if(kinematics_ != nullptr) {
-            if(kinematics_->forward(joints, axes_.size(), point) != rt::ErrorCode::ok) {
+        if(pose_frames_.kinematics_ != nullptr) {
+            if(pose_frames_.kinematics_->forward(joints, axes_.size(), point) != rt::ErrorCode::ok) {
                 return false;
             }
         } else {
@@ -3867,7 +3332,7 @@ private:
             if(axes_.size() > 1) point.y = joints[1];
             if(axes_.size() > 2) point.z = joints[2];
         }
-        tcp.translation = point + active_tool_offset_;
+        tcp.translation = point + pose_frames_.active_tool_offset_;
         return true;
     }
 
@@ -3877,11 +3342,11 @@ private:
         geom::RigidTransform base_tcp{};
         if(!current_tracking_tcp(base_tcp)) return false;
         const geom::RigidTransform delta = geom::compose(
-            workpiece_frame_, geom::invert(active_dynamic_reference_frame_));
+            pose_frames_.workpiece_frame_, geom::invert(pose_frames_.active_dynamic_reference_frame_));
         const geom::RigidTransform tracked_tcp = geom::compose(delta, base_tcp);
         if(!solve_tracking_tcp(tracked_tcp)) return false;
-        tracking_hold_pose_ =
-            geom::compose(geom::invert(workpiece_frame_), tracked_tcp);
+        pose_frames_.tracking_hold_pose_ =
+            geom::compose(geom::invert(pose_frames_.workpiece_frame_), tracked_tcp);
         tracking_following_ = true;
         tracking_motion_seen_ = true;
         return true;
@@ -3890,12 +3355,12 @@ private:
     void apply_tracking_hold()
     {
         if(!tracking_following_ || tracking_kind_ == TrackingKind::none || active_ ||
-           window_active_ || cart_window_active_ || direct_active_ || jog_active_ ||
+           joint_window_.active_ || cartesian_.window_active_ || direct_path_.direct_active_ || jog_active_ ||
            group_sync_active_) {
             return;
         }
         const geom::RigidTransform target =
-            geom::compose(workpiece_frame_, tracking_hold_pose_);
+            geom::compose(pose_frames_.workpiece_frame_, pose_frames_.tracking_hold_pose_);
         if(!solve_tracking_tcp(target)) {
             tracking_error_ = rt::ErrorCode::precondition_failed;
             set_group_error(tracking_error_);
@@ -3907,6 +3372,7 @@ private:
         if(!path_odometer_initialized_) {
             for(std::size_t i = 0; i < axes_.size(); ++i) {
                 path_odometer_position_[i] = axes_[i]->snapshot().command_position;
+                path_odometer_member_velocity_[i] = 0.0;
             }
             path_odometer_initialized_ = true;
             return;
@@ -3916,6 +3382,7 @@ private:
             const double position = axes_[i]->snapshot().command_position;
             const double delta = position - path_odometer_position_[i];
             squared_distance += delta * delta;
+            path_odometer_member_velocity_[i] = delta;
             path_odometer_position_[i] = position;
         }
         const double distance = std::sqrt(squared_distance);
@@ -3971,17 +3438,15 @@ private:
         tracking_following_ = false;
         tracking_error_ = rt::ErrorCode::ok;
     }
-
     void set_tracking_frame(const geom::RigidTransform &frame)
     {
-        workpiece_frame_ = frame;
-        workpiece_frame_rpy_[0] = frame.translation.x;
-        workpiece_frame_rpy_[1] = frame.translation.y;
-        workpiece_frame_rpy_[2] = frame.translation.z;
-        geom::extract_rpy(frame.rotation, workpiece_frame_rpy_[3],
-                          workpiece_frame_rpy_[4], workpiece_frame_rpy_[5]);
+        pose_frames_.workpiece_frame_ = frame;
+        pose_frames_.workpiece_frame_rpy_[0] = frame.translation.x;
+        pose_frames_.workpiece_frame_rpy_[1] = frame.translation.y;
+        pose_frames_.workpiece_frame_rpy_[2] = frame.translation.z;
+        geom::extract_rpy(frame.rotation, pose_frames_.workpiece_frame_rpy_[3],
+                          pose_frames_.workpiece_frame_rpy_[4], pose_frames_.workpiece_frame_rpy_[5]);
     }
-
     void update_tracking_transform()
     {
         if(tracking_kind_ == TrackingKind::none) return;
@@ -4193,10 +3658,10 @@ private:
         if(coord_system != CoordSystem::mcs && coord_system != CoordSystem::pcs) {
             return rt::ErrorCode::unsupported;
         }
-        if(kinematics_ == nullptr && pose_kinematics_ == nullptr) {
+        if(pose_frames_.kinematics_ == nullptr && pose_frames_.pose_kinematics_ == nullptr) {
             return rt::ErrorCode::precondition_failed;
         }
-        if(options.max_angular_distance > 0.0 && pose_kinematics_ == nullptr) {
+        if(options.max_angular_distance > 0.0 && pose_frames_.pose_kinematics_ == nullptr) {
             return rt::ErrorCode::unsupported;
         }
         return direction.size >= 3 ? rt::ErrorCode::ok
@@ -4331,12 +3796,12 @@ private:
     {
         double q[MaxAxes] = {};
         const bool pcs = jog_coord_system_ == CoordSystem::pcs;
-        if(pose_kinematics_ != nullptr) {
+        if(pose_frames_.pose_kinematics_ != nullptr) {
             geom::RigidTransform tcp = geom::make_rpy_transform(
                 target.value[0], target.value[1], target.value[2], target.value[3],
                 target.value[4], target.value[5]);
-            if(pcs) tcp = geom::compose(workpiece_frame_, tcp);
-            const geom::RigidTransform flange = geom::compose(tcp, jog_pose_tool_inverse_);
+            if(pcs) tcp = geom::compose(pose_frames_.workpiece_frame_, tcp);
+            const geom::RigidTransform flange = geom::compose(tcp, pose_frames_.jog_pose_tool_inverse_);
             kin::Pose6 pose{};
             pose.position[0] = flange.translation.x;
             pose.position[1] = flange.translation.y;
@@ -4346,10 +3811,10 @@ private:
                     pose.rotation[row][column] = flange.rotation[row][column];
                 }
             }
-            const rt::ErrorCode solved = pose_kinematics_->inverse(
-                pose, jog_position_.data(), pose_max_joint_step_, q);
+            const rt::ErrorCode solved = pose_frames_.pose_kinematics_->inverse(
+                pose, jog_position_.data(), pose_frames_.pose_max_joint_step_, q);
             if(solved != rt::ErrorCode::ok ||
-               pose_kinematics_->singularity_margin(q) < pose_min_margin_) {
+               pose_frames_.pose_kinematics_->singularity_margin(q) < pose_frames_.pose_min_margin_) {
                 jog_error_ = solved == rt::ErrorCode::ok
                                  ? rt::ErrorCode::precondition_failed
                                  : solved;
@@ -4357,13 +3822,13 @@ private:
             }
         } else {
             geom::Vec3 point = cartesian_part(target);
-            if(pcs) point = geom::transform_point(workpiece_frame_, point);
-            point = point - jog_tool_offset_;
+            if(pcs) point = geom::transform_point(pose_frames_.workpiece_frame_, point);
+            point = point - pose_frames_.jog_tool_offset_;
             const rt::ErrorCode solved =
-                kinematics_->inverse(point, jog_position_.data(), axes_.size(), q);
+                pose_frames_.kinematics_->inverse(point, jog_position_.data(), axes_.size(), q);
             if(solved != rt::ErrorCode::ok ||
-               kinematics_->singularity_margin(q, axes_.size()) <
-                   kinematics_min_margin_) {
+               pose_frames_.kinematics_->singularity_margin(q, axes_.size()) <
+                   pose_frames_.kinematics_min_margin_) {
                 jog_error_ = solved == rt::ErrorCode::ok
                                  ? rt::ErrorCode::precondition_failed
                                  : solved;
@@ -4458,37 +3923,24 @@ private:
                       ? (jog_releasing_ ? GroupStatus::stopping : GroupStatus::moving)
                       : GroupStatus::standby;
     }
-
     void apply_selected_tool()
     {
         const ToolData &tool = tools_[selected_tool_];
-        pose_tool_ = geom::make_rpy_transform(tool.value[0], tool.value[1], tool.value[2],
+        pose_frames_.pose_tool_ = geom::make_rpy_transform(tool.value[0], tool.value[1], tool.value[2],
                                               tool.value[3], tool.value[4], tool.value[5]);
-        pose_tool_inverse_ = geom::invert(pose_tool_);
-        tool_offset_ = {tool.value[0], tool.value[1], tool.value[2]};
+        pose_frames_.pose_tool_inverse_ = geom::invert(pose_frames_.pose_tool_);
+        pose_frames_.tool_offset_ = {tool.value[0], tool.value[1], tool.value[2]};
         for(std::size_t i = 0; i < tool.value.size(); ++i) {
-            tool_transform_rpy_[i] = tool.value[i];
+            pose_frames_.tool_transform_rpy_[i] = tool.value[i];
         }
     }
-
     void snapshot_selections()
     {
         active_tool_ = selected_tool_;
         active_payload_ = selected_payload_;
     }
-
-    void snapshot_active_tool_transform()
-    {
-        active_pose_tool_ = pose_tool_;
-        active_pose_tool_inverse_ = pose_tool_inverse_;
-        active_tool_offset_ = tool_offset_;
-    }
-
-    bool active_tool_transform_applies() const
-    {
-        return status_ == GroupStatus::moving || status_ == GroupStatus::stopping ||
-               status_ == GroupStatus::interrupted;
-    }
+    void snapshot_active_tool_transform();
+    bool active_tool_transform_applies() const;
 
     rt::ErrorCode preflight_member_targets(const GroupPosition &target) const
     {
@@ -4506,7 +3958,7 @@ private:
         if(status_ != GroupStatus::disabled && status_ != GroupStatus::standby) {
             return false;
         }
-        if(active_ || direct_active_ || window_active_ || cart_window_active_ || jog_active_ ||
+        if(active_ || direct_path_.direct_active_ || joint_window_.active_ || cartesian_.window_active_ || jog_active_ ||
            !queue_.empty()) {
             return false;
         }
@@ -4572,90 +4024,11 @@ private:
         return rt::ErrorCode::ok;
     }
 
-    void abort_direct_members()
-    {
-        for(std::size_t i = 0; i < axes_.size(); ++i) {
-            axes_[i]->abort_group_owned_motion();
-        }
-    }
-
-    rt::ErrorCode start_direct(const GroupCommand &command)
-    {
-        if(!members_ready_for_group_motion()) return rt::ErrorCode::invalid_argument;
-        std::array<AxisCommand, MaxAxes> commands{};
-        for(std::size_t i = 0; i < axes_.size(); ++i) {
-            AxisCommand &member = commands[i];
-            member.kind = CommandKind::move_absolute;
-            member.value = command.target.value[i];
-            member.velocity = command.velocity;
-            member.acceleration = command.acceleration;
-            member.deceleration = command.deceleration;
-            member.jerk = command.jerk;
-            const rt::ErrorCode preflight = axes_[i]->preflight_group_owned(member);
-            if(preflight != rt::ErrorCode::ok) return preflight;
-        }
-        snapshot_selections();
-        snapshot_active_tool_transform();
-        for(std::size_t i = 0; i < axes_.size(); ++i) {
-            const rt::Result<std::uint32_t> submitted =
-                axes_[i]->submit_group_owned(commands[i]);
-            if(!submitted) {
-                abort_direct_members();
-                set_group_error(submitted.error());
-                return submitted.error();
-            }
-        }
-        direct_active_ = true;
-        direct_stopping_ = false;
-        direct_command_id_ = command.command_id;
-        for(std::size_t i = 0; i < axes_.size(); ++i) {
-            active_finish_[i] = command.target.value[i];
-        }
-        status_ = GroupStatus::moving;
-        return rt::ErrorCode::ok;
-    }
-
-    void complete_direct(std::uint32_t command_id)
-    {
-        last_completed_direct_id_ = command_id;
-    }
-
-    void abort_direct(std::uint32_t command_id)
-    {
-        last_aborted_direct_id_ = command_id;
-    }
-
-    rt::ErrorCode stop_direct_members(double deceleration, double jerk)
-    {
-        for(std::size_t i = 0; i < axes_.size(); ++i) {
-            if(!axes_[i]->powered() || axes_[i]->status() == AxisStatus::errorstop) {
-                abort_direct_members();
-                abort_motion();
-                set_group_error(rt::ErrorCode::precondition_failed);
-                return rt::ErrorCode::precondition_failed;
-            }
-        }
-
-        for(std::size_t i = 0; i < axes_.size(); ++i) {
-            AxisCommand halt{};
-            halt.kind = CommandKind::halt;
-            halt.velocity = 1.0;
-            halt.acceleration = deceleration;
-            halt.deceleration = deceleration;
-            halt.jerk = jerk;
-            const rt::Result<std::uint32_t> submitted = axes_[i]->submit_group_owned(halt);
-            if(!submitted) {
-                last_aborted_direct_id_ = direct_command_id_;
-                abort_direct_members();
-                abort_motion();
-                status_ = GroupStatus::standby;
-                return submitted.error();
-            }
-        }
-        direct_stopping_ = true;
-        status_ = GroupStatus::stopping;
-        return rt::ErrorCode::ok;
-    }
+    void abort_direct_members();
+    rt::ErrorCode start_direct(const GroupCommand &command);
+    void complete_direct(std::uint32_t command_id);
+    void abort_direct(std::uint32_t command_id);
+    rt::ErrorCode stop_direct_members(double deceleration, double jerk);
 
     bool members_ready_for_group_motion() const
     {
@@ -4701,45 +4074,11 @@ private:
         return true;
     }
 
-    static geom::Vec3 cartesian_part(const GroupPosition &position)
-    {
-        return geom::Vec3{position.value[0],
-                          position.size > 1 ? position.value[1] : 0.0,
-                          position.size > 2 ? position.value[2] : 0.0};
-    }
+    static geom::Vec3 cartesian_part(const GroupPosition &position);
 
-    rt::ErrorCode select_orientation_interpolation(GroupCommand &command) const
-    {
-        switch(command.orientation_mode) {
-        case OrientationMode::joint_space:
-            return rt::ErrorCode::ok;
-        case OrientationMode::shortest_path:
-        case OrientationMode::constant:
-            if(pose_kinematics_ == nullptr) {
-                return rt::ErrorCode::unsupported;
-            }
-            if(command.coord_system != CoordSystem::mcs &&
-               command.coord_system != CoordSystem::pcs) {
-                return rt::ErrorCode::unsupported;
-            }
-            command.interpolation_space = InterpolationSpace::cartesian;
-            return rt::ErrorCode::ok;
-        default:
-            return rt::ErrorCode::invalid_argument;
-        }
-    }
+    rt::ErrorCode select_orientation_interpolation(GroupCommand &command) const;
 
-    static void store_cartesian_part(GroupPosition &position, geom::Vec3 point)
-    {
-        position.value[0] = point.x;
-        if(position.size > 1) {
-            position.value[1] = point.y;
-        }
-        if(position.size > 2) {
-            position.value[2] = point.z;
-        }
-    }
-
+    static void store_cartesian_part(GroupPosition &position, geom::Vec3 point);
     // Approved coordinate matrix (B1 v1): MCS/PCS targets convert to ACS at
     // submit time on the first three coordinates (higher axes pass through in
     // ACS); ACS commands never see the frames. Absolute points go through the
@@ -4747,183 +4086,7 @@ private:
     // relative distances only rotate — translation and tool offset cancel
     // between two TCP positions. The v1 ACS<->MCS mapping is the declared
     // identity (Cartesian rig; kinematics plugins arrive with B2).
-    rt::ErrorCode apply_coordinate_frame(GroupCommand &command) const
-    {
-        switch(command.coord_system) {
-        case CoordSystem::acs:
-            return rt::ErrorCode::ok;
-        case CoordSystem::mcs:
-        case CoordSystem::pcs:
-            break;
-        default:
-            return rt::ErrorCode::unsupported;
-        }
-
-        const bool pcs = command.coord_system == CoordSystem::pcs;
-        const bool circular = command.path_kind == GroupPathKind::circular;
-
-        // Orientation batch (approved matrix, decision #6): the pose
-        // pipeline consumes [x,y,z,roll,pitch,yaw] targets on 6-joint
-        // groups. v1 is submit_linear + absolute only; relative, circular,
-        // and blending transitions report explicit unsupported. The frame
-        // and tool compose on the pose, the analytic inverse (seeded by the
-        // segment start joints, KB-041 gates) lands the 6 ACS joint targets,
-        // and the in-segment interpolation stays a joint-space line
-        // (declared boundary, orientation edition).
-        if(pose_kinematics_ != nullptr) {
-            if(circular || command.relative ||
-               command.buffer_mode == BufferMode::blending_low ||
-               command.buffer_mode == BufferMode::blending_high) {
-                return rt::ErrorCode::unsupported;
-            }
-            geom::RigidTransform target = geom::make_rpy_transform(
-                command.target.value[0], command.target.value[1],
-                command.target.value[2], command.target.value[3],
-                command.target.value[4], command.target.value[5]);
-            if(pcs) {
-                target = geom::compose(workpiece_frame_, target);
-            }
-            const geom::RigidTransform flange = geom::compose(target, pose_tool_inverse_);
-
-            kin::Pose6 pose{};
-            pose.position[0] = flange.translation.x;
-            pose.position[1] = flange.translation.y;
-            pose.position[2] = flange.translation.z;
-            for(int i = 0; i < 3; ++i) {
-                for(int j = 0; j < 3; ++j) {
-                    pose.rotation[i][j] = flange.rotation[i][j];
-                }
-            }
-
-            double seed[MaxAxes] = {};
-            for(std::size_t i = 0; i < axes_.size(); ++i) {
-                seed[i] = queued_finish(i);
-            }
-            double joints[MaxAxes] = {};
-            const rt::ErrorCode inverted =
-                pose_kinematics_->inverse(pose, seed, pose_max_joint_step_, joints);
-            if(inverted != rt::ErrorCode::ok) {
-                return inverted;
-            }
-            if(pose_kinematics_->singularity_margin(joints) < pose_min_margin_) {
-                return rt::ErrorCode::precondition_failed;
-            }
-            for(std::size_t i = 0; i < axes_.size(); ++i) {
-                command.target.value[i] = joints[i];
-            }
-            command.coord_system = CoordSystem::acs;
-            return rt::ErrorCode::ok;
-        }
-
-        // Kinematics-configured pipeline (approved kinematics matrix): the
-        // Cartesian point goes through the workpiece frame and tool offset,
-        // then the inverse solution — seeded with the segment start joints —
-        // becomes the ACS joint target. v1 solves endpoints and aux points
-        // only; the in-segment interpolation stays joint-space (declared
-        // boundary: an MCS line is a joint-space line, not a Cartesian line,
-        // on nonlinear mechanisms).
-        if(kinematics_ != nullptr) {
-            double seed[MaxAxes] = {};
-            for(std::size_t i = 0; i < axes_.size(); ++i) {
-                seed[i] = queued_finish(i);
-            }
-            rt::ErrorCode solved =
-                solve_cartesian_target(command.target, command.relative, pcs, seed);
-            if(solved != rt::ErrorCode::ok) {
-                return solved;
-            }
-            if(circular) {
-                solved = solve_cartesian_target(command.aux, command.relative, pcs, seed);
-                if(solved != rt::ErrorCode::ok) {
-                    return solved;
-                }
-            }
-            command.relative = false;
-            command.coord_system = CoordSystem::acs;
-
-            // Dual-space limiting (BS3.6): sample the joint-space chord
-            // through the forward solution; the worst Cartesian displacement
-            // per path-parameter step scales the command velocity down. The
-            // path parameter references the longest member travel (KB-027).
-            if(cartesian_velocity_limit_ > 0.0 && !circular) {
-                double longest = 0.0;
-                for(std::size_t i = 0; i < axes_.size(); ++i) {
-                    const double travel = std::fabs(command.target.value[i] - seed[i]);
-                    if(travel > longest) {
-                        longest = travel;
-                    }
-                }
-                if(longest > 0.0) {
-                    constexpr int Samples = 16;
-                    double joints[MaxAxes] = {};
-                    geom::Vec3 previous{};
-                    double worst_ratio = 0.0;
-                    for(int step = 0; step <= Samples; ++step) {
-                        const double fraction =
-                            static_cast<double>(step) / static_cast<double>(Samples);
-                        for(std::size_t i = 0; i < axes_.size(); ++i) {
-                            joints[i] =
-                                seed[i] + fraction * (command.target.value[i] - seed[i]);
-                        }
-                        geom::Vec3 cartesian{};
-                        const rt::ErrorCode forwarded =
-                            kinematics_->forward(joints, axes_.size(), cartesian);
-                        if(forwarded != rt::ErrorCode::ok) {
-                            return forwarded;
-                        }
-                        if(step > 0) {
-                            const double chord = geom::norm(cartesian - previous);
-                            const double parameter_step =
-                                longest / static_cast<double>(Samples);
-                            const double ratio = chord / parameter_step;
-                            if(ratio > worst_ratio) {
-                                worst_ratio = ratio;
-                            }
-                        }
-                        previous = cartesian;
-                    }
-                    if(worst_ratio > 0.0) {
-                        const double allowed = cartesian_velocity_limit_ / worst_ratio;
-                        if(allowed < command.velocity) {
-                            command.velocity = allowed;
-                        }
-                    }
-                }
-            }
-            return rt::ErrorCode::ok;
-        }
-
-        if(command.relative) {
-            geom::Vec3 direction = cartesian_part(command.target);
-            if(pcs) {
-                direction = geom::transform_rotate(workpiece_frame_, direction);
-            }
-            store_cartesian_part(command.target, direction);
-            if(circular) {
-                geom::Vec3 aux = cartesian_part(command.aux);
-                if(pcs) {
-                    aux = geom::transform_rotate(workpiece_frame_, aux);
-                }
-                store_cartesian_part(command.aux, aux);
-            }
-        } else {
-            geom::Vec3 point = cartesian_part(command.target);
-            if(pcs) {
-                point = geom::transform_point(workpiece_frame_, point);
-            }
-            store_cartesian_part(command.target,
-                                 point - tool_offset_);
-            if(circular) {
-                geom::Vec3 aux = cartesian_part(command.aux);
-                if(pcs) {
-                    aux = geom::transform_point(workpiece_frame_, aux);
-                }
-                store_cartesian_part(command.aux, aux - tool_offset_);
-            }
-        }
-        command.coord_system = CoordSystem::acs;
-        return rt::ErrorCode::ok;
-    }
+    rt::ErrorCode apply_coordinate_frame(GroupCommand &command) const;
 
     // One Cartesian target through frame, tool offset, and inverse solution.
     // Relative displacements only rotate (translation and tool offset cancel
@@ -4932,41 +4095,7 @@ private:
     rt::ErrorCode solve_cartesian_target(GroupPosition &position,
                                          bool relative,
                                          bool pcs,
-                                         const double *seed) const
-    {
-        geom::Vec3 point = cartesian_part(position);
-        if(relative) {
-            if(pcs) {
-                point = geom::transform_rotate(workpiece_frame_, point);
-            }
-            geom::Vec3 start{};
-            const rt::ErrorCode forwarded =
-                kinematics_->forward(seed, axes_.size(), start);
-            if(forwarded != rt::ErrorCode::ok) {
-                return forwarded;
-            }
-            point = start + point;
-        } else {
-            if(pcs) {
-                point = geom::transform_point(workpiece_frame_, point);
-            }
-            point = point - tool_offset_;
-        }
-
-        double joints[MaxAxes] = {};
-        const rt::ErrorCode inverted =
-            kinematics_->inverse(point, seed, axes_.size(), joints);
-        if(inverted != rt::ErrorCode::ok) {
-            return inverted;
-        }
-        if(kinematics_->singularity_margin(joints, axes_.size()) < kinematics_min_margin_) {
-            return rt::ErrorCode::precondition_failed;
-        }
-        for(std::size_t i = 0; i < axes_.size(); ++i) {
-            position.value[i] = joints[i];
-        }
-        return rt::ErrorCode::ok;
-    }
+                                         const double *seed) const;
 
     // Cartesian-interpolation batch (approved matrix decisions #1-#6 and
     // the approved v2 addendum): submit-side resolution of opt-in segments.
@@ -4985,1347 +4114,44 @@ private:
     // quantization declared). The cycle path samples the window geometry
     // and runs one analytic inverse (KB-044 machinery); failures are the
     // declared group errorstop.
-    template<typename T, std::size_t Capacity>
-    class HeapStaticVector
-    {
-      public:
-        HeapStaticVector()
-            : data_(new rt::StaticVector<T, Capacity>())
-        {
-        }
+    static constexpr std::size_t CartWindowPieces =
+        GroupCartesianState<MaxAxes>::WindowCapacity;
+    using CartPiece = GroupCartesianState<MaxAxes>::Piece;
 
-        bool empty() const { return data_->empty(); }
-        std::size_t size() const { return data_->size(); }
-        T &operator[](std::size_t index) { return (*data_)[index]; }
-        const T &operator[](std::size_t index) const { return (*data_)[index]; }
-        rt::ErrorCode push_back(const T &value) { return data_->push_back(value); }
-        void pop_back() { data_->pop_back(); }
-        void clear() { data_->clear(); }
-
-      private:
-        std::unique_ptr<rt::StaticVector<T, Capacity>> data_;
-    };
-
-    struct CartPiece
-    {
-        bool corner = false;
-        geom::Vec3 start{};
-        geom::Vec3 dir{};
-        double length = 0.0;
-        geom::QuinticBlendSegment blend{};
-        double v_in = 0.0;
-        double v_out = 0.0;
-        double cap = 0.0;
-        otg::Profile1D profile{};
-        std::int64_t duration = 0;
-    };
-    static constexpr std::size_t CartWindowPieces = 32; // <= 16 segments
-
-    rt::Result<std::uint32_t> submit_cartesian_window(GroupCommand command)
-    {
-        if(command.command_id == 0) {
-            command.command_id = next_command_id_++;
-        }
-        if(command.coord_system != CoordSystem::mcs &&
-           command.coord_system != CoordSystem::pcs) {
-            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported);
-        }
-        if(command.relative || !queue_.empty() || window_active_) {
-            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported);
-        }
-        if(command.tool_number != active_tool_ ||
-           command.payload_number != active_payload_) {
-            last_blend_degraded_id_ = command.command_id;
-            command.buffer_mode = BufferMode::buffered;
-            command.transition_mode = TransitionMode::none;
-            command.transition_velocity = 0.0;
-            command.transition_parameter = 0.0;
-            const rt::ErrorCode prepared = prepare_cartesian_linear(command);
-            if(prepared != rt::ErrorCode::ok) {
-                return rt::Result<std::uint32_t>::failure(prepared);
-            }
-            const rt::ErrorCode queued = queue_.push_back(command);
-            return queued == rt::ErrorCode::ok
-                       ? rt::Result<std::uint32_t>::success(command.command_id)
-                       : rt::Result<std::uint32_t>::failure(queued);
-        }
-        const bool extend = cart_window_active_;
-        if(!extend) {
-            // Conversion seed: an active, non-chain, non-arc Cartesian line.
-            if(!active_ || status_ != GroupStatus::moving ||
-               active_kind_ != GroupPathKind::cartesian_linear ||
-               active_cart_.arc_path || active_cart_.chain ||
-               active_cart_.pose || active_path_length_ <= 0.0) {
-                return rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported);
-            }
-        } else if(cart_window_stopping_) {
-            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported);
-        }
-
-        // Successor target in the plugin Cartesian domain.
-        geom::Vec3 target_point = cartesian_part(command.target);
-        if(command.coord_system == CoordSystem::pcs) {
-            target_point = geom::transform_point(workpiece_frame_, target_point);
-        }
-        target_point = target_point - tool_offset_;
-
-        // Tail geometry: the line the corner attaches to.
-        geom::Vec3 tail_end{};
-        geom::Vec3 tail_dir{};
-        double tail_room = 0.0; // trimmable room on the tail line
-        std::size_t tail_index = 0;
-        if(!extend) {
-            const otg::State1D live = otg::sample(
-                active_profile_, rt::CycleTick::from_cycles(active_tick_));
-            double s_live = live.position < 0.0 ? 0.0 : live.position;
-            s_live = s_live > active_path_length_ ? active_path_length_ : s_live;
-            tail_end = geom::Vec3{active_cart_.start.x + active_cart_.delta.x,
-                                  active_cart_.start.y + active_cart_.delta.y,
-                                  active_cart_.start.z + active_cart_.delta.z};
-            const double len = geom::norm(active_cart_.delta);
-            tail_dir = geom::Vec3{active_cart_.delta.x / len,
-                                  active_cart_.delta.y / len,
-                                  active_cart_.delta.z / len};
-            tail_room = active_path_length_ - s_live;
-        } else {
-            tail_index = cart_window_.size() - 1;
-            const CartPiece &tail = cart_window_[tail_index];
-            tail_end = geom::Vec3{tail.start.x + tail.dir.x * tail.length,
-                                  tail.start.y + tail.dir.y * tail.length,
-                                  tail.start.z + tail.dir.z * tail.length};
-            tail_dir = tail.dir;
-            if(tail_index == cart_piece_index_) {
-                const otg::State1D live = otg::sample(
-                    cart_window_[tail_index].profile,
-                    rt::CycleTick::from_cycles(cart_piece_tick_));
-                tail_room = tail.length - live.position;
-            } else if(tail_index > cart_piece_index_) {
-                tail_room = tail.length;
-            } else {
-                return rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported);
-            }
-        }
-
-        const geom::Vec3 out_vec = target_point - tail_end;
-        const double len_b = geom::norm(out_vec);
-        bool degrade = false;
-        double trim = 0.0;
-        double corner_cap = 0.0;
-        geom::QuinticBlendSegment corner{};
-        bool passthrough = false;
-        if(len_b <= 1e-12) {
-            degrade = true;
-        } else {
-            const geom::Vec3 t1{out_vec.x / len_b, out_vec.y / len_b,
-                                out_vec.z / len_b};
-            const double dot =
-                tail_dir.x * t1.x + tail_dir.y * t1.y + tail_dir.z * t1.z;
-            if(dot <= -0.999) {
-                degrade = true;
-            } else if(dot >= 1.0 - 1e-9) {
-                passthrough = true;
-            } else {
-                const geom::Vec3 diff{t1.x - tail_dir.x, t1.y - tail_dir.y,
-                                      t1.z - tail_dir.z};
-                const double turn = geom::norm(diff);
-                trim = command.transition_parameter * 96.0 / (23.0 * turn);
-                const double room = tail_room < len_b ? tail_room : len_b;
-                if(trim > 0.5 * room) {
-                    trim = 0.5 * room;
-                }
-                if(trim <= 1e-9 || tail_room <= trim) {
-                    degrade = true;
-                } else {
-                    const geom::Vec3 entry{tail_end.x - tail_dir.x * trim,
-                                           tail_end.y - tail_dir.y * trim,
-                                           tail_end.z - tail_dir.z * trim};
-                    const geom::Vec3 exit{tail_end.x + t1.x * trim,
-                                          tail_end.y + t1.y * trim,
-                                          tail_end.z + t1.z * trim};
-                    const rt::Result<geom::QuinticBlendSegment> blend =
-                        geom::make_quintic_blend(entry, tail_end, exit,
-                                                 command.transition_parameter);
-                    if(!blend) {
-                        degrade = true;
-                    } else {
-                        corner = blend.value();
-                        const double axis_accel =
-                            command.acceleration < command.deceleration
-                                ? command.acceleration
-                                : command.deceleration;
-                        corner_cap = corner.max_curvature > 1e-12
-                                         ? std::sqrt(axis_accel /
-                                                     corner.max_curvature)
-                                         : command.velocity;
-                    }
-                }
-            }
-        }
-
-        if(!degrade &&
-           cart_window_.size() + (passthrough ? 1 : 2) > CartWindowPieces) {
-            return rt::Result<std::uint32_t>::failure(
-                rt::ErrorCode::capacity_exceeded);
-        }
-        if(!degrade && !passthrough && command.transition_velocity > 0.0 &&
-           command.transition_velocity < corner_cap) {
-            corner_cap = command.transition_velocity;
-        }
-
-        if(!degrade) {
-            // Pre-validation: seed-chain the inverse along the new line (the
-            // corner stays inside the tolerance ball of the lines,
-            // declared); update the window tail joints.
-            double chain[MaxAxes] = {};
-            if(!extend) {
-                for(std::size_t i = 0; i < axes_.size(); ++i) {
-                    chain[i] = active_finish_[i];
-                }
-            } else {
-                for(std::size_t i = 0; i < axes_.size(); ++i) {
-                    chain[i] = cart_tail_joints_[i];
-                }
-            }
-            double q[MaxAxes] = {};
-            constexpr int Samples = 32;
-            bool valid = true;
-            rt::ErrorCode failure = rt::ErrorCode::ok;
-            for(int k = 0; k <= Samples && valid; ++k) {
-                const double fraction =
-                    static_cast<double>(k) / static_cast<double>(Samples);
-                const geom::Vec3 sample{
-                    tail_end.x + (target_point.x - tail_end.x) * fraction,
-                    tail_end.y + (target_point.y - tail_end.y) * fraction,
-                    tail_end.z + (target_point.z - tail_end.z) * fraction};
-                const rt::ErrorCode solved =
-                    kinematics_->inverse(sample, chain, axes_.size(), q);
-                if(solved != rt::ErrorCode::ok) {
-                    valid = false;
-                    failure = solved;
-                    break;
-                }
-                if(kinematics_->singularity_margin(q, axes_.size()) <
-                   kinematics_min_margin_) {
-                    valid = false;
-                    failure = rt::ErrorCode::precondition_failed;
-                    break;
-                }
-                for(std::size_t i = 0; i < axes_.size(); ++i) {
-                    chain[i] = q[i];
-                }
-            }
-            if(!valid) {
-                return rt::Result<std::uint32_t>::failure(failure);
-            }
-
-            // Commit geometry. Extending while riding a corner piece is a
-            // declared too-late degrade (transient, one corner long).
-            if(extend && cart_window_[cart_piece_index_].corner) {
-                degrade = true;
-            }
-            if(!degrade && !extend) {
-                cart_window_convert(command, trim, passthrough);
-            } else if(!degrade) {
-                // Re-anchor the currently executing line piece to its live
-                // state so the rebuild replans from reality.
-                CartPiece &current = cart_window_[cart_piece_index_];
-                const otg::State1D live = otg::sample(
-                    current.profile, rt::CycleTick::from_cycles(cart_piece_tick_));
-                double s_live = live.position < 0.0 ? 0.0 : live.position;
-                s_live = s_live > current.length ? current.length : s_live;
-                current.start = geom::Vec3{current.start.x + current.dir.x * s_live,
-                                           current.start.y + current.dir.y * s_live,
-                                           current.start.z + current.dir.z * s_live};
-                current.length -= s_live;
-                cart_piece_tick_ = 0;
-                cart_window_entry_v_ = live.velocity < 0.0 ? 0.0 : live.velocity;
-                cart_window_entry_a_ = live.acceleration;
-                cart_window_[tail_index].length -= passthrough ? 0.0 : trim;
-            }
-            if(!degrade) {
-            if(!passthrough) {
-                CartPiece piece{};
-                piece.corner = true;
-                piece.blend = corner;
-                piece.length = corner.length;
-                piece.cap = corner_cap;
-                cart_window_.push_back(piece);
-            }
-            CartPiece line{};
-            const geom::Vec3 t1{out_vec.x / len_b, out_vec.y / len_b,
-                                out_vec.z / len_b};
-            line.start = passthrough
-                             ? tail_end
-                             : geom::Vec3{tail_end.x + t1.x * trim,
-                                          tail_end.y + t1.y * trim,
-                                          tail_end.z + t1.z * trim};
-            line.dir = t1;
-            line.length = passthrough ? len_b : len_b - trim;
-            line.cap = command.velocity;
-            if(passthrough && command.transition_velocity > 0.0 &&
-               command.transition_velocity < line.cap) {
-                line.cap = command.transition_velocity;
-            }
-            cart_window_.push_back(line);
-            for(std::size_t i = 0; i < axes_.size(); ++i) {
-                cart_tail_joints_[i] = chain[i];
-            }
-            cart_window_acc_ = cart_window_acc_ < command.acceleration
-                                   ? cart_window_acc_
-                                   : command.acceleration;
-            cart_window_dec_ = cart_window_dec_ < command.deceleration
-                                   ? cart_window_dec_
-                                   : command.deceleration;
-            cart_window_jerk_ = cart_window_jerk_ < command.jerk
-                                    ? cart_window_jerk_
-                                    : command.jerk;
-            if(!cart_window_rebuild()) {
-                // The rebuild failing after commit would strand geometry;
-                // fall back to an immediate errorstop-free degrade: brake.
-                cart_window_reset();
-                status_ = GroupStatus::standby;
-                return rt::Result<std::uint32_t>::failure(
-                    rt::ErrorCode::infeasible);
-            }
-            cart_window_last_id_ = command.command_id;
-            return rt::Result<std::uint32_t>::success(command.command_id);
-            }
-        }
-
-        // Reported degradation: plain buffered Cartesian segment behind the
-        // window (or behind the active segment).
-        last_blend_degraded_id_ = command.command_id;
-        command.buffer_mode = BufferMode::buffered;
-        command.transition_mode = TransitionMode::none;
-        command.transition_velocity = 0.0;
-        command.transition_parameter = 0.0;
-        const rt::ErrorCode prepared = prepare_cartesian_linear(command);
-        if(prepared != rt::ErrorCode::ok) {
-            return rt::Result<std::uint32_t>::failure(prepared);
-        }
-        const rt::ErrorCode queued = queue_.push_back(command);
-        if(queued != rt::ErrorCode::ok) {
-            return rt::Result<std::uint32_t>::failure(queued);
-        }
-        return rt::Result<std::uint32_t>::success(command.command_id);
-    }
-
-    void cart_window_convert(const GroupCommand &command, double trim,
-                             bool passthrough)
-    {
-        const otg::State1D live =
-            otg::sample(active_profile_, rt::CycleTick::from_cycles(active_tick_));
-        double s_live = live.position < 0.0 ? 0.0 : live.position;
-        s_live = s_live > active_path_length_ ? active_path_length_ : s_live;
-        const double len = geom::norm(active_cart_.delta);
-        const geom::Vec3 dir{active_cart_.delta.x / len,
-                             active_cart_.delta.y / len,
-                             active_cart_.delta.z / len};
-        CartPiece first{};
-        first.start = geom::Vec3{active_cart_.start.x + dir.x * s_live,
-                                 active_cart_.start.y + dir.y * s_live,
-                                 active_cart_.start.z + dir.z * s_live};
-        first.dir = dir;
-        first.length = (active_path_length_ - s_live) -
-                       (passthrough ? 0.0 : trim);
-        first.cap = active_command_.velocity;
-        cart_window_.clear();
-        cart_window_.push_back(first);
-        cart_window_entry_v_ = live.velocity < 0.0 ? 0.0 : live.velocity;
-        cart_window_entry_a_ = live.acceleration;
-        cart_window_acc_ = active_command_.acceleration;
-        cart_window_dec_ = active_command_.deceleration;
-        cart_window_jerk_ = active_command_.jerk;
-        for(std::size_t i = 0; i < axes_.size(); ++i) {
-            cart_window_joints_[i] = cart_joints_[i];
-        }
-        (void)command;
-        active_ = false;
-        cart_window_active_ = true;
-        cart_piece_index_ = 0;
-        cart_piece_tick_ = 0;
-        status_ = GroupStatus::moving;
-    }
-
-    // Bidirectional node scan and per-line profile planning over every
-    // piece from the current one onward. Committed pieces before the
-    // current index are never touched.
-    bool cart_window_rebuild()
-    {
-        const double acc = cart_window_acc_;
-        const double dec = cart_window_dec_;
-        const double jerk = cart_window_jerk_;
-        const std::size_t count = cart_window_.size();
-
-        // Forward pass: reachable node velocities.
-        double v = cart_window_entry_v_;
-        for(std::size_t i = cart_piece_index_; i < count; ++i) {
-            CartPiece &piece = cart_window_[i];
-            if(piece.corner) {
-                v = v < piece.cap ? v : piece.cap;
-                piece.v_in = v;
-                piece.v_out = v;
-                continue;
-            }
-            piece.v_in = v;
-            double reach = plan::jerk_reachable_speed(v, piece.length, acc, jerk);
-            reach = reach < piece.cap ? reach : piece.cap;
-            if(cartesian_velocity_limit_ > 0.0 &&
-               reach > cartesian_velocity_limit_) {
-                reach = cartesian_velocity_limit_;
-            }
-            piece.v_out = reach;
-            v = reach;
-        }
-        // Backward pass: terminal rest.
-        v = 0.0;
-        for(std::size_t r = count; r > cart_piece_index_; --r) {
-            CartPiece &piece = cart_window_[r - 1];
-            if(piece.corner) {
-                v = v < piece.cap ? v : piece.cap;
-                piece.v_out = piece.v_out < v ? piece.v_out : v;
-                piece.v_in = piece.v_out;
-                v = piece.v_in;
-                continue;
-            }
-            piece.v_out = piece.v_out < v ? piece.v_out : v;
-            double reach =
-                plan::jerk_reachable_speed(piece.v_out, piece.length, dec, jerk);
-            piece.v_in = piece.v_in < reach ? piece.v_in : reach;
-            v = piece.v_in;
-        }
-        for(std::size_t i = cart_piece_index_; i < count; ++i) {
-            CartPiece &piece = cart_window_[i];
-            if(piece.corner) {
-                const double speed = piece.v_in > 1e-12 ? piece.v_in : 1e-12;
-                piece.duration =
-                    static_cast<std::int64_t>(piece.length / speed) + 1;
-                continue;
-            }
-            const bool live_entry = i == cart_piece_index_;
-            const double entry_v = live_entry ? cart_window_entry_v_ : piece.v_in;
-            const double entry_a = live_entry ? cart_window_entry_a_ : 0.0;
-            double cap = piece.cap;
-            if(cartesian_velocity_limit_ > 0.0 && cap > cartesian_velocity_limit_) {
-                cap = cartesian_velocity_limit_;
-            }
-            const otg::Limits1D lim{cap, acc, dec, jerk};
-            const rt::Result<otg::Profile1D> profile = otg::plan_time_optimal(
-                {0.0, entry_v, entry_a}, {piece.length, piece.v_out, 0.0},
-                lim);
-            if(!profile) {
-                return false;
-            }
-            piece.profile = profile.value();
-            piece.duration = piece.profile.duration_cycles();
-            const double avg_v = entry_v > piece.v_out
-                ? entry_v : (piece.v_out > 1e-12 ? piece.v_out : entry_v);
-            if(avg_v > 1e-12) {
-                const std::int64_t ideal = static_cast<std::int64_t>(
-                    std::ceil(piece.length / avg_v));
-                if(piece.duration > ideal + 4) {
-                    for(std::int64_t t = ideal; t <= ideal + 4; ++t) {
-                        const rt::Result<otg::Profile1D> ft =
-                            otg::solve_fixed_time(
-                                {0.0, entry_v, entry_a},
-                                {piece.length, piece.v_out, 0.0}, lim, t);
-                        if(ft) {
-                            piece.profile = ft.value();
-                            piece.duration = ft.value().duration_cycles();
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-        return true;
-    }
-
-    geom::Vec3 cart_piece_point(const CartPiece &piece, double s) const
-    {
-        if(piece.corner) {
-            const double u = geom::quintic_parameter_at_length(piece.blend, s);
-            return geom::quintic_point(piece.blend, u);
-        }
-        const double clamped = s < 0.0 ? 0.0 : (s > piece.length ? piece.length : s);
-        return geom::Vec3{piece.start.x + piece.dir.x * clamped,
-                          piece.start.y + piece.dir.y * clamped,
-                          piece.start.z + piece.dir.z * clamped};
-    }
-
-    bool cart_window_emit(geom::Vec3 point)
-    {
-        double q[MaxAxes] = {};
-        rt::ErrorCode solved =
-            kinematics_->inverse(point, cart_window_joints_, axes_.size(), q);
-        if(solved == rt::ErrorCode::ok &&
-           kinematics_->singularity_margin(q, axes_.size()) <
-               kinematics_min_margin_) {
-            solved = rt::ErrorCode::precondition_failed;
-        }
-        if(solved != rt::ErrorCode::ok) {
-            last_cartesian_error_ = solved;
-            abort_motion();
-            set_group_error(solved);
-            return false;
-        }
-        for(std::size_t i = 0; i < axes_.size(); ++i) {
-            axes_[i]->set_synchronized_position(q[i]);
-            cart_window_joints_[i] = q[i];
-        }
-        return true;
-    }
-
-    void cart_window_cycle()
-    {
-        if(cart_window_stopping_) {
-            ++cart_halt_tick_;
-            const otg::State1D state = otg::sample(
-                cart_halt_profile_, rt::CycleTick::from_cycles(cart_halt_tick_));
-            const geom::Vec3 point =
-                cart_window_point_at(cart_halt_origin_ + state.position);
-            if(!cart_window_emit(point)) {
-                return;
-            }
-            if(cart_halt_tick_ >= cart_halt_duration_) {
-                cart_window_reset();
-                status_ = GroupStatus::standby;
-                start_next_queued();
-            }
-            return;
-        }
-
-        ++cart_piece_tick_;
-        CartPiece &piece = cart_window_[cart_piece_index_];
-        double s = 0.0;
-        if(piece.corner) {
-            s = piece.v_in * static_cast<double>(cart_piece_tick_);
-            s = s > piece.length ? piece.length : s;
-        } else {
-            const otg::State1D state = otg::sample(
-                piece.profile, rt::CycleTick::from_cycles(cart_piece_tick_));
-            s = state.position;
-        }
-        if(!cart_window_emit(cart_piece_point(piece, s))) {
-            return;
-        }
-        if(cart_piece_tick_ >= piece.duration) {
-            if(cart_piece_index_ + 1 < cart_window_.size()) {
-                ++cart_piece_index_;
-                cart_piece_tick_ = 0;
-                // Entry state for the freshly entered piece.
-                const CartPiece &next = cart_window_[cart_piece_index_];
-                cart_window_entry_v_ = next.v_in;
-                cart_window_entry_a_ = 0.0;
-            } else {
-                cart_window_reset();
-                status_ = GroupStatus::standby;
-                start_next_queued();
-            }
-        }
-    }
-
-    // Composite arc-length lookup from the live point onward (halt walker).
-    geom::Vec3 cart_window_point_at(double composite) const
-    {
-        double remaining = composite;
-        for(std::size_t i = cart_piece_index_; i < cart_window_.size(); ++i) {
-            const CartPiece &piece = cart_window_[i];
-            double offset = 0.0;
-            if(i == cart_piece_index_) {
-                offset = cart_halt_piece_offset_;
-            }
-            const double available = piece.length - offset;
-            if(remaining <= available) {
-                return cart_piece_point(piece, offset + remaining);
-            }
-            remaining -= available;
-        }
-        const CartPiece &last = cart_window_[cart_window_.size() - 1];
-        return cart_piece_point(last, last.length);
-    }
-
-    rt::ErrorCode cart_window_stop(double deceleration, double jerk)
-    {
-        if(!std::isfinite(deceleration) || deceleration <= 0.0 ||
-           !std::isfinite(jerk) || jerk <= 0.0) {
-            return rt::ErrorCode::invalid_argument;
-        }
-        CartPiece &piece = cart_window_[cart_piece_index_];
-        otg::State1D state{};
-        if(piece.corner) {
-            double s = piece.v_in * static_cast<double>(cart_piece_tick_);
-            s = s > piece.length ? piece.length : s;
-            state = {s, piece.v_in, 0.0};
-        } else {
-            state = otg::sample(piece.profile,
-                                rt::CycleTick::from_cycles(cart_piece_tick_));
-        }
-        double remaining = piece.length - state.position;
-        for(std::size_t i = cart_piece_index_ + 1; i < cart_window_.size(); ++i) {
-            remaining += cart_window_[i].length;
-        }
-        const otg::Limits1D halt_limits{state.velocity > 1e-12 ? state.velocity
-                                                               : 1e-12,
-                                        deceleration, deceleration, jerk};
-        double target = state.velocity * state.velocity / (2.0 * deceleration) +
-                        state.velocity * (deceleration / jerk);
-        if(target > remaining) {
-            target = remaining;
-        }
-        rt::Result<otg::Profile1D> halt =
-            rt::Result<otg::Profile1D>::failure(rt::ErrorCode::infeasible);
-        for(int attempt = 0; attempt < 8; ++attempt) {
-            halt = otg::plan_time_optimal({0.0, state.velocity, state.acceleration},
-                                          {target, 0.0, 0.0}, halt_limits);
-            if(halt || target >= remaining) {
-                break;
-            }
-            target = target * 1.5 < remaining ? target * 1.5 : remaining;
-        }
-        if(!halt) {
-            // Immediate stop fallback (same as the group linear path).
-            cart_window_reset();
-            queue_.clear();
-            status_ = GroupStatus::standby;
-            return rt::ErrorCode::ok;
-        }
-        cart_halt_profile_ = halt.value();
-        cart_halt_duration_ = cart_halt_profile_.duration_cycles();
-        cart_halt_tick_ = 0;
-        cart_halt_origin_ = 0.0;
-        cart_halt_piece_offset_ = state.position;
-        cart_window_stopping_ = true;
-        queue_.clear();
-        status_ = GroupStatus::stopping;
-        return rt::ErrorCode::ok;
-    }
-
-    void cart_window_reset()
-    {
-        cart_window_.clear();
-        cart_window_active_ = false;
-        cart_window_stopping_ = false;
-        cart_piece_index_ = 0;
-        cart_piece_tick_ = 0;
-        cart_halt_tick_ = 0;
-        cart_halt_duration_ = 0;
-        cart_halt_origin_ = 0.0;
-        cart_halt_piece_offset_ = 0.0;
-    }
-
-    // Cartesian v2-C (approved addendum): fuse the active Cartesian line,
-    // a Cartesian-space quintic corner inside the tolerance band, and the
-    // successor line into one chain driven by one profile planned from the
-    // live path state. The chain velocity carries the corner curvature cap;
-    // orientation rides a single geodesic over the whole chain (declared).
-    // Reflex corners, too-late submissions, and chains that do not beat the
-    // full-stop baseline degrade to BUFFERED and are reported.
-    rt::Result<std::uint32_t> submit_cartesian_blend(GroupCommand command)
-    {
-        if(command.command_id == 0) {
-            command.command_id = next_command_id_++;
-        }
-        if(command.coord_system != CoordSystem::mcs &&
-           command.coord_system != CoordSystem::pcs) {
-            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported);
-        }
-        if(command.relative ||
-           (kinematics_ == nullptr && pose_kinematics_ == nullptr)) {
-            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported);
-        }
-        // Mixed-mode blending, arc/rotation-driven actives, committed
-        // chains, windows, and non-empty queues are all outside the v1
-        // fusion shape.
-        if(!active_ || status_ != GroupStatus::moving ||
-           active_kind_ != GroupPathKind::cartesian_linear ||
-           active_cart_.arc_path || active_cart_.angle_driven ||
-           active_cart_.chain || window_active_ || !queue_.empty() ||
-           active_path_length_ <= 0.0) {
-            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported);
-        }
-
-        // Successor target in the Cartesian (TCP) domain.
-        geom::Vec3 target_point = cartesian_part(command.target);
-        geom::RigidTransform target_pose{};
-        if(pose_kinematics_ != nullptr) {
-            target_pose = geom::make_rpy_transform(
-                command.target.value[0], command.target.value[1],
-                command.target.value[2], command.target.value[3],
-                command.target.value[4], command.target.value[5]);
-            if(command.coord_system == CoordSystem::pcs) {
-                target_pose = geom::compose(workpiece_frame_, target_pose);
-            }
-            target_point = target_pose.translation;
-        } else {
-            if(command.coord_system == CoordSystem::pcs) {
-                target_point = geom::transform_point(workpiece_frame_, target_point);
-            }
-            target_point = target_point - tool_offset_;
-        }
-
-        // Live path state and geometry.
-        const otg::State1D live =
-            otg::sample(active_profile_, rt::CycleTick::from_cycles(active_tick_));
-        const double s_live = live.position < 0.0
-                                  ? 0.0
-                                  : (live.position > active_path_length_
-                                         ? active_path_length_
-                                         : live.position);
-        const double remaining = active_path_length_ - s_live;
-        const geom::Vec3 live_point =
-            cartesian_point_at(active_cart_, s_live / active_path_length_);
-        const geom::Vec3 corner_point = geom::Vec3{
-            active_cart_.start.x + active_cart_.delta.x,
-            active_cart_.start.y + active_cart_.delta.y,
-            active_cart_.start.z + active_cart_.delta.z};
-        const double active_len = geom::norm(active_cart_.delta);
-        if(active_len <= 1e-12) {
-            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported);
-        }
-        const geom::Vec3 t0{active_cart_.delta.x / active_len,
-                            active_cart_.delta.y / active_len,
-                            active_cart_.delta.z / active_len};
-        const geom::Vec3 out_vec = target_point - corner_point;
-        const double len_b = geom::norm(out_vec);
-        const double dot = len_b > 1e-12
-                               ? (t0.x * out_vec.x + t0.y * out_vec.y +
-                                  t0.z * out_vec.z) /
-                                     len_b
-                               : -1.0;
-
-        bool degrade = false;
-        double trim = 0.0;
-        bool passthrough = false;
-        if(len_b <= 1e-12 || dot <= -0.999) {
-            degrade = true;
-        } else if(dot >= 1.0 - 1e-9) {
-            passthrough = true;
-        } else {
-            const geom::Vec3 t1{out_vec.x / len_b, out_vec.y / len_b,
-                                out_vec.z / len_b};
-            const double turn = geom::norm(t1 - t0);
-            trim = command.transition_parameter * 96.0 / (23.0 * turn);
-            const double room = remaining < len_b ? remaining : len_b;
-            if(trim > 0.5 * room) {
-                trim = 0.5 * room;
-            }
-            if(trim <= 1e-9 || remaining <= trim) {
-                degrade = true;
-            }
-        }
-
-        CartesianSegment segment{};
-        rt::Result<otg::Profile1D> chain_profile =
-            rt::Result<otg::Profile1D>::failure(rt::ErrorCode::invalid_argument);
-        if(!degrade) {
-            const geom::Vec3 t1{out_vec.x / len_b, out_vec.y / len_b,
-                                out_vec.z / len_b};
-            segment.pose = active_cart_.pose;
-            segment.chain = true;
-            segment.start = live_point;
-            segment.dir1 = t0;
-            if(passthrough) {
-                segment.line1 = remaining;
-                segment.exit_point = corner_point;
-            } else {
-                const geom::Vec3 entry{corner_point.x - t0.x * trim,
-                                       corner_point.y - t0.y * trim,
-                                       corner_point.z - t0.z * trim};
-                const geom::Vec3 exit{corner_point.x + t1.x * trim,
-                                      corner_point.y + t1.y * trim,
-                                      corner_point.z + t1.z * trim};
-                const rt::Result<geom::QuinticBlendSegment> blend =
-                    geom::make_quintic_blend(entry, corner_point, exit,
-                                             command.transition_parameter);
-                if(!blend) {
-                    degrade = true;
-                } else {
-                    segment.corner = blend.value();
-                    segment.line1 = remaining - trim;
-                    segment.exit_point = exit;
-                }
-            }
-            segment.dir2 = t1;
-            segment.line2 = len_b - trim;
-            segment.delta = target_point - live_point;
-            segment.length = segment.line1 + segment.corner.length + segment.line2;
-
-            if(!degrade && segment.pose) {
-                const geom::RigidTransform live_tcp = pose_start_tcp(cart_joints_);
-                if(command.orientation_mode == OrientationMode::constant) {
-                    for(int i = 0; i < 3; ++i) {
-                        for(int j = 0; j < 3; ++j) {
-                            target_pose.rotation[i][j] = live_tcp.rotation[i][j];
-                        }
-                    }
-                }
-                for(int i = 0; i < 3; ++i) {
-                    for(int j = 0; j < 3; ++j) {
-                        segment.rotation_start[i][j] = live_tcp.rotation[i][j];
-                    }
-                }
-                geom::relative_axis_angle(live_tcp.rotation, target_pose.rotation,
-                                          segment.axis, segment.angle);
-                if(segment.angle >= 3.14159265358979323846 - 1e-6) {
-                    return rt::Result<std::uint32_t>::failure(
-                        rt::ErrorCode::invalid_argument);
-                }
-            }
-        }
-
-        if(!degrade) {
-            // Chain envelope: both commands and the corner curvature cap.
-            GroupCommand fused = command;
-            fused.velocity = fused.velocity < active_command_.velocity
-                                 ? fused.velocity
-                                 : active_command_.velocity;
-            fused.acceleration = fused.acceleration < active_command_.acceleration
-                                     ? fused.acceleration
-                                     : active_command_.acceleration;
-            fused.deceleration = fused.deceleration < active_command_.deceleration
-                                     ? fused.deceleration
-                                     : active_command_.deceleration;
-            fused.jerk =
-                fused.jerk < active_command_.jerk ? fused.jerk : active_command_.jerk;
-            if(command.transition_velocity > 0.0 &&
-               command.transition_velocity < fused.velocity) {
-                // This planner has one profile for the fused chain, so the
-                // explicit junction cap conservatively bounds that profile.
-                fused.velocity = command.transition_velocity;
-            }
-            if(segment.corner.max_curvature > 1e-12) {
-                const double axis_accel =
-                    fused.acceleration < fused.deceleration ? fused.acceleration
-                                                            : fused.deceleration;
-                const double cap = std::sqrt(axis_accel / segment.corner.max_curvature);
-                if(cap < fused.velocity) {
-                    fused.velocity = cap;
-                }
-            }
-            double chain_seed[MaxAxes] = {};
-            for(std::size_t i = 0; i < axes_.size(); ++i) {
-                chain_seed[i] = cart_joints_[i];
-            }
-            const rt::ErrorCode validated =
-                prevalidate_cartesian(fused, segment, chain_seed);
-            if(validated != rt::ErrorCode::ok) {
-                return rt::Result<std::uint32_t>::failure(validated);
-            }
-            chain_profile = otg::plan_time_optimal(
-                {0.0, live.velocity, live.acceleration},
-                {fused.cart.length, 0.0, 0.0},
-                {fused.velocity, fused.acceleration, fused.deceleration, fused.jerk});
-            if(!chain_profile) {
-                degrade = true;
-            } else {
-                // Constructive gate: the fused chain must beat the full-stop
-                // baseline (finish the active segment, then run the successor
-                // from rest).
-                const rt::Result<otg::Profile1D> tail = otg::plan_time_optimal(
-                    {0.0, 0.0, 0.0}, {len_b, 0.0, 0.0},
-                    {command.velocity, command.acceleration, command.deceleration,
-                     command.jerk});
-                if(tail) {
-                    const std::int64_t baseline = (active_duration_ - active_tick_) +
-                                                  tail.value().duration_cycles();
-                    if(chain_profile.value().duration_cycles() >= baseline) {
-                        degrade = true;
-                    }
-                } else {
-                    degrade = true;
-                }
-            }
-            if(!degrade) {
-                active_command_ = fused;
-                active_cart_ = fused.cart;
-                active_kind_ = GroupPathKind::cartesian_linear;
-                active_arc_ = geom::ArcSegment{};
-                active_path_length_ = fused.cart.length;
-                active_profile_ = chain_profile.value();
-                active_tick_ = 0;
-                active_duration_ = active_profile_.duration_cycles();
-                for(std::size_t i = 0; i < axes_.size(); ++i) {
-                    active_start_[i] = axes_[i]->snapshot().command_position;
-                    active_finish_[i] = fused.target.value[i];
-                }
-                return rt::Result<std::uint32_t>::success(command.command_id);
-            }
-        }
-
-        // Reported degradation to a plain buffered Cartesian segment.
-        last_blend_degraded_id_ = command.command_id;
-        command.buffer_mode = BufferMode::buffered;
-        command.transition_mode = TransitionMode::none;
-        command.transition_velocity = 0.0;
-        command.transition_parameter = 0.0;
-        const rt::ErrorCode prepared = prepare_cartesian_linear(command);
-        if(prepared != rt::ErrorCode::ok) {
-            return rt::Result<std::uint32_t>::failure(prepared);
-        }
-        const rt::ErrorCode queued = queue_.push_back(command);
-        if(queued != rt::ErrorCode::ok) {
-            return rt::Result<std::uint32_t>::failure(queued);
-        }
-        return rt::Result<std::uint32_t>::success(command.command_id);
-    }
-
-    rt::ErrorCode prepare_cartesian_linear(GroupCommand &command)
-    {
-        const rt::ErrorCode guarded = cartesian_guards(command);
-        if(guarded != rt::ErrorCode::ok) {
-            return guarded;
-        }
-        double chain[MaxAxes] = {};
-        segment_start_joints(command, chain);
-
-        CartesianSegment segment{};
-        if(pose_kinematics_ != nullptr) {
-            segment.pose = true;
-            const geom::RigidTransform requested = geom::make_rpy_transform(
-                command.target.value[0], command.target.value[1],
-                command.target.value[2], command.target.value[3],
-                command.target.value[4], command.target.value[5]);
-            const geom::RigidTransform start = pose_start_tcp(chain);
-            geom::RigidTransform target = requested;
-            if(command.relative) {
-                geom::Vec3 displacement = requested.translation;
-                if(command.coord_system == CoordSystem::pcs) {
-                    displacement = geom::transform_rotate(workpiece_frame_, displacement);
-                }
-                target.translation = start.translation + displacement;
-                if(command.orientation_mode == OrientationMode::constant) {
-                    for(int i = 0; i < 3; ++i) {
-                        for(int j = 0; j < 3; ++j) {
-                            target.rotation[i][j] = start.rotation[i][j];
-                        }
-                    }
-                } else {
-                    geom::rotation_multiply(start.rotation, requested.rotation,
-                                            target.rotation);
-                }
-            } else {
-                if(command.coord_system == CoordSystem::pcs) {
-                    target = geom::compose(workpiece_frame_, target);
-                }
-                if(command.orientation_mode == OrientationMode::constant) {
-                    for(int i = 0; i < 3; ++i) {
-                        for(int j = 0; j < 3; ++j) {
-                            target.rotation[i][j] = start.rotation[i][j];
-                        }
-                    }
-                }
-            }
-            segment.start = start.translation;
-            segment.delta = target.translation - start.translation;
-            for(int i = 0; i < 3; ++i) {
-                for(int j = 0; j < 3; ++j) {
-                    segment.rotation_start[i][j] = start.rotation[i][j];
-                }
-            }
-            geom::relative_axis_angle(start.rotation, target.rotation, segment.axis,
-                                      segment.angle);
-            if(segment.angle >= 3.14159265358979323846 - 1e-6) {
-                return rt::ErrorCode::invalid_argument;
-            }
-            segment.length = geom::norm(segment.delta);
-            if(segment.length < 1e-12 && segment.angle > 0.0) {
-                segment.angle_driven = true;
-                segment.length = segment.angle;
-            }
-        } else {
-            geom::Vec3 point = cartesian_part(command.target);
-            geom::Vec3 start{};
-            const rt::ErrorCode forwarded =
-                kinematics_->forward(chain, axes_.size(), start);
-            if(forwarded != rt::ErrorCode::ok) {
-                return forwarded;
-            }
-            if(command.relative) {
-                if(command.coord_system == CoordSystem::pcs) {
-                    point = geom::transform_rotate(workpiece_frame_, point);
-                }
-                point = start + point;
-            } else {
-                if(command.coord_system == CoordSystem::pcs) {
-                    point = geom::transform_point(workpiece_frame_, point);
-                }
-                point = point - tool_offset_;
-            }
-            segment.start = start;
-            segment.delta = point - start;
-            segment.length = geom::norm(segment.delta);
-        }
-        command.relative = false;
-        return prevalidate_cartesian(command, segment, chain);
-    }
-
-    // Cartesian v2-B (approved addendum): three-point BORDER arcs in the
-    // Cartesian XY plane, z following the path parameter linearly — the
-    // KB-030 plane convention transplanted to the TCP domain (arbitrary
-    // spatial arc planes stay a follow-up, recorded). Pose groups ride the
-    // start-to-target geodesic along the arc fraction; aux orientation
-    // slots are ignored (declared).
-    rt::ErrorCode prepare_cartesian_circular(GroupCommand &command)
-    {
-        const rt::ErrorCode guarded = cartesian_guards(command);
-        if(guarded != rt::ErrorCode::ok) {
-            return guarded;
-        }
-        const bool pcs = command.coord_system == CoordSystem::pcs;
-        double chain[MaxAxes] = {};
-        segment_start_joints(command, chain);
-
-        CartesianSegment segment{};
-        geom::Vec3 start_point{};
-        geom::Vec3 aux_point = cartesian_part(command.aux);
-        geom::Vec3 target_point = cartesian_part(command.target);
-        if(pose_kinematics_ != nullptr) {
-            segment.pose = true;
-            const geom::RigidTransform requested = geom::make_rpy_transform(
-                command.target.value[0], command.target.value[1],
-                command.target.value[2], command.target.value[3],
-                command.target.value[4], command.target.value[5]);
-            const geom::RigidTransform start = pose_start_tcp(chain);
-            start_point = start.translation;
-            geom::RigidTransform target = requested;
-            if(command.relative) {
-                geom::Vec3 target_delta = requested.translation;
-                if(pcs) {
-                    target_delta = geom::transform_rotate(workpiece_frame_, target_delta);
-                    aux_point = geom::transform_rotate(workpiece_frame_, aux_point);
-                }
-                target.translation = start.translation + target_delta;
-                aux_point = start.translation + aux_point;
-                if(command.orientation_mode == OrientationMode::constant) {
-                    for(int i = 0; i < 3; ++i) {
-                        for(int j = 0; j < 3; ++j) {
-                            target.rotation[i][j] = start.rotation[i][j];
-                        }
-                    }
-                } else {
-                    geom::rotation_multiply(start.rotation, requested.rotation,
-                                            target.rotation);
-                }
-            } else {
-                if(pcs) {
-                    target = geom::compose(workpiece_frame_, target);
-                    aux_point = geom::transform_point(workpiece_frame_, aux_point);
-                }
-                if(command.orientation_mode == OrientationMode::constant) {
-                    for(int i = 0; i < 3; ++i) {
-                        for(int j = 0; j < 3; ++j) {
-                            target.rotation[i][j] = start.rotation[i][j];
-                        }
-                    }
-                }
-            }
-            target_point = target.translation;
-            for(int i = 0; i < 3; ++i) {
-                for(int j = 0; j < 3; ++j) {
-                    segment.rotation_start[i][j] = start.rotation[i][j];
-                }
-            }
-            geom::relative_axis_angle(start.rotation, target.rotation, segment.axis,
-                                      segment.angle);
-            if(segment.angle >= 3.14159265358979323846 - 1e-6) {
-                return rt::ErrorCode::invalid_argument;
-            }
-        } else {
-            geom::Vec3 start{};
-            const rt::ErrorCode forwarded =
-                kinematics_->forward(chain, axes_.size(), start);
-            if(forwarded != rt::ErrorCode::ok) {
-                return forwarded;
-            }
-            start_point = start;
-            if(command.relative) {
-                if(pcs) {
-                    aux_point = geom::transform_rotate(workpiece_frame_, aux_point);
-                    target_point = geom::transform_rotate(workpiece_frame_, target_point);
-                }
-                aux_point = start + aux_point;
-                target_point = start + target_point;
-            } else {
-                if(pcs) {
-                    aux_point = geom::transform_point(workpiece_frame_, aux_point);
-                    target_point = geom::transform_point(workpiece_frame_, target_point);
-                }
-                aux_point = aux_point - tool_offset_;
-                target_point = target_point - tool_offset_;
-            }
-        }
-
-        const geom::Vec3 plane_start{start_point.x, start_point.y, 0.0};
-        const geom::Vec3 plane_aux{aux_point.x, aux_point.y, 0.0};
-        const geom::Vec3 plane_finish{target_point.x, target_point.y, 0.0};
-        constexpr double PointTolerance = 1e-12;
-        if(geom::norm(plane_aux - plane_start) <= PointTolerance ||
-           geom::norm(plane_finish - plane_aux) <= PointTolerance ||
-           geom::norm(plane_finish - plane_start) <= PointTolerance) {
-            return rt::ErrorCode::invalid_argument;
-        }
-        const rt::Result<geom::ArcSegment> arc =
-            geom::make_arc(plane_start, plane_aux, plane_finish);
-        if(!arc) {
-            return rt::ErrorCode::invalid_argument;
-        }
-        if(arc.value().radius > geom::norm(plane_finish - plane_start) * 1e6) {
-            return rt::ErrorCode::invalid_argument;
-        }
-        const CircPathChoice derived = arc.value().sweep >= 0.0
-                                           ? CircPathChoice::counter_clockwise
-                                           : CircPathChoice::clockwise;
-        if(derived != command.path_choice) {
-            return rt::ErrorCode::invalid_argument;
-        }
-        if(command.tolerance > 0.0) {
-            const double via_sweep = geom::normalize_sweep(
-                geom::angle_of(plane_aux, arc.value().center) -
-                    arc.value().start_angle,
-                arc.value().sweep);
-            const double fraction = via_sweep / arc.value().sweep;
-            const double expected_z = start_point.z +
-                                      (target_point.z - start_point.z) * fraction;
-            if(std::fabs(aux_point.z - expected_z) > command.tolerance) {
-                return rt::ErrorCode::invalid_argument;
-            }
-        }
-        segment.arc_path = true;
-        segment.arc = arc.value();
-        segment.start = start_point;
-        segment.delta = target_point - start_point;
-        segment.length = arc.value().length;
-        command.relative = false;
-        return prevalidate_cartesian(command, segment, chain);
-    }
-
-    rt::ErrorCode cartesian_guards(const GroupCommand &command) const
-    {
-        if(command.coord_system != CoordSystem::mcs &&
-           command.coord_system != CoordSystem::pcs) {
-            return rt::ErrorCode::unsupported;
-        }
-        if((command.relative &&
-            command.orientation_mode == OrientationMode::joint_space) ||
-           command.buffer_mode == BufferMode::blending_low ||
-           command.buffer_mode == BufferMode::blending_high ||
-           command.transition_mode != TransitionMode::none ||
-           command.transition_parameter != 0.0) {
-            return rt::ErrorCode::unsupported;
-        }
-        if(kinematics_ == nullptr && pose_kinematics_ == nullptr) {
-            return rt::ErrorCode::unsupported;
-        }
-        return rt::ErrorCode::ok;
-    }
-
-    void segment_start_joints(const GroupCommand &command, double *chain) const
-    {
-        const bool aborting = command.buffer_mode == BufferMode::aborting;
-        for(std::size_t i = 0; i < axes_.size(); ++i) {
-            chain[i] = aborting ? axes_[i]->snapshot().command_position
-                                : queued_finish(i);
-        }
-    }
-
-    geom::RigidTransform pose_start_tcp(const double *chain) const
-    {
-        kin::Pose6 flange{};
-        pose_kinematics_->forward(chain, flange);
-        geom::RigidTransform start{};
-        start.translation = geom::Vec3{flange.position[0], flange.position[1],
-                                       flange.position[2]};
-        for(int i = 0; i < 3; ++i) {
-            for(int j = 0; j < 3; ++j) {
-                start.rotation[i][j] = flange.rotation[i][j];
-            }
-        }
-        return geom::compose(start, pose_tool_);
-    }
-
-    // Shared 33-sample pre-validation and command commit for every
-    // Cartesian segment shape.
+    rt::Result<std::uint32_t> submit_cartesian_window(GroupCommand command);
+    void cart_window_convert(const GroupCommand &command,
+                             double trim,
+                             bool passthrough);
+    bool cart_window_rebuild();
+    geom::Vec3 cart_piece_point(const CartPiece &piece, double s) const;
+    bool cart_window_emit(geom::Vec3 point);
+    void cart_window_cycle();
+    geom::Vec3 cart_window_point_at(double composite) const;
+    rt::ErrorCode cart_window_stop(double deceleration, double jerk);
+    void cart_window_reset();
+    rt::Result<std::uint32_t> submit_cartesian_blend(GroupCommand command);
+    rt::ErrorCode prepare_cartesian_linear(GroupCommand &command);
+    rt::ErrorCode prepare_cartesian_circular(GroupCommand &command);
+    rt::ErrorCode cartesian_guards(const GroupCommand &command) const;
+    void segment_start_joints(const GroupCommand &command, double *chain) const;
+    geom::RigidTransform pose_start_tcp(const double *chain) const;
     rt::ErrorCode prevalidate_cartesian(GroupCommand &command,
                                         CartesianSegment &segment,
-                                        double *chain)
-    {
-        constexpr int Samples = 32;
-        double q[MaxAxes] = {};
-        double worst_step = 0.0;
-
-        for(int k = 0; k <= Samples; ++k) {
-            const double fraction =
-                static_cast<double>(k) / static_cast<double>(Samples);
-            rt::ErrorCode solved = rt::ErrorCode::ok;
-            if(segment.pose) {
-                geom::RigidTransform tcp{};
-                cartesian_pose_at(segment, fraction, tcp);
-                const geom::RigidTransform flange_target =
-                    geom::compose(tcp, pose_tool_inverse_);
-                kin::Pose6 pose{};
-                pose.position[0] = flange_target.translation.x;
-                pose.position[1] = flange_target.translation.y;
-                pose.position[2] = flange_target.translation.z;
-                for(int i = 0; i < 3; ++i) {
-                    for(int j = 0; j < 3; ++j) {
-                        pose.rotation[i][j] = flange_target.rotation[i][j];
-                    }
-                }
-                solved = pose_kinematics_->inverse(pose, chain,
-                                                   pose_max_joint_step_, q);
-                if(solved == rt::ErrorCode::ok &&
-                   pose_kinematics_->singularity_margin(q) < pose_min_margin_) {
-                    return rt::ErrorCode::precondition_failed;
-                }
-            } else {
-                const geom::Vec3 sample = cartesian_point_at(segment, fraction);
-                solved = kinematics_->inverse(sample, chain, axes_.size(), q);
-                if(solved == rt::ErrorCode::ok &&
-                   kinematics_->singularity_margin(q, axes_.size()) <
-                       kinematics_min_margin_) {
-                    return rt::ErrorCode::precondition_failed;
-                }
-            }
-            if(solved != rt::ErrorCode::ok) {
-                return solved;
-            }
-            if(k > 0) {
-                for(std::size_t i = 0; i < axes_.size(); ++i) {
-                    const double step = std::fabs(q[i] - chain[i]);
-                    if(step > worst_step) {
-                        worst_step = step;
-                    }
-                }
-            }
-            for(std::size_t i = 0; i < axes_.size(); ++i) {
-                chain[i] = q[i];
-            }
-        }
-        // Velocity budget (decision #6): the step gate doubles as the joint
-        // velocity budget with a safety factor of two (pose pipeline).
-        if(segment.pose && worst_step > 0.0 && segment.length > 0.0) {
-            const double per_unit =
-                worst_step / (segment.length / static_cast<double>(Samples));
-            const double allowed = 0.5 * pose_max_joint_step_ / per_unit;
-            if(allowed < command.velocity) {
-                command.velocity = allowed;
-            }
-        }
-        for(std::size_t i = 0; i < axes_.size(); ++i) {
-            command.target.value[i] = q[i];
-        }
-        if(cartesian_velocity_limit_ > 0.0 &&
-           cartesian_velocity_limit_ < command.velocity) {
-            command.velocity = cartesian_velocity_limit_;
-        }
-        command.coord_system = CoordSystem::acs;
-        command.path_kind = GroupPathKind::cartesian_linear;
-        command.cart = segment;
-        return preflight_member_targets(command.target);
-    }
-
+                                        double *chain);
     geom::Vec3 cartesian_point_at(const CartesianSegment &segment,
-                                  double fraction) const
-    {
-        if(segment.chain) {
-            const double s = fraction * segment.length;
-            if(s <= segment.line1) {
-                return geom::Vec3{segment.start.x + segment.dir1.x * s,
-                                  segment.start.y + segment.dir1.y * s,
-                                  segment.start.z + segment.dir1.z * s};
-            }
-            const double in_corner = s - segment.line1;
-            if(in_corner <= segment.corner.length) {
-                const double u =
-                    geom::quintic_parameter_at_length(segment.corner, in_corner);
-                return geom::quintic_point(segment.corner, u);
-            }
-            const double tail = s - segment.line1 - segment.corner.length;
-            return geom::Vec3{segment.exit_point.x + segment.dir2.x * tail,
-                              segment.exit_point.y + segment.dir2.y * tail,
-                              segment.exit_point.z + segment.dir2.z * tail};
-        }
-        if(segment.arc_path) {
-            geom::Vec3 point =
-                geom::sample(segment.arc, fraction * segment.arc.length);
-            point.z = segment.start.z + segment.delta.z * fraction;
-            return point;
-        }
-        return geom::Vec3{segment.start.x + segment.delta.x * fraction,
-                          segment.start.y + segment.delta.y * fraction,
-                          segment.start.z + segment.delta.z * fraction};
-    }
-
+                                  double fraction) const;
     void cartesian_pose_at(const CartesianSegment &segment,
                            double fraction,
-                           geom::RigidTransform &tcp) const
-    {
-        tcp.translation = cartesian_point_at(segment, fraction);
-        double relative[3][3];
-        geom::rodrigues(segment.axis, segment.angle * fraction, relative);
-        geom::rotation_multiply(segment.rotation_start, relative, tcp.rotation);
-    }
-
-    // Cycle-path Cartesian sampling (approved matrix decisions #3/#4/#7):
-    // one analytic inverse per cycle, seeded by the previous cycle's
-    // joints. A failure between the pre-validation samples is the declared
-    // group errorstop — members keep the last good setpoint, nothing
-    // extrapolates, nothing flips branches.
-    bool cartesian_cycle(double ratio)
-    {
-        double q[MaxAxes] = {};
-        rt::ErrorCode solved = rt::ErrorCode::ok;
-        if(active_cart_.pose) {
-            geom::RigidTransform tcp{};
-            cartesian_pose_at(active_cart_, ratio, tcp);
-            const geom::RigidTransform flange_target =
-                geom::compose(tcp, active_pose_tool_inverse_);
-            kin::Pose6 pose{};
-            pose.position[0] = flange_target.translation.x;
-            pose.position[1] = flange_target.translation.y;
-            pose.position[2] = flange_target.translation.z;
-            for(int i = 0; i < 3; ++i) {
-                for(int j = 0; j < 3; ++j) {
-                    pose.rotation[i][j] = flange_target.rotation[i][j];
-                }
-            }
-            solved = pose_kinematics_->inverse(pose, cart_joints_,
-                                               pose_max_joint_step_, q);
-            if(solved == rt::ErrorCode::ok &&
-               pose_kinematics_->singularity_margin(q) < pose_min_margin_) {
-                solved = rt::ErrorCode::precondition_failed;
-            }
-        } else {
-            const geom::Vec3 point = cartesian_point_at(active_cart_, ratio);
-            solved = kinematics_->inverse(point, cart_joints_, axes_.size(), q);
-            if(solved == rt::ErrorCode::ok &&
-               kinematics_->singularity_margin(q, axes_.size()) <
-                   kinematics_min_margin_) {
-                solved = rt::ErrorCode::precondition_failed;
-            }
-        }
-        if(solved != rt::ErrorCode::ok) {
-            last_cartesian_error_ = solved;
-            abort_motion();
-            set_group_error(solved);
-            return false;
-        }
-        for(std::size_t i = 0; i < axes_.size(); ++i) {
-            axes_[i]->set_synchronized_position(q[i]);
-            cart_joints_[i] = q[i];
-        }
-        return true;
-    }
-
+                           geom::RigidTransform &tcp) const;
+    bool cartesian_cycle(double ratio);
     double queued_finish(std::size_t axis_index) const
     {
         double finish =
-            window_active_
-                ? window_[window_.size() - 1].target[axis_index]
-                : (cart_window_active_
+            joint_window_.active_
+                ? joint_window_.segments_[joint_window_.segments_.size() - 1].target[axis_index]
+                : (cartesian_.window_active_
                        ? cart_tail_joints_[axis_index]
-                       : (direct_active_
+                       : (direct_path_.direct_active_
                               ? active_finish_[axis_index]
                               : (active_ ? active_finish_[axis_index]
                                          : axes_[axis_index]->snapshot().command_position)));
@@ -6355,14 +4181,14 @@ private:
     {
         active_tool_ = command.tool_number;
         active_payload_ = command.payload_number;
-        active_pose_tool_inverse_ = command.tool_inverse;
-        active_pose_tool_ = geom::invert(command.tool_inverse);
-        active_tool_offset_ = {active_pose_tool_.translation.x,
-                               active_pose_tool_.translation.y,
-                               active_pose_tool_.translation.z};
+        pose_frames_.active_pose_tool_inverse_ = command.tool_inverse;
+        pose_frames_.active_pose_tool_ = geom::invert(command.tool_inverse);
+        pose_frames_.active_tool_offset_ = {pose_frames_.active_pose_tool_.translation.x,
+                               pose_frames_.active_pose_tool_.translation.y,
+                               pose_frames_.active_pose_tool_.translation.z};
         active_command_ = command;
         if(command.dynamic_pcs && pending_dynamic_pcs_) {
-            active_dynamic_reference_frame_ = pending_dynamic_reference_frame_;
+            pose_frames_.active_dynamic_reference_frame_ = pose_frames_.pending_dynamic_reference_frame_;
         }
         pending_dynamic_pcs_ = false;
         if(!command.dynamic_pcs) tracking_following_ = false;
@@ -6388,29 +4214,45 @@ private:
         if(command.path_kind == GroupPathKind::circular) {
             longest = command.arc.length;
         }
-        active_cart_ = command.cart;
+        cartesian_.active_segment_ = command.cart;
         if(command.path_kind == GroupPathKind::cartesian_linear) {
             longest = command.cart.length;
             for(std::size_t i = 0; i < axes_.size(); ++i) {
-                cart_joints_[i] = active_start_[i];
+                cartesian_.joints_[i] = active_start_[i];
             }
         }
         active_path_length_ = longest;
 
-        // Y7 (KB-051 fix): velocity-continuous aborting takeover via
-        // tolerance-tube connector. The pre-takeover velocity is decomposed
-        // into an along-path scalar (projected onto the new path tangent)
-        // and a lateral residual that decays to zero via an independent
-        // jerk-limited profile (approved v2.1 matrix, linear scope).
+        // Y7/Y7b1/Y7b2a: joint-domain linear/circular targets may accept a
+        // captured member state from a plain Cartesian LINE source; Cartesian
+        // targets never consume this connector.
+        const bool connector_target =
+            (command.path_kind == GroupPathKind::linear ||
+             command.path_kind == GroupPathKind::circular) &&
+            !command.dynamic_pcs;
+        const bool vector_capture = connector_.captured_vector_state();
         const bool try_connector = connector_.take_captured_velocity() &&
-                                   command.path_kind == GroupPathKind::linear;
+                                   connector_target;
 
         if(try_connector) {
-            const rt::ErrorCode planned = connector_.plan(
-                {command.velocity, command.acceleration, command.deceleration,
-                 command.jerk},
-                longest, axes_.size(), active_start_, active_finish_,
-                active_profile_, active_duration_);
+            const otg::Limits1D limits{
+                command.velocity, command.acceleration, command.deceleration,
+                command.jerk};
+            rt::ErrorCode planned = rt::ErrorCode::ok;
+            if(command.path_kind == GroupPathKind::circular) {
+                planned = connector_.plan_circular(
+                    limits, longest, axes_.size(), active_start_,
+                    active_finish_, active_arc_, active_profile_,
+                    active_duration_);
+            } else if(vector_capture) {
+                planned = connector_.plan_linear_vector(
+                    limits, longest, axes_.size(), active_start_,
+                    active_finish_, active_profile_, active_duration_);
+            } else {
+                planned = connector_.plan(
+                    limits, longest, axes_.size(), active_start_,
+                    active_finish_, active_profile_, active_duration_);
+            }
             if(planned == rt::ErrorCode::ok) {
                 active_ = true;
                 status_ = GroupStatus::moving;
@@ -6486,14 +4328,14 @@ private:
 
     void abort_motion()
     {
-        if(direct_active_) abort_direct(direct_command_id_);
+        if(direct_path_.direct_active_) abort_direct(direct_path_.direct_command_id_);
         if(active_ && active_command_.direct_semantics) {
             abort_direct(active_command_.command_id);
         }
-        if(window_active_) {
-            for(std::size_t i = window_index_; i < window_.size(); ++i) {
-                if(window_[i].kind == WindowKind::direct_line) {
-                    abort_direct(window_[i].command_id);
+        if(joint_window_.active_) {
+            for(std::size_t i = joint_window_.index_; i < joint_window_.segments_.size(); ++i) {
+                if(joint_window_.segments_[i].kind == WindowKind::direct_line) {
+                    abort_direct(joint_window_.segments_[i].command_id);
                 }
             }
         }
@@ -6515,8 +4357,8 @@ private:
         }
         active_ = false;
         connector_.deactivate();
-        direct_active_ = false;
-        direct_stopping_ = false;
+        direct_path_.direct_active_ = false;
+        direct_path_.direct_stopping_ = false;
         override_paused_ = false;
         interrupting_ = false;
         interrupted_plain_ = false;
@@ -6531,13 +4373,61 @@ private:
         }
     }
 
-    // Y7 (KB-051/052): forwards to the extracted connector cluster; only
-    // plain linear motions qualify (approved v2.1 scope).
-    void capture_takeover_velocity()
+    // Y7/Y7b1/Y7b2a: capture the live member state before abort_motion()
+    // clears it. Cartesian capture is opt-in only for a plain joint
+    // LINE/circular target and a plain Cartesian LINE source.
+    void current_member_output_state(
+        std::array<double, MaxAxes> &velocity,
+        std::array<double, MaxAxes> &acceleration) const
     {
-        connector_.capture(active_, active_kind_ == GroupPathKind::linear,
-                           active_path_length_, active_profile_, active_tick_,
-                           active_start_, active_finish_, axes_.size());
+        velocity.fill(0.0);
+        acceleration.fill(0.0);
+        if(!path_odometer_initialized_) {
+            return;
+        }
+        for(std::size_t i = 0; i < axes_.size(); ++i) {
+            velocity[i] = axes_[i]->snapshot().command_position -
+                          path_odometer_position_[i];
+            acceleration[i] =
+                velocity[i] - path_odometer_member_velocity_[i];
+        }
+    }
+
+    void capture_takeover_velocity(bool allow_cartesian_source = false)
+    {
+        if(active_command_.dynamic_pcs) {
+            connector_.discard_capture();
+            return;
+        }
+        if(active_kind_ == GroupPathKind::cartesian_linear) {
+            if(!allow_cartesian_source ||
+               cartesian_.active_segment_.arc_path ||
+               cartesian_.active_segment_.chain ||
+               !path_odometer_initialized_) {
+                connector_.discard_capture();
+                return;
+            }
+            std::array<double, MaxAxes> output_velocity{};
+            std::array<double, MaxAxes> output_acceleration{};
+            current_member_output_state(output_velocity, output_acceleration);
+            connector_.capture_output_history(
+                active_, output_velocity, output_acceleration, axes_.size());
+            return;
+        }
+        if(active_kind_ == GroupPathKind::circular) {
+            connector_.capture_circular(
+                active_, active_arc_, active_path_length_, active_profile_,
+                active_tick_, active_start_, active_finish_, axes_.size());
+        } else {
+            connector_.capture(active_, active_kind_ == GroupPathKind::linear,
+                               active_path_length_, active_profile_, active_tick_,
+                               active_start_, active_finish_, axes_.size());
+        }
+        std::array<double, MaxAxes> output_velocity{};
+        std::array<double, MaxAxes> output_acceleration{};
+        current_member_output_state(output_velocity, output_acceleration);
+        connector_.set_captured_output_state(
+            output_velocity, output_acceleration, axes_.size());
     }
 
     // A5 look-ahead window (KB-032, approved A5 matrix): consecutive blending
@@ -6548,924 +4438,38 @@ private:
     // cruise domain), so straight parts are no longer dragged down to the
     // sharpest corner speed. All planning happens synchronously at submit;
     // the cycle path only samples precomputed data.
-    static constexpr std::size_t BlendTableSize = 33;
-    static constexpr std::size_t WindowCapacity = 64;
-
-    struct WindowNode
-    {
-        bool has_curve = false;
-        std::array<std::array<double, MaxAxes>, 6> ctrl{};
-        std::array<double, BlendTableSize> cumulative{};
-        double curve_length = 0.0;
-        double corner_cap = 0.0;
-        double curve_velocity = 0.0;
-        std::int64_t curve_cycles = 0;
-    };
-
-    enum class WindowKind
-    {
-        line,
-        direct_line,
-        arc,
-    };
-
-    struct WindowSegment
-    {
-        WindowKind kind = WindowKind::line;
-        std::array<double, MaxAxes> entry{}; // line start (after entry trim)
-        std::array<double, MaxAxes> dir{};   // unit direction (line only)
-        std::array<double, MaxAxes> target{};
-        double full_length = 0.0;            // line: corner-to-corner; arc: arc length
-        double trim_in = 0.0;                // arcs are never trimmed (v2)
-        double trim_out = 0.0;
-        geom::ArcSegment arc_geom{};         // arc only (KB-030 plane arc)
-        otg::Limits1D limits{};              // euclidean dynamics (arc: velocity
-                                             // already clamped to sqrt(a*R))
-        std::uint32_t command_id = 0;
-        double entry_velocity = 0.0;
-        double exit_velocity = 0.0;
-        otg::Profile1D profile{};            // path profile entry_v -> exit_v
-        WindowNode node{};                   // corner to the NEXT segment
-
-        double line_length() const
-        {
-            const double length = full_length - trim_in - trim_out;
-            return length > 0.0 ? length : 0.0;
-        }
-    };
+    static constexpr std::size_t BlendTableSize =
+        GroupLookaheadWindow<MaxAxes>::BlendTableSize;
+    static constexpr std::size_t WindowCapacity =
+        GroupLookaheadWindow<MaxAxes>::Capacity;
+    using WindowNode = GroupLookaheadWindow<MaxAxes>::Node;
+    using WindowKind = GroupLookaheadWindow<MaxAxes>::Kind;
+    using WindowSegment = GroupLookaheadWindow<MaxAxes>::Segment;
 
     // N-dimensional unit tangent at a segment boundary: lines use dir; arcs
     // combine the plane tangent with the linear following of higher axes.
     void window_tangent(const WindowSegment &seg, bool at_exit,
-                        std::array<double, MaxAxes> &out) const
-    {
-        if(seg.kind == WindowKind::line || seg.kind == WindowKind::direct_line) {
-            out = seg.dir;
-            return;
-        }
-        const geom::Vec3 plane =
-            geom::tangent(seg.arc_geom, at_exit ? seg.arc_geom.length : 0.0);
-        out[0] = plane.x;
-        out[1] = plane.y;
-        double norm = plane.x * plane.x + plane.y * plane.y;
-        for(std::size_t i = 2; i < axes_.size(); ++i) {
-            const double slope = (seg.target[i] - seg.entry[i]) / seg.full_length;
-            out[i] = slope;
-            norm += slope * slope;
-        }
-        norm = std::sqrt(norm);
-        if(norm > 0.0) {
-            for(std::size_t i = 0; i < axes_.size(); ++i) {
-                out[i] /= norm;
-            }
-        }
-    }
-
-    rt::Result<std::uint32_t> submit_blend(GroupCommand command)
-    {
-        // v1 declared boundary: blending extends the active window (or the
-        // active plain linear command); a stopping window, plain queued
-        // commands, or anything else is an explicit error.
-        if(window_stop_ || !queue_.empty()) {
-            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported);
-        }
-        if(command.tool_number != active_tool_ ||
-           command.payload_number != active_payload_) {
-            return degrade_blend(command);
-        }
-        if(!window_active_) {
-            if(!active_ || active_kind_ != GroupPathKind::linear ||
-               status_ != GroupStatus::moving || active_path_length_ <= 0.0) {
-                return rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported);
-            }
-        }
-        if(window_active_ && window_.size() >= window_depth_) {
-            // Window capacity is a declared limit, never a silent drop.
-            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::capacity_exceeded);
-        }
-
-        // Predecessor tail geometry (window tail or the active linear command).
-        std::array<double, MaxAxes> pred_target{};
-        std::array<double, MaxAxes> pred_dir{};
-        double pred_full = 0.0;
-        double pred_trim_out_room = 0.0; // half-length truncation budget
-        bool pred_is_line = true;
-        otg::Limits1D pred_limits{};
-        if(window_active_) {
-            const WindowSegment &tail = window_[window_.size() - 1];
-            pred_target = tail.target;
-            window_tangent(tail, true, pred_dir);
-            pred_full = tail.full_length;
-            pred_limits = tail.limits;
-            pred_is_line = tail.kind == WindowKind::line ||
-                           tail.kind == WindowKind::direct_line;
-        } else {
-            double length1 = 0.0;
-            for(std::size_t i = 0; i < axes_.size(); ++i) {
-                const double d = active_finish_[i] - active_start_[i];
-                pred_dir[i] = d;
-                pred_target[i] = active_finish_[i];
-                length1 += d * d;
-            }
-            length1 = std::sqrt(length1);
-            if(length1 <= 1e-12) {
-                return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
-            }
-            for(std::size_t i = 0; i < axes_.size(); ++i) {
-                pred_dir[i] /= length1;
-            }
-            pred_full = length1;
-            const double scale1 = length1 / active_path_length_;
-            pred_limits = otg::Limits1D{active_command_.velocity * scale1,
-                                        active_command_.acceleration * scale1,
-                                        active_command_.deceleration * scale1,
-                                        active_command_.jerk * scale1};
-        }
-        pred_trim_out_room = pred_is_line ? pred_full * 0.5 : 0.0;
-
-        // Successor geometry.
-        double length2 = 0.0;
-        double longest2 = 0.0;
-        std::array<double, MaxAxes> u2{};
-        for(std::size_t i = 0; i < axes_.size(); ++i) {
-            const double d = command.target.value[i] - pred_target[i];
-            u2[i] = d;
-            length2 += d * d;
-            const double travel = std::fabs(d);
-            if(travel > longest2) {
-                longest2 = travel;
-            }
-        }
-        length2 = std::sqrt(length2);
-        if(length2 <= 1e-12) {
-            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
-        }
-        double alignment = 0.0;
-        for(std::size_t i = 0; i < axes_.size(); ++i) {
-            u2[i] /= length2;
-            alignment += pred_dir[i] * u2[i];
-        }
-        const double scale2 = longest2 > 0.0 ? length2 / longest2 : 1.0;
-        const otg::Limits1D limits2{command.velocity * scale2,
-                                    command.acceleration * scale2,
-                                    command.deceleration * scale2, command.jerk * scale2};
-
-        if(alignment < -0.999) {
-            // Reflex corner: degrade to a BUFFERED full-stop join, reported.
-            return degrade_blend(command);
-        }
-
-        // Corner construction (geometry frozen at creation).
-        WindowNode node{};
-        double trim = 0.0;
-        double corner_cap =
-            pred_limits.max_velocity < limits2.max_velocity ? pred_limits.max_velocity
-                                                            : limits2.max_velocity;
-        if(alignment <= 0.999 && !pred_is_line) {
-            // No tolerance-band curve exists between an arc and a line (v3
-            // scope); a non-tangent junction degrades to a full-stop join.
-            return degrade_blend(command);
-        }
-        if(alignment <= 0.999) {
-            double turn = 0.0;
-            for(std::size_t i = 0; i < axes_.size(); ++i) {
-                const double diff = u2[i] - pred_dir[i];
-                turn += diff * diff;
-            }
-            turn = std::sqrt(turn);
-            trim = command.transition_parameter * 96.0 / (23.0 * turn);
-            if(trim > pred_trim_out_room) {
-                trim = pred_trim_out_room;
-            }
-            if(trim > length2 * 0.5) {
-                trim = length2 * 0.5;
-            }
-            for(std::size_t i = 0; i < axes_.size(); ++i) {
-                const double corner = pred_target[i];
-                node.ctrl[0][i] = corner - pred_dir[i] * trim;
-                node.ctrl[1][i] = corner - pred_dir[i] * (trim * 2.0 / 3.0);
-                node.ctrl[2][i] = corner - pred_dir[i] * (trim / 3.0);
-                node.ctrl[3][i] = corner + u2[i] * (trim / 3.0);
-                node.ctrl[4][i] = corner + u2[i] * (trim * 2.0 / 3.0);
-                node.ctrl[5][i] = corner + u2[i] * trim;
-            }
-            double accumulated = 0.0;
-            std::array<double, MaxAxes> previous{};
-            blend_point(node.ctrl, 0.0, previous);
-            node.cumulative[0] = 0.0;
-            for(std::size_t step = 1; step < BlendTableSize; ++step) {
-                const double u =
-                    static_cast<double>(step) / static_cast<double>(BlendTableSize - 1);
-                std::array<double, MaxAxes> point{};
-                blend_point(node.ctrl, u, point);
-                double chord = 0.0;
-                for(std::size_t i = 0; i < axes_.size(); ++i) {
-                    const double diff = point[i] - previous[i];
-                    chord += diff * diff;
-                }
-                accumulated += std::sqrt(chord);
-                node.cumulative[step] = accumulated;
-                previous = point;
-            }
-            node.curve_length = accumulated;
-            if(!std::isfinite(node.curve_length) || node.curve_length <= 0.0) {
-                return degrade_blend(command);
-            }
-            double max_curvature = 0.0;
-            for(std::size_t step = 0; step <= 64; ++step) {
-                const double u = static_cast<double>(step) / 64.0;
-                const double curvature = blend_curvature(node.ctrl, u);
-                if(curvature > max_curvature) {
-                    max_curvature = curvature;
-                }
-            }
-            if(max_curvature > 0.0) {
-                double junction = pred_limits.max_acceleration;
-                if(pred_limits.max_deceleration < junction) {
-                    junction = pred_limits.max_deceleration;
-                }
-                if(limits2.max_acceleration < junction) {
-                    junction = limits2.max_acceleration;
-                }
-                if(limits2.max_deceleration < junction) {
-                    junction = limits2.max_deceleration;
-                }
-                const double geometric = std::sqrt(junction / max_curvature);
-                if(geometric < corner_cap) {
-                    corner_cap = geometric;
-                }
-            }
-            node.has_curve = true;
-        }
-        if(command.transition_velocity > 0.0) {
-            const double transition_cap = command.transition_velocity * scale2;
-            if(transition_cap < corner_cap) {
-                corner_cap = transition_cap;
-            }
-        }
-        node.corner_cap = corner_cap;
-
-        // Baseline for the constructive cycle-time gate (captured pre-append).
-        const std::int64_t old_remaining = window_active_ ? window_remaining_cycles() : -1;
-
-        // Convert the active linear command into window segment zero.
-        bool converted = false;
-        if(!window_active_) {
-            if(!convert_active_linear_to_window()) {
-                return rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported);
-            }
-            converted = true;
-        }
-
-        // Append: tail gains the corner, the new segment enters the window.
-        WindowSegment &tail = window_[window_.size() - 1];
-        const double saved_trim_out = tail.trim_out;
-        const WindowNode saved_node = tail.node;
-        tail.trim_out = trim;
-        tail.node = node;
-
-        WindowSegment fresh{};
-        fresh.kind = command.direct_semantics ? WindowKind::direct_line
-                                              : WindowKind::line;
-        for(std::size_t i = 0; i < axes_.size(); ++i) {
-            fresh.entry[i] = node.has_curve ? node.ctrl[5][i] : pred_target[i];
-            fresh.dir[i] = u2[i];
-            fresh.target[i] = command.target.value[i];
-        }
-        fresh.full_length = length2;
-        fresh.trim_in = trim;
-        fresh.limits = limits2;
-        fresh.command_id = command.command_id;
-        if(window_.size() >= window_depth_ ||
-           window_.push_back(fresh) != rt::ErrorCode::ok) {
-            tail.trim_out = saved_trim_out;
-            tail.node = saved_node;
-            if(converted) {
-                window_.clear();
-            }
-            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::capacity_exceeded);
-        }
-
-        bool late = false;
-        if(!window_rebuild(late)) {
-            window_.pop_back();
-            WindowSegment &restore = window_[window_.size() - 1];
-            restore.trim_out = saved_trim_out;
-            restore.node = saved_node;
-            if(converted) {
-                window_.clear();
-            } else if(!window_rebuild(late)) {
-                // Restoring the previous window must succeed; if the live
-                // state has drifted past a boundary, stop safely.
-                window_reset();
-                clear_axes_synchronized();
-                status_ = GroupStatus::standby;
-                abort_motion();
-            }
-            return degrade_blend(command);
-        }
-
-        // Constructive cycle-time gate (KB-031 carried over): the extended
-        // window must beat "previous window then a standalone full-stop move".
-        if(old_remaining >= 0) {
-            const rt::Result<otg::Profile1D> standalone = otg::plan_time_optimal(
-                {0.0, 0.0, 0.0}, {length2, 0.0, 0.0}, limits2);
-            if(standalone &&
-               window_remaining_cycles() >=
-                   old_remaining + standalone.value().duration_cycles()) {
-                window_.pop_back();
-                WindowSegment &restore = window_[window_.size() - 1];
-                restore.trim_out = saved_trim_out;
-                restore.node = saved_node;
-                if(!window_rebuild(late)) {
-                    window_reset();
-                    clear_axes_synchronized();
-                    status_ = GroupStatus::standby;
-                    abort_motion();
-                }
-                return degrade_blend(command);
-            }
-        }
-
-        if(converted) {
-            active_ = false;
-            window_active_ = true;
-        }
-        status_ = GroupStatus::moving;
-        return rt::Result<std::uint32_t>::success(command.command_id);
-    }
-
-    // Seed the window from the active linear command: segment zero carries
-    // the euclidean geometry and the live state (captured for the rebuild).
-    bool convert_active_linear_to_window()
-    {
-        double length1 = 0.0;
-        std::array<double, MaxAxes> direction{};
-        for(std::size_t i = 0; i < axes_.size(); ++i) {
-            const double d = active_finish_[i] - active_start_[i];
-            direction[i] = d;
-            length1 += d * d;
-        }
-        length1 = std::sqrt(length1);
-        if(length1 <= 1e-12 || active_path_length_ <= 0.0) {
-            return false;
-        }
-        for(std::size_t i = 0; i < axes_.size(); ++i) {
-            direction[i] /= length1;
-        }
-        const double scale1 = length1 / active_path_length_;
-
-        WindowSegment seg0{};
-        seg0.kind = active_command_.direct_semantics ? WindowKind::direct_line
-                                                     : WindowKind::line;
-        for(std::size_t i = 0; i < axes_.size(); ++i) {
-            seg0.entry[i] = active_start_[i];
-            seg0.dir[i] = direction[i];
-            seg0.target[i] = active_finish_[i];
-        }
-        seg0.full_length = length1;
-        seg0.limits = otg::Limits1D{active_command_.velocity * scale1,
-                                    active_command_.acceleration * scale1,
-                                    active_command_.deceleration * scale1,
-                                    active_command_.jerk * scale1};
-        seg0.command_id = active_command_.command_id;
-        const otg::State1D raw =
-            otg::sample(active_profile_, rt::CycleTick::from_cycles(active_tick_));
-        seg0.entry_velocity = raw.velocity * scale1; // updated by rebuild
-        seg0.profile = active_profile_;              // replaced by rebuild
-        window_.clear();
-        window_.push_back(seg0);
-        window_seed_state_ = otg::State1D{raw.position * scale1, raw.velocity * scale1,
-                                          raw.acceleration * scale1};
-        window_index_ = 0;
-        window_in_curve_ = false;
-        window_tick_ = 0;
-        return true;
-    }
-
-    // A5 v2 (KB-033): append a KB-030 BORDER arc to the look-ahead window.
-    // The junction must be tangent-continuous (no tolerance-band curve exists
-    // between lines and arcs until v3); anything else degrades to a BUFFERED
-    // full-stop join, reported. The arc segment's velocity limit is clamped
-    // to the centripetal bound sqrt(a*R) for the whole segment.
-    rt::Result<std::uint32_t> submit_blend_arc(GroupCommand command,
-                                               const std::array<double, MaxAxes> &start_point)
-    {
-        if(window_stop_ || !queue_.empty()) {
-            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported);
-        }
-        if(command.tool_number != active_tool_ ||
-           command.payload_number != active_payload_) {
-            return degrade_blend(command);
-        }
-        if(!window_active_) {
-            if(!active_ || active_kind_ != GroupPathKind::linear ||
-               status_ != GroupStatus::moving || active_path_length_ <= 0.0) {
-                // Converting an active circular command is a declared v2
-                // boundary: only linear actives seed a window.
-                return rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported);
-            }
-        }
-        if(window_active_ && window_.size() >= window_depth_) {
-            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::capacity_exceeded);
-        }
-
-        // Arc segment descriptor. KB-030 dynamics are already stated in the
-        // plane arc-length domain, so no metric conversion applies; the
-        // centripetal bound clamps the whole segment.
-        WindowSegment fresh{};
-        fresh.kind = WindowKind::arc;
-        fresh.arc_geom = command.arc;
-        fresh.full_length = command.arc.length;
-        for(std::size_t i = 0; i < axes_.size(); ++i) {
-            fresh.entry[i] = start_point[i];
-            fresh.target[i] = command.target.value[i];
-        }
-        fresh.entry[0] = command.arc.start.x;
-        fresh.entry[1] = command.arc.start.y;
-        fresh.limits = otg::Limits1D{command.velocity, command.acceleration,
-                                     command.deceleration, command.jerk};
-        double junction = fresh.limits.max_acceleration;
-        if(fresh.limits.max_deceleration < junction) {
-            junction = fresh.limits.max_deceleration;
-        }
-        const double centripetal = std::sqrt(junction * command.arc.radius);
-        if(centripetal < fresh.limits.max_velocity) {
-            fresh.limits.max_velocity = centripetal;
-        }
-        fresh.command_id = command.command_id;
-
-        // Predecessor exit tangent vs the arc entry tangent (N-dimensional).
-        std::array<double, MaxAxes> pred_tangent{};
-        otg::Limits1D pred_limits{};
-        if(window_active_) {
-            const WindowSegment &tail = window_[window_.size() - 1];
-            window_tangent(tail, true, pred_tangent);
-            pred_limits = tail.limits;
-        } else {
-            double length1 = 0.0;
-            for(std::size_t i = 0; i < axes_.size(); ++i) {
-                const double d = active_finish_[i] - active_start_[i];
-                pred_tangent[i] = d;
-                length1 += d * d;
-            }
-            length1 = std::sqrt(length1);
-            if(length1 <= 1e-12) {
-                return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
-            }
-            for(std::size_t i = 0; i < axes_.size(); ++i) {
-                pred_tangent[i] /= length1;
-            }
-            const double scale1 = length1 / active_path_length_;
-            pred_limits = otg::Limits1D{active_command_.velocity * scale1,
-                                        active_command_.acceleration * scale1,
-                                        active_command_.deceleration * scale1,
-                                        active_command_.jerk * scale1};
-        }
-        std::array<double, MaxAxes> arc_tangent{};
-        window_tangent(fresh, false, arc_tangent);
-        double alignment = 0.0;
-        for(std::size_t i = 0; i < axes_.size(); ++i) {
-            alignment += pred_tangent[i] * arc_tangent[i];
-        }
-        if(alignment <= 0.999) {
-            // Non-tangent junction: full-stop join, reported (approved v2).
-            return degrade_blend(command);
-        }
-
-        // Pass-through node (no curve, no trims).
-        WindowNode node{};
-        node.corner_cap = pred_limits.max_velocity < fresh.limits.max_velocity
-                              ? pred_limits.max_velocity
-                              : fresh.limits.max_velocity;
-        if(command.transition_velocity > 0.0 &&
-           command.transition_velocity < node.corner_cap) {
-            node.corner_cap = command.transition_velocity;
-        }
-
-        const std::int64_t old_remaining = window_active_ ? window_remaining_cycles() : -1;
-
-        bool converted = false;
-        if(!window_active_) {
-            if(!convert_active_linear_to_window()) {
-                return rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported);
-            }
-            converted = true;
-        }
-
-        WindowSegment &tail = window_[window_.size() - 1];
-        const WindowNode saved_node = tail.node;
-        tail.node = node;
-        if(window_.size() >= window_depth_ ||
-           window_.push_back(fresh) != rt::ErrorCode::ok) {
-            tail.node = saved_node;
-            if(converted) {
-                window_.clear();
-            }
-            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::capacity_exceeded);
-        }
-
-        bool late = false;
-        if(!window_rebuild(late)) {
-            window_.pop_back();
-            WindowSegment &restore = window_[window_.size() - 1];
-            restore.node = saved_node;
-            if(converted) {
-                window_.clear();
-            } else if(!window_rebuild(late)) {
-                window_reset();
-                clear_axes_synchronized();
-                status_ = GroupStatus::standby;
-                abort_motion();
-            }
-            return degrade_blend(command);
-        }
-
-        if(old_remaining >= 0) {
-            const rt::Result<otg::Profile1D> standalone = otg::plan_time_optimal(
-                {0.0, 0.0, 0.0}, {fresh.full_length, 0.0, 0.0}, fresh.limits);
-            if(standalone &&
-               window_remaining_cycles() >=
-                   old_remaining + standalone.value().duration_cycles()) {
-                window_.pop_back();
-                WindowSegment &restore = window_[window_.size() - 1];
-                restore.node = saved_node;
-                if(!window_rebuild(late)) {
-                    window_reset();
-                    clear_axes_synchronized();
-                    status_ = GroupStatus::standby;
-                    abort_motion();
-                }
-                return degrade_blend(command);
-            }
-        }
-
-        if(converted) {
-            active_ = false;
-            window_active_ = true;
-        }
-        status_ = GroupStatus::moving;
-        return rt::Result<std::uint32_t>::success(command.command_id);
-    }
-
-    // Trapezoid-level bidirectional scan + per-segment profile planning over
-    // the not-yet-started part of the window. Returns false when any segment
-    // profile is infeasible (caller degrades).
-    bool window_rebuild(bool &late)
-    {
-        late = false;
-        const std::size_t count = window_.size();
-        if(count == 0 || window_index_ >= count) {
-            return false;
-        }
-
-        // Live state along the current line piece (euclidean, local coords).
-        double s_live = 0.0;
-        double v_live = 0.0;
-        double a_live = 0.0;
-        std::size_t first = window_index_;
-        if(window_active_) {
-            if(window_in_curve_) {
-                // The current curve is committed; rebuild from the next line.
-                const WindowNode &cur = window_[window_index_].node;
-                double s_curve = cur.curve_velocity * static_cast<double>(window_tick_);
-                if(s_curve > cur.curve_length) {
-                    s_curve = cur.curve_length;
-                }
-                (void)s_curve;
-                first = window_index_ + 1;
-                if(first >= count) {
-                    return false;
-                }
-                s_live = 0.0;
-                v_live = cur.curve_velocity;
-                a_live = 0.0;
-            } else {
-                const otg::State1D raw = otg::sample(
-                    window_[window_index_].profile, rt::CycleTick::from_cycles(window_tick_));
-                s_live = raw.position;
-                v_live = raw.velocity;
-                a_live = raw.acceleration;
-            }
-        } else {
-            // Fresh conversion: seed state captured in submit_blend.
-            s_live = window_seed_state_.position;
-            v_live = window_seed_state_.velocity;
-            a_live = window_seed_state_.acceleration;
-        }
-
-        // Late submission: already inside (or past) the tail transition region.
-        const WindowSegment &first_seg = window_[first];
-        if(first == count - 2 || count == 2) {
-            // The newly trimmed segment is the live one: check the room.
-        }
-        if(first < count && window_[first].line_length() <= 0.0 && first + 1 < count) {
-            // Fully consumed line between two corners is allowed only when
-            // both node velocities agree; v1 degrades instead.
-            return false;
-        }
-        if(!window_in_curve_ && s_live >= window_[first].line_length()) {
-            late = true;
-            return false;
-        }
-        (void)first_seg;
-
-        // Forward pass (accelerating limit), then backward pass (braking).
-        std::array<double, WindowCapacity> node_v{};
-        double forward = v_live;
-        for(std::size_t i = first; i < count; ++i) {
-            const double length = i == first && !window_in_curve_
-                                      ? window_[i].line_length() - s_live
-                                      : window_[i].line_length();
-            const double usable = length > 0.0 ? length : 0.0;
-            // Approved look-ahead v2: exact jerk-limited reachability
-            // replaces the trapezoid estimate (declared change, KB-039).
-            double reachable = plan::jerk_reachable_speed(
-                forward, usable, window_[i].limits.max_acceleration,
-                window_[i].limits.max_jerk);
-            if(i + 1 < count) {
-                const double cap = window_[i].node.corner_cap;
-                if(reachable > cap) {
-                    reachable = cap;
-                }
-                node_v[i] = reachable;
-                forward = reachable;
-            } else {
-                node_v[i] = 0.0; // terminal rest
-            }
-        }
-        double backward = 0.0;
-        for(std::size_t r = count; r > first; --r) {
-            const std::size_t i = r - 1;
-            const double length = i == first && !window_in_curve_
-                                      ? window_[i].line_length() - s_live
-                                      : window_[i].line_length();
-            const double usable = length > 0.0 ? length : 0.0;
-            if(i + 1 < count && backward < node_v[i]) {
-                node_v[i] = backward;
-            }
-            backward = plan::jerk_reachable_speed(node_v[i], usable,
-                                                  window_[i].limits.max_deceleration,
-                                                  window_[i].limits.max_jerk);
-            if(i + 1 < count) {
-                backward = backward; // entry allowance of segment i
-            }
-        }
-
-        // Quantize curve velocities and plan the per-segment profiles.
-        double entry_velocity = v_live;
-        double entry_acceleration = a_live;
-        double entry_position = window_in_curve_ ? 0.0 : s_live;
-        for(std::size_t i = first; i < count; ++i) {
-            WindowSegment &seg = window_[i];
-            double exit_velocity = 0.0;
-            if(i + 1 < count) {
-                if(seg.node.has_curve) {
-                    double v = node_v[i];
-                    if(v <= 1e-12) {
-                        return false; // corner requires rest: degrade
-                    }
-                    std::int64_t cycles = static_cast<std::int64_t>(
-                        std::ceil(seg.node.curve_length / v));
-                    if(cycles < 1) {
-                        cycles = 1;
-                    }
-                    seg.node.curve_velocity =
-                        seg.node.curve_length / static_cast<double>(cycles);
-                    seg.node.curve_cycles = cycles;
-                    exit_velocity = seg.node.curve_velocity;
-                } else {
-                    exit_velocity = node_v[i];
-                }
-            }
-            const rt::Result<otg::Profile1D> profile = otg::plan_time_optimal(
-                {entry_position, entry_velocity, entry_acceleration},
-                {seg.line_length(), exit_velocity, 0.0}, seg.limits);
-            if(!profile) {
-                return false;
-            }
-            seg.entry_velocity = entry_velocity;
-            seg.exit_velocity = exit_velocity;
-            seg.profile = profile.value();
-            entry_velocity = exit_velocity;
-            entry_acceleration = 0.0;
-            entry_position = 0.0;
-        }
-        if(!window_in_curve_) {
-            // The live line profile was replanned from the live state; its
-            // tick restarts. A committed curve keeps its own progress.
-            window_tick_ = 0;
-        }
-        return true;
-    }
-
-    std::int64_t window_remaining_cycles() const
-    {
-        std::int64_t total = 0;
-        for(std::size_t i = window_index_; i < window_.size(); ++i) {
-            if(!(i == window_index_ && window_in_curve_)) {
-                total += window_[i].profile.duration_cycles();
-            }
-            if(i + 1 < window_.size() && window_[i].node.has_curve) {
-                total += window_[i].node.curve_cycles;
-            }
-        }
-        return total;
-    }
-
-    void window_cycle()
-    {
-        if(window_override_paused_ && !window_stop_) {
-            return;
-        }
-        ++window_tick_;
-        if(window_stop_) {
-            const otg::State1D st = otg::sample(window_stop_profile_,
-                                                rt::CycleTick::from_cycles(window_tick_));
-            sample_window_arclength(window_stop_origin_ + st.position);
-            if(window_tick_ >= window_stop_profile_.duration_cycles()) {
-                if(window_override_paused_) {
-                    interrupting_ = false;
-                    window_stop_ = false;
-                    status_ = GroupStatus::moving;
-                } else if(interrupting_) {
-                    interrupting_ = false;
-                    window_stop_ = false;
-                    status_ = GroupStatus::interrupted;
-                } else {
-                    window_reset();
-                    clear_axes_synchronized();
-                    status_ = GroupStatus::standby;
-                    start_next_queued();
-                }
-            }
-            return;
-        }
-
-        WindowSegment &seg = window_[window_index_];
-        if(window_in_curve_) {
-            double s = seg.node.curve_velocity * static_cast<double>(window_tick_);
-            if(s > seg.node.curve_length) {
-                s = seg.node.curve_length;
-            }
-            sample_window_curve(seg.node, s);
-            if(window_tick_ >= seg.node.curve_cycles) {
-                if(seg.kind == WindowKind::direct_line) complete_direct(seg.command_id);
-                ++window_index_;
-                window_in_curve_ = false;
-                window_tick_ = 0;
-            }
-            return;
-        }
-
-        const otg::State1D st =
-            otg::sample(seg.profile, rt::CycleTick::from_cycles(window_tick_));
-        // No clamping: a terminal profile may legally overshoot the target by
-        // a hair inside its envelope and come back; clamping would turn that
-        // into a hard stop (acceleration step). The final sample lands on the
-        // exact segment end by the profile's endpoint contract.
-        const double s = st.position;
-        sample_window_segment(seg, s);
-        if(window_tick_ >= seg.profile.duration_cycles()) {
-            if(window_index_ + 1 < window_.size()) {
-                if(seg.node.has_curve) {
-                    window_in_curve_ = true;
-                    window_tick_ = 0;
-                } else {
-                    if(seg.kind == WindowKind::direct_line) complete_direct(seg.command_id);
-                    ++window_index_;
-                    window_tick_ = 0;
-                }
-            } else {
-                if(seg.kind == WindowKind::direct_line) complete_direct(seg.command_id);
-                window_reset();
-                clear_axes_synchronized();
-                status_ = GroupStatus::standby;
-                start_next_queued();
-            }
-        }
-    }
-
-    void sample_window_segment(const WindowSegment &seg, double arclength)
-    {
-        if(seg.kind == WindowKind::arc) {
-            double s = arclength;
-            if(s < 0.0) {
-                s = 0.0;
-            }
-            if(s > seg.full_length) {
-                s = seg.full_length;
-            }
-            const geom::Vec3 point = geom::sample(seg.arc_geom, s);
-            axes_[0]->set_synchronized_position(point.x);
-            axes_[1]->set_synchronized_position(point.y);
-            const double ratio = seg.full_length > 0.0 ? s / seg.full_length : 1.0;
-            for(std::size_t i = 2; i < axes_.size(); ++i) {
-                axes_[i]->set_synchronized_position(
-                    seg.entry[i] + (seg.target[i] - seg.entry[i]) * ratio);
-            }
-            return;
-        }
-        for(std::size_t i = 0; i < axes_.size(); ++i) {
-            axes_[i]->set_synchronized_position(seg.entry[i] + seg.dir[i] * arclength);
-        }
-    }
-
-    void sample_window_curve(const WindowNode &node, double arclength)
-    {
-        double target = arclength;
-        if(target < 0.0) {
-            target = 0.0;
-        }
-        if(target > node.curve_length) {
-            target = node.curve_length;
-        }
-        std::size_t low = 0;
-        for(std::size_t i = 1; i < BlendTableSize; ++i) {
-            if(node.cumulative[i] >= target) {
-                low = i - 1;
-                break;
-            }
-            low = i - 1;
-        }
-        const double segment = node.cumulative[low + 1] - node.cumulative[low];
-        const double fraction =
-            segment > 0.0 ? (target - node.cumulative[low]) / segment : 0.0;
-        const double u = (static_cast<double>(low) + fraction) /
-                         static_cast<double>(BlendTableSize - 1);
-        std::array<double, MaxAxes> point{};
-        blend_point(node.ctrl, u, point);
-        for(std::size_t i = 0; i < axes_.size(); ++i) {
-            axes_[i]->set_synchronized_position(point[i]);
-        }
-    }
-
-    // Composite arc length measured from the live piece at stop time: walks
-    // the remaining pieces (bounded by the window capacity, simple compares).
-    void sample_window_arclength(double arclength)
-    {
-        double remaining = arclength;
-        bool in_curve = window_in_curve_;
-        std::size_t index = window_index_;
-        while(index < window_.size()) {
-            const WindowSegment &seg = window_[index];
-            if(!in_curve) {
-                const double length = seg.line_length();
-                if(remaining <= length || index + 1 >= window_.size()) {
-                    const double s =
-                        remaining < 0.0 ? 0.0 : (remaining > length ? length : remaining);
-                    sample_window_segment(seg, s);
-                    return;
-                }
-                remaining -= length;
-                if(seg.node.has_curve) {
-                    in_curve = true;
-                } else {
-                    ++index;
-                }
-            } else {
-                if(remaining <= seg.node.curve_length) {
-                    sample_window_curve(seg.node, remaining);
-                    return;
-                }
-                remaining -= seg.node.curve_length;
-                in_curve = false;
-                ++index;
-            }
-        }
-    }
-
-    void window_live_state(double &s_live, double &v_live, double &a_live) const
-    {
-        if(window_in_curve_) {
-            const WindowNode &node = window_[window_index_].node;
-            double s = node.curve_velocity * static_cast<double>(window_tick_);
-            if(s > node.curve_length) {
-                s = node.curve_length;
-            }
-            s_live = s;
-            v_live = node.curve_velocity;
-            a_live = 0.0;
-            return;
-        }
-        const otg::State1D raw = otg::sample(window_[window_index_].profile,
-                                             rt::CycleTick::from_cycles(window_tick_));
-        const double length = window_[window_index_].line_length();
-        s_live = raw.position < 0.0 ? 0.0 : (raw.position > length ? length : raw.position);
-        v_live = raw.velocity;
-        a_live = raw.acceleration;
-    }
-
-    void window_reset()
-    {
-        window_active_ = false;
-        window_stop_ = false;
-        window_override_paused_ = false;
-        window_in_curve_ = false;
-        window_index_ = 0;
-        window_tick_ = 0;
-        window_.clear();
-    }
+                        std::array<double, MaxAxes> &out) const;
+    rt::Result<std::uint32_t> submit_blend(GroupCommand command);
+    bool convert_active_linear_to_window();
+    rt::Result<std::uint32_t> submit_blend_arc(
+        GroupCommand command,
+        const std::array<double, MaxAxes> &start_point);
+    bool window_rebuild(bool &late);
+    std::int64_t window_remaining_cycles() const;
+    void window_cycle();
+    void sample_window_segment(const WindowSegment &seg, double arclength);
+    void sample_window_curve(const WindowNode &node, double arclength);
+    void sample_window_arclength(double arclength);
+    void window_live_state(double &s_live, double &v_live, double &a_live) const;
+    void window_reset();
+    rt::Result<std::uint32_t> degrade_blend(GroupCommand command);
+    void blend_point(const std::array<std::array<double, MaxAxes>, 6> &control,
+                     double u,
+                     std::array<double, MaxAxes> &out) const;
+    double blend_curvature(
+        const std::array<std::array<double, MaxAxes>, 6> &control,
+        double u) const;
 
     void clear_axes_synchronized()
     {
@@ -7474,104 +4478,7 @@ private:
         }
     }
 
-    rt::Result<std::uint32_t> degrade_blend(GroupCommand command)
-    {
-        last_blend_degraded_id_ = command.command_id;
-        command.buffer_mode = BufferMode::buffered;
-        command.transition_mode = TransitionMode::none;
-        command.transition_velocity = 0.0;
-        command.transition_parameter = 0.0;
-        const rt::ErrorCode queued = queue_.push_back(command);
-        if(queued != rt::ErrorCode::ok) {
-            return rt::Result<std::uint32_t>::failure(queued);
-        }
-        return rt::Result<std::uint32_t>::success(command.command_id);
-    }
-
-    void blend_point(const std::array<std::array<double, MaxAxes>, 6> &control,
-                     double u,
-                     std::array<double, MaxAxes> &out) const
-    {
-        const double v = 1.0 - u;
-        const double v2 = v * v;
-        const double u2 = u * u;
-        const double w0 = v2 * v2 * v;
-        const double w1 = 5.0 * v2 * v2 * u;
-        const double w2 = 10.0 * v2 * v * u2;
-        const double w3 = 10.0 * v2 * u2 * u;
-        const double w4 = 5.0 * v * u2 * u2;
-        const double w5 = u2 * u2 * u;
-        for(std::size_t i = 0; i < axes_.size(); ++i) {
-            out[i] = control[0][i] * w0 + control[1][i] * w1 + control[2][i] * w2 +
-                     control[3][i] * w3 + control[4][i] * w4 + control[5][i] * w5;
-        }
-    }
-
-    double blend_curvature(const std::array<std::array<double, MaxAxes>, 6> &control,
-                           double u) const
-    {
-        const double v = 1.0 - u;
-        const double v2 = v * v;
-        const double u2 = u * u;
-        const double d1w0 = 5.0 * v2 * v2;
-        const double d1w1 = 20.0 * v2 * v * u;
-        const double d1w2 = 30.0 * v2 * u2;
-        const double d1w3 = 20.0 * v * u2 * u;
-        const double d1w4 = 5.0 * u2 * u2;
-        const double d2w0 = 20.0 * v * v * v;
-        const double d2w1 = 60.0 * v * v * u;
-        const double d2w2 = 60.0 * v * u * u;
-        const double d2w3 = 20.0 * u * u * u;
-        double norm1 = 0.0;
-        double norm2 = 0.0;
-        double dot12 = 0.0;
-        for(std::size_t i = 0; i < axes_.size(); ++i) {
-            const double e0 = control[1][i] - control[0][i];
-            const double e1 = control[2][i] - control[1][i];
-            const double e2 = control[3][i] - control[2][i];
-            const double e3 = control[4][i] - control[3][i];
-            const double e4 = control[5][i] - control[4][i];
-            const double first = e0 * d1w0 + e1 * d1w1 + e2 * d1w2 + e3 * d1w3 + e4 * d1w4;
-            const double f0 = e1 - e0;
-            const double f1 = e2 - e1;
-            const double f2 = e3 - e2;
-            const double f3 = e4 - e3;
-            const double second = f0 * d2w0 + f1 * d2w1 + f2 * d2w2 + f3 * d2w3;
-            norm1 += first * first;
-            norm2 += second * second;
-            dot12 += first * second;
-        }
-        if(norm1 <= 1e-24) {
-            return 0.0;
-        }
-        const double area = norm1 * norm2 - dot12 * dot12;
-        if(area <= 0.0) {
-            return 0.0;
-        }
-        return std::sqrt(area) / (norm1 * std::sqrt(norm1));
-    }
-
-    const kin::PoseKinematics *pose_kinematics_ = nullptr;
-    double pose_min_margin_ = 0.0;
-    double pose_max_joint_step_ = 0.0;
-    const kin::Kinematics *kinematics_ = nullptr;
-    double kinematics_min_margin_ = 0.0;
-    double cartesian_velocity_limit_ = 0.0;
-    std::size_t cart_piece_index_ = 0;
-    std::int64_t cart_piece_tick_ = 0;
-    std::int64_t cart_halt_tick_ = 0;
-    std::int64_t cart_halt_duration_ = 0;
-    double cart_halt_origin_ = 0.0;
-    double cart_halt_piece_offset_ = 0.0;
-    double cart_window_entry_v_ = 0.0;
-    double cart_window_entry_a_ = 0.0;
-    double cart_window_acc_ = 0.0;
-    double cart_window_dec_ = 0.0;
-    double cart_window_jerk_ = 0.0;
-    std::size_t window_depth_ = WindowCapacity;
-    std::size_t window_index_ = 0;
-    std::int64_t window_tick_ = 0;
-    double window_stop_origin_ = 0.0;
+    GroupPoseFramesState pose_frames_{};
     double active_path_length_ = 0.0;
     double path_odometer_ = 0.0;
     double path_odometer_velocity_ = 0.0;
@@ -7593,13 +4500,10 @@ private:
     double interrupt_ratio_ = 0.0;
     double jog_stop_deceleration_ = 0.0;
     double jog_stop_jerk_ = 0.0;
-    geom::Vec3 tool_offset_{};
-    otg::State1D window_seed_state_{};
-    double workpiece_frame_rpy_[6] = {};
-    double tool_transform_rpy_[6] = {};
     std::array<double, MaxAxes> active_start_{};
     std::array<double, MaxAxes> active_finish_{};
     std::array<double, MaxAxes> path_odometer_position_{};
+    std::array<double, MaxAxes> path_odometer_member_velocity_{};
     std::array<double, SyncPathCapacity> group_sync_cumulative_{};
     std::array<GroupPosition, SyncPathCapacity> group_sync_waypoints_{};
     std::array<double, MaxAxes> jog_position_{};
@@ -7613,7 +4517,6 @@ private:
     std::array<bool, PayloadCapacity> payload_defined_{{true}};
     RigidBodyDynamics rigid_body_dynamics_{};
     bool rigid_body_dynamics_defined_ = false;
-    double cart_joints_[MaxAxes] = {};
     // Cartesian look-ahead and Jog are mutually exclusive AxisGroup states;
     // overlay their submit-domain seed storage so Jog inputs do not enlarge
     // the already large fixed-capacity look-ahead object.
@@ -7622,60 +4525,37 @@ private:
         double cart_tail_joints_[MaxAxes] = {};
         double jog_cartesian_start_[MaxAxes];
     };
-    double cart_window_joints_[MaxAxes] = {};
     GroupTakeoverConnector<MaxAxes> connector_{};
+    GroupLookaheadWindow<MaxAxes> joint_window_{};
     rt::StaticVector<AxisModel *, MaxAxes> axes_{};
     rt::StaticVector<IdentInGroup, MaxAxes> member_idents_{};
     AxisModel *path_sync_slave_ = nullptr;
     AxisModel *group_sync_master_ = nullptr;
     AxisModel *tracking_master_axis_ = nullptr;
     AxisGroup *tracking_master_group_ = nullptr;
-    geom::RigidTransform workpiece_frame_{};
-    geom::RigidTransform tracking_hold_pose_{};
-    geom::RigidTransform pending_dynamic_reference_frame_{};
-    geom::RigidTransform active_dynamic_reference_frame_{};
-    geom::RigidTransform pose_tool_{};
-    geom::RigidTransform pose_tool_inverse_{};
-    geom::RigidTransform active_pose_tool_inverse_{};
-    geom::RigidTransform active_pose_tool_{};
-    geom::RigidTransform jog_pose_tool_inverse_{};
-    geom::Vec3 jog_tool_offset_{};
-    geom::Vec3 active_tool_offset_{};
     geom::ArcSegment active_arc_{};
-    CartesianSegment active_cart_{};
     GroupCommand active_command_{};
     ToolData tracking_origin_{};
     ToolData tracking_transform_{};
     GroupPosition jog_direction_{};
     GroupPosition jog_cartesian_position_{};
-    otg::Profile1D cart_halt_profile_{};
-    otg::Profile1D window_stop_profile_{};
     otg::Profile1D active_profile_{};
     rt::StaticVector<GroupCommand, QueueCapacity> queue_{};
     rt::StaticVector<GroupManagementResult, QueueCapacity> management_results_{};
     rt::StaticVector<std::uint32_t, QueueCapacity> aborted_management_ids_{};
-    // Both look-ahead domains are planned outside cycle(). Keeping their full
-    // fixed-capacity buffers inline made ordinary stack construction unsafe.
-    // Storage is allocated once with the group; all cycle-time access remains
-    // fixed-capacity and allocation-free.
-    HeapStaticVector<CartPiece, CartWindowPieces> cart_window_{};
-    HeapStaticVector<WindowSegment, WindowCapacity> window_{};
+    GroupCartesianState<MaxAxes> cartesian_{};
     int domain_id_ = 0;
     GroupStatus status_ = GroupStatus::disabled;
     GroupPathKind active_kind_ = GroupPathKind::linear;
     CoordSystem jog_coord_system_ = CoordSystem::acs;
-    rt::ErrorCode last_cartesian_error_ = rt::ErrorCode::ok;
     rt::ErrorCode group_error_id_ = rt::ErrorCode::ok;
     rt::ErrorCode jog_error_ = rt::ErrorCode::ok;
     rt::ErrorCode tracking_error_ = rt::ErrorCode::ok;
-    std::uint32_t cart_window_last_id_ = 0;
     std::uint32_t last_blend_degraded_id_ = 0;
     std::uint32_t next_command_id_ = 1;
     std::uint32_t active_management_id_ = 0;
     GroupCommandKind active_management_kind_ = GroupCommandKind::motion;
-    std::uint32_t direct_command_id_ = 0;
-    std::uint32_t last_completed_direct_id_ = 0;
-    std::uint32_t last_aborted_direct_id_ = 0;
+    GroupDirectPathState direct_path_{};
     std::uint32_t jog_command_id_ = 0;
     std::uint32_t last_aborted_jog_id_ = 0;
     std::uint32_t path_sync_id_ = 0;
@@ -7696,19 +4576,11 @@ private:
     std::size_t selected_payload_ = 0;
     std::size_t active_payload_ = 0;
     std::size_t group_sync_count_ = 0;
-    bool cart_window_active_ = false;
-    bool cart_window_stopping_ = false;
-    bool window_active_ = false;
-    bool window_in_curve_ = false;
-    bool window_stop_ = false;
-    bool window_override_paused_ = false;
     bool active_ = false;
     bool override_paused_ = false;
     bool interrupting_ = false;
     bool interrupted_plain_ = false;
     bool interrupted_window_ = false;
-    bool direct_active_ = false;
-    bool direct_stopping_ = false;
     bool numbered_tool_mode_ = false;
     bool jog_active_ = false;
     bool jog_releasing_ = false;
@@ -7742,3 +4614,8 @@ private:
 };
 
 } // namespace plcopen::core::axis
+
+#include "axis/group_pose_frames_impl.h"
+#include "axis/group_cartesian_impl.h"
+#include "axis/group_window_impl.h"
+#include "axis/group_direct_path_impl.h"

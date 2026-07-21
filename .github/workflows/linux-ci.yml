@@ -6,6 +6,9 @@ on:
   pull_request:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   build-test:
     runs-on: ubuntu-latest
@@ -25,6 +28,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
       - name: Run RT-safety static scan
         run: cmake -P cmake/rt_safety_scan.cmake
@@ -121,11 +126,136 @@ jobs:
           find build-docs/docs/api/html -name '*.png' -type f -print -quit | grep -q .
           find build-docs/docs/api/html -name '*.map' -type f -print -quit | grep -q .
 
+  benchmark-trend:
+    name: E5 benchmark trend (GCC Release)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Verify benchmark trend tool
+        run: python -m unittest tools.test_benchmark_trend -v
+
+      - name: Build head benchmark probes
+        run: |
+          cmake -S . -B build-e5-head \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_C_COMPILER=gcc \
+            -DCMAKE_CXX_COMPILER=g++ \
+            -DPLCOPEN_BUILD_DEMOS=OFF
+          cmake --build build-e5-head --parallel --target \
+            plcopen_core_benchmark plcopen_core_otg_optimality_oracle
+
+      - name: Resolve comparison base
+        id: benchmark-base
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PUSH_BASE_SHA: ${{ github.event.before }}
+        run: |
+          base_sha=""
+          if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
+            base_sha="$PR_BASE_SHA"
+          elif [[ "$GITHUB_EVENT_NAME" == "push" ]]; then
+            base_sha="$PUSH_BASE_SHA"
+          fi
+
+          if [[ "$base_sha" =~ ^0+$ ]]; then
+            base_sha=""
+          fi
+
+          mode="record"
+          if [[ -n "$base_sha" ]] &&
+             git cat-file -e "${base_sha}^{commit}" 2>/dev/null &&
+             git cat-file -e "${base_sha}:tools/benchmark_trend.py" 2>/dev/null &&
+             git cat-file -e "${base_sha}:ci/benchmark-trend-policy.json" 2>/dev/null; then
+            mode="compare"
+          fi
+          echo "base_sha=$base_sha" >> "$GITHUB_OUTPUT"
+          echo "mode=$mode" >> "$GITHUB_OUTPUT"
+
+      - name: Build base benchmark probes
+        if: steps.benchmark-base.outputs.mode == 'compare'
+        env:
+          BASE_SHA: ${{ steps.benchmark-base.outputs.base_sha }}
+        run: |
+          base_root="$RUNNER_TEMP/plcopen-e5-base"
+          base_build="$RUNNER_TEMP/plcopen-e5-base-build"
+          git worktree add --detach "$base_root" "$BASE_SHA"
+          cmake -S "$base_root" -B "$base_build" \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_C_COMPILER=gcc \
+            -DCMAKE_CXX_COMPILER=g++ \
+            -DPLCOPEN_BUILD_DEMOS=OFF
+          cmake --build "$base_build" --parallel --target \
+            plcopen_core_benchmark plcopen_core_otg_optimality_oracle
+
+      - name: Compare benchmark trend (report only)
+        id: benchmark-compare
+        if: steps.benchmark-base.outputs.mode == 'compare'
+        continue-on-error: true
+        env:
+          BASE_SHA: ${{ steps.benchmark-base.outputs.base_sha }}
+        run: |
+          base_root="$RUNNER_TEMP/plcopen-e5-base"
+          base_build="$RUNNER_TEMP/plcopen-e5-base-build"
+          python "$base_root/tools/benchmark_trend.py" compare \
+            --policy "$base_root/ci/benchmark-trend-policy.json" \
+            --base-benchmark "$base_build/core/plcopen_core_benchmark" \
+            --head-benchmark "$GITHUB_WORKSPACE/build-e5-head/core/plcopen_core_benchmark" \
+            --base-oracle "$base_build/core/plcopen_core_otg_optimality_oracle" \
+            --head-oracle "$GITHUB_WORKSPACE/build-e5-head/core/plcopen_core_otg_optimality_oracle" \
+            --output "$GITHUB_WORKSPACE/build-e5/benchmark-trend.json" \
+            --base-sha "$BASE_SHA" \
+            --head-sha "$GITHUB_SHA"
+
+      - name: Summarize benchmark trend signal
+        if: always() && steps.benchmark-base.outputs.mode == 'compare'
+        env:
+          COMPARE_OUTCOME: ${{ steps.benchmark-compare.outcome }}
+        run: |
+          if [[ "$COMPARE_OUTCOME" == "success" ]]; then
+            echo "### E5 benchmark trend: PASS" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "### E5 benchmark trend: report-only regression signal" >> "$GITHUB_STEP_SUMMARY"
+            echo "The comparison returned non-zero, but E5 does not gate pull requests or main." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Record benchmark trend bootstrap
+        if: steps.benchmark-base.outputs.mode == 'record'
+        run: |
+          python tools/benchmark_trend.py record \
+            --policy ci/benchmark-trend-policy.json \
+            --benchmark build-e5-head/core/plcopen_core_benchmark \
+            --oracle build-e5-head/core/plcopen_core_otg_optimality_oracle \
+            --output build-e5/benchmark-trend.json \
+            --sha "$GITHUB_SHA"
+
+      - name: Upload benchmark trend history
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: e5-benchmark-trend-${{ github.run_id }}-${{ github.run_attempt }}
+          path: build-e5/benchmark-trend.json
+          if-no-files-found: warn
+          retention-days: 90
+
   arm64-cross:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
       - name: Install ARM64 toolchain and QEMU
         run: |
