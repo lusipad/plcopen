@@ -234,6 +234,11 @@ if(BUILD_TESTING AND PLCOPEN_BUILD_CORE_TESTS)
     plcopen_core_rt_compile_options(plcopen_core_st_l2b_tests)
     add_test(NAME plcopen_core_st_l2b_tests COMMAND plcopen_core_st_l2b_tests)
 
+    add_executable(plcopen_core_st_wcet_tests test/st_wcet_tests.cpp)
+    target_link_libraries(plcopen_core_st_wcet_tests PRIVATE plcopen::core)
+    plcopen_core_rt_compile_options(plcopen_core_st_wcet_tests)
+    add_test(NAME plcopen_core_st_wcet_tests COMMAND plcopen_core_st_wcet_tests)
+
     add_executable(plcopen_core_st_l2c_tests test/st_l2c_tests.cpp)
     target_link_libraries(plcopen_core_st_l2c_tests PRIVATE plcopen::core)
     plcopen_core_rt_compile_options(plcopen_core_st_l2c_tests)

@@ -577,8 +577,10 @@ int check_fixed_cases()
 
 struct DomainStats
 {
+    int attempted = 0;
+    int planner_fail = 0;
     int compared = 0;
-    int miss = 0;
+    int oracle_miss = 0;
     int fail = 0;
     int ec_max = 0;
     int ec_min = 0;
@@ -588,13 +590,17 @@ struct DomainStats
     void record(otg::State1D from, otg::Target1D to, otg::Limits1D lim,
                 const StructureTable &tab, int case_id)
     {
+        ++attempted;
         rt::Result<otg::Profile1D> planned =
             otg::plan_time_optimal(from, to, lim);
-        if(!planned) return;
+        if(!planned) {
+            ++planner_fail;
+            return;
+        }
 
         OracleResult orc = oracle_solve(from, to, lim, tab);
         if(!orc.found) {
-            ++miss;
+            ++oracle_miss;
             return;
         }
 
@@ -616,20 +622,29 @@ struct DomainStats
         }
 
         int ec = static_cast<int>(excess);
-        if(ec > ec_max) ec_max = ec;
-        if(ec < ec_min) ec_min = ec;
+        if(compared == 0 || ec > ec_max) ec_max = ec;
+        if(compared == 0 || ec < ec_min) ec_min = ec;
         ec_sum += ec;
         ++compared;
     }
 
     void report(const char *domain) const
     {
-        std::printf("  [%s] compared=%d miss=%d", domain, compared, miss);
+        std::printf("  [%s] attempted=%d planner_fail=%d oracle_miss=%d "
+                    "negative_fail=%d compared=%d",
+                    domain, attempted, planner_fail, oracle_miss, fail,
+                    compared);
         if(compared > 0) {
             std::printf(" max=%d avg=%.2f", ec_max, ec_sum / compared);
             if(ec_min < 0) std::printf(" min=%d", ec_min);
         }
         std::printf("\n");
+        std::printf(
+            "OTG_ORACLE_METRICS domain=%s attempted=%d planner_fail=%d "
+            "oracle_miss=%d negative_fail=%d compared=%d excess_min=%d "
+            "excess_max=%d excess_sum=%.0f hard_gate=%d\n",
+            domain, attempted, planner_fail, oracle_miss, fail, compared,
+            ec_min, ec_max, ec_sum, hard_gate ? 1 : 0);
     }
 };
 

@@ -1175,6 +1175,7 @@ private:
                 emit_u8(info.param_pins[i]);
                 emit_u32(argument.offset);
                 emit_u32(argument.type_id);
+                set_last_cost(static_cast<std::uint32_t>(desc->size));
             } else {
                 emit_expr(stmt.params[i].value);
                 emit_op(Op::fb_store_in);

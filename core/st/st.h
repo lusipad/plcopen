@@ -12,5 +12,6 @@
 #include "st/standard_functions.h"
 #include "st/tasking.h"
 #include "st/vm.h"
+#include "st/wcet.h"
 #include "st/configuration_runtime.h"
 #include "st/debug.h"

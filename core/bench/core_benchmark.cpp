@@ -1,5 +1,7 @@
+#include <chrono>
 #include <cstdio>
 #include <ctime>
+#include <limits>
 
 #include "axis/group.h"
 #include "axis/state.h"
@@ -13,6 +15,7 @@
 #include "rt/static_vector.h"
 #include "kin/wrist6r.h"
 #include "stream/joint_group.h"
+#include "st/st.h"
 
 namespace
 {
@@ -20,6 +23,133 @@ namespace
 double millis_since(std::clock_t start)
 {
     return 1000.0 * static_cast<double>(std::clock() - start) / CLOCKS_PER_SEC;
+}
+
+#if defined(_WIN32)
+constexpr const char *BenchPlatform = "windows";
+#elif defined(__linux__)
+constexpr const char *BenchPlatform = "linux";
+#elif defined(__APPLE__)
+constexpr const char *BenchPlatform = "macos";
+#else
+constexpr const char *BenchPlatform = "unknown";
+#endif
+
+#if defined(__clang__)
+constexpr const char *BenchCompiler = "clang";
+constexpr int BenchCompilerMajor = __clang_major__;
+constexpr int BenchCompilerMinor = __clang_minor__;
+constexpr int BenchCompilerPatch = __clang_patchlevel__;
+#elif defined(_MSC_VER)
+constexpr const char *BenchCompiler = "msvc";
+constexpr int BenchCompilerMajor = _MSC_VER / 100;
+constexpr int BenchCompilerMinor = _MSC_VER % 100;
+constexpr int BenchCompilerPatch = _MSC_FULL_VER % 100000;
+#elif defined(__GNUC__)
+constexpr const char *BenchCompiler = "gcc";
+constexpr int BenchCompilerMajor = __GNUC__;
+constexpr int BenchCompilerMinor = __GNUC_MINOR__;
+constexpr int BenchCompilerPatch = __GNUC_PATCHLEVEL__;
+#else
+constexpr const char *BenchCompiler = "unknown";
+constexpr int BenchCompilerMajor = 0;
+constexpr int BenchCompilerMinor = 0;
+constexpr int BenchCompilerPatch = 0;
+#endif
+
+#if defined(NDEBUG)
+constexpr const char *BenchBuild = "release";
+constexpr int BenchCalibrationEligible = 1;
+#else
+constexpr const char *BenchBuild = "debug";
+constexpr int BenchCalibrationEligible = 0;
+#endif
+
+struct StCalibration
+{
+    bool ok = false;
+    bool native_profile_required = false;
+    std::uint64_t work_units = 0;
+    std::uint32_t native_fb_instances = 0;
+    double observed_ns_per_scan = 0.0;
+};
+
+struct StThroughput
+{
+    bool ok = false;
+    std::int64_t instructions = 0;
+    double observed_ns_per_instruction = 0.0;
+};
+
+StCalibration calibrate_st_scan(const char *source)
+{
+    using namespace plcopen::core;
+
+    const st::CompileResult compiled = st::compile(source);
+    if(!compiled.ok) return {};
+    const st::WcetReport report = st::make_wcet_report(compiled.program);
+    if(!report.bounded || report.worst_case_work_units == 0 ||
+       report.worst_case_work_units > static_cast<std::uint64_t>(
+                                          std::numeric_limits<std::int64_t>::max()))
+        return {};
+
+    alignas(8) static unsigned char storage[65536] = {};
+    st::Instance instance;
+    if(instance.load(compiled.program, "main", storage, sizeof(storage),
+                     1000000) != rt::ErrorCode::ok)
+        return {};
+
+    constexpr int WarmupScans = 100;
+    constexpr int CalibrationScans = 200000;
+    const std::int64_t budget =
+        static_cast<std::int64_t>(report.worst_case_work_units);
+    for(int i = 0; i < WarmupScans; ++i)
+        if(instance.scan(budget) != st::ScanError::ok) return {};
+
+    const auto start = std::chrono::steady_clock::now();
+    for(int i = 0; i < CalibrationScans; ++i)
+        if(instance.scan(budget) != st::ScanError::ok) return {};
+    const double observed_ns = std::chrono::duration<double, std::nano>(
+                                   std::chrono::steady_clock::now() - start)
+                                   .count() /
+        CalibrationScans;
+    if(observed_ns <= 0.0) return {};
+    return {true, report.requires_native_fb_profile,
+            report.worst_case_work_units, report.native_fb_instances,
+            observed_ns};
+}
+
+StThroughput calibrate_st_throughput()
+{
+    using namespace plcopen::core;
+
+    // Metric 5.9: the established mixed arithmetic/control-flow workload.
+    const st::CompileResult compiled = st::compile(
+        "PROGRAM p\n"
+        "VAR i : DINT; s : DINT; END_VAR\n"
+        "FOR i := 1 TO 100000 DO s := s + i * 2 - 1; END_FOR;\n"
+        "END_PROGRAM\n");
+    if(!compiled.ok) return {};
+
+    alignas(8) static unsigned char storage[65536] = {};
+    st::Instance instance;
+    constexpr std::int64_t Budget = 10000000;
+    if(instance.load(compiled.program, storage, sizeof(storage), 1000000) !=
+           rt::ErrorCode::ok ||
+       instance.scan(Budget) != st::ScanError::ok ||
+       instance.begin(Budget) != st::ScanError::ok)
+        return {};
+
+    std::int64_t executed = 0;
+    const auto start = std::chrono::steady_clock::now();
+    const st::ScanError result = instance.resume(
+        std::numeric_limits<std::int64_t>::max(), executed);
+    const double observed_ns = std::chrono::duration<double, std::nano>(
+                                   std::chrono::steady_clock::now() - start)
+                                   .count();
+    if(result != st::ScanError::ok || executed <= 0 || observed_ns <= 0.0)
+        return {};
+    return {true, executed, observed_ns / static_cast<double>(executed)};
 }
 
 } // namespace
@@ -193,6 +323,66 @@ int main()
             ? static_cast<double>(optimal_cycles) / static_cast<double>(baseline_cycles)
             : 0.0;
 
+    // A2 observations are environment-scoped calibration, never a certified
+    // wall-clock bound.  Compilation/allocation happen before scan timing.
+    const StCalibration st_scalar = calibrate_st_scan(
+        "PROGRAM Main VAR A : DINT := 3; B : DINT; END_VAR "
+        "B := A * 7 + 2; END_PROGRAM");
+    const StCalibration st_native = calibrate_st_scan(
+        "PROGRAM Main VAR Edge : R_TRIG; Q : BOOL; END_VAR "
+        "Edge(CLK := TRUE); Q := Edge.Q; END_PROGRAM");
+    const StThroughput st_mixed = calibrate_st_throughput();
+    if(!st_scalar.ok || !st_native.ok ||
+       !st_native.native_profile_required ||
+       st_native.native_fb_instances == 0 || !st_mixed.ok) {
+        std::printf("BENCH_FAIL st calibration\n");
+        return 1;
+    }
+    const double st_scalar_ns_per_work_unit =
+        st_scalar.observed_ns_per_scan /
+        static_cast<double>(st_scalar.work_units);
+
+    // E5 planning-domain trend: rebuild the full 64-segment look-ahead
+    // window repeatedly.  The volatile window length prevents the optimizer
+    // from hoisting the deterministic replan out of the measurement loop.
+    constexpr std::size_t WindowSegments = 64;
+    constexpr int WindowReplanIterations = 200000;
+    plan::PathBuffer<WindowSegments> replan_path;
+    geom::Vec3 replan_start{};
+    for(std::size_t i = 0; i < WindowSegments; ++i) {
+        const geom::Vec3 replan_finish{
+            static_cast<double>(i + 1),
+            (i % 2 == 0) ? 0.25 : -0.25,
+            0.0};
+        const rt::Result<geom::LineSegment> segment =
+            geom::make_line(replan_start, replan_finish);
+        if(!segment ||
+           replan_path.push(geom::as_path_segment(segment.value())) !=
+               rt::ErrorCode::ok) {
+            std::printf("BENCH_FAIL window fixture\n");
+            return 1;
+        }
+        replan_start = replan_finish;
+    }
+    volatile std::size_t replan_window = WindowSegments;
+    double replan_checksum = 0.0;
+    start = std::clock();
+    for(int i = 0; i < WindowReplanIterations; ++i) {
+        const rt::Result<plan::LookAheadPlan<WindowSegments>> replanned =
+            plan::compute_lookahead(replan_path, 4.0, 2.0, replan_window);
+        if(!replanned) {
+            std::printf("BENCH_FAIL window replan\n");
+            return 1;
+        }
+        for(std::size_t j = 0; j < WindowSegments; ++j) {
+            replan_checksum += replanned.value().entry_speed[j] +
+                replanned.value().exit_speed[j];
+        }
+    }
+    const double window_replan_us =
+        1000.0 * millis_since(start) / WindowReplanIterations;
+    position_sum += replan_checksum * 1.0e-12;
+
     const double speed_ripple =
         std::fabs(lookahead.value().exit_speed[0] - lookahead.value().entry_speed[1]);
     const double path_error = geom::norm(path_buffer.sample(path_buffer.total_length()) -
@@ -333,6 +523,23 @@ int main()
 
     std::printf("CARTESIAN_METRICS cartesian_ik_cycle_us=%.3f budget_us=50\n",
                 cartesian_ik_us);
+    std::printf("WINDOW_METRICS segments=%zu window_replan_us=%.3f\n",
+                WindowSegments, window_replan_us);
+    std::printf(
+        "ST_WCET_METRICS platform=%s compiler=%s compiler_version=%d.%d.%d "
+        "build=%s calibration_eligible=%d certified_wcet=0 "
+        "scalar_work_units=%llu scalar_observed_ns_per_scan=%.3f "
+        "scalar_observed_ns_per_work_unit=%.3f native_work_units=%llu "
+        "native_fb_instances=%u native_observed_ns_per_scan=%.3f "
+        "mixed_instructions=%lld mixed_observed_ns_per_instruction=%.3f\n",
+        BenchPlatform, BenchCompiler, BenchCompilerMajor, BenchCompilerMinor,
+        BenchCompilerPatch, BenchBuild, BenchCalibrationEligible,
+        static_cast<unsigned long long>(st_scalar.work_units),
+        st_scalar.observed_ns_per_scan, st_scalar_ns_per_work_unit,
+        static_cast<unsigned long long>(st_native.work_units),
+        st_native.native_fb_instances, st_native.observed_ns_per_scan,
+        static_cast<long long>(st_mixed.instructions),
+        st_mixed.observed_ns_per_instruction);
     std::printf("BENCH_BASELINE static_vector_ms=%.3f spsc_ms=%.3f sample_ms=%.3f "
                 "path_sample_ms=%.3f axis_cycle_pair_ms=%.3f group_circular_cycle_ms=%.3f "
                 "checksum=%.3f\n",

@@ -1388,6 +1388,23 @@ void real_instruction_reports()
                       static_cast<std::uint64_t>(long_exact),
               "L2b WCI report equals longer path exact VM budget");
     }
+
+    const st::CompileResult object_input = st::compile(
+        "PROGRAM Main\nVAR G : GROUP_REF; Positive : MC_JOG_BOOLEAN_ARRAY; "
+        "Negative : MC_JOG_BOOLEAN_ARRAY; Jog : MC_GroupJog; END_VAR\n"
+        "Jog(AxesGroup := G, Enable := FALSE, JogPositive := Positive, "
+        "JogNegative := Negative, VelOverride := 1.0, AccOverride := 1.0, "
+        "CoordSystem := MC_COORD_SYSTEM#acs, MaxLinearDistance := 0.0, "
+        "MaxAngularDistance := 0.0);\nEND_PROGRAM\n");
+    check(object_input.ok && object_input.program.worst_case_bounded,
+          "A2 object-input WCI fixture compiles bounded");
+    if(object_input.ok) {
+        const std::int64_t object_exact = exact_budget(object_input, "main");
+        check(object_exact > 0 &&
+                  object_input.program.worst_case_instructions ==
+                      static_cast<std::uint64_t>(object_exact),
+              "A2 FB object-input WCI equals VM exact minimum budget");
+    }
 }
 
 void multi_pou_scan_is_zero_allocation()
