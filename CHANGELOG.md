@@ -4,6 +4,52 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- Y7b2a（KB-087）允许 plain Cartesian LINE 活动段以统一 odometer 的真实成员输出
+  历史接入 plain joint-domain LINE/circular 目标的既有公差管 connector；来源侧
+  不再因缺 Jacobian 从静止重启。translation/pose、横向/同向/反向投影、圆弧 tube
+  与目标局部门进入专项回归；不修改 kinematics ABI，也不把离散 `v/a` 宣称为
+  differential kinematics。Cartesian ARC/chain/window 来源、动态 PCS/tracking 与
+  所有 Cartesian 目标仍需独立语义门。
+
+- Y7b1（KB-086）把组级 `aborting` 公差管扩展到 plain ACS joint-domain
+  circular：以非单位路径导数分解实时成员状态，固定容量逐成员 residual
+  保留曲率加速度，并同时复验解析链式状态与端点钳位后的实际逐周期输出。
+  标量剖面若越过有限终点再回拉，则改用固定容量 endpoint-safe 制动/续行候选，
+  不以运行时硬钳位掩盖 acceleration/jerk 尖峰。
+  circular 及 circular→linear vector connector 的 GroupStop 不再丢 residual；
+  Interrupt/Override 与动态 PCS/tracking 保持显式边界。Cartesian 目标及非
+  Y7b2a plain Cartesian LINE→joint LINE/circular 来源形态继续留在 Y7b2 后续批次。
+
+- X5 executor IPC 软件形态：在 ADR-0007 进程内承诺环之外、稳定 `Servo`
+  边界新增版本化固定宽度 setpoint/feedback SPSC 与状态双缓冲；ABI attach
+  严格校验 magic/version/record-size/axis/depth，owner 在映射生命周期内
+  不可转让，wire 对非法 enum/bit/NaN/Inf 整帧原子拒绝。默认 CTest 仅运行
+  纯内存/线程契约；显式 process-integration 才创建 Windows/Linux 命名
+  共享内存与子进程，父子往返、未 commit 状态不可见、超时回收均纳入验证，
+  Core Nightly 增加 Linux/Windows 对拍并把纯内存并发合同纳入 TSan。
+
+- E5 基准趋势管线：Linux/GCC Release 在同一 runner 构建 base/head，OTG
+  `excess_cycles` 采用分域确定性退化门，ST 混合负载每指令成本、笛卡尔
+  IK 与固定 64 段窗口重规划采用 9 对 AB/BA 采样和二次确认；结果写入
+  schema v1 JSON artifact 并保留 90 天。比较器仅用 Python 标准库，严格
+  拒绝缺失/重复/非有限/注入型输入；PR 权限收紧为只读且 checkout 不保留
+  凭据，历史 artifact 不回灌门禁。
+
+- G1 治理文档批：新增贡献指南、单维护者决策/继任声明与安全政策；公开 ST
+  不可信源码、Program load、预算 scan、tasking、debug/force 和真实控制
+  binding 的信任边界及默认资源上限。私密漏洞报告功能尚未启用，因此先
+  提供不公开敏感细节的联系请求流程，不承诺 SLA/LTS；同步移除 issue 模板
+  中已废弃的 T0-T3 政策引用。
+
+- A2 T30 WCET 软件度量闭环：新增字节码版本锚定的 87-opcode 预算/时间
+  分类表与无分配 `WcetReport`，显式区分 VM 最坏工作单位和平台墙钟观测；
+  Release benchmark 输出 platform/compiler/build 身份、标量工作单位与原生
+  FB scan 的 `observed_*` 校准值，并固定声明 `certified_wcet=0`。同步修复
+  `fb_store_object` 对象输入在 VM 按字节扣费、compile artifact 却按 1
+  低报的预算差异；`scan(budget)` 既有语义和字节码格式保持不变。
+
 ## [0.20.0] - 2026-07-19
 
 ### Added

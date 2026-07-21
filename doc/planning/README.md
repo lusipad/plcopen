@@ -23,18 +23,25 @@
 | [v0.20.0-release-draft.md](v0.20.0-release-draft.md) | v0.20.0 发布形式、门禁证据与已执行检查单；面向用户的发布记录见 [`docs/releases/v0.20.0.md`](../../docs/releases/v0.20.0.md) | **已发布（2026-07-20）** |
 | [v1.0.0-alpha-release-draft.md](v1.0.0-alpha-release-draft.md) | v1.0.0-alpha 实验预览发布记录 | 历史记录 |
 | [r1-rt-report-template.md](r1-rt-report-template.md) | 72h PREEMPT_RT 报告模板（B7 硬件阶段使用） | 模板，待真机 |
-| [software-excellence-plan.md](software-excellence-plan.md) | 软件极致候选清单（Y 算法/P 标准面/Z 采纳/E 证据四线） | 2026-07-19 重基线；当前起手见文末 |
+| [software-excellence-plan.md](software-excellence-plan.md) | 软件极致候选清单（Y 算法/P 标准面/Z 采纳/E 证据四线） | 2026-07-21 重基线；当前起手见文末 |
 - [L 系列工作拆解](l-series-work-breakdown.md) —— L0-L7、L∀ 已闭合的范围、依赖、出口判据与完成态证据（2026-07-17 重基线）
 - [PLCopen 合规补齐计划](plcopen-conformance-plan.md) —— 原文审计后的 P 系列重构：P1-A 结构缺口 → L2a 引脚表（即合规面）→ 可提交认证声明（2026-07-12）
-- [**主计划：从这里到商用级**](master-plan.md) —— 复盘第一入口：剩余工作按 AI 能力边界四栏分类 + 依赖链总图 + 人侧杠杆排序（2026-07-19 重基线）
+- [**主计划：从这里到商用级**](master-plan.md) —— 复盘第一入口：剩余工作按 AI 能力边界四栏分类 + 依赖链总图 + 人侧杠杆排序（2026-07-21 重基线）
 - [采纳与推广计划](adoption-plan.md) —— 开源本位的 90 天推广序列：人群分层/渠道三选/证据即内容/灯塔口径/P0 账号、签署与发布授权门（2026-07-20）
-- [**执行计划清单**](execution-plan-2026-07-12.md) —— ROADMAP「当前承诺」的任务级勾选账：P0 复绿 / A1→A2→G1 / F 轨条件插队 / 人专属前置（2026-07-20 重基线）
+- [**执行计划清单**](execution-plan-2026-07-12.md) —— ROADMAP「当前承诺」的任务级勾选账：P0/A1/A2/G1/X5 已完成 / E5 软件完成待远端证据 / F 轨条件插队 / 人专属前置（2026-07-21 重基线）
+- [X5 executor IPC 实施计划](x5-executor-ipc-plan.md) / [实施记录](x5-executor-ipc-implementation-notes.md) —— `Servo` 边界固定 ABI IPC；软件实现完成，远端 Nightly 首轮待推送（2026-07-21）
 | [full-project-review-2026-07-09.md](full-project-review-2026-07-09.md) | 全项目 Review：架构热点、门禁漂移、公共 API 合同与修复队列 | 已执行，P1/P2 修复批输入 |
-| [axis-group-split-plan-2026-07-09.md](axis-group-split-plan-2026-07-09.md) | `AxisGroup` 按行为簇拆分计划与验收顺序 | 现行，下一批迁移输入 |
+| [axis-group-split-plan-2026-07-09.md](axis-group-split-plan-2026-07-09.md) | `AxisGroup` 按行为簇拆分计划与验收顺序 | **第 1-5 批全部完成（2026-07-21）** |
+| [axis-group-batch2-plan.md](axis-group-batch2-plan.md) / [实施记录](axis-group-batch2-implementation-notes.md) | joint look-ahead window 状态 owner 与实现拆分 | **已完成（2026-07-21）**：group.h 7744→6774 行，93/93 + RT + replay 全绿 |
+| [axis-group-batch3-plan.md](axis-group-batch3-plan.md) / [实施记录](axis-group-batch3-implementation-notes.md) | Cartesian path/window 状态 owner 与实现拆分 | **已完成（2026-07-21）**：group.h 6774→5426 行，93/93 + RT + replay + 安装态 consumer 全绿 |
+| [axis-group-batch4-plan.md](axis-group-batch4-plan.md) / [实施记录](axis-group-batch4-implementation-notes.md) | frame/tool/pose/kinematics 状态 owner 与实现拆分 | **已完成（2026-07-21）**：group.h 5426→4687 行，93/93 + RT + replay + find_package/FetchContent consumer 全绿 |
+| [axis-group-batch5-plan.md](axis-group-batch5-plan.md) / [实施记录](axis-group-batch5-implementation-notes.md) | MoveDirect 专属生命周期状态 owner 与 path 实现拆分 | **已完成（2026-07-21）**：group.h 4687→4487 行，93/93 + RT + replay + find_package/FetchContent consumer 全绿 |
+| [y7b1-circular-takeover-plan.md](y7b1-circular-takeover-plan.md) / [实施记录](y7b1-circular-takeover-implementation-notes.md) | Y7b1 plain joint-domain circular aborting 接管连续性 | **已完成（2026-07-21）**：当批 22 场景、93/93、ASan/UBSan、RT/replay、消费者与文档门全绿；后续 Y7b2a 已单独解除 Cartesian LINE 来源到 joint LINE/circular |
+| [y7b2-cartesian-takeover-plan.md](y7b2-cartesian-takeover-plan.md) / [实施记录](y7b2-cartesian-takeover-implementation-notes.md) | Y7b2a plain Cartesian LINE 来源到 joint linear/circular 的 aborting 接管连续性 | **已完成（2026-07-21）**：复用真实成员输出历史，不改 kinematics ABI；Cartesian 目标另过 feasibility/语义 gate |
 
 已完成的执行文档（R0-R4 拆解、证据包、rewrite-plan、v0.11 草案等）在
 [doc/archive/](../archive/)。
 
 ---
 
-*本索引最后更新：2026-07-20（发布授权规则与 v0.20.0 前置状态同步）*
+*本索引最后更新：2026-07-21（Y7b2a LINE/circular 实施收口）*

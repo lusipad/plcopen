@@ -1,4 +1,4 @@
-# 执行计划清单（2026-07-12 建账；2026-07-20 重基线）
+# 执行计划清单（2026-07-12 建账；2026-07-21 重基线）
 
 > 性质：**操作层执行清单**。优先级唯一事实源是 [ROADMAP「当前承诺」节](../../ROADMAP.md)，
 > 本文件是其任务级展开 + 勾选账；批次细节以各链接的规格/拆解文档为准，
@@ -99,7 +99,18 @@ PyPI publisher 已由维护者注册；发布 tag / GitHub Release 不再列为�
 - **A1（已完成）**：`805a363` 交付[浮点数值语义合同](../design/core/floating-point-semantics.md)、
   consumer 严格编译选项与跨平台运行值测试；Windows/Linux/ARM64 与三平台
   Wheels 远端复验通过。
-- **后续无外部前置队列**：A2 T30 WCET 度量工具（0.2 L0）→ G1 治理文档批（0.2 L0）。
+- **A2（已完成，2026-07-20）**：T30 WCET 度量工具已交付版本锚定成本表、无分配报告与环境化 Release 观测；不声称 certified WCET。
+- **G1（已完成，2026-07-21）**：贡献流程、单维护者决策/继任声明、安全报告与 ST 不可信输入资源边界已公开；私密漏洞报告和 org 迁移保留为人侧动作。
+- **E5（软件实现完成，远端证据待闭环，2026-07-21）**：四类指标、同机
+  base/head 9 对门、二次确认、严格解析与 90 天 JSON 历史已接入 Linux
+  workflow；本地自对拍通过，尚待首次 bootstrap 和随后一次真实远端比较。
+- **X5（软件实现完成，远端证据待闭环，2026-07-21）**：固定 ABI Servo
+  setpoint/feedback SPSC + 状态双缓冲、owner 映射期不可转让、整帧输入校验、
+  Windows/Linux 两进程对拍与 Linux TSan 本地通过；两平台 Nightly 首轮待推送。
+- **AxisGroup 第 1-5 批（已完成，2026-07-21）**：connector、joint look-ahead、
+  Cartesian path/window、frame/pose/kinematics 与 MoveDirect lifecycle/path 已按
+  行为簇形成明确 owner，group.h 7744→4487 行；93/93、RT scan、18/2409 replay
+  与 find_package/FetchContent consumer 全绿。共享调度边界按设计保留。
 - **条件插队**：ADR-0006 许可证核验与台架决策完成后，F1→F2→F3。
 - Y/P/Z/E 四线候选见[软件极致计划](software-excellence-plan.md)
 - OOP 裁决、OPC UA 触发条件修正——[合规计划人专属项](plcopen-conformance-plan.md)，随复盘
