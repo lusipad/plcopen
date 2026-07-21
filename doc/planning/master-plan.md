@@ -42,7 +42,7 @@
  ├─🟡 tag/Release 明确授权 ──────────────┤  授权后可由 AI 执行
  ├─✅ A2 WCET ──────────────────────────┤  软件度量闭环已完成
  ├─✅ G1 治理 ──────────────────────────┤  决策/继任/安全边界已公开
- ├─🟢 E5 趋势管线（CI 常驻）─────────────┤  bootstrap 完成，真实比较待闭环
+ ├─✅ E5 趋势管线（CI 常驻）─────────────┤  bootstrap + 真实比较已闭环
  ├─✅ X5 IPC 软件形态 ───────────────────┤  Servo 边界跨进程合同已闭合
  ├─🟡 E6 竞品对拍报告（手动+探针）────────┤  证据即内容
  ├─✅ AxisGroup 拆分 5 ──────────────────┤  第 1-5 批全部完成
@@ -90,7 +90,7 @@
 | L 系列 | L2a→L7 完整 61131-3（ST/SFC/POU/映像/任务/调试） | ~5 L0 | **已完成（L∀ `pending=0`）** |
 | 商用门板 | P#8 安全边界 / P#5 分支覆盖 / P#2 精度证据 / P#7 文档四件套 | 1.8 L0 | **已完成，4/8 软件门关闭** |
 | 工程债 | A1 浮点合同 / A2 WCET / G1 治理 / AxisGroup 2-5 批 / X5 IPC | 1.5 L0 | **A1/A2/G1/X5 与 AxisGroup 第 1-5 批全部完成** |
-| 证据 | E5 趋势管线 / E6 竞品对拍 | 0.6 L0 | **E5 软件实现与远端 bootstrap 完成、待一次真实比较；E6 保持手动** |
+| 证据 | E5 趋势管线 / E6 竞品对拍 | 0.6 L0 | **E5 软件实现、远端 bootstrap 与真实比较均完成；E6 保持手动** |
 | **F 轨** | **EtherCAT 主站抽象 + 虚拟从站 CI + 驱动品牌矩阵** | **~2 L0** | **★未开工** |
 | H 轨 | 混合指令帧 / 数值 IK / 动力学前馈 | ~1.5 L0 | 设计已备 |
 | T 轨 | MuJoCo 闭环孪生 | ~0.5 L0 | 设计已备 |
@@ -150,7 +150,8 @@ Windows/Linux/ARM64 数值测试与三平台 Wheels 通过。A2 WCET 与 G1 治�
 不可转让 owner、Windows/Linux 两进程对拍与 TSan 软件证据，并由
 [Core Nightly](https://github.com/lusipad/plcopen/actions/runs/29873304328) 完成 9/9 远端复验。
 E5 已完成四类指标、同机 base/head report-only 比较和 90 天 JSON 历史的软件实现；
-[主干 Linux CI](https://github.com/lusipad/plcopen/actions/runs/29873287478) 已完成首次 bootstrap，仍待一次真实 base/head 对拍。AxisGroup 第 1-5 批
+[主干 Linux CI](https://github.com/lusipad/plcopen/actions/runs/29873287478) 完成首次 bootstrap，
+[PR #9](https://github.com/lusipad/plcopen/actions/runs/29874743112/job/88782685662) 又以 `mode=compare`、`verdict=pass` 完成真实 base/head 对拍。AxisGroup 第 1-5 批
 行为簇拆分已全部完成，`group.h` 7744→4487 行。F 轨仍是最后一块大软件和 #1/#4 的前置，
 ADR-0006 许可证核验与台架决策完成后立即插队，按 F1→F2→F3 推进。
 

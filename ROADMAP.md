@@ -45,10 +45,11 @@ sprint 记录）在 [doc/archive/roadmap-history.md](doc/archive/roadmap-history
    executor IPC 软件形态均已收口。X5 保留 ADR-0007 进程内承诺环，只在
    `Servo` 边界新增固定 ABI SPSC + 状态双缓冲；Windows/Linux 两进程与
    Linux TSan 已在 [Core Nightly](https://github.com/lusipad/plcopen/actions/runs/29873304328)
-   远端复验，整轮 9/9 job 全绿。E5 基准趋势管线的软件实现也已完成——四类指标由 Linux/GCC
+   远端复验，整轮 9/9 job 全绿。E5 基准趋势管线也已完成——四类指标由 Linux/GCC
    Release 同机 base/head 成对比较，结果保留 90 天且不回灌门禁，CI 只测
    本仓库、零外部 benchmark 依赖；[主干 Linux CI](https://github.com/lusipad/plcopen/actions/runs/29873287478)
-   已完成首次 `record` bootstrap，当前只欠一次真实 base/head 远端比较，证据闭环前不把 E5 写成完全交付。AxisGroup
+   已完成首次 `record` bootstrap，随后 [PR #9 真实 base/head 比较](https://github.com/lusipad/plcopen/actions/runs/29874743112/job/88782685662)
+   以 `mode=compare`、`verdict=pass` 闭环。AxisGroup
    第 1-5 批行为簇拆分已全部完成，`group.h` 7744→4487 行；共享调度边界按设计
    保留，不再作为该架构债挂账。
 6. **F 轨 EtherCAT**：仍是最大的剩余软件块和商用指标 #1/#4 的上游；
