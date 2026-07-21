@@ -177,7 +177,7 @@ LD/FBD/SFC 图形画布、HMI、TC6-XML 工程交换、cam 表图形编辑器。
 | Y7b | 组接管扩展 | **Y7b1 circular 与 Y7b2a 来源桥接已完成（2026-07-21，KB-086/087）**：plain Cartesian LINE 来源可按真实成员输出历史接到 joint LINE/circular，不需要 Jacobian。**Y7b2b 固定 fraction A 与 B v0 `K=6` 均已 NO-GO**；`K=40` 的候选 replay 项升至 6.67 倍仍有覆盖缺口且无 holdout，只保留“预注册绝对 tube/coverage/WCET → 候选 set-cover/Pareto → analytic holdout”的 planning spike。Cartesian 目标继续 rest-start，未获生产实现授权 | KB-051/086/087；[Y7b1 计划](y7b1-circular-takeover-plan.md)；[Y7b2 计划](y7b2-cartesian-takeover-plan.md) |
 | Y4b | 组同步切换 | Y4 solve_fixed_time 的组级消费：多轴同步切换（T_sync 逐轴定时解）接入组路径执行 | ROADMAP 4c"组同步切换待下批"挂账 |
 | Y3′ | TOPP-RA 影子→换主裁决批 | 影子模式 excess_cycles 数据积累后的主路径采用裁决 + 独立门禁（含回放声明变更评估） | 算法评审终局"先影子后换主"；数据驱动，非日历驱动 |
-| X5 | executor IPC 形态验证 | **完成（2026-07-21）**：保留 ADR-0007 进程内承诺环，在 `Servo` 边界交付固定 ABI setpoint/feedback SPSC + 状态双缓冲；owner 映射期不可转让，默认纯内存门、Windows/Linux 显式进程对拍与 Linux TSan 已通过，远端 Nightly 首轮待推送 | ADR-0006/0007 显式开放项；**F 轨（EtherCAT IPC 形态）的真正软件前置** |
+| X5 | executor IPC 形态验证 | **完成（2026-07-22）**：保留 ADR-0007 进程内承诺环，在 `Servo` 边界交付固定 ABI setpoint/feedback SPSC + 状态双缓冲；owner 映射期不可转让，默认纯内存门、Windows/Linux 显式进程对拍与 Linux TSan 本地及 [Core Nightly](https://github.com/lusipad/plcopen/actions/runs/29873304328) 远端均通过 | ADR-0006/0007 显式开放项；**F 轨（EtherCAT IPC 形态）的真正软件前置** |
 | E5 | 基准趋势管线（**CI 常驻**） | 基准数字（OTG excess_cycles vs 自有 oracle、ST 每指令成本、cartesian_ik_us、窗口重规划耗时）统一入趋势：历史留存 + report-only 退化比对。**CI 只测我们自己**——零外部依赖是信任边界（不执行或下载别人的 benchmark） | Y0"基线入趋势"与 ST 5.9"入趋势"的基础设施补课 |
 | E6 | 竞品对拍报告（**手动批次，不进 CI**） | 与 Intel RTmotion（Apache 2.0，可编译）黑盒对拍：算法质量（相对自有 oracle 的 excess_cycles 三路对照）/ 性能（规划耗时、内存、体积）/ 语义合规（逐周期 setpoint 对拍）。**先跑 30 分钟探针**（接口能否对齐、哪些域对不上），探针决定是否值得做。**三条铁律**：① 可能会输，输了如实发（"我们在 X 域慢 15%，原因 Y，修复计划 Z"比赢更建立信任）；② 没有对手的能力（Part 4）只列清单，**不宣称胜出**——没得比不叫赢；③ Beckhoff/CODESYS 闭源不可编译对拍，只能做公开规格对照，黑盒对照需 EULA 人工核验（多数商业 EULA 禁止发布 benchmark，**属人专属**） | 2026-07-12 维护者定调"不能盲目号称自己赢了"；对拍报告本身是最强推广内容 |
 | Z0′ | 冷用户测试首轮 | Pages + 三平台 wheel 已具备——干净环境从 README/文档站走到跑通，失败即缺陷登记（流程首次实跑） | Z0 既定流程，触发条件已满足 |
@@ -237,11 +237,12 @@ E2 22:17 → 10:31，Linux 总时长 27:59 → 16:46。`805a363` 随后完成
 WCET 软件度量随后完成 87-opcode 成本表、无分配报告与环境化 Release
 观测；G1 又完成贡献、决策/继任和 ST 安全边界公开。X5 于 2026-07-21
 完成 `Servo` 边界固定 ABI IPC、不可转让 owner、整帧非有限值拒绝、
-Windows/Linux 父子进程与 Linux TSan 本地证据；远端两平台 Nightly 首轮
-要等推送。E5 基准趋势管线的
+Windows/Linux 父子进程与 Linux TSan 本地证据；[Core Nightly](https://github.com/lusipad/plcopen/actions/runs/29873304328)
+又以 9/9 job 全绿完成两平台进程与 TSan 远端复验。E5 基准趋势管线的
 软件实现于 2026-07-21 完成：OTG 完整样本账、ST 混合指令成本、笛卡尔 IK
 与 64 段窗口重规划进入同机 base/head 成对门和 90 天 JSON 历史；本地
-自对拍已通过，尚待推送后的首次 bootstrap 与随后一次真实远端比较闭环。
+自对拍已通过，[主干 Linux CI](https://github.com/lusipad/plcopen/actions/runs/29873287478)
+已完成首次 bootstrap，尚待一次真实远端比较闭环。
 AxisGroup 第 1-5 批 connector、joint look-ahead、Cartesian path/window、
 frame/pose/kinematics 与 MoveDirect lifecycle/path 已于 2026-07-21 全部完成；
 共享调度边界按设计保留。Y7b1 随后关闭 joint-domain circular 接管，Y7b2a

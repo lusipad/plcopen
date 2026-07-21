@@ -54,5 +54,6 @@
   `PASS X5 IPC transport tests`，退出码 0，无 ThreadSanitizer 报告。
 - 静态/资产门：RT scan `29 files`；回放 `18 files / 2409 samples`；
   `mkdocs build --strict`、workflow YAML parse、`git diff --check` 全绿。
-- 本机无 Linux/Clang 或 Windows ClangCL 工具集；Linux 主线已有 GCC/Clang
-  矩阵，连同新增 Windows/Linux Nightly 进程 job 均待推送后形成远端证据。
+- 本地验证后，[Core Nightly](https://github.com/lusipad/plcopen/actions/runs/29873304328)
+  以 9/9 job 全绿完成 Windows/Linux 进程对拍与 Linux TSan 远端复验；合并提交
+  `78d287c` 的 Windows/Linux/Documentation 主线门也全部通过。

@@ -44,11 +44,11 @@ sprint 记录）在 [doc/archive/roadmap-history.md](doc/archive/roadmap-history
 5. **无外部前置的软件队列**：v0.20.0、A2 T30 WCET、G1 治理与 X5
    executor IPC 软件形态均已收口。X5 保留 ADR-0007 进程内承诺环，只在
    `Servo` 边界新增固定 ABI SPSC + 状态双缓冲；Windows/Linux 两进程与
-   Linux TSan 本地通过，两平台 Nightly 首轮待推送。E5 基准趋势管线的软件
-   实现也已完成——四类指标由 Linux/GCC
+   Linux TSan 已在 [Core Nightly](https://github.com/lusipad/plcopen/actions/runs/29873304328)
+   远端复验，整轮 9/9 job 全绿。E5 基准趋势管线的软件实现也已完成——四类指标由 Linux/GCC
    Release 同机 base/head 成对比较，结果保留 90 天且不回灌门禁，CI 只测
-   本仓库、零外部 benchmark 依赖。当前只欠推送后的首次 bootstrap 和随后
-   一次真实 base/head 远端证据，证据闭环前不把 E5 写成完全交付。AxisGroup
+   本仓库、零外部 benchmark 依赖；[主干 Linux CI](https://github.com/lusipad/plcopen/actions/runs/29873287478)
+   已完成首次 `record` bootstrap，当前只欠一次真实 base/head 远端比较，证据闭环前不把 E5 写成完全交付。AxisGroup
    第 1-5 批行为簇拆分已全部完成，`group.h` 7744→4487 行；共享调度边界按设计
    保留，不再作为该架构债挂账。
 6. **F 轨 EtherCAT**：仍是最大的剩余软件块和商用指标 #1/#4 的上游；
@@ -140,7 +140,7 @@ native adapter，feature-set `pending=0`。批次证据与范围外项见
 | G1 | 治理文档批：CONTRIBUTING + GOVERNANCE（决策/继任声明）+ SECURITY.md（含 ST 不可信输入面威胁模型与资源上限声明）；GitHub org 迁移列人专属 | 0.2 L0 | **完成（2026-07-21）**：三份根文档、公开入口和 issue 对齐点同步；bus factor=1、无指定继任者、无 SLA/LTS，私密漏洞报告/org 迁移保留为人侧动作 |
 | A1 | 浮点数值语义合同：编译旗标钉死（FMA 收缩/舍入）+ 跨平台运行值容差/禁止项 + 双平台运行值对照测试 | 0.3 L0 | **完成（2026-07-19，`805a363`）**：严格选项传递到 consumer，Windows/Linux/ARM64 数值测试与三平台 Wheels 通过；[合同](doc/design/core/floating-point-semantics.md) |
 | A2 | T30 WCET 度量工具：每指令成本表 + 静态无环路径长度 + 调用深度上界（compile 产物附带） | 0.2 L0 | **完成（2026-07-20）**：87-opcode 预算/时间分类、无分配机读报告、对象输入 exact-budget 修复与 Release 环境化 `observed_*` 校准；不改变 VM budget，不声称 certified WCET；[合同](doc/compliance/st-wcet-semantics.md) |
-| X5 | executor ↔ fieldbus IPC 软件形态：固定 ABI Servo setpoint/feedback SPSC + 状态双缓冲；默认纯内存门、显式两进程门 | 0.2 L0 | **软件实现完成、远端证据待闭环（2026-07-21）**：owner 映射期不可转让、NaN/Inf 整帧拒绝、Windows/Linux 父子进程与 Linux TSan 本地通过；[合同](doc/compliance/executor-ipc-semantics.md) |
+| X5 | executor ↔ fieldbus IPC 软件形态：固定 ABI Servo setpoint/feedback SPSC + 状态双缓冲；默认纯内存门、显式两进程门 | 0.2 L0 | **完成（2026-07-22）**：owner 映射期不可转让、NaN/Inf 整帧拒绝、Windows/Linux 父子进程与 Linux TSan 本地及 [Core Nightly](https://github.com/lusipad/plcopen/actions/runs/29873304328) 远端均通过；[合同](doc/compliance/executor-ipc-semantics.md) |
 
 **2026-07-12 生态调研追加裁决**：竞品 Intel RTmotion 确认存在（Apache
 2.0、活跃、Part 1/2、零 Part 4）——VISION 竞争表已校准，"生态位无人"
