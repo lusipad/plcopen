@@ -179,6 +179,9 @@ Part 5 已关闭 11/11 标准 FB 与 45 B + 102 E 机读声明。正式 B/E/V �
 | 接下来做什么 | [ROADMAP.md](ROADMAP.md) · [doc/planning/](doc/planning/) |
 | 长期方向与战略 | [VISION.md](VISION.md) · [具身智能战略](doc/planning/embodied-strategy.md) |
 | 怎么构建 | [BUILD_README.md](BUILD_README.md) · [BUILD_LINUX.md](BUILD_LINUX.md) |
+| 怎么贡献 | [CONTRIBUTING.md](CONTRIBUTING.md) |
+| 谁做决策、如何继任 | [GOVERNANCE.md](GOVERNANCE.md) |
+| 如何报告漏洞、ST 信任边界 | [SECURITY.md](SECURITY.md) |
 | 从 v0.x 迁移 | [doc/migration-v0-to-v1.md](doc/migration-v0-to-v1.md) |
 | 生产集成与运维 | [文档站生产指南](docs/index.md) · [运维手册](docs/operations.md) |
 | 版本变化 | [CHANGELOG.md](CHANGELOG.md) |
@@ -190,10 +193,11 @@ Part 5 已关闭 11/11 标准 FB 与 45 B + 102 E 机读声明。正式 B/E/V �
 
 ## 贡献 · 历史 · 许可
 
-- 贡献：bug 修复/测试/文档随时 PR；路线内条目看 [ROADMAP.md](ROADMAP.md)；
-  路线外能力先看 [VISION.md 解锁条件](VISION.md#解锁条件)。问题走
-  [Issues](https://github.com/lusipad/plcopen/issues)，讨论走
+- 贡献：完整流程、门禁和提交格式见 [CONTRIBUTING.md](CONTRIBUTING.md)；
+  问题走 [Issues](https://github.com/lusipad/plcopen/issues)，讨论走
   [Discussions](https://github.com/lusipad/plcopen/discussions)。
+- 治理与安全：决策/继任边界见 [GOVERNANCE.md](GOVERNANCE.md)；敏感漏洞
+  不得公开披露，按 [SECURITY.md](SECURITY.md) 请求私密协调。
 - 历史：fork 自 [i5cnc](https://github.com/i5cnc)（已停维护），保留运动
   控制核心并按 PLCopen 标准重写；出处纪律见 [PROVENANCE.md](PROVENANCE.md)。
 - 许可：[Apache License 2.0](LICENSE)。致谢：IEC 61131-3、PLCopen 组织、
