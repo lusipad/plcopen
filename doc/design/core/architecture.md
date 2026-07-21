@@ -79,9 +79,10 @@
   ≤H 周期内到达 servo 输出。
 - 自 2026-07-11 起为进程内 canonical 落地（X3
   `core/demo/rt_executor_demo.cpp`，ServoSim 闭环，Core Nightly
-  `executor-tsan` 全程零报告）。仍开放：跨进程共享内存 IPC
-  （[ADR-0006](../decisions/0006-fieldbus-process-model.md) 形态的
-  seqlock/双缓冲实现验证）；硬件真值链待 B7。
+  `executor-tsan` 全程零报告）。2026-07-21 的 X5 又在 `Servo` 边界完成
+  [ADR-0006](../decisions/0006-fieldbus-process-model.md) 跨进程软件形态：
+  固定 ABI setpoint/feedback SPSC + 状态双缓冲、Windows/Linux 父子进程
+  对拍和 TSan 契约测试；远端 Nightly 首轮证据待推送，硬件真值链仍待 B7。
 
 ```text
 +--------------------------------------------------+
@@ -218,8 +219,9 @@ Part 5 C5 已完成 11/11 标准门面、45 B + 102 E 机读声明与可软件�
 `axis/group.h` 7744 行、`axis/state.h` 3907 行、`st/sema.h` 3584 行，均应在
 后续变更时控制增量；`otg/time_optimal.h` 1332 行，不为行数主动重构。
 
-**已知边界**：KB-051 的 linear 组级 aborting 接管速度连续性已由 Y7
-修复；circular/笛卡尔接管扩展仍开放（见
+**已知边界**：KB-051/086 的 linear/circular 组级 aborting 接管速度连续性已由
+Y7/Y7b1 修复；KB-087 又关闭 plain Cartesian LINE 来源到 joint LINE/circular 的
+来源侧断崖。Cartesian 目标、Cartesian ARC/chain/window 来源仍开放（见
 [group-takeover-semantics](../../compliance/group-takeover-semantics.md)）。
 完整台账见 [known-boundaries.md](../../compliance/known-boundaries.md)。
 
@@ -233,7 +235,7 @@ Part 5 C5 已完成 11/11 标准门面、45 B + 102 E 机读声明与可软件�
 | L0-L4 零 PLCopen 语义 | L0-L4 与 kin/stream 不得引用 axis/fb/st——通用运动内核可独立复用，`otg/` 可单独发布 | 同上审计（plan/exec 的 include 面仅含 geom/otg/rt） |
 | 周期路径五禁 | 零堆分配、零阻塞锁、无异常、无系统调用、禁浮点时间累加（时间一律整型周期计数） | RT 扫描门禁；纪律细则见 `plcopen-rt-safety` 技能 |
 | 声明变更纪律 | 改变既有周期路径输出必须：KB 登记 + 回放基线重录 + 提交信息注明；未声明变更 = 回放零差异 | 黄金回放门禁（`plcopen_core_replay_regression`）；流程见 `plcopen-replay-baseline` 技能 |
-| 单写者 + 四条 SPSC | 每块状态恰好一个写入上下文；跨域共享 = 恰好四条 SPSC（命令/承诺帧/反馈/快照）；seqlock/双缓冲仅是 ADR-0006 跨进程 IPC 形态的开放项 | [ADR-0007](../decisions/0007-executor-committed-trajectory.md)；Core Nightly `executor-tsan` 全程零报告 |
+| 单写者 + 边界分层 | 进程内规划/RT 共享仍为四条 SPSC（命令/承诺帧/反馈/快照）；X5 只在外层 `Servo` 进程边界使用两条固定 ABI SPSC + 状态双缓冲，owner 映射期不可转让 | [ADR-0007](../decisions/0007-executor-committed-trajectory.md)、[X5 合同](../../compliance/executor-ipc-semantics.md)；纯内存并发测试 + 显式两进程门 |
 
 ---
 
@@ -253,6 +255,7 @@ Part 5 C5 已完成 11/11 标准门面、45 B + 102 E 机读声明与可软件�
 | [ADR-0004](../decisions/0004-servo-adapter-interface.md) | Servo 窄接口 + 桥接 | Accepted，已落地 |
 | [ADR-0005](../decisions/0005-humanoid-multi-chain-model.md) | 人形多链模型（分链前馈，非全身动力学） | Accepted |
 | [ADR-0007](../decisions/0007-executor-committed-trajectory.md) | 承诺轨迹环双域 executor | Accepted；2026-07-11 起进程内 canonical 落地 |
+| [X5 IPC 合同](../../compliance/executor-ipc-semantics.md) | executor ↔ fieldbus 的固定 ABI Servo 传输 | 2026-07-21 软件形态完成；远端 Nightly 待首轮取证 |
 | [architecture-review-2026-07.md](../architecture-review-2026-07.md) | 分层健康体检：include 图 0 违规 + 体量地图 + 测试组织 | 2026-07-12；下次体检触发条件见文内 |
 
 ---
@@ -268,6 +271,5 @@ Part 5 C5 已完成 11/11 标准门面、45 B + 102 E 机读声明与可软件�
 
 ---
 
-*本文档最后更新：2026-07-12（全文重写：定稿三视图收录、st/kin/stream
-名分入图、ADR-0007 双域口径、L6 合规诚实口径；依据 2026-07-12 include
-审计）*
+*本文档最后更新：2026-07-21（X5 executor ↔ fieldbus IPC 软件形态落地；
+分层与 L6 合规诚实口径仍依据 2026-07-12 include 审计）*

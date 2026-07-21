@@ -25,6 +25,8 @@ option(PLCOPEN_BUILD_CORE "Build plcopen rewrite core targets" ON)
 option(PLCOPEN_BUILD_LEGACY "Build legacy v0.x src targets" OFF)
 option(PLCOPEN_BUILD_DOCS "Build plcopen API docs with Doxygen" OFF)
 option(PLCOPEN_BUILD_PYTHON_BINDINGS "Build pybind11-based Python bindings" OFF)
+option(PLCOPEN_ENABLE_PROCESS_INTEGRATION_TESTS
+       "Enable cooperative local tests that create named shared memory and child processes" OFF)
 set(PLCOPEN_DEFAULT_BUILD_TESTS OFF)
 if(PLCOPEN_IS_TOP_LEVEL)
   set(PLCOPEN_DEFAULT_BUILD_TESTS ${BUILD_TESTING})

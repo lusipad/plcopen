@@ -18,6 +18,12 @@ semantics-free by the twin equivalence test (command domain identical cycle
 by cycle). st 语言层（`core/st`）是与 adapters 平行的另一外圈消费面（只
 消费 `fb/basic.h` 与 `rt/error.h`）。
 
+X5 在该稳定 `Servo` 边界补齐 ADR-0006 的 IPC 软件形态：
+`ipc_transport.h` 定义带 magic/version/record-size 的固定宽度 setpoint/
+feedback SPSC 与状态双缓冲，`rt/ipc_channel.h` 提供映射期 owner 不可转让、
+同 token 不可重复 claim、bounded、无 OS 接触的原语。Windows/Linux 命名共享内存只存在于显式
+integration harness；默认 CTest 不创建进程，且该 harness 不构成权限边界。
+
 B5 scope (real-drive context, plcopen-fieldbus repository): object-dictionary
 mode handshakes, bus I/O, DC clock alignment. The interface itself stays
 allocation-free and exception-free; 线程与时钟归宿主执行器所有（ADR-0007），

@@ -47,8 +47,9 @@ RT 线程，等于复制 AxisGroup 职责，双写者风险回潮。
    排除启动竞态假饥饿。
 5. **验证**：CTest 冒烟（交接健康 + 零饥饿 + 命令全消费）+
    Linux TSAN 运行零报告（Core Nightly `executor-tsan` 作业）。
-6. **非目标**：跨进程共享内存 seqlock/双缓冲（ADR-0006 IPC 形态的
-   实现验证）仍开放；本 ADR 只钉进程内三线程 canonical 形态。
+6. **非目标**：本 ADR 只钉进程内三线程 canonical 形态。ADR-0006 的跨进程
+   Servo 边界已由 2026-07-21 的 [X5 合同](../../compliance/executor-ipc-semantics.md)
+   独立落地，不改写本承诺轨迹环。
 
 ## 后果
 
