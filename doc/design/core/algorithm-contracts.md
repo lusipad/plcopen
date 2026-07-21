@@ -66,19 +66,18 @@ quintic Hermite: 当前 (p,v,a) → 瞄准 (p,v,0)，时长 h
 → 落地：T24 **已交付**（KB-064，`core/stream/quintic_fast_path.h`，
 配置开关默认关；[stream-fastpath-design](stream-fastpath-design.md)）。
 
-## 5. aborting 接管（先批 linear 组）
+## 5. aborting 接管（linear + joint-domain circular）
 
 ```text
-t̂ = 新路径切向
-ṡ₀ = ⟨q̇, t̂⟩；a_s0 = ⟨q̈, t̂⟩
-along   = OTG_1D(s=0, v=ṡ₀, a=a_s0 → 新路径目标)     # β·限值
-lateral = OTG_decay(q̇ − ṡ₀·t̂, a_lat → 0,0)          # (1−β)·限值
+s_dot0  = dot(q_dot,q_s) / dot(q_s,q_s)
+s_ddot0 = dot(q_ddot-q_ss*s_dot0^2,q_s) / dot(q_s,q_s)
+along   = OTG_1D(s=0, v=s_dot0, a=s_ddot0 → 新路径目标) # β·限值
+lateral = OTG_decay(q_lat_dot, q_lat_ddot → 0,0)         # (1−β)·限值
 q_out   = path(along.s) + lateral.offset
 断言：每周期全向量 v/a/j ≤ 全额限值
 ```
 
-**circular / 笛卡尔暂不批准**——扩展前置条件是曲率链式项显式进
-矩阵作限值检查：
+Y7b1 circular 已把曲率链式项显式纳入提交期成员轴限值检查：
 
 ```text
 q̇  = q_s·ṡ
@@ -86,7 +85,21 @@ q̈  = q_ss·ṡ² + q_s·s̈
 q⃛  = q_sss·ṡ³ + 3·q_ss·ṡ·s̈ + q_s·s⃛
 ```
 
-→ 落地：Y7 **已交付**（[group-takeover-semantics](../../compliance/group-takeover-semantics.md)，linear 范围已批已实现；circular/笛卡尔扩展开放）。
+有限 linear/circular 段还按周期路径的真实端点钳位输出做位置差分复验；若
+time-optimal 或单 quintic 在标量导数合规时仍越过终点再回拉，改用“精确制动
+至静止 + rest-to-rest quintic”的 endpoint-safe 多段候选，禁止用硬钳位隐藏
+实际 setpoint 的 acceleration/jerk 尖峰。
+circular 及 circular→linear vector connector 的 GroupStop 同步制动沿路与
+逐成员 residual。connector 活跃时 Interrupt/SetOverride fail-closed 为
+`unsupported`，动态 PCS/tracking 不进入该证明域。
+
+→ 落地：Y7 linear 与 Y7b1 joint-domain circular **已交付**
+（[group-takeover-semantics](../../compliance/group-takeover-semantics.md)）；
+Y7b2a 又以统一 odometer 的真实成员输出历史关闭 plain Cartesian LINE 来源到
+joint LINE/circular 的边界，不扩 kinematics ABI，也不把离散状态冒充路径导数。Cartesian
+目标等其余形态仍开放：成员限值、TCP tube 与有界 IK 回放需先裁决；若要求沿
+Cartesian 目标切向直接承接，kinematics/pose kinematics 仍缺跨插件统一的成员轴
+`dq/ds` 至 `d³q/ds³`，不得以 TCP 导数代替。
 
 ## 6. IK（解析优先，DLS 只做兜底）
 
@@ -108,10 +121,11 @@ for k in 0..N_max:
 
 ```text
 Y7 linear 接管 → Y0 oracle → Y2 完整 OTG → Y4 定时同步
+→ Y7b1 circular 接管
 → T24 解析快路径 → Y3 TOPP-RA/jerk-aware → H2 IK v2.1
 ```
 
-落地状态（2026-07-12）：**Y7/Y0/Y2/Y4/T24 已交付**（T24 = KB-064，
+落地状态（2026-07-21）：**Y7/Y7b1/Y0/Y2/Y4/T24 已交付**（T24 = KB-064，
 默认关）；**Y3 影子中**（TOPP 三头已在库，影子 oracle 对照）；
 **H2 待实现**（矩阵 v2.1 已批，`serial_chain` 未动工）。
 
