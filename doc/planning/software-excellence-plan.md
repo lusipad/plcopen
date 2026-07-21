@@ -175,7 +175,7 @@ LD/FBD/SFC 图形画布、HMI、TC6-XML 工程交换、cam 表图形编辑器。
 | # | 批次 | 内容 | 来源/前置 |
 |---|------|------|----------|
 | Y7b | 组接管扩展 | **Y7b1 circular 与 Y7b2a 来源桥接已完成（2026-07-21，KB-086/087）**：plain Cartesian LINE 来源可按真实成员输出历史接到 joint LINE/circular，不需要 Jacobian。**Y7b2b 固定 fraction A 与 B v0 `K=6` 均已 NO-GO**；`K=40` 的候选 replay 项升至 6.67 倍仍有覆盖缺口且无 holdout，只保留“预注册绝对 tube/coverage/WCET → 候选 set-cover/Pareto → analytic holdout”的 planning spike。Cartesian 目标继续 rest-start，未获生产实现授权 | KB-051/086/087；[Y7b1 计划](y7b1-circular-takeover-plan.md)；[Y7b2 计划](y7b2-cartesian-takeover-plan.md) |
-| Y4b | 组同步切换 | Y4 solve_fixed_time 的组级消费：多轴同步切换（T_sync 逐轴定时解）接入组路径执行 | ROADMAP 4c"组同步切换待下批"挂账 |
+| Y4b | 组同步切换 | Y4 solve_fixed_time 的组级消费：向量接管 connector 的多成员 residual 以 `T_sync` 逐轴定时解，同拍汇入既有共享标量路径；不改 MoveDirect 非协调语义与 steady-state 组路径律 | [Y4b 语义矩阵](../compliance/group-synchronized-switch-semantics.md)草案待批；ROADMAP 4c 挂账 |
 | Y3′ | TOPP-RA 影子→换主裁决批 | 影子模式 excess_cycles 数据积累后的主路径采用裁决 + 独立门禁（含回放声明变更评估） | 算法评审终局"先影子后换主"；数据驱动，非日历驱动 |
 | X5 | executor IPC 形态验证 | **完成（2026-07-22）**：保留 ADR-0007 进程内承诺环，在 `Servo` 边界交付固定 ABI setpoint/feedback SPSC + 状态双缓冲；owner 映射期不可转让，默认纯内存门、Windows/Linux 显式进程对拍与 Linux TSan 本地及 [Core Nightly](https://github.com/lusipad/plcopen/actions/runs/29873304328) 远端均通过 | ADR-0006/0007 显式开放项；**F 轨（EtherCAT IPC 形态）的真正软件前置** |
 | E5 | 基准趋势管线（**CI 常驻**） | **完成（2026-07-22）**：基准数字（OTG excess_cycles vs 自有 oracle、ST 每指令成本、cartesian_ik_us、窗口重规划耗时）统一入趋势：历史留存 + report-only 退化比对；远端 bootstrap 与 [真实 base/head 比较](https://github.com/lusipad/plcopen/actions/runs/29874743112/job/88782685662) 均通过。**CI 只测我们自己**——零外部依赖是信任边界（不执行或下载别人的 benchmark） | Y0"基线入趋势"与 ST 5.9"入趋势"的基础设施补课 |

@@ -78,7 +78,7 @@ soak 周期等效）；发布账号前置已完成，tag / Release 待明确授�
 | 2 | 对抗性探测轮 | 组/FB 语义面系统扫描，发现即 KB/修复 | **已交付**（KB-052/053/054） |
 | 3 | Y0 最优性 oracle（评审定序提前：先立标尺再修算法） | 切换结构枚举表（第一交付物）+ 双 oracle + Ruckig 黑盒对照，excess_cycles 分域基线入趋势 | **主 oracle 已交付**：678 结构表 + Newton 打靶 + 4 域基线；副 oracle / Ruckig 对照随 Y2 |
 | 4 | Y2 完整 OTG（评审三关键） | state-to-state 任意目标状态（非零 at）+ 钉边界 + epsilon 政策声明化；Ruckig 黑盒对照 | **软件全交付**（KB-055 非零 at + 12 固定 + 50k fuzz；KB-057 epsilon 政策声明化；Y0 oracle 678 结构表 + 4 域基线）；Ruckig 对照待 ADR-0003 人工审批 |
-| 4c | Y4 solve_fixed_time 一等原语（评审三关键，紧跟 Y2） | 同步 + cycle-exact 量化（删 KB-050 尾段补丁）+ 流追赶汇合同一求解；终态 ≤1e-9（T43） | **求解器 + KB-050 集成 + 流 rendezvous 已交付**（KB-056：8 候选族 + below_tmin multi-cubic；KB-050：匀速骑行/退避梯子删除；KB-035：流跟踪律 solve_fixed_time rendezvous 优先——38/38 pass）；组同步切换待下批 |
+| 4c | Y4 solve_fixed_time 一等原语（评审三关键，紧跟 Y2） | 同步 + cycle-exact 量化（删 KB-050 尾段补丁）+ 流追赶汇合同一求解；终态 ≤1e-9（T43） | **求解器 + KB-050 集成 + 流 rendezvous 已交付**（KB-056：8 候选族 + below_tmin multi-cubic；KB-050：匀速骑行/退避梯子删除；KB-035：流跟踪律 solve_fixed_time rendezvous 优先——38/38 pass）；[Y4b 组同步切换矩阵](doc/compliance/group-synchronized-switch-semantics.md)已起草待批 |
 | 5a | P-Part4 剩余 FB | 管理组矩阵 + 路径表/变换 + P4-B2/P4-B3/C3 已实现 | ✅ Part 4 v2.0 **68/68 同名门面齐全**（KB-078）；旧 Position 回读包装已在 C6 删除，接口/语义边界逐项登记，见 [完整条款审计](doc/compliance/plcopen-part4-clause-audit.md) |
 | 5b | P-Part5 回零规程 | MC_Step* 标准回零步 FB 面（数字输入通道模拟验收） | ✅ **C5 软件合同关闭**（KB-080）：11/11 标准 FB、45 B + 102 E 机读声明及软件语义闭合；硬件/认证边界不冒充 |
 | 4b | **信号通道并行项 + Z 系列全量**（拷问后拉入） | T1 pip wheel + Z3 文档站 + Z2 单位层 + Z4 包管理 + Z5 诊断 | **Z3 文档站已上线**（http://lusipad.com/plcopen/ ，Pages 2026-07-11 启用）；Wheels 三平台远端绿，PyPI publisher 与 GitHub environment 已配置——剩余 tag / Release 待维护者明确授权 |
