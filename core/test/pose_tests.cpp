@@ -313,7 +313,7 @@ int check_rejections()
         // pose plugin (and the 6-axis constraint holds regardless).
         const double scale[3] = {1.0, 1.0, 1.0};
         const double offset[3] = {0.0, 0.0, 0.0};
-        const kin::CartesianGantry gantry(3, scale, offset);
+        static const kin::CartesianGantry gantry(3, scale, offset);
         if(three.set_kinematics(&gantry) != rt::ErrorCode::ok ||
            three.set_pose_kinematics(&arm, 0.0, 3.0) != rt::ErrorCode::invalid_argument) {
             return fail("reject dual plugins");

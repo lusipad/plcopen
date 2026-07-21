@@ -35,10 +35,11 @@ static_assert(std::atomic<std::uint64_t>::is_always_lock_free,
 template <typename T> struct AtomicPayloadTraits
 {
     static_assert(std::is_trivially_copyable_v<T>, "ipc payloads must be trivially copyable");
-    static_assert(sizeof(T) % sizeof(std::uint64_t) == 0,
+    static constexpr std::size_t WordSize = sizeof(std::uint64_t);
+    static_assert(sizeof(T) % WordSize == 0,
                   "ipc payload size must be a multiple of uint64_t");
 
-    static constexpr std::size_t WordCount = sizeof(T) / sizeof(std::uint64_t);
+    static constexpr std::size_t WordCount = sizeof(T) / WordSize;
     using WordArray = std::array<std::uint64_t, WordCount>;
     using AtomicWordArray = std::array<std::atomic<std::uint64_t>, WordCount>;
 };

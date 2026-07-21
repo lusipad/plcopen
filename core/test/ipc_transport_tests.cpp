@@ -126,7 +126,8 @@ int check_servo_wire_roundtrip()
     if(adapters::ipc::decode_setpoints(setpoint_frame, decoded_setpoints, 2, setpoint_tick)) {
         return fail("X5-A02 invalid direction rejected");
     }
-    setpoints[0].torque_direction = static_cast<axis::Direction>(99);
+    setpoints[0].torque_direction =
+        static_cast<axis::Direction>(99); // NOLINT(clang-analyzer-optin.core.EnumCastOutOfRange)
     if(adapters::ipc::encode_setpoints(77, setpoints, 2, setpoint_frame)) {
         return fail("X5-A02 invalid source direction rejected");
     }
