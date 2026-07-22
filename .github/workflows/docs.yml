@@ -53,8 +53,10 @@ jobs:
             -DPLCOPEN_BUILD_TESTS=OFF \
             -DPLCOPEN_BUILD_DOCS=ON
           cmake --build build-docs --target docs
+          mkdir -p docs/api
+          cp -R build-docs/docs/api/html/. docs/api/
+          test -s docs/api/index.html
           mkdocs build --strict
-          cp -R build-docs/docs/api/html site/api
           test -s site/api/index.html
 
   deploy:
