@@ -18,7 +18,7 @@ README、文档站、PyPI 或 GitHub 公开源码/Release 出发；不得把当�
 | 批次 | 提交/公开版本 | 环境与入口 | 结果 | 失败 issue |
 |---|---|---|---|---|
 | Z0′ | `v0.20.0` | Linux CPython 3.13 wheel；Windows CPython 3.14 sdist；公开 Python 指南 | 通过，见 [首轮实施记录](z0-cold-user-test-implementation-notes.md) | — |
-| Z1～Z5 收口 | 本 PR；`pyplcopen==0.20.0` + 合入后的 `main` | `Cold User` workflow：notebook / C++ / ST / 文档站 | 合入后回填 workflow run | 失败时必填 |
+| Z1～Z5 收口 | `a1673d7`；`pyplcopen==0.20.0` + 公开 `main` | `Cold User` workflow：公开 notebook / C++ / ST / 文档站 | [通过（run 29920696958）](https://github.com/lusipad/plcopen/actions/runs/29920696958)，29 秒 | — |
 
 ## 本地预检（不替代公开证据）
 
