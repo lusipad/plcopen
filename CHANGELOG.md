@@ -6,6 +6,13 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- Z0′ 冷用户首轮从公开 README、文档站与 PyPI `v0.20.0` 实跑：
+  Linux CPython 3.13 预编译 wheel、Windows CPython 3.14 sdist 回退
+  与 Python 指南五组示例均在隔离环境通过。安装文档现明确
+  3.14+ 需要本地 C++/CMake 工具链，SI 示例也改为展示 200 mm/s
+  配置值回转，不再读取阻塞移动完成后必然为零的速度；
+  指南中的五个 Python 代码块现由 CTest 直接提取并执行。
+
 - Y4b（KB-088）让 linear/circular vector takeover connector 的所有非零成员
   residual 先取共同 `T_sync=max(T_min[i])`，再以 `solve_fixed_time` 同拍归零；
   共享标量路径、公差管与完整成员 v/a/j 复验保持不变，任一同步解失败仍原子

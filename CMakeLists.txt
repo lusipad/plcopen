@@ -181,6 +181,12 @@ assert len(loaded) == 33
 assert abs(loaded[-1][1] - 0.5) < 1e-9
 ]=])
     add_test(NAME pyplcopen_smoke COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/pyplcopen_smoke_$<CONFIG>.py)
+    add_test(
+      NAME pyplcopen_smoke_docs
+      COMMAND ${Python3_EXECUTABLE}
+              ${CMAKE_CURRENT_SOURCE_DIR}/ci/docs_python_smoke.py
+              ${CMAKE_CURRENT_SOURCE_DIR}/docs/getting-started/python.md
+              $<TARGET_FILE_DIR:pyplcopen>)
   endif()
 endif()
 

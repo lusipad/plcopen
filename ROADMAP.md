@@ -163,7 +163,7 @@ D/H/F 候选优先级。**main 强制门禁（branch protection + required check
 Y7b1 circular 接管（已完成）/ Y7b2a Cartesian LINE 来源桥接（joint LINE/circular，已完成）/
 Y7b2b Cartesian 目标接管（固定 fraction A 与 B v0 `K=6` 已 NO-GO；`K=40` 仅留候选压缩/holdout/WCET planning spike）/ Y4b 组同步切换（已完成）/
 Y3′ 影子换主 / X5 executor IPC 形态（已完成）/
-E5 基准趋势管线 / Z0′ 冷用户首轮 / Z3′ 文档站内容）；语言层批次的可
+E5 基准趋势管线 / Z0′ 冷用户首轮（已完成）/ Z3′ 文档站内容）；语言层批次的可
 执行拆解见 [L 系列工作拆解](doc/planning/l-series-work-breakdown.md)
 （含 pyplcopen ST 暴露、语言层探测轮等并行项）。已完成项与当前缺口
 以本页表格为准。此外：
@@ -198,4 +198,4 @@ VS Code 扩展与 D2 WASM Playground，挂在 L 系列拆解的触发表。）
 
 ---
 
-*最后更新：2026-07-21（Y7b2b K6/K40 与候选压缩裁决同步）*
+*最后更新：2026-07-22（Y4b 与 Z0′ 完成证据同步）*
