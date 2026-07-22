@@ -6,13 +6,25 @@ on:
     paths:
       - 'docs/**'
       - 'mkdocs.yml'
+      - 'README.md'
+      - 'core/**/*.h'
+      - 'cmake/Doxyfile.in'
+      - 'CMakeLists.txt'
+  pull_request:
+    paths:
+      - 'docs/**'
+      - 'mkdocs.yml'
+      - 'README.md'
+      - 'core/**/*.h'
+      - 'cmake/Doxyfile.in'
+      - 'CMakeLists.txt'
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
@@ -26,5 +38,54 @@ jobs:
       - name: Install mkdocs
         run: pip install mkdocs mkdocs-material
 
+      - name: Install Doxygen
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y doxygen graphviz
+
+      - name: Build documentation strictly
+        run: |
+          cmake -S . -B build-docs \
+            -DBUILD_TESTING=OFF \
+            -DPLCOPEN_BUILD_DEMOS=OFF \
+            -DPLCOPEN_BUILD_TESTS=OFF \
+            -DPLCOPEN_BUILD_DOCS=ON
+          cmake --build build-docs --target docs
+          mkdocs build --strict
+          cp -R build-docs/docs/api/html site/api
+          test -s site/api/index.html
+
+  deploy:
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.x'
+
+      - name: Install mkdocs
+        run: pip install mkdocs mkdocs-material
+
+      - name: Install Doxygen
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y doxygen graphviz
+
       - name: Deploy to GitHub Pages
-        run: mkdocs gh-deploy --force
+        run: |
+          cmake -S . -B build-docs \
+            -DBUILD_TESTING=OFF \
+            -DPLCOPEN_BUILD_DEMOS=OFF \
+            -DPLCOPEN_BUILD_TESTS=OFF \
+            -DPLCOPEN_BUILD_DOCS=ON
+          cmake --build build-docs --target docs
+          mkdocs build --strict
+          cp -R build-docs/docs/api/html site/api
+          mkdocs gh-deploy --force --dirty --strict

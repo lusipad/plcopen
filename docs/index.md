@@ -15,9 +15,9 @@ in your controller, or put it under your learning stack.**
 
 | Control Style | What You Get | Entry Point |
 |---|---|---|
-| Python digital twin | `pip install pyplcopen==0.20.0` | [Python guide](getting-started/python.md) |
+| Python digital twin | `pip install pyplcopen==0.20.0` | [Python guide](getting-started/python.md) · [5-minute notebook](notebooks/five-minute-digital-twin.ipynb) |
 | C++ embedded library | `find_package(plcopen)` or `FetchContent` | [C++ guide](getting-started/cpp.md) |
-| IEC 61131-3 ST | `compile()` → bytecode VM → cyclic `scan()` | [core/st/README.md](https://github.com/lusipad/plcopen/blob/main/core/st/README.md) |
+| IEC 61131-3 ST | `compile()` → bytecode VM → cyclic `scan()` | [ST guide](getting-started/st.md) |
 | Algorithm white-box | Compliance matrices, oracles, known boundaries | [Algorithm guide](getting-started/algorithms.md) |
 
 ## Production guides
@@ -26,6 +26,7 @@ in your controller, or put it under your learning stack.**
 - [Real-time integration](guides/realtime-integration.md)
 - [Motion tuning](guides/tuning.md)
 - [TwinCAT / CODESYS migration](guides/twinCAT-codesys-migration.md)
+- [Diagnostics and trace visualization](guides/diagnostics.md)
 - [Operations](operations.md)
 
 Two audiences share one kernel: **industrial controller developers** write

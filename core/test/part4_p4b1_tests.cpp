@@ -1043,6 +1043,158 @@ int check_default_dynamics_and_invalid_limits()
     return 0;
 }
 
+int check_group_si_config_roundtrip_and_atomic_reject()
+{
+    const auto cfg1 = rt::CycleConfig::at_1khz();
+    const auto cfg4 = rt::CycleConfig::at_4khz();
+
+    axis::AxisModel axes_1khz[2];
+    axis::AxisGroup group_1khz;
+    group_1khz.add_axis(axes_1khz[0]);
+    group_1khz.add_axis(axes_1khz[1]);
+
+    axis::GroupSiConfig write_1khz{};
+    write_1khz.cycle = cfg1;
+    write_1khz.count = 2;
+    write_1khz.value[0] = {200.0, 800.0, 900.0, 5000.0, -1.0, 2.0, true, true};
+    write_1khz.value[1] = {240.0, 880.0, 990.0, 6000.0, -2.0, 3.0, true, true};
+    if(group_1khz.write_group_si_config(write_1khz) != rt::ErrorCode::ok) {
+        return fail("group_si: 1kHz write");
+    }
+    const auto read_1khz = group_1khz.group_si_config(cfg1);
+    if(!read_1khz ||
+       std::fabs(read_1khz.value().value[0].max_velocity - 200.0) > 1e-9 ||
+       std::fabs(read_1khz.value().value[1].max_acceleration - 880.0) > 1e-6 ||
+       read_1khz.value().value[1].max_position != 3.0) {
+        return fail("group_si: 1kHz roundtrip");
+    }
+
+    axis::AxisModel axes_4khz[2];
+    axis::AxisGroup group_4khz;
+    group_4khz.add_axis(axes_4khz[0]);
+    group_4khz.add_axis(axes_4khz[1]);
+    axis::GroupSiConfig write_4khz = write_1khz;
+    write_4khz.cycle = cfg4;
+    if(group_4khz.write_group_si_config(write_4khz) != rt::ErrorCode::ok) {
+        return fail("group_si: 4kHz write");
+    }
+    const auto read_4khz = group_4khz.group_si_config(cfg4);
+    if(!read_4khz ||
+       std::fabs(read_4khz.value().value[0].max_velocity -
+                 read_1khz.value().value[0].max_velocity) > 1e-9 ||
+       std::fabs(read_4khz.value().value[1].max_jerk -
+                 read_1khz.value().value[1].max_jerk) > 1e-3) {
+        return fail("group_si: physical equivalence");
+    }
+
+    const axis::GroupSiConfig before = read_1khz.value();
+    axis::GroupSiConfig invalid = before;
+    invalid.cycle = cfg1;
+    invalid.value[1].max_jerk = std::numeric_limits<double>::quiet_NaN();
+    if(group_1khz.write_group_si_config(invalid) != rt::ErrorCode::invalid_argument) {
+        return fail("group_si: reject invalid member");
+    }
+    const auto after_invalid = group_1khz.group_si_config(cfg1);
+    if(!after_invalid ||
+       std::fabs(after_invalid.value().value[0].max_velocity - before.value[0].max_velocity) > 1e-9 ||
+       std::fabs(after_invalid.value().value[1].max_jerk - before.value[1].max_jerk) > 1e-3) {
+        return fail("group_si: invalid write atomic");
+    }
+
+    invalid = before;
+    invalid.cycle = rt::CycleConfig::from_period_ns(0);
+    if(group_1khz.write_group_si_config(invalid) != rt::ErrorCode::invalid_argument) {
+        return fail("group_si: reject zero period");
+    }
+
+    std::printf("  PASS group_si_config_roundtrip_and_atomic_reject\n");
+    return 0;
+}
+
+int check_axis_si_config_roundtrip_and_rejects()
+{
+    const auto cfg1 = rt::CycleConfig::at_1khz();
+    const auto cfg4 = rt::CycleConfig::at_4khz();
+
+    axis::AxisSiConfig si{};
+    si.max_velocity = 300.0;
+    si.max_acceleration = 900.0;
+    si.max_deceleration = 1100.0;
+    si.max_jerk = 7000.0;
+    si.min_position = -4.0;
+    si.max_position = 6.0;
+    si.min_position_enabled = true;
+    si.max_position_enabled = true;
+
+    axis::AxisModel axis_1khz;
+    if(axis_1khz.configure_si(cfg1, si) != rt::ErrorCode::ok) {
+        return fail("axis_si: 1kHz write");
+    }
+    const auto read_1khz = axis_1khz.si_config(cfg1);
+    if(!read_1khz ||
+       std::fabs(read_1khz.value().max_velocity - si.max_velocity) > 1e-9 ||
+       std::fabs(read_1khz.value().max_acceleration - si.max_acceleration) > 1e-6 ||
+       std::fabs(read_1khz.value().max_deceleration - si.max_deceleration) > 1e-6 ||
+       std::fabs(read_1khz.value().max_jerk - si.max_jerk) > 1e-3 ||
+       read_1khz.value().min_position != si.min_position ||
+       read_1khz.value().max_position != si.max_position ||
+       read_1khz.value().min_position_enabled != si.min_position_enabled ||
+       read_1khz.value().max_position_enabled != si.max_position_enabled) {
+        return fail("axis_si: 1kHz roundtrip");
+    }
+
+    axis::AxisModel axis_4khz;
+    if(axis_4khz.configure_si(cfg4, si) != rt::ErrorCode::ok) {
+        return fail("axis_si: 4kHz write");
+    }
+    const axis::MotionLimits &limits_1khz = axis_1khz.motion_limits();
+    const axis::MotionLimits &limits_4khz = axis_4khz.motion_limits();
+    if(std::fabs(cfg1.velocity_to_si(limits_1khz.max_velocity) -
+                 cfg4.velocity_to_si(limits_4khz.max_velocity)) > 1e-9 ||
+       std::fabs(cfg1.acceleration_to_si(limits_1khz.max_acceleration) -
+                 cfg4.acceleration_to_si(limits_4khz.max_acceleration)) > 1e-6 ||
+       std::fabs(cfg1.acceleration_to_si(limits_1khz.max_deceleration) -
+                 cfg4.acceleration_to_si(limits_4khz.max_deceleration)) > 1e-6 ||
+       std::fabs(cfg1.jerk_to_si(limits_1khz.max_jerk) -
+                 cfg4.jerk_to_si(limits_4khz.max_jerk)) > 1e-3) {
+        return fail("axis_si: physical equivalence");
+    }
+
+    axis::AxisSiConfig invalid = si;
+    invalid.max_velocity = std::numeric_limits<double>::quiet_NaN();
+    if(axis_1khz.configure_si(cfg1, invalid) != rt::ErrorCode::invalid_argument) {
+        return fail("axis_si: reject nan");
+    }
+    invalid = si;
+    invalid.max_acceleration = 0.0;
+    if(axis_1khz.configure_si(cfg1, invalid) != rt::ErrorCode::invalid_argument) {
+        return fail("axis_si: reject zero acceleration");
+    }
+    if(axis_1khz.configure_si(rt::CycleConfig::from_period_ns(0), si) !=
+       rt::ErrorCode::invalid_argument) {
+        return fail("axis_si: reject zero period");
+    }
+    invalid = si;
+    invalid.min_position = 8.0;
+    invalid.max_position = 7.0;
+    if(axis_1khz.configure_si(cfg1, invalid) != rt::ErrorCode::invalid_argument) {
+        return fail("axis_si: reject inverted position limits");
+    }
+    const auto invalid_read = axis_1khz.si_config(rt::CycleConfig::from_period_ns(0));
+    if(invalid_read || invalid_read.error() != rt::ErrorCode::invalid_argument) {
+        return fail("axis_si: reject zero-period read");
+    }
+    const auto after_invalid = axis_1khz.si_config(cfg1);
+    if(!after_invalid ||
+       std::fabs(after_invalid.value().max_velocity - si.max_velocity) > 1e-9 ||
+       std::fabs(after_invalid.value().max_acceleration - si.max_acceleration) > 1e-6) {
+        return fail("axis_si: invalid write preserves previous");
+    }
+
+    std::printf("  PASS axis_si_config_roundtrip_and_rejects\n");
+    return 0;
+}
+
 } // namespace
 
 int main()
@@ -1066,6 +1218,8 @@ int main()
     failures += check_group_sw_limits_read_lifecycle();
     failures += check_dynamics_partial_updates_and_capacity();
     failures += check_default_dynamics_and_invalid_limits();
+    failures += check_group_si_config_roundtrip_and_atomic_reject();
+    failures += check_axis_si_config_roundtrip_and_rejects();
     std::printf("---\n%d failures\n", failures);
     return failures;
 }

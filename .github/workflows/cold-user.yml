@@ -1,0 +1,109 @@
+name: Cold User
+
+on:
+  workflow_dispatch:
+    inputs:
+      python-version:
+        description: Published pyplcopen version to install from PyPI
+        required: true
+        default: '0.20.0'
+        type: string
+      source-ref:
+        description: Public Git ref to fetch for the C++ and ST journeys
+        required: true
+        default: main
+        type: string
+      docs-base-url:
+        description: Public documentation site root
+        required: true
+        default: https://lusipad.com/plcopen
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  public-entrypoints:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Set up public wheel interpreter
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+
+      - name: Fetch the public source ref
+        env:
+          SOURCE_REF: ${{ inputs['source-ref'] }}
+        run: |
+          public_source="$RUNNER_TEMP/plcopen-public-source"
+          git init "$public_source"
+          git -C "$public_source" remote add origin https://github.com/lusipad/plcopen.git
+          git -C "$public_source" fetch --depth 1 origin "$SOURCE_REF"
+          git -C "$public_source" -c advice.detachedHead=false checkout --detach FETCH_HEAD
+          echo "PUBLIC_SOURCE=$public_source" >> "$GITHUB_ENV"
+
+      - name: Run the public notebook against the published wheel
+        env:
+          PACKAGE_VERSION: ${{ inputs['python-version'] }}
+          DOCS_BASE_URL: ${{ inputs['docs-base-url'] }}
+        run: |
+          python -m venv "$RUNNER_TEMP/cold-user-venv"
+          source "$RUNNER_TEMP/cold-user-venv/bin/activate"
+          unset PYTHONPATH
+          python -m pip install --disable-pip-version-check --only-binary=:all: \
+            "pyplcopen==$PACKAGE_VERSION"
+          module_dir="$(python -c 'import pathlib, pyplcopen; print(pathlib.Path(pyplcopen.__file__).parent)')"
+          public_notebook="$RUNNER_TEMP/five-minute-digital-twin.ipynb"
+          docs_root="${DOCS_BASE_URL%/}"
+          curl --fail --location --retry 3 \
+            "$docs_root/notebooks/five-minute-digital-twin.ipynb" \
+            --output "$public_notebook"
+          python "$PUBLIC_SOURCE/ci/notebook_smoke.py" \
+            "$public_notebook" \
+            "$module_dir"
+
+      - name: Run the public C++ installed-package journey
+        run: |
+          public_build="$RUNNER_TEMP/plcopen-public-build"
+          public_install="$RUNNER_TEMP/plcopen-public-install"
+          consumer_build="$RUNNER_TEMP/plcopen-public-consumer"
+          cmake -S "$PUBLIC_SOURCE" -B "$public_build" \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DBUILD_TESTING=OFF \
+            -DPLCOPEN_BUILD_DEMOS=OFF \
+            -DPLCOPEN_BUILD_TESTS=OFF
+          cmake --build "$public_build" --parallel
+          cmake --install "$public_build" --prefix "$public_install"
+          cmake -S "$PUBLIC_SOURCE/test_package/find_package" -B "$consumer_build" \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_PREFIX_PATH="$public_install"
+          cmake --build "$consumer_build" --parallel
+          "$consumer_build/plcopen_find_package_smoke"
+
+      - name: Run the public ST journey
+        run: |
+          python "$PUBLIC_SOURCE/ci/docs_st_smoke.py" \
+            "$PUBLIC_SOURCE/docs/getting-started/st.md" \
+            "$PUBLIC_SOURCE" \
+            "$RUNNER_TEMP/plcopen-public-build"
+
+      - name: Verify public documentation entrypoints
+        env:
+          DOCS_BASE_URL: ${{ inputs['docs-base-url'] }}
+        run: |
+          docs_root="${DOCS_BASE_URL%/}"
+          curl --fail --location --retry 3 "$docs_root/" \
+            --output "$RUNNER_TEMP/docs-index.html"
+          curl --fail --location --retry 3 "$docs_root/getting-started/python/" \
+            --output "$RUNNER_TEMP/docs-python.html"
+          curl --fail --location --retry 3 "$docs_root/getting-started/cpp/" \
+            --output "$RUNNER_TEMP/docs-cpp.html"
+          curl --fail --location --retry 3 "$docs_root/getting-started/st/" \
+            --output "$RUNNER_TEMP/docs-st.html"
+          grep -F "getting-started/cpp/" "$RUNNER_TEMP/docs-index.html"
+          grep -F "getting-started/st/" "$RUNNER_TEMP/docs-index.html"
+          grep -F "five-minute-digital-twin.ipynb" "$RUNNER_TEMP/docs-python.html"
+          grep -F "C++ Embedded" "$RUNNER_TEMP/docs-cpp.html"
+          grep -F "IEC 61131-3 ST" "$RUNNER_TEMP/docs-st.html"

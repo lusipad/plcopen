@@ -4,6 +4,7 @@
 #include <new>
 
 #include "rt/cycle.h"
+#include "rt/error_diag.h"
 #include "rt/error.h"
 #include "rt/error_text.h"
 #include "rt/spsc_queue.h"
@@ -36,36 +37,76 @@ int fail(const char *name)
 int check_error_text()
 {
     using plcopen::core::rt::ErrorCode;
+    using plcopen::core::rt::diagnose;
     using plcopen::core::rt::to_string;
 
     struct ErrorTextCase
     {
         ErrorCode code;
         const char *text;
+        const char *name;
+        const char *summary;
+        const char *hint_fragment;
     };
 
     const ErrorTextCase cases[] = {
-        {ErrorCode::ok, "ok"},
+        {ErrorCode::ok, "ok", "ok", "operation completed successfully",
+         "no recovery action"},
         {ErrorCode::invalid_argument,
-         "invalid_argument: a parameter value is out of its valid domain"},
+         "invalid_argument: a parameter value is out of its valid domain",
+         "invalid_argument",
+         "a parameter value is out of its valid domain",
+         "NaN/Inf"},
         {ErrorCode::out_of_range,
-         "out_of_range: a value exceeds an array or container bound"},
+         "out_of_range: a value exceeds an array or container bound",
+         "out_of_range",
+         "a value exceeded a fixed bound or configured motion window",
+         "limits"},
         {ErrorCode::capacity_exceeded,
-         "capacity_exceeded: a fixed-size container is full"},
+         "capacity_exceeded: a fixed-size container is full",
+         "capacity_exceeded",
+         "a fixed-size container or queue is full",
+         "queue to drain"},
         {ErrorCode::infeasible,
-         "infeasible: no solution exists for the given constraints"},
+         "infeasible: no solution exists for the given constraints",
+         "infeasible",
+         "the requested motion or solve has no feasible solution",
+         "relax legal dynamics"},
         {ErrorCode::precondition_failed,
-         "precondition_failed: the object is not in the required state"},
-        {ErrorCode::unsupported, "unsupported: this operation is not implemented"},
+         "precondition_failed: the object is not in the required state",
+         "precondition_failed",
+         "the object is not in the required lifecycle state",
+         "ownership"},
+        {ErrorCode::unsupported, "unsupported: this operation is not implemented",
+         "unsupported", "the requested operation is not implemented",
+         "declared-supported"},
+        {ErrorCode::bytecode_version_mismatch,
+         "bytecode_version_mismatch: recompile the ST source for this runtime",
+         "bytecode_version_mismatch",
+         "the compiled ST bytecode version does not match the runtime",
+         "recompile the ST program"},
     };
 
     for(const ErrorTextCase &test : cases) {
         if(std::strcmp(to_string(test.code), test.text) != 0) {
             return fail("error text mapping");
         }
+        const plcopen::core::rt::ErrorDiagnostic diagnostic = diagnose(test.code);
+        if(std::strcmp(diagnostic.name, test.name) != 0 ||
+           std::strcmp(diagnostic.summary, test.summary) != 0 ||
+           std::strstr(diagnostic.hint, test.hint_fragment) == nullptr) {
+            return fail("error diagnostic mapping");
+        }
     }
     if(std::strcmp(to_string(static_cast<ErrorCode>(999)), "unknown error code") != 0) {
         return fail("unknown error text fallback");
+    }
+    const plcopen::core::rt::ErrorDiagnostic unknown =
+        diagnose(static_cast<ErrorCode>(999));
+    if(unknown.code != static_cast<ErrorCode>(999) ||
+       std::strcmp(unknown.summary, "unknown error code") != 0 ||
+       std::strstr(unknown.hint, "inspect the raw error value") == nullptr) {
+        return fail("unknown error diagnostic fallback");
     }
     return 0;
 }

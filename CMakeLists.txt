@@ -15,6 +15,10 @@ include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 include(CTest)
 
+if(BUILD_TESTING)
+  find_package(Python3 COMPONENTS Interpreter QUIET)
+endif()
+
 set(PLCOPEN_IS_TOP_LEVEL OFF)
 if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
   set(PLCOPEN_IS_TOP_LEVEL ON)
@@ -133,6 +137,26 @@ axis.home_direct(0.25)
 assert abs(axis.home_position() - 0.25) < 1e-12
 assert abs(axis.actual_position() - 0.25) < 1e-12
 
+# Z2 SI configuration objects apply one load-domain conversion and round-trip
+# through the same public boundary.
+cycle = pyplcopen.CycleConfig.at_1khz()
+si = pyplcopen.AxisSiConfig()
+si.max_velocity = 200.0
+si.max_acceleration = 1000.0
+si.max_deceleration = 1000.0
+si.max_jerk = 50000.0
+configured_axis = pyplcopen.AxisSim()
+configured_axis.configure_si(cycle, si)
+si_read = configured_axis.si_config(cycle)
+assert abs(si_read.max_velocity - 200.0) < 1e-9
+assert abs(si_read.max_jerk - 50000.0) < 1e-3
+
+diagnostic = pyplcopen.diagnose(pyplcopen.ErrorCode.INVALID_ARGUMENT)
+assert diagnostic.code == pyplcopen.ErrorCode.INVALID_ARGUMENT
+assert diagnostic.name == "invalid_argument"
+assert "NaN/Inf" in diagnostic.hint
+assert pyplcopen.error_text(pyplcopen.ErrorCode.INVALID_ARGUMENT).startswith("invalid_argument:")
+
 # B9 stream session demo (KB-035): a 100 Hz sine target stream upsampled to
 # the cycle rate; the stream stalls at the end and the filter comes to a
 # jerk-limited controlled stop; a standard exit follows at rest.
@@ -158,6 +182,12 @@ assert axis.status() == pyplcopen.AxisStatus.STANDSTILL
 # Pose surface (KB-042/043/044): TCP pose command over a Cartesian line,
 # then read back in the same frame.
 arm = pyplcopen.PoseArmSim()
+group_si = pyplcopen.GroupSiConfig()
+group_si.cycle = cycle
+for index in range(6):
+    group_si.set_axis(index, si)
+arm.configure_si(group_si)
+assert arm.si_config(cycle).count == 6
 arm.move_joints([0.3, 0.6, 1.0, -0.4, 0.9, 0.2], 0.05, 0.004, 0.004, 0.004)
 arm.move_pose(0.35, 0.15, 0.55, 0.3, -0.5, 1.2, 0.01, 0.002, 0.002, 0.002,
               cartesian=True)
@@ -186,6 +216,12 @@ assert abs(loaded[-1][1] - 0.5) < 1e-9
       COMMAND ${Python3_EXECUTABLE}
               ${CMAKE_CURRENT_SOURCE_DIR}/ci/docs_python_smoke.py
               ${CMAKE_CURRENT_SOURCE_DIR}/docs/getting-started/python.md
+              $<TARGET_FILE_DIR:pyplcopen>)
+    add_test(
+      NAME pyplcopen_smoke_notebook
+      COMMAND ${Python3_EXECUTABLE}
+              ${CMAKE_CURRENT_SOURCE_DIR}/ci/notebook_smoke.py
+              ${CMAKE_CURRENT_SOURCE_DIR}/docs/notebooks/five-minute-digital-twin.ipynb
               $<TARGET_FILE_DIR:pyplcopen>)
   endif()
 endif()

@@ -6,18 +6,9 @@ ALLOW_UNICODE_NAMES    = YES
 OUTPUT_LANGUAGE        = Chinese
 
 INPUT                  = "@CMAKE_CURRENT_SOURCE_DIR@/README.md" \
-                         "@CMAKE_CURRENT_SOURCE_DIR@/src/fb/FunctionBlock.h" \
-                         "@CMAKE_CURRENT_SOURCE_DIR@/src/fb/FbMultiAxis.h" \
-                         "@CMAKE_CURRENT_SOURCE_DIR@/src/fb/FbPLCOpenBase.h" \
-                         "@CMAKE_CURRENT_SOURCE_DIR@/src/fb/FbSingleAxis.h" \
-                         "@CMAKE_CURRENT_SOURCE_DIR@/src/fb/PLCTypes.h" \
-                         "@CMAKE_CURRENT_SOURCE_DIR@/src/motion/AxesGroup.h" \
-                         "@CMAKE_CURRENT_SOURCE_DIR@/src/motion/Global.h" \
-                         "@CMAKE_CURRENT_SOURCE_DIR@/src/motion/Scheduler.h" \
-                         "@CMAKE_CURRENT_SOURCE_DIR@/src/motion/Servo.h" \
-                         "@CMAKE_CURRENT_SOURCE_DIR@/src/motion/interpolation/GroupLinearPlanner.h"
+                         "@CMAKE_CURRENT_SOURCE_DIR@/core"
 FILE_PATTERNS          = *.h *.md
-RECURSIVE              = NO
+RECURSIVE              = YES
 USE_MDFILE_AS_MAINPAGE = "@CMAKE_CURRENT_SOURCE_DIR@/README.md"
 STRIP_FROM_PATH        = "@CMAKE_CURRENT_SOURCE_DIR@"
 

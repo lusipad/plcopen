@@ -124,10 +124,12 @@ python -m pip install pyplcopen==0.20.0
 macOS 预编译 wheel。对当前 `v0.20.0`，Python 3.14 及更新版本会从
 sdist 本地构建，因此需要 C++17 编译器与 CMake ≥ 3.21。
 
-更多用法（单轴/流/位姿/凸轮/SI 单位转换）见
-[Python 上手指南](docs/getting-started/python.md)。ST 语言层用法见
-[core/st/README.md](core/st/README.md)（容错前端、指令预算看门狗、
-跨平台字节码锚点哈希）。
+从零开始的三条主旅程见 [Python 数字孪生](docs/getting-started/python.md)、
+[C++ 嵌入](docs/getting-started/cpp.md) 与
+[ST 直驱 MC](docs/getting-started/st.md)；最快体验可直接打开
+[5 分钟 notebook](docs/notebooks/five-minute-digital-twin.ipynb)。包管理器入口、
+SI 配置与公开/当前源码版本边界均在对应旅程中说明。错误排查与 trace 图表见
+[诊断指南](docs/guides/diagnostics.md)。
 
 ---
 
@@ -188,6 +190,8 @@ Part 5 已关闭 11/11 标准 FB 与 45 B + 102 E 机读声明。正式 B/E/V �
 | 如何报告漏洞、ST 信任边界 | [SECURITY.md](SECURITY.md) |
 | 从 v0.x 迁移 | [doc/migration-v0-to-v1.md](doc/migration-v0-to-v1.md) |
 | 生产集成与运维 | [文档站生产指南](docs/index.md) · [运维手册](docs/operations.md) |
+| 三条入门旅程与 notebook | [Python](docs/getting-started/python.md) · [C++](docs/getting-started/cpp.md) · [ST](docs/getting-started/st.md) · [5 分钟 notebook](docs/notebooks/five-minute-digital-twin.ipynb) |
+| ErrorCode 排障与 trace 图表 | [诊断指南](docs/guides/diagnostics.md) |
 | 版本变化 | [CHANGELOG.md](CHANGELOG.md) |
 | v0.20.0 对使用者意味着什么 | [正式发布记录](docs/releases/v0.20.0.md) |
 | v0.20.0 怎么发布、还缺什么 | [发布检查单](doc/planning/v0.20.0-release-draft.md) |

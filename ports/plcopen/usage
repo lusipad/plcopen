@@ -1,0 +1,4 @@
+plcopen provides a CMake package target:
+
+    find_package(plcopen CONFIG REQUIRED)
+    target_link_libraries(main PRIVATE plcopen::plcopen)
