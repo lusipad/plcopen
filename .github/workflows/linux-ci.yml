@@ -82,6 +82,10 @@ jobs:
           cmake -S test_package/find_package -B build/ci-find -DCMAKE_PREFIX_PATH="$install_prefix"
           cmake --build build/ci-find --parallel
           ./build/ci-find/plcopen_find_package_smoke
+          python ci/docs_st_smoke.py docs/getting-started/st.md "$PWD" "$PWD/build"
+          cmake -S test_package/st_find_package -B build/ci-st-find -DCMAKE_PREFIX_PATH="$install_prefix"
+          cmake --build build/ci-st-find --parallel
+          ./build/ci-st-find/plcopen_st_guide_smoke
 
       - name: Verify FetchContent consumer
         if: matrix.compiler == 'gcc'
@@ -91,6 +95,27 @@ jobs:
           consumer="$(find build/ci-fetch -name 'plcopen_fetchcontent_smoke' -type f -print -quit)"
           test -n "$consumer"
           "$consumer"
+
+      - name: Verify Conan 2 package consumer
+        if: matrix.compiler == 'gcc'
+        run: |
+          python -m pip install "conan>=2,<3"
+          conan profile detect --force
+          conan create . --build=missing -s build_type=Release -s compiler.cppstd=17
+
+      - name: Verify vcpkg overlay port consumer
+        if: matrix.compiler == 'gcc'
+        run: |
+          vcpkg_root="$RUNNER_TEMP/vcpkg"
+          git clone --depth 1 https://github.com/microsoft/vcpkg "$vcpkg_root"
+          "$vcpkg_root/bootstrap-vcpkg.sh" -disableMetrics
+          "$vcpkg_root/vcpkg" install --classic --enforce-port-checks \
+            "--overlay-ports=$PWD/ports" plcopen
+          cmake -S test_package/find_package -B build/ci-vcpkg-find \
+            -DCMAKE_TOOLCHAIN_FILE="$vcpkg_root/scripts/buildsystems/vcpkg.cmake" \
+            -DVCPKG_TARGET_TRIPLET=x64-linux
+          cmake --build build/ci-vcpkg-find --parallel
+          ./build/ci-vcpkg-find/plcopen_find_package_smoke
 
       - name: Build and test Python bindings
         if: matrix.compiler == 'gcc'

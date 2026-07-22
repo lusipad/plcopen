@@ -4,7 +4,18 @@ Build a motion simulation in Python. A matching published wheel requires no
 C++ toolchain; an sdist or source install requires a C++17 compiler and
 CMake >= 3.21.
 
-## Install
+The primary 30-minute path is: install (5 minutes), run the single-axis
+digital twin and SI configuration (10 minutes), then exercise the trajectory
+stream and inspect diagnostics (15 minutes). Pose control and cam generation
+are optional extensions.
+
+Prefer a runnable notebook? Download
+[Five-minute plcopen digital twin](../notebooks/five-minute-digital-twin.ipynb).
+Repository CI executes its code cells without interaction against the build-tree
+module; the post-merge `Cold User` workflow downloads the public notebook and
+repeats the smoke against the published wheel.
+
+## 0–5 minutes: install
 
 Install the published `v0.20.0` package from PyPI:
 
@@ -27,7 +38,7 @@ python -m pip install .
     sdist and therefore needs the source-build toolchain above. For a
     compiler-free install, use CPython 3.10-3.13.
 
-## Single-Axis Motion (5 minutes)
+## 5–10 minutes: single-axis motion
 
 ```python
 import pyplcopen
@@ -53,10 +64,16 @@ Each `move_*` call submits a command and runs cycles until the axis settles.
 The `jerk` parameter (default 1.0) controls the smoothness of the
 acceleration ramp.
 
-## SI Units (CycleConfig)
+## 10–15 minutes: SI configuration
 
 The core uses per-cycle units internally. Use `CycleConfig` to convert
 from human-readable SI values:
+
+!!! note "Current source API"
+    `AxisSiConfig` / `GroupSiConfig` were added after `v0.20.0`. For this
+    subsection, use the current-source install command above until the next
+    maintainer-authorized release. The `CycleConfig` conversions themselves
+    are available in `v0.20.0`.
 
 ```python
 import pyplcopen
@@ -64,7 +81,14 @@ import pyplcopen
 cfg = pyplcopen.CycleConfig.at_1khz()  # 1 ms cycle
 velocity_per_cycle = cfg.velocity_to_cycle(200.0)
 
+limits = pyplcopen.AxisSiConfig()
+limits.max_velocity = 200.0
+limits.max_acceleration = 1000.0
+limits.max_deceleration = 1000.0
+limits.max_jerk = 50000.0
+
 axis = pyplcopen.AxisSim()
+axis.configure_si(cfg, limits)  # load-domain conversion; call before power_on()
 axis.power_on()
 axis.move_absolute(
     100.0,                              # position (same units)
@@ -78,12 +102,15 @@ axis.move_absolute(
 # Verify the configured limit with an SI round trip instead.
 print(f"Position: {axis.command_position()} mm")
 print(f"Configured velocity: {cfg.velocity_to_si(velocity_per_cycle)} mm/s")
+assert abs(axis.si_config(cfg).max_velocity - 200.0) < 1e-9
 ```
 
 Presets: `at_1khz()`, `at_2khz()`, `at_4khz()`, or `from_period_ns()`
-for any cycle rate.
+for any cycle rate. `GroupSiConfig` applies a complete set of member-axis
+limits atomically to an idle group; an invalid member leaves every existing
+limit unchanged.
 
-## Trajectory Stream (10 minutes)
+## 15–25 minutes: trajectory stream
 
 This capability is provided by the `core/stream` support library (B9):
 a jerk-limited online filter that sits beside the layer ladder, depends
@@ -121,7 +148,26 @@ print(f"Mode: {axis.stream_mode()}")  # "stopped"
 axis.stream_disengage()
 ```
 
-## 6-DOF Pose Control (15 minutes)
+## 25–30 minutes: inspect a diagnostic
+
+The current source exposes the same stable error metadata used by the C++
+load-domain API:
+
+```python
+import pyplcopen
+
+diagnostic = pyplcopen.diagnose(pyplcopen.ErrorCode.INVALID_ARGUMENT)
+print(diagnostic.summary)
+print(f"next: {diagnostic.hint}")
+```
+
+!!! note "Current source API"
+    The structured `ErrorCode` / `diagnose()` Python binding was added after
+    `v0.20.0`; install the current source for this subsection until the next
+    maintainer-authorized release. C++ diagnostics and the standalone trace
+    viewer are covered in the [diagnostics guide](../guides/diagnostics.md).
+
+## Optional: 6-DOF pose control
 
 Drive a simulated 6R arm by TCP pose — Cartesian interpolation with
 inverse kinematics per cycle.
@@ -170,6 +216,10 @@ for master, slave in table[:5]:
 
 ## Next Steps
 
+- [5-minute digital twin notebook](../notebooks/five-minute-digital-twin.ipynb) —
+  run the same flow cell-by-cell in Jupyter
 - [C++ embedding guide](cpp.md) — use the library directly in your controller
+- [Diagnostics and trace](../guides/diagnostics.md) — structured hints and a
+  standalone HTML/SVG timeline
 - [Algorithm white-box](algorithms.md) — understand the motion planning internals
 - [Compliance matrices](https://github.com/lusipad/plcopen/tree/main/doc/compliance) — what's implemented vs. the PLCopen standard

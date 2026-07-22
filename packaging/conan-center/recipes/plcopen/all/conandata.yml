@@ -1,0 +1,4 @@
+sources:
+  "0.20.0":
+    url: "https://github.com/lusipad/plcopen/archive/refs/tags/v0.20.0.tar.gz"
+    sha256: "52464d3a4b7bbbb48a905644a467aebcafedf39060e20ddc8219c33e658fb065"

@@ -10,12 +10,14 @@ STO/SS1，也不证明驱动器已经安全。
 
 | `ErrorCode` | 常见原因 | 处置 |
 |-------------|----------|------|
+| `ok` | 调用成功，无恢复动作 | 继续执行下一条命令；无需复位 |
 | `invalid_argument` | 空引用、NaN/Inf、零或负动力学参数、无效组合 | 修正输入；确认 Execute 上升沿只提交一次 |
 | `out_of_range` | 超出固定数组、软限位或表点范围 | 检查维数、目标和固定容量；不要扩大 RT 容器 |
 | `capacity_exceeded` | 队列、窗口或固定表已满 | 降低连续段数/窗口深度，等待已承诺段完成 |
 | `infeasible` | 动力学约束下没有可行 OTG/TOPP 解 | 增加可用周期或放宽合法动力学限值，保留原轨迹 |
 | `precondition_failed` | 轴未上电、组非 standby、所有权/同步状态不满足 | 读取状态快照，按生命周期解除 owner 或先停止 |
 | `unsupported` | 当前矩阵明确未实现，如 CENTER/RADIUS 圆弧、EtherCAT | 不重试同一输入；切换到已声明支持的路径或宿主实现 |
+| `bytecode_version_mismatch` | ST 工件字节码版本与当前运行时不匹配 | 用当前工具链重新编译 ST 程序，或成对升级编译器与运行时 |
 
 ## 典型现象
 
@@ -33,6 +35,18 @@ STO/SS1，也不证明驱动器已经安全。
 每次现场事件至少记录：版本/tag、周期配置、轴/组配置、输入命令、错误码
 文本（`rt::to_string`）、最后 100 个快照、是否触发安全系统，以及回放
 语料 ID。修复后先在 ServoSim 和黄金回放复现，再安排真机验证。
+
+## Trace 可视化
+
+参考 executor 的 `PLCT v1` 二进制 trace 可以直接导出为 CSV 或单文件 HTML：
+
+```bash
+python tools/plcopen_trace.py rt_executor_trace.bin --csv rt_executor_trace.csv --html rt_executor_trace.html
+```
+
+HTML 输出是自包含的 SVG 时序图：每个轴一条 lane，横轴是 tick，绿线是命令位置，
+并附带最终位置、最大速度/加速度和最大单周期位置步长摘要。先用它判断是命令
+序列、动力学约束还是宿主桥接出了问题，再决定是否需要更深的 replay/真机复现。
 
 ## 安全边界
 

@@ -1,128 +1,115 @@
-# C++ Embedded
+# C++ Embedded — 30-minute journey
 
 Use plcopen as a header-only library in your controller project. No runtime
 dependencies, no dynamic linking — just `#include` and go.
+
+In this journey you will install the published `v0.20.0` source package,
+build a two-axis consumer, execute `MC_GroupEnable` and
+`MC_MoveLinearAbsolute`, and inspect the success/error boundary. The exact
+consumer below is compiled and run on Windows and Linux CI.
 
 ## Requirements
 
 - C++17 compiler (GCC 9+, Clang 10+, MSVC 2022+)
 - CMake 3.21+
 
-!!! note "Release candidate"
-    The commands below target `v0.20.0`. The candidate has passed all release
-    gates, but the tag does not exist until the authorized release action is
-    performed. Before then, use a source checkout of the current branch or
-    `main` after the release-documentation PR merges.
+## 0–5 minutes: choose an install path
 
-## Option A: vcpkg (planned)
+`v0.20.0` was published on 2026-07-20. FetchContent is the shortest clean
+start; install + `find_package` is the production-shaped path.
 
-An overlay port (`ports/plcopen/` with a `portfile.cmake`) is not yet
-published — the repository currently only ships a root `vcpkg.json`,
-which is a port-style manifest draft (name / version / `vcpkg-cmake`
-host-tool dependencies), not a usable port. Until the port lands, use
-FetchContent (Option C) or install + `find_package` (Option D).
+=== "FetchContent"
 
-## Option B: Conan
+    ```cmake
+    include(FetchContent)
+    FetchContent_Declare(
+      plcopen
+      GIT_REPOSITORY https://github.com/lusipad/plcopen.git
+      GIT_TAG v0.20.0)
+    FetchContent_MakeAvailable(plcopen)
+    ```
 
-```bash
-conan create /path/to/plcopen
-conan install . --requires=plcopen/0.20.0
-```
+=== "Install + find_package"
 
-## Option C: FetchContent (quickest)
+    ```bash
+    git clone --branch v0.20.0 --depth 1 https://github.com/lusipad/plcopen.git
+    cmake -S plcopen -B plcopen/build -DPLCOPEN_BUILD_TESTS=OFF -DPLCOPEN_BUILD_DEMOS=OFF
+    cmake --build plcopen/build --config Release
+    cmake --install plcopen/build --config Release --prefix /opt/plcopen
+    ```
+
+=== "vcpkg overlay"
+
+    The repository ships a tested overlay port. Until the external curated
+    registry accepts it, point vcpkg at the checked-out port explicitly:
+
+    ```bash
+    git clone https://github.com/lusipad/plcopen.git
+    "$VCPKG_ROOT/vcpkg" install --classic \
+      --overlay-ports="$PWD/plcopen/ports" plcopen
+    ```
+
+=== "Conan 2"
+
+    The repository recipe and its consumer `test_package` are tested together.
+    ConanCenter acceptance is tracked separately from this source recipe:
+
+    ```bash
+    git clone https://github.com/lusipad/plcopen.git
+    conan profile detect --force
+    conan create plcopen --build=missing \
+      -s build_type=Release -s compiler.cppstd=17
+    ```
+
+The current-source recipe and the overlay port are usable now; the separate
+ConanCenter submission asset pins the published `v0.20.0` archive. Neither is
+yet a listing in ConanCenter or the vcpkg curated registry, so those external
+PRs and reviews must not be inferred from a green local consumer test.
+
+## 5–15 minutes: build the canonical consumer
+
+Create a directory containing this `CMakeLists.txt`:
 
 ```cmake
-cmake_minimum_required(VERSION 3.21)
-project(my_controller CXX)
-
-include(FetchContent)
-FetchContent_Declare(
-  plcopen
-  GIT_REPOSITORY https://github.com/lusipad/plcopen.git
-  GIT_TAG v0.20.0)
-FetchContent_MakeAvailable(plcopen)
-
-add_executable(my_controller main.cpp)
-target_link_libraries(my_controller PRIVATE plcopen::plcopen)
+--8<-- "test_package/find_package/CMakeLists.txt"
 ```
 
-## Option D: Install + find_package
+Copy this CI-owned program to `main.cpp`:
+
+```cpp
+--8<-- "test_package/find_package/main.cpp"
+```
+
+Configure, build, and run it. Replace `/opt/plcopen` with your install prefix:
 
 ```bash
-# Build and install plcopen
-git clone https://github.com/lusipad/plcopen.git
-cmake -S plcopen -B plcopen/build
-cmake --install plcopen/build --prefix /opt/plcopen
+cmake -S . -B build -DCMAKE_PREFIX_PATH=/opt/plcopen
+cmake --build build --config Release
+./build/plcopen_find_package_smoke
 ```
 
-```cmake
-cmake_minimum_required(VERSION 3.21)
-project(my_controller CXX)
+On Windows the executable is normally under `build/Release/`. Exit code `0`
+means both axes reached `(3, 4)` without an FB error.
 
-find_package(plcopen CONFIG REQUIRED)
-add_executable(my_controller main.cpp)
-target_link_libraries(my_controller PRIVATE plcopen::plcopen)
-```
+## 15–25 minutes: understand the lifecycle
 
-## Single-Axis Example
+- `AxisModel` objects outlive the non-owning `AxisGroup` membership.
+- `FbGroupEnable` and `FbMoveLinearAbsolute` use an `execute` level/edge and
+  expose `busy`, `done`, `command_aborted`, `error`, and `error_id`.
+- `group.cycle()` advances exactly one deterministic cycle; the example has no
+  wall-clock sleep because the host owns scheduling.
+- Return values and `error_id` are `rt::ErrorCode`; use `rt::to_string()` and
+  the diagnostic hint API before deciding whether to retry.
 
-```cpp
-#include "axis/state.h"
+Dynamics at the low-level API are per cycle. Use `rt::CycleConfig` or the SI
+axis/group configuration objects to convert once at the load boundary; do not
+perform floating-point time accumulation in the cycle loop.
 
-int main()
-{
-    plcopen::core::axis::AxisModel axis;
-    axis.set_power(true);
+## 25–30 minutes: choose the production boundary
 
-    plcopen::core::axis::AxisCommand cmd{};
-    cmd.kind = plcopen::core::axis::CommandKind::move_absolute;
-    cmd.value = 100.0;
-    cmd.velocity = 10.0;
-    cmd.acceleration = 5.0;
-    cmd.deceleration = 5.0;
-    cmd.jerk = 1.0;
-    axis.submit(cmd);
-
-    while (axis.status() != plcopen::core::axis::AxisStatus::standstill) {
-        axis.cycle();
-    }
-    // axis.snapshot().command_position == 100.0
-}
-```
-
-## Group + Linear Motion
-
-```cpp
-#include "axis/state.h"
-#include "axis/group.h"
-
-int main()
-{
-    plcopen::core::axis::AxisModel axes[3];
-    plcopen::core::axis::AxisGroup group;
-
-    for (auto& ax : axes) {
-        ax.set_power(true);
-        group.add_axis(ax);
-    }
-    group.enable();
-
-    plcopen::core::axis::GroupCommand cmd{};
-    cmd.target.size = 3;
-    cmd.target.value[0] = 10.0;
-    cmd.target.value[1] = 20.0;
-    cmd.target.value[2] = 30.0;
-    cmd.velocity = 5.0;
-    cmd.acceleration = 2.0;
-    cmd.deceleration = 2.0;
-    cmd.jerk = 1.0;
-    group.submit_linear(cmd);
-
-    while (group.status() != plcopen::core::axis::GroupStatus::standby) {
-        group.cycle();
-    }
-}
-```
+The teaching loop owns both planning and cycle advancement. Production uses
+the committed-frame executor below, or supplies its own scheduler and
+`Servo` adapter. Keep configuration and diagnostics outside the RT tick.
 
 ## Real-Time Constraints
 
@@ -158,33 +145,11 @@ See `core/demo/rt_executor_demo.cpp` for the reference two-thread executor
 with `ServoSim`, and the
 [runtime diagram](../index.md#runtime-shape-adr-0007) on the home page.
 
-## Embedding the ST Runtime
+## Embedding the ST runtime
 
-The kernel also ships an IEC 61131-3 ST logic-subset runtime you can embed
-next to the motion API. Compilation may allocate (load domain); the cyclic
-`scan()` obeys the same RT rules as the motion cycle path:
-
-```cpp
-#include "st/st.h"
-using namespace plcopen::core;
-
-const st::CompileResult r = st::compile(source); // diagnostics in r.diagnostics
-alignas(8) static unsigned char buffer[65536];   // caller-owned static placement
-st::Instance vm;
-vm.load(r.program, buffer, sizeof(buffer), task_period_ns); // Program must outlive vm
-while (running) {
-    const st::ScanError e = vm.scan(budget_instructions);
-    // faults latch until reset(): division_by_zero / for_step_zero / budget_exceeded
-}
-```
-
-`load()` preconditions: the buffer must be **8-byte aligned** (`alignas(8)`;
-a misaligned buffer is rejected with `invalid_argument`) and at least
-`r.program.required_bytes()` long (`capacity_exceeded` otherwise).
-
-Details: [core/st/README.md](https://github.com/lusipad/plcopen/blob/main/core/st/README.md),
-normative spec:
-[st-l0-semantics.md](https://github.com/lusipad/plcopen/blob/main/doc/compliance/st-l0-semantics.md).
+Continue with the independent [ST direct-motion journey](st.md). Its complete
+host program is compiled and run by CTest; it covers `compile()` → `load()` →
+`bind_axis()` → cyclic `scan()` and `AxisModel::cycle()` without placeholders.
 
 ## Build Options
 
@@ -198,5 +163,6 @@ normative spec:
 ## Next Steps
 
 - [Python simulation guide](python.md) — prototype without a C++ toolchain
+- [ST direct-motion guide](st.md) — execute `MC_Power` and `MC_MoveAbsolute` from ST
 - [Algorithm internals](algorithms.md) — how the motion planner works
 - [BUILD_README.md](https://github.com/lusipad/plcopen/blob/main/BUILD_README.md) — full build reference

@@ -527,11 +527,15 @@ if(PLCOPEN_BUILD_DEMOS)
     add_executable(plcopen_core_group_path_motion demo/group_path_motion.cpp)
     target_link_libraries(plcopen_core_group_path_motion PRIVATE plcopen::plcopen)
 
+    add_executable(plcopen_core_st_motion demo/st_motion.cpp)
+    target_link_libraries(plcopen_core_st_motion PRIVATE plcopen::plcopen)
+
     if(BUILD_TESTING)
         add_test(NAME plcopen_core_basic_fb_cycle_smoke COMMAND plcopen_core_basic_fb_cycle)
         add_test(NAME plcopen_core_group_linear_move_smoke COMMAND plcopen_core_group_linear_move)
         add_test(NAME plcopen_core_trajectory_stream_smoke COMMAND plcopen_core_trajectory_stream)
         add_test(NAME plcopen_core_group_path_motion_smoke COMMAND plcopen_core_group_path_motion)
+        add_test(NAME plcopen_core_st_motion_smoke COMMAND plcopen_core_st_motion)
         add_test(NAME plcopen_core_rt_executor_smoke
                  COMMAND plcopen_core_rt_executor_demo --cycles 2000 --trace
                          ${CMAKE_CURRENT_BINARY_DIR}/rt_executor_trace_smoke.bin)
@@ -539,6 +543,15 @@ if(PLCOPEN_BUILD_DEMOS)
             PASS_REGULAR_EXPRESSION
                 "commands_enqueued=[1-9][0-9]* commands_consumed=[1-9][0-9]* command_queue_full=0 command_rejections=[0-9]+ frames_planned=[1-9][0-9]* frames_consumed=[1-9][0-9]* starvation=0 feedback_bridged=[1-9][0-9]* feedback_queue_full=0 snapshot_published=[1-9][0-9]* snapshot_reads=[1-9][0-9]* snapshot_queue_full=0"
             FAIL_REGULAR_EXPRESSION "EXECUTOR FAIL")
+        if(Python3_Interpreter_FOUND)
+            add_test(
+                NAME plcopen_trace_tool_tests
+                COMMAND ${CMAKE_COMMAND} -E env
+                        PLCOPEN_TRACE_DEMO=$<TARGET_FILE:plcopen_core_rt_executor_demo>
+                        ${Python3_EXECUTABLE} -m unittest tools.test_plcopen_trace -v)
+            set_tests_properties(plcopen_trace_tool_tests PROPERTIES
+                WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+        endif()
     endif()
 endif()
 

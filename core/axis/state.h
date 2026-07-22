@@ -10,6 +10,7 @@
 #include "otg/time_optimal.h"
 #include "rt/error.h"
 #include "rt/static_vector.h"
+#include "rt/units.h"
 #include "stream/filter.h"
 
 namespace plcopen::core::axis
@@ -101,6 +102,18 @@ struct MotionLimits
     double max_acceleration = 1.0;
     double max_deceleration = 1.0;
     double max_jerk = 1.0;
+    double min_position = 0.0;
+    double max_position = 0.0;
+    bool min_position_enabled = false;
+    bool max_position_enabled = false;
+};
+
+struct AxisSiConfig
+{
+    double max_velocity = 0.0;
+    double max_acceleration = 0.0;
+    double max_deceleration = 0.0;
+    double max_jerk = 0.0;
     double min_position = 0.0;
     double max_position = 0.0;
     bool min_position_enabled = false;
@@ -415,6 +428,23 @@ class AxisModel
 
     const MotionLimits &motion_limits() const { return limits_; }
 
+    rt::Result<AxisSiConfig> si_config(const rt::CycleConfig &cycle) const
+    {
+        if(cycle.period_ns() <= 0) {
+            return rt::Result<AxisSiConfig>::failure(rt::ErrorCode::invalid_argument);
+        }
+        AxisSiConfig result{};
+        result.max_velocity = cycle.velocity_to_si(limits_.max_velocity);
+        result.max_acceleration = cycle.acceleration_to_si(limits_.max_acceleration);
+        result.max_deceleration = cycle.acceleration_to_si(limits_.max_deceleration);
+        result.max_jerk = cycle.jerk_to_si(limits_.max_jerk);
+        result.min_position = limits_.min_position;
+        result.max_position = limits_.max_position;
+        result.min_position_enabled = limits_.min_position_enabled;
+        result.max_position_enabled = limits_.max_position_enabled;
+        return rt::Result<AxisSiConfig>::success(result);
+    }
+
     // KB-068: a standby group may claim this member only when every
     // standalone writer (base, sync, stream, and superimposed) is idle.
     bool has_standalone_motion() const
@@ -450,6 +480,13 @@ class AxisModel
         }
         limits_ = limits;
         return rt::ErrorCode::ok;
+    }
+
+    rt::ErrorCode configure_si(const rt::CycleConfig &cycle, const AxisSiConfig &config)
+    {
+        const rt::Result<MotionLimits> limits = si_to_limits(cycle, config, limits_);
+        if(!limits) return limits.error();
+        return configure_limits(limits.value());
     }
 
     rt::ErrorCode set_power(bool enabled, bool enable_positive = true,
@@ -1175,6 +1212,34 @@ class AxisModel
 
   private:
     friend class AxisGroup;
+
+    static rt::Result<MotionLimits> si_to_limits(const rt::CycleConfig &cycle,
+                                                 const AxisSiConfig &config,
+                                                 MotionLimits base)
+    {
+        if(cycle.period_ns() <= 0) {
+            return rt::Result<MotionLimits>::failure(rt::ErrorCode::invalid_argument);
+        }
+        base.max_velocity = cycle.velocity_to_cycle(config.max_velocity);
+        base.max_acceleration = cycle.acceleration_to_cycle(config.max_acceleration);
+        base.max_deceleration = cycle.acceleration_to_cycle(config.max_deceleration);
+        base.max_jerk = cycle.jerk_to_cycle(config.max_jerk);
+        base.min_position = config.min_position;
+        base.max_position = config.max_position;
+        base.min_position_enabled = config.min_position_enabled;
+        base.max_position_enabled = config.max_position_enabled;
+        if(!std::isfinite(base.max_velocity) || !std::isfinite(base.max_acceleration) ||
+           !std::isfinite(base.max_deceleration) || !std::isfinite(base.max_jerk) ||
+           (config.min_position_enabled && !std::isfinite(config.min_position)) ||
+           (config.max_position_enabled && !std::isfinite(config.max_position)) ||
+           (config.min_position_enabled && config.max_position_enabled &&
+            config.min_position > config.max_position) ||
+           base.max_velocity <= 0.0 || base.max_acceleration <= 0.0 ||
+           base.max_deceleration <= 0.0 || base.max_jerk <= 0.0) {
+            return rt::Result<MotionLimits>::failure(rt::ErrorCode::invalid_argument);
+        }
+        return rt::Result<MotionLimits>::success(base);
+    }
 
     rt::ErrorCode set_group_owner(void *owner, const GroupStatus *status = nullptr)
     {

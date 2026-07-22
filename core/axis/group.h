@@ -178,6 +178,13 @@ struct GroupSWLimit
 
 using GroupSWLimits = GroupArray<GroupSWLimit>;
 
+struct GroupSiConfig
+{
+    rt::CycleConfig cycle = rt::CycleConfig::at_1khz();
+    std::array<AxisSiConfig, GroupPosition::MaxAxes> value{};
+    std::size_t count = 0;
+};
+
 enum class GroupCommandState
 {
     accepted,
@@ -1079,6 +1086,24 @@ public:
         return rt::Result<GroupSWLimits>::success(result);
     }
 
+    rt::Result<GroupSiConfig> group_si_config(const rt::CycleConfig &cycle) const
+    {
+        if(cycle.period_ns() <= 0) {
+            return rt::Result<GroupSiConfig>::failure(rt::ErrorCode::invalid_argument);
+        }
+        GroupSiConfig result{};
+        result.cycle = cycle;
+        result.count = axes_.size();
+        for(std::size_t i = 0; i < axes_.size(); ++i) {
+            const rt::Result<AxisSiConfig> axis_config = axes_[i]->si_config(cycle);
+            if(!axis_config) {
+                return rt::Result<GroupSiConfig>::failure(axis_config.error());
+            }
+            result.value[i] = axis_config.value();
+        }
+        return rt::Result<GroupSiConfig>::success(result);
+    }
+
     rt::ErrorCode write_group_sw_limits(const GroupSWLimits &limits)
     {
         if(limits.count != axes_.size()) return rt::ErrorCode::invalid_argument;
@@ -1097,6 +1122,18 @@ public:
             next.min_position_enabled = limits.value[i].minimum_enabled;
             next.max_position_enabled = limits.value[i].maximum_enabled;
             axes_[i]->limits_ = next;
+        }
+        return rt::ErrorCode::ok;
+    }
+
+    rt::ErrorCode write_group_si_config(const GroupSiConfig &config)
+    {
+        if(!configuration_writable()) return rt::ErrorCode::precondition_failed;
+        std::array<MotionLimits, MaxAxes> next_limits{};
+        const rt::ErrorCode valid = validate_group_si_config(config, next_limits);
+        if(valid != rt::ErrorCode::ok) return valid;
+        for(std::size_t i = 0; i < config.count; ++i) {
+            axes_[i]->limits_ = next_limits[i];
         }
         return rt::ErrorCode::ok;
     }
@@ -3048,6 +3085,22 @@ private:
         }
         return rt::ErrorCode::ok;
     }
+
+    rt::ErrorCode validate_group_si_config(const GroupSiConfig &config,
+                                           std::array<MotionLimits, MaxAxes> &next_limits) const
+    {
+        if(config.count != axes_.size() || config.cycle.period_ns() <= 0) {
+            return rt::ErrorCode::invalid_argument;
+        }
+        for(std::size_t i = 0; i < config.count; ++i) {
+            const rt::Result<MotionLimits> next =
+                AxisModel::si_to_limits(config.cycle, config.value[i], axes_[i]->limits_);
+            if(!next) return next.error();
+            next_limits[i] = next.value();
+        }
+        return rt::ErrorCode::ok;
+    }
+
     rt::ErrorCode validate_kinematics(const KinTransformRef &transform,
                                       double min_singularity_margin,
                                       double max_joint_step) const;

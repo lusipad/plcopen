@@ -6,6 +6,21 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- Z1～Z5 软件极致收口：新增可执行的五分钟数字孪生 notebook；为单轴和组提供
+  可回读、校验且组级原子提交的 SI 配置及 Python 绑定；把 Python、C++、ST
+  三条 30 分钟旅程接入同源 CTest，并让文档站同时发布 MkDocs 与 Doxygen API。
+  既有 `ErrorCode` 数值和 `to_string()` 文本保持不变，另增结构化名称、摘要、
+  处置提示及 Python 可发现性；`PLCT v1` trace 工具新增无依赖单文件 HTML/SVG。
+
+- 完成仓库内发行消费者闭环：根 Conan 2 recipe、ConanCenter 提交资产、vcpkg
+  overlay port 均固定 `v0.20.0` 来源并通过真实 `find_package`/ST 消费者预检；
+  Linux CI 运行 Conan 与 `--enforce-port-checks` vcpkg 严格门。中央 registry
+  收录仍由 ConanCenter/vcpkg 外部维护者审批，不在本仓状态中提前声明。
+
+- Z0 持续冷用户门新增手动 workflow：从干净环境强制安装公开 PyPI binary
+  wheel，另行抓取公开 Git ref 构建 C++/ST 消费者，并检查公开 Python、C++、
+  ST 文档入口。PR 模板与登记表要求每个 T/Z 批在合入、工件公开后回填运行证据。
+
 - Z0′ 冷用户首轮从公开 README、文档站与 PyPI `v0.20.0` 实跑：
   Linux CPython 3.13 预编译 wheel、Windows CPython 3.14 sdist 回退
   与 Python 指南五组示例均在隔离环境通过。安装文档现明确

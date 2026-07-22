@@ -65,7 +65,7 @@
 | T1 | pip wheel（原 Z1） | pyplcopen 上 PyPI，cibuildwheel 三平台 |
 | T2 | **MuJoCo 闭环孪生**（2026-07-06 升级） | 策略 → pyplcopen 流滤波 → MuJoCo 执行器（物理域，Menagerie 厂商参数模型用户侧下载不 vendor）→ 反馈回灌 → rerun 可视化；命令域由内核保真、物理域由 MuJoCo 承担、标定域声明真机专属。**独有主张：碰真机前把真实执行层放进仿真回路验证策略**（sim2real 鸿沟的执行层部分由此关闭） |
 | T3 | 单位与配置层（原 Z2） | SI ↔ 每周期换算 + 机构参数配置结构 |
-| Z0 | **冷用户测试（流程）** | 每次 T/Z 批收口后，干净环境模拟新用户从 README 走到跑通，失败即缺陷登记 |
+| Z0 | **冷用户测试（流程）** | 每次 T/Z 批收口后，干净环境模拟新用户从 README 走到跑通，失败即缺陷登记；首轮 Z0′ 已完成，后续由手动 `Cold User` workflow 与登记表持续执行 |
 
 ## Y 系列：算法（核心线）
 
@@ -109,13 +109,13 @@
 
 > Z1/Z3 起步细案见 [signal-channel-plan](signal-channel-plan.md)——拷问后拉进当前里程碑并行项 4b。
 
-| # | 批次 | 内容 |
-|---|------|------|
-| Z1 | **pip wheel** | pyplcopen 上 PyPI（cibuildwheel 三平台）+ "5 分钟数字孪生" notebook——第一个外部用户信号的最短路径 |
-| Z2 | 单位与配置层 | SI ↔ 每周期换算辅助 + 轴/组配置结构（拆掉"每周期单位"这堵新人墙，核心约定不变） |
-| Z3 | 文档站 | 三条用户旅程 ×30 分钟教程、API 参考、算法白皮书（矩阵内容可读化） |
-| Z4 | C++ 包管理 | vcpkg + conan 收录 |
-| Z5 | 诊断体验 | ErrorCode → 文本+排查提示；trace 可视化 |
+| # | 批次 | 内容 | 状态 |
+|---|------|------|------|
+| Z1 | **pip wheel** | pyplcopen 上 PyPI（cibuildwheel 三平台）+ "5 分钟数字孪生" notebook——第一个外部用户信号的最短路径 | **仓库交付完成（2026-07-22）**：`0.20.0` 三平台 wheels/sdist 已发布；notebook 与无 Jupyter smoke 门已接入 |
+| Z2 | 单位与配置层 | SI ↔ 每周期换算辅助 + 轴/组配置结构（拆掉"每周期单位"这堵新人墙，核心约定不变） | **仓库交付完成（2026-07-22）**：`CycleConfig` + `AxisSiConfig`/`GroupSiConfig` 提供 C++/Python 加载域入口，1/4 kHz 等价与原子拒绝有回归测试；新增配置随下个获授权版本发布 |
+| Z3 | 文档站 | 三条用户旅程 ×30 分钟教程、API 参考、算法白皮书（矩阵内容可读化） | **仓库交付完成（2026-07-22）**：Python/C++/ST 三条可执行旅程、Doxygen API 与 strict 文档门；算法白盒保留为参考页 |
+| Z4 | C++ 包管理 | vcpkg + Conan 消费入口；中央 registry 收录由外部审核裁决 | **仓库交付完成（2026-07-22）**：Conan 2 `test_package`、vcpkg overlay port、CI 消费门及中央提交资产齐备；不冒充 ConanCenter/vcpkg 已收录 |
+| Z5 | 诊断体验 | ErrorCode → 文本+排查提示；trace 可视化 | **仓库交付完成（2026-07-22）**：逐码结构化提示与 Python 入口、`PLCT v1` 单文件 HTML/SVG 导出及工具测试 |
 
 **克制条款**：Z 只做无论谁来都需要的门廊；更深的 API 重设计等第一批
 真实用户反馈（与 VISION 解锁纪律同源）。G-code/ST 仍属 Phase D 门控，
@@ -181,7 +181,7 @@ LD/FBD/SFC 图形画布、HMI、TC6-XML 工程交换、cam 表图形编辑器。
 | E5 | 基准趋势管线（**CI 常驻**） | **完成（2026-07-22）**：基准数字（OTG excess_cycles vs 自有 oracle、ST 每指令成本、cartesian_ik_us、窗口重规划耗时）统一入趋势：历史留存 + report-only 退化比对；远端 bootstrap 与 [真实 base/head 比较](https://github.com/lusipad/plcopen/actions/runs/29874743112/job/88782685662) 均通过。**CI 只测我们自己**——零外部依赖是信任边界（不执行或下载别人的 benchmark） | Y0"基线入趋势"与 ST 5.9"入趋势"的基础设施补课 |
 | E6 | 竞品对拍报告（**手动批次，不进 CI**） | 与 Intel RTmotion（Apache 2.0，可编译）黑盒对拍：算法质量（相对自有 oracle 的 excess_cycles 三路对照）/ 性能（规划耗时、内存、体积）/ 语义合规（逐周期 setpoint 对拍）。**先跑 30 分钟探针**（接口能否对齐、哪些域对不上），探针决定是否值得做。**三条铁律**：① 可能会输，输了如实发（"我们在 X 域慢 15%，原因 Y，修复计划 Z"比赢更建立信任）；② 没有对手的能力（Part 4）只列清单，**不宣称胜出**——没得比不叫赢；③ Beckhoff/CODESYS 闭源不可编译对拍，只能做公开规格对照，黑盒对照需 EULA 人工核验（多数商业 EULA 禁止发布 benchmark，**属人专属**） | 2026-07-12 维护者定调"不能盲目号称自己赢了"；对拍报告本身是最强推广内容 |
 | Z0′ | 冷用户测试首轮 | **已完成（2026-07-22）**：只从公开 README/文档站/PyPI 出发，Linux CPython 3.13 binary wheel、Windows CPython 3.14 sdist 回退与 Python 指南五组示例均跑通；修正 3.14 本地编译提示与 SI 示例停稳后零速回读 | [实施记录](z0-cold-user-test-implementation-notes.md) |
-| Z3′ | 文档站内容批 | 三条用户旅程 ×30 分钟教程（原 DoD 未完成，站上线的只是既有 docs）；**含 ST 旅程**（L2a 后"ST 直驱 MC"是首页示例素材） | Z3 DoD 余量 + L 系列联动 |
+| Z3′ | 文档站内容批 | **已完成（2026-07-22）**：Python/C++/ST 三条 30 分钟旅程均由可执行示例支撑，ST 直驱 `MC_Power`/`MC_MoveAbsolute` 已接安装消费者门 | Z3 DoD 余量 + L 系列联动 |
 
 语言层侧的补遗（pyplcopen ST 暴露、语言层对抗探测轮、st 模块入变异
 抽查、覆盖盲区盘点）挂在 [l-series-work-breakdown](l-series-work-breakdown.md)
@@ -220,7 +220,7 @@ LD/FBD/SFC 图形画布、HMI、TC6-XML 工程交换、cam 表图形编辑器。
 | P-Part5 回零 | [part5-homing-semantics.md](../compliance/part5-homing-semantics.md) | **已批准并交付**（25 测试） |
 | P-Part4 管理组 | [part4-management-semantics.md](../compliance/part4-management-semantics.md) | **已批准并交付**（27 测试） |
 | P-Part4 路径表/变换（第二批） | [part4-pathtable-semantics.md](../compliance/part4-pathtable-semantics.md) | **已批准并交付**（24 测试） |
-| Z1/Z3 信号通道细案 | [signal-channel-plan.md](signal-channel-plan.md) | 已拉进当前里程碑并行项 4b |
+| Z1～Z5 信号通道与采纳面 | [signal-channel-plan.md](signal-channel-plan.md) / [收口计划](z-series-completion-plan.md) | **仓库交付完成（2026-07-22）**；Z0 持续执行，Z4 外部收录等待上游审核 |
 | 对抗性探测轮 | `.claude/skills/plcopen-adversarial-probe` | 已固化为技能 |
 | **算法合同集（权威）** | [algorithm-contracts.md](../design/core/algorithm-contracts.md) | **已批准**（2026-07-07 维护者裁决，六合同 + 落地顺序） |
 | Y0 oracle | [otg-oracle-design.md](../design/core/otg-oracle-design.md) | 设计已备（测试层免批） |

@@ -18,6 +18,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
       - name: Run RT-safety static scan
         run: cmake -P cmake/rt_safety_scan.cmake
 
@@ -58,6 +63,22 @@ jobs:
           if ($LASTEXITCODE -ne 0) {
             throw "find_package consumer failed"
           }
+          python ci/docs_st_smoke.py docs/getting-started/st.md $env:GITHUB_WORKSPACE (Join-Path $env:GITHUB_WORKSPACE "build")
+          if ($LASTEXITCODE -ne 0) {
+            throw "ST documentation consumer failed"
+          }
+
+          cmake -S test_package/st_find_package -B build/ci-st-find "-DCMAKE_PREFIX_PATH=$InstallPrefix"
+          cmake --build build/ci-st-find --config Release --parallel -- /p:TrackFileAccess=false /nodeReuse:false
+
+          $StConsumer = Get-ChildItem build/ci-st-find -Recurse -File -Filter plcopen_st_guide_smoke.exe | Select-Object -First 1
+          if (-not $StConsumer) {
+            throw "ST find_package consumer executable was not produced"
+          }
+          & $StConsumer.FullName
+          if ($LASTEXITCODE -ne 0) {
+            throw "ST find_package consumer failed"
+          }
 
       - name: Verify FetchContent consumer with Windows path
         run: |
@@ -72,3 +93,12 @@ jobs:
           if ($LASTEXITCODE -ne 0) {
             throw "FetchContent consumer failed"
           }
+
+      - name: Build and test Python bindings
+        run: |
+          cmake -S . -B build-python `
+            -DPLCOPEN_BUILD_DEMOS=OFF `
+            -DPLCOPEN_BUILD_TESTS=OFF `
+            -DPLCOPEN_BUILD_PYTHON_BINDINGS=ON
+          cmake --build build-python --config Release --parallel -- /p:TrackFileAccess=false /nodeReuse:false
+          ctest --test-dir build-python -C Release -R pyplcopen_smoke --output-on-failure

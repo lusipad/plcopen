@@ -6,6 +6,7 @@
 #include "exec/sync.h"
 #include "geom/frame.h"
 #include "kin/wrist6r.h"
+#include "rt/error_diag.h"
 #include "rt/error_text.h"
 #include "rt/units.h"
 
@@ -141,6 +142,21 @@ public:
             joints[i] = axes_[i].snapshot().command_position;
         }
         return joints;
+    }
+
+    void configure_si(const plcopen::core::axis::GroupSiConfig &config)
+    {
+        throw_on_error("configure_si", group_.write_group_si_config(config));
+    }
+
+    plcopen::core::axis::GroupSiConfig si_config(
+        const plcopen::core::rt::CycleConfig &cycle) const
+    {
+        const auto result = group_.group_si_config(cycle);
+        if(!result) {
+            throw_on_error("si_config", result.error());
+        }
+        return result.value();
     }
 
     std::string status() const
@@ -374,6 +390,22 @@ public:
         return axis_.status();
     }
 
+    void configure_si(const plcopen::core::rt::CycleConfig &cycle,
+                      const plcopen::core::axis::AxisSiConfig &config)
+    {
+        throw_on_error("configure_si", axis_.configure_si(cycle, config));
+    }
+
+    plcopen::core::axis::AxisSiConfig si_config(
+        const plcopen::core::rt::CycleConfig &cycle) const
+    {
+        const auto result = axis_.si_config(cycle);
+        if(!result) {
+            throw_on_error("si_config", result.error());
+        }
+        return result.value();
+    }
+
     // B9 stream session (KB-035): a low-rate joint target stream upsampled
     // to the cycle rate through the online OTG filter. Producers stamp
     // targets in the session cycle domain (stream_now()).
@@ -482,6 +514,77 @@ PYBIND11_MODULE(pyplcopen, module)
 {
     module.doc() = "Minimal Python smoke facade for the plcopen rewrite core";
 
+    py::enum_<plcopen::core::rt::ErrorCode>(module, "ErrorCode")
+        .value("OK", plcopen::core::rt::ErrorCode::ok)
+        .value("INVALID_ARGUMENT", plcopen::core::rt::ErrorCode::invalid_argument)
+        .value("OUT_OF_RANGE", plcopen::core::rt::ErrorCode::out_of_range)
+        .value("CAPACITY_EXCEEDED", plcopen::core::rt::ErrorCode::capacity_exceeded)
+        .value("INFEASIBLE", plcopen::core::rt::ErrorCode::infeasible)
+        .value("PRECONDITION_FAILED", plcopen::core::rt::ErrorCode::precondition_failed)
+        .value("UNSUPPORTED", plcopen::core::rt::ErrorCode::unsupported)
+        .value("BYTECODE_VERSION_MISMATCH",
+               plcopen::core::rt::ErrorCode::bytecode_version_mismatch);
+
+    py::class_<plcopen::core::rt::ErrorDiagnostic>(module, "ErrorDiagnostic")
+        .def_readonly("code", &plcopen::core::rt::ErrorDiagnostic::code)
+        .def_readonly("name", &plcopen::core::rt::ErrorDiagnostic::name)
+        .def_readonly("summary", &plcopen::core::rt::ErrorDiagnostic::summary)
+        .def_readonly("hint", &plcopen::core::rt::ErrorDiagnostic::hint);
+
+    py::class_<plcopen::core::rt::CycleConfig>(module, "CycleConfig",
+        "SI <-> per-cycle unit converter. The core uses per-cycle units "
+        "internally; this helper converts human-readable SI values "
+        "(mm/s, mm/s^2, mm/s^3) to/from per-cycle values.")
+        .def_static("from_period_ns", &plcopen::core::rt::CycleConfig::from_period_ns,
+                    py::arg("period_ns"))
+        .def_static("at_1khz", &plcopen::core::rt::CycleConfig::at_1khz)
+        .def_static("at_2khz", &plcopen::core::rt::CycleConfig::at_2khz)
+        .def_static("at_4khz", &plcopen::core::rt::CycleConfig::at_4khz)
+        .def("period_ns", &plcopen::core::rt::CycleConfig::period_ns)
+        .def("period_seconds", &plcopen::core::rt::CycleConfig::period_seconds)
+        .def("velocity_to_cycle", &plcopen::core::rt::CycleConfig::velocity_to_cycle,
+             py::arg("velocity_per_second"))
+        .def("acceleration_to_cycle", &plcopen::core::rt::CycleConfig::acceleration_to_cycle,
+             py::arg("accel_per_second_sq"))
+        .def("jerk_to_cycle", &plcopen::core::rt::CycleConfig::jerk_to_cycle,
+             py::arg("jerk_per_second_cubed"))
+        .def("velocity_to_si", &plcopen::core::rt::CycleConfig::velocity_to_si,
+             py::arg("velocity_per_cycle"))
+        .def("acceleration_to_si", &plcopen::core::rt::CycleConfig::acceleration_to_si,
+             py::arg("accel_per_cycle_sq"))
+        .def("jerk_to_si", &plcopen::core::rt::CycleConfig::jerk_to_si,
+             py::arg("jerk_per_cycle_cubed"));
+
+    py::class_<plcopen::core::axis::AxisSiConfig>(module, "AxisSiConfig")
+        .def(py::init<>())
+        .def_readwrite("max_velocity", &plcopen::core::axis::AxisSiConfig::max_velocity)
+        .def_readwrite("max_acceleration", &plcopen::core::axis::AxisSiConfig::max_acceleration)
+        .def_readwrite("max_deceleration", &plcopen::core::axis::AxisSiConfig::max_deceleration)
+        .def_readwrite("max_jerk", &plcopen::core::axis::AxisSiConfig::max_jerk)
+        .def_readwrite("min_position", &plcopen::core::axis::AxisSiConfig::min_position)
+        .def_readwrite("max_position", &plcopen::core::axis::AxisSiConfig::max_position)
+        .def_readwrite("min_position_enabled",
+                       &plcopen::core::axis::AxisSiConfig::min_position_enabled)
+        .def_readwrite("max_position_enabled",
+                       &plcopen::core::axis::AxisSiConfig::max_position_enabled);
+
+    py::class_<plcopen::core::axis::GroupSiConfig>(module, "GroupSiConfig")
+        .def(py::init<>())
+        .def_readwrite("cycle", &plcopen::core::axis::GroupSiConfig::cycle)
+        .def_readwrite("count", &plcopen::core::axis::GroupSiConfig::count)
+        .def("set_axis", [](plcopen::core::axis::GroupSiConfig &config,
+                            std::size_t index,
+                            const plcopen::core::axis::AxisSiConfig &axis_config) {
+            if(index >= config.value.size()) throw py::index_error();
+            config.value[index] = axis_config;
+            if(config.count <= index) config.count = index + 1U;
+        }, py::arg("index"), py::arg("config"))
+        .def("axis", [](const plcopen::core::axis::GroupSiConfig &config,
+                        std::size_t index) {
+            if(index >= config.count) throw py::index_error();
+            return config.value[index];
+        }, py::arg("index"));
+
     py::enum_<plcopen::core::axis::AxisStatus>(module, "AxisStatus")
         .value("DISABLED", plcopen::core::axis::AxisStatus::disabled)
         .value("STANDSTILL", plcopen::core::axis::AxisStatus::standstill)
@@ -514,6 +617,9 @@ PYBIND11_MODULE(pyplcopen, module)
         .def("command_velocity", &AxisSim::command_velocity)
         .def("actual_acceleration", &AxisSim::actual_acceleration)
         .def("command_acceleration", &AxisSim::command_acceleration)
+        .def("configure_si", &AxisSim::configure_si, py::arg("cycle"),
+             py::arg("config"))
+        .def("si_config", &AxisSim::si_config, py::arg("cycle"))
         .def("status", &AxisSim::status)
         .def("stream_engage", &AxisSim::stream_engage, py::arg("velocity_limit"),
              py::arg("acceleration_limit"), py::arg("jerk_limit"),
@@ -544,6 +650,8 @@ PYBIND11_MODULE(pyplcopen, module)
         .def("read_pose", &PoseArmSim::read_pose, py::arg("actual") = false,
              py::arg("pcs") = false)
         .def("joint_positions", &PoseArmSim::joint_positions)
+        .def("configure_si", &PoseArmSim::configure_si, py::arg("config"))
+        .def("si_config", &PoseArmSim::si_config, py::arg("cycle"))
         .def("status", &PoseArmSim::status)
         .def("cycle", &PoseArmSim::cycle, py::arg("cycles") = 1);
 
@@ -551,30 +659,8 @@ PYBIND11_MODULE(pyplcopen, module)
                py::arg("master_span"), py::arg("rise"), py::arg("points"));
     module.def("load_cam_table_csv", &load_cam_table_csv, py::arg("path"));
 
-    py::class_<plcopen::core::rt::CycleConfig>(module, "CycleConfig",
-        "SI <-> per-cycle unit converter. The core uses per-cycle units "
-        "internally; this helper converts human-readable SI values "
-        "(mm/s, mm/s^2, mm/s^3) to/from per-cycle values.")
-        .def_static("from_period_ns", &plcopen::core::rt::CycleConfig::from_period_ns,
-                     py::arg("period_ns"))
-        .def_static("at_1khz", &plcopen::core::rt::CycleConfig::at_1khz)
-        .def_static("at_2khz", &plcopen::core::rt::CycleConfig::at_2khz)
-        .def_static("at_4khz", &plcopen::core::rt::CycleConfig::at_4khz)
-        .def("period_ns", &plcopen::core::rt::CycleConfig::period_ns)
-        .def("period_seconds", &plcopen::core::rt::CycleConfig::period_seconds)
-        .def("velocity_to_cycle", &plcopen::core::rt::CycleConfig::velocity_to_cycle,
-             py::arg("velocity_per_second"))
-        .def("acceleration_to_cycle", &plcopen::core::rt::CycleConfig::acceleration_to_cycle,
-             py::arg("accel_per_second_sq"))
-        .def("jerk_to_cycle", &plcopen::core::rt::CycleConfig::jerk_to_cycle,
-             py::arg("jerk_per_second_cubed"))
-        .def("velocity_to_si", &plcopen::core::rt::CycleConfig::velocity_to_si,
-             py::arg("velocity_per_cycle"))
-        .def("acceleration_to_si", &plcopen::core::rt::CycleConfig::acceleration_to_si,
-             py::arg("accel_per_cycle_sq"))
-        .def("jerk_to_si", &plcopen::core::rt::CycleConfig::jerk_to_si,
-             py::arg("jerk_per_cycle_cubed"));
-
     module.def("error_text", &plcopen::core::rt::to_string, py::arg("code"),
                "Human-readable description of an ErrorCode value.");
+    module.def("diagnose", &plcopen::core::rt::diagnose, py::arg("code"),
+               "Return a structured summary and recovery hint for an ErrorCode.");
 }
