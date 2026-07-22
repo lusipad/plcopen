@@ -2048,6 +2048,144 @@ int check_circular_source_takeover()
     return 0;
 }
 
+// Y4b regression: a vector connector with multiple live residual members must
+// collapse those residuals onto the target line on the same cycle instead of
+// letting each member finish independently.
+int check_linear_vector_connector_residuals_finish_same_cycle()
+{
+    Rig3 rig;
+    if(!rig.group.submit_linear(make_cmd3(1.0, 0.0, 0.0)) ||
+       run_to_standstill(rig.group) < 0) {
+        return fail("linear_vector_sync: approach");
+    }
+
+    const double root_half = std::sqrt(0.5);
+    if(!rig.group.submit_circular(make_circular_abort3(
+           root_half, root_half, 0.5, 0.0, 1.0, 1.0,
+           axis::CircPathChoice::counter_clockwise))) {
+        return fail("linear_vector_sync: arc rejected");
+    }
+    for(int i = 0; i < 29; ++i) {
+        rig.group.cycle();
+    }
+    if(rig.group.status() != axis::GroupStatus::moving) {
+        return fail("linear_vector_sync: source not moving");
+    }
+
+    const double live_x = rig.x.snapshot().command_position;
+    const double live_y = rig.y.snapshot().command_position;
+    const double live_z = rig.z.snapshot().command_position;
+    const double target_x = live_x + 1.2;
+    const double target_y = live_y + 0.45;
+    const double target_z = live_z + 1.6;
+
+    axis::GroupCommand successor = make_abort(target_x, target_y);
+    successor.target.size = 3;
+    successor.target.value[2] = target_z;
+    successor.jerk = 1e-5;
+    const rt::Result<std::uint32_t> submitted = rig.group.submit_linear(successor);
+    if(!submitted) {
+        return fail("linear_vector_sync: linear takeover rejected");
+    }
+    if(!rig.group.connector_active()) {
+        return fail("linear_vector_sync: connector missing");
+    }
+    const double tube = rig.group.connector_tube_radius();
+    if(!(tube > 0.0)) {
+        return fail("linear_vector_sync: tube missing");
+    }
+
+    const std::array<double, 3> line_start{live_x, live_y, live_z};
+    const std::array<double, 3> line_delta{
+        target_x - live_x, target_y - live_y, target_z - live_z};
+
+    std::array<int, 3> last_nonzero_tick{-1, -1, -1};
+    std::array<bool, 3> saw_nonzero{false, false, false};
+    double max_radius = 0.0;
+    bool connector_ended = false;
+
+    for(int tick = 1; tick <= 50000; ++tick) {
+        rig.group.cycle();
+        if(rig.group.status() == axis::GroupStatus::standby) {
+            connector_ended = !rig.group.connector_active();
+            break;
+        }
+        const rt::Result<axis::GroupCommandInfo> info =
+            rig.group.command_info(submitted.value());
+        if(!info) {
+            return fail("linear_vector_sync: command info unavailable");
+        }
+        const std::array<double, 3> position{
+            rig.x.snapshot().command_position,
+            rig.y.snapshot().command_position,
+            rig.z.snapshot().command_position,
+        };
+        double radius_sq = 0.0;
+        for(std::size_t axis = 0; axis < position.size(); ++axis) {
+            const double base =
+                line_start[axis] + line_delta[axis] * info.value().progress;
+            const double residual = position[axis] - base;
+            radius_sq += residual * residual;
+            if(std::fabs(residual) > 1e-9) {
+                saw_nonzero[axis] = true;
+                last_nonzero_tick[axis] = tick;
+            }
+        }
+        max_radius = std::max(max_radius, std::sqrt(radius_sq));
+        if(!rig.group.connector_active()) {
+            connector_ended = true;
+        }
+        if(rig.group.status() == axis::GroupStatus::standby) {
+            break;
+        }
+    }
+
+    int nonzero_axes = 0;
+    int first_last_tick = -1;
+    int min_last_tick = 0;
+    int max_last_tick = 0;
+    for(std::size_t axis = 0; axis < saw_nonzero.size(); ++axis) {
+        if(!saw_nonzero[axis]) {
+            continue;
+        }
+        ++nonzero_axes;
+        if(first_last_tick < 0) {
+            first_last_tick = last_nonzero_tick[axis];
+            min_last_tick = last_nonzero_tick[axis];
+            max_last_tick = last_nonzero_tick[axis];
+        } else {
+            min_last_tick = std::min(min_last_tick, last_nonzero_tick[axis]);
+            max_last_tick = std::max(max_last_tick, last_nonzero_tick[axis]);
+        }
+    }
+
+    if(nonzero_axes < 2) {
+        std::printf("  last_ticks=[%d,%d,%d]\n", last_nonzero_tick[0],
+                    last_nonzero_tick[1], last_nonzero_tick[2]);
+        return fail("linear_vector_sync: fixture did not create two residuals");
+    }
+    if(!connector_ended) {
+        return fail("linear_vector_sync: connector did not finish");
+    }
+    if(max_radius > tube * 1.01) {
+        std::printf("  max_radius=%.6e tube=%.6e\n", max_radius, tube);
+        return fail("linear_vector_sync: residual escaped tube");
+    }
+    if(min_last_tick != max_last_tick) {
+        std::printf("  last_ticks=[%d,%d,%d] nonzero_axes=%d\n",
+                    last_nonzero_tick[0], last_nonzero_tick[1],
+                    last_nonzero_tick[2], nonzero_axes);
+        return fail("linear_vector_sync: residuals did not finish same cycle");
+    }
+    if(rig.group.status() != axis::GroupStatus::standby ||
+       !near(rig.x.snapshot().command_position, target_x, 1e-9) ||
+       !near(rig.y.snapshot().command_position, target_y, 1e-9) ||
+       !near(rig.z.snapshot().command_position, target_z, 1e-9)) {
+        return fail("linear_vector_sync: endpoint");
+    }
+    return 0;
+}
+
 // A third member follows the arc fraction linearly and participates in the
 // same residual decomposition and limit budget as the in-plane members.
 int check_circular_higher_axis_takeover()
@@ -2078,11 +2216,17 @@ int check_circular_higher_axis_takeover()
         center_x, center_y + 1.0, target_z,
         axis::CircPathChoice::counter_clockwise);
     command.tolerance = 1e-9;
-    if(!rig.group.submit_circular(command)) {
+    const rt::Result<std::uint32_t> submitted =
+        rig.group.submit_circular(command);
+    if(!submitted) {
         return fail("circular_higher_axis: takeover rejected");
     }
     if(!rig.group.connector_active()) {
         return fail("circular_higher_axis: connector missing");
+    }
+    const double tube = rig.group.connector_tube_radius();
+    if(!(tube > 0.0)) {
+        return fail("circular_higher_axis: tube missing");
     }
     const double z_slope = (target_z - live_z) / (std::acos(-1.0) * 0.5);
     const double expected_path_speed =
@@ -2107,12 +2251,38 @@ int check_circular_higher_axis_takeover()
     bool first = true;
     bool connector_ended = false;
     const double half_pi = std::acos(-1.0) * 0.5;
+    std::array<int, 3> last_nonzero_tick{-1, -1, -1};
+    std::array<bool, 3> saw_nonzero{false, false, false};
+    double max_residual_radius = 0.0;
 
     for(int i = 0; i < 50000; ++i) {
         rig.group.cycle();
         const double x = rig.x.snapshot().command_position;
         const double y = rig.y.snapshot().command_position;
         const double z = rig.z.snapshot().command_position;
+        if(rig.group.status() != axis::GroupStatus::standby) {
+            const rt::Result<axis::GroupCommandInfo> info =
+                rig.group.command_info(submitted.value());
+            if(!info) {
+                return fail("circular_higher_axis: command info unavailable");
+            }
+            const double angle = info.value().progress * half_pi;
+            const std::array<double, 3> residual{
+                x - (center_x + std::cos(angle)),
+                y - (center_y + std::sin(angle)),
+                z - (live_z + (target_z - live_z) * info.value().progress),
+            };
+            double radius_sq = 0.0;
+            for(std::size_t member = 0; member < residual.size(); ++member) {
+                radius_sq += residual[member] * residual[member];
+                if(std::fabs(residual[member]) > 1e-9) {
+                    saw_nonzero[member] = true;
+                    last_nonzero_tick[member] = i + 1;
+                }
+            }
+            max_residual_radius =
+                std::max(max_residual_radius, std::sqrt(radius_sq));
+        }
         const double vx = x - previous_x;
         const double vy = y - previous_y;
         const double vz = z - previous_z;
@@ -2160,6 +2330,33 @@ int check_circular_higher_axis_takeover()
         std::printf("  circular higher-axis post error=%.6e\n",
                     post_connector_z_error);
         return fail("circular_higher_axis: did not merge onto helix");
+    }
+    int nonzero_axes = 0;
+    int min_last_tick = 0;
+    int max_last_tick = 0;
+    for(std::size_t member = 0; member < saw_nonzero.size(); ++member) {
+        if(!saw_nonzero[member]) {
+            continue;
+        }
+        if(nonzero_axes == 0) {
+            min_last_tick = last_nonzero_tick[member];
+            max_last_tick = last_nonzero_tick[member];
+        } else {
+            min_last_tick = std::min(min_last_tick, last_nonzero_tick[member]);
+            max_last_tick = std::max(max_last_tick, last_nonzero_tick[member]);
+        }
+        ++nonzero_axes;
+    }
+    if(nonzero_axes < 2 || min_last_tick != max_last_tick) {
+        std::printf("  circular higher-axis last_ticks=[%d,%d,%d]\n",
+                    last_nonzero_tick[0], last_nonzero_tick[1],
+                    last_nonzero_tick[2]);
+        return fail("circular_higher_axis: residual timing");
+    }
+    if(max_residual_radius > tube * 1.01) {
+        std::printf("  circular higher-axis radius=%.6e tube=%.6e\n",
+                    max_residual_radius, tube);
+        return fail("circular_higher_axis: residual escaped tube");
     }
     if(max_velocity > 0.02 * 1.1 || max_acceleration > 0.002 * 1.5 ||
        max_jerk > 0.002 * 2.0) {
@@ -2395,9 +2592,14 @@ int check_stop_during_linear_vector_connector()
         return fail("linear_vector_stop: connector ended too early");
     }
 
-    if(rig.group.stop(0.0005, 0.0005) != rt::ErrorCode::ok ||
+    const rt::ErrorCode stopped = rig.group.stop(0.0005, 0.0005);
+    if(stopped != rt::ErrorCode::ok ||
        rig.group.status() != axis::GroupStatus::stopping ||
        !rig.group.connector_active()) {
+        std::printf("  linear vector stop error=%d status=%d connector=%d\n",
+                    static_cast<int>(stopped),
+                    static_cast<int>(rig.group.status()),
+                    rig.group.connector_active() ? 1 : 0);
         return fail("linear_vector_stop: stop rejected or residual dropped");
     }
     rig.group.cycle();
@@ -2539,6 +2741,7 @@ int main()
        check_aligned_circular_takeover() != 0 ||
        check_nonaligned_circular_tube() != 0 ||
        check_circular_source_takeover() != 0 ||
+       check_linear_vector_connector_residuals_finish_same_cycle() != 0 ||
        check_circular_higher_axis_takeover() != 0 ||
        check_negative_circular_projection() != 0 ||
        check_reentrant_circular_connector() != 0 ||

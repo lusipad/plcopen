@@ -132,4 +132,6 @@
 
 - `KB-087`：Y7b2a 关闭 plain Cartesian LINE 活动段 aborting 到 plain joint-domain LINE/circular 时的 rest-start 断崖。来源不伪造 Jacobian 或 `dq/ds`，而是一次性捕获统一 path odometer 最近成员 setpoint 的离散 `v/a`，同时作为既有 vector connector 的入口状态与首拍实际输出验证基线；目标仍分别由 Y7 linear 与 Y7b1 circular 的解析路径导数、β 分预算、固定容量 residual 和 `R_tube` 完成规划与复验。translation 与 pose 插件均覆盖，既有 joint linear/circular capture 路径不改，周期域无新增 IK、heap 或非固定迭代。**边界**：只有 plain Cartesian LINE 来源→plain joint LINE/circular 目标消费该 bridge；Cartesian ARC/chain/window、动态 PCS/tracking 与所有 Cartesian 目标仍不消费。Cartesian 目标 residual 方案必须先裁决成员限值来源、TCP tube 度量和最大 IK replay 次数；若要求沿目标切向直接承接，再另立 differential capability 合同。
 
+- `KB-088`：Y4b 关闭 Y7/Y7b 向量 connector 内多成员 residual 各自按最短时长先后归零的节拍缺口。`plan_linear_vector` 与 `plan_circular` 在 submit 域先对每个非零 `{offset=0,v_lat,a_lat}` 求 `T_min[i]`，取整数周期 `T_sync=max(T_min[i])`，再逐成员调用 `solve_fixed_time(..., T_sync)`；零 residual 保持恒零，单 residual 逐位沿用 time-optimal，任一求解或完整成员 v/a/j 复验失败均原子走既有 rest-start，`R_tube` 按同步 profile 重算。周期域仍只做固定容量 `Profile1D` 采样。同步 profile 暴露了 residual 反向加速与沿路制动叠加时的符号预算漏洞，GroupStop 因此把 residual 独立制动的 acceleration/deceleration 上限均收紧为 `min(acceleration,deceleration)`，保持既有独立制动/连续性合同而不新增同步停稳。验收 `plcopen_core_y7_group_takeover_tests` 共 31 个顶层场景，linear 与 circular 均从公开成员输出证明多 residual 同拍汇合、公差管与终点。**边界**：MoveDirect、普通共享标量路径、window/chain、Cartesian target、动态 PCS/tracking 与 GroupStop 同步停稳均不消费 Y4b。
+
 ---

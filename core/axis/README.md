@@ -75,11 +75,14 @@ Responsibilities:
   (KB-068).
 - Own slave-side synchronization (gear/cam/combine): the slave axis samples master snapshots
   read-only in its own `cycle()` and drives itself through `set_synchronized_position`.
-- Y7 aborting-takeover 连接器（`group_takeover_connector.h`，KB-051/052/053，已批 v2.1
+- Y7 aborting-takeover 连接器（`group_takeover_connector.h`，KB-051/052/053/088，
+  已批 Y4b
   矩阵）：从 `AxisGroup` 提取的第一个行为簇（拆分计划见
   [axis-group-split-plan-2026-07-09](../../doc/planning/axis-group-split-plan-2026-07-09.md)），
   持有接管前速度/加速度捕获向量、横向衰减 profile 与容差管半径；规划在
-  submit（规划域），采样每周期 O(1)。
+  submit（规划域），采样每周期 O(1)。linear/circular vector connector 的
+  非零成员 residual 先取共同 `T_sync=max(T_min[i])`，再用 fixed-time profile
+  同拍归零；共享标量路径律与 GroupStop 独立制动语义保持不变。
 
 `AxisGroup` member lifetime:
 

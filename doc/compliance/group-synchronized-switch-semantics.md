@@ -1,7 +1,8 @@
-# 组同步切换语义矩阵（Y4b，草案）
+# 组同步切换语义矩阵（Y4b）
 
-> 状态：**草案，待维护者批准（2026-07-22）**。本矩阵只定义 Y7
-> 向量接管 connector 的多成员残差定时汇合；批准前不得修改实现。
+> 状态：**已实现（2026-07-22，KB-088；范围为 v1 向量 connector
+> residual 定时同步）**。本矩阵只定义 Y7
+> 向量接管 connector 的多成员残差定时汇合。
 > 上位合同为[算法合同 §2](../design/core/algorithm-contracts.md)的
 > `solve_fixed_time` 多轴定时同步，以及
 > [组接管连续性矩阵](group-takeover-semantics.md) v2.4。
@@ -24,7 +25,7 @@ Y4b 不是新的组路径算法，而是 Y7/Y7b 向量 connector 的定时同步
 
 ## 决策点
 
-| # | 决策点 | 草案提案 | 理由 |
+| # | 决策点 | 已批准语义 | 理由 |
 |---|---|---|---|
 | 1 | 同步对象 | 只同步 vector connector 中非零的逐成员 residual profile；共享 along-path profile 保持独立标量路径律 | 同时消费 Y4，又不破坏算法合同 §3 的路径几何 |
 | 2 | 公共时长 | 对每个非零 residual 从实时 `{offset=0, v_lat, a_lat}` 到 `{0,0,0}` 求 `T_min[i]`，取 `T_sync=max(T_min[i])`（整数周期） | 与算法合同 §2 一致；无浮点时钟或半周期差 |
@@ -69,5 +70,5 @@ Y4b 不是新的组路径算法，而是 Y7/Y7b 向量 connector 的定时同步
 
 ---
 
-*草案创建：2026-07-22。批准后才进入 RED → GREEN，实现记录、KB、
-CHANGELOG 与计划状态在同一批次同步。*
+*草案创建并批准：2026-07-22。实现按 RED → GREEN 完成，实现记录、KB、
+CHANGELOG 与计划状态已在同一批次同步。*
