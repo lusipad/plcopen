@@ -204,6 +204,52 @@ private:
         has_velocity_ = true;
     }
 
+    rt::ErrorCode plan_synchronized_residual_profiles(
+        const otg::Limits1D &limits,
+        const std::array<otg::State1D, MaxAxes> &residuals,
+        std::size_t axis_count, double state_threshold,
+        std::array<otg::Profile1D, MaxAxes> &profiles,
+        std::int64_t &duration) const
+    {
+        duration = 0;
+        std::array<bool, MaxAxes> active_residuals{};
+        for(std::size_t i = 0; i < axis_count; ++i) {
+            const otg::State1D residual = residuals[i];
+            if(std::fabs(residual.position) <= state_threshold &&
+               std::fabs(residual.velocity) <= state_threshold &&
+               std::fabs(residual.acceleration) <= state_threshold) {
+                continue;
+            }
+            active_residuals[i] = true;
+            const rt::Result<otg::Profile1D> optimal =
+                otg::plan_time_optimal(residual, {0.0, 0.0, 0.0}, limits);
+            if(!optimal) {
+                return optimal.error();
+            }
+            duration = std::max(duration, optimal.value().duration_cycles());
+        }
+        if(duration == 0) {
+            profiles = {};
+            return rt::ErrorCode::ok;
+        }
+
+        std::array<otg::Profile1D, MaxAxes> planned{};
+        for(std::size_t i = 0; i < axis_count; ++i) {
+            if(!active_residuals[i]) {
+                continue;
+            }
+            const rt::Result<otg::Profile1D> fixed =
+                otg::solve_fixed_time(residuals[i], {0.0, 0.0, 0.0}, limits,
+                                      duration);
+            if(!fixed) {
+                return fixed.error();
+            }
+            planned[i] = fixed.value();
+        }
+        profiles = planned;
+        return rt::ErrorCode::ok;
+    }
+
 public:
 
     // Y7 connector planner: decomposes the takeover velocity into along-path
@@ -463,26 +509,25 @@ public:
             (1.0 - kBeta) * limits.max_deceleration,
             (1.0 - kBeta) * limits.max_jerk,
         };
+        std::array<otg::State1D, MaxAxes> residuals{};
         for(std::size_t i = 0; i < axis_count; ++i) {
-            const otg::State1D residual{
+            residuals[i] = {
                 0.0,
                 velocity_[i] - q_s[i] * s_dot_0,
                 acceleration_[i] - q_s[i] * a_s0,
             };
-            if(std::fabs(residual.velocity) <= kStateThreshold &&
-               std::fabs(residual.acceleration) <= kStateThreshold) {
-                continue;
-            }
-            const rt::Result<otg::Profile1D> lateral =
-                otg::plan_time_optimal(
-                    residual, {0.0, 0.0, 0.0}, lateral_limits);
-            if(!lateral) {
-                vector_mode_ = false;
-                return lateral.error();
-            }
-            lateral_profiles_[i] = lateral.value();
-            duration_ = std::max(duration_, lateral.value().duration_cycles());
         }
+        std::array<otg::Profile1D, MaxAxes> planned_lateral{};
+        std::int64_t planned_duration = 0;
+        const rt::ErrorCode lateral_error = plan_synchronized_residual_profiles(
+            lateral_limits, residuals, axis_count, kStateThreshold,
+            planned_lateral, planned_duration);
+        if(lateral_error != rt::ErrorCode::ok) {
+            vector_mode_ = false;
+            return lateral_error;
+        }
+        lateral_profiles_ = planned_lateral;
+        duration_ = planned_duration;
         active_duration = std::max(active_duration, duration_);
         if(!validate_linear_profiles(limits, path_length, q_s, axis_count,
                                      active_profile, lateral_profiles_,
@@ -634,27 +679,27 @@ public:
             (1.0 - kBeta) * limits.max_deceleration,
             (1.0 - kBeta) * limits.max_jerk,
         };
+        std::array<otg::State1D, MaxAxes> residuals{};
         for(std::size_t i = 0; i < axis_count; ++i) {
             const double base_acceleration =
                 q_ss[i] * s_dot_0 * s_dot_0 + q_s[i] * a_s0;
-            const double lateral_velocity = velocity_[i] - q_s[i] * s_dot_0;
-            const double lateral_acceleration =
-                acceleration_[i] - base_acceleration;
-            if(std::fabs(lateral_velocity) <= kStateThreshold &&
-               std::fabs(lateral_acceleration) <= kStateThreshold) {
-                continue;
-            }
-            const rt::Result<otg::Profile1D> lateral =
-                otg::plan_time_optimal(
-                    {0.0, lateral_velocity, lateral_acceleration},
-                    {0.0, 0.0, 0.0}, lateral_limits);
-            if(!lateral) {
-                vector_mode_ = false;
-                return lateral.error();
-            }
-            lateral_profiles_[i] = lateral.value();
-            duration_ = std::max(duration_, lateral.value().duration_cycles());
+            residuals[i] = {
+                0.0,
+                velocity_[i] - q_s[i] * s_dot_0,
+                acceleration_[i] - base_acceleration,
+            };
         }
+        std::array<otg::Profile1D, MaxAxes> planned_lateral{};
+        std::int64_t planned_duration = 0;
+        const rt::ErrorCode lateral_error = plan_synchronized_residual_profiles(
+            lateral_limits, residuals, axis_count, kStateThreshold,
+            planned_lateral, planned_duration);
+        if(lateral_error != rt::ErrorCode::ok) {
+            vector_mode_ = false;
+            return lateral_error;
+        }
+        lateral_profiles_ = planned_lateral;
+        duration_ = planned_duration;
         active_duration = std::max(active_duration, duration_);
 
         if(!validate_circular_profiles(limits, path_length, axis_count,
@@ -787,10 +832,16 @@ public:
             return reduced;
         }
 
+        // A residual can reverse while the composed member velocity still
+        // brakes. Use the stricter signed bound so the independent residual
+        // stop cannot exceed either requested member acceleration envelope.
+        const double lateral_acceleration_limit =
+            (1.0 - kBeta) *
+            std::min(limits.max_acceleration, limits.max_deceleration);
         const otg::Limits1D lateral_limits{
             (1.0 - kBeta) * limits.max_velocity,
-            (1.0 - kBeta) * limits.max_acceleration,
-            (1.0 - kBeta) * limits.max_deceleration,
+            lateral_acceleration_limit,
+            lateral_acceleration_limit,
             (1.0 - kBeta) * limits.max_jerk,
         };
         std::array<otg::Profile1D, MaxAxes> stopped_lateral{};

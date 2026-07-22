@@ -6,6 +6,12 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- Y4b（KB-088）让 linear/circular vector takeover connector 的所有非零成员
+  residual 先取共同 `T_sync=max(T_min[i])`，再以 `solve_fixed_time` 同拍归零；
+  共享标量路径、公差管与完整成员 v/a/j 复验保持不变，任一同步解失败仍原子
+  回退 rest-start。GroupStop 不新增同步停稳语义；其 residual 独立制动预算同时
+  收紧为符号对称上限，避免残差反向加速与沿路制动叠加后越过成员减速度包络。
+
 - Y7b2a（KB-087）允许 plain Cartesian LINE 活动段以统一 odometer 的真实成员输出
   历史接入 plain joint-domain LINE/circular 目标的既有公差管 connector；来源侧
   不再因缺 Jacobian 从静止重启。translation/pose、横向/同向/反向投影、圆弧 tube

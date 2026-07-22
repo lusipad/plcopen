@@ -3,7 +3,7 @@
 > 本页是"现在在哪"的唯一入口，每个批次收口时更新。术语见
 > [CONTEXT.md](CONTEXT.md)；边界细节见
 > [已知边界注册表](doc/compliance/known-boundaries.md)。
-> 最后更新：**2026-07-21**。
+> 最后更新：**2026-07-22**。
 
 ## 一句话
 
@@ -69,7 +69,7 @@ sink 门面，生产层无反向引用）。分层健康度见
 
 ## 质量门禁现状
 
-- 测试：当前 Windows Debug 配置登记 93 项 CTest，其中日常门运行 82 项非 fuzz 测试；2026-07-21 本地全量 93/93（含 11 fuzz）通过。X5 [executor IPC 合同](doc/compliance/executor-ipc-semantics.md)的 Windows 显式进程门 2/2、Linux/GCC 2/2 与 Linux TSan 纯内存并发门均通过；默认配置确认不注册进程测试，[Core Nightly](https://github.com/lusipad/plcopen/actions/runs/29873304328) 又完成 Windows/Linux 两进程与 Linux TSan 远端复验，整轮 9/9 job 全绿。A2 [WCET 软件度量合同](doc/compliance/st-wcet-semantics.md)新增 87-opcode 成本/时间分类、无分配机读报告与 Release 环境化观测，且不形成 certified WCET 声明。E5 [基准趋势管线](doc/design/benchmark-trend-pipeline.md)已完成四类机读指标、严格零依赖比较器和 Linux 同机 base/head report-only 比较；Linux 自对拍 9/9 对 PASS，[主干 Linux CI](https://github.com/lusipad/plcopen/actions/runs/29873287478) 首次 `record` bootstrap 成功，[PR #9 真实比较](https://github.com/lusipad/plcopen/actions/runs/29874743112/job/88782685662) artifact 确认 `mode=compare`、`verdict=pass`、base=`78d287c`。2026-07-19 候选 Coverage Gate 实测全 `core/` line **95.5%（43925/45983）**、固定生产运动栈 branch **85.0%（9184/10811）**、`core/st` branch **85.1%（14187/16663）**，均达到硬门。A1 [浮点数值语义合同](doc/design/core/floating-point-semantics.md)已在 Windows、Linux GCC/Clang 与 ARM64/QEMU 复验。P#2 聚合门实测 Bezier 稳速波动 0.0775%、圆弧约 7.6e-12%、cam 相位 0 拍、blending 公差利用率 100%。P#7 五页指南与运维手册已接入文档站，`mkdocs build --strict` 通过。精度总账见[商用证据](doc/compliance/commercial-gate-evidence.md)，覆盖口径见[分支覆盖基线](doc/compliance/branch-coverage-baseline.md)
+- 测试：当前 Windows Debug 配置登记 93 项 CTest，其中日常门运行 82 项非 fuzz 测试；2026-07-22 本地全量 93/93（含 11 fuzz）通过，Y4b 的 Y7 定向门含 31 个顶层场景。X5 [executor IPC 合同](doc/compliance/executor-ipc-semantics.md)的 Windows 显式进程门 2/2、Linux/GCC 2/2 与 Linux TSan 纯内存并发门均通过；默认配置确认不注册进程测试，[Core Nightly](https://github.com/lusipad/plcopen/actions/runs/29873304328) 又完成 Windows/Linux 两进程与 Linux TSan 远端复验，整轮 9/9 job 全绿。A2 [WCET 软件度量合同](doc/compliance/st-wcet-semantics.md)新增 87-opcode 成本/时间分类、无分配机读报告与 Release 环境化观测，且不形成 certified WCET 声明。E5 [基准趋势管线](doc/design/benchmark-trend-pipeline.md)已完成四类机读指标、严格零依赖比较器和 Linux 同机 base/head report-only 比较；Linux 自对拍 9/9 对 PASS，[主干 Linux CI](https://github.com/lusipad/plcopen/actions/runs/29873287478) 首次 `record` bootstrap 成功，[PR #9 真实比较](https://github.com/lusipad/plcopen/actions/runs/29874743112/job/88782685662) artifact 确认 `mode=compare`、`verdict=pass`、base=`78d287c`。2026-07-19 候选 Coverage Gate 实测全 `core/` line **95.5%（43925/45983）**、固定生产运动栈 branch **85.0%（9184/10811）**、`core/st` branch **85.1%（14187/16663）**，均达到硬门。A1 [浮点数值语义合同](doc/design/core/floating-point-semantics.md)已在 Windows、Linux GCC/Clang 与 ARM64/QEMU 复验。P#2 聚合门实测 Bezier 稳速波动 0.0775%、圆弧约 7.6e-12%、cam 相位 0 拍、blending 公差利用率 100%。P#7 五页指南与运维手册已接入文档站，`mkdocs build --strict` 通过。精度总账见[商用证据](doc/compliance/commercial-gate-evidence.md)，覆盖口径见[分支覆盖基线](doc/compliance/branch-coverage-baseline.md)
 - 回放：18 语料逐周期比对；声明变更零例外流程运行中
 - 分层：2026-07-12 include 图审计 **0 违规**（L0-L4 零 PLCopen 语义引用、无循环依赖、L4 不引 L3），见 [架构审查报告](doc/design/architecture-review-2026-07.md)
 - RT：静态扫描 29 文件（含 st vm/bind、Feetech adapter 与 X5 OS-free IPC 原语）+ 冻结窗口分配断言；DoD §5.3 的周期耗时对比通过（新核 = 旧线 9.3%）；分配 soak 以周期等效口径关闭（25.92 亿周期零分配，2026-07-11），墙钟 72h/抖动证据归 B7 真机报告
@@ -85,7 +85,7 @@ sink 门面，生产层无反向引用）。分层健康度见
 | 旧 `src/` v0.11 线 EOL 窗口 | v1.0.0-alpha 实验预览已发布（2026-07-06）；旧 `src/` 线 90 天 P0-only 窗口至 2026-10-04，不影响新核采用 v0.20.0 版本号 |
 | 硬件阶段（B5 真栈/B6 台架/B7 RT 报告） | 等台架或灯塔环境；参考 executor 双域已落地（ADR-0007，TSAN 零报告），真机测量链待硬件 |
 | 72h 分配断言 soak | **周期等效口径关闭（2026-07-11）**：07-06 墙钟版证据链断裂（无结束日志，如实登记）；改交付 2,592,000,000 冻结周期（72h@1kHz ×10）Release 零分配 PASS；真实 72h 墙钟连续运行归 B7 真机 RT 报告。口径调整开放维护者复核 |
-| **KB-051/086/087 组接管速度断崖** | **Y7/Y7b1/Y7b2a 已修复（2026-07-21）**：plain ACS joint-domain linear/circular 的 aborting 接管均按实时成员状态进入有界公差管；plain Cartesian LINE 来源也可用统一 odometer 的真实成员输出历史连续接到 plain joint-domain LINE/circular 目标，不扩 kinematics ABI。Y7b2b 固定 fraction A 与 B v0 `K=6` 均已 NO-GO；`K=40` 因成本、覆盖与 holdout 缺口只保留 planning/WCET spike。Cartesian 目标默认继续 rest-start，未获生产实现授权；Cartesian ARC/chain/window 来源和动态 PCS/tracking 仍不消费该 bridge |
+| **KB-051/086/087/088 组接管** | **Y7/Y7b1/Y7b2a/Y4b 已修复（2026-07-22）**：plain ACS joint-domain linear/circular 的 aborting 接管均按实时成员状态进入有界公差管；plain Cartesian LINE 来源也可用统一 odometer 的真实成员输出历史连续接到 plain joint-domain LINE/circular 目标，不扩 kinematics ABI。vector connector 的全部非零 residual 现以共同 `T_sync=max(T_min[i])` fixed-time 重解，同拍汇入共享标量路径；GroupStop 仍独立制动。Y7b2b 固定 fraction A 与 B v0 `K=6` 均已 NO-GO；`K=40` 因成本、覆盖与 holdout 缺口只保留 planning/WCET spike。Cartesian 目标默认继续 rest-start，未获生产实现授权；Cartesian ARC/chain/window 来源和动态 PCS/tracking 仍不消费该 bridge |
 | Part 4 管理/路径表/变换 FB | **已交付**（GroupHome/MoveDirect/GroupSetOverride/GroupInterrupt·Continue + PathSelect/MovePath/SetKinTransform/ReadCartesianTransform，验收测试已接入 CTest） |
 | Part 5 回零 FB | **C5 软件合同已关闭（KB-080）**：11/11 标准 FB、45 B + 102 E 机读声明与软件语义均有测试；真机堵转、编码器、多圈、时间戳、正式批准仍是独立边界 |
 | A1 浮点数值语义合同 | **已完成（`805a363`）**：严格编译选项传递、运行环境禁止项、跨平台基本运算与超越函数容差均已合同化并远端复验 |
