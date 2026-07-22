@@ -41,8 +41,15 @@
   `--enforce-port-checks` 下通过；installed `find_package` 消费者通过。
 - `mkdocs build --strict`、Doxygen 1.17 + Graphviz 15.1、actionlint 1.7.12、
   Python bytecode 编译、所有 workflow YAML 解析与 `git diff --check` 通过。
-- 上述均为本地/仓库资产证据。远端 PR CI、合入后的公开 `Cold User` workflow
-  与外部 registry 收录在发生前保持未完成，不以本记录替代。
+- [PR #12](https://github.com/lusipad/plcopen/pull/12) 的 Windows、Linux GCC/
+  Clang、ARM64、Documentation 与 E5 门禁全绿；Pages strict deploy 修复由
+  [PR #13](https://github.com/lusipad/plcopen/pull/13) 独立复验并合入。
+- 主干 [Documentation run 29920396387](https://github.com/lusipad/plcopen/actions/runs/29920396387)
+  的 build/deploy 均通过；公开 Python/C++/ST、notebook 与 Doxygen API 返回
+  HTTP 200。随后 [Cold User run 29920696958](https://github.com/lusipad/plcopen/actions/runs/29920696958)
+  从公开 notebook、PyPI wheel、公开 `main` 和文档站完成 29 秒端到端复验。
+- 外部 registry 收录仍未发生；本记录不以本仓绿灯替代 ConanCenter/vcpkg
+  上游 PR、CI 与维护者审核。
 
 ## Questions
 
