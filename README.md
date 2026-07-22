@@ -116,9 +116,13 @@ axis.stream_disengage()
 安装 Python 绑定：
 
 ```bash
-pip install pyplcopen==0.20.0
-# 或在需要源码构建时：pip install .（需要 C++17 编译器 + CMake ≥ 3.21）
+python -m pip install pyplcopen==0.20.0
+# 或在需要源码构建时：python -m pip install .（需要 C++17 编译器 + CMake ≥ 3.21）
 ```
+
+无编译器的安装请使用 CPython 3.10～3.13；这些版本有 Windows、Linux、
+macOS 预编译 wheel。对当前 `v0.20.0`，Python 3.14 及更新版本会从
+sdist 本地构建，因此需要 C++17 编译器与 CMake ≥ 3.21。
 
 更多用法（单轴/流/位姿/凸轮/SI 单位转换）见
 [Python 上手指南](docs/getting-started/python.md)。ST 语言层用法见

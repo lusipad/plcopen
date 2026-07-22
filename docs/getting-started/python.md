@@ -1,14 +1,15 @@
 # Python Digital Twin
 
-Build a motion simulation in Python. Published wheels require no C++
-toolchain; a source install requires a C++17 compiler and CMake >= 3.21.
+Build a motion simulation in Python. A matching published wheel requires no
+C++ toolchain; an sdist or source install requires a C++17 compiler and
+CMake >= 3.21.
 
 ## Install
 
 Install the published `v0.20.0` package from PyPI:
 
 ```bash
-pip install pyplcopen==0.20.0
+python -m pip install pyplcopen==0.20.0
 ```
 
 To build the current source instead, clone the repository and install it with
@@ -17,12 +18,14 @@ a C++17 compiler and CMake >= 3.21:
 ```bash
 git clone https://github.com/lusipad/plcopen.git
 cd plcopen
-pip install .
+python -m pip install .
 ```
 
 !!! note
     Published wheels cover Windows, Linux, and macOS for Python 3.10-3.13.
-    If no wheel matches your platform, pip builds from the sdist.
+    If no wheel matches your interpreter or platform, pip builds from the
+    sdist and therefore needs the source-build toolchain above. For a
+    compiler-free install, use CPython 3.10-3.13.
 
 ## Single-Axis Motion (5 minutes)
 
@@ -59,19 +62,22 @@ from human-readable SI values:
 import pyplcopen
 
 cfg = pyplcopen.CycleConfig.at_1khz()  # 1 ms cycle
+velocity_per_cycle = cfg.velocity_to_cycle(200.0)
 
 axis = pyplcopen.AxisSim()
 axis.power_on()
 axis.move_absolute(
     100.0,                              # position (same units)
-    cfg.velocity_to_cycle(200.0),       # 200 mm/s
+    velocity_per_cycle,                 # 200 mm/s
     cfg.acceleration_to_cycle(1000.0),  # 1000 mm/s^2
     cfg.acceleration_to_cycle(1000.0),  # deceleration
     cfg.jerk_to_cycle(50000.0),         # 50000 mm/s^3
 )
 
-# Read back in SI
-print(f"Velocity: {cfg.velocity_to_si(axis.command_velocity())} mm/s")
+# move_absolute() returns at standstill, so command_velocity() is now zero.
+# Verify the configured limit with an SI round trip instead.
+print(f"Position: {axis.command_position()} mm")
+print(f"Configured velocity: {cfg.velocity_to_si(velocity_per_cycle)} mm/s")
 ```
 
 Presets: `at_1khz()`, `at_2khz()`, `at_4khz()`, or `from_period_ns()`

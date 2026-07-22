@@ -180,7 +180,7 @@ LD/FBD/SFC 图形画布、HMI、TC6-XML 工程交换、cam 表图形编辑器。
 | X5 | executor IPC 形态验证 | **完成（2026-07-22）**：保留 ADR-0007 进程内承诺环，在 `Servo` 边界交付固定 ABI setpoint/feedback SPSC + 状态双缓冲；owner 映射期不可转让，默认纯内存门、Windows/Linux 显式进程对拍与 Linux TSan 本地及 [Core Nightly](https://github.com/lusipad/plcopen/actions/runs/29873304328) 远端均通过 | ADR-0006/0007 显式开放项；**F 轨（EtherCAT IPC 形态）的真正软件前置** |
 | E5 | 基准趋势管线（**CI 常驻**） | **完成（2026-07-22）**：基准数字（OTG excess_cycles vs 自有 oracle、ST 每指令成本、cartesian_ik_us、窗口重规划耗时）统一入趋势：历史留存 + report-only 退化比对；远端 bootstrap 与 [真实 base/head 比较](https://github.com/lusipad/plcopen/actions/runs/29874743112/job/88782685662) 均通过。**CI 只测我们自己**——零外部依赖是信任边界（不执行或下载别人的 benchmark） | Y0"基线入趋势"与 ST 5.9"入趋势"的基础设施补课 |
 | E6 | 竞品对拍报告（**手动批次，不进 CI**） | 与 Intel RTmotion（Apache 2.0，可编译）黑盒对拍：算法质量（相对自有 oracle 的 excess_cycles 三路对照）/ 性能（规划耗时、内存、体积）/ 语义合规（逐周期 setpoint 对拍）。**先跑 30 分钟探针**（接口能否对齐、哪些域对不上），探针决定是否值得做。**三条铁律**：① 可能会输，输了如实发（"我们在 X 域慢 15%，原因 Y，修复计划 Z"比赢更建立信任）；② 没有对手的能力（Part 4）只列清单，**不宣称胜出**——没得比不叫赢；③ Beckhoff/CODESYS 闭源不可编译对拍，只能做公开规格对照，黑盒对照需 EULA 人工核验（多数商业 EULA 禁止发布 benchmark，**属人专属**） | 2026-07-12 维护者定调"不能盲目号称自己赢了"；对拍报告本身是最强推广内容 |
-| Z0′ | 冷用户测试首轮 | Pages + 三平台 wheel 已具备——干净环境从 README/文档站走到跑通，失败即缺陷登记（流程首次实跑） | Z0 既定流程，触发条件已满足 |
+| Z0′ | 冷用户测试首轮 | **已完成（2026-07-22）**：只从公开 README/文档站/PyPI 出发，Linux CPython 3.13 binary wheel、Windows CPython 3.14 sdist 回退与 Python 指南五组示例均跑通；修正 3.14 本地编译提示与 SI 示例停稳后零速回读 | [实施记录](z0-cold-user-test-implementation-notes.md) |
 | Z3′ | 文档站内容批 | 三条用户旅程 ×30 分钟教程（原 DoD 未完成，站上线的只是既有 docs）；**含 ST 旅程**（L2a 后"ST 直驱 MC"是首页示例素材） | Z3 DoD 余量 + L 系列联动 |
 
 语言层侧的补遗（pyplcopen ST 暴露、语言层对抗探测轮、st 模块入变异
