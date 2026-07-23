@@ -38,16 +38,22 @@ H2 已完成：固定容量 standard/modified DH 正解、确定性数值 DLS �
   2 万 6DOF + 2 万 7DOF 回环通过 1e-9 双门。
 - 退化同轴腕 fixture 初测虽快，但不足以证明真实冗余臂；替换为共享的
   非退化交替扭角 7R fixture，并让 benchmark 启用偏好路径。1e-5 rad
-  hot-seed Debug 本机样本为 22.650、23.900 µs/解，独立复审样本为
-  23.850 µs/解；规范事实只保留“通过 30 µs 硬门”。Windows CI 新增专项
-  Debug CTest，E5 继续承担 Release 同机趋势。
+  hot-seed Debug 初始本机样本为 22.650、23.900 µs/解，独立复审样本为
+  23.850/25.850 µs/解，但首个 GitHub Windows runner 观测 30.400 µs 并
+  正确触发硬门。没有放宽预算：数值雅可比改为缓存未扰动 link transform
+  与前缀，只重组受影响后缀；偏好步复验双门后直接返回，删除重复 FK/残差
+  计算。优化后本机多次复跑稳定通过，规范事实仍只保留“通过 30 µs 硬门”。
+  Windows CI 新增专项 Debug CTest，E5 继续承担 Release 同机趋势。
+- `find_package` smoke 默认强制 H2 头存在，守住 HEAD 安装导出；只有明确消费
+  已发布 v0.20.0 源包的 vcpkg CI 步骤关闭该要求，避免用 HEAD 消费者冒充
+  旧发布包含有未发布头。
 
 ## 验证
 
 - Windows Debug 全量 CTest 96/96 通过（含 11 项 fuzz、2 万 6DOF +
   2 万非退化 7DOF 回环、冻结窗口零分配与 benchmark）。
-- 独立 H2 Debug benchmark CTest 通过；最终单跑观测
-  `serial_chain_ik_us=22.650`，低于 30 µs 硬门。
+- 独立 H2 Debug benchmark CTest 通过；优化后本机多次观测均低于
+  30 µs 硬门。
 - RT 静态扫描 31 文件通过；18 份回放、2409 个样本校验通过。
 - benchmark trend 15/15 单元测试、Release `pyplcopen_smoke`、
   `find_package` / `FetchContent` 两个公开消费者和安装头文件检查均通过。

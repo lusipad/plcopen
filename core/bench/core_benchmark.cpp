@@ -553,6 +553,18 @@ int main()
                 return 1;
             }
         }
+        double seed_preference_cost = 0.0;
+        double solved_preference_cost = 0.0;
+        for(std::size_t joint = 0; joint < 7; ++joint) {
+            const double seed_difference = preferred[joint] - seeds[1][joint];
+            const double solved_difference = preferred[joint] - solved[joint];
+            seed_preference_cost += seed_difference * seed_difference;
+            solved_preference_cost += solved_difference * solved_difference;
+        }
+        if(!(solved_preference_cost < seed_preference_cost)) {
+            std::printf("BENCH_FAIL serial chain preference path\n");
+            return 1;
+        }
         constexpr int SerialIterations = 20000;
         double checksum = 0.0;
         start = std::clock();
