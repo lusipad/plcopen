@@ -10,6 +10,62 @@ import sys
 import xml.etree.ElementTree as ET
 
 
+PROJECT_SOURCE_LINKS = {
+    Path("project/index.md"): (
+        "https://github.com/lusipad/plcopen/blob/main/STATUS.md",
+        "https://github.com/lusipad/plcopen/blob/main/"
+        "doc/design/core/architecture.md",
+        "https://github.com/lusipad/plcopen/blob/main/"
+        "doc/compliance/plcopen-conformance-audit.md",
+        "https://github.com/lusipad/plcopen/blob/main/"
+        "doc/compliance/known-boundaries.md",
+        "https://github.com/lusipad/plcopen/blob/main/CONTRIBUTING.md",
+        "https://github.com/lusipad/plcopen/blob/main/GOVERNANCE.md",
+        "https://github.com/lusipad/plcopen/blob/main/SECURITY.md",
+        "https://github.com/lusipad/plcopen/blob/main/CHANGELOG.md",
+    ),
+    Path("project/status.md"): (
+        "https://github.com/lusipad/plcopen/blob/main/STATUS.md",
+    ),
+    Path("project/architecture.md"): (
+        "https://github.com/lusipad/plcopen/blob/main/"
+        "doc/design/core/architecture.md",
+    ),
+    Path("project/compliance.md"): (
+        "https://github.com/lusipad/plcopen/blob/main/"
+        "doc/compliance/plcopen-conformance-audit.md",
+    ),
+    Path("project/known-boundaries.md"): (
+        "https://github.com/lusipad/plcopen/blob/main/"
+        "doc/compliance/known-boundaries.md",
+    ),
+    Path("project/contributing.md"): (
+        "https://github.com/lusipad/plcopen/blob/main/CONTRIBUTING.md",
+    ),
+    Path("project/governance.md"): (
+        "https://github.com/lusipad/plcopen/blob/main/GOVERNANCE.md",
+    ),
+    Path("project/security.md"): (
+        "https://github.com/lusipad/plcopen/blob/main/SECURITY.md",
+    ),
+    Path("project/changelog.md"): (
+        "https://github.com/lusipad/plcopen/blob/main/CHANGELOG.md",
+    ),
+}
+
+LEGACY_PROJECT_NAV_LINKS = {
+    "https://github.com/lusipad/plcopen/tree/main/doc/compliance",
+    "https://github.com/lusipad/plcopen/blob/main/"
+    "doc/design/core/architecture.md",
+    "https://github.com/lusipad/plcopen/blob/main/"
+    "doc/compliance/known-boundaries.md",
+    "https://github.com/lusipad/plcopen/blob/main/CONTRIBUTING.md",
+    "https://github.com/lusipad/plcopen/blob/main/GOVERNANCE.md",
+    "https://github.com/lusipad/plcopen/blob/main/SECURITY.md",
+    "https://github.com/lusipad/plcopen/blob/main/CHANGELOG.md",
+}
+
+
 class PageMetadata(HTMLParser):
     def __init__(self) -> None:
         super().__init__()
@@ -41,14 +97,15 @@ def markdown_files(root: Path) -> set[Path]:
 
 
 def rendered_page(site: Path, prefix: Path, source: Path) -> Path:
-    if source == Path("index.md"):
-        return site / prefix / "index.html"
+    if source.name == "index.md":
+        return site / prefix / source.parent / "index.html"
     return site / prefix / source.with_suffix("") / "index.html"
 
 
 def url_suffix(source: Path) -> str:
-    if source == Path("index.md"):
-        return ""
+    if source.name == "index.md":
+        parent = source.parent.as_posix()
+        return "" if parent == "." else f"{parent}/"
     return f"{source.with_suffix('').as_posix()}/"
 
 
@@ -68,8 +125,44 @@ def sitemap_urls(path: Path) -> set[str]:
     }
 
 
+def verify_project_sources(root: Path, label: str) -> list[str]:
+    errors: list[str] = []
+    for source, canonical_links in PROJECT_SOURCE_LINKS.items():
+        path = root / source
+        if not path.is_file():
+            errors.append(f"missing {label} project source: {source.as_posix()}")
+            continue
+        text = path.read_text(encoding="utf-8")
+        errors.extend(
+            f"{path}: missing canonical source link {canonical_link}"
+            for canonical_link in canonical_links
+            if canonical_link not in text
+        )
+    return errors
+
+
+def verify_project_navigation(config: Path, label: str) -> list[str]:
+    text = config.read_text(encoding="utf-8")
+    errors = [
+        f"{config}: {label} navigation missing {source.as_posix()}"
+        for source in PROJECT_SOURCE_LINKS
+        if source.as_posix() not in text
+    ]
+    errors.extend(
+        f"{config}: {label} navigation still uses external project link {link}"
+        for link in LEGACY_PROJECT_NAV_LINKS
+        if link in text
+    )
+    return errors
+
+
 def verify(
-    site: Path, english_docs: Path, chinese_docs: Path, base_url: str
+    site: Path,
+    english_docs: Path,
+    chinese_docs: Path,
+    english_config: Path,
+    chinese_config: Path,
+    base_url: str,
 ) -> list[str]:
     errors: list[str] = []
     english_sources = markdown_files(english_docs)
@@ -80,6 +173,11 @@ def verify(
         for source in sorted(chinese_sources - english_sources):
             errors.append(f"missing English source: {source.as_posix()}")
         return errors
+
+    errors.extend(verify_project_sources(english_docs, "English"))
+    errors.extend(verify_project_sources(chinese_docs, "Chinese"))
+    errors.extend(verify_project_navigation(english_config, "English"))
+    errors.extend(verify_project_navigation(chinese_config, "Chinese"))
 
     base_url = base_url.rstrip("/") + "/"
     expected_alternates = {
@@ -143,6 +241,12 @@ def main() -> int:
     parser.add_argument("--english-docs", type=Path, default=Path("docs"))
     parser.add_argument("--chinese-docs", type=Path, default=Path("docs.zh"))
     parser.add_argument(
+        "--english-config", type=Path, default=Path("mkdocs.en.yml")
+    )
+    parser.add_argument(
+        "--chinese-config", type=Path, default=Path("mkdocs.yml")
+    )
+    parser.add_argument(
         "--base-url", default="https://lusipad.com/plcopen/"
     )
     args = parser.parse_args()
@@ -151,6 +255,8 @@ def main() -> int:
         args.site_dir,
         args.english_docs,
         args.chinese_docs,
+        args.english_config,
+        args.chinese_config,
         args.base_url,
     )
     if errors:

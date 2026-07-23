@@ -24,6 +24,7 @@
 - [TwinCAT / CODESYS 迁移](guides/twinCAT-codesys-migration.md)
 - [诊断与 trace 可视化](guides/diagnostics.md)
 - [运维](operations.md)
+- [项目文档](project/index.md)
 
 两个受众共享同一个内核：**工业控制器开发者** 使用 IEC 61131-3 ST 程序
 （内置运行时）或 C++ / Python `MC_*` 功能块调用来编写机器逻辑；**具身 AI
@@ -128,15 +129,14 @@ SPSC ring，加上一个有界状态快照，并提供明确的 Windows/Linux �
 
 ## 链接
 
-- [STATUS.md](https://github.com/lusipad/plcopen/blob/main/STATUS.md) — 当前能力状态
-- [CONTEXT.md](https://github.com/lusipad/plcopen/blob/main/CONTEXT.md) — 术语表
-- [合规矩阵](https://github.com/lusipad/plcopen/tree/main/doc/compliance) — 规范性规格与逐条款审计
-- [已知边界](https://github.com/lusipad/plcopen/blob/main/doc/compliance/known-boundaries.md) — 已声明限制
-- [架构](https://github.com/lusipad/plcopen/blob/main/doc/design/core/architecture.md) — 设计文档
-- [贡献指南](https://github.com/lusipad/plcopen/blob/main/CONTRIBUTING.md) — 工作流、门禁、提交与 PR 证据
-- [治理](https://github.com/lusipad/plcopen/blob/main/GOVERNANCE.md) — 决策权限与继任状态
-- [安全](https://github.com/lusipad/plcopen/blob/main/SECURITY.md) — 漏洞报告与 ST 信任边界
-- [CHANGELOG](https://github.com/lusipad/plcopen/blob/main/CHANGELOG.md) — 版本历史
+- [状态与方向](project/status.md) — 当前事实、承诺、愿景与术语
+- [架构](project/architecture.md) — 分层、执行域与承重不变量
+- [合规](project/compliance.md) — 声明模型与证据地图
+- [已知边界](project/known-boundaries.md) — 已声明限制及其阅读方法
+- [参与贡献](project/contributing.md) — 工作流、门禁、提交与 PR 证据
+- [治理](project/governance.md) — 决策权限与继任状态
+- [安全](project/security.md) — 漏洞报告与信任边界
+- [变更日志](project/changelog.md) — 仓库与发布历史
 - [v0.20.0 发布记录](releases/v0.20.0.md) — 安装、亮点、制品、验证与已知限制
 - [v0.20.0 发布清单](https://github.com/lusipad/plcopen/blob/main/doc/planning/v0.20.0-release-draft.md) — 发布表单、已验证门禁与剩余动作
 
