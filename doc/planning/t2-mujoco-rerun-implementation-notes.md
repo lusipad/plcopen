@@ -46,7 +46,11 @@
 - replay fixture verification：18 个文件、2,409 个样本通过；
 - `python -m mkdocs build --strict` 与 `git diff --check`：通过。
 
-## 待评审问题
+## 远端证据与后续边界
 
-- 远端 Windows/Linux Twin integration 证据在分支推送后回填。
+- [PR #16](https://github.com/lusipad/plcopen/pull/16) 的
+  [Twin integration](https://github.com/lusipad/plcopen/actions/runs/30024648555)
+  已在 Windows/Linux 通过；[Windows 主门](https://github.com/lusipad/plcopen/actions/runs/30024648191)
+  重跑后全绿，[Linux 主门](https://github.com/lusipad/plcopen/actions/runs/30024648125)
+  的 GCC、Clang、ARM64 与 E5 均通过。
 - T2b（更大本地模型或厂商模型演示）不属于本批，不自动启动。
