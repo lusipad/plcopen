@@ -1,62 +1,60 @@
-site_name: plcopen
-site_url: https://lusipad.github.io/plcopen/
+INHERIT: mkdocs.base.yml
+
+site_url: https://lusipad.com/plcopen/
 site_description: >-
-  Modern C++ PLCopen motion-control kernel + IEC 61131-3 ST runtime —
-  embed it in your controller, or put it under your learning stack
-repo_url: https://github.com/lusipad/plcopen
-repo_name: lusipad/plcopen
+  现代 C++ PLCopen 运动控制内核与 IEC 61131-3 ST 运行时，
+  可嵌入控制器，也可接入学习系统
+docs_dir: docs.zh
+site_dir: site
 
 theme:
-  name: material
+  language: zh
   palette:
     - media: "(prefers-color-scheme: light)"
       scheme: default
       toggle:
         icon: material/brightness-7
-        name: Switch to dark mode
+        name: 切换到深色模式
     - media: "(prefers-color-scheme: dark)"
       scheme: slate
       toggle:
         icon: material/brightness-4
-        name: Switch to light mode
-  features:
-    - content.code.copy
-    - navigation.instant
-    - navigation.sections
+        name: 切换到浅色模式
 
-markdown_extensions:
-  - admonition
-  - pymdownx.highlight:
-      anchor_linenums: true
-  - pymdownx.superfences
-  - pymdownx.snippets:
-      base_path: .
-      check_paths: true
-  - pymdownx.tabbed:
-      alternate_style: true
-  - tables
+plugins:
+  search:
+    lang: zh
+
+extra:
+  alternate:
+    - name: 简体中文
+      link: /plcopen/
+      lang: zh
+    - name: English
+      link: /plcopen/en/
+      lang: en
 
 nav:
-  - Home: index.md
-  - Getting Started:
-    - Python Digital Twin: getting-started/python.md
-    - C++ Embedded: getting-started/cpp.md
+  - 首页: index.md
+  - 快速开始:
+    - Python 数字孪生: getting-started/python.md
+    - C++ 嵌入: getting-started/cpp.md
     - IEC 61131-3 ST: getting-started/st.md
-  - Releases:
+  - 版本:
     - v0.20.0: releases/v0.20.0.md
-  - References:
-    - Algorithm White-Box: getting-started/algorithms.md
-    - C++ API (generated): https://lusipad.com/plcopen/api/
-    - Function-block reference: references/fb-reference.md
-    - Real-time integration: guides/realtime-integration.md
-    - Motion tuning: guides/tuning.md
-    - TwinCAT / CODESYS migration: guides/twinCAT-codesys-migration.md
-    - Diagnostics and trace: guides/diagnostics.md
-    - Operations: operations.md
-    - Compliance: https://github.com/lusipad/plcopen/tree/main/doc/compliance
-    - Architecture: https://github.com/lusipad/plcopen/blob/main/doc/design/core/architecture.md
-    - Known Boundaries: https://github.com/lusipad/plcopen/blob/main/doc/compliance/known-boundaries.md
-    - Contributing: https://github.com/lusipad/plcopen/blob/main/CONTRIBUTING.md
-    - Governance: https://github.com/lusipad/plcopen/blob/main/GOVERNANCE.md
-    - Security: https://github.com/lusipad/plcopen/blob/main/SECURITY.md
-    - Changelog: https://github.com/lusipad/plcopen/blob/main/CHANGELOG.md
+  - 参考:
+    - 算法白盒: getting-started/algorithms.md
+    - C++ API（自动生成）: https://lusipad.com/plcopen/api/
+    - 功能块参考: references/fb-reference.md
+    - 实时集成: guides/realtime-integration.md
+    - 运动调参: guides/tuning.md
+    - TwinCAT / CODESYS 迁移: guides/twinCAT-codesys-migration.md
+    - 诊断与轨迹: guides/diagnostics.md
+    - 运维: operations.md
+    - 合规: https://github.com/lusipad/plcopen/tree/main/doc/compliance
+    - 架构: https://github.com/lusipad/plcopen/blob/main/doc/design/core/architecture.md
+    - 已知边界: https://github.com/lusipad/plcopen/blob/main/doc/compliance/known-boundaries.md
+    - 参与贡献: https://github.com/lusipad/plcopen/blob/main/CONTRIBUTING.md
+    - 治理: https://github.com/lusipad/plcopen/blob/main/GOVERNANCE.md
+    - 安全: https://github.com/lusipad/plcopen/blob/main/SECURITY.md
+    - 变更日志: https://github.com/lusipad/plcopen/blob/main/CHANGELOG.md

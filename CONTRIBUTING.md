@@ -97,7 +97,7 @@ LF/CRLF 提示，但不得有空白错误。
 | 改动面 | 验证 |
 |--------|------|
 | 合规矩阵 | 运行对应 `cmake/generate_*_matrix.cmake`，生成后工作树无意外差异 |
-| 文档站 | `python -m pip install mkdocs mkdocs-material`，然后 `mkdocs build --strict` |
+| 文档站 | `python -m pip install mkdocs mkdocs-material`，然后依次运行 `mkdocs build --strict -f mkdocs.yml` 与 `mkdocs build --strict -f mkdocs.en.yml` |
 | 覆盖率敏感代码 | `.\coverage.ps1 -BuildDir build-sync -Configuration Debug` |
 | 性能/周期路径 | 对应 benchmark、回放与零分配测试 |
 | Linux 静态分析 | `cmake/clang_tidy_gate.cmake`；本地缺工具时以 Linux CI 为准 |
