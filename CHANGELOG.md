@@ -6,6 +6,11 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- 文档站新增简体中文默认入口与 `/en/` 英文入口：两套页面保持相同路径，
+  使用 Material 原生语言选择器在当前页面切换；Documentation workflow
+  对中英文 Markdown 做一一对应检查，分别严格构建后与 Doxygen API 一次性
+  发布，不新增 i18n 插件。
+
 - T2a（KB-090）新增可选 `pyplcopen[twin]` 闭环：低频目标经既有
   `AxisSim.stream_*` 形成逐周期 setpoint，MuJoCo 3.10.x 固定 1 kHz
   执行后通过新 Python feedback seam 回灌 actual，Rerun 0.34.x 默认写带

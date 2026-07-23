@@ -5,8 +5,10 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/docs.yml'
+      - 'ci/verify_docs_i18n.py'
       - 'docs/**'
-      - 'mkdocs.yml'
+      - 'docs.zh/**'
+      - 'mkdocs*.yml'
       - 'README.md'
       - 'core/**/*.h'
       - 'cmake/Doxyfile.in'
@@ -14,8 +16,10 @@ on:
   pull_request:
     paths:
       - '.github/workflows/docs.yml'
+      - 'ci/verify_docs_i18n.py'
       - 'docs/**'
-      - 'mkdocs.yml'
+      - 'docs.zh/**'
+      - 'mkdocs*.yml'
       - 'README.md'
       - 'core/**/*.h'
       - 'cmake/Doxyfile.in'
@@ -53,10 +57,11 @@ jobs:
             -DPLCOPEN_BUILD_TESTS=OFF \
             -DPLCOPEN_BUILD_DOCS=ON
           cmake --build build-docs --target docs
-          mkdir -p docs/api
-          cp -R build-docs/docs/api/html/. docs/api/
-          test -s docs/api/index.html
-          mkdocs build --strict
+          mkdocs build --strict -f mkdocs.yml
+          mkdocs build --strict -f mkdocs.en.yml
+          mkdir -p site/api
+          cp -R build-docs/docs/api/html/. site/api/
+          python ci/verify_docs_i18n.py --site-dir site
           test -s site/api/index.html
 
   deploy:
@@ -90,7 +95,11 @@ jobs:
             -DPLCOPEN_BUILD_TESTS=OFF \
             -DPLCOPEN_BUILD_DOCS=ON
           cmake --build build-docs --target docs
-          mkdir -p docs/api
-          cp -R build-docs/docs/api/html/. docs/api/
-          test -s docs/api/index.html
-          mkdocs gh-deploy --force --clean --strict
+          mkdocs build --strict -f mkdocs.yml
+          mkdocs build --strict -f mkdocs.en.yml
+          mkdir -p site/api
+          cp -R build-docs/docs/api/html/. site/api/
+          python ci/verify_docs_i18n.py --site-dir site
+          test -s site/api/index.html
+          python -m ghp_import -n -p -f \
+            -m "Deploy documentation for ${GITHUB_SHA}" site

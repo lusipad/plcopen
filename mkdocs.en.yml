@@ -1,0 +1,49 @@
+INHERIT: mkdocs.base.yml
+
+site_url: https://lusipad.com/plcopen/en/
+site_description: >-
+  Modern C++ PLCopen motion-control kernel + IEC 61131-3 ST runtime —
+  embed it in your controller, or put it under your learning stack
+docs_dir: docs
+site_dir: site/en
+
+theme:
+  language: en
+
+plugins:
+  search:
+    lang: en
+
+extra:
+  alternate:
+    - name: 简体中文
+      link: /plcopen/
+      lang: zh
+    - name: English
+      link: /plcopen/en/
+      lang: en
+
+nav:
+  - Home: index.md
+  - Getting Started:
+    - Python Digital Twin: getting-started/python.md
+    - C++ Embedded: getting-started/cpp.md
+    - IEC 61131-3 ST: getting-started/st.md
+  - Releases:
+    - v0.20.0: releases/v0.20.0.md
+  - References:
+    - Algorithm White-Box: getting-started/algorithms.md
+    - C++ API (generated): https://lusipad.com/plcopen/api/
+    - Function-block reference: references/fb-reference.md
+    - Real-time integration: guides/realtime-integration.md
+    - Motion tuning: guides/tuning.md
+    - TwinCAT / CODESYS migration: guides/twinCAT-codesys-migration.md
+    - Diagnostics and trace: guides/diagnostics.md
+    - Operations: operations.md
+    - Compliance: https://github.com/lusipad/plcopen/tree/main/doc/compliance
+    - Architecture: https://github.com/lusipad/plcopen/blob/main/doc/design/core/architecture.md
+    - Known Boundaries: https://github.com/lusipad/plcopen/blob/main/doc/compliance/known-boundaries.md
+    - Contributing: https://github.com/lusipad/plcopen/blob/main/CONTRIBUTING.md
+    - Governance: https://github.com/lusipad/plcopen/blob/main/GOVERNANCE.md
+    - Security: https://github.com/lusipad/plcopen/blob/main/SECURITY.md
+    - Changelog: https://github.com/lusipad/plcopen/blob/main/CHANGELOG.md
