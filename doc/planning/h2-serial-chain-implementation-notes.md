@@ -43,14 +43,17 @@ H2 已完成：固定容量 standard/modified DH 正解、确定性数值 DLS �
   正确触发硬门。没有放宽预算：数值雅可比改为缓存未扰动 link transform
   与前缀，只重组受影响后缀；偏好步复验双门后直接返回，删除重复 FK/残差
   计算。优化后本机多次复跑稳定通过，规范事实仍只保留“通过 30 µs 硬门”。
-  Windows CI 新增专项 Debug CTest，E5 继续承担 Release 同机趋势。
+  第二次 Windows runner 已越过 H2 性能热点，但聚合 benchmark 先被仅适合
+  Release 标定的既有笛卡尔 50 µs 门拦截；因此 H2 预算改由
+  `--serial-chain-only` 独立 CTest 执行。聚合 benchmark 仍保留既有门并输出
+  SerialChain 指标，E5 继续承担 Release 同机趋势。
 - `find_package` smoke 默认强制 H2 头存在，守住 HEAD 安装导出；只有明确消费
   已发布 v0.20.0 源包的 vcpkg CI 步骤关闭该要求，避免用 HEAD 消费者冒充
   旧发布包含有未发布头。
 
 ## 验证
 
-- Windows Debug 全量 CTest 96/96 通过（含 11 项 fuzz、2 万 6DOF +
+- Windows Debug 全量 CTest 97/97 通过（含 11 项 fuzz、2 万 6DOF +
   2 万非退化 7DOF 回环、冻结窗口零分配与 benchmark）。
 - 独立 H2 Debug benchmark CTest 通过；优化后本机多次观测均低于
   30 µs 硬门。

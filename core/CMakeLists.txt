@@ -493,6 +493,9 @@ if(BUILD_TESTING AND PLCOPEN_BUILD_CORE_TESTS)
     plcopen_core_rt_compile_options(plcopen_core_benchmark)
     add_test(NAME plcopen_core_benchmark COMMAND plcopen_core_benchmark)
     set_tests_properties(plcopen_core_benchmark PROPERTIES LABELS benchmark)
+    add_test(NAME plcopen_core_serial_chain_benchmark
+             COMMAND plcopen_core_benchmark --serial-chain-only)
+    set_tests_properties(plcopen_core_serial_chain_benchmark PROPERTIES LABELS benchmark)
 endif()
 
 if((WIN32 OR (UNIX AND NOT APPLE)) AND
