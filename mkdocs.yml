@@ -40,21 +40,25 @@ nav:
     - Python 数字孪生: getting-started/python.md
     - C++ 嵌入: getting-started/cpp.md
     - IEC 61131-3 ST: getting-started/st.md
-  - 版本:
-    - v0.20.0: releases/v0.20.0.md
-  - 参考:
-    - 算法白盒: getting-started/algorithms.md
-    - C++ API（自动生成）: https://lusipad.com/plcopen/api/
-    - 功能块参考: references/fb-reference.md
+  - 使用指南:
     - 实时集成: guides/realtime-integration.md
     - 运动调参: guides/tuning.md
     - TwinCAT / CODESYS 迁移: guides/twinCAT-codesys-migration.md
     - 诊断与轨迹: guides/diagnostics.md
     - 运维: operations.md
-    - 合规: https://github.com/lusipad/plcopen/tree/main/doc/compliance
-    - 架构: https://github.com/lusipad/plcopen/blob/main/doc/design/core/architecture.md
-    - 已知边界: https://github.com/lusipad/plcopen/blob/main/doc/compliance/known-boundaries.md
-    - 参与贡献: https://github.com/lusipad/plcopen/blob/main/CONTRIBUTING.md
-    - 治理: https://github.com/lusipad/plcopen/blob/main/GOVERNANCE.md
-    - 安全: https://github.com/lusipad/plcopen/blob/main/SECURITY.md
-    - 变更日志: https://github.com/lusipad/plcopen/blob/main/CHANGELOG.md
+  - 参考:
+    - 算法白盒: getting-started/algorithms.md
+    - 功能块参考: references/fb-reference.md
+    - C++ API（自动生成）: https://lusipad.com/plcopen/api/
+  - 项目文档:
+    - 导览: project/index.md
+    - 状态与方向: project/status.md
+    - 架构: project/architecture.md
+    - 合规: project/compliance.md
+    - 已知边界: project/known-boundaries.md
+    - 参与贡献: project/contributing.md
+    - 治理: project/governance.md
+    - 安全: project/security.md
+    - 变更日志: project/changelog.md
+  - 版本:
+    - v0.20.0: releases/v0.20.0.md

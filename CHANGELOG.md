@@ -6,6 +6,10 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- 文档站新增双语“项目文档”层：将状态与方向、架构、合规、已知边界、贡献、
+  治理、安全和变更历史从 GitHub 直链整合为站内导读页，同时保留权威仓库
+  文档作为单一事实源；导航拆分为使用指南、参考、项目文档和版本四组。
+
 - 文档站新增简体中文默认入口与 `/en/` 英文入口：两套页面保持相同路径，
   使用 Material 原生语言选择器在当前页面切换；Documentation workflow
   对中英文 Markdown 做一一对应检查，分别严格构建后与 Doxygen API 一次性
