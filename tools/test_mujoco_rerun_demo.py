@@ -46,7 +46,7 @@ class MujocoRerunDemoTest(unittest.TestCase):
                     "axes/joint2/actual",
                     "axes/joint2/error",
                     "robot/link1",
-                    "robot/link2",
+                    "robot/link1/link2",
                 },
             )
 
@@ -153,7 +153,8 @@ class MujocoRerunDemoTest(unittest.TestCase):
                 text=True,
             )
             self.assertEqual(result.returncode, 2)
-            self.assertIn("pyplcopen[twin]", result.stderr)
+            self.assertIn(demo.INSTALL_HINT, result.stderr)
+            self.assertIn(demo.PROJECT_ROOT.as_uri(), result.stderr)
             self.assertEqual(len(result.stderr.strip().splitlines()), 1)
 
     def test_controlled_stop_uses_existing_stream_semantics(self) -> None:

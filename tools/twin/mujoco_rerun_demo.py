@@ -12,6 +12,7 @@ from typing import Any, Sequence
 
 
 SCRIPT_PATH = Path(__file__).resolve()
+PROJECT_ROOT = SCRIPT_PATH.parents[2]
 DEFAULT_MODEL = SCRIPT_PATH.with_name("two_link.xml")
 DEFAULT_JOINTS = ("joint1", "joint2")
 DEFAULT_ACTUATORS = ("actuator1", "actuator2")
@@ -19,7 +20,9 @@ TIMESTEP = 0.001
 STEPS = 2_000
 TARGET_INTERVAL = 10
 MAX_FINAL_ERROR = 0.02
-INSTALL_HINT = "python -m pip install 'pyplcopen[twin]'"
+INSTALL_HINT = (
+    f'python -m pip install "pyplcopen[twin] @ {PROJECT_ROOT.as_uri()}"'
+)
 
 
 class ValidationError(RuntimeError):
@@ -210,13 +213,13 @@ def _log_tick(
         rerun.Transform3D(translation=first_position, mat3x3=first_rotation),
     )
     recording.log(
-        "robot/link2",
+        "robot/link1/link2",
         rerun.Transform3D(
             translation=relative_position,
             mat3x3=relative_rotation,
         ),
     )
-    entities.update(("robot/link1", "robot/link2"))
+    entities.update(("robot/link1", "robot/link1/link2"))
 
 
 def run_closed_loop(
