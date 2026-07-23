@@ -148,6 +148,38 @@ print(f"Mode: {axis.stream_mode()}")  # "stopped"
 axis.stream_disengage()
 ```
 
+## Optional: MuJoCo + Rerun closed loop
+
+The current source includes the T2a execution-layer twin. Its dependencies stay
+outside the default wheel and are installed only through the `twin` extra:
+
+```bash
+python -m pip install ".[twin]"
+python tools/twin/mujoco_rerun_demo.py --output twin.rrd
+python -m rerun rrd verify --check-footers true twin.rrd
+```
+
+The command runs 2,000 fixed 1 kHz simulation ticks without wall-clock sleeps:
+the existing `AxisSim` stream produces command setpoints, MuJoCo advances one
+physics step, measured joint state is written back through the actual-feedback
+channel, and Rerun records target/command/actual/error plus link transforms.
+It does not open a Viewer unless `--spawn` is explicit, and it refuses to
+replace an existing recording unless `--overwrite` is explicit.
+
+To use another local two-joint MJCF, provide exactly two ordered joint and
+actuator mappings:
+
+```bash
+python tools/twin/mujoco_rerun_demo.py \
+  --output twin.rrd --model robot.xml \
+  --joint shoulder --joint elbow \
+  --actuator shoulder_position --actuator elbow_position
+```
+
+T2a requires hinge joints and a 1 ms model timestep. It does not download or
+bundle Menagerie/vendor models, and the software result is not hardware,
+functional-safety, calibration, or sim2real evidence.
+
 ## 25–30 minutes: inspect a diagnostic
 
 The current source exposes the same stable error metadata used by the C++

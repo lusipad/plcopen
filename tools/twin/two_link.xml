@@ -1,0 +1,32 @@
+<mujoco model="plcopen_t2a_two_link">
+  <compiler angle="radian"/>
+  <option timestep="0.001" integrator="implicitfast"/>
+
+  <default>
+    <joint type="hinge" axis="0 0 1" damping="0.1"
+           armature="0.01" limited="true" range="-1.5 1.5"/>
+    <geom type="capsule" size="0.025" density="300"
+          rgba="0.2 0.5 0.8 1"/>
+  </default>
+
+  <worldbody>
+    <geom name="base" type="cylinder" size="0.08 0.04"
+          rgba="0.25 0.25 0.28 1"/>
+    <body name="link1">
+      <joint name="joint1"/>
+      <geom name="link1_geom" fromto="0 0 0 0.4 0 0"/>
+      <body name="link2" pos="0.4 0 0">
+        <joint name="joint2"/>
+        <geom name="link2_geom" fromto="0 0 0 0.3 0 0"
+              rgba="0.8 0.4 0.2 1"/>
+      </body>
+    </body>
+  </worldbody>
+
+  <actuator>
+    <position name="actuator1" joint="joint1" kp="100" kv="5"
+              ctrllimited="true" ctrlrange="-1.5 1.5"/>
+    <position name="actuator2" joint="joint2" kp="100" kv="5"
+              ctrllimited="true" ctrlrange="-1.5 1.5"/>
+  </actuator>
+</mujoco>

@@ -136,6 +136,26 @@ assert axis.status() == pyplcopen.AxisStatus.STANDSTILL
 axis.home_direct(0.25)
 assert abs(axis.home_position() - 0.25) < 1e-12
 assert abs(axis.actual_position() - 0.25) < 1e-12
+command_before_feedback = (
+    axis.command_position(),
+    axis.command_velocity(),
+    axis.command_acceleration(),
+)
+axis.set_actual_feedback(0.2, -0.03, 0.004, 0.5)
+assert abs(axis.actual_position() - 0.2) < 1e-12
+assert abs(axis.actual_velocity() + 0.03) < 1e-12
+assert abs(axis.actual_acceleration() - 0.004) < 1e-12
+assert abs(axis.actual_torque() - 0.5) < 1e-12
+assert command_before_feedback == (
+    axis.command_position(),
+    axis.command_velocity(),
+    axis.command_acceleration(),
+)
+try:
+    axis.set_actual_feedback(float("nan"), 0.0)
+    raise AssertionError("non-finite actual feedback was accepted")
+except RuntimeError as error:
+    assert "invalid_argument" in str(error)
 
 # Z2 SI configuration objects apply one load-domain conversion and round-trip
 # through the same public boundary.
