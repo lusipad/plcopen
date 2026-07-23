@@ -43,6 +43,18 @@ print(diagnostic.hint)
 Use the structured API when handling a native `ErrorCode` or when building a
 diagnostic UI; exception strings are not a control protocol.
 
+Numerical IK distinguishes bounded-iteration exhaustion (`not_converged`),
+maximum-damping ill-conditioning (`singular_region`), and a target blocked by
+hard joint limits (`limit_infeasible`). The strict solver never attaches an
+approximate joint vector to these errors; callers that need residuals for
+diagnostics must opt in to `SerialChain::solve_best_effort`.
+
+There is no separate numerical-IK code for “outside the workspace.” The
+termination cause is the contract: accepted descent steps that exhaust the
+32-iteration budget report `not_converged`; no descent at maximum damping
+reports `singular_region`; hard-limit projection reports `limit_infeasible`;
+the inherited seed-distance gate remains `infeasible`.
+
 ## PLCT v1 timeline
 
 The reference executor can write the existing versioned binary trace format.

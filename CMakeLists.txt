@@ -156,6 +156,9 @@ assert diagnostic.code == pyplcopen.ErrorCode.INVALID_ARGUMENT
 assert diagnostic.name == "invalid_argument"
 assert "NaN/Inf" in diagnostic.hint
 assert pyplcopen.error_text(pyplcopen.ErrorCode.INVALID_ARGUMENT).startswith("invalid_argument:")
+assert pyplcopen.diagnose(pyplcopen.ErrorCode.NOT_CONVERGED).name == "not_converged"
+assert pyplcopen.diagnose(pyplcopen.ErrorCode.SINGULAR_REGION).name == "singular_region"
+assert pyplcopen.diagnose(pyplcopen.ErrorCode.LIMIT_INFEASIBLE).name == "limit_infeasible"
 
 # B9 stream session demo (KB-035): a 100 Hz sine target stream upsampled to
 # the cycle rate; the stream stalls at the end and the filter comes to a

@@ -8,14 +8,16 @@
 #include "exec/sampler.h"
 #include "exec/sync.h"
 #include "geom/geometry.h"
+#include "kin/serial_chain.h"
+#include "kin/wrist6r.h"
 #include "otg/profile1d.h"
 #include "otg/time_optimal.h"
 #include "plan/path.h"
 #include "rt/spsc_queue.h"
 #include "rt/static_vector.h"
-#include "kin/wrist6r.h"
-#include "stream/joint_group.h"
 #include "st/st.h"
+#include "stream/joint_group.h"
+#include "test_support/serial_chain_fixture.h"
 
 namespace
 {
@@ -521,8 +523,61 @@ int main()
         }
     }
 
+    // H2 numerical IK budget: the shared seven-link fixture has alternating
+    // twists, so its redundancy is distributed across the arm rather than
+    // supplied by a zero-length axis coaxial with the wrist. Each solve starts
+    // from a nearby 1e-5-rad seed, which is the cycle-path hot-start contract;
+    // cold-start exhaustion remains a correctness/error-classification test.
+    double serial_chain_ik_us = 0.0;
+    {
+        const kin::SerialChainSpec spec = test_support::seven_dof_arm_spec();
+        const kin::SerialChain chain(spec);
+        const double target_joints[2][7] = {
+            {0.2, -0.6, 0.8, -1.0, 0.7, 0.5, -0.3},
+            {0.21, -0.59, 0.79, -0.99, 0.71, 0.49, -0.29}};
+        const double seeds[2][7] = {
+            {0.20001, -0.60001, 0.80001, -0.99999, 0.69999, 0.50001, -0.29999},
+            {0.20999, -0.58999, 0.78999, -0.99001, 0.71001, 0.48999, -0.29001}};
+        const double preferred[7] = {0.5, -0.3, 0.4, -0.7, 0.4, 0.2, 0.1};
+        kin::SerialChainSolveOptions options{};
+        options.preferred_joints = preferred;
+        options.preference_weight = 1e-4;
+        kin::Pose6 targets[2];
+        chain.forward(target_joints[0], targets[0]);
+        chain.forward(target_joints[1], targets[1]);
+        double solved[7] = {};
+        for(int i = 0; i < 100; ++i) {
+            if(chain.solve(targets[i & 1], seeds[i & 1], 0.1, options, solved) !=
+               rt::ErrorCode::ok) {
+                std::printf("BENCH_FAIL serial chain warmup\n");
+                return 1;
+            }
+        }
+        constexpr int SerialIterations = 20000;
+        double checksum = 0.0;
+        start = std::clock();
+        for(int i = 0; i < SerialIterations; ++i) {
+            if(chain.solve(targets[i & 1], seeds[i & 1], 0.1, options, solved) !=
+               rt::ErrorCode::ok) {
+                std::printf("BENCH_FAIL serial chain solve\n");
+                return 1;
+            }
+            checksum += solved[0] + solved[6];
+        }
+        serial_chain_ik_us = 1000.0 * millis_since(start) / SerialIterations;
+        position_sum += checksum * 1e-12;
+        if(serial_chain_ik_us > 30.0) {
+            std::printf("BENCH_FAIL serial_chain_ik_us=%.2f exceeds 30us gate\n",
+                        serial_chain_ik_us);
+            return 1;
+        }
+    }
+
     std::printf("CARTESIAN_METRICS cartesian_ik_cycle_us=%.3f budget_us=50\n",
                 cartesian_ik_us);
+    std::printf(
+        "SERIAL_CHAIN_METRICS serial_chain_ik_us=%.3f serial_chain_budget_us=30\n",
+        serial_chain_ik_us);
     std::printf("WINDOW_METRICS segments=%zu window_replan_us=%.3f\n",
                 WindowSegments, window_replan_us);
     std::printf(

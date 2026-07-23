@@ -38,6 +38,12 @@ jobs:
       - name: Clean build and run regular CTest suite
         run: .\build.ps1 -Clean -Test -ExcludeFuzz
 
+      - name: Verify H2 Debug IK budget
+        run: |
+          cmake -S . -B build-h2-debug -DBUILD_TESTING=ON -DPLCOPEN_BUILD_CORE_TESTS=ON
+          cmake --build build-h2-debug --config Debug --target plcopen_core_benchmark --parallel
+          ctest --test-dir build-h2-debug -C Debug --output-on-failure -R "^plcopen_core_benchmark$"
+
       - name: Collect coverage
         run: .\coverage.ps1 -ExcludeFuzz
 

@@ -523,7 +523,10 @@ PYBIND11_MODULE(pyplcopen, module)
         .value("PRECONDITION_FAILED", plcopen::core::rt::ErrorCode::precondition_failed)
         .value("UNSUPPORTED", plcopen::core::rt::ErrorCode::unsupported)
         .value("BYTECODE_VERSION_MISMATCH",
-               plcopen::core::rt::ErrorCode::bytecode_version_mismatch);
+               plcopen::core::rt::ErrorCode::bytecode_version_mismatch)
+        .value("NOT_CONVERGED", plcopen::core::rt::ErrorCode::not_converged)
+        .value("SINGULAR_REGION", plcopen::core::rt::ErrorCode::singular_region)
+        .value("LIMIT_INFEASIBLE", plcopen::core::rt::ErrorCode::limit_infeasible);
 
     py::class_<plcopen::core::rt::ErrorDiagnostic>(module, "ErrorDiagnostic")
         .def_readonly("code", &plcopen::core::rt::ErrorDiagnostic::code)

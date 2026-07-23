@@ -18,6 +18,10 @@ BENCHMARK_SPECS = {
         "cartesian_ik_cycle_us": "float",
         "budget_us": "float",
     },
+    "SERIAL_CHAIN_METRICS": {
+        "serial_chain_ik_us": "float",
+        "serial_chain_budget_us": "float",
+    },
     "ST_WCET_METRICS": {
         "platform": "safe",
         "compiler": "safe",
@@ -55,12 +59,14 @@ ORACLE_SPEC = {
 
 TIMING_METRICS = [
     "cartesian_ik_cycle_us",
+    "serial_chain_ik_us",
     "mixed_observed_ns_per_instruction",
     "window_replan_us",
 ]
 
 WORKLOAD_IDENTITY_FIELDS = [
     "budget_us",
+    "serial_chain_budget_us",
     "scalar_work_units",
     "native_work_units",
     "native_fb_instances",
@@ -269,6 +275,7 @@ def parse_benchmark_stdout(stdout, policy):
     return {
         "metrics": {
             **parsed["CARTESIAN_METRICS"],
+            **parsed["SERIAL_CHAIN_METRICS"],
             **st,
             **parsed["WINDOW_METRICS"],
         },
@@ -320,12 +327,17 @@ def require_non_negative(value, label):
 
 def validate_benchmark_metrics(parsed):
     cartesian = parsed["CARTESIAN_METRICS"]
+    serial_chain = parsed["SERIAL_CHAIN_METRICS"]
     st = parsed["ST_WCET_METRICS"]
     window = parsed["WINDOW_METRICS"]
     require_positive(cartesian["cartesian_ik_cycle_us"], "cartesian_ik_cycle_us")
     require_positive(cartesian["budget_us"], "budget_us")
+    require_positive(serial_chain["serial_chain_ik_us"], "serial_chain_ik_us")
+    require_positive(serial_chain["serial_chain_budget_us"], "serial_chain_budget_us")
     if cartesian["budget_us"] != 50.0:
         raise ToolError("budget_us must remain 50")
+    if serial_chain["serial_chain_budget_us"] != 30.0:
+        raise ToolError("serial_chain_budget_us must remain 30")
     if st["calibration_eligible"] != 1:
         raise ToolError("calibration_eligible must be 1")
     if st["certified_wcet"] != 0:

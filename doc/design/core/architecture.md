@@ -249,7 +249,7 @@ Y7/Y7b1 修复；KB-087 又关闭 plain Cartesian LINE 来源到 joint LINE/circ
 | [st-runtime-design.md](st-runtime-design.md) | ST 语言层三档范围、字节码 VM 架构、自研 vs MatIEC 裁决 | ST-L0+ST-L1a 已交付（KB-069/070） |
 | [stream-fastpath-design.md](stream-fastpath-design.md) | T24 流式快路径：闭式五次 + 解析极值校验 + 最坏拍合同 | 已落地（KB-064，默认关） |
 | [otg-oracle-design.md](otg-oracle-design.md) | Y0 双 oracle（打靶 + 值迭代）+ Ruckig 第三对照方法学 | 已落地（`core/test/otg_optimality_oracle.cpp`）；Y2 已补齐 |
-| [algorithm-contracts.md](algorithm-contracts.md) | 六份算法合同 + 落地顺序（算法线权威口径） | Y7/Y0/Y2/Y4/T24 已交付；Y3 影子中；H2 待实现 |
+| [algorithm-contracts.md](algorithm-contracts.md) | 七份算法合同 + 落地顺序（算法线权威口径） | Y7/Y0/Y2/Y4/T24/H2 已交付；Y3 影子中 |
 | [priority-tracks-design.md](priority-tracks-design.md) | 人形/EtherCAT/孪生三轨的模块地图与建造顺序 | 随轨推进更新 |
 | `core/*/README.md` 系列 | 各模块「随码写」的详细设计（11 份） | 与代码同提交维护 |
 | [ADR-0004](../decisions/0004-servo-adapter-interface.md) | Servo 窄接口 + 桥接 | Accepted，已落地 |

@@ -13,6 +13,9 @@ enum class ErrorCode
     precondition_failed,
     unsupported,
     bytecode_version_mismatch,
+    not_converged,
+    singular_region,
+    limit_infeasible,
 };
 
 template <typename T> class Result

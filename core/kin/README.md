@@ -45,6 +45,21 @@ limiting: at submit the joint-space chord is sampled through the forward
 solution and the command velocity scales down so the worst sampled Cartesian
 speed stays under the limit (linear segments, kinematics-configured groups).
 
+H2 (`serial_chain.h`, KB-089): `SerialChain` is the deterministic numerical
+fallback beside the analytic plugins. It models one to eight revolute joints
+with a fixed-capacity standard-DH or modified-DH table, implements
+base-to-flange FK, and solves pose IK with a numerical Jacobian, SO(3) log
+residual, adaptive DLS, hard joint-limit projection, and a fixed 32-iteration
+cap. Strict `inverse`/`solve` write output only after both residual gates pass;
+`solve_best_effort` is the explicit opt-in surface for a failed code plus the
+best point and residuals. A 7-DOF preferred-joint target is applied only inside
+the converged primary-task gates, at most once, and consumes the same
+32-iteration budget. Workspace-outside targets use the observable termination
+cause (`not_converged`, `singular_region`, or `limit_infeasible`); the inherited
+seed-step gate remains `infeasible`. The existing L5 pose seam remains
+six-axis, so 7-DOF is currently a core/offline capability rather than an
+AxisGroup claim. Spherical-wrist 6R remains analytic-first.
+
 v1 declared boundaries:
 
 - joint count == Cartesian count (2 or 3) == group axis count; the 6R batch
@@ -56,5 +71,7 @@ v1 declared boundaries:
   measured ~2.4 us for the 6R); the wrist-singularity band (KB-045) resolves
   the ZYZ indeterminacy by seed-locking q4 inside |sin q5| < 1e-8, so
   Cartesian sweeps cross the wrist singularity without errorstop;
-- singularity handling is the entry-ban pre-check only (margin threshold at
-  submit); DLS degradation is v2.
+- analytic-plugin singularity handling remains the entry-ban pre-check
+  (margin threshold at submit); H2 numerical chains instead use adaptive
+  damping plus convergence/error classification and return a large positive
+  entry margin.

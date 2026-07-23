@@ -24,6 +24,7 @@ def load_tool_module():
 def benchmark_stdout(
     *,
     cartesian=100.0,
+    serial_chain=20.0,
     scalar_scan=80.0,
     scalar_unit=10.0,
     mixed_instructions=11,
@@ -38,6 +39,10 @@ def benchmark_stdout(
     return "\n".join(
         [
             f"CARTESIAN_METRICS cartesian_ik_cycle_us={cartesian:.3f} budget_us=50",
+            (
+                f"SERIAL_CHAIN_METRICS serial_chain_ik_us={serial_chain:.3f} "
+                "serial_chain_budget_us=30"
+            ),
             (
                 "ST_WCET_METRICS "
                 f"platform={platform} compiler={compiler} compiler_version={compiler_version} "
@@ -201,11 +206,27 @@ class BenchmarkTrendToolTests(unittest.TestCase):
     def test_compare_warns_on_ten_percent_regression(self):
         base_benchmark = self.write_emitter(
             "warn-base-benchmark",
-            [benchmark_stdout(cartesian=100.0, mixed_instruction=10.0, window=40.0)] * 10,
+            [
+                benchmark_stdout(
+                    cartesian=100.0,
+                    serial_chain=20.0,
+                    mixed_instruction=10.0,
+                    window=40.0,
+                )
+            ]
+            * 10,
         )
         head_benchmark = self.write_emitter(
             "warn-head-benchmark",
-            [benchmark_stdout(cartesian=111.0, mixed_instruction=11.1, window=44.4)] * 10,
+            [
+                benchmark_stdout(
+                    cartesian=111.0,
+                    serial_chain=22.2,
+                    mixed_instruction=11.1,
+                    window=44.4,
+                )
+            ]
+            * 10,
         )
         base_oracle = self.write_emitter("warn-base-oracle", [oracle_stdout()] * 2)
         head_oracle = self.write_emitter("warn-head-oracle", [oracle_stdout()] * 2)
@@ -241,11 +262,27 @@ class BenchmarkTrendToolTests(unittest.TestCase):
     def test_compare_fails_only_after_confirmation(self):
         base_benchmark = self.write_emitter(
             "fail-base-benchmark",
-            [benchmark_stdout(cartesian=100.0, mixed_instruction=10.0, window=40.0)] * 19,
+            [
+                benchmark_stdout(
+                    cartesian=100.0,
+                    serial_chain=20.0,
+                    mixed_instruction=10.0,
+                    window=40.0,
+                )
+            ]
+            * 19,
         )
         head_benchmark = self.write_emitter(
             "fail-head-benchmark",
-            [benchmark_stdout(cartesian=130.0, mixed_instruction=13.0, window=52.0)] * 19,
+            [
+                benchmark_stdout(
+                    cartesian=130.0,
+                    serial_chain=26.0,
+                    mixed_instruction=13.0,
+                    window=52.0,
+                )
+            ]
+            * 19,
         )
         base_oracle = self.write_emitter("fail-base-oracle", [oracle_stdout()] * 2)
         head_oracle = self.write_emitter("fail-head-oracle", [oracle_stdout()] * 2)
@@ -422,6 +459,7 @@ class BenchmarkTrendToolTests(unittest.TestCase):
             "\n".join(
                 [
                     "CARTESIAN_METRICS cartesian_ik_cycle_us=NaN budget_us=50",
+                    "SERIAL_CHAIN_METRICS serial_chain_ik_us=20.0 serial_chain_budget_us=30",
                     "ST_WCET_METRICS platform=windows compiler=msvc compiler_version=19.50.35726 build=release calibration_eligible=1 certified_wcet=0 scalar_work_units=7 scalar_observed_ns_per_scan=80 scalar_observed_ns_per_work_unit=10 mixed_instructions=11 mixed_observed_ns_per_instruction=12 native_work_units=6 native_fb_instances=1 native_observed_ns_per_scan=60",
                     "WINDOW_METRICS segments=64 window_replan_us=40",
                     "",
@@ -454,6 +492,7 @@ class BenchmarkTrendToolTests(unittest.TestCase):
             "\n".join(
                 [
                     "CARTESIAN_METRICS cartesian_ik_cycle_us=100.0 budget_us=50",
+                    "SERIAL_CHAIN_METRICS serial_chain_ik_us=20.0 serial_chain_budget_us=30",
                     "ST_WCET_METRICS platform=windows compiler=msvc compiler_version=19.50.35726 build=release calibration_eligible=1 certified_wcet=0 scalar_work_units=7 scalar_observed_ns_per_scan=80 scalar_observed_ns_per_work_unit=10 native_work_units=6 native_fb_instances=1 native_observed_ns_per_scan=60",
                     "WINDOW_METRICS segments=64 window_replan_us=40",
                     "",

@@ -324,6 +324,11 @@ if(BUILD_TESTING AND PLCOPEN_BUILD_CORE_TESTS)
     plcopen_core_rt_compile_options(plcopen_core_wrist6r_tests)
     add_test(NAME plcopen_core_wrist6r_tests COMMAND plcopen_core_wrist6r_tests)
 
+    add_executable(plcopen_core_serial_chain_tests test/serial_chain_tests.cpp)
+    target_link_libraries(plcopen_core_serial_chain_tests PRIVATE plcopen::core)
+    plcopen_core_rt_compile_options(plcopen_core_serial_chain_tests)
+    add_test(NAME plcopen_core_serial_chain_tests COMMAND plcopen_core_serial_chain_tests)
+
     add_executable(plcopen_core_pose_tests test/pose_tests.cpp)
     target_link_libraries(plcopen_core_pose_tests PRIVATE plcopen::core)
     plcopen_core_rt_compile_options(plcopen_core_pose_tests)

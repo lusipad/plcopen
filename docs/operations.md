@@ -15,6 +15,9 @@ STO/SS1，也不证明驱动器已经安全。
 | `out_of_range` | 超出固定数组、软限位或表点范围 | 检查维数、目标和固定容量；不要扩大 RT 容器 |
 | `capacity_exceeded` | 队列、窗口或固定表已满 | 降低连续段数/窗口深度，等待已承诺段完成 |
 | `infeasible` | 动力学约束下没有可行 OTG/TOPP 解 | 增加可用周期或放宽合法动力学限值，保留原轨迹 |
+| `not_converged` | 有界数值求解用尽 32 次迭代仍未同时满足位置/姿态门 | 换用更接近目标的 seed；仅在诊断场景显式调用 best-effort |
+| `singular_region` | 数值 IK 在病态区域把阻尼提高到上限仍不能下降残差 | 改变目标或 seed 以离开奇异构型，不要反复提交同一输入 |
+| `limit_infeasible` | 硬关节限位投影阻止数值 IK 到达目标 | 检查关节限位与目标可达性；成功前保留原承诺轨迹 |
 | `precondition_failed` | 轴未上电、组非 standby、所有权/同步状态不满足 | 读取状态快照，按生命周期解除 owner 或先停止 |
 | `unsupported` | 当前矩阵明确未实现，如 CENTER/RADIUS 圆弧、EtherCAT | 不重试同一输入；切换到已声明支持的路径或宿主实现 |
 | `bytecode_version_mismatch` | ST 工件字节码版本与当前运行时不匹配 | 用当前工具链重新编译 ST 程序，或成对升级编译器与运行时 |

@@ -72,6 +72,21 @@ int check_error_text()
          "infeasible",
          "the requested motion or solve has no feasible solution",
          "relax legal dynamics"},
+        {ErrorCode::not_converged,
+         "not_converged: the bounded numerical solve exhausted its iteration budget",
+         "not_converged",
+         "the bounded numerical solve did not meet its convergence gates",
+         "seed closer"},
+        {ErrorCode::singular_region,
+         "singular_region: damping reached its limit in an ill-conditioned region",
+         "singular_region",
+         "the numerical solve remains ill-conditioned at maximum damping",
+         "change the target"},
+        {ErrorCode::limit_infeasible,
+         "limit_infeasible: hard joint limits prevent the requested solution",
+         "limit_infeasible",
+         "hard limits prevent the numerical solve from reaching its target",
+         "joint limits"},
         {ErrorCode::precondition_failed,
          "precondition_failed: the object is not in the required state",
          "precondition_failed",
@@ -107,6 +122,12 @@ int check_error_text()
        std::strcmp(unknown.summary, "unknown error code") != 0 ||
        std::strstr(unknown.hint, "inspect the raw error value") == nullptr) {
         return fail("unknown error diagnostic fallback");
+    }
+    if(static_cast<int>(ErrorCode::bytecode_version_mismatch) != 7 ||
+       static_cast<int>(ErrorCode::not_converged) != 8 ||
+       static_cast<int>(ErrorCode::singular_region) != 9 ||
+       static_cast<int>(ErrorCode::limit_infeasible) != 10) {
+        return fail("error code numeric stability");
     }
     return 0;
 }

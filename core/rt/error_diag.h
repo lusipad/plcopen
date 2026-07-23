@@ -34,6 +34,19 @@ constexpr ErrorDiagnostic diagnose(ErrorCode code)
     case ErrorCode::infeasible:
         return {code, "infeasible", "the requested motion or solve has no feasible solution",
                 "relax legal dynamics, extend the allowed time, or change the target path"};
+    case ErrorCode::not_converged:
+        return {code, "not_converged",
+                "the bounded numerical solve did not meet its convergence gates",
+                "start from a seed closer to the target or use the explicit best-effort result "
+                "for diagnostics"};
+    case ErrorCode::singular_region:
+        return {code, "singular_region",
+                "the numerical solve remains ill-conditioned at maximum damping",
+                "change the target or seed to move away from the singular configuration"};
+    case ErrorCode::limit_infeasible:
+        return {code, "limit_infeasible",
+                "hard limits prevent the numerical solve from reaching its target",
+                "inspect the joint limits or choose a target reachable inside them"};
     case ErrorCode::precondition_failed:
         return {code, "precondition_failed", "the object is not in the required lifecycle state",
                 "read the latest axis/group status and satisfy ownership, power, or standby "

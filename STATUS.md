@@ -3,7 +3,7 @@
 > 本页是"现在在哪"的唯一入口，每个批次收口时更新。术语见
 > [CONTEXT.md](CONTEXT.md)；边界细节见
 > [已知边界注册表](doc/compliance/known-boundaries.md)。
-> 最后更新：**2026-07-22**。
+> 最后更新：**2026-07-23**。
 
 ## 一句话
 
@@ -41,6 +41,9 @@ P#5 分支覆盖门、P#2 轨迹精度软件证据和 P#7 文档主体也已关�
 轴/组 SI 配置、Python/C++/ST 三条主旅程、Conan/vcpkg 消费者资产、结构化
 错误诊断与单文件 trace 可视化均已落地；ConanCenter/vcpkg 中央仓库收录仍是
 外部维护者流程，不作为本仓完成状态冒充。
+**H2 数值 IK 已交付（2026-07-23，KB-089）**：`kin::SerialChain` 提供
+1～8 轴 standard/modified DH 正解、确定性自适应 DLS 逆解、严格失败分流与
+7DOF 零空间偏好；解析 6R 仍优先，L5 `AxisGroup` 六轴位姿 seam 本批不扩。
 
 ## 历史刻度（处于哪一步）
 
@@ -66,7 +69,7 @@ sink 门面，生产层无反向引用）。分层健康度见
 | L5 axis | 单轴全命令生命周期、组共享路径（2-8 轴）、前瞻窗口执行、坐标系栈（ACS/MCS/PCS + 工件帧/工具偏置）、kinematics 级联（消费支撑库 kin：龙门/SCARA）、位姿管线（RPY + 6R，TCP 工具变换）、笛卡尔/位姿回读（含 RPY 反演万向节约定）、段内笛卡尔插补（直线/圆弧/blending + 前瞻窗口，逐周期逆解 + 测地姿态，opt-in；腕奇异可穿越）、窗口深度可配、双空间限速、B9 流会话（消费支撑库 stream） | KB-035/036/037/041~050 |
 | L6 fb | **Part 1 v2.0：43/43 门面，C4（KB-079）关闭 D-01～D-20；正式 B/E/V 供应商声明仍未闭合。Part 4 v2.0：68/68 同名门面；统一使用 v2 `FbGroupReadPosition(Source)`，不保留旧 Position 回读包装；power-owner、queued transform/moving set-position、非 Cartesian ref、buffered dynamic PCS 与部分 E/O 字段仍显式受限。Part 5 v2.0：C5（KB-080）完成 11/11 标准 FB、45 B + 102 E 机读声明与可软件验证语义。**这些事实不等于 PLCopen 官方合规或真机性能证明；C6 逐项状态见 [能力对等矩阵](doc/compliance/plcopen-beckhoff-parity-matrix.md)。Part 6 的 5 个 FB 全部门控未实现。 | 全文审计见 [总账](doc/compliance/plcopen-conformance-audit.md) 与各专项矩阵 |
 | L7 adapters | **外圈消费面之一**（绕过 L6，只消费 axis/state.h + rt/error.h）：Servo 窄接口 + ServoSim + 桥接（ADR-0004）、CiA402 状态机、CSP/CSV/CST bumpless 骨架、Feetech STS 协议 0 固定容量总线/Servo/Sim（无 IO；动态单位与 Status 位未核，不进真机） | KB-040/074 |
-| 支撑库 kin | 阶梯旁支撑库（依赖 geom/rt，被 L5 消费）：kinematics 插件 ABI + 合规 harness、龙门/SCARA 解析解、球腕 6R（Pieper + 8 分支 seed 选支、奇异 margin） | KB-037/041 |
+| 支撑库 kin | 阶梯旁支撑库（依赖 geom/rt，被 L5 消费）：kinematics 插件 ABI + 合规 harness、龙门/SCARA 解析解、球腕 6R（Pieper + 8 分支 seed 选支、奇异 margin）；H2 固定容量 1～8 轴 DH/modified-DH `SerialChain`（数值雅可比 + 自适应 DLS + 7DOF 偏好，严格/best-effort 分流） | KB-037/041/089 |
 | 支撑库 stream | 阶梯旁支撑库（依赖 otg/rt，被 L5 消费）：B9 轨迹流滤波（OTG 在线重解、断流看门狗、solve_fixed_time rendezvous 跟踪律）、多关节聚合 | KB-035 |
 | st 语言层（ST L0-L7、L∀） | **外圈消费面之一**（与 L7 adapters 平行、居 L6 之上，纯 sink）。IEC 61131-3 ST：容错前端、确定性字节码 VM、标量/枚举/子范围/聚合/字符串日期类型、用户 POU 与 134 个标准 FB 完整绑定；49 个公开绑定类型、AXIS/GROUP/序列/对象 typed registry 均只向 ST 暴露 1-based handle。L3-L7 已完成并按 L 系列总账闭合；仍不宣称完整 IEC 平台或 PLCopen 官方认证 | KB-069/070/071；[L 系列总账](doc/planning/l-series-work-breakdown.md) |
 | 工具面 | pyplcopen（单轴/流/PoseArmSim，`0.20.0` 的 Windows/Linux/macOS wheels + sdist 已发布到 PyPI，CycleConfig 与轴/组 SI 配置）、可执行 notebook、Python/C++/ST 三条 30 分钟旅程、18 份回放黄金语料、28 关节 @1kHz 预算基准 + 笛卡尔 IK 预算门、参考 executor demo（canonical `planning → committed trajectory → RT` 双域，ADR-0007，TSAN 零报告）、X5 固定 ABI Servo IPC（默认纯内存合同 + 显式 Windows/Linux 两进程 harness）、周期级 trace + 单文件 HTML/SVG、**文档站已上线**（http://lusipad.com/plcopen/ ）、已通过消费者预检的 Conan recipe 与 vcpkg overlay port（中央 registry 尚未收录）、结构化 ErrorCode 诊断 | — |
@@ -76,7 +79,7 @@ sink 门面，生产层无反向引用）。分层健康度见
 - 测试：Z 系列分支当前 Windows Debug 配置登记 98 项 CTest，其中日常门运行 87 项非 fuzz 测试；2026-07-22 本地全量 98/98（含 11 fuzz）通过，新增 notebook、Python SI/诊断、ST 文档同源旅程与 trace HTML 端到端门。Y4b 的 Y7 定向门含 31 个顶层场景。X5 [executor IPC 合同](doc/compliance/executor-ipc-semantics.md)的 Windows 显式进程门 2/2、Linux/GCC 2/2 与 Linux TSan 纯内存并发门均通过；默认配置确认不注册进程测试，[Core Nightly](https://github.com/lusipad/plcopen/actions/runs/29873304328) 又完成 Windows/Linux 两进程与 Linux TSan 远端复验，整轮 9/9 job 全绿。A2 [WCET 软件度量合同](doc/compliance/st-wcet-semantics.md)新增 87-opcode 成本/时间分类、无分配机读报告与 Release 环境化观测，且不形成 certified WCET 声明。E5 [基准趋势管线](doc/design/benchmark-trend-pipeline.md)已完成四类机读指标、严格零依赖比较器和 Linux 同机 base/head report-only 比较；Linux 自对拍 9/9 对 PASS，[主干 Linux CI](https://github.com/lusipad/plcopen/actions/runs/29873287478) 首次 `record` bootstrap 成功，[PR #9 真实比较](https://github.com/lusipad/plcopen/actions/runs/29874743112/job/88782685662) artifact 确认 `mode=compare`、`verdict=pass`、base=`78d287c`。2026-07-19 候选 Coverage Gate 实测全 `core/` line **95.5%（43925/45983）**、固定生产运动栈 branch **85.0%（9184/10811）**、`core/st` branch **85.1%（14187/16663）**，均达到硬门。A1 [浮点数值语义合同](doc/design/core/floating-point-semantics.md)已在 Windows、Linux GCC/Clang 与 ARM64/QEMU 复验。P#2 聚合门实测 Bezier 稳速波动 0.0775%、圆弧约 7.6e-12%、cam 相位 0 拍、blending 公差利用率 100%。P#7 五页指南与运维手册已接入文档站，`mkdocs build --strict` 通过。精度总账见[商用证据](doc/compliance/commercial-gate-evidence.md)，覆盖口径见[分支覆盖基线](doc/compliance/branch-coverage-baseline.md)
 - 回放：18 语料逐周期比对；声明变更零例外流程运行中
 - 分层：2026-07-12 include 图审计 **0 违规**（L0-L4 零 PLCopen 语义引用、无循环依赖、L4 不引 L3），见 [架构审查报告](doc/design/architecture-review-2026-07.md)
-- RT：静态扫描 30 文件（含 st vm/bind、Feetech adapter、X5 OS-free IPC 原语与 Z 系列 ST 旅程）+ 冻结窗口分配断言；DoD §5.3 的周期耗时对比通过（新核 = 旧线 9.3%）；分配 soak 以周期等效口径关闭（25.92 亿周期零分配，2026-07-11），墙钟 72h/抖动证据归 B7 真机报告
+- RT：静态扫描 31 文件（含 st vm/bind、Feetech adapter、X5 OS-free IPC 原语、Z 系列 ST 旅程与 H2 SerialChain）+ 冻结窗口分配断言；DoD §5.3 的周期耗时对比通过（新核 = 旧线 9.3%）；分配 soak 以周期等效口径关闭（25.92 亿周期零分配，2026-07-11），墙钟 72h/抖动证据归 B7 真机报告
 - CI（v0.20.0）：候选 `5a5cf81` 的 [Windows CI](https://github.com/lusipad/plcopen/actions/runs/29692190516)、[Linux CI](https://github.com/lusipad/plcopen/actions/runs/29692190521)、[三平台 Wheels + sdist](https://github.com/lusipad/plcopen/actions/runs/29692204896)、[Core Nightly](https://github.com/lusipad/plcopen/actions/runs/29692206177)、[Coverage Gate](https://github.com/lusipad/plcopen/actions/runs/29692207269)、[Mutation Score Gate](https://github.com/lusipad/plcopen/actions/runs/29692208327) 与 [Documentation](https://github.com/lusipad/plcopen/actions/runs/29692209416) 全部通过；最终 tag 提交 `7788a85` 的 Windows/Linux/Documentation 主线门禁 0 annotations，[tag Wheels/PyPI run](https://github.com/lusipad/plcopen/actions/runs/29709944703) 5/5 job 全绿。合并提交 `78d287c` 的 [Windows CI](https://github.com/lusipad/plcopen/actions/runs/29873287504)、[Linux CI](https://github.com/lusipad/plcopen/actions/runs/29873287478)、[Documentation](https://github.com/lusipad/plcopen/actions/runs/29873287492) 与新版 [Core Nightly](https://github.com/lusipad/plcopen/actions/runs/29873304328) 也全部通过；Nightly 9/9 job 全绿。11 项 fuzz 只进入 Nightly；A2/X5 新增专项后，普通 PR 当前跑 82 项非 fuzz 测试。PR 分支不再同时触发 push 与 pull_request 两套 Windows/Linux 主门禁。`main` 仍无 branch protection/ruleset，这些是 workflow 证据而非技术强制的 required checks。触发边界见 [CI gate 矩阵](doc/compliance/ci-gates.md)
 
 ## 进行中 / 待办
@@ -99,6 +102,7 @@ sink 门面，生产层无反向引用）。分层健康度见
 | X5 executor IPC | **已完成（2026-07-22）**：固定 ABI Servo setpoint/feedback SPSC + 状态双缓冲、一次性 owner claim、整帧 NaN/Inf 拒绝与完整 lifecycle 已落地；默认纯内存门、Windows/Linux 两进程和 Linux TSan 本地通过，[Core Nightly](https://github.com/lusipad/plcopen/actions/runs/29873304328) 9/9 job 全绿并形成两平台进程/TSan 远端证据；不声称恶意 peer 隔离、DC/真栈/硬实时或许可证结论 |
 | Z0′ 冷用户首轮 | **已完成（2026-07-22）**：隔离环境不使用本地源码或 `PYTHONPATH`；Linux CPython 3.13 强制 binary wheel 安装、Windows CPython 3.14 sdist 构建与 README stream 旅程通过，Python 指南 single-axis/SI/stream/pose/cam 五组示例全部跑通。文档已说清 3.14+ 本地构建工具链，SI 示例不再用停稳后零速冒充配置速度；见 [实施记录](doc/planning/z0-cold-user-test-implementation-notes.md) |
 | **Z1～Z5 软件极致收口** | **已完成（2026-07-22）**：可执行 notebook；轴/组 SI 配置及 Python 绑定；Python/C++/ST 三条同源旅程与 Doxygen API；Conan/vcpkg 双消费者资产；全量 ErrorCode 结构化诊断和 trace HTML/SVG。Windows Debug 98/98、Conan 两消费者、vcpkg 严格 port、MkDocs strict、Doxygen/Graphviz、RT scan 与 18/2409 replay 均通过；PR #12/#13 全门绿色，主干 Pages build/deploy 通过，[Cold User 公开入口复验](https://github.com/lusipad/plcopen/actions/runs/29920696958) 29 秒全绿。外部中央 registry 收录仍按上游维护者流程跟踪 |
+| **H2 数值 IK 兜底** | **已完成（2026-07-23，KB-089）**：1～8 轴转动关节 `SerialChain`、standard/modified DH、数值雅可比 + 自适应 DLS、32 次总上限、三类失败码、显式 best-effort 与 7DOF 零空间偏好均已落地；6DOF/非退化 7DOF 各 2 万例回环、固定 FK/SO(3) oracle、带偏好冻结窗口零分配，preference-enabled Debug hot-seed 通过 30 µs 专项门。解析 6R 仍优先，L5 位姿 seam 仍限六轴 |
 | AxisGroup 架构债 | **第 1-5 批全部完成（2026-07-21）**：connector、joint look-ahead、Cartesian path/window、frame/pose/kinematics 与 MoveDirect lifecycle/path 各自形成明确 owner；第 2-5 批累计 75 个 `AxisGroup` 方法原样迁出，`group.h` 7744→4487 行；93/93、RT scan、18/2409 replay 与 find_package/FetchContent consumer 全绿。共享 queue/status/error 与 management 调度按设计保留在 `AxisGroup` |
 | Y2 epsilon 政策 | **已声明化**（KB-057：段时长钳零 + 复验，整数量化天然覆盖） |
 | Y2 Ruckig 对照 | **人工门控**（ADR-0003：需先审查上游许可证，不进 R1） |
