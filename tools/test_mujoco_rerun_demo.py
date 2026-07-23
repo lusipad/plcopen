@@ -128,7 +128,10 @@ class MujocoRerunDemoTest(unittest.TestCase):
             output.write_bytes(b"owned by this test")
             with self.assertRaisesRegex(demo.ValidationError, "already exists"):
                 demo.validate_output(output, overwrite=False)
-            self.assertEqual(demo.validate_output(output, overwrite=True), output)
+            self.assertEqual(
+                demo.validate_output(output, overwrite=True),
+                output.expanduser().resolve(),
+            )
 
     def test_missing_dependency_message_is_concise(self) -> None:
         with tempfile.TemporaryDirectory(prefix="plcopen-twin-missing-") as directory:
