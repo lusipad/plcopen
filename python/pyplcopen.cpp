@@ -380,9 +380,21 @@ public:
         return axis_.snapshot().actual_acceleration;
     }
 
+    double actual_torque() const
+    {
+        return axis_.snapshot().actual_torque;
+    }
+
     double command_acceleration() const
     {
         return axis_.snapshot().command_acceleration;
+    }
+
+    void set_actual_feedback(double position, double velocity, double acceleration = 0.0,
+                             double torque = 0.0)
+    {
+        throw_on_error("set_actual_feedback",
+                       axis_.set_actual_feedback(position, velocity, acceleration, torque));
     }
 
     plcopen::core::axis::AxisStatus status() const
@@ -619,7 +631,11 @@ PYBIND11_MODULE(pyplcopen, module)
         .def("actual_velocity", &AxisSim::actual_velocity)
         .def("command_velocity", &AxisSim::command_velocity)
         .def("actual_acceleration", &AxisSim::actual_acceleration)
+        .def("actual_torque", &AxisSim::actual_torque)
         .def("command_acceleration", &AxisSim::command_acceleration)
+        .def("set_actual_feedback", &AxisSim::set_actual_feedback,
+             py::arg("position"), py::arg("velocity"),
+             py::arg("acceleration") = 0.0, py::arg("torque") = 0.0)
         .def("configure_si", &AxisSim::configure_si, py::arg("cycle"),
              py::arg("config"))
         .def("si_config", &AxisSim::si_config, py::arg("cycle"))

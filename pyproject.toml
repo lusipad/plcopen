@@ -29,6 +29,12 @@ classifiers = [
     "Topic :: System :: Hardware",
 ]
 
+[project.optional-dependencies]
+twin = [
+    "mujoco>=3.10,<3.11",
+    "rerun-sdk>=0.34,<0.35",
+]
+
 [project.urls]
 Homepage = "https://github.com/lusipad/plcopen"
 Repository = "https://github.com/lusipad/plcopen"

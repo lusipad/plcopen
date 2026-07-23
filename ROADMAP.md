@@ -53,8 +53,11 @@ sprint 记录）在 [doc/archive/roadmap-history.md](doc/archive/roadmap-history
    第 1-5 批行为簇拆分已全部完成，`group.h` 7744→4487 行；共享调度边界按设计
    保留，不再作为该架构债挂账。H2 数值 IK 兜底已于 2026-07-23 交付
    （KB-089）：`SerialChain` 覆盖 1～8 轴 DH/modified-DH、严格失败分流与
-   7DOF 偏好，Debug 实测低于 30 µs；L5 六轴 seam 不扩。下一无外部前置批次
-   为 T2 MuJoCo/rerun 闭环孪生。
+   7DOF 偏好，Debug 实测低于 30 µs；L5 六轴 seam 不扩。T2a
+   MuJoCo/Rerun 闭环孪生也已完成本地实现（KB-090）：默认依赖保持不变，
+   本仓 primitive 双关节 fixture 闭合 stream→physics→feedback→`.rrd`，
+   当前承诺是完成 Windows/Linux 远端 Twin integration 复验与合入；T2b
+   更大模型、H1/H3 或 RL 不自动接续。
 6. **F 轨 EtherCAT**：仍是最大的剩余软件块和商用指标 #1/#4 的上游；
    ADR-0006 许可证人工核验与台架决策完成后立即插队，按 F1→F2→F3 推进。
 7. **完成面守护**：PLCopen/Beckhoff C0→C6 与 ST L0→L7、L∀ 已完成；只

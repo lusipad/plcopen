@@ -1,6 +1,6 @@
 # T2a MuJoCo / Rerun 闭环孪生实施计划
 
-> 状态：**待维护者批准**（2026-07-23）。
+> 状态：**已批准并实施（2026-07-23，T2a 范围）**。
 >
 > 规格草案：
 > [`t2-digital-twin-semantics.md`](../compliance/t2-digital-twin-semantics.md)。
@@ -83,5 +83,5 @@
 
 逐轮决策、偏差、意外与评审问题写入
 [`t2-mujoco-rerun-implementation-notes.md`](t2-mujoco-rerun-implementation-notes.md)。
-维护者批准规格后，先把规格状态头改为“已批准（日期 + T2a 范围）”，再写
-失败集成测试和最小实现。
+本批按 Gate 0 → Python feedback seam → headless demo/测试 → 隔离 CI →
+状态文档的顺序实施；证据见实施记录。

@@ -1,0 +1,42 @@
+name: Twin integration
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  twin:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Install optional twin dependencies
+        run: python -m pip install ".[twin]"
+
+      - name: Verify primitive-model feasibility
+        run: python tools/test_twin_feasibility.py
+
+      - name: Verify installed binding and twin integration
+        run: |
+          python ci/smoke_test.py
+          python tools/test_mujoco_rerun_demo.py

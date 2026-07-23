@@ -6,6 +6,13 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- T2a（KB-090）新增可选 `pyplcopen[twin]` 闭环：低频目标经既有
+  `AxisSim.stream_*` 形成逐周期 setpoint，MuJoCo 3.10.x 固定 1 kHz
+  执行后通过新 Python feedback seam 回灌 actual，Rerun 0.34.x 默认写带
+  footer 的 headless `.rrd`。CI fixture 是本仓自制 primitive 双关节 MJCF；
+  外部模型只接受本地路径与显式 joint/actuator 映射，不下载、不 vendor。
+  本批不扩 H1/H2/L5，不声明真机保真、安全或 sim2real 完成。
+
 - H2（KB-089）新增固定容量 `kin::SerialChain`：支持 1～8 个转动关节的
   standard/modified DH 正解，以及确定性数值雅可比 + 自适应 DLS 位姿逆解。
   严格入口同时执行位置/SO(3) log 双残差门、32 次上限、关节限位与 seed

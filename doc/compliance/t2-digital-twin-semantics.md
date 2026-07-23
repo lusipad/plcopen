@@ -1,8 +1,8 @@
 # T2a MuJoCo / Rerun 闭环孪生语义
 
-> 状态：**草案，待维护者批准**（2026-07-23）。
+> 状态：**已批准（2026-07-23，T2a 范围）**。
 >
-> 本批只定义 Python 工具面的首个可执行闭环；批准前不添加依赖、不写实现。
+> 本批只定义 Python 工具面的首个可执行闭环。
 > 上位设计见
 > [`priority-tracks-design.md`](../design/core/priority-tracks-design.md) 与
 > [`long-term-plan.md` T21/T27](../planning/long-term-plan.md)。
@@ -25,10 +25,23 @@
 | D01 | 依赖边界 | 新增可选 extra `pyplcopen[twin]`，首个验证窗口固定 `mujoco>=3.10,<3.11`、`rerun-sdk>=0.34,<0.35`。两者均支持 Python 3.10+；固定 minor 避免 Rerun 活跃演进 API 与 `.rrd` 相邻版本兼容边界漂移 |
 | D02 | 时间模型 | `CycleConfig` 是唯一换算源；`model.opt.timestep == cycle.seconds_per_cycle`，每个内核周期严格执行一次 `mj_step`，默认 1 kHz。禁止读取墙钟或 sleep，确保快放、单步与重复运行 |
 | D03 | 周期顺序 | 每 tick：策略按计划提交目标 → `AxisSim.cycle(1)` 产 setpoint → 写 MuJoCo position actuator → `mj_step` → 将 actual 反馈写回 `AxisSim` → 记录同 tick 数据。反馈只更新 actual/readback，不改 command |
-| D04 | Python seam | 只给 `AxisSim` 增加 `set_actual_feedback(position, velocity, acceleration=0, torque=0)`，直接复用现有 `AxisModel::set_actual_feedback` 的有限值校验；不增加新的 core API |
+| D04 | Python seam | 只给 `AxisSim` 增加 `set_actual_feedback(position, velocity, acceleration=0, torque=0)` 与 `actual_torque()` 回读，直接复用现有 `AxisModel::set_actual_feedback` 的有限值校验；不增加新的 core API |
 | D05 | 参考模型 | 本仓提供自制双关节、纯 primitive geom 的 MJCF，用于确定性 headless 集成门；外部模型由 `--model` 与显式 joint/actuator 名称映射接入 |
 | D06 | Rerun 输出 | 默认保存带 footer 的 `.rrd`，记录 `sim_tick` 与 `sim_time` 两条时间线；程序化 blueprint 固定 3D 机构视图和 command/actual/error 时序图。只有显式 `--spawn` 才启动 Viewer |
 | D07 | 默认旅程 | 2 秒确定性轨迹：前 1 秒 100 Hz 低频目标，后 1 秒保持；1 kHz 物理步。默认不访问网络、不启动子进程、不写工作区固定路径 |
+
+T2a 命令行为：
+
+```text
+python tools/twin/mujoco_rerun_demo.py --output OUTPUT
+  [--model MODEL --joint J1 --joint J2
+                 --actuator A1 --actuator A2]
+  [--overwrite] [--spawn]
+```
+
+本批不提供 cycle 选择参数；内置或外部模型的 timestep 不是 `0.001` 时在
+仿真前以退出码 2 拒绝。退出码 0 表示记录已完成，2 表示依赖/参数/模型验证
+失败，1 表示验证后运行或显式 Viewer 启动失败。
 
 依赖与 API 依据：
 
