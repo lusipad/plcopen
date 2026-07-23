@@ -67,7 +67,17 @@ class SerialChain final : public PoseKinematics
     static constexpr std::size_t MaxJoints = SerialChainMaxJoints;
     static constexpr std::size_t MaxIterations = 32;
 
-    explicit SerialChain(const SerialChainSpec &spec) : spec_(spec), valid_(validate_spec(spec)) {}
+    explicit SerialChain(const SerialChainSpec &spec) : spec_(spec), valid_(validate_spec(spec))
+    {
+        if (valid_)
+        {
+            for (std::size_t joint = 0; joint < spec_.joint_count; ++joint)
+            {
+                alpha_cosines_[joint] = std::cos(spec_.links[joint].alpha);
+                alpha_sines_[joint] = std::sin(spec_.links[joint].alpha);
+            }
+        }
+    }
 
     std::size_t joint_count() const override { return valid_ ? spec_.joint_count : 0; }
 
@@ -84,7 +94,7 @@ class SerialChain final : public PoseKinematics
             // PoseKinematics carries no array extent: validate_spec bounds the
             // loop, while callers provide joint_count initialized elements.
             // NOLINTNEXTLINE(clang-analyzer-core.CallAndMessage)
-            const geom::RigidTransform link = link_transform(spec_.links[i], joints[i]);
+            const geom::RigidTransform link = link_transform(i, joints[i]);
             transform = geom::compose(transform, link);
         }
         copy_pose(transform, pose);
@@ -227,7 +237,7 @@ class SerialChain final : public PoseKinematics
     }
 
     static void relative_rotation_log(const double from[3][3], const double to[3][3],
-                                      double base_log[3])
+                                       double base_log[3])
     {
         double relative[3][3];
         for (int row = 0; row < 3; ++row)
@@ -269,37 +279,72 @@ class SerialChain final : public PoseKinematics
         }
     }
 
+    static void relative_rotation_increment(const double from[3][3], const double to[3][3],
+                                             double base_increment[3])
+    {
+        // Numerical Jacobian columns use a fixed 1e-7-rad perturbation. The
+        // skew part is the one-sided infinitesimal rotation increment; the
+        // full SO(3) log remains the convergence/error oracle.
+        double relative[3][3];
+        for (int row = 0; row < 3; ++row)
+        {
+            for (int column = 0; column < 3; ++column)
+            {
+                relative[row][column] = from[0][row] * to[0][column] +
+                                        from[1][row] * to[1][column] +
+                                        from[2][row] * to[2][column];
+            }
+        }
+        const double local_increment[3] = {
+            0.5 * (relative[2][1] - relative[1][2]),
+            0.5 * (relative[0][2] - relative[2][0]),
+            0.5 * (relative[1][0] - relative[0][1])};
+        for (int row = 0; row < 3; ++row)
+        {
+            base_increment[row] = from[row][0] * local_increment[0] +
+                                  from[row][1] * local_increment[1] +
+                                  from[row][2] * local_increment[2];
+        }
+    }
+
     void forward_from(const double *joints, Pose6 &pose) const
     {
         geom::RigidTransform transform{};
         for (std::size_t i = 0; i < spec_.joint_count; ++i)
         {
-            const geom::RigidTransform link =
-                link_transform(spec_.links[i], joints[i]);
+            const geom::RigidTransform link = link_transform(i, joints[i]);
             transform = geom::compose(transform, link);
         }
         copy_pose(transform, pose);
     }
 
-    void numerical_jacobian(const double *joints, const Pose6 &current,
-                            double jacobian[6][MaxJoints]) const
+    void evaluate_chain(const double *joints, Pose6 &pose,
+                        geom::RigidTransform link_transforms[MaxJoints],
+                        geom::RigidTransform prefixes[MaxJoints + 1]) const
+    {
+        prefixes[0] = geom::RigidTransform{};
+        for (std::size_t joint = 0; joint < spec_.joint_count; ++joint)
+        {
+            link_transforms[joint] = link_transform(joint, joints[joint]);
+            prefixes[joint + 1] = geom::compose(prefixes[joint], link_transforms[joint]);
+        }
+        copy_pose(prefixes[spec_.joint_count], pose);
+    }
+
+    void numerical_jacobian(
+        const double *joints, const Pose6 &current,
+        const geom::RigidTransform link_transforms[MaxJoints],
+        const geom::RigidTransform prefixes[MaxJoints + 1],
+        double jacobian[6][MaxJoints]) const
     {
         // A one-joint perturbation leaves every other local link transform
-        // unchanged. Cache those products so each numerical-Jacobian column
-        // recomposes only the affected suffix.
-        geom::RigidTransform link_transforms[MaxJoints] = {};
-        geom::RigidTransform prefixes[MaxJoints + 1] = {};
-        for (std::size_t i = 0; i < spec_.joint_count; ++i)
-        {
-            link_transforms[i] = link_transform(spec_.links[i], joints[i]);
-            prefixes[i + 1] = geom::compose(prefixes[i], link_transforms[i]);
-        }
+        // unchanged. Reuse the current-pose products so each numerical-
+        // Jacobian column recomposes only the affected suffix.
         for (std::size_t column = 0; column < spec_.joint_count; ++column)
         {
             geom::RigidTransform perturbed_transform =
                 geom::compose(prefixes[column],
-                              link_transform(spec_.links[column],
-                                             joints[column] + DifferenceStep));
+                              link_transform(column, joints[column] + DifferenceStep));
             for (std::size_t downstream = column + 1; downstream < spec_.joint_count;
                  ++downstream)
             {
@@ -314,7 +359,7 @@ class SerialChain final : public PoseKinematics
                     (perturbed.position[row] - current.position[row]) / DifferenceStep;
             }
             double rotation_delta[3];
-            relative_rotation_log(current.rotation, perturbed.rotation, rotation_delta);
+            relative_rotation_increment(current.rotation, perturbed.rotation, rotation_delta);
             for (int row = 0; row < 3; ++row)
             {
                 jacobian[row + 3][column] = rotation_delta[row] / DifferenceStep;
@@ -533,6 +578,8 @@ class SerialChain final : public PoseKinematics
                                        double max_joint_step,
                                        const SerialChainSolveOptions &options,
                                        double joints[MaxJoints], const Pose6 &current,
+                                       const geom::RigidTransform link_transforms[MaxJoints],
+                                       const geom::RigidTransform prefixes[MaxJoints + 1],
                                        double &position_residual,
                                        double &orientation_residual) const
     {
@@ -541,7 +588,7 @@ class SerialChain final : public PoseKinematics
             return false;
         }
         double jacobian[6][MaxJoints] = {};
-        numerical_jacobian(joints, current, jacobian);
+        numerical_jacobian(joints, current, link_transforms, prefixes, jacobian);
         double secondary_step[MaxJoints] = {};
         if (!nullspace_step(jacobian, joints, options, MinimumDamping, secondary_step))
         {
@@ -596,22 +643,28 @@ class SerialChain final : public PoseKinematics
         double joints[MaxJoints] = {};
         for (std::size_t joint = 0; joint < spec_.joint_count; ++joint)
         {
-            if (seed[joint] < spec_.links[joint].min_position ||
-                seed[joint] > spec_.links[joint].max_position)
+            // PoseKinematics carries no array extent; callers provide one seed
+            // per validated joint_count element.
+            // NOLINTNEXTLINE(clang-analyzer-core.uninitialized.Assign)
+            const double seed_value = seed[joint];
+            if (seed_value < spec_.links[joint].min_position ||
+                seed_value > spec_.links[joint].max_position)
             {
                 result.code = rt::ErrorCode::limit_infeasible;
                 return result;
             }
-            joints[joint] = seed[joint];
-            result.joints[joint] = seed[joint];
+            joints[joint] = seed_value;
+            result.joints[joint] = seed_value;
         }
 
         double best_score = 1e300;
         double damping = MinimumDamping;
+        geom::RigidTransform link_transforms[MaxJoints] = {};
+        geom::RigidTransform prefixes[MaxJoints + 1] = {};
         for (std::size_t iteration = 0; iteration < MaxIterations; ++iteration)
         {
             Pose6 current{};
-            forward_from(joints, current);
+            evaluate_chain(joints, current, link_transforms, prefixes);
             double error[6];
             double position_residual = 0.0;
             double orientation_residual = 0.0;
@@ -636,8 +689,8 @@ class SerialChain final : public PoseKinematics
                 double preference_position = 0.0;
                 double preference_orientation = 0.0;
                 if (apply_in_loop_preference_step(target, seed, max_joint_step, options, joints,
-                                                  current, preference_position,
-                                                  preference_orientation))
+                                                  current, link_transforms, prefixes,
+                                                  preference_position, preference_orientation))
                 {
                     result.code = rt::ErrorCode::ok;
                     result.position_residual = preference_position;
@@ -661,7 +714,7 @@ class SerialChain final : public PoseKinematics
             }
 
             double jacobian[6][MaxJoints] = {};
-            numerical_jacobian(joints, current, jacobian);
+            numerical_jacobian(joints, current, link_transforms, prefixes, jacobian);
             bool accepted = false;
             bool any_limit_clipped = false;
             bool any_step_clipped = false;
@@ -775,13 +828,14 @@ class SerialChain final : public PoseKinematics
         return result;
     }
 
-    geom::RigidTransform link_transform(const DhLink &link, double joint) const
+    geom::RigidTransform link_transform(std::size_t index, double joint) const
     {
+        const DhLink &link = spec_.links[index];
         const double theta = joint + link.theta_offset;
         const double ct = std::cos(theta);
         const double st = std::sin(theta);
-        const double ca = std::cos(link.alpha);
-        const double sa = std::sin(link.alpha);
+        const double ca = alpha_cosines_[index];
+        const double sa = alpha_sines_[index];
         geom::RigidTransform transform{};
         if (spec_.convention == DhConvention::standard)
         {
@@ -826,6 +880,8 @@ class SerialChain final : public PoseKinematics
     }
 
     SerialChainSpec spec_{};
+    std::array<double, MaxJoints> alpha_cosines_{};
+    std::array<double, MaxJoints> alpha_sines_{};
     bool valid_ = false;
 };
 

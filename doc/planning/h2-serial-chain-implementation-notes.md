@@ -46,7 +46,11 @@ H2 已完成：固定容量 standard/modified DH 正解、确定性数值 DLS �
   第二次 Windows runner 已越过 H2 性能热点，但聚合 benchmark 先被仅适合
   Release 标定的既有笛卡尔 50 µs 门拦截；因此 H2 预算改由
   `--serial-chain-only` 独立 CTest 执行。聚合 benchmark 仍保留既有门并输出
-  SerialChain 指标，E5 继续承担 Release 同机趋势。
+  SerialChain 指标，E5 继续承担 Release 同机趋势。第三次 Windows runner
+  在独立门观测 33.550 µs，证明隔离生效但热点仍超预算。最终优化在构造时
+  缓存固定 DH 扭角三角值，并复用当前 FK 的 link/prefix 展开；固定
+  1e-7 rad 雅可比扰动使用等价的一阶反对称增量，最终收敛与失败判定仍使用
+  完整 SO(3) log。本机多轮样本降至 18.000–22.400 µs，30 µs 规范未放宽。
 - `find_package` smoke 默认强制 H2 头存在，守住 HEAD 安装导出；只有明确消费
   已发布 v0.20.0 源包的 vcpkg CI 步骤关闭该要求，避免用 HEAD 消费者冒充
   旧发布包含有未发布头。
