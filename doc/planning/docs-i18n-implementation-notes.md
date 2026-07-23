@@ -6,8 +6,9 @@
 
 中文根站与 `/en/` 英文站已完成同路径内容、原生语言切换和双重 strict
 构建；Doxygen API 保持在语言目录之外，由 workflow 在两站构建后拼装。
-本地构建、逐页 i18n 校验、actionlint 与独立代码审查均通过；待远端 CI
-与 Pages 部署。
+本地构建、逐页 i18n 校验、actionlint 与独立代码审查均通过；
+[远端 Documentation build/deploy](https://github.com/lusipad/plcopen/actions/runs/30035093781)
+全绿，中文根站与 `/en/` 英文站已上线。
 
 ## Decisions
 
@@ -25,7 +26,7 @@
 
 - 浏览器安全策略不允许直接打开本地 `file://` 构建产物；没有绕过该限制，
   改用标准库 HTML 解析器检查语言标记、alternate 链接、页面一一对应和深层
-  锚点。最终可见页面以 PR/Pages 部署后的 HTTPS smoke 为准。
+  锚点；Pages 部署后再以 HTTPS 完成可见页面 smoke。
 
 ## Surprises
 
@@ -49,3 +50,7 @@
 - 生成产物站内链接检查：26 个 HTML 页面无缺失目标或片段。
 - actionlint v1.7.12：`.github/workflows/docs.yml` 通过。
 - `git diff --check`、`python -m pip check`：通过。
+- 远端 Documentation `30035093781`：build 与 deploy 均通过，包含 Doxygen
+  API 拼装、双站 strict、12 对页面校验与 `gh-pages` 推送。
+- 公网 smoke：中文根站、英文 `/en/`、两种 Python 深层页、Doxygen API 与
+  两份 sitemap 均返回 200；HTML `lang` 分别为 `zh` / `en`。
