@@ -1,5 +1,6 @@
 #include <chrono>
 #include <cstdio>
+#include <cstring>
 #include <ctime>
 #include <limits>
 
@@ -8,14 +9,16 @@
 #include "exec/sampler.h"
 #include "exec/sync.h"
 #include "geom/geometry.h"
+#include "kin/serial_chain.h"
+#include "kin/wrist6r.h"
 #include "otg/profile1d.h"
 #include "otg/time_optimal.h"
 #include "plan/path.h"
 #include "rt/spsc_queue.h"
 #include "rt/static_vector.h"
-#include "kin/wrist6r.h"
-#include "stream/joint_group.h"
 #include "st/st.h"
+#include "stream/joint_group.h"
+#include "test_support/serial_chain_fixture.h"
 
 namespace
 {
@@ -152,11 +155,95 @@ StThroughput calibrate_st_throughput()
     return {true, executed, observed_ns / static_cast<double>(executed)};
 }
 
-} // namespace
+struct SerialChainBenchmark
+{
+    double ik_us = 0.0;
+    double checksum = 0.0;
+};
 
-int main()
+int run_serial_chain_benchmark(bool enforce_budget, SerialChainBenchmark &result)
 {
     using namespace plcopen::core;
+
+    // H2 numerical IK budget: the shared seven-link fixture has alternating
+    // twists, so its redundancy is distributed across the arm rather than
+    // supplied by a zero-length axis coaxial with the wrist. Each solve starts
+    // from a nearby 1e-5-rad seed, which is the cycle-path hot-start contract;
+    // cold-start exhaustion remains a correctness/error-classification test.
+    const kin::SerialChainSpec spec = test_support::seven_dof_arm_spec();
+    const kin::SerialChain chain(spec);
+    const double target_joints[2][7] = {
+        {0.2, -0.6, 0.8, -1.0, 0.7, 0.5, -0.3},
+        {0.21, -0.59, 0.79, -0.99, 0.71, 0.49, -0.29}};
+    const double seeds[2][7] = {
+        {0.20001, -0.60001, 0.80001, -0.99999, 0.69999, 0.50001, -0.29999},
+        {0.20999, -0.58999, 0.78999, -0.99001, 0.71001, 0.48999, -0.29001}};
+    const double preferred[7] = {0.5, -0.3, 0.4, -0.7, 0.4, 0.2, 0.1};
+    kin::SerialChainSolveOptions options{};
+    options.preferred_joints = preferred;
+    options.preference_weight = 1e-4;
+    kin::Pose6 targets[2];
+    chain.forward(target_joints[0], targets[0]);
+    chain.forward(target_joints[1], targets[1]);
+    double solved[7] = {};
+    for(int i = 0; i < 100; ++i) {
+        if(chain.solve(targets[i & 1], seeds[i & 1], 0.1, options, solved) !=
+           rt::ErrorCode::ok) {
+            std::printf("BENCH_FAIL serial chain warmup\n");
+            return 1;
+        }
+    }
+    double seed_preference_cost = 0.0;
+    double solved_preference_cost = 0.0;
+    for(std::size_t joint = 0; joint < 7; ++joint) {
+        const double seed_difference = preferred[joint] - seeds[1][joint];
+        const double solved_difference = preferred[joint] - solved[joint];
+        seed_preference_cost += seed_difference * seed_difference;
+        solved_preference_cost += solved_difference * solved_difference;
+    }
+    if(!(solved_preference_cost < seed_preference_cost)) {
+        std::printf("BENCH_FAIL serial chain preference path\n");
+        return 1;
+    }
+    constexpr int SerialIterations = 20000;
+    const std::clock_t start = std::clock();
+    for(int i = 0; i < SerialIterations; ++i) {
+        if(chain.solve(targets[i & 1], seeds[i & 1], 0.1, options, solved) !=
+           rt::ErrorCode::ok) {
+            std::printf("BENCH_FAIL serial chain solve\n");
+            return 1;
+        }
+        result.checksum += solved[0] + solved[6];
+    }
+    result.ik_us = 1000.0 * millis_since(start) / SerialIterations;
+    if(enforce_budget && result.ik_us > 30.0) {
+        std::printf("BENCH_FAIL serial_chain_ik_us=%.2f exceeds 30us gate\n",
+                    result.ik_us);
+        return 1;
+    }
+    return 0;
+}
+
+} // namespace
+
+int main(int argc, char **argv)
+{
+    using namespace plcopen::core;
+
+    if(argc == 2 && std::strcmp(argv[1], "--serial-chain-only") == 0) {
+        SerialChainBenchmark serial_chain;
+        if(run_serial_chain_benchmark(true, serial_chain) != 0) {
+            return 1;
+        }
+        std::printf(
+            "SERIAL_CHAIN_METRICS serial_chain_ik_us=%.3f serial_chain_budget_us=30\n",
+            serial_chain.ik_us);
+        return 0;
+    }
+    if(argc != 1) {
+        std::printf("BENCH_FAIL unknown benchmark selector\n");
+        return 2;
+    }
 
     rt::StaticVector<int, 8> values;
     rt::SpscQueue<int, 8> queue;
@@ -521,8 +608,17 @@ int main()
         }
     }
 
+    SerialChainBenchmark serial_chain;
+    if(run_serial_chain_benchmark(false, serial_chain) != 0) {
+        return 1;
+    }
+    position_sum += serial_chain.checksum * 1e-12;
+
     std::printf("CARTESIAN_METRICS cartesian_ik_cycle_us=%.3f budget_us=50\n",
                 cartesian_ik_us);
+    std::printf(
+        "SERIAL_CHAIN_METRICS serial_chain_ik_us=%.3f serial_chain_budget_us=30\n",
+        serial_chain.ik_us);
     std::printf("WINDOW_METRICS segments=%zu window_replan_us=%.3f\n",
                 WindowSegments, window_replan_us);
     std::printf(

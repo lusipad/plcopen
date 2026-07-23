@@ -113,7 +113,8 @@ jobs:
             "--overlay-ports=$PWD/ports" plcopen
           cmake -S test_package/find_package -B build/ci-vcpkg-find \
             -DCMAKE_TOOLCHAIN_FILE="$vcpkg_root/scripts/buildsystems/vcpkg.cmake" \
-            -DVCPKG_TARGET_TRIPLET=x64-linux
+            -DVCPKG_TARGET_TRIPLET=x64-linux \
+            -DPLCOPEN_SMOKE_REQUIRE_SERIAL_CHAIN=OFF
           cmake --build build/ci-vcpkg-find --parallel
           ./build/ci-vcpkg-find/plcopen_find_package_smoke
 

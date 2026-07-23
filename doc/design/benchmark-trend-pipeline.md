@@ -17,13 +17,19 @@ artifact 只承担历史证据留存，不作为后续比较输入。
 |------|----------|----------|------------|
 | OTG `excess_cycles` | `plcopen_core_otg_optimality_oracle` 的每域 `OTG_ORACLE_METRICS` | 域、attempted、compared、hard-gate 身份必须一致；planner fail、oracle miss、negative fail、最大/平均 excess 均不得增加 | hard-gate 域负 excess 仍由 oracle 自身直接失败 |
 | ST 每指令成本 | `ST_WCET_METRICS.mixed_observed_ns_per_instruction`；实际执行指令数同时记录 | base/head 成对墙钟比 | ST L0 的约 10⁶ 混合指令 ≤100 ms Release 门继续独立生效 |
-| 笛卡尔 IK | 既有 `cartesian_ik_cycle_us`（软件计划中的 `cartesian_ik_us` 即此逐周期指标） | base/head 成对墙钟比 | ≤50 µs 硬门继续独立生效 |
+| 解析笛卡尔 IK | 既有 `cartesian_ik_cycle_us`（软件计划中的 `cartesian_ik_us` 即此逐周期指标） | base/head 成对墙钟比 | ≤50 µs 硬门继续独立生效 |
+| H2 数值 IK | `SERIAL_CHAIN_METRICS` 的非退化 7DOF、preference-enabled、1e-5 rad hot-seed `serial_chain_ik_us` | base/head 成对墙钟比 | Windows CI 专项 Debug CTest ≤30 µs/解 |
 | 窗口重规划 | 固定 64 段路径、完整消费 entry/exit 结果的 `window_replan_us` | base/head 成对墙钟比 | 无跨机器绝对门；它是规划域观测，不是周期路径成本 |
 
 `scalar_*` 与 `native_*` ST 校准值继续进入 JSON，供 A2 诊断使用，但主机
 噪声较大，不参与 E5 回归判定。OTG 行同时报告 `attempted`、
 `planner_fail`、`oracle_miss`、`negative_fail` 和 `compared`，禁止通过静默
 丢弃困难样本制造“改善”。
+
+E5 的 base/head 趋势仍使用 Linux/GCC Release 同机对拍；H2 的绝对预算是
+已批准的 Debug 口径，因此 Windows 主门另建 Debug
+`plcopen_core_benchmark` 并直接运行同一个 30 µs 失败门。两者复用同一份
+交替扭角 7DOF fixture，避免测试臂与预算臂漂移。
 
 ## 3. 成对采样与阈值
 

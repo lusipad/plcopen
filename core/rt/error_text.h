@@ -18,6 +18,12 @@ constexpr const char *to_string(ErrorCode code)
         return "capacity_exceeded: a fixed-size container is full";
     case ErrorCode::infeasible:
         return "infeasible: no solution exists for the given constraints";
+    case ErrorCode::not_converged:
+        return "not_converged: the bounded numerical solve exhausted its iteration budget";
+    case ErrorCode::singular_region:
+        return "singular_region: damping reached its limit in an ill-conditioned region";
+    case ErrorCode::limit_infeasible:
+        return "limit_infeasible: hard joint limits prevent the requested solution";
     case ErrorCode::precondition_failed:
         return "precondition_failed: the object is not in the required state";
     case ErrorCode::unsupported:

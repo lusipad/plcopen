@@ -114,8 +114,9 @@ for k in 0..N_max:
   not_converged / singular_region / limit_infeasible
 ```
 
-→ 落地：H2 **待实现**（kinematics 矩阵 v2.1 已批准；
-`core/kin/serial_chain.h` 尚不存在，仍是规划项）。
+→ 落地：H2 **已交付**（2026-07-23，KB-089）：`kin::SerialChain`
+以固定 32 次、数值雅可比、SO(3) log、自适应 DLS 和硬限位投影实现；
+严格入口与显式 best-effort 分流，7DOF 偏好只在主任务收敛门内接受。
 
 ## 落地顺序（最小正确序）
 
@@ -125,9 +126,9 @@ Y7 linear 接管 → Y0 oracle → Y2 完整 OTG → Y4 定时同步
 → T24 解析快路径 → Y3 TOPP-RA/jerk-aware → H2 IK v2.1
 ```
 
-落地状态（2026-07-21）：**Y7/Y7b1/Y0/Y2/Y4/T24 已交付**（T24 = KB-064，
-默认关）；**Y3 影子中**（TOPP 三头已在库，影子 oracle 对照）；
-**H2 待实现**（矩阵 v2.1 已批，`serial_chain` 未动工）。
+落地状态（2026-07-23）：**Y7/Y7b1/Y0/Y2/Y4/T24/H2 已交付**
+（T24 = KB-064，默认关；H2 = KB-089）；**Y3 影子中**
+（TOPP 三头已在库，影子 oracle 对照）。
 
 **最关键三件**：完整 OTG（Y2）、定时同步（Y4）、解析快路径校验
 （T24）——已全部交付。

@@ -5,7 +5,7 @@
 [doc/planning/](doc/planning/README.md)，历史里程碑（v0.2 → v0.11 全部
 sprint 记录）在 [doc/archive/roadmap-history.md](doc/archive/roadmap-history.md)。
 
-## 当前承诺（2026-07-21，唯一优先级声明）
+## 当前承诺（2026-07-23，唯一优先级声明）
 
 优先级只在本节声明一次，下列各节只承载明细，不再各自宣称"当前/最高"：
 
@@ -45,13 +45,16 @@ sprint 记录）在 [doc/archive/roadmap-history.md](doc/archive/roadmap-history
    executor IPC 软件形态均已收口。X5 保留 ADR-0007 进程内承诺环，只在
    `Servo` 边界新增固定 ABI SPSC + 状态双缓冲；Windows/Linux 两进程与
    Linux TSan 已在 [Core Nightly](https://github.com/lusipad/plcopen/actions/runs/29873304328)
-   远端复验，整轮 9/9 job 全绿。E5 基准趋势管线也已完成——四类指标由 Linux/GCC
+   远端复验，整轮 9/9 job 全绿。E5 基准趋势管线也已完成——指标由 Linux/GCC
    Release 同机 base/head 成对比较，结果保留 90 天且不回灌门禁，CI 只测
    本仓库、零外部 benchmark 依赖；[主干 Linux CI](https://github.com/lusipad/plcopen/actions/runs/29873287478)
    已完成首次 `record` bootstrap，随后 [PR #9 真实 base/head 比较](https://github.com/lusipad/plcopen/actions/runs/29874743112/job/88782685662)
    以 `mode=compare`、`verdict=pass` 闭环。AxisGroup
    第 1-5 批行为簇拆分已全部完成，`group.h` 7744→4487 行；共享调度边界按设计
-   保留，不再作为该架构债挂账。
+   保留，不再作为该架构债挂账。H2 数值 IK 兜底已于 2026-07-23 交付
+   （KB-089）：`SerialChain` 覆盖 1～8 轴 DH/modified-DH、严格失败分流与
+   7DOF 偏好，Debug 实测低于 30 µs；L5 六轴 seam 不扩。下一无外部前置批次
+   为 T2 MuJoCo/rerun 闭环孪生。
 6. **F 轨 EtherCAT**：仍是最大的剩余软件块和商用指标 #1/#4 的上游；
    ADR-0006 许可证人工核验与台架决策完成后立即插队，按 F1→F2→F3 推进。
 7. **完成面守护**：PLCopen/Beckhoff C0→C6 与 ST L0→L7、L∀ 已完成；只

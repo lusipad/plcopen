@@ -16,6 +16,8 @@
 #include "axis/state.h"
 #include "fb/group.h"
 #include "fb/homing.h"
+#include "kin/serial_chain.h"
+#include "test_support/serial_chain_fixture.h"
 
 namespace
 {
@@ -252,6 +254,20 @@ int main(int argc, char **argv)
     adapters::FeetechPacket feetech_read{};
     adapters::FeetechPacket feetech_responses[2] = {};
 
+    const kin::SerialChain serial_chain(test_support::seven_dof_arm_spec());
+    const double serial_target_joints[7] = {0.2, -0.6, 0.8, -1.0, 0.7, 0.5, -0.3};
+    const double serial_seed[7] = {0.20001, -0.60001, 0.80001, -0.99999,
+                                   0.69999, 0.50001,  -0.29999};
+    const double serial_preferred[7] = {0.5, -0.3, 0.4, -0.7, 0.4, 0.2, 0.1};
+    kin::SerialChainSolveOptions serial_options{};
+    serial_options.preferred_joints = serial_preferred;
+    serial_options.preference_weight = 1e-4;
+    kin::Pose6 serial_target{};
+    serial_chain.forward(serial_target_joints, serial_target);
+    double serial_output[7] = {};
+    rt::ErrorCode serial_status = rt::ErrorCode::invalid_argument;
+    kin::SerialChainSolveResult serial_best{};
+
     // ---- Frozen window: any heap allocation is a defect -----------------
     g_frozen_allocations = 0;
     g_frozen = true;
@@ -281,6 +297,10 @@ int main(int argc, char **argv)
         for (const auto &response : feetech_responses)
             feetech.consume(response);
         feetech.end_feedback_cycle();
+        serial_status =
+            serial_chain.solve(serial_target, serial_seed, 0.25, serial_options, serial_output);
+        serial_best =
+            serial_chain.solve_best_effort(serial_target, serial_seed, 0.25, serial_options);
     }
     g_frozen = false;
 
@@ -288,6 +308,10 @@ int main(int argc, char **argv)
     {
         std::printf("FAIL frozen cycle path allocated %llu time(s)\n", g_frozen_allocations);
         return 1;
+    }
+    if (serial_status != rt::ErrorCode::ok || serial_best.code != rt::ErrorCode::ok)
+    {
+        return fail("serial chain frozen solve");
     }
 
     // Sanity: the guard itself works (an allocation while frozen is counted).

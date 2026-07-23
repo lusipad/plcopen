@@ -24,7 +24,7 @@ B2 v1 = 把 KB-036 的「ACS↔MCS 恒等声明」升级为**可配的 kinematic
 | # | 决策点 | 提案 | 理由 |
 |---|--------|------|------|
 | 1 | 插件形态 | 纯虚接口 `kin::Kinematics`（头文件 ABI，静态注册；动态加载/跨 DSO ABI 留 Phase C）：`forward(joints[, size]) → cartesian`、`inverse(cartesian, seed_joints[, size]) → joints`、`joint_count()`、`cartesian_count()` | 可嵌入库形态：用户编译期链接自己的构型；跨 DSO 稳定 ABI 是发布期工程 |
-| 2 | RT-safe 契约 | 实现必须：无堆分配、无异常、无阻塞、数值迭代 ≤3 次牛顿 + 种子热启动、超限返回 `infeasible` 而非等收敛（T5）；契约由验证 harness 断言（定时/定界/确定性），不靠自觉 | 确定性 > 最后一微米（6.3-#7） |
+| 2 | RT-safe 契约 | v1 插件实现必须：无堆分配、无异常、无阻塞、数值迭代 ≤3 次牛顿 + 种子热启动、超限返回 `infeasible` 而非等收敛（T5）；H2 数值链由下文 v2.1 的固定 32 次专项合同取代该通用上限；契约由验证 harness 断言（定时/定界/确定性），不靠自觉 | 确定性 > 最后一微米（6.3-#7） |
 | 3 | 奇异区策略 | v1 仅实现**禁入区预检查**（T5 三选一的默认项）：插件提供 `singularity_margin(joints) → double`（到最近奇异构型的度量），submit 时对端点与 aux 点检查 margin > 配置阈值，违例 `precondition_failed`；DLS 降级与报错停机留 v2 | 预检查纯软件可验证且无在线数值风险 |
 | 4 | 解的多分支 | `inverse` 以 seed（当前关节位置）选支：返回与 seed 同支的解（构型分支不跳变）；无同支解 → `infeasible`。显式分支选择 API 留 v2 | 隐式跳支是机械事故来源；seed 连续性是最小安全语义 |
 | 5 | 组集成 | `AxisGroup::set_kinematics(kin::Kinematics *)`（standby + 空队列守卫，同帧栈）；配置后 MCS/PCS 命令：目标点 → 帧栈 → **逆解** → ACS 关节目标；ACS 命令照旧直通（诊断/维修模式） | 与 KB-036 管线自然级联 |
@@ -38,7 +38,7 @@ B2 v1 = 把 KB-036 的「ACS↔MCS 恒等声明」升级为**可配的 kinematic
 
 | 形态 | 语义 |
 |---|---|
-| 逆解不可达（工作空间外） | `infeasible` |
+| v1 解析逆解不可达（工作空间外） | `infeasible`；H2 数值链按 v2.1 的可观察终止原因分类 |
 | 奇异 margin ≤ 阈值（端点或 aux） | `precondition_failed` |
 | 与 seed 同支无解 | `infeasible`（不跳支） |
 | joint_count ≠ 组轴数 / cartesian 维数不符 | `invalid_argument` |
@@ -101,7 +101,7 @@ B2 v1 = 把 KB-036 的「ACS↔MCS 恒等声明」升级为**可配的 kinematic
 
 | # | 决策点 | 提案 |
 |---|--------|------|
-| 1 | 求解器 | 阻尼最小二乘（DLS，Levenberg-Marquardt 阻尼自适应）+ 关节限位投影；**有界迭代**（≤N 次，RT 合同），不收敛显式 `infeasible`——不静默给近似解 |
+| 1 | 求解器 | 阻尼最小二乘（DLS，Levenberg-Marquardt 阻尼自适应）+ 关节限位投影；**有界迭代**（≤N 次，RT 合同），不收敛显式失败——具体由 v2.1 #4 细分，不静默给近似解 |
 | 2 | 冗余处理 | 7DOF 零空间：次要目标 = 姿态参考（肘位/中位偏好，调用方给权重）；无次要目标时零空间分量为零（最小范数） |
 | 3 | 构型描述 | DH/改进 DH 参数表驱动的通用串联链正解 + 数值雅可比（解析雅可比留后续）；`kin::SerialChain`（PoseKinematics 实现） |
 | 4 | 与解析层关系 | 球腕 6R 仍走解析（快 + 分支确定）；SerialChain 是并列插件不是替换；seed 语义与步门合同不变 |
@@ -127,3 +127,30 @@ B2 v1 = 把 KB-036 的「ACS↔MCS 恒等声明」升级为**可配的 kinematic
 | 6 | 确定性 | 同输入（含 seed）同迭代轨迹同返回——阻尼自适应策略纯函数，无随机重启 |
 | 7 | 显式近似 opt-in | 需要 best-effort 解的调用方走独立入口（`solve_best_effort`，返回码仍标注未收敛 + 携带残差值）——默认入口永不静默降级 |
 | 8 | 残差定义 | SE(3) 误差用 **log map**：位置差 + SO(3) 对数（轴角向量），**不用 RPY 差值作优化残差**（评审裁决——RPY 有万向锁伪影，仅保留为用户 IO 表示；#1 的 ‖Δθ‖ 即此轴角范数） |
+
+### H2 实现记录（2026-07-23，KB-089）
+
+- `kin::SerialChain` 已作为 `PoseKinematics` 并列插件交付：固定容量
+  1～8 个转动关节，支持整链 standard DH / modified DH，模型边界为
+  base-to-flange；解析 `SphericalWrist6R` 仍是球腕 6R 首选。
+- 逆解采用数值雅可比、SO(3) log 残差和确定性自适应 DLS；迭代上限固定
+  32。关节限位与 seed 步门逐步投影，严格入口失败不写输出，
+  `solve_best_effort` 才携带最佳点、双残差与失败码。
+- `not_converged` / `singular_region` / `limit_infeasible` 已追加到
+  `rt::ErrorCode` 尾部并同步结构化诊断与 Python 枚举，既有枚举数值不变。
+- 7DOF 零空间偏好只在主任务已同时通过位置/姿态门后尝试一次并复验双门；
+  该步消耗同一个 32 次总预算，不存在循环外的未计数修整。本批不解除 L5
+  `AxisGroup` 的六轴位姿守卫；7DOF 仅在 `core/kin` 求解面和离线消费面可用。
+- 数值链不新增笼统的“工作空间外”错误码，按可观察终止原因稳定分类：
+  接受下降步但 32 次仍未过门为 `not_converged`，最大阻尼仍无下降方向为
+  `singular_region`，硬限位投影阻断为 `limit_infeasible`，既有 seed 步门
+  阻断仍为 `infeasible`。
+- 验收覆盖 standard/modified DH worked example、UR-like 6DOF 与非退化
+  交替扭角 7DOF 各 2 万例确定性回环、固定 FK oracle、SO(3) 有向性、三类失败、
+  严格/best-effort 分流和带偏好的冻结窗口零分配。preference-enabled 7DOF
+  hot-seed 已通过 Debug ≤30 µs/解硬门。
+- 性能指标仍在同一 benchmark 工件中，但使用独立
+  `SERIAL_CHAIN_METRICS` 行：迁移 PR 的 base parser 会严格拒绝给既有
+  `CARTESIAN_METRICS` 新增字段；独立前缀保证旧 parser 忽略、新 parser
+  合入后纳入 Release 趋势，预算语义不变。Windows CI 另行构建并执行
+  Debug benchmark，直接守住 30 µs 绝对门。

@@ -6,6 +6,13 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- H2（KB-089）新增固定容量 `kin::SerialChain`：支持 1～8 个转动关节的
+  standard/modified DH 正解，以及确定性数值雅可比 + 自适应 DLS 位姿逆解。
+  严格入口同时执行位置/SO(3) log 双残差门、32 次上限、关节限位与 seed
+  步门；显式 best-effort 返回最佳点和残差。追加三类数值 IK 错误码而不改变
+  既有枚举数值；7DOF Debug hot-seed 微基准低于 30 µs 硬门。解析 6R 仍优先，
+  L5 `AxisGroup` 六轴位姿 seam 本批不扩。
+
 - Z1～Z5 软件极致收口：新增可执行的五分钟数字孪生 notebook；为单轴和组提供
   可回读、校验且组级原子提交的 SI 配置及 Python 绑定；把 Python、C++、ST
   三条 30 分钟旅程接入同源 CTest，并让文档站同时发布 MkDocs 与 Doxygen API。

@@ -1,6 +1,16 @@
 #include "axis/group.h"
 #include "fb/motion.h"
 
+#if PLCOPEN_SMOKE_REQUIRE_SERIAL_CHAIN
+#include "kin/serial_chain.h"
+#define PLCOPEN_SMOKE_HAS_SERIAL_CHAIN 1
+#elif __has_include("kin/serial_chain.h")
+#include "kin/serial_chain.h"
+#define PLCOPEN_SMOKE_HAS_SERIAL_CHAIN 1
+#else
+#define PLCOPEN_SMOKE_HAS_SERIAL_CHAIN 0
+#endif
+
 #include <cmath>
 
 int main()
@@ -26,6 +36,21 @@ int main()
         return 3;
     }
 
+#if PLCOPEN_SMOKE_HAS_SERIAL_CHAIN
+    kin::SerialChainSpec chain_spec{};
+    chain_spec.joint_count = 1;
+    chain_spec.links[0] = {1.0, 0.0, 0.0, 0.0, -1.0, 1.0};
+    const kin::SerialChain chain(chain_spec);
+    const double joint[1] = {0.25};
+    kin::Pose6 pose{};
+    chain.forward(joint, pose);
+    if(chain.joint_count() != 1 ||
+       std::fabs(pose.position[0] - std::cos(joint[0])) > 1e-12 ||
+       std::fabs(pose.position[1] - std::sin(joint[0])) > 1e-12) {
+        return 4;
+    }
+#endif
+
     fb::FbMoveLinearAbsolute move;
     move.group_ref = &group;
     move.position.size = 2;
@@ -43,5 +68,5 @@ int main()
                    std::fabs(x.snapshot().command_position - 3.0) < 1e-8 &&
                    std::fabs(y.snapshot().command_position - 4.0) < 1e-8
                ? 0
-               : 4;
+               : 5;
 }
