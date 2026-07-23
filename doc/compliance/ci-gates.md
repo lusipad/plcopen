@@ -5,7 +5,12 @@
 
 > 远端证据截至 2026-07-19：v0.20.0 候选 `5a5cf81` 的 Windows、Linux、
 > Wheels、Coverage、Mutation、Core Nightly 与 Documentation 全部通过；
-> Pages 已启用且站点 200（http://lusipad.com/plcopen/ ）。
+> Pages 已启用且站点 200（https://lusipad.com/plcopen/ ）。
+>
+> 2026-07-24 双语站点
+> [Documentation build/deploy](https://github.com/lusipad/plcopen/actions/runs/30035093781)
+> 全绿；中文根站、英文 `/en/`、Doxygen API 与两份 sitemap 公网复验均为
+> 200。
 
 | Gate | Workflow | 触发 | 证明对象 | Release blocking |
 |------|----------|------|----------|------------------|
