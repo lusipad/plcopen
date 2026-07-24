@@ -10,6 +10,7 @@
 #include "rt/error_text.h"
 #include "rt/units.h"
 #include "st/language.h"
+#include "stream/joint_group.h"
 
 #include <fstream>
 #include <sstream>
@@ -304,6 +305,148 @@ std::vector<std::pair<double, double>> load_cam_table_csv(const std::string &pat
     }
     return table;
 }
+
+class JointStreamSim
+{
+public:
+    JointStreamSim(std::size_t joint_count,
+                   const std::string &mode,
+                   double velocity_limit,
+                   double acceleration_limit,
+                   double jerk_limit,
+                   std::int64_t timeout_cycles,
+                   std::int64_t extrapolation_cycles,
+                   double position_limit)
+        : joint_count_(joint_count)
+    {
+        using plcopen::core::rt::ErrorCode;
+        using plcopen::core::stream::JointFrameMode;
+        using plcopen::core::stream::JointStreamGroup;
+        using plcopen::core::stream::JointStreamGroupConfig;
+
+        if(joint_count < 1 || joint_count > JointStreamGroup::MaxJoints ||
+           !std::isfinite(position_limit) || position_limit <= 0.0) {
+            throw_on_error("JointStreamSim", ErrorCode::invalid_argument);
+        }
+
+        JointStreamGroupConfig config{};
+        config.joint_count = joint_count;
+        config.gain_ramp_cycles = 1;
+        if(mode == "direct") {
+            config.mode = JointFrameMode::direct;
+        } else if(mode == "upsample") {
+            config.mode = JointFrameMode::upsample;
+        } else {
+            throw_on_error("JointStreamSim", ErrorCode::invalid_argument);
+        }
+
+        for(std::size_t joint = 0; joint < joint_count; ++joint) {
+            auto &member = config.joints[joint];
+            member.filter.limits = {
+                velocity_limit,
+                acceleration_limit,
+                acceleration_limit,
+                jerk_limit,
+            };
+            member.filter.position_envelope_enabled = true;
+            member.filter.min_position = -position_limit;
+            member.filter.max_position = position_limit;
+            member.filter.timeout_cycles = timeout_cycles;
+            member.filter.extrapolation_cycles = extrapolation_cycles;
+            member.max_abs_tau_ff = 0.0;
+            member.min_kp = 0.0;
+            member.max_kp = 0.0;
+            member.min_kd = 0.0;
+            member.max_kd = 0.0;
+            member.safe_kp = 0.0;
+            member.safe_kd = 0.0;
+        }
+        throw_on_error("JointStreamSim", group_.configure_frame(config));
+    }
+
+    void reset(const std::vector<double> &positions)
+    {
+        if(!valid_values(positions)) {
+            throw_on_error("reset", plcopen::core::rt::ErrorCode::invalid_argument);
+        }
+        for(std::size_t joint = 0; joint < joint_count_; ++joint) {
+            throw_on_error("reset", group_.reset(joint, {positions[joint], 0.0, 0.0}));
+        }
+    }
+
+    void push_frame(const std::vector<double> &positions,
+                    std::int64_t timestamp_cycles,
+                    const std::optional<std::vector<double>> &velocities)
+    {
+        if(!valid_values(positions) ||
+           (velocities.has_value() && !valid_values(*velocities))) {
+            throw_on_error("push_frame", plcopen::core::rt::ErrorCode::invalid_argument);
+        }
+
+        plcopen::core::stream::JointCommandFrame frame{};
+        frame.joint_count = joint_count_;
+        frame.timestamp_cycles = timestamp_cycles;
+        for(std::size_t joint = 0; joint < joint_count_; ++joint) {
+            frame.joints[joint].q_des = positions[joint];
+            frame.joints[joint].dq_des =
+                velocities.has_value() ? (*velocities)[joint] : 0.0;
+        }
+        throw_on_error("push_frame", group_.push_frame(frame));
+    }
+
+    void cycle(int cycles)
+    {
+        if(cycles < 1) {
+            throw_on_error("cycle", plcopen::core::rt::ErrorCode::invalid_argument);
+        }
+        for(int cycle = 0; cycle < cycles; ++cycle) {
+            group_.cycle();
+        }
+    }
+
+    py::dict setpoint_frame() const
+    {
+        const plcopen::core::stream::JointSetpointFrame &frame =
+            group_.read_setpoint_frame();
+        py::list positions;
+        py::list velocities;
+        py::list accelerations;
+        for(std::size_t joint = 0; joint < frame.joint_count; ++joint) {
+            positions.append(frame.joints[joint].position);
+            velocities.append(frame.joints[joint].velocity);
+            accelerations.append(frame.joints[joint].acceleration);
+        }
+        py::dict result;
+        result["positions"] = static_cast<py::list &&>(positions);
+        result["velocities"] = static_cast<py::list &&>(velocities);
+        result["accelerations"] = static_cast<py::list &&>(accelerations);
+        result["cycle_timestamp"] = frame.cycle_timestamp;
+        result["producer_timestamp_cycles"] = frame.producer_timestamp_cycles;
+        result["frame_sequence"] = frame.frame_sequence;
+        return result;
+    }
+
+    std::uint32_t rejected_frames() const { return group_.rejected_frames(); }
+
+    std::uint32_t dropouts() const { return group_.dropout_count(); }
+
+private:
+    bool valid_values(const std::vector<double> &values) const
+    {
+        if(values.size() != joint_count_) {
+            return false;
+        }
+        for(double value : values) {
+            if(!std::isfinite(value)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    plcopen::core::stream::JointStreamGroup group_{};
+    std::size_t joint_count_ = 0;
+};
 
 class AxisSim
 {
@@ -720,6 +863,23 @@ PYBIND11_MODULE(pyplcopen, module)
         .value("SYNCHRONIZED_MOTION", plcopen::core::axis::AxisStatus::synchronized_motion)
         .value("STOPPING", plcopen::core::axis::AxisStatus::stopping)
         .value("ERRORSTOP", plcopen::core::axis::AxisStatus::errorstop);
+
+    py::class_<JointStreamSim>(module, "JointStreamSim")
+        .def(py::init<std::size_t, const std::string &, double, double, double,
+                      std::int64_t, std::int64_t, double>(),
+             py::arg("joint_count"), py::arg("mode"),
+             py::arg("velocity_limit"), py::arg("acceleration_limit"),
+             py::arg("jerk_limit"), py::arg("timeout_cycles") = 30,
+             py::arg("extrapolation_cycles") = 40,
+             py::arg("position_limit") = 3.14159265358979323846)
+        .def("reset", &JointStreamSim::reset, py::arg("positions"))
+        .def("push_frame", &JointStreamSim::push_frame,
+             py::arg("positions"), py::arg("timestamp_cycles"),
+             py::arg("velocities") = std::nullopt)
+        .def("cycle", &JointStreamSim::cycle, py::arg("cycles") = 1)
+        .def("setpoint_frame", &JointStreamSim::setpoint_frame)
+        .def("rejected_frames", &JointStreamSim::rejected_frames)
+        .def("dropouts", &JointStreamSim::dropouts);
 
     py::class_<AxisSim>(module, "AxisSim")
         .def(py::init<std::int32_t>(), py::arg("domain_id") = 0)
