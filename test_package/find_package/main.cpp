@@ -1,6 +1,12 @@
 #include "axis/group.h"
 #include "fb/motion.h"
+
+#if PLCOPEN_SMOKE_REQUIRE_H1
 #include "stream/joint_group.h"
+#define PLCOPEN_SMOKE_HAS_H1 1
+#else
+#define PLCOPEN_SMOKE_HAS_H1 0
+#endif
 
 #if PLCOPEN_SMOKE_REQUIRE_SERIAL_CHAIN
 #include "kin/serial_chain.h"
@@ -19,6 +25,7 @@ namespace
 
 bool verify_h1_joint_stream()
 {
+#if PLCOPEN_SMOKE_HAS_H1
     using namespace plcopen::core;
 
     stream::JointStreamGroupConfig config{};
@@ -55,6 +62,9 @@ bool verify_h1_joint_stream()
            std::fabs(setpoint.joints[0].position - 0.25) < 1e-12 &&
            std::fabs(setpoint.joints[0].velocity - 0.1) < 1e-12 &&
            std::fabs(setpoint.joints[0].tau_ff - 0.5) < 1e-12;
+#else
+    return true;
+#endif
 }
 
 } // namespace

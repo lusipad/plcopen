@@ -39,6 +39,11 @@ direct/upsample 分层延迟合同、组级断流、混合字段斜坡和 setpoi
 - 初始五拍全慢夹具使用 `timeout_cycles=2`，第 4 拍会按合同进入断流，
   与纯重规划队列观测相互干扰；预算夹具单独提高 watchdog，断流行为由
   独立用例覆盖。
+- 首轮 Linux GCC 主门的代码、CTest、benchmark、安装态/FetchContent 与
+  Conan 均通过，但固定公开 `v0.20.0` 的 vcpkg port 被共用消费者默认要求
+  H1 新 API 阻断。消费者因此新增显式 `PLCOPEN_SMOKE_REQUIRE_H1`：
+  当前源码/安装态默认开启，历史发布包预检显式关闭；未改变 port 版本或
+  伪装 H1 已进入 `v0.20.0`。
 
 ## Verification
 
@@ -46,7 +51,9 @@ direct/upsample 分层延迟合同、组级断流、混合字段斜坡和 setpoi
 - Windows MSVC Release `STREAM_METRICS`：48 关节四项 H1 指标均低于
   300µs；既有 28 关节 legacy 指标也低于原门槛。
 - 安装态 `find_package` 与源码态 `FetchContent` 消费者均编译并运行
-  `stream/joint_group.h` 的 H1 direct 帧冒烟。
+  `stream/joint_group.h` 的 H1 direct 帧冒烟；关闭 H1/H2 未发布面后，
+  同一消费者也已对仅含 legacy `JointStreamGroup::MaxJoints=32` 的历史
+  安装树编译并运行通过。
 - RT safety scan：31 文件通过；replay fixture：18 文件、2409 样本通过。
 - 中英文 MkDocs strict 与 i18n：26 对页面通过。当前 Windows 主机未安装
   Doxygen，CMake `docs` target 只验证了仓库定义的提示型 fallback；真实

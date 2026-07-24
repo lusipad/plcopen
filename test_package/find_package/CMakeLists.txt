@@ -6,6 +6,8 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 option(PLCOPEN_SMOKE_REQUIRE_SERIAL_CHAIN
        "Require the unreleased H2 SerialChain install surface" ON)
+option(PLCOPEN_SMOKE_REQUIRE_H1
+       "Require the unreleased H1 synchronized joint stream install surface" ON)
 
 find_package(plcopen REQUIRED CONFIG)
 
@@ -17,4 +19,11 @@ if(PLCOPEN_SMOKE_REQUIRE_SERIAL_CHAIN)
 else()
     target_compile_definitions(plcopen_find_package_smoke
                                PRIVATE PLCOPEN_SMOKE_REQUIRE_SERIAL_CHAIN=0)
+endif()
+if(PLCOPEN_SMOKE_REQUIRE_H1)
+    target_compile_definitions(plcopen_find_package_smoke
+                               PRIVATE PLCOPEN_SMOKE_REQUIRE_H1=1)
+else()
+    target_compile_definitions(plcopen_find_package_smoke
+                               PRIVATE PLCOPEN_SMOKE_REQUIRE_H1=0)
 endif()
