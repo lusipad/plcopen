@@ -13,7 +13,7 @@ function createExtension(vscode, languageClientModule) {
       `PLCopen ST Language Server 无法启动：${detail}`,
       `解释器：${pythonPath}`,
       `请确认“plcopenSt.pythonPath”指向已安装 pyplcopen 的 Python，`,
-      `并执行：${pythonPath} -m pip install pyplcopen`,
+      `并执行：${pythonPath} -m pip install <path-to-pyplcopen-wheel>`,
     ].join(" ");
   }
 

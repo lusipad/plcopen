@@ -6,7 +6,8 @@
 
 语义矩阵已于 2026-07-24 获维护者批准。C++ `st::LanguageDocument`、
 Python 标准库 stdio server、VS Code 薄客户端、许可证证据和本地 VSIX
-均已完成；CI 与双语用户文档仍待完成。
+均已完成；Windows/Linux Language Tools workflow 与双语用户指南已接入，
+当前只待 PR 远端门禁和合并后证据回填。
 
 ## Decisions
 
@@ -34,6 +35,9 @@ Python 标准库 stdio server、VS Code 薄客户端、许可证证据和本地 
   只保留语言/括号/注释配置，收到 trust grant 后才创建 client。
 - production 许可证清单由 lockfile 与实际安装树生成；ISC/BlueOak 例外
   只能分别用于 `semver`/`minimatch`，不能被未来其他依赖复用。
+- 独立 Language Tools workflow 在 Windows/Linux 同时编译 binding、运行
+  原始 transcript、构建并干净安装 wheel，再用 Node 24 从固定 lockfile
+  测试、审计、打包和检查 VSIX；两平台 artifact 保留 14 天。
 
 ## Deviations
 
@@ -55,6 +59,9 @@ Python 标准库 stdio server、VS Code 薄客户端、许可证证据和本地 
 - `vsce package` 会提示扩展根目录没有独立 LICENSE，以及未 bundle 的
   393 文件性能建议。前者按人专属法律文件规则不由本批复制/新建，后者若
   处理将需要第三个直接构建依赖；两者均不阻止本地 VSIX 构建与安装。
+- 公开 `pyplcopen==0.20.0` 不含尚未发布的 D1 server；扩展失败提示和双语
+  指南因此都要求安装“当前 checkout 构建的 wheel”，不把公开旧包误写成
+  可用修复。公共 PyPI/Marketplace 仍未获授权。
 
 ## Verification
 
@@ -72,6 +79,13 @@ Python 标准库 stdio server、VS Code 薄客户端、许可证证据和本地 
 - VSIX：生成 683.92 KiB / 393 文件的本地 artifact；归档检查证明 9 个
   production package 与 inventory 的名称/版本/许可证完全一致，且不含
   `@vscode/vsce`、任何其他 dev tree、测试、脚本、lockfile 或 `.bin`。
+- Windows Debug：全新配置构建后 98/98 CTest 通过，包含 11 项 fuzz smoke
+  与新增 `plcopen_core_st_language_tests`；RT safety scan 31 文件通过，
+  replay fixture 18 文件/2409 样本零差异。
+- 安装态 C++：安装 `st/language.h` 后，独立 `find_package` ST consumer
+  成功实例化/复用 `LanguageDocument`，再完成既有 ST 编译、绑定和运动。
+- 文档：中英文 MkDocs strict 与 i18n 26 对页面通过；新增同路径
+  `guides/st-language-server/`，明确当前源码快照、trust 与未发布边界。
 ## Questions for review
 
 - 无。

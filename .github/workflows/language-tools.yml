@@ -1,0 +1,107 @@
+name: Language Tools
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  language-tools:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: editors/vscode/package-lock.json
+
+      - name: Build Python binding and language server tests
+        run: >
+          cmake -S . -B build-language-tools
+          -DCMAKE_BUILD_TYPE=Release
+          -DPLCOPEN_BUILD_DEMOS=OFF
+          -DPLCOPEN_BUILD_TESTS=OFF
+          -DPLCOPEN_BUILD_PYTHON_BINDINGS=ON
+
+      - name: Compile Python binding
+        run: cmake --build build-language-tools --config Release --parallel
+
+      - name: Verify binding and raw LSP transcript
+        run: >
+          ctest --test-dir build-language-tools -C Release
+          --output-on-failure
+          -R "^pyplcopen_(smoke|language_tools)$"
+
+      - name: Build wheel
+        run: |
+          python -m pip install build
+          python -m build --wheel --outdir dist
+
+      - name: Verify installed wheel on Linux
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          wheel="$(find dist -maxdepth 1 -name 'pyplcopen-*.whl' -print -quit)"
+          test -n "$wheel"
+          python -m pip install --no-deps --target build-wheel-install "$wheel"
+          PYTHONPATH="$PWD/build-wheel-install" \
+            python python/tests/test_language_bridge.py -v
+
+      - name: Verify installed wheel on Windows
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $Wheel = Get-ChildItem dist -Filter 'pyplcopen-*.whl' |
+            Select-Object -First 1
+          if (-not $Wheel) {
+            throw 'wheel was not produced'
+          }
+          python -m pip install --no-deps --target build-wheel-install $Wheel.FullName
+          $env:PYTHONPATH = Join-Path $env:GITHUB_WORKSPACE 'build-wheel-install'
+          python python/tests/test_language_bridge.py -v
+
+      - name: Install locked VS Code dependencies
+        working-directory: editors/vscode
+        run: npm ci --ignore-scripts
+
+      - name: Verify extension, licenses, and production audit
+        working-directory: editors/vscode
+        run: |
+          npm run verify:licenses
+          npm test
+          npm audit --omit=dev
+
+      - name: Package and inspect VSIX
+        working-directory: editors/vscode
+        run: |
+          npm run package
+          npm run verify:vsix
+
+      - name: Upload local-install VSIX
+        uses: actions/upload-artifact@v7
+        with:
+          name: plcopen-st-language-tools-${{ runner.os }}
+          path: editors/vscode/plcopen-st-language-tools.vsix
+          retention-days: 14

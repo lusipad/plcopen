@@ -89,5 +89,6 @@ cmake --build build --config Release
 ## 更多细节
 
 - [core/st/README.md](https://github.com/lusipad/plcopen/blob/main/core/st/README.md)
+- [ST Language Server 与 VS Code](../guides/st-language-server.md)
 - [ST 运行时参考](../references/st-runtime.md)
 - [Function-block reference](../references/fb-reference.md)

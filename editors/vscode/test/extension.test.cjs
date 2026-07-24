@@ -165,6 +165,9 @@ test("startup failure reports interpreter and install command", async () => {
 
   assert.equal(harness.errors.length, 1);
   assert.match(harness.errors[0], /plcopenSt\.pythonPath/);
-  assert.match(harness.errors[0], /pip install pyplcopen/);
+  assert.match(
+    harness.errors[0],
+    /pip install <path-to-pyplcopen-wheel>/,
+  );
   assert.match(harness.output.join("\n"), /module missing/);
 });

@@ -80,6 +80,17 @@ int fail_scan(st::ScanError error, int cycle)
 
 int main()
 {
+    st::LanguageDocument language_document(kSource);
+    const st::LanguageCompletionList completion =
+        language_document.complete({0, 0});
+    const st::LanguageUpdateReport update =
+        language_document.update(kSource);
+    if(completion.items.empty() || update.reparsed_pous != 0 ||
+       update.reused_pous != 1) {
+        std::cerr << "st guide smoke: language tools install surface failed\n";
+        return 1;
+    }
+
     const st::CompileResult compiled = st::compile(kSource);
     if(!compiled.ok) {
         return fail_compile(compiled);
