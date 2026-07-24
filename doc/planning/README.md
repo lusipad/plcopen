@@ -26,7 +26,7 @@
 | [software-excellence-plan.md](software-excellence-plan.md) | 软件极致候选清单（Y 算法/P 标准面/Z 采纳/E 证据四线） | 2026-07-21 重基线；当前起手见文末 |
 | [t2-mujoco-rerun-plan.md](t2-mujoco-rerun-plan.md) / [实施记录](t2-mujoco-rerun-implementation-notes.md) | T2a MuJoCo 物理闭环 + Rerun 离线记录首批，保持 H1/H2/L5 边界 | **已完成，Windows/Linux 远端复验通过（2026-07-24）** |
 | [d3-online-scope-plan.md](d3-online-scope-plan.md) / [实施记录](d3-online-scope-implementation-notes.md) | D3 `PLCT v1` 在线 Scope：非 RT 落盘、阈值触发、窗口冻结与可选 Rerun | **已完成并上线，PR #23 与主线四门全绿（2026-07-24，KB-091）** |
-| [d1-st-language-server-plan.md](d1-st-language-server-plan.md) / [实施记录](d1-st-language-server-implementation-notes.md) | D1 单文档多 POU ST LSP + trusted-workspace VS Code client | **本地软件交付完成，远端门禁待闭合（2026-07-24，KB-092）** |
+| [d1-st-language-server-plan.md](d1-st-language-server-plan.md) / [实施记录](d1-st-language-server-implementation-notes.md) | D1 单文档多 POU ST LSP + trusted-workspace VS Code client | **已完成并合入，PR #26 与合并后五门全绿（2026-07-24，KB-092）** |
 | [docs-i18n-plan.md](docs-i18n-plan.md) / [实施记录](docs-i18n-implementation-notes.md) | 文档站简体中文默认入口、`/en/` 英文镜像、同页语言切换与原子 Pages 发布 | **已完成并上线，远端 build/deploy 全绿（2026-07-24）** |
 | [docs-site-integration-plan.md](docs-site-integration-plan.md) / [实施记录](docs-site-integration-implementation-notes.md) | 把架构、合规、边界、贡献、治理、安全与变更历史整合为双语站内项目文档层 | **已完成并上线，21 对页面与公网深层路由通过（2026-07-24）** |
 | [docs-reference-integration-plan.md](docs-reference-integration-plan.md) / [实施记录](docs-reference-integration-implementation-notes.md) | 把 ST、标准证据和 ADR 接入双语参考区，修正五个英文页与深层同页语言切换 | **已完成并上线，24 对页面与深层同页语言切换公网通过（2026-07-24）** |
@@ -50,4 +50,4 @@
 
 ---
 
-*本索引最后更新：2026-07-24（D1 本地软件交付完成，远端门禁后转 H1）*
+*本索引最后更新：2026-07-24（D1 主线与公网证据闭合，当前转入 H1）*

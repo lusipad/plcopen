@@ -52,7 +52,7 @@
  │   → R3 LeRobot 集成层                 │  🟢AI：全部软件
  │                                       │
  ├─✅ D3 Scope（主线/公网证据闭合）────────┤  已完成
- │   → 🟡 D1 ST LSP → H1 同步关节流       │  D1 待远端门，随后 H1
+ │   → ✅ D1 ST LSP → 🟡 H1 同步关节流     │  当前 H1
  │   → T2b 大模型孪生 → H3 动力学前馈     │
  ├─🟢 D2 WASM Playground ────────────────┤  候选，不插入当前队列
  │                                       │
@@ -97,7 +97,7 @@
 | H 轨 | 同步关节流 / 数值 IK / 动力学前馈 | ~1.5 L0 | H2 已完成；H1/H3 已进入授权队列 |
 | T 轨 | MuJoCo 闭环孪生 | ~0.5 L0 | T2a 已完成；T2b 已进入授权队列 |
 | R 系列 | 舵机 adapter / 六轴臂 / LeRobot 集成 | ~0.8 L0 | R1 纯软件已交付；R2/R3 等设备 |
-| D 系列 | LSP / WASM Playground / 示波器 | ~1 L0 | D3 已完成并上线；D1 本地交付完成、远端门待闭合；D2 保留候选 |
+| D 系列 | LSP / WASM Playground / 示波器 | ~1 L0 | D3 已完成并上线；D1 已完成并合入；D2 保留候选 |
 | 补遗 | Y7b/Y4b/Y3′/T28 反馈毒性防线 | ~1 L0 | 已挂号 |
 
 扣除已完成的 L 系列与商用门板后，**剩余存货重估约 8-9 L0 当量**。按
@@ -158,8 +158,13 @@ E5 已完成四类指标、同机 base/head report-only 比较和 90 天 JSON �
 D3→D1→H1→T2b→H3 软件队列；D3 已由
 [PR #23](https://github.com/lusipad/plcopen/pull/23) 合并，主线 Windows、
 Linux、Twin/Scope、Documentation 与双语公网页面均已复验。D1（KB-092）
-已完成 C++/Python/VS Code/VSIX/CI/双语文档的本地软件交付，当前等待远端
-门禁，闭合后转入 H1。
+已由 [PR #26](https://github.com/lusipad/plcopen/pull/26) 合并；合并后
+[Windows](https://github.com/lusipad/plcopen/actions/runs/30104753037)、
+[Linux](https://github.com/lusipad/plcopen/actions/runs/30104753119)、
+[Language Tools](https://github.com/lusipad/plcopen/actions/runs/30104753368)、
+[Twin](https://github.com/lusipad/plcopen/actions/runs/30104753300) 与
+[Documentation](https://github.com/lusipad/plcopen/actions/runs/30104753259)
+均全绿，中英文指南已上线；当前转入 H1。
 F 轨仍是最后一块大软件和 #1/#4 的前置，ADR-0006 许可证核验与
 台架决策完成后立即插队，按 F1→F2→F3 推进。
 
