@@ -17,6 +17,12 @@
 > 全绿，21 对 Markdown、Doxygen 拼装与 Pages 推送通过；中文 `/project/`、
 > 英文 `/en/project/`、架构/合规/安全深层页及两份 sitemap 公网复验均为
 > 200。
+>
+> 2026-07-24 技术参考页站内整合
+> [Documentation build/deploy](https://github.com/lusipad/plcopen/actions/runs/30060185662)
+> 全绿，24 对 Markdown、英文正文语言合同、Doxygen 拼装与 Pages 推送通过；
+> ST 运行时、标准证据、ADR、五个修正后的英文页及两份 sitemap 公网复验均为
+> 200，深层页可见语言选择器保持对应路径。
 
 | Gate | Workflow | 触发 | 证明对象 | Release blocking |
 |------|----------|------|----------|------------------|
