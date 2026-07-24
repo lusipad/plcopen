@@ -8,18 +8,40 @@ stream 是阶梯旁支撑库：仅依赖 otg/rt、被 L5 axis 消费，不碰语
 semantics; 轴会话集成已在 L5/L6 交付（见
 [core/axis README](../axis/README.md) 的 B9 stream session 一节）。
 
-Multi-joint aggregation (`joint_group.h`, BS1.7): `JointStreamGroup` banks up
-to 32 independent per-joint filters behind one shared configuration call — a
-configuration convenience with no cross-joint time-synchronization promise
-(whole-body consistency belongs to the producer). Budget evidence: 28 joints
-at 1 kHz cost ~24 us/cycle at the staggered 100 Hz steady state and ~241
-us/cycle with every joint re-solving every cycle (`STREAM_METRICS` in the
-core benchmark), inside the 300 us (30%) budget gate.
+Multi-joint aggregation (`joint_group.h`) has two explicitly isolated
+surfaces:
+
+- the BS1.7 legacy surface banks up to 48 independent filters behind one
+  shared configuration call and makes no cross-joint synchronization promise;
+- the H1 frame surface accepts a fixed-capacity atomic
+  `{q_des, dq_des, tau_ff, kp, kd}` frame with per-joint policy. `direct`
+  presents all accepted q/dq/tau fields in the next group cycle, while
+  `upsample` reuses `StreamFilter1D` and limits slow replans to 10 joints per
+  cycle. Both modes use one group-local watchdog and publish one command
+  snapshot through `read_setpoint_frame()`.
+
+Producer timestamps only order and identify frames; group-local cycles control
+activation and dropout age. Rejected frames change no joint target, mixed
+field, sequence, or running profile. The snapshot is commanded state, not
+actual feedback. H1 carries `tau_ff` as data only; an adapter or executor must
+not consume it until the separate T18 safety contract is approved and
+implemented.
+
+Release budget evidence (`STREAM_METRICS`): the legacy 28-joint path costs
+~26.85 us/cycle at staggered 100 Hz and ~234.50 us/cycle with all joints
+re-solving. H1 at 48 joints costs ~0.15 us direct steady, ~0.75 us direct
+adversarial, ~12.90 us upsample fast-path, and ~131.00 us with the 10-slow-
+replan budget, all below the approved 300 us software gates on the measured
+Windows MSVC Release host.
 
 Shared group configuration is transactional: every member is preflighted
 before any configuration is committed. A rejected running reconfiguration
 keeps the previous joint count, member configurations, and profiles intact;
 `end_session()` reopens the next shared configuration window.
+
+Frame configuration is also transactional and per joint. A session must call
+`configure_frame()`, reset every configured member, then use only
+`push_frame()`; frame and legacy per-joint submissions cannot be mixed.
 
 First slice scope (BS1.2-BS1.5):
 
