@@ -71,6 +71,8 @@ The HTML contains one lane per axis plus final position, maximum absolute
 velocity/acceleration, and maximum single-cycle position step. It reads only
 the trace path supplied on the command line and writes only the requested
 outputs.
+For live following, threshold triggers, bounded pre/post windows, and Rerun
+`.rrd`, continue with the [online commissioning scope](online-scope.md).
 
 For incident capture fields and the safety boundary, continue with the
 [operations guide](../operations.md).

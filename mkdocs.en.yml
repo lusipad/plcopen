@@ -34,6 +34,7 @@ nav:
     - Motion tuning: guides/tuning.md
     - TwinCAT / CODESYS migration: guides/twinCAT-codesys-migration.md
     - Diagnostics and trace: guides/diagnostics.md
+    - Online commissioning scope: guides/online-scope.md
     - Operations: operations.md
   - References:
     - Algorithm White-Box: getting-started/algorithms.md

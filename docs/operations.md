@@ -55,7 +55,9 @@ The HTML is a self-contained SVG timeline with one lane per axis, tick on the
 horizontal axis, and command position in green. It also reports final
 position, maximum velocity/acceleration, and maximum one-cycle position step.
 Use it first to distinguish a command-sequence, dynamic-constraint, or host
-bridge problem before deeper replay or hardware reproduction.
+bridge problem before deeper replay or hardware reproduction. To follow a
+running trace, freeze a threshold window, or write `.rrd`, continue with the
+[online commissioning scope](guides/online-scope.md).
 
 ## Safety boundary
 

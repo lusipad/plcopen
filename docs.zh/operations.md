@@ -50,7 +50,8 @@ python tools/plcopen_trace.py rt_executor_trace.bin --csv rt_executor_trace.csv 
 HTML 输出是自包含的 SVG 时序图：每个轴一条 lane，横轴为 tick，绿线表示命令
 位置，并附带最终位置、最大速度/加速度和最大单周期位置步长摘要。先用它判断
 问题出在命令序列、动力学约束还是宿主桥接，再决定是否需要更深的 replay /
-真机复现。
+真机复现。运行中按阈值冻结前后窗口、持续写 `.rrd` 的方法见
+[在线调试示波器](guides/online-scope.md)。
 
 ## 安全边界
 

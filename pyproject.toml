@@ -30,6 +30,9 @@ classifiers = [
 ]
 
 [project.optional-dependencies]
+scope = [
+    "rerun-sdk>=0.34,<0.35",
+]
 twin = [
     "mujoco>=3.10,<3.11",
     "rerun-sdk>=0.34,<0.35",

@@ -6,6 +6,12 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- D3（KB-091）把参考 executor 的 `PLCT v1` trace 升级为在线 commissioning
+  Scope：RT 线程只向固定容量 SPSC 发布记录，非 RT writer 持续落盘；工具侧
+  支持单轴 position/velocity/acceleration 的 rising/falling 阈值穿越、
+  精确前后窗口冻结、兼容 PLCT/CSV/HTML 输出及可选 Rerun `.rrd`。队列满时
+  trace 丢样并计数但不反压控制；格式、运动输出和 ST L7 调试合同均不改变。
+
 - 文档站参考区新增双语 ST 运行时、标准与证据、架构决策三组站内导读，
   保留规范矩阵和 ADR 原文为唯一事实源；五个原本“英文 URL、中文正文”的
   实时集成、调参、迁移、运维和功能块页面已完整英文化。i18n 门禁由 21 对
