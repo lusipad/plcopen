@@ -1,6 +1,11 @@
 # D1 ST Language Server 语义矩阵 v1
 
-> 状态：**草案，待维护者批准（2026-07-24）**。
+> 状态：**维护者已批准（2026-07-24）**。
+>
+> 批准范围：本矩阵全部 16 项 v1 决策，以及
+> `vscode-languageclient 10.1.0` production tree 中 `semver`（ISC）与
+> `minimatch`（BlueOak-1.0.0）的许可证例外。批准不包含 Marketplace、
+> PyPI、Tag 或 GitHub Release 发布。
 >
 > 设计依据：[long-term-plan T40](../planning/long-term-plan.md)、
 > [软件极致计划 D1](../planning/software-excellence-plan.md)、

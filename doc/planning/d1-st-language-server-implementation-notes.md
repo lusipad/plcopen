@@ -4,9 +4,15 @@
 
 ## 摘要
 
-尚未实施；语义矩阵等待维护者批准。
+语义矩阵已于 2026-07-24 获维护者批准；尚未开始实现。
 
 ## Decisions
+
+- 维护者在紧接明确审批文本后回复“继续”，批准
+  [D1 v1 语义矩阵](../compliance/st-language-server-semantics.md)全部范围。
+- 同时批准 `semver`（ISC）与 `minimatch`（BlueOak-1.0.0）作为 VSIX
+  production 传递依赖；仍不授权 Marketplace、PyPI、Tag 或 GitHub
+  Release 发布。
 
 ## Deviations
 
@@ -14,9 +20,4 @@
 
 ## Questions for review
 
-- 维护者是否批准
-  [D1 v1 语义矩阵](../compliance/st-language-server-semantics.md)，包括单文档
-  多 POU 边界，以及扩展固定使用 `vscode-languageclient 10.1.0` 和
-  `@vscode/vsce 3.9.2`？
-- 是否同时明确批准 production 传递依赖 `semver` 的 ISC 与 `minimatch`
-  的 BlueOak-1.0.0 许可证？未批准时不得生成 npm lockfile 或开始扩展实现。
+- 无。
