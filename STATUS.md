@@ -16,7 +16,12 @@
 Coverage/Mutation/Docs 全通过。**中英双语文档站已上线**，本批
 [Documentation build/deploy](https://github.com/lusipad/plcopen/actions/runs/30035093781)
 全绿
-（https://lusipad.com/plcopen/ ，Pages 2026-07-11 启用）。**executor
+（https://lusipad.com/plcopen/ ，Pages 2026-07-11 启用）。架构、合规、
+边界、贡献、治理、安全与变更历史已进一步整合为
+[中文项目文档](https://lusipad.com/plcopen/project/) 与
+[英文项目文档](https://lusipad.com/plcopen/en/project/)；
+[本批 Documentation build/deploy](https://github.com/lusipad/plcopen/actions/runs/30054317413)
+全绿并通过 21 对页面校验。**executor
 双域已落地**（ADR-0007：规划域产帧、RT 域仅消费承诺轨迹，TSAN 零
 报告）。S0 纯软件发布准备与发布执行均已收口；tag `v0.20.0` 固定到
 `7788a85`，tag 工作流已通过 Trusted Publishing 发布 20 个 wheels 与 1 个

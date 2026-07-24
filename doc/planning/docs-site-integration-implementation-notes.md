@@ -5,9 +5,9 @@
 ## 摘要
 
 九对双语项目导读页、分层导航和权威源契约已完成；内部计划、归档和完整规范
-矩阵继续留在仓库，不进入普通用户路径。本地 strict 构建、21 对页面校验、
-全站链接检查、浏览器导航 QA 与独立审查均通过，待远端 Documentation 与
-Pages 部署验证。
+矩阵继续留在仓库，不进入普通用户路径。本地与远端 strict 构建、21 对页面
+校验、全站链接检查、浏览器导航 QA、独立审查和 Pages 部署均通过；中英文
+项目导览与深层主题页已上线。
 
 ## Decisions
 
@@ -51,4 +51,12 @@ Pages 部署验证。
 - 本地浏览器 QA：中文导航显示九个项目入口；中英文聚合页 `lang`、
   canonical 与深层路径正确；英文聚合页八个权威来源齐全。
 - 独立代码审查：APPROVE，0 个剩余问题。
-- 远端 Documentation 与公网 Pages：待验证。
+- PR #19 的 Documentation `30053381705`：strict build 通过；PR 事件按契约
+  跳过 deploy。
+- 合并提交 `ecf9638` 的
+  [Documentation build/deploy](https://github.com/lusipad/plcopen/actions/runs/30054317413)：
+  build 与 deploy 均通过，包含 21 对页面、Doxygen API 拼装和 `gh-pages`
+  推送。
+- 公网 smoke：中文 `/project/`、英文 `/en/project/`、中文架构、英文合规、
+  中文安全和两份 sitemap 均返回 200，语言标记与新路径正确。
+- 合并提交 `ecf9638` 的 Linux、Windows、Twin 主分支工作流全部通过。
