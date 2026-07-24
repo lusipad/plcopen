@@ -67,11 +67,16 @@ sprint 记录）在 [doc/archive/roadmap-history.md](doc/archive/roadmap-history
    [Linux](https://github.com/lusipad/plcopen/actions/runs/30071051258)、
    [Twin/Scope](https://github.com/lusipad/plcopen/actions/runs/30071051277) 与
    [Documentation](https://github.com/lusipad/plcopen/actions/runs/30071051246)
-   主线全绿。D1（KB-092）的 C++ 工具索引、Python stdio LSP、wheel、
-   trusted-workspace VS Code client、许可证证据、本地 VSIX、双平台
-   Language Tools workflow 与双语指南已完成本地交付，当前等待 PR 远端
-   门禁；闭合后转入 H1。D2 WASM Playground 与 RL 保留候选，不插入本
-   队列。
+   主线全绿。D1（KB-092）已由
+   [PR #26](https://github.com/lusipad/plcopen/pull/26) 合并；合并后的
+   [Windows](https://github.com/lusipad/plcopen/actions/runs/30104753037)、
+   [Linux](https://github.com/lusipad/plcopen/actions/runs/30104753119)、
+   [Language Tools](https://github.com/lusipad/plcopen/actions/runs/30104753368)、
+   [Twin](https://github.com/lusipad/plcopen/actions/runs/30104753300) 与
+   [Documentation](https://github.com/lusipad/plcopen/actions/runs/30104753259)
+   主线全绿，中英文 ST Language Server 指南与两份 sitemap 公网复验为
+   200。Marketplace、PyPI、tag 与 GitHub Release 均未执行；当前转入 H1。
+   D2 WASM Playground 与 RL 保留候选，不插入本队列。
 7. **F 轨 EtherCAT**：仍是最大的剩余软件块和商用指标 #1/#4 的上游；
    ADR-0006 许可证人工核验与台架决策完成后立即插队，按 F1→F2→F3 推进。
 8. **完成面守护**：PLCopen/Beckhoff C0→C6 与 ST L0→L7、L∀ 已完成；只
@@ -220,4 +225,4 @@ VS Code 扩展与 D2 WASM Playground，挂在 L 系列拆解的触发表。）
 
 ---
 
-*最后更新：2026-07-24（D1 本地软件交付完成，远端门禁后转入 H1）*
+*最后更新：2026-07-24（D1 主线与公网证据闭合，当前转入 H1 同步关节流）*

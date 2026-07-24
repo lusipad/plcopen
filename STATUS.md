@@ -72,13 +72,21 @@ sim2real 均不在声明范围；[PR #16](https://github.com/lusipad/plcopen/pul
 [Documentation](https://github.com/lusipad/plcopen/actions/runs/30071051246)
 全绿；[中文](https://lusipad.com/plcopen/guides/online-scope/)与
 [英文](https://lusipad.com/plcopen/en/guides/online-scope/)页面已上线。
-**D1 ST Language Server 已完成本地软件交付（2026-07-24，KB-092）**：
+**D1 ST Language Server 已完成并合入（2026-07-24，KB-092）**：
 权威 C++ ST 前端新增 POU 粒度容错工具索引，Python 标准库 stdio server
 提供 UTF-16 增量诊断/补全/定义/悬停，薄 VS Code client 只在 trusted
 workspace 启动指定解释器。固定 npm lock、9 包 production 许可证/integrity
 清单、第三方 notices 草案、双平台 Language Tools workflow 与本地 VSIX
-均已落地；当前等待 PR 远端门禁，尚未发布 Marketplace、PyPI、tag 或
-GitHub Release。门禁闭合后按授权队列转入 H1 同步关节流。
+均已落地；[PR #26](https://github.com/lusipad/plcopen/pull/26) 合入后的
+[Windows](https://github.com/lusipad/plcopen/actions/runs/30104753037)、
+[Linux](https://github.com/lusipad/plcopen/actions/runs/30104753119)、
+[Language Tools](https://github.com/lusipad/plcopen/actions/runs/30104753368)、
+[Twin](https://github.com/lusipad/plcopen/actions/runs/30104753300) 与
+[Documentation](https://github.com/lusipad/plcopen/actions/runs/30104753259)
+主线门禁全绿，[中文](https://lusipad.com/plcopen/guides/st-language-server/)
+和[英文](https://lusipad.com/plcopen/en/guides/st-language-server/)指南已上线。
+Marketplace、PyPI、tag 和 GitHub Release 均未授权、未执行；当前按授权队列
+转入 H1 同步关节流。
 
 ## 历史刻度（处于哪一步）
 
@@ -140,7 +148,7 @@ sink 门面，生产层无反向引用）。分层健康度见
 | **H2 数值 IK 兜底** | **已完成（2026-07-23，KB-089）**：1～8 轴转动关节 `SerialChain`、standard/modified DH、数值雅可比 + 自适应 DLS、32 次总上限、三类失败码、显式 best-effort 与 7DOF 零空间偏好均已落地；6DOF/非退化 7DOF 各 2 万例回环、固定 FK/SO(3) oracle、带偏好冻结窗口零分配，preference-enabled Debug hot-seed 通过 30 µs 专项门。解析 6R 仍优先，L5 位姿 seam 仍限六轴 |
 | **T2a MuJoCo/Rerun 闭环孪生** | **已完成（2026-07-24，KB-090）**：2,000 tick/2.0 s、双轴末误差 ≤0.02 rad、command 确定性、feedback 单位换算、断流反例、错误模型/覆盖保护与 `.rrd` footer 均有可执行测试；默认依赖不变，外部模型只接本地路径。[Twin integration](https://github.com/lusipad/plcopen/actions/runs/30024648555) 的 Windows/Linux 与 [Windows](https://github.com/lusipad/plcopen/actions/runs/30024648191) / [Linux](https://github.com/lusipad/plcopen/actions/runs/30024648125) 主门禁均通过 |
 | **D3 在线调试示波器** | **已完成并上线（2026-07-24，KB-091）**：`PLCT v1` 在线落盘不改格式，RT 侧仅 SPSC push/丢样计数，非 RT writer 独占文件 I/O；工具侧提供 rising/falling 阈值、精确前后窗口、严格截断拒绝、PLCT/CSV/HTML 与可选 Rerun `.rrd`。本地定向 14/14、Debug CTest 97/97、RT scan、replay 与双语文档门通过；PR #23、合并后四条主线工作流及中英文公网页面均已复验。不声明 actual/error/ST watch、远程服务或认证测量能力 |
-| **D1 ST Language Server** | **本地软件交付完成（2026-07-24，KB-092），远端门禁待闭合**：C++ 权威诊断/POU 索引、Python stdio LSP、wheel、trusted-workspace VS Code client、固定 lock/许可证证据、本地 VSIX、Windows/Linux workflow 与双语指南均已实现。Windows Debug 98/98（含 11 fuzz）、15 项 Python、4 项 Node、RT scan、18/2409 replay、安装态 C++/wheel、双语 strict、`npm audit --omit=dev` 与 VSIX 9 包/dev-tree 检查通过；不声明跨文件 IDE、在线 PLC 或任何公共发布 |
+| **D1 ST Language Server** | **已完成并合入（2026-07-24，KB-092）**：C++ 权威诊断/POU 索引、Python stdio LSP、wheel、trusted-workspace VS Code client、固定 lock/许可证证据、本地 VSIX、Windows/Linux workflow 与双语指南均已实现。Windows Debug 98/98（含 11 fuzz）、15 项 Python、4 项 Node、RT scan、18/2409 replay、安装态 C++/wheel、双语 strict、`npm audit --omit=dev` 与 VSIX 9 包/dev-tree 检查通过；PR #26 及合并后 Windows/Linux/Language Tools/Twin/Documentation 五门全绿，双语公网页面已复验；不声明跨文件 IDE、在线 PLC、Marketplace/PyPI/tag/GitHub Release 发布 |
 | AxisGroup 架构债 | **第 1-5 批全部完成（2026-07-21）**：connector、joint look-ahead、Cartesian path/window、frame/pose/kinematics 与 MoveDirect lifecycle/path 各自形成明确 owner；第 2-5 批累计 75 个 `AxisGroup` 方法原样迁出，`group.h` 7744→4487 行；93/93、RT scan、18/2409 replay 与 find_package/FetchContent consumer 全绿。共享 queue/status/error 与 management 调度按设计保留在 `AxisGroup` |
 | Y2 epsilon 政策 | **已声明化**（KB-057：段时长钳零 + 复验，整数量化天然覆盖） |
 | Y2 Ruckig 对照 | **人工门控**（ADR-0003：需先审查上游许可证，不进 R1） |

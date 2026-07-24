@@ -32,6 +32,17 @@
 > [Documentation](https://github.com/lusipad/plcopen/actions/runs/30071051246)
 > 全绿，25 对双语 Markdown 通过；中文 `/guides/online-scope/`、英文
 > `/en/guides/online-scope/` 与两份 sitemap 公网复验均为 200。
+>
+> 2026-07-24 D1 ST Language Server 由
+> [PR #26](https://github.com/lusipad/plcopen/pull/26) 合并；合并后的
+> [Windows](https://github.com/lusipad/plcopen/actions/runs/30104753037)、
+> [Linux](https://github.com/lusipad/plcopen/actions/runs/30104753119)、
+> [Language Tools](https://github.com/lusipad/plcopen/actions/runs/30104753368)、
+> [Twin](https://github.com/lusipad/plcopen/actions/runs/30104753300) 与
+> [Documentation](https://github.com/lusipad/plcopen/actions/runs/30104753259)
+> 全绿；Language Tools 在 Windows/Linux 生成并验证 wheel 与 VSIX artifact，
+> 26 对双语 Markdown 通过；中文 `/guides/st-language-server/`、英文
+> `/en/guides/st-language-server/` 与两份 sitemap 公网复验均为 200。
 
 | Gate | Workflow | 触发 | 证明对象 | Release blocking |
 |------|----------|------|----------|------------------|

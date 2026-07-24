@@ -6,8 +6,9 @@
 
 语义矩阵已于 2026-07-24 获维护者批准。C++ `st::LanguageDocument`、
 Python 标准库 stdio server、VS Code 薄客户端、许可证证据和本地 VSIX
-均已完成；Windows/Linux Language Tools workflow 与双语用户指南已接入，
-当前只待 PR 远端门禁和合并后证据回填。
+均已完成；[PR #26](https://github.com/lusipad/plcopen/pull/26) 已合并，
+合并后的五条主线工作流全绿，中英文用户指南已上线。Marketplace、PyPI、
+tag 与 GitHub Release 均未授权、未执行。
 
 ## Decisions
 
@@ -69,10 +70,10 @@ Python 标准库 stdio server、VS Code 薄客户端、许可证证据和本地 
   通过，覆盖 UTF-16/CRLF/emoji、多 change 原子性、版本、容量、协议错误、
   四类查询、真实 pybind 与真实模块 stdio 入口。
 - CTest：`pyplcopen_smoke` 与 `pyplcopen_language_tools` 通过。
-- Wheel：CPython 3.14 Windows wheel 构建通过，并核对同时包含
+- Wheel：本地 CPython 3.14 Windows wheel 构建通过，并核对同时包含
   `plcopen_lsp/{__init__,__main__,server}.py` 与 `pyplcopen` `.pyd`；
-  安装到干净 target 后 5 项真实 bridge/stdio 测试通过；Linux wheel 留给
-  后续 CI。
+  安装到干净 target 后 5 项真实 bridge/stdio 测试通过；Language Tools CI
+  的 Windows/Linux wheel 构建与干净 target 安装也均通过。
 - VS Code：先确认 4 项 manifest/trust/startup 测试全红，再实现至全绿；
   `npm ci --ignore-scripts`、许可证清单 freshness、`npm audit --omit=dev`
   零漏洞与 `vsce package` 均通过。
@@ -86,6 +87,22 @@ Python 标准库 stdio server、VS Code 薄客户端、许可证证据和本地 
   成功实例化/复用 `LanguageDocument`，再完成既有 ST 编译、绑定和运动。
 - 文档：中英文 MkDocs strict 与 i18n 26 对页面通过；新增同路径
   `guides/st-language-server/`，明确当前源码快照、trust 与未发布边界。
+
+## 远端证据
+
+- [PR #26](https://github.com/lusipad/plcopen/pull/26) 已合并到主线提交
+  `b91ca3d6dc90509c1cc17f7178fd5b0696b9405c`。
+- 合并后的
+  [Windows](https://github.com/lusipad/plcopen/actions/runs/30104753037)、
+  [Linux](https://github.com/lusipad/plcopen/actions/runs/30104753119)、
+  [Language Tools](https://github.com/lusipad/plcopen/actions/runs/30104753368)、
+  [Twin](https://github.com/lusipad/plcopen/actions/runs/30104753300) 与
+  [Documentation](https://github.com/lusipad/plcopen/actions/runs/30104753259)
+  工作流均为 `success`。
+- [中文指南](https://lusipad.com/plcopen/guides/st-language-server/)、
+  [英文指南](https://lusipad.com/plcopen/en/guides/st-language-server/)与两份
+  sitemap 均已公网复验为 200。
+
 ## Questions for review
 
 - 无。
