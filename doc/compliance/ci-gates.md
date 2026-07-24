@@ -23,6 +23,15 @@
 > 全绿，24 对 Markdown、英文正文语言合同、Doxygen 拼装与 Pages 推送通过；
 > ST 运行时、标准证据、ADR、五个修正后的英文页及两份 sitemap 公网复验均为
 > 200，深层页可见语言选择器保持对应路径。
+>
+> 2026-07-24 D3 在线 Scope 由
+> [PR #23](https://github.com/lusipad/plcopen/pull/23) 合并；合并后的
+> [Windows](https://github.com/lusipad/plcopen/actions/runs/30071051259)、
+> [Linux](https://github.com/lusipad/plcopen/actions/runs/30071051258)、
+> [Twin/Scope](https://github.com/lusipad/plcopen/actions/runs/30071051277) 与
+> [Documentation](https://github.com/lusipad/plcopen/actions/runs/30071051246)
+> 全绿，25 对双语 Markdown 通过；中文 `/guides/online-scope/`、英文
+> `/en/guides/online-scope/` 与两份 sitemap 公网复验均为 200。
 
 | Gate | Workflow | 触发 | 证明对象 | Release blocking |
 |------|----------|------|----------|------------------|

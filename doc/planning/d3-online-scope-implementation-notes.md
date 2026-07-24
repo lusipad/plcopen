@@ -4,9 +4,9 @@
 
 ## 摘要
 
-本地实现完成，待全量门禁与远端交付闭环。`PLCT v1` 格式不变；参考 executor
-改为 RT SPSC 发布、非 RT writer 持续落盘，工具侧完成严格读取、在线跟随、
-阈值触发、精确窗口、PLCT/CSV/HTML 与可选 Rerun 输出。
+实现与交付已闭合。`PLCT v1` 格式不变；参考 executor 改为 RT SPSC 发布、
+非 RT writer 持续落盘，工具侧完成严格读取、在线跟随、阈值触发、精确窗口、
+PLCT/CSV/HTML 与可选 Rerun 输出。
 
 ## Decisions
 
@@ -43,4 +43,17 @@
   失败原子性与 Rerun footer）。
 - 本地 Debug 全量 CTest 97/97、RT scan 31 文件、18 份/2409 样本 replay
   零差异、双语 MkDocs strict 与 25 对 i18n 校验通过。
-- PR 与合并后主线远端：待执行。
+- [PR #23](https://github.com/lusipad/plcopen/pull/23) 的
+  [Windows](https://github.com/lusipad/plcopen/actions/runs/30068134503)、
+  [Linux](https://github.com/lusipad/plcopen/actions/runs/30068134506)、
+  [Twin/Scope](https://github.com/lusipad/plcopen/actions/runs/30068134505) 与
+  [Documentation](https://github.com/lusipad/plcopen/actions/runs/30068134539)
+  全绿后合并。
+- 合并后主线
+  [Windows](https://github.com/lusipad/plcopen/actions/runs/30071051259)、
+  [Linux](https://github.com/lusipad/plcopen/actions/runs/30071051258)、
+  [Twin/Scope](https://github.com/lusipad/plcopen/actions/runs/30071051277) 与
+  [Documentation](https://github.com/lusipad/plcopen/actions/runs/30071051246)
+  全绿；[中文 Scope](https://lusipad.com/plcopen/guides/online-scope/)、
+  [英文 Scope](https://lusipad.com/plcopen/en/guides/online-scope/)及两份
+  sitemap 公网复验均为 200。
