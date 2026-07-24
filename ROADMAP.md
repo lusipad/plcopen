@@ -5,7 +5,7 @@
 [doc/planning/](doc/planning/README.md)，历史里程碑（v0.2 → v0.11 全部
 sprint 记录）在 [doc/archive/roadmap-history.md](doc/archive/roadmap-history.md)。
 
-## 当前承诺（2026-07-24，唯一优先级声明）
+## 当前承诺（2026-07-25，唯一优先级声明）
 
 优先级只在本节声明一次，下列各节只承载明细，不再各自宣称"当前/最高"：
 
@@ -75,8 +75,16 @@ sprint 记录）在 [doc/archive/roadmap-history.md](doc/archive/roadmap-history
    [Twin](https://github.com/lusipad/plcopen/actions/runs/30104753300) 与
    [Documentation](https://github.com/lusipad/plcopen/actions/runs/30104753259)
    主线全绿，中英文 ST Language Server 指南与两份 sitemap 公网复验为
-   200。Marketplace、PyPI、tag 与 GitHub Release 均未执行；当前转入 H1。
-   D2 WASM Playground 与 RL 保留候选，不插入本队列。
+   200。H1（KB-035）随后由
+   [PR #29](https://github.com/lusipad/plcopen/pull/29) 合入：48 关节原子
+   混合帧、direct/upsample、组级 watchdog/断流与命令快照已完成；合入后的
+   [Windows](https://github.com/lusipad/plcopen/actions/runs/30132203965)、
+   [Linux](https://github.com/lusipad/plcopen/actions/runs/30132203958)、
+   [Language Tools](https://github.com/lusipad/plcopen/actions/runs/30132204009)、
+   [Twin](https://github.com/lusipad/plcopen/actions/runs/30132203971) 与
+   [Documentation](https://github.com/lusipad/plcopen/actions/runs/30132203996)
+   主线全绿。Marketplace、PyPI、tag 与 GitHub Release 均未执行；当前转入
+   T2b 大模型孪生。D2 WASM Playground 与 RL 保留候选，不插入本队列。
 7. **F 轨 EtherCAT**：仍是最大的剩余软件块和商用指标 #1/#4 的上游；
    ADR-0006 许可证人工核验与台架决策完成后立即插队，按 F1→F2→F3 推进。
 8. **完成面守护**：PLCopen/Beckhoff C0→C6 与 ST L0→L7、L∀ 已完成；只
@@ -225,4 +233,4 @@ VS Code 扩展与 D2 WASM Playground，挂在 L 系列拆解的触发表。）
 
 ---
 
-*最后更新：2026-07-24（D1 主线与公网证据闭合，当前转入 H1 同步关节流）*
+*最后更新：2026-07-25（H1 主线证据闭合，当前转入 T2b 大模型孪生）*

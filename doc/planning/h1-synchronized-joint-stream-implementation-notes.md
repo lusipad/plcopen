@@ -56,8 +56,19 @@ direct/upsample 分层延迟合同、组级断流、混合字段斜坡和 setpoi
   安装树编译并运行通过。
 - RT safety scan：31 文件通过；replay fixture：18 文件、2409 样本通过。
 - 中英文 MkDocs strict 与 i18n：26 对页面通过。当前 Windows 主机未安装
-  Doxygen，CMake `docs` target 只验证了仓库定义的提示型 fallback；真实
-  Doxygen/Graphviz、Linux GCC/Clang、ARM64 与远端工作流仍待 PR 门禁。
+  Doxygen，CMake `docs` target 只验证了仓库定义的提示型 fallback。
+- [PR #29](https://github.com/lusipad/plcopen/pull/29) 的 Windows、
+  Linux GCC/Clang、ARM64/QEMU、E5、Doxygen/Graphviz、Language Tools、
+  Twin 与 Documentation 全绿，合入提交为
+  `220e80c263128ea71f850492bd76ba7169bf9b4e`。
+- 合入后的 [Linux](https://github.com/lusipad/plcopen/actions/runs/30132203958)、
+  [Documentation](https://github.com/lusipad/plcopen/actions/runs/30132203996)、
+  [Language Tools](https://github.com/lusipad/plcopen/actions/runs/30132204009)
+  与 [Twin](https://github.com/lusipad/plcopen/actions/runs/30132203971)
+  首轮全绿。[Windows](https://github.com/lusipad/plcopen/actions/runs/30132203965)
+  首轮仅 H2 Debug IK 微基准在 runner 负载下测得 32.45µs、超过既有
+  30µs 门；同 SHA 的 PR run 已通过，失败 job 原 SHA 重跑时该门和整条
+  workflow 均通过。H1 功能与预算门没有失败。
 
 ## Questions for review
 
