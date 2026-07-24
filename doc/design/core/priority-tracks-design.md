@@ -8,7 +8,7 @@
 
 | 模块 | 层 | 轨 | 内容 | 语义矩阵 |
 |------|----|----|------|---------|
-| `core/stream`（扩展） | 支撑库（阶梯旁，otg/rt，被 L5 消费） | H1 | `push_frame`（混合指令帧原子 + 同拍生效）、`DropoutPolicy::coordinated_stop`、容量 48、**直通/升频双模式（T25）**、**流式快路径（T24，已实现）**、τ_ff/增益衰减与斜坡（T23） | T24 已批已实现（KB-064，默认关，见 [trajectory-stream-semantics](../../compliance/trajectory-stream-semantics.md) 行 5）；**T23/T25 待批**（实现前须补入矩阵再请批） |
+| `core/stream`（扩展） | 支撑库（阶梯旁，otg/rt，被 L5 消费） | H1 | `push_frame`（混合指令帧原子提交）、容量 48、**直通/升频双模式（T25）**、**流式快路径（T24，已实现）**、组级断流与 τ_ff/增益衰减斜坡（T23） | T24 已实现（KB-064，legacy 默认关）；T23/T25 已随 [H1 v2.1 矩阵](../../compliance/trajectory-stream-semantics.md#v21-增补h1-同步关节流组已批准2026-07-25)批准，待实现 |
 | `core/kin/serial_chain.h`（**已实现，KB-089**） | 支撑库（阶梯旁，kin，geom/rt） | H2 | 固定容量 1～8 轴 DH/modified-DH 通用串联链：正解、数值雅可比、确定性自适应 DLS、限位投影、7DOF 零空间偏好；实现 `PoseKinematics`（与解析层并列插件） | ✅ v2/v2.1 已批准并于 2026-07-23 交付；严格/best-effort 分流，L5 六轴 seam 不扩 |
 | `core/dyn/`（新目录） | L2 级纯数学 | H3 | **分链前馈/重力补偿**——每条固定基座链/树独立 RNEA（重力/科氏/惯量前馈；腿/臂/腰各自成链，ADR-0005 口径）；参数结构体（质量/质心/惯量）、独立 ABA oracle（仅测试层）；**全身浮动基座 + 接触动力学显式非目标**（上层职责）；无 PLCopen 语义，进 RT 扫描 | ⏳ 待起草（T15 定界后） |
 | 扭矩流通道 | L3/L5 | H3+T18 | CST 流模式 + 三层安全监督（扭矩限幅/速度监督/位置围栏） | ⏳ 待起草（安全语义域，单独矩阵） |
