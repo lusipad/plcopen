@@ -61,12 +61,18 @@ P#5 分支覆盖门、P#2 轨迹精度软件证据和 P#7 文档主体也已关�
 依赖不变。CI 只用本仓 primitive 双关节模型，真机保真、安全、标定与
 sim2real 均不在声明范围；[PR #16](https://github.com/lusipad/plcopen/pull/16)
 的 Windows/Linux Twin integration 与主门禁均已远端复验。
-**D3 在线调试示波器已完成本地实现（2026-07-24，KB-091，远端待验）**：
+**D3 在线调试示波器已完成（2026-07-24，KB-091）**：
 参考 executor 在 RT 侧只发布固定大小 trace 记录，非 RT writer 持续写兼容
 `PLCT v1` 文件；工具侧支持阈值穿越、精确前后窗口、CSV/HTML 与可选 Rerun
 `.rrd`。trace 丢样只计数、不阻塞控制；command-only 格式与 ST L7 trace
-保持独立。当前按维护者授权的 D3→D1→H1→T2b→H3 队列推进，D3 远端闭合后
-再进入 D1。
+保持独立。[PR #23](https://github.com/lusipad/plcopen/pull/23) 已合并，
+主线 [Windows](https://github.com/lusipad/plcopen/actions/runs/30071051259)、
+[Linux](https://github.com/lusipad/plcopen/actions/runs/30071051258)、
+[Twin/Scope](https://github.com/lusipad/plcopen/actions/runs/30071051277) 与
+[Documentation](https://github.com/lusipad/plcopen/actions/runs/30071051246)
+全绿；[中文](https://lusipad.com/plcopen/guides/online-scope/)与
+[英文](https://lusipad.com/plcopen/en/guides/online-scope/)页面已上线。
+当前按授权队列转入 D1 ST LSP。
 
 ## 历史刻度（处于哪一步）
 
@@ -127,7 +133,7 @@ sink 门面，生产层无反向引用）。分层健康度见
 | **Z1～Z5 软件极致收口** | **已完成（2026-07-22）**：可执行 notebook；轴/组 SI 配置及 Python 绑定；Python/C++/ST 三条同源旅程与 Doxygen API；Conan/vcpkg 双消费者资产；全量 ErrorCode 结构化诊断和 trace HTML/SVG。Windows Debug 98/98、Conan 两消费者、vcpkg 严格 port、MkDocs strict、Doxygen/Graphviz、RT scan 与 18/2409 replay 均通过；PR #12/#13 全门绿色，主干 Pages build/deploy 通过，[Cold User 公开入口复验](https://github.com/lusipad/plcopen/actions/runs/29920696958) 29 秒全绿。外部中央 registry 收录仍按上游维护者流程跟踪 |
 | **H2 数值 IK 兜底** | **已完成（2026-07-23，KB-089）**：1～8 轴转动关节 `SerialChain`、standard/modified DH、数值雅可比 + 自适应 DLS、32 次总上限、三类失败码、显式 best-effort 与 7DOF 零空间偏好均已落地；6DOF/非退化 7DOF 各 2 万例回环、固定 FK/SO(3) oracle、带偏好冻结窗口零分配，preference-enabled Debug hot-seed 通过 30 µs 专项门。解析 6R 仍优先，L5 位姿 seam 仍限六轴 |
 | **T2a MuJoCo/Rerun 闭环孪生** | **已完成（2026-07-24，KB-090）**：2,000 tick/2.0 s、双轴末误差 ≤0.02 rad、command 确定性、feedback 单位换算、断流反例、错误模型/覆盖保护与 `.rrd` footer 均有可执行测试；默认依赖不变，外部模型只接本地路径。[Twin integration](https://github.com/lusipad/plcopen/actions/runs/30024648555) 的 Windows/Linux 与 [Windows](https://github.com/lusipad/plcopen/actions/runs/30024648191) / [Linux](https://github.com/lusipad/plcopen/actions/runs/30024648125) 主门禁均通过 |
-| **D3 在线调试示波器** | **本地实现完成，远端待验（2026-07-24，KB-091）**：`PLCT v1` 在线落盘不改格式，RT 侧仅 SPSC push/丢样计数，非 RT writer 独占文件 I/O；工具侧提供 rising/falling 阈值、精确前后窗口、严格截断拒绝、PLCT/CSV/HTML 与可选 Rerun `.rrd`。本地定向测试与全量门禁证据将在实施记录闭合后回填；不声明 actual/error/ST watch、远程服务或认证测量能力 |
+| **D3 在线调试示波器** | **已完成并上线（2026-07-24，KB-091）**：`PLCT v1` 在线落盘不改格式，RT 侧仅 SPSC push/丢样计数，非 RT writer 独占文件 I/O；工具侧提供 rising/falling 阈值、精确前后窗口、严格截断拒绝、PLCT/CSV/HTML 与可选 Rerun `.rrd`。本地定向 14/14、Debug CTest 97/97、RT scan、replay 与双语文档门通过；PR #23、合并后四条主线工作流及中英文公网页面均已复验。不声明 actual/error/ST watch、远程服务或认证测量能力 |
 | AxisGroup 架构债 | **第 1-5 批全部完成（2026-07-21）**：connector、joint look-ahead、Cartesian path/window、frame/pose/kinematics 与 MoveDirect lifecycle/path 各自形成明确 owner；第 2-5 批累计 75 个 `AxisGroup` 方法原样迁出，`group.h` 7744→4487 行；93/93、RT scan、18/2409 replay 与 find_package/FetchContent consumer 全绿。共享 queue/status/error 与 management 调度按设计保留在 `AxisGroup` |
 | Y2 epsilon 政策 | **已声明化**（KB-057：段时长钳零 + 复验，整数量化天然覆盖） |
 | Y2 Ruckig 对照 | **人工门控**（ADR-0003：需先审查上游许可证，不进 R1） |
