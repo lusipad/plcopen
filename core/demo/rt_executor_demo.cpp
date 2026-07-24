@@ -94,7 +94,7 @@ static_assert(std::is_trivially_copyable<FeedbackFrame>::value,
 static_assert(std::is_trivially_copyable<GroupSnapshot>::value,
               "executor snapshots must remain allocation-free queue payloads");
 
-// --- trace record (X4): versioned POD, drained to file post-run. ---
+// --- trace record (X4/D3): versioned POD, drained by a non-RT writer. ---
 struct TraceRecord
 {
     std::int64_t tick;
@@ -106,22 +106,17 @@ struct TraceRecord
 };
 
 constexpr std::uint32_t TraceVersion = 1;
+constexpr std::size_t TraceRingCapacity = 65536;
 
-bool write_trace(const char *path, const TraceRecord *records, std::size_t count)
+bool write_trace_header(std::FILE *file)
 {
-    std::FILE *file = std::fopen(path, "wb");
-    if(file == nullptr) {
-        return false;
-    }
     const char magic[4] = {'P', 'L', 'C', 'T'};
     const std::uint32_t version = TraceVersion;
     const std::uint32_t record_size = sizeof(TraceRecord);
-    std::fwrite(magic, 1, 4, file);
-    std::fwrite(&version, sizeof(version), 1, file);
-    std::fwrite(&record_size, sizeof(record_size), 1, file);
-    std::fwrite(records, sizeof(TraceRecord), count, file);
-    std::fclose(file);
-    return true;
+    return std::fwrite(magic, 1, 4, file) == 4 &&
+           std::fwrite(&version, sizeof(version), 1, file) == 1 &&
+           std::fwrite(&record_size, sizeof(record_size), 1, file) == 1 &&
+           std::fflush(file) == 0;
 }
 
 void try_elevate_rt_thread()
@@ -170,11 +165,66 @@ int main(int argc, char **argv)
     static rt::SpscQueue<CommittedFrame, CommittedRingCapacity> committed_ring;
     static rt::SpscQueue<FeedbackFrame, FeedbackQueueCapacity> feedback_queue;
     static rt::SpscQueue<GroupSnapshot, SnapshotQueueCapacity> snapshot_queue;
+    static rt::SpscQueue<TraceRecord, TraceRingCapacity> trace_ring;
     std::atomic<bool> running{true};
     std::atomic<bool> primed{false};
+    std::atomic<bool> trace_writer_running{true};
+    std::atomic<bool> trace_writer_ready{false};
+    std::atomic<bool> trace_write_failed{false};
+    std::atomic<std::size_t> trace_records_written{0};
+    std::atomic<std::size_t> trace_dropped{0};
     long commands_enqueued = 0;
     long command_queue_full = 0;
     long snapshot_reads = 0;
+
+    // D3 online trace writer: all file operations live here, outside the
+    // RT context. The ready handshake proves the header is durable before
+    // control cycles begin, so a follower can attach immediately.
+    std::thread trace_writer([&]() {
+        std::FILE *file = std::fopen(trace_path, "wb");
+        if(file == nullptr || !write_trace_header(file)) {
+            trace_write_failed.store(true, std::memory_order_release);
+            trace_writer_ready.store(true, std::memory_order_release);
+            if(file != nullptr) std::fclose(file);
+            return;
+        }
+        trace_writer_ready.store(true, std::memory_order_release);
+
+        TraceRecord record{};
+        while(trace_writer_running.load(std::memory_order_acquire) ||
+              !trace_ring.empty()) {
+            std::size_t batch = 0;
+            while(batch < 256 && trace_ring.pop(record)) {
+                if(std::fwrite(&record, sizeof(record), 1, file) != 1) {
+                    trace_write_failed.store(true, std::memory_order_release);
+                    break;
+                }
+                trace_records_written.fetch_add(1, std::memory_order_relaxed);
+                ++batch;
+            }
+            if(trace_write_failed.load(std::memory_order_acquire)) break;
+            if(batch != 0) {
+                if(std::fflush(file) != 0) {
+                    trace_write_failed.store(true, std::memory_order_release);
+                    break;
+                }
+            } else {
+                std::this_thread::sleep_for(std::chrono::microseconds(100));
+            }
+        }
+        const bool final_flush_failed = std::fflush(file) != 0;
+        const bool close_failed = std::fclose(file) != 0;
+        if(final_flush_failed || close_failed)
+            trace_write_failed.store(true, std::memory_order_release);
+    });
+    while(!trace_writer_ready.load(std::memory_order_acquire))
+        std::this_thread::yield();
+    if(trace_write_failed.load(std::memory_order_acquire)) {
+        trace_writer_running.store(false, std::memory_order_release);
+        trace_writer.join();
+        std::printf("executor: cannot create trace %s\n", trace_path);
+        return 1;
+    }
 
     // Producer thread: enqueues a zigzag of blended segments and drains
     // snapshots at a leisurely rate. It never accesses AxisGroup.
@@ -276,9 +326,6 @@ int main(int argc, char **argv)
 
     // RT thread (main): pops exactly one committed frame per period,
     // drives servos, feeds actuals back, publishes snapshot + trace.
-    static rt::SpscQueue<TraceRecord, 65536> trace_ring;
-    static TraceRecord drained[65536];
-    std::size_t drained_count = 0;
     long overruns = 0;
     long starvation = 0;
     long frames_consumed = 0;
@@ -339,14 +386,8 @@ int main(int argc, char **argv)
             record.position = current.position[a];
             record.velocity = current.velocity[a];
             record.acceleration = current.acceleration[a];
-            if(!trace_ring.push(record) && drained_count == 0) {
-                // Ring full: drain in-place (demo-domain shortcut).
-                TraceRecord sink{};
-                while(trace_ring.pop(sink) && drained_count < 65536) {
-                    drained[drained_count++] = sink;
-                }
-                trace_ring.push(record);
-            }
+            if(!trace_ring.push(record))
+                trace_dropped.fetch_add(1, std::memory_order_relaxed);
         }
         if(!feedback_queue.push(feedback)) {
             ++feedback_queue_full;
@@ -387,6 +428,8 @@ int main(int argc, char **argv)
     running.store(false);
     producer.join();
     planner.join();
+    trace_writer_running.store(false, std::memory_order_release);
+    trace_writer.join();
 
     // Final sentinel snapshot from the RT context (single producer holds).
     GroupSnapshot final_marker{};
@@ -402,14 +445,13 @@ int main(int argc, char **argv)
         ++snapshot_reads;
     }
 
-    TraceRecord sink{};
-    while(trace_ring.pop(sink) && drained_count < 65536) {
-        drained[drained_count++] = sink;
-    }
-    if(!write_trace(trace_path, drained, drained_count)) {
-        std::printf("executor: cannot write trace %s\n", trace_path);
-        return 1;
-    }
+    const std::size_t written =
+        trace_records_written.load(std::memory_order_acquire);
+    const std::size_t dropped =
+        trace_dropped.load(std::memory_order_acquire);
+    const bool trace_healthy =
+        !trace_write_failed.load(std::memory_order_acquire) && dropped == 0 &&
+        written == static_cast<std::size_t>(cycles) * 2;
 
     const double ms =
         std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(elapsed)
@@ -419,12 +461,13 @@ int main(int argc, char **argv)
                 "frames_planned=%lld frames_consumed=%ld starvation=%ld "
                 "feedback_bridged=%ld feedback_queue_full=%ld "
                 "snapshot_published=%ld snapshot_reads=%ld snapshot_queue_full=%ld "
-                "overruns=%ld trace_records=%zu final=(%.6f, %.6f) status=%d\n",
+                "overruns=%ld trace_records=%zu trace_dropped=%zu "
+                "final=(%.6f, %.6f) status=%d\n",
                 cycles, ms, commands_enqueued, commands_consumed, command_queue_full,
                 command_rejections, static_cast<long long>(plan_tick),
                 frames_consumed, starvation, feedback_bridged, feedback_queue_full,
                 snapshots_published, snapshot_reads, snapshot_queue_full, overruns,
-                drained_count, current.position[0], current.position[1],
+                written, dropped, current.position[0], current.position[1],
                 current.status);
     const bool command_handoff_healthy =
         commands_enqueued > 0 && commands_consumed == commands_enqueued &&
@@ -437,7 +480,7 @@ int main(int argc, char **argv)
     const bool snapshot_handoff_healthy =
         snapshots_published > 0 && snapshot_reads > 0 && snapshot_queue_full == 0 &&
         final_snapshot_received;
-    const bool healthy = drained_count > 0 && command_handoff_healthy &&
+    const bool healthy = trace_healthy && command_handoff_healthy &&
                          committed_handoff_healthy && feedback_handoff_healthy &&
                          snapshot_handoff_healthy;
     std::printf("EXECUTOR %s\n", healthy ? "PASS" : "FAIL");

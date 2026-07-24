@@ -62,6 +62,8 @@ python tools/plcopen_trace.py rt_executor_trace.bin \
 
 HTML 每个轴占一条 lane，并包含最终位置、最大绝对速度/加速度，以及最大单
 周期位置步长。它只读取命令行提供的 trace 路径，也只写出显式请求的输出。
+需要运行中跟随、阈值触发、前后窗口冻结或 Rerun `.rrd` 时，继续阅读
+[在线调试示波器](online-scope.md)。
 
 关于事故采集字段和安全边界，请继续阅读
 [运维手册](../operations.md)。

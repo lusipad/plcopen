@@ -30,8 +30,8 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Install optional twin dependencies
-        run: python -m pip install ".[twin]"
+      - name: Install optional twin and scope dependencies
+        run: python -m pip install ".[twin,scope]"
 
       - name: Verify primitive-model feasibility
         run: python tools/test_twin_feasibility.py
@@ -40,3 +40,4 @@ jobs:
         run: |
           python ci/smoke_test.py
           python tools/test_mujoco_rerun_demo.py
+          python -m unittest tools.test_plcopen_trace.TraceToolTests.test_rrd_export_has_footer_and_axis_entities -v

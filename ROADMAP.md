@@ -58,17 +58,22 @@ sprint 记录）在 [doc/archive/roadmap-history.md](doc/archive/roadmap-history
    本仓 primitive 双关节 fixture 闭合 stream→physics→feedback→`.rrd`，
    [PR #16](https://github.com/lusipad/plcopen/pull/16) 的
    [Windows/Linux Twin integration](https://github.com/lusipad/plcopen/actions/runs/30024648555)
-   与 Windows/Linux 主门禁均已通过。本批到此闭合；T2b 更大模型、H1/H3
-   或 RL 不自动接续。
-6. **F 轨 EtherCAT**：仍是最大的剩余软件块和商用指标 #1/#4 的上游；
+   与 Windows/Linux 主门禁均已通过。
+6. **维护者授权的软件队列（进行中）**：2026-07-24 已明确按
+   **D3 Scope → D1 ST LSP → H1 同步关节流 → T2b 大模型孪生 →
+   H3 动力学前馈** 顺序开发。当前 D3 已完成本地实现，正在执行全量门禁与
+   远端交付；在其远端证据闭合前不切换到 D1。D2 WASM Playground 与 RL
+   保留候选，不插入本队列。
+7. **F 轨 EtherCAT**：仍是最大的剩余软件块和商用指标 #1/#4 的上游；
    ADR-0006 许可证人工核验与台架决策完成后立即插队，按 F1→F2→F3 推进。
-7. **完成面守护**：PLCopen/Beckhoff C0→C6 与 ST L0→L7、L∀ 已完成；只
+8. **完成面守护**：PLCopen/Beckhoff C0→C6 与 ST L0→L7、L∀ 已完成；只
    维护能力矩阵、特性表和限制注册表不漂移，不扩张到 IDE、Safety、CNC。
    商用门板已关闭的软件面保持不回退，台架、部署、认证和日历证据不以
    软件模拟冒充。
 
-真机在手时 H1 修订稿送批并插队。这里的“对等”限于核心可编程运动能力，
-不含 IDE、Safety、EtherCAT 产品化、CNC/G-code 与品牌私有扩展。
+真机在手时补做 H1 硬件证据并插队，但不以软件模拟冒充台架结论。这里的
+“对等”限于核心可编程运动能力，不含 IDE、Safety、EtherCAT 产品化、
+CNC/G-code 与品牌私有扩展。
 
 ## 已完成里程碑：PLCopen 扎实化（2026-Q3，2026-07-12 归档）
 
@@ -207,4 +212,4 @@ VS Code 扩展与 D2 WASM Playground，挂在 L 系列拆解的触发表。）
 
 ---
 
-*最后更新：2026-07-22（Y4b 与 Z0′ 完成证据同步）*
+*最后更新：2026-07-24（维护者授权 D3→D1→H1→T2b→H3 顺序，D3 本地实现待远端闭环）*

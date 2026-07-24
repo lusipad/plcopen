@@ -51,8 +51,10 @@
  │   R1 舵机 adapter → R2 六轴臂 demo    │  🔴人：下单
  │   → R3 LeRobot 集成层                 │  🟢AI：全部软件
  │                                       │
- ├─🟢 D2 WASM Playground ────────────────┤  ★采纳核弹（零安装）
- ├─🟢 T2 MuJoCo 闭环孪生 ────────────────┤  ★人形叙事的软件立足点
+ ├─🟡 D3 Scope（本地完成，远端待验）──────┤  当前队列
+ │   → D1 ST LSP → H1 同步关节流          │  维护者已授权顺序
+ │   → T2b 大模型孪生 → H3 动力学前馈     │
+ ├─🟢 D2 WASM Playground ────────────────┤  候选，不插入当前队列
  │                                       │
  │  ═══ 以上全部完成 = 软件面到头 ═══     │
  │                                       │
@@ -92,10 +94,10 @@
 | 工程债 | A1 浮点合同 / A2 WCET / G1 治理 / AxisGroup 2-5 批 / X5 IPC | 1.5 L0 | **A1/A2/G1/X5 与 AxisGroup 第 1-5 批全部完成** |
 | 证据 | E5 趋势管线 / E6 竞品对拍 | 0.6 L0 | **E5 软件实现、远端 bootstrap 与真实比较均完成；E6 保持手动** |
 | **F 轨** | **EtherCAT 主站抽象 + 虚拟从站 CI + 驱动品牌矩阵** | **~2 L0** | **★未开工** |
-| H 轨 | 混合指令帧 / 数值 IK / 动力学前馈 | ~1.5 L0 | 设计已备 |
-| T 轨 | MuJoCo 闭环孪生 | ~0.5 L0 | 设计已备 |
+| H 轨 | 同步关节流 / 数值 IK / 动力学前馈 | ~1.5 L0 | H2 已完成；H1/H3 已进入授权队列 |
+| T 轨 | MuJoCo 闭环孪生 | ~0.5 L0 | T2a 已完成；T2b 已进入授权队列 |
 | R 系列 | 舵机 adapter / 六轴臂 / LeRobot 集成 | ~0.8 L0 | R1 纯软件已交付；R2/R3 等设备 |
-| D 系列 | LSP（L2b 后）/ WASM Playground / 示波器 | ~1 L0 | 部分待前置 |
+| D 系列 | LSP / WASM Playground / 示波器 | ~1 L0 | D3 本地完成待远端；D1 紧随其后，D2 保留候选 |
 | 补遗 | Y7b/Y4b/Y3′/T28 反馈毒性防线 | ~1 L0 | 已挂号 |
 
 扣除已完成的 L 系列与商用门板后，**剩余存货重估约 8-9 L0 当量**。按
@@ -152,8 +154,10 @@ Windows/Linux/ARM64 数值测试与三平台 Wheels 通过。A2 WCET 与 G1 治�
 E5 已完成四类指标、同机 base/head report-only 比较和 90 天 JSON 历史的软件实现；
 [主干 Linux CI](https://github.com/lusipad/plcopen/actions/runs/29873287478) 完成首次 bootstrap，
 [PR #9](https://github.com/lusipad/plcopen/actions/runs/29874743112/job/88782685662) 又以 `mode=compare`、`verdict=pass` 完成真实 base/head 对拍。AxisGroup 第 1-5 批
-行为簇拆分已全部完成，`group.h` 7744→4487 行。F 轨仍是最后一块大软件和 #1/#4 的前置，
-ADR-0006 许可证核验与台架决策完成后立即插队，按 F1→F2→F3 推进。
+行为簇拆分已全部完成，`group.h` 7744→4487 行。维护者已于 2026-07-24 授权
+D3→D1→H1→T2b→H3 软件队列；当前 D3 本地实现完成，待全量与远端证据闭合后
+进入 D1。F 轨仍是最后一块大软件和 #1/#4 的前置，ADR-0006 许可证核验与
+台架决策完成后立即插队，按 F1→F2→F3 推进。
 
 **🔴 人侧，按杠杆排序**：
 
@@ -167,7 +171,7 @@ ADR-0006 许可证核验与台架决策完成后立即插队，按 F1→F2→F3 
 
 ---
 
-*创建：2026-07-12；2026-07-19 按 L 系列闭合与当前队列重基线。
+*创建：2026-07-12；2026-07-24 按 D3→D1→H1→T2b→H3 授权队列重基线。
 本文是复盘第一入口；细表在 [软件极致计划](software-excellence-plan.md)、
 [L 系列拆解](l-series-work-breakdown.md)、[采纳计划](adoption-plan.md)；
 关键路径与八项硬指标仍以 [长期规划](long-term-plan.md) 为准。*

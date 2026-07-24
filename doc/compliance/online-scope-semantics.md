@@ -32,7 +32,7 @@ D3 v1 把既有 executor 周期 trace 从“运行结束后一次性落盘”升
 | 4 | 静态读取 | header、版本、记录大小或尾部完整性不合法时拒绝整个文件，不返回伪完整数据 | 截断数据不能冒充有效证据 |
 | 5 | 触发条件 | 一个轴的 position/velocity/acceleration，支持 rising/falling 阈值穿越；首个样本只建立比较基线，不自行触发 | v1 接口小且行为可精确测试 |
 | 6 | 窗口 | `pre_cycles` 表示触发拍之前保留的完整周期数，另含触发拍；`post_cycles` 表示触发后完整周期数；输出包含所有轴记录并按原顺序保存 | “前 N + 触发 + 后 M”没有 off-by-one 歧义 |
-| 7 | follow 完成 | 捕获到触发后第 `post_cycles` 拍的全部记录后冻结；无触发或生产者停滞超过显式超时则失败 | 在线命令必须有界，不无限等待 |
+| 7 | follow 完成 | 捕获到触发后第 `post_cycles` 拍的全部记录后冻结；`--timeout` 从 follow 开始计总时限，等待 header、触发与 post 窗口均计入，持续来数据也不延长 | 在线命令必须有界，不无限等待 |
 | 8 | 输出 | 冻结窗口可写兼容 `PLCT v1`、CSV、单文件 HTML；Rerun 可实时记录所有跟随样本并写显式 `.rrd`，Viewer 仅显式 `--spawn` | 保留无依赖路径，同时提供 commissioning 曲线 |
 | 9 | 配置域 | 轴号非负，周期数非负，阈值有限，超时为正；不合法组合在打开输出前拒绝 | 无部分文件、无静默修正 |
 
@@ -46,7 +46,7 @@ D3 v1 把既有 executor 周期 trace 从“运行结束后一次性落盘”升
 | 静态文件尾部不足一个完整记录 | 拒绝并报告 truncated record |
 | follow 暂时读到半条记录 | 保留残片并继续等待，不输出半条记录 |
 | trigger 字段、轴号、阈值、窗口或超时无效 | CLI 参数错误，未创建 window/CSV/HTML/RRD |
-| 阈值始终未穿越 | 超时失败，不生成冻结窗口 |
+| 阈值始终未穿越 | 总时限到达后失败，不生成冻结窗口 |
 | Rerun 未安装但请求 `.rrd`/`--spawn` | 明确依赖错误；PLCT/CSV/HTML 路径不受影响 |
 | `--spawn` 未同时指定 `.rrd` | 参数错误，避免只有易失 Viewer 而无证据文件 |
 
@@ -71,4 +71,3 @@ D3 v1 把既有 executor 周期 trace 从“运行结束后一次性落盘”升
 - 不把 ST `DebugTraceRecord`、breakpoint 或 force 语义并入 v1；
 - 不做复合布尔表达式、多触发器、hysteresis、自动缩放策略或无限历史；
 - 不在 RT 线程执行阈值判断、Rerun 调用、文件 I/O 或动态内存操作。
-
