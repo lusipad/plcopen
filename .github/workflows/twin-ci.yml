@@ -40,4 +40,5 @@ jobs:
         run: |
           python ci/smoke_test.py
           python tools/test_mujoco_rerun_demo.py
+          python tools/test_mujoco_joint_stream_demo.py
           python -m unittest tools.test_plcopen_trace.TraceToolTests.test_rrd_export_has_footer_and_axis_entities -v

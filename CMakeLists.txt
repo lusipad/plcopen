@@ -202,6 +202,17 @@ assert abs(axis.command_velocity()) < 1e-9
 axis.stream_disengage()
 assert axis.status() == pyplcopen.AxisStatus.STANDSTILL
 
+# T2b synchronized seven-joint Python seam consumes one complete H1 frame.
+joint_stream = pyplcopen.JointStreamSim(
+    7, "direct", 0.8, 0.08, 0.02, 30, 40, math.pi
+)
+joint_stream.reset([0.0] * 7)
+joint_stream.push_frame([0.01 * joint for joint in range(7)], 1)
+joint_stream.cycle()
+joint_snapshot = joint_stream.setpoint_frame()
+assert joint_snapshot["frame_sequence"] == 1
+assert len(joint_snapshot["positions"]) == 7
+
 # Pose surface (KB-042/043/044): TCP pose command over a Cartesian line,
 # then read back in the same frame.
 arm = pyplcopen.PoseArmSim()

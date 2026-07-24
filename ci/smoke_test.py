@@ -55,6 +55,16 @@ axis.cycle(400)
 axis.stream_disengage()
 assert axis.status() == pyplcopen.AxisStatus.STANDSTILL
 
+joint_stream = pyplcopen.JointStreamSim(
+    7, "direct", 0.8, 0.08, 0.02, 30, 40, math.pi
+)
+joint_stream.reset([0.0] * 7)
+joint_stream.push_frame([0.01 * joint for joint in range(7)], 1)
+joint_stream.cycle()
+joint_snapshot = joint_stream.setpoint_frame()
+assert joint_snapshot["frame_sequence"] == 1
+assert len(joint_snapshot["positions"]) == 7
+
 arm = pyplcopen.PoseArmSim()
 arm.move_joints([0.3, 0.6, 1.0, -0.4, 0.9, 0.2], 0.05, 0.004, 0.004, 0.004)
 arm.move_pose(0.35, 0.15, 0.55, 0.3, -0.5, 1.2, 0.01, 0.002, 0.002, 0.002,

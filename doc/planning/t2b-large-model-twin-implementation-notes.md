@@ -13,6 +13,10 @@
 - 2026-07-25：内存 MJCF spike 在现有 MuJoCo 3.10.0 环境完成 7 joint /
   7 actuator、2,000 tick、2.0 s，状态全有限，墙钟 0.0218 s；`kp=100`
   的保持段末最大误差为 0.00977 rad，因此规格硬门固定为 0.02 rad。
+- 2026-07-25：红测先固定 `JointStreamSim` 的最小公开形状、七关节
+  feasibility、200 帧闭环、确定性、失败原子性、组级断流和 Rerun footer/
+  实体集合。生产代码未改时，新集成测试因模块不存在失败，feasibility
+  因 `seven_link.xml` 不存在失败；T2a 原测试仍通过。
 
 ## Deviations
 
@@ -25,4 +29,3 @@
   单纯替换 MJCF 无法形成 T2b，必须泛化装载层并新增独立 H1 旅程。
 
 ## Questions for review
-
