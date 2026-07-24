@@ -23,6 +23,7 @@
 - [运动调参](guides/tuning.md)
 - [TwinCAT / CODESYS 迁移](guides/twinCAT-codesys-migration.md)
 - [诊断与 trace 可视化](guides/diagnostics.md)
+- [ST Language Server 与 VS Code](guides/st-language-server.md)
 - [运维](operations.md)
 - [项目文档](project/index.md)
 

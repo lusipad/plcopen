@@ -72,7 +72,13 @@ sim2real 均不在声明范围；[PR #16](https://github.com/lusipad/plcopen/pul
 [Documentation](https://github.com/lusipad/plcopen/actions/runs/30071051246)
 全绿；[中文](https://lusipad.com/plcopen/guides/online-scope/)与
 [英文](https://lusipad.com/plcopen/en/guides/online-scope/)页面已上线。
-当前按授权队列转入 D1 ST LSP。
+**D1 ST Language Server 已完成本地软件交付（2026-07-24，KB-092）**：
+权威 C++ ST 前端新增 POU 粒度容错工具索引，Python 标准库 stdio server
+提供 UTF-16 增量诊断/补全/定义/悬停，薄 VS Code client 只在 trusted
+workspace 启动指定解释器。固定 npm lock、9 包 production 许可证/integrity
+清单、第三方 notices 草案、双平台 Language Tools workflow 与本地 VSIX
+均已落地；当前等待 PR 远端门禁，尚未发布 Marketplace、PyPI、tag 或
+GitHub Release。门禁闭合后按授权队列转入 H1 同步关节流。
 
 ## 历史刻度（处于哪一步）
 
@@ -101,7 +107,7 @@ sink 门面，生产层无反向引用）。分层健康度见
 | 支撑库 kin | 阶梯旁支撑库（依赖 geom/rt，被 L5 消费）：kinematics 插件 ABI + 合规 harness、龙门/SCARA 解析解、球腕 6R（Pieper + 8 分支 seed 选支、奇异 margin）；H2 固定容量 1～8 轴 DH/modified-DH `SerialChain`（数值雅可比 + 自适应 DLS + 7DOF 偏好，严格/best-effort 分流） | KB-037/041/089 |
 | 支撑库 stream | 阶梯旁支撑库（依赖 otg/rt，被 L5 消费）：B9 轨迹流滤波（OTG 在线重解、断流看门狗、solve_fixed_time rendezvous 跟踪律）、多关节聚合 | KB-035 |
 | st 语言层（ST L0-L7、L∀） | **外圈消费面之一**（与 L7 adapters 平行、居 L6 之上，纯 sink）。IEC 61131-3 ST：容错前端、确定性字节码 VM、标量/枚举/子范围/聚合/字符串日期类型、用户 POU 与 134 个标准 FB 完整绑定；49 个公开绑定类型、AXIS/GROUP/序列/对象 typed registry 均只向 ST 暴露 1-based handle。L3-L7 已完成并按 L 系列总账闭合；仍不宣称完整 IEC 平台或 PLCopen 官方认证 | KB-069/070/071；[L 系列总账](doc/planning/l-series-work-breakdown.md) |
-| 工具面 | pyplcopen（单轴/流/PoseArmSim，`0.20.0` 的 Windows/Linux/macOS wheels + sdist 已发布到 PyPI，CycleConfig 与轴/组 SI 配置；当前源码另有可选 `twin` MuJoCo/Rerun 闭环）、可执行 notebook、Python/C++/ST 三条 30 分钟旅程、18 份回放黄金语料、28 关节 @1kHz 预算基准 + 笛卡尔 IK 预算门、参考 executor demo（canonical `planning → committed trajectory → RT` 双域，ADR-0007，TSAN 零报告）、X5 固定 ABI Servo IPC（默认纯内存合同 + 显式 Windows/Linux 两进程 harness）、D3 在线 `PLCT v1` Scope（非 RT writer、阈值触发、窗口冻结、HTML/CSV 与可选 Rerun）、**[中文默认](https://lusipad.com/plcopen/) + [`/en/` 英文](https://lusipad.com/plcopen/en/)的双语文档站**、已通过消费者预检的 Conan recipe 与 vcpkg overlay port（中央 registry 尚未收录）、结构化 ErrorCode 诊断 | KB-091 |
+| 工具面 | pyplcopen（单轴/流/PoseArmSim，`0.20.0` 的 Windows/Linux/macOS wheels + sdist 已发布到 PyPI，CycleConfig 与轴/组 SI 配置；当前源码另有可选 `twin` MuJoCo/Rerun 闭环）、可执行 notebook、Python/C++/ST 三条 30 分钟旅程、18 份回放黄金语料、28 关节 @1kHz 预算基准 + 笛卡尔 IK 预算门、参考 executor demo（canonical `planning → committed trajectory → RT` 双域，ADR-0007，TSAN 零报告）、X5 固定 ABI Servo IPC（默认纯内存合同 + 显式 Windows/Linux 两进程 harness）、D3 在线 `PLCT v1` Scope（非 RT writer、阈值触发、窗口冻结、HTML/CSV 与可选 Rerun）、D1 单文档多 POU ST LSP + trusted-workspace VS Code client（当前仅源码/CI VSIX）、**[中文默认](https://lusipad.com/plcopen/) + [`/en/` 英文](https://lusipad.com/plcopen/en/)的双语文档站**、已通过消费者预检的 Conan recipe 与 vcpkg overlay port（中央 registry 尚未收录）、结构化 ErrorCode 诊断 | KB-091/092 |
 
 ## 质量门禁现状
 
@@ -109,7 +115,7 @@ sink 门面，生产层无反向引用）。分层健康度见
 - 回放：18 语料逐周期比对；声明变更零例外流程运行中
 - 分层：2026-07-12 include 图审计 **0 违规**（L0-L4 零 PLCopen 语义引用、无循环依赖、L4 不引 L3），见 [架构审查报告](doc/design/architecture-review-2026-07.md)
 - RT：静态扫描 31 文件（含 st vm/bind、Feetech adapter、X5 OS-free IPC 原语、Z 系列 ST 旅程与 H2 SerialChain）+ 冻结窗口分配断言；DoD §5.3 的周期耗时对比通过（新核 = 旧线 9.3%）；分配 soak 以周期等效口径关闭（25.92 亿周期零分配，2026-07-11），墙钟 72h/抖动证据归 B7 真机报告
-- CI（v0.20.0）：候选 `5a5cf81` 的 [Windows CI](https://github.com/lusipad/plcopen/actions/runs/29692190516)、[Linux CI](https://github.com/lusipad/plcopen/actions/runs/29692190521)、[三平台 Wheels + sdist](https://github.com/lusipad/plcopen/actions/runs/29692204896)、[Core Nightly](https://github.com/lusipad/plcopen/actions/runs/29692206177)、[Coverage Gate](https://github.com/lusipad/plcopen/actions/runs/29692207269)、[Mutation Score Gate](https://github.com/lusipad/plcopen/actions/runs/29692208327) 与 [Documentation](https://github.com/lusipad/plcopen/actions/runs/29692209416) 全部通过；最终 tag 提交 `7788a85` 的 Windows/Linux/Documentation 主线门禁 0 annotations，[tag Wheels/PyPI run](https://github.com/lusipad/plcopen/actions/runs/29709944703) 5/5 job 全绿。合并提交 `78d287c` 的 [Windows CI](https://github.com/lusipad/plcopen/actions/runs/29873287504)、[Linux CI](https://github.com/lusipad/plcopen/actions/runs/29873287478)、[Documentation](https://github.com/lusipad/plcopen/actions/runs/29873287492) 与新版 [Core Nightly](https://github.com/lusipad/plcopen/actions/runs/29873304328) 也全部通过；Nightly 9/9 job 全绿。11 项 fuzz 只进入 Nightly；A2/X5 新增专项后，普通 PR 当前跑 82 项非 fuzz 测试。PR 分支不再同时触发 push 与 pull_request 两套 Windows/Linux 主门禁。`main` 仍无 branch protection/ruleset，这些是 workflow 证据而非技术强制的 required checks。触发边界见 [CI gate 矩阵](doc/compliance/ci-gates.md)
+- CI（v0.20.0）：候选 `5a5cf81` 的 [Windows CI](https://github.com/lusipad/plcopen/actions/runs/29692190516)、[Linux CI](https://github.com/lusipad/plcopen/actions/runs/29692190521)、[三平台 Wheels + sdist](https://github.com/lusipad/plcopen/actions/runs/29692204896)、[Core Nightly](https://github.com/lusipad/plcopen/actions/runs/29692206177)、[Coverage Gate](https://github.com/lusipad/plcopen/actions/runs/29692207269)、[Mutation Score Gate](https://github.com/lusipad/plcopen/actions/runs/29692208327) 与 [Documentation](https://github.com/lusipad/plcopen/actions/runs/29692209416) 全部通过；最终 tag 提交 `7788a85` 的 Windows/Linux/Documentation 主线门禁 0 annotations，[tag Wheels/PyPI run](https://github.com/lusipad/plcopen/actions/runs/29709944703) 5/5 job 全绿。合并提交 `78d287c` 的 [Windows CI](https://github.com/lusipad/plcopen/actions/runs/29873287504)、[Linux CI](https://github.com/lusipad/plcopen/actions/runs/29873287478)、[Documentation](https://github.com/lusipad/plcopen/actions/runs/29873287492) 与新版 [Core Nightly](https://github.com/lusipad/plcopen/actions/runs/29873304328) 也全部通过；Nightly 9/9 job 全绿。11 项 fuzz 只进入 Nightly；D1 接入后，普通 PR 当前登记 87 项非 fuzz 测试。PR 分支不再同时触发 push 与 pull_request 两套 Windows/Linux 主门禁。`main` 仍无 branch protection/ruleset，这些是 workflow 证据而非技术强制的 required checks。触发边界见 [CI gate 矩阵](doc/compliance/ci-gates.md)
 
 ## 进行中 / 待办
 
@@ -134,6 +140,7 @@ sink 门面，生产层无反向引用）。分层健康度见
 | **H2 数值 IK 兜底** | **已完成（2026-07-23，KB-089）**：1～8 轴转动关节 `SerialChain`、standard/modified DH、数值雅可比 + 自适应 DLS、32 次总上限、三类失败码、显式 best-effort 与 7DOF 零空间偏好均已落地；6DOF/非退化 7DOF 各 2 万例回环、固定 FK/SO(3) oracle、带偏好冻结窗口零分配，preference-enabled Debug hot-seed 通过 30 µs 专项门。解析 6R 仍优先，L5 位姿 seam 仍限六轴 |
 | **T2a MuJoCo/Rerun 闭环孪生** | **已完成（2026-07-24，KB-090）**：2,000 tick/2.0 s、双轴末误差 ≤0.02 rad、command 确定性、feedback 单位换算、断流反例、错误模型/覆盖保护与 `.rrd` footer 均有可执行测试；默认依赖不变，外部模型只接本地路径。[Twin integration](https://github.com/lusipad/plcopen/actions/runs/30024648555) 的 Windows/Linux 与 [Windows](https://github.com/lusipad/plcopen/actions/runs/30024648191) / [Linux](https://github.com/lusipad/plcopen/actions/runs/30024648125) 主门禁均通过 |
 | **D3 在线调试示波器** | **已完成并上线（2026-07-24，KB-091）**：`PLCT v1` 在线落盘不改格式，RT 侧仅 SPSC push/丢样计数，非 RT writer 独占文件 I/O；工具侧提供 rising/falling 阈值、精确前后窗口、严格截断拒绝、PLCT/CSV/HTML 与可选 Rerun `.rrd`。本地定向 14/14、Debug CTest 97/97、RT scan、replay 与双语文档门通过；PR #23、合并后四条主线工作流及中英文公网页面均已复验。不声明 actual/error/ST watch、远程服务或认证测量能力 |
+| **D1 ST Language Server** | **本地软件交付完成（2026-07-24，KB-092），远端门禁待闭合**：C++ 权威诊断/POU 索引、Python stdio LSP、wheel、trusted-workspace VS Code client、固定 lock/许可证证据、本地 VSIX、Windows/Linux workflow 与双语指南均已实现。Windows Debug 98/98（含 11 fuzz）、15 项 Python、4 项 Node、RT scan、18/2409 replay、安装态 C++/wheel、双语 strict、`npm audit --omit=dev` 与 VSIX 9 包/dev-tree 检查通过；不声明跨文件 IDE、在线 PLC 或任何公共发布 |
 | AxisGroup 架构债 | **第 1-5 批全部完成（2026-07-21）**：connector、joint look-ahead、Cartesian path/window、frame/pose/kinematics 与 MoveDirect lifecycle/path 各自形成明确 owner；第 2-5 批累计 75 个 `AxisGroup` 方法原样迁出，`group.h` 7744→4487 行；93/93、RT scan、18/2409 replay 与 find_package/FetchContent consumer 全绿。共享 queue/status/error 与 management 调度按设计保留在 `AxisGroup` |
 | Y2 epsilon 政策 | **已声明化**（KB-057：段时长钳零 + 复验，整数量化天然覆盖） |
 | Y2 Ruckig 对照 | **人工门控**（ADR-0003：需先审查上游许可证，不进 R1） |

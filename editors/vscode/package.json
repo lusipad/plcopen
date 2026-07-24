@@ -1,0 +1,71 @@
+{
+  "name": "plcopen-st-language-tools",
+  "displayName": "PLCopen ST Language Tools",
+  "description": "PLCopen Structured Text diagnostics, completion, definition, and hover.",
+  "version": "0.1.0",
+  "private": true,
+  "publisher": "plcopen-project",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lusipad/plcopen.git"
+  },
+  "engines": {
+    "vscode": "^1.91.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "activationEvents": [
+    "onLanguage:plcopen-st"
+  ],
+  "main": "./extension.js",
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": "limited",
+      "description": "不可信工作区只注册 ST 语言配置，不启动 Python Language Server。",
+      "restrictedConfigurations": [
+        "plcopenSt.pythonPath"
+      ]
+    }
+  },
+  "contributes": {
+    "languages": [
+      {
+        "id": "plcopen-st",
+        "aliases": [
+          "PLCopen ST",
+          "Structured Text"
+        ],
+        "extensions": [
+          ".st"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "configuration": {
+      "title": "PLCopen ST",
+      "properties": {
+        "plcopenSt.pythonPath": {
+          "type": "string",
+          "default": "python",
+          "scope": "machine",
+          "description": "用于启动 `python -m plcopen_lsp` 的 Python 解释器。该设置不会自动采用工作区内的虚拟环境。"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "licenses": "node scripts/generate-production-inventory.cjs",
+    "verify:licenses": "node scripts/generate-production-inventory.cjs --check",
+    "test": "node --test test/*.test.cjs",
+    "package": "vsce package --out plcopen-st-language-tools.vsix",
+    "verify:vsix": "python scripts/verify_vsix.py plcopen-st-language-tools.vsix"
+  },
+  "dependencies": {
+    "vscode-languageclient": "10.1.0"
+  },
+  "devDependencies": {
+    "@vscode/vsce": "3.9.2"
+  }
+}

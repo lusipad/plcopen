@@ -15,3 +15,4 @@
 #include "st/wcet.h"
 #include "st/configuration_runtime.h"
 #include "st/debug.h"
+#include "st/language.h"

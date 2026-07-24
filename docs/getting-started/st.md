@@ -88,5 +88,6 @@ control. You can also mix both: ST for sequencing, C++ for adapters.
 ## More detail
 
 - [core/st/README.md](https://github.com/lusipad/plcopen/blob/main/core/st/README.md)
+- [ST Language Server and VS Code](../guides/st-language-server.md)
 - [ST runtime reference](../references/st-runtime.md)
 - [Function-block reference](../references/fb-reference.md)

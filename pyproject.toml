@@ -51,7 +51,7 @@ cmake.args = [
     "-DPLCOPEN_BUILD_DOCS=OFF",
     "-DBUILD_TESTING=OFF",
 ]
-wheel.packages = []
+wheel.packages = ["python/plcopen_lsp"]
 wheel.exclude = ["include/**", "lib/**"]
 
 [tool.cibuildwheel]

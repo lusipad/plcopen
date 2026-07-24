@@ -9,6 +9,7 @@
 #include "rt/error_diag.h"
 #include "rt/error_text.h"
 #include "rt/units.h"
+#include "st/language.h"
 
 #include <fstream>
 #include <sstream>
@@ -25,6 +26,42 @@ namespace py = pybind11;
 
 namespace
 {
+py::dict language_position_py(
+    const plcopen::core::st::LanguagePosition &position)
+{
+    py::dict result;
+    result["line"] = position.line;
+    result["character"] = position.character;
+    return result;
+}
+
+py::dict language_range_py(const plcopen::core::st::LanguageRange &range)
+{
+    py::dict result;
+    result["start"] = language_position_py(range.start);
+    result["end"] = language_position_py(range.end);
+    return result;
+}
+
+int language_completion_kind(
+    plcopen::core::st::LanguageSymbolKind kind)
+{
+    using Kind = plcopen::core::st::LanguageSymbolKind;
+    switch(kind) {
+    case Kind::function_:
+    case Kind::standard_function: return 3; // LSP Function
+    case Kind::field: return 5;             // LSP Field
+    case Kind::variable:
+    case Kind::parameter: return 6; // LSP Variable
+    case Kind::function_block:
+    case Kind::standard_function_block: return 7; // LSP Class
+    case Kind::program: return 9;                   // LSP Module
+    case Kind::keyword: return 14;                  // LSP Keyword
+    case Kind::type: return 22;                     // LSP Struct
+    }
+    return 1;
+}
+
 std::string make_error_message(const char *operation, plcopen::core::rt::ErrorCode error)
 {
     return std::string(operation) + " failed: " + plcopen::core::rt::to_string(error);
@@ -525,6 +562,81 @@ private:
 PYBIND11_MODULE(pyplcopen, module)
 {
     module.doc() = "Minimal Python smoke facade for the plcopen rewrite core";
+
+    py::class_<plcopen::core::st::LanguageDocument>(
+        module, "_StLanguageDocument")
+        .def(py::init<std::string>(), py::arg("text"))
+        .def(
+            "update",
+            [](plcopen::core::st::LanguageDocument &document,
+               std::string text) {
+                const plcopen::core::st::LanguageUpdateReport report =
+                    document.update(static_cast<std::string &&>(text));
+                py::dict result;
+                result["reparsed_pous"] = report.reparsed_pous;
+                result["reused_pous"] = report.reused_pous;
+                return result;
+            },
+            py::arg("text"))
+        .def(
+            "diagnostics",
+            [](const plcopen::core::st::LanguageDocument &document) {
+                py::list result;
+                for(const plcopen::core::st::LanguageDiagnostic &diagnostic :
+                    document.diagnostics()) {
+                    py::dict item;
+                    item["range"] = language_range_py(diagnostic.range);
+                    item["code"] = diagnostic.code;
+                    item["message"] = diagnostic.message;
+                    item["warning"] = diagnostic.warning;
+                    result.append(static_cast<py::dict &&>(item));
+                }
+                return result;
+            })
+        .def(
+            "complete",
+            [](const plcopen::core::st::LanguageDocument &document,
+               std::int32_t line, std::int32_t character) {
+                const plcopen::core::st::LanguageCompletionList completion =
+                    document.complete({line, character});
+                py::list items;
+                for(const plcopen::core::st::LanguageCompletionItem &source :
+                    completion.items) {
+                    py::dict item;
+                    item["label"] = source.label;
+                    item["detail"] = source.detail;
+                    item["kind"] = language_completion_kind(source.kind);
+                    items.append(static_cast<py::dict &&>(item));
+                }
+                py::dict result;
+                result["isIncomplete"] = completion.is_incomplete;
+                result["items"] = static_cast<py::list &&>(items);
+                return result;
+            },
+            py::arg("line"), py::arg("character"))
+        .def(
+            "definition",
+            [](const plcopen::core::st::LanguageDocument &document,
+               std::int32_t line, std::int32_t character) -> py::object {
+                const plcopen::core::st::LanguageDefinition definition =
+                    document.definition({line, character});
+                if(!definition.found) return py::none();
+                return language_range_py(definition.selection);
+            },
+            py::arg("line"), py::arg("character"))
+        .def(
+            "hover",
+            [](const plcopen::core::st::LanguageDocument &document,
+               std::int32_t line, std::int32_t character) -> py::object {
+                const plcopen::core::st::LanguageHover hover =
+                    document.hover({line, character});
+                if(!hover.found) return py::none();
+                py::dict result;
+                result["range"] = language_range_py(hover.range);
+                result["contents"] = hover.contents;
+                return result;
+            },
+            py::arg("line"), py::arg("character"));
 
     py::enum_<plcopen::core::rt::ErrorCode>(module, "ErrorCode")
         .value("OK", plcopen::core::rt::ErrorCode::ok)

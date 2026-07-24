@@ -1,0 +1,78 @@
+{
+  "schemaVersion": 1,
+  "generatedFrom": "package-lock.json",
+  "dependencies": [
+    {
+      "name": "balanced-match",
+      "version": "4.0.4",
+      "license": "MIT",
+      "integrity": "sha512-BLrgEcRTwX2o6gGxGOCNyMvGSp35YofuYzw9h1IMTRmKqttAZZVU67bdb9Pr2vUHA8+j3i2tJfjO6C6+4myGTA==",
+      "direct": false,
+      "licenseFile": "LICENSE.md"
+    },
+    {
+      "name": "brace-expansion",
+      "version": "5.0.8",
+      "license": "MIT",
+      "integrity": "sha512-JZyDyq3D4AUifKTPOB7DELf6XsB3WdPuNxCtob1vFXPsSXhdAiHBWJ/tJ8HAc9aH84BK+5JFZLNkJKx3G9kzQg==",
+      "direct": false,
+      "licenseFile": "LICENSE"
+    },
+    {
+      "name": "minimatch",
+      "version": "10.2.5",
+      "license": "BlueOak-1.0.0",
+      "integrity": "sha512-MULkVLfKGYDFYejP07QOurDLLQpcjk7Fw+7jXS2R2czRQzR56yHRveU5NDJEOviH+hETZKSkIk5c+T23GjFUMg==",
+      "direct": false,
+      "licenseFile": "LICENSE.md"
+    },
+    {
+      "name": "semver",
+      "version": "7.8.5",
+      "license": "ISC",
+      "integrity": "sha512-Y7/KDsb8LjooZpwaqGyulO6DQlksgCncchHGk+sZIY4SBvUocMBEFH5Ur1fI4dV+Jvl0w6cjvucaIi40puRioA==",
+      "direct": false,
+      "licenseFile": "LICENSE"
+    },
+    {
+      "name": "vscode-jsonrpc",
+      "version": "9.0.1",
+      "license": "MIT",
+      "integrity": "sha512-rfuA6T75H6m5EkbhtEPzre9pT0HPcDI2MMy4+nPFIBks5J8JBAUHD4tRYSgaBOijIEC7SRkC1kKyXTLqbmh9jw==",
+      "direct": false,
+      "licenseFile": "License.txt"
+    },
+    {
+      "name": "vscode-languageclient",
+      "version": "10.1.0",
+      "license": "MIT",
+      "integrity": "sha512-XXRx6lqVitQy/oOLr9MfNYRG+MbQkhXkDaxbQMiKxEm8zZNfheRFUKNb8UYNh2stn9btl2wQM5wZFJjJvoc+jA==",
+      "direct": true,
+      "licenseFile": "License.txt"
+    },
+    {
+      "name": "vscode-languageserver-protocol",
+      "version": "3.18.2",
+      "license": "MIT",
+      "integrity": "sha512-XRyDbT0Pp3sSNti3JmxVEUMySWCSi1hhM+/KUlCy1hV1zmrqpM1OwO12EAki8blhmLuIMpaJrYbo0OzGVfK2Qg==",
+      "direct": false,
+      "licenseFile": "License.txt"
+    },
+    {
+      "name": "vscode-languageserver-textdocument",
+      "version": "1.0.13",
+      "license": "MIT",
+      "integrity": "sha512-nx0ZHwMGIsVkzFG3/VLeJYBLTaFBRuNdGDvevvjuoayU5EOS2fEYazOhtCM3PI9ClMMg5igc0uwXtAq4tJj+Dw==",
+      "direct": false,
+      "licenseFile": "License.txt"
+    },
+    {
+      "name": "vscode-languageserver-types",
+      "version": "3.18.0",
+      "license": "MIT",
+      "integrity": "sha512-8TsGPNMIMiiBdkORgRSvLjuiEIiAFtO+KssmYWxQ+uSVvlf7RjK8YKCOjPzZ+YA04jXEV7+7LvkSmHkhpNS99g==",
+      "direct": false,
+      "licenseFile": "License.txt"
+    }
+  ]
+}

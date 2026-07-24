@@ -198,6 +198,12 @@ if(BUILD_TESTING AND PLCOPEN_BUILD_CORE_TESTS)
     endif()
     add_test(NAME plcopen_core_st_l0_quality_tests COMMAND plcopen_core_st_l0_quality_tests)
 
+    add_executable(plcopen_core_st_language_tests test/st_language_tests.cpp)
+    target_link_libraries(plcopen_core_st_language_tests PRIVATE plcopen::core)
+    plcopen_core_rt_compile_options(plcopen_core_st_language_tests)
+    add_test(NAME plcopen_core_st_language_tests
+             COMMAND plcopen_core_st_language_tests)
+
     add_executable(plcopen_core_st_l1a_types_tests test/st_l1a_types_tests.cpp)
     target_link_libraries(plcopen_core_st_l1a_types_tests PRIVATE plcopen::core)
     plcopen_core_rt_compile_options(plcopen_core_st_l1a_types_tests)

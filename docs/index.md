@@ -27,6 +27,7 @@ in your controller, or put it under your learning stack.**
 - [Motion tuning](guides/tuning.md)
 - [TwinCAT / CODESYS migration](guides/twinCAT-codesys-migration.md)
 - [Diagnostics and trace visualization](guides/diagnostics.md)
+- [ST Language Server and VS Code](guides/st-language-server.md)
 - [Operations](operations.md)
 - [Project documentation](project/index.md)
 

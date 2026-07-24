@@ -1,0 +1,9 @@
+.vscode/**
+.gitignore
+.ruff_cache/**
+test/**
+scripts/**
+node_modules/@vscode/vsce/**
+node_modules/.bin/**
+package-lock.json
+*.vsix

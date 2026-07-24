@@ -6,6 +6,15 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- D1（KB-092）新增单文档多 POU 的 ST Language Server：C++ 工具域复用
+  权威编译诊断、lexer、类型/标准函数与 134 FB 清单，并按 POU 内容缓存
+  容错符号索引；零第三方 Python runtime 依赖的 stdio LSP 提供 UTF-16
+  增量同步、诊断、补全、定义与悬停。薄 VS Code 扩展只在 trusted
+  workspace 启动 machine-scope 指定解释器，file/untitled `.st` 共用官方
+  client。固定 npm lock、9 包生产许可证/integrity 清单与 notices 草案、
+  Windows/Linux Language Tools workflow 及不含 dev tree 的本地 VSIX
+  同步进入门禁；本批不发布 Marketplace、PyPI、tag 或 GitHub Release。
+
 - D3（KB-091）把参考 executor 的 `PLCT v1` trace 升级为在线 commissioning
   Scope：RT 线程只向固定容量 SPSC 发布记录，非 RT writer 持续落盘；工具侧
   支持单轴 position/velocity/acceleration 的 rising/falling 阈值穿越、

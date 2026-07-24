@@ -45,6 +45,7 @@ nav:
     - 运动调参: guides/tuning.md
     - TwinCAT / CODESYS 迁移: guides/twinCAT-codesys-migration.md
     - 诊断与轨迹: guides/diagnostics.md
+    - ST Language Server: guides/st-language-server.md
     - 在线调试示波器: guides/online-scope.md
     - 运维: operations.md
   - 参考:
