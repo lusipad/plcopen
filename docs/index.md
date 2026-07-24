@@ -107,7 +107,7 @@ PLCopen approval, hardware truth, or Beckhoff black-box performance claim
 is made. The C6 capability verdict is published in the
 [PLCopen / Beckhoff parity matrix](https://github.com/lusipad/plcopen/blob/main/doc/compliance/plcopen-beckhoff-parity-matrix.md);
 per-clause audits are published in
-[doc/compliance](https://github.com/lusipad/plcopen/tree/main/doc/compliance).
+[standards and evidence](references/standards-evidence.md).
 
 ### Runtime shape (ADR-0007)
 

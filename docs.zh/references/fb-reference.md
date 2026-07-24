@@ -1,7 +1,7 @@
 # 功能块参考
 
 这页是 `core/fb` 的消费面索引，不是 PLCopen 合规声明。标准条款和已知
-边界以 [合规矩阵](https://github.com/lusipad/plcopen/tree/main/doc/compliance)
+边界以 [标准与证据](standards-evidence.md)
 为准。
 
 ## 生命周期

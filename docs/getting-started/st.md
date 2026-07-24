@@ -88,5 +88,5 @@ control. You can also mix both: ST for sequencing, C++ for adapters.
 ## More detail
 
 - [core/st/README.md](https://github.com/lusipad/plcopen/blob/main/core/st/README.md)
-- [ST semantics spec](https://github.com/lusipad/plcopen/blob/main/doc/compliance/st-l0-semantics.md)
+- [ST runtime reference](../references/st-runtime.md)
 - [Function-block reference](../references/fb-reference.md)

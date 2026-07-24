@@ -141,4 +141,5 @@ ctest --test-dir build --build-config Release --output-on-failure
 
 - [Python simulation](python.md) — interact with the algorithms from Python
 - [C++ embedding](cpp.md) — use the library in your controller
-- [ADR decisions](https://github.com/lusipad/plcopen/tree/main/doc/design/decisions) — why things are designed this way
+- [Architecture decisions](../references/architecture-decisions.md) — why
+  these boundaries were chosen

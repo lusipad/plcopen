@@ -28,7 +28,7 @@
 | Mutation Score Gate | `.github/workflows/mutation-score.yml` | 每周一 `03:17 UTC`、`workflow_dispatch` | `cmake/mutation_score_gate.cmake`，20 项登记 mutation（含 ST 编译成功契约与 VM 指令预算边界），总 kill score >= 70% | 周期质量门；发布前按需手动确认 |
 | Core Nightly | `.github/workflows/core-nightly.yml` | 每日 `02:23 UTC`、`workflow_dispatch` | **九个独立 job**：11 项统一 fuzz smoke、1,000,000 轮 deterministic OTG fuzz、A2 allocation 50,000,000-cycle soak、1,000,000 轮 time-optimal OTG fuzz、executor/ST L3/L5/X5 TSAN、X5 Linux/Windows 两进程共享内存对拍、ST 五模式各 100,000 输入 ASan/UBSan、ST L7 独立 TSAN；单项失败不跳过其余项 | 周期质量门；不替代主线 CI |
 | Wheels | `.github/workflows/wheels.yml` | tag `v*`、`workflow_dispatch` | cibuildwheel 三平台 wheel、sdist artifact、`ci/smoke_test.py`；tag 推送额外触发 `publish_pypi`（Trusted Publishing，PyPI 侧 publisher 注册完成前该作业失败属预期） | 发布包门 |
-| Documentation | `.github/workflows/docs.yml` | `main` 分支 `docs/**`、`docs.zh/**` 或 `mkdocs*.yml` 变更、`workflow_dispatch` | 中英文 Markdown 路径一一对应；中文根站与 `/en/` 英文站分别通过 MkDocs strict，项目导读页回链权威仓库来源，和 Doxygen API 拼装后一次推送 `gh-pages`；Pages 已启用（2026-07-11），站点 https://lusipad.com/plcopen/ | 文档发布门 |
+| Documentation | `.github/workflows/docs.yml` | `main` 分支 `docs/**`、`docs.zh/**`、`overrides/**` 或 `mkdocs*.yml` 变更、`workflow_dispatch` | 24 对中英文 Markdown 路径一一对应，英文正文拒绝中文叙述；中文根站与 `/en/` 英文站分别通过 MkDocs strict，项目/技术导读页回链权威仓库来源，深层页语言选择器保持对应路径，和 Doxygen API 拼装后一次推送 `gh-pages`；Pages 已启用（2026-07-11），站点 https://lusipad.com/plcopen/ | 文档发布门 |
 
 ## 使用规则
 

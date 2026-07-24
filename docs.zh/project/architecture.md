@@ -35,5 +35,5 @@ plcopen 是可嵌入的 C++17 运动控制内核。生产内核按依赖只向�
 
 完整图集、实现现状对照和不变量表维护在
 [权威架构文档](https://github.com/lusipad/plcopen/blob/main/doc/design/core/architecture.md)。
-架构理由单独记录在
-[ADR](https://github.com/lusipad/plcopen/tree/main/doc/design/decisions) 中。
+架构理由和拒绝方案单独整理在站内
+[架构决策导览](../references/architecture-decisions.md)，每项仍回链权威 ADR。

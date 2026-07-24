@@ -131,4 +131,4 @@ ctest --test-dir build --build-config Release --output-on-failure
 
 - [Python 仿真](python.md) — 在 Python 中与这些算法交互
 - [C++ 嵌入](cpp.md) — 在你的控制器里使用这个库
-- [ADR 决策](https://github.com/lusipad/plcopen/tree/main/doc/design/decisions) — 了解这些设计为什么如此
+- [架构决策](../references/architecture-decisions.md) — 了解这些设计为什么如此

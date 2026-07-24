@@ -49,6 +49,9 @@ nav:
   - 参考:
     - 算法白盒: getting-started/algorithms.md
     - 功能块参考: references/fb-reference.md
+    - ST 运行时: references/st-runtime.md
+    - 标准与证据: references/standards-evidence.md
+    - 架构决策: references/architecture-decisions.md
     - C++ API（自动生成）: https://lusipad.com/plcopen/api/
   - 项目文档:
     - 导览: project/index.md

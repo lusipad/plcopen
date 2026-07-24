@@ -27,6 +27,7 @@
 | [t2-mujoco-rerun-plan.md](t2-mujoco-rerun-plan.md) / [实施记录](t2-mujoco-rerun-implementation-notes.md) | T2a MuJoCo 物理闭环 + Rerun 离线记录首批，保持 H1/H2/L5 边界 | **已完成，Windows/Linux 远端复验通过（2026-07-24）** |
 | [docs-i18n-plan.md](docs-i18n-plan.md) / [实施记录](docs-i18n-implementation-notes.md) | 文档站简体中文默认入口、`/en/` 英文镜像、同页语言切换与原子 Pages 发布 | **已完成并上线，远端 build/deploy 全绿（2026-07-24）** |
 | [docs-site-integration-plan.md](docs-site-integration-plan.md) / [实施记录](docs-site-integration-implementation-notes.md) | 把架构、合规、边界、贡献、治理、安全与变更历史整合为双语站内项目文档层 | **已完成并上线，21 对页面与公网深层路由通过（2026-07-24）** |
+| [docs-reference-integration-plan.md](docs-reference-integration-plan.md) / [实施记录](docs-reference-integration-implementation-notes.md) | 把 ST、标准证据和 ADR 接入双语参考区，修正五个英文页与深层同页语言切换 | **本地完成，远端 Documentation / Pages 待复验（2026-07-24）** |
 - [L 系列工作拆解](l-series-work-breakdown.md) —— L0-L7、L∀ 已闭合的范围、依赖、出口判据与完成态证据（2026-07-17 重基线）
 - [PLCopen 合规补齐计划](plcopen-conformance-plan.md) —— 原文审计后的 P 系列重构：P1-A 结构缺口 → L2a 引脚表（即合规面）→ 可提交认证声明（2026-07-12）
 - [**主计划：从这里到商用级**](master-plan.md) —— 复盘第一入口：剩余工作按 AI 能力边界四栏分类 + 依赖链总图 + 人侧杠杆排序（2026-07-21 重基线）
@@ -47,4 +48,4 @@
 
 ---
 
-*本索引最后更新：2026-07-24（项目文档站内整合上线）*
+*本索引最后更新：2026-07-24（技术参考页站内整合本地完成）*

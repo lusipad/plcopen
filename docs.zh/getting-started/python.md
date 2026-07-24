@@ -240,4 +240,4 @@ for master, slave in table[:5]:
 - [C++ 嵌入指南](cpp.md) — 在你的控制器里直接使用这个库
 - [诊断与 trace](../guides/diagnostics.md) — 结构化 hint 与独立 HTML/SVG 时间线
 - [算法白盒](algorithms.md) — 理解运动规划内部机制
-- [合规矩阵](https://github.com/lusipad/plcopen/tree/main/doc/compliance) — 标准里哪些已实现、哪些还没有
+- [标准与证据](../references/standards-evidence.md) — 标准里哪些已实现、哪些还没有
