@@ -5,8 +5,8 @@
 ## 摘要
 
 语义矩阵已于 2026-07-24 获维护者批准。C++ `st::LanguageDocument`、
-Python 标准库 stdio server、私有 pybind bridge 及其定向测试已实现；
-VS Code client、许可证证据、CI 和用户文档仍待完成。
+Python 标准库 stdio server、VS Code 薄客户端、许可证证据和本地 VSIX
+均已完成；CI 与双语用户文档仍待完成。
 
 ## Decisions
 
@@ -26,6 +26,14 @@ VS Code client、许可证证据、CI 和用户文档仍待完成。
   网络，也不执行 ST。
 - Python wheel 显式打包 `plcopen_lsp` 顶层包；同一 wheel 同时携带
   `pyplcopen` 扩展和 `python -m plcopen_lsp` 入口。
+- VS Code 扩展使用纯 JavaScript，唯一 production 直接依赖固定为
+  `vscode-languageclient 10.1.0`；`@vscode/vsce 3.9.2` 只用于开发打包，
+  不为单一入口再增加 TypeScript/测试框架依赖。
+- `plcopenSt.pythonPath` 是 machine-scope 设置；扩展只把该解释器作为
+  executable 直接启动，不寻找或采用工作区 `.venv`。untrusted workspace
+  只保留语言/括号/注释配置，收到 trust grant 后才创建 client。
+- production 许可证清单由 lockfile 与实际安装树生成；ISC/BlueOak 例外
+  只能分别用于 `semver`/`minimatch`，不能被未来其他依赖复用。
 
 ## Deviations
 
@@ -41,6 +49,12 @@ VS Code client、许可证证据、CI 和用户文档仍待完成。
 - CMake `file(GENERATE)` 的 bracket argument 不展开源码目录变量；Python
   测试 runner 改用 quoted `CONTENT` 后，源码包路径与配置态扩展路径均可
   正确注入。
+- 当前 lockfile 将 production 传递项固定为 9 个包，其中
+  `semver 7.8.5` 为 ISC、`minimatch 10.2.5` 为 BlueOak-1.0.0；其余均为
+  MIT。版本、SPDX、integrity 与许可证全文已生成清单/notices 草案。
+- `vsce package` 会提示扩展根目录没有独立 LICENSE，以及未 bundle 的
+  393 文件性能建议。前者按人专属法律文件规则不由本批复制/新建，后者若
+  处理将需要第三个直接构建依赖；两者均不阻止本地 VSIX 构建与安装。
 
 ## Verification
 
@@ -52,6 +66,12 @@ VS Code client、许可证证据、CI 和用户文档仍待完成。
   `plcopen_lsp/{__init__,__main__,server}.py` 与 `pyplcopen` `.pyd`；
   安装到干净 target 后 5 项真实 bridge/stdio 测试通过；Linux wheel 留给
   后续 CI。
+- VS Code：先确认 4 项 manifest/trust/startup 测试全红，再实现至全绿；
+  `npm ci --ignore-scripts`、许可证清单 freshness、`npm audit --omit=dev`
+  零漏洞与 `vsce package` 均通过。
+- VSIX：生成 683.92 KiB / 393 文件的本地 artifact；归档检查证明 9 个
+  production package 与 inventory 的名称/版本/许可证完全一致，且不含
+  `@vscode/vsce`、任何其他 dev tree、测试、脚本、lockfile 或 `.bin`。
 ## Questions for review
 
 - 无。
