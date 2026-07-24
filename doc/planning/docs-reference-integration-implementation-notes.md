@@ -5,8 +5,8 @@
 ## 摘要
 
 三对技术参考页、五个既有英文页翻译、正文语言合同和深层同页语言切换已
-本地完成。24 对页面、strict 构建、全站链接和浏览器交互均通过；远端
-Documentation 与 Pages 证据待推送后回填。
+完成并上线。24 对页面、strict 构建、全站链接、浏览器交互、远端主线门禁
+与 Pages 公网复验均通过。
 
 ## Decisions
 
@@ -49,5 +49,15 @@ Documentation 与 Pages 证据待推送后回填。
 - 本地浏览器 QA：三个新参考入口均返回 200；五个英文化页面 `lang=en`
   且正文无汉字；中文 ST 深层页经可见语言选择器准确到达对应英文深层页，
   两份 sitemap 全部 200，控制台零错误。
-- 本机未安装 Doxygen；CMake `docs` target 只输出安装提示，API 拼装由远端
-  Documentation workflow 复验。
+- 本机未安装 Doxygen；CMake `docs` target 只输出安装提示。远端
+  [Documentation build/deploy](https://github.com/lusipad/plcopen/actions/runs/30060185662)
+  已完成 Doxygen/API 拼装、24 对页面合同与 Pages 原子推送。
+- [PR #21](https://github.com/lusipad/plcopen/pull/21) 的 Documentation、
+  Windows、Linux 与 Twin integration 全部通过后合入 `main`；合并提交
+  `e944982` 的 [Windows](https://github.com/lusipad/plcopen/actions/runs/30060185658)、
+  [Linux](https://github.com/lusipad/plcopen/actions/runs/30060185669)、
+  [Twin integration](https://github.com/lusipad/plcopen/actions/runs/30060185653)
+  与 Documentation 主线运行全部成功。
+- 公网复验：中英文 ST 运行时、标准证据、ADR、修正后的英文实时集成与运维页
+  及两份 sitemap 均返回 200；中文 ST 深层页的可见语言选择器准确指向
+  `/plcopen/en/references/st-runtime/`，英文页可准确返回中文同页。
