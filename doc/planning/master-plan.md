@@ -52,8 +52,8 @@
  │   → R3 LeRobot 集成层                 │  🟢AI：全部软件
  │                                       │
  ├─✅ D3 Scope（主线/公网证据闭合）────────┤  已完成
- │   → ✅ D1 ST LSP → 🟡 H1 同步关节流     │  当前 H1
- │   → T2b 大模型孪生 → H3 动力学前馈     │
+ │   → ✅ D1 ST LSP → ✅ H1 同步关节流     │
+ │   → 🟡 T2b 大模型孪生 → H3 动力学前馈   │  当前 T2b
  ├─🟢 D2 WASM Playground ────────────────┤  候选，不插入当前队列
  │                                       │
  │  ═══ 以上全部完成 = 软件面到头 ═══     │
@@ -164,7 +164,10 @@ Linux、Twin/Scope、Documentation 与双语公网页面均已复验。D1（KB-0
 [Language Tools](https://github.com/lusipad/plcopen/actions/runs/30104753368)、
 [Twin](https://github.com/lusipad/plcopen/actions/runs/30104753300) 与
 [Documentation](https://github.com/lusipad/plcopen/actions/runs/30104753259)
-均全绿，中英文指南已上线；当前转入 H1。
+均全绿，中英文指南已上线。H1（KB-035）也已由
+[PR #29](https://github.com/lusipad/plcopen/pull/29) 合入，合并后
+Windows、Linux、Language Tools、Twin 与 Documentation 五门均全绿；
+当前转入 T2b。
 F 轨仍是最后一块大软件和 #1/#4 的前置，ADR-0006 许可证核验与
 台架决策完成后立即插队，按 F1→F2→F3 推进。
 
