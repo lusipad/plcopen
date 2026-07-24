@@ -144,6 +144,59 @@ int check_configuration_and_legacy_compatibility()
     return 0;
 }
 
+int check_frame_configuration_transaction()
+{
+    constexpr std::size_t JointCount = 2;
+    stream::JointStreamGroup group;
+    stream::JointStreamGroupConfig invalid =
+        frame_config(stream::JointFrameMode::direct, JointCount);
+    invalid.gain_ramp_cycles = 0;
+    if(group.configure_frame(invalid) != rt::ErrorCode::invalid_argument ||
+       group.joint_count() != 0) {
+        return fail("frame gain-ramp configuration");
+    }
+    invalid = frame_config(stream::JointFrameMode::direct, JointCount);
+    invalid.joints[1].safe_kp = invalid.joints[1].max_kp + 1.0;
+    if(group.configure_frame(invalid) != rt::ErrorCode::invalid_argument ||
+       group.joint_count() != 0) {
+        return fail("frame safe-gain configuration");
+    }
+
+    stream::JointStreamGroup safe_hold;
+    if(safe_hold.configure_frame(
+           frame_config(stream::JointFrameMode::direct, 1)) !=
+           rt::ErrorCode::ok ||
+       safe_hold.reset(0, {0.0, 0.0, 0.0}) != rt::ErrorCode::ok) {
+        return fail("frame pre-command safe setup");
+    }
+    safe_hold.cycle();
+    const stream::JointSetpointFrame held = safe_hold.read_setpoint_frame();
+    if(held.frame_sequence != 0 || !near(held.joints[0].kp, 2.0) ||
+       !near(held.joints[0].kd, 1.0)) {
+        return fail("frame pre-command safe gains");
+    }
+
+    const stream::JointStreamGroupConfig original =
+        frame_config(stream::JointFrameMode::direct, JointCount);
+    if(group.configure_frame(original) != rt::ErrorCode::ok ||
+       group.reset(0, {0.0, 0.0, 0.0}) != rt::ErrorCode::ok) {
+        return fail("frame transactional setup");
+    }
+    stream::JointStreamGroupConfig replacement = original;
+    replacement.joints[0].filter.limits.max_velocity = 0.1;
+    if(group.configure_frame(replacement) != rt::ErrorCode::invalid_argument ||
+       group.joint_count() != JointCount ||
+       group.reset(1, {0.0, 0.0, 0.0}) != rt::ErrorCode::ok) {
+        return fail("running frame configuration is atomic");
+    }
+    stream::JointCommandFrame retained = command_frame(JointCount, 1);
+    retained.joints[0].dq_des = 0.2;
+    if(group.push_frame(retained) != rt::ErrorCode::ok) {
+        return fail("rejected reconfigure retains original limits");
+    }
+    return 0;
+}
+
 int check_atomic_rejection_and_keep_latest()
 {
     constexpr std::size_t JointCount = 3;
@@ -174,6 +227,12 @@ int check_atomic_rejection_and_keep_latest()
     if(group.push_frame(pending) != rt::ErrorCode::ok) {
         return fail("atomic pending valid frame");
     }
+    stream::StreamTarget legacy_target{};
+    legacy_target.position = 0.1;
+    legacy_target.timestamp_cycles = 1;
+    if(group.push_target(0, legacy_target) != rt::ErrorCode::invalid_argument) {
+        return fail("frame rejects legacy target push");
+    }
     stream::JointCommandFrame wrong_length = command_frame(JointCount - 1, 4000);
     if(group.push_frame(wrong_length) != rt::ErrorCode::invalid_argument) {
         return fail("atomic wrong length");
@@ -192,7 +251,22 @@ int check_atomic_rejection_and_keep_latest()
     if(group.push_frame(out_of_bounds) != rt::ErrorCode::invalid_argument) {
         return fail("atomic gain bound");
     }
-    if(group.rejected_frames() != 4) {
+    stream::JointCommandFrame position_bound = command_frame(JointCount, 7000);
+    position_bound.joints[0].q_des = 11.0;
+    if(group.push_frame(position_bound) != rt::ErrorCode::invalid_argument) {
+        return fail("atomic position bound");
+    }
+    stream::JointCommandFrame velocity_bound = command_frame(JointCount, 8000);
+    velocity_bound.joints[0].dq_des = 0.6;
+    if(group.push_frame(velocity_bound) != rt::ErrorCode::invalid_argument) {
+        return fail("atomic velocity bound");
+    }
+    stream::JointCommandFrame torque_bound = command_frame(JointCount, 9000);
+    torque_bound.joints[0].tau_ff = 11.0;
+    if(group.push_frame(torque_bound) != rt::ErrorCode::invalid_argument) {
+        return fail("atomic torque bound");
+    }
+    if(group.rejected_frames() != 7) {
         return fail("atomic rejected counter");
     }
 
@@ -281,18 +355,27 @@ int check_upsample_fast_and_bounded_slow_replans()
         return fail("upsample fast setup");
     }
     stream::JointCommandFrame fast_frame = command_frame(JointCount, 1, 0.001);
+    for(std::size_t joint = 0; joint < JointCount; ++joint) {
+        fast_frame.joints[joint].q_des = 0.0;
+        fast_frame.joints[joint].dq_des = 0.001;
+    }
     if(fast.push_frame(fast_frame) != rt::ErrorCode::ok) {
         return fail("upsample fast push");
     }
     fast.cycle();
     if(fast.pending_replans() != 0 || fast.deferred_replans() != 0) {
+        std::printf("  fast pending=%zu deferred=%llu\n", fast.pending_replans(),
+                    static_cast<unsigned long long>(fast.deferred_replans()));
         return fail("upsample fast synchronized replan");
     }
 
     stream::JointStreamGroup slow;
-    if(slow.configure_frame(
-           frame_config(stream::JointFrameMode::upsample, JointCount, false)) !=
-           rt::ErrorCode::ok ||
+    stream::JointStreamGroupConfig slow_config =
+        frame_config(stream::JointFrameMode::upsample, JointCount, false);
+    for(std::size_t joint = 0; joint < JointCount; ++joint) {
+        slow_config.joints[joint].filter.timeout_cycles = 100;
+    }
+    if(slow.configure_frame(slow_config) != rt::ErrorCode::ok ||
        !reset_all(slow, JointCount)) {
         return fail("upsample slow setup");
     }
@@ -305,6 +388,9 @@ int check_upsample_fast_and_bounded_slow_replans()
     for(std::size_t cycle = 0; cycle < 5; ++cycle) {
         slow.cycle();
         if(slow.pending_replans() != expected_pending[cycle]) {
+            std::printf("  slow cycle=%zu pending=%zu deferred=%llu\n", cycle + 1,
+                        slow.pending_replans(),
+                        static_cast<unsigned long long>(slow.deferred_replans()));
             return fail("upsample slow bounded queue");
         }
     }
@@ -314,14 +400,83 @@ int check_upsample_fast_and_bounded_slow_replans()
     return 0;
 }
 
+int check_upsample_group_dropout_and_recovery()
+{
+    constexpr std::size_t JointCount = 48;
+    stream::JointStreamGroup group;
+    if(group.configure_frame(
+           frame_config(stream::JointFrameMode::upsample, JointCount, true)) !=
+           rt::ErrorCode::ok ||
+       !reset_all(group, JointCount)) {
+        return fail("upsample dropout setup");
+    }
+
+    stream::JointCommandFrame first = command_frame(JointCount, 1);
+    for(std::size_t joint = 0; joint < JointCount; ++joint) {
+        first.joints[joint].q_des = 0.0;
+        first.joints[joint].dq_des = 0.001;
+        first.joints[joint].tau_ff =
+            1.0 + 0.05 * static_cast<double>(joint);
+    }
+    if(group.push_frame(first) != rt::ErrorCode::ok) {
+        return fail("upsample dropout initial frame");
+    }
+    group.cycle();
+    group.cycle();
+    group.cycle();
+    if(group.dropout_count() != 0) {
+        return fail("upsample group watchdog fired early");
+    }
+    group.cycle();
+    if(group.dropout_count() != 1) {
+        return fail("upsample group watchdog");
+    }
+    const stream::JointSetpointFrame dropping = group.read_setpoint_frame();
+    for(std::size_t joint = 0; joint < JointCount; ++joint) {
+        if(group.joint(joint).mode() !=
+               stream::StreamFilter1D::Mode::extrapolating ||
+           !(dropping.joints[joint].tau_ff < first.joints[joint].tau_ff)) {
+            return fail("upsample coordinated dropout");
+        }
+    }
+
+    stream::JointCommandFrame recovery = first;
+    recovery.timestamp_cycles = 2;
+    for(std::size_t joint = 0; joint < JointCount; ++joint) {
+        recovery.joints[joint].tau_ff = 0.05 * static_cast<double>(joint);
+        recovery.joints[joint].kp = 6.0 + static_cast<double>(joint);
+    }
+    if(group.push_frame(recovery) != rt::ErrorCode::ok) {
+        return fail("upsample recovery push");
+    }
+    group.cycle();
+    const stream::JointSetpointFrame recovered = group.read_setpoint_frame();
+    if(recovered.frame_sequence != 2 ||
+       recovered.producer_timestamp_cycles != 2 ||
+       group.dropout_count() != 1) {
+        return fail("upsample recovery snapshot");
+    }
+    for(std::size_t joint = 0; joint < JointCount; ++joint) {
+        if(group.joint(joint).mode() != stream::StreamFilter1D::Mode::tracking ||
+           !near(recovered.joints[joint].tau_ff,
+                 recovery.joints[joint].tau_ff) ||
+           !(recovered.joints[joint].kp < recovery.joints[joint].kp)) {
+            return fail("upsample synchronized recovery");
+        }
+    }
+    return 0;
+}
+
 } // namespace
 
 int main()
 {
     if(check_configuration_and_legacy_compatibility() != 0 ||
+       check_frame_configuration_transaction() != 0 ||
        check_atomic_rejection_and_keep_latest() != 0 ||
        check_direct_same_cycle_and_local_watchdog() != 0 ||
-       check_upsample_fast_and_bounded_slow_replans() != 0) {
+       check_upsample_fast_and_bounded_slow_replans() != 0 ||
+       check_upsample_group_dropout_and_recovery() != 0) {
         return 1;
     }
     std::printf("PASS H1 synchronized joint stream tests\n");

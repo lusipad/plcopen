@@ -74,6 +74,15 @@ public:
         stopped,       // dropout: at rest, waiting for a fresh target
     };
 
+    enum class ReplanResult
+    {
+        none,
+        fast,
+        slow,
+        deferred,
+        fault,
+    };
+
     rt::ErrorCode configure(const StreamFilterConfig &config)
     {
         if(!can_configure(config)) {
@@ -148,6 +157,36 @@ public:
         profile_tick_ = 0;
     }
 
+    // Starts the existing dropout ladder from an externally supplied command
+    // state. Frame-direct mode uses this planning-domain transition when its
+    // group watchdog expires; normal legacy tracking never calls it.
+    rt::ErrorCode begin_dropout_from(otg::State1D state)
+    {
+        if(!session_started_ || !otg::is_finite(state) ||
+           config_.limits.max_velocity <= 0.0) {
+            return rt::ErrorCode::invalid_argument;
+        }
+
+        state_ = state;
+        have_target_ = false;
+        have_profile_ = false;
+        quintic_active_ = false;
+        profile_tick_ = 0;
+        pending_dirty_ = false;
+        ++dropout_count_;
+        if(config_.extrapolation_cycles > 0 && state.velocity != 0.0) {
+            mode_ = Mode::extrapolating;
+            extrapolation_tick_ = 0;
+            extrapolation_start_velocity_ = state.velocity;
+            synthetic_position_ = state.position;
+        } else if(state.velocity != 0.0 || state.acceleration != 0.0) {
+            enter_stopping();
+        } else {
+            mode_ = Mode::stopped;
+        }
+        return rt::ErrorCode::ok;
+    }
+
     // Producer side. Rejections (non-finite input, non-monotonic timestamp)
     // never disturb the running filter; they are counted and reported to the
     // producer through the return code.
@@ -210,6 +249,17 @@ public:
     // setpoint state. The output stream never breaks (decision #5).
     otg::State1D cycle()
     {
+        ReplanResult result = ReplanResult::none;
+        return cycle_with_replan_budget(true, result);
+    }
+
+    // Group frame mode may defer a full OTG solve after first attempting the
+    // fixed-cost quintic path. A deferred member keeps sampling its previous
+    // proven profile and retains the pending target for a later cycle.
+    otg::State1D cycle_with_replan_budget(bool allow_slow_replan,
+                                          ReplanResult &replan_result)
+    {
+        replan_result = ReplanResult::none;
         if(now_ < INT64_MAX) {
             ++now_;
         }
@@ -297,7 +347,7 @@ public:
         }
 
         if(pending_dirty_) {
-            replan();
+            replan_result = replan(allow_slow_replan);
         }
         advance();
 
@@ -317,6 +367,11 @@ public:
             mode_ = Mode::stopped;
         }
         return state_;
+    }
+
+    bool replan_pending() const
+    {
+        return pending_dirty_;
     }
 
     otg::State1D state() const
@@ -631,10 +686,8 @@ private:
         pending_dirty_ = true;
     }
 
-    void replan()
+    ReplanResult replan(bool allow_slow_replan)
     {
-        pending_dirty_ = false;
-
         // Numerical-dust guard: sampled profiles keep the state inside the
         // envelope up to the planner's sampling tolerance; the re-plan entry
         // state must be strictly admissible.
@@ -647,8 +700,9 @@ private:
         }
         if(!otg::is_finite(from) || !std::isfinite(pending_position_) ||
            !std::isfinite(pending_velocity_)) {
+            pending_dirty_ = false;
             ++filter_faults_;
-            return;
+            return ReplanResult::fault;
         }
 
         // Tracking law for moving targets: aim at the line point one stream
@@ -760,9 +814,15 @@ private:
                 quintic_active_ = true;
                 profile_tick_ = 0;
                 have_profile_ = true;
-                return;
+                pending_dirty_ = false;
+                return ReplanResult::fast;
             }
         }
+
+        if(!allow_slow_replan) {
+            return ReplanResult::deferred;
+        }
+        pending_dirty_ = false;
 
         rt::Result<otg::Profile1D> planned =
             rendezvous_cycles > 0
@@ -796,12 +856,13 @@ private:
         }
         if(!planned) {
             ++filter_faults_;
-            return;
+            return ReplanResult::slow;
         }
         profile_ = planned.value();
         quintic_active_ = false;
         profile_tick_ = 0;
         have_profile_ = true;
+        return ReplanResult::slow;
     }
 
     void advance()

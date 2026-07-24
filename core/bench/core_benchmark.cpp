@@ -84,6 +84,183 @@ struct StThroughput
     double observed_ns_per_instruction = 0.0;
 };
 
+struct H1StreamBenchmark
+{
+    double direct_steady_us = 0.0;
+    double direct_adversarial_us = 0.0;
+    double upsample_fast_us = 0.0;
+    double upsample_slow_budget_us = 0.0;
+    double checksum = 0.0;
+};
+
+plcopen::core::stream::JointStreamGroupConfig
+make_h1_stream_config(plcopen::core::stream::JointFrameMode mode, bool fast_path)
+{
+    using namespace plcopen::core;
+
+    stream::JointStreamGroupConfig config{};
+    config.mode = mode;
+    config.joint_count = stream::JointStreamGroup::MaxJoints;
+    config.gain_ramp_cycles = 4;
+    for(std::size_t joint = 0; joint < config.joint_count; ++joint) {
+        stream::JointStreamConfig &member = config.joints[joint];
+        member.filter.limits = {0.5, 0.05, 0.05, 0.01};
+        member.filter.position_envelope_enabled = true;
+        member.filter.min_position = -100.0;
+        member.filter.max_position = 100.0;
+        member.filter.timeout_cycles = 1000000;
+        member.filter.extrapolation_cycles = 40;
+        member.filter.quintic_fast_path = fast_path;
+        member.max_abs_tau_ff = 10.0;
+        member.min_kp = 0.0;
+        member.max_kp = 100.0;
+        member.min_kd = 0.0;
+        member.max_kd = 20.0;
+        member.safe_kp = 2.0;
+        member.safe_kd = 1.0;
+    }
+    return config;
+}
+
+bool reset_h1_stream(plcopen::core::stream::JointStreamGroup &group)
+{
+    using namespace plcopen::core;
+
+    for(std::size_t joint = 0; joint < group.joint_count(); ++joint) {
+        if(group.reset(joint, {0.0, 0.0, 0.0}) != rt::ErrorCode::ok) {
+            return false;
+        }
+    }
+    return true;
+}
+
+int run_h1_stream_benchmark(H1StreamBenchmark &result)
+{
+    using namespace plcopen::core;
+
+    constexpr int DirectSteadyCycles = 20000;
+    constexpr int DirectAdversarialCycles = 20000;
+    constexpr int UpsampleFastCycles = 20000;
+    constexpr int UpsampleSlowCycles = 2000;
+
+    stream::JointStreamGroup direct;
+    if(direct.configure_frame(
+           make_h1_stream_config(stream::JointFrameMode::direct, false)) !=
+           rt::ErrorCode::ok ||
+       !reset_h1_stream(direct)) {
+        return 1;
+    }
+    stream::JointCommandFrame direct_frame{};
+    direct_frame.joint_count = direct.joint_count();
+    direct_frame.timestamp_cycles = 1;
+    for(std::size_t joint = 0; joint < direct_frame.joint_count; ++joint) {
+        direct_frame.joints[joint] = {0.0, 0.0, 0.0, 4.0, 2.0};
+    }
+    if(direct.push_frame(direct_frame) != rt::ErrorCode::ok) {
+        return 1;
+    }
+    direct.cycle();
+
+    std::clock_t start = std::clock();
+    for(int cycle = 0; cycle < DirectSteadyCycles; ++cycle) {
+        direct.cycle();
+    }
+    result.direct_steady_us =
+        1000.0 * millis_since(start) / DirectSteadyCycles;
+
+    start = std::clock();
+    for(int cycle = 0; cycle < DirectAdversarialCycles; ++cycle) {
+        const double direction = cycle % 2 == 0 ? 1.0 : -1.0;
+        ++direct_frame.timestamp_cycles;
+        for(std::size_t joint = 0; joint < direct_frame.joint_count; ++joint) {
+            const double index = static_cast<double>(joint);
+            direct_frame.joints[joint] = {
+                direction * (0.5 + 0.001 * index),
+                direction * 0.1,
+                direction * (1.0 + 0.01 * index),
+                4.0 + index,
+                2.0 + 0.1 * index,
+            };
+        }
+        if(direct.push_frame(direct_frame) != rt::ErrorCode::ok) {
+            return 1;
+        }
+        direct.cycle();
+    }
+    result.direct_adversarial_us =
+        1000.0 * millis_since(start) / DirectAdversarialCycles;
+    result.checksum += direct.read_setpoint_frame().joints[0].position;
+
+    stream::JointStreamGroup fast;
+    if(fast.configure_frame(
+           make_h1_stream_config(stream::JointFrameMode::upsample, true)) !=
+           rt::ErrorCode::ok ||
+       !reset_h1_stream(fast)) {
+        return 1;
+    }
+    stream::JointCommandFrame fast_frame{};
+    fast_frame.joint_count = fast.joint_count();
+    start = std::clock();
+    for(int cycle = 0; cycle < UpsampleFastCycles; ++cycle) {
+        fast_frame.timestamp_cycles = cycle + 1;
+        const double position = 0.001 * static_cast<double>(cycle);
+        for(std::size_t joint = 0; joint < fast_frame.joint_count; ++joint) {
+            fast_frame.joints[joint] = {position, 0.001, 0.0, 4.0, 2.0};
+        }
+        if(fast.push_frame(fast_frame) != rt::ErrorCode::ok) {
+            return 1;
+        }
+        fast.cycle();
+        if(fast.pending_replans() != 0 || fast.deferred_replans() != 0) {
+            return 1;
+        }
+    }
+    result.upsample_fast_us =
+        1000.0 * millis_since(start) / UpsampleFastCycles;
+    result.checksum += fast.read_setpoint_frame().joints[0].position;
+
+    stream::JointStreamGroup slow;
+    if(slow.configure_frame(
+           make_h1_stream_config(stream::JointFrameMode::upsample, false)) !=
+           rt::ErrorCode::ok ||
+       !reset_h1_stream(slow)) {
+        return 1;
+    }
+    stream::JointCommandFrame slow_frame{};
+    slow_frame.joint_count = slow.joint_count();
+    start = std::clock();
+    for(int cycle = 0; cycle < UpsampleSlowCycles; ++cycle) {
+        const double direction = cycle % 2 == 0 ? 1.0 : -1.0;
+        slow_frame.timestamp_cycles = cycle + 1;
+        for(std::size_t joint = 0; joint < slow_frame.joint_count; ++joint) {
+            slow_frame.joints[joint] = {
+                direction * (0.5 + 0.001 * static_cast<double>(joint)),
+                0.0,
+                direction,
+                4.0,
+                2.0,
+            };
+        }
+        if(slow.push_frame(slow_frame) != rt::ErrorCode::ok) {
+            return 1;
+        }
+        slow.cycle();
+    }
+    result.upsample_slow_budget_us =
+        1000.0 * millis_since(start) / UpsampleSlowCycles;
+    result.checksum += slow.read_setpoint_frame().joints[0].position;
+    if(slow.pending_replans() !=
+           stream::JointStreamGroup::MaxJoints -
+               stream::JointStreamGroup::SlowReplansPerCycle ||
+       slow.deferred_replans() !=
+           static_cast<std::uint64_t>(UpsampleSlowCycles) *
+               (stream::JointStreamGroup::MaxJoints -
+                stream::JointStreamGroup::SlowReplansPerCycle)) {
+        return 1;
+    }
+    return 0;
+}
+
 StCalibration calibrate_st_scan(const char *source)
 {
     using namespace plcopen::core;
@@ -535,6 +712,27 @@ int main(int argc, char **argv)
         position_sum += joints.state(0).position;
     }
 
+    H1StreamBenchmark h1_stream;
+    if(run_h1_stream_benchmark(h1_stream) != 0) {
+        std::printf("BENCH_FAIL H1 stream setup or bounded-replan invariant\n");
+        return 1;
+    }
+    position_sum += h1_stream.checksum;
+    if(BenchCalibrationEligible != 0 &&
+       (h1_stream.direct_steady_us > 300.0 ||
+        h1_stream.direct_adversarial_us > 300.0 ||
+        h1_stream.upsample_fast_us > 300.0 ||
+        h1_stream.upsample_slow_budget_us > 300.0)) {
+        std::printf(
+            "BENCH_FAIL H1 stream cycle budget direct_steady=%.2f "
+            "direct_adversarial=%.2f upsample_fast=%.2f "
+            "upsample_slow_budget=%.2f budget_us=300\n",
+            h1_stream.direct_steady_us, h1_stream.direct_adversarial_us,
+            h1_stream.upsample_fast_us,
+            h1_stream.upsample_slow_budget_us);
+        return 1;
+    }
+
     // Cartesian-interpolation budget gate (approved matrix decision #11):
     // a 6R pose group rides Cartesian segments through the per-cycle
     // analytic inverse; the measured per-cycle cost carries the hard 50 us
@@ -644,6 +842,15 @@ int main(int argc, char **argv)
     std::printf("STREAM_METRICS joints=28 stagger_us_per_cycle=%.2f burst_us_per_cycle=%.2f "
                 "budget_us=300\n",
                 stream_stagger_us, stream_burst_us);
+    std::printf(
+        "STREAM_METRICS h1_joints=48 direct_steady_us_per_cycle=%.2f "
+        "direct_adversarial_us_per_cycle=%.2f "
+        "upsample_fast_us_per_cycle=%.2f "
+        "upsample_slow_budget_us_per_cycle=%.2f slow_replans_per_cycle=%zu "
+        "budget_us=300\n",
+        h1_stream.direct_steady_us, h1_stream.direct_adversarial_us,
+        h1_stream.upsample_fast_us, h1_stream.upsample_slow_budget_us,
+        stream::JointStreamGroup::SlowReplansPerCycle);
     std::printf("PATH_METRICS speed_ripple=%.6f path_error=%.12f cycle_efficiency=%.6f "
                 "blend_deviation=%.12f cam_error=%.12f overlay_checksum=%.6f "
                 "otg_duration_vs_baseline=%.4f\n",

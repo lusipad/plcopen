@@ -18,6 +18,15 @@ direct/upsample 分层延迟合同、组级断流、混合字段斜坡和 setpoi
   1. `StreamFilter1D` 可预算重规划与显式 dropout 入口；
   2. `JointStreamGroup` 原子帧、direct/upsample、组级 watchdog 与快照；
   3. 48 关节预算、消费者与文档证据。
+- 逐关节 `timeout_cycles` 不同时，frame 会话采用最小值作为组级
+  watchdog 阈值，确保所有关节同拍进入断流且没有成员超过自身上限。
+- `upsample` 每拍从轮转起点遍历全部成员：T24 命中不消耗慢解额度，
+  慢解最多 10 个，延期成员继续旧安全剖面；48 关节全慢输入的待解队列
+  为 `38→28→18→8→0`，累计延期 92。
+- Windows MSVC Release 微基准实测：
+  direct 稳态 `0.15µs/拍`、direct 对抗帧 `0.75µs/拍`、
+  upsample 快路径 `12.25µs/拍`、全慢预算拍 `123.00µs/拍`，
+  均低于批准的 `300µs` 软件门。
 
 ## Deviations
 
@@ -25,7 +34,11 @@ direct/upsample 分层延迟合同、组级断流、混合字段斜坡和 setpoi
 
 ## Surprises
 
-- 无。
+- 初始快路径夹具的位姿并不满足 T24 解析包络，实际走慢解；改为
+  `{q=0,dq=0.001}` 的已证明命中输入后，48 关节当拍零延期。
+- 初始五拍全慢夹具使用 `timeout_cycles=2`，第 4 拍会按合同进入断流，
+  与纯重规划队列观测相互干扰；预算夹具单独提高 watchdog，断流行为由
+  独立用例覆盖。
 
 ## Questions for review
 
