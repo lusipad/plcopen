@@ -18,3 +18,5 @@
   [D1 v1 语义矩阵](../compliance/st-language-server-semantics.md)，包括单文档
   多 POU 边界，以及扩展固定使用 `vscode-languageclient 10.1.0` 和
   `@vscode/vsce 3.9.2`？
+- 是否同时明确批准 production 传递依赖 `semver` 的 ISC 与 `minimatch`
+  的 BlueOak-1.0.0 许可证？未批准时不得生成 npm lockfile 或开始扩展实现。

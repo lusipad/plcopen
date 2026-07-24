@@ -58,12 +58,18 @@ wheel 无法可靠携带纯 Python server 或 pybind 往返成为已测瓶颈时
 
 ### 1.5 扩展允许两个固定 npm 依赖，但不扩大产品发布
 
-`vscode-languageclient 10.1.0` 是唯一 runtime npm 依赖；
-`@vscode/vsce 3.9.2` 只用于测试/打包。两者 lock、license、audit 与 VSIX
-进入 CI；core/default wheel 无新运行依赖。扩展不可信 workspace 不启动
-Python，也不自动选 workspace `.venv`。
+`vscode-languageclient 10.1.0` 是唯一直接 runtime npm 依赖；
+`@vscode/vsce 3.9.2` 只用于测试/打包。实时 registry/lock 探针显示直接项
+均为 MIT，但 production tree 还包含 `semver`（ISC）与 `minimatch`
+（BlueOak-1.0.0）；这两种许可证不在 `PROVENANCE.md` 当前自动允许的
+MIT/BSD/Apache 清单内，所以必须由维护者在批准矩阵时一并明确裁决。
+批准后生成 production dependency/license/integrity 清单与第三方 notices
+草案，并验证 VSIX 不打入 `@vscode/vsce` dev tree。core/default wheel 无新
+第三方运行依赖；扩展不可信 workspace 不启动 Python，也不自动选 workspace
+`.venv`。
 
-置信度：中。官方 client 显著降低协议适配错误；如果维护者坚持零 npm
+置信度：中。推荐当前 v10 client，以匹配 LSP 3.18；若不批准 BlueOak，
+可重送 v9 client（仍需批准 ISC，且协议库退至 LSP 3.17）；若坚持零 npm
 依赖，D1 应改为“只交付通用 Language Server、不交付 VS Code client”，
 而不是在扩展里手写一套 language client。
 
@@ -96,8 +102,9 @@ Python，也不自动选 workspace `.venv`。
    包装入 wheel。
 3. 实现 Content-Length/JSON-RPC 生命周期、UTF-16 增量文档、四项 handler
    与原始 transcript 测试。
-4. 在 `editors/vscode/` 增加语言登记、基础配置、官方 client、trust/解释器
-   设置、Node 测试、lockfile 与 VSIX 打包。
+4. 在维护者完成 ISC/BlueOak 裁决后，在 `editors/vscode/` 增加语言登记、
+   基础配置、官方 client、trust/解释器设置、Node 测试、lockfile、生产
+   许可证清单/第三方 notices 草案与 VSIX 打包。
 5. 增加 Windows/Linux Language Tools workflow；同步双语指南、导航、CI
    总账、KB-092、CHANGELOG、STATUS/ROADMAP 与实施记录。
 

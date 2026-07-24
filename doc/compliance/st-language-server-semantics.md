@@ -45,7 +45,7 @@ POU 工程，不把尚未存在的跨文件工程模型藏进实现。
 | 12 | 容错查询 | 即使权威编译失败，索引仍从可辨识 fragment/token 提供补全、定义和悬停；当前不完整 fragment 不复用其旧符号冒充现状 | 编辑态可用，但不隐藏已删除或改坏的声明 |
 | 13 | 容量 | header 最多 8 KiB、单条 JSON-RPC body 最多 32 MiB、最多同时保留 64 个打开文档、单文档 UTF-8 最多 4 MiB；文档超限只发布 `capacity_document_bytes` / `capacity_open_documents` 诊断，查询返回空 | server 内存和响应规模必须有界；32 MiB 可容纳 4 MiB 文本的最坏 JSON 转义 |
 | 14 | Python/VS Code 接线 | wheel 增加零第三方 Python 依赖的 `plcopen_lsp` 包；扩展用设置指定 Python，运行 `python -m plcopen_lsp`，缺模块时显示可操作错误；不自动采用 workspace 内解释器 | 避免在不可信仓库中静默执行 `.venv` |
-| 15 | 扩展依赖 | 允许扩展目录固定 `vscode-languageclient 10.1.0`（runtime）与 `@vscode/vsce 3.9.2`（dev/package）两个直接依赖，提交包含其传递依赖的 lockfile；两者当前为 MIT。不再增加其他直接 npm/Python/C++ 依赖 | 官方 client 避免自写易错 LSP 适配，vsce 形成可安装证据包 |
+| 15 | 扩展依赖与许可证门 | 提案固定 `vscode-languageclient 10.1.0`（runtime）与 `@vscode/vsce 3.9.2`（dev/package）两个直接依赖并提交 lockfile。两项直接依赖为 MIT；当前 production tree 另含 `semver`（ISC）与 `minimatch`（BlueOak-1.0.0），超出 `PROVENANCE.md` 现行 MIT/BSD/Apache 自动允许清单，**必须由维护者显式批准 ISC/BlueOak 后才可实施**。不再增加其他直接 npm/Python/C++ 依赖 | 官方 client 避免自写易错 LSP 适配，但传递许可证不能被顶层 MIT 标签掩盖 |
 | 16 | Workspace Trust | untrusted workspace 只注册 `.st` 语言配置，不启动 Python 进程；server 不访问网络、不执行 ST 或 workspace 命令、不读取未打开 URI | 工具不把打开陌生仓库变成代码执行入口 |
 
 ## 退化、拒绝与错误规则
@@ -63,6 +63,7 @@ POU 工程，不把尚未存在的跨文件工程模型藏进实现。
 | 定义/悬停无法唯一解析 | 返回 `null`，不取“第一个看起来像”的声明 |
 | 补全超过 8192 项 | 按当前作用域、用户符号、权威内置项的稳定顺序截断，并置 `isIncomplete=true` |
 | Python/`plcopen_lsp` 不可启动 | 扩展输出通道和错误通知给出解释器/安装命令；不退回扩展内置伪解析 |
+| ISC 或 BlueOak-1.0.0 未获维护者明确批准 | 不安装/提交 npm lockfile，不开始扩展实现；可改送旧 client 或无 VS Code client 的新矩阵，但不得静默放宽出处清单 |
 | 不可信 workspace | 不 spawn server；语言标识和基础括号/注释配置仍可用 |
 | 文档关闭 | 删除内存文本/索引并发布空 diagnostics |
 
@@ -78,7 +79,7 @@ POU 工程，不把尚未存在的跨文件工程模型藏进实现。
 | 定义 | 局部遮蔽 GVL、跨 POU 调用、用户 FB pin 和前方文本位移均命中精确 selection range；歧义/内置返回 null |
 | 悬停 | 用户变量/POU、标准函数、标准 FB pin 的 kind/type/direction 与权威清单一致；坏源码仍可查询可辨识项 |
 | 容量与安全 | 8 KiB header、32 MiB body、4 MiB 文档、64 文档均有 N/N+1；server 不读未打开 URI、不联网、不执行 ST；untrusted workspace 不 spawn |
-| 扩展 | `npm ci`、Node 单测/manifest 检查、固定依赖审计与 `vsce package` 生成可安装 VSIX；file/untitled `.st` 均连接同一 client |
+| 扩展 | 维护者许可证批准有记录；production tree 生成完整 package/version/license/integrity 清单和第三方 notices 草案；`npm ci`、Node 单测/manifest 检查、`npm audit --omit=dev` 与 `vsce package` 生成可安装 VSIX，并证明 VSIX 不含 `@vscode/vsce` dev tree；file/untitled `.st` 均连接同一 client |
 | 平台 | Windows/Linux Python binding + LSP transcript + VS Code package workflow 全绿 |
 | 回归 | 全量 CTest、ST fuzz smoke、RT scan、18 份 replay 零差异、双语 MkDocs strict/i18n 通过 |
 
