@@ -176,3 +176,20 @@ H1 把 `JointStreamGroup` 从配置便利入口升级为固定容量原子命令
 T24 快路径仍由
 [流式快路径设计](../design/core/stream-fastpath-design.md)及其 oracle
 约束。H1 的软件预算和模拟证据不得写成真机、功能安全或 T18 完成。
+
+### v2.1 实现记录（2026-07-25）
+
+- `core/stream/joint_group.h` 交付 48 关节固定容量配置、原子帧、
+  direct/upsample 会话隔离、组级 watchdog、混合字段斜坡与命令快照；
+  `StreamFilter1D` 新增可延期的慢重规划入口和从外部命令状态启动断流的
+  固定容量入口，既有 `cycle()` 行为保持不变。
+- upsample 使用轮转公平队列；全慢 48 关节夹具的待解数量精确为
+  `38→28→18→8→0`，累计延期 92。T24 真快路径夹具 48 关节当拍零延期。
+- Windows MSVC Release 的 48 关节结果为 direct 稳态
+  `0.15µs/拍`、direct 对抗帧 `0.75µs/拍`、upsample 快路径
+  `12.90µs/拍`、全慢预算拍 `131.00µs/拍`；四项均低于批准的
+  `300µs` 软件门。
+- `plcopen_core_joint_stream_group_tests` 覆盖配置事务、会话隔离、七类
+  整帧拒绝、keep-latest、本地 watchdog、direct/fast 同拍、慢解队列、
+  组级断流与恢复；安装态 `find_package` 和源码态 `FetchContent`
+  消费者均直接包含并运行 H1 公共头面。

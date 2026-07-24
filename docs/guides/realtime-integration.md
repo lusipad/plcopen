@@ -31,6 +31,45 @@ axis.cycle();
 // Do not call planning APIs from this thread.
 ```
 
+## Synchronized joint command frames
+
+`stream::JointStreamGroup` provides the fixed-capacity H1 command primitive
+for up to 48 joints. Configure and reset every member before the session, then
+submit complete frames through `push_frame()`:
+
+```cpp
+stream::JointStreamGroupConfig config{};
+config.joint_count = 2;
+config.mode = stream::JointFrameMode::direct;
+// Fill every config.joints[i] filter, torque, gain, and safe-gain limit.
+
+stream::JointStreamGroup joint_stream;
+joint_stream.configure_frame(config);
+joint_stream.reset(0, {});
+joint_stream.reset(1, {});
+
+stream::JointCommandFrame frame{};
+frame.joint_count = 2;
+frame.timestamp_cycles = 1; // ordering/echo only
+frame.joints[0] = {0.2, 0.01, 0.0, 8.0, 2.0};
+frame.joints[1] = {-0.2, -0.01, 0.0, 8.0, 2.0};
+joint_stream.push_frame(frame);
+joint_stream.cycle();
+const auto &command = joint_stream.read_setpoint_frame();
+```
+
+The producer timestamp never schedules a future activation: the owning local
+cycle controls activation and watchdog age. `direct` exposes accepted q/dq
+fields together in the next cycle and does not claim jerk-limited smoothing.
+`upsample` reuses the 1D OTG filter; fast-path joints respond together, while
+slow replans are limited to 10 joints per cycle and may take up to five cycles
+across a full 48-joint frame. Invalid member data rejects the whole frame.
+
+The returned frame is a **command snapshot**, not actual feedback. H1 carries
+`tau_ff` but does not authorize a drive adapter or executor to apply it; that
+requires the separate T18 torque-limit, velocity-supervision, and position-
+fence contract.
+
 Real EtherCAT access, thread scheduling, clock synchronization, and bus I/O
 live outside this repository. At the cycle boundary, the host executor calls
 `adapters::Servo` and returns feedback through hooks such as

@@ -25,7 +25,7 @@ direct/upsample 分层延迟合同、组级断流、混合字段斜坡和 setpoi
   为 `38→28→18→8→0`，累计延期 92。
 - Windows MSVC Release 微基准实测：
   direct 稳态 `0.15µs/拍`、direct 对抗帧 `0.75µs/拍`、
-  upsample 快路径 `12.25µs/拍`、全慢预算拍 `123.00µs/拍`，
+  upsample 快路径 `12.90µs/拍`、全慢预算拍 `131.00µs/拍`，
   均低于批准的 `300µs` 软件门。
 
 ## Deviations
@@ -39,6 +39,18 @@ direct/upsample 分层延迟合同、组级断流、混合字段斜坡和 setpoi
 - 初始五拍全慢夹具使用 `timeout_cycles=2`，第 4 拍会按合同进入断流，
   与纯重规划队列观测相互干扰；预算夹具单独提高 watchdog，断流行为由
   独立用例覆盖。
+
+## Verification
+
+- Windows MSVC Debug 全量 CTest：99/99，通过 11 项 fuzz。
+- Windows MSVC Release `STREAM_METRICS`：48 关节四项 H1 指标均低于
+  300µs；既有 28 关节 legacy 指标也低于原门槛。
+- 安装态 `find_package` 与源码态 `FetchContent` 消费者均编译并运行
+  `stream/joint_group.h` 的 H1 direct 帧冒烟。
+- RT safety scan：31 文件通过；replay fixture：18 文件、2409 样本通过。
+- 中英文 MkDocs strict 与 i18n：26 对页面通过。当前 Windows 主机未安装
+  Doxygen，CMake `docs` target 只验证了仓库定义的提示型 fallback；真实
+  Doxygen/Graphviz、Linux GCC/Clang、ARM64 与远端工作流仍待 PR 门禁。
 
 ## Questions for review
 

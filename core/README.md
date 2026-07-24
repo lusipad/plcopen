@@ -41,8 +41,8 @@
 | L1 otg    jerk-limited OTG solver           |  |  | gantry / SCARA / 6R    |
 +---------------------------------------------+  |  | deps: geom, rt         |
 | L0 rt      cycle time, static vectors,      |  |  +------------------------+
-|                 SPSC rings, error codes     |  +->| stream        streaming|
-+---------------------------------------------+     | OTG-filtered input (B9)|
+|                 SPSC rings, error codes     |  +->| stream   atomic frames |
++---------------------------------------------+     | + OTG filter   (B9/H1) |
                                                     | deps: otg, rt          |
                                                     +------------------------+
  reading rules: stacking = downward include permission, not per-edge

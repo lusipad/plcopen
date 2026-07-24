@@ -6,6 +6,13 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- H1（KB-035）把 `stream::JointStreamGroup` 扩为 48 关节固定容量原子
+  `{q_des,dq_des,tau_ff,kp,kd}` 命令帧：`direct` 在下一 group cycle
+  同拍呈现，`upsample` 复用既有 OTG 滤波并把慢解限制为每拍 10 关节；
+  完整预检、keep-latest、本地周期 watchdog、组级断流、混合字段安全斜坡
+  与命令快照均有专项回归和安装态消费者。`tau_ff` 本批只形成数据通路，
+  adapter/executor 消费仍受独立 T18 安全合同门控。
+
 - D1（KB-092）新增单文档多 POU 的 ST Language Server：C++ 工具域复用
   权威编译诊断、lexer、类型/标准函数与 134 FB 清单，并按 POU 内容缓存
   容错符号索引；零第三方 Python runtime 依赖的 stdio LSP 提供 UTF-16
