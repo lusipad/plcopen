@@ -234,6 +234,24 @@ assert len(loaded) == 33
 assert abs(loaded[-1][1] - 0.5) < 1e-9
 ]=])
     add_test(NAME pyplcopen_smoke COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/pyplcopen_smoke_$<CONFIG>.py)
+    file(GENERATE
+      OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/pyplcopen_language_tools_$<CONFIG>.py
+      CONTENT
+"import sys
+import unittest
+
+sys.path.insert(0, r\"$<TARGET_FILE_DIR:pyplcopen>\")
+sys.path.insert(0, r\"${CMAKE_CURRENT_SOURCE_DIR}/python\")
+suite = unittest.defaultTestLoader.discover(
+    r\"${CMAKE_CURRENT_SOURCE_DIR}/python/tests\"
+)
+result = unittest.TextTestRunner(verbosity=2).run(suite)
+raise SystemExit(0 if result.wasSuccessful() else 1)
+")
+    add_test(
+      NAME pyplcopen_language_tools
+      COMMAND ${Python3_EXECUTABLE}
+              ${CMAKE_CURRENT_BINARY_DIR}/pyplcopen_language_tools_$<CONFIG>.py)
     add_test(
       NAME pyplcopen_smoke_docs
       COMMAND ${Python3_EXECUTABLE}
