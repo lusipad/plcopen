@@ -254,4 +254,5 @@ for master, slave in table[:5]:
 - [Diagnostics and trace](../guides/diagnostics.md) — structured hints and a
   standalone HTML/SVG timeline
 - [Algorithm white-box](algorithms.md) — understand the motion planning internals
-- [Compliance matrices](https://github.com/lusipad/plcopen/tree/main/doc/compliance) — what's implemented vs. the PLCopen standard
+- [Standards and evidence](../references/standards-evidence.md) — what is
+  implemented and what each proof can establish

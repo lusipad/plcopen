@@ -89,5 +89,5 @@ cmake --build build --config Release
 ## 更多细节
 
 - [core/st/README.md](https://github.com/lusipad/plcopen/blob/main/core/st/README.md)
-- [ST semantics spec](https://github.com/lusipad/plcopen/blob/main/doc/compliance/st-l0-semantics.md)
+- [ST 运行时参考](../references/st-runtime.md)
 - [Function-block reference](../references/fb-reference.md)

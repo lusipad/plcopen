@@ -1,19 +1,23 @@
 # Real-time integration guide
 
-## 推荐拓扑
+## Recommended topology
 
-生产系统采用 ADR-0007 双域模型：
+Production systems use the ADR-0007 two-domain model:
 
-1. 规划域线程是 `AxisGroup`/`AxisModel` 的唯一写者，排空命令、运行 FB
-   和 `cycle()`，填充承诺轨迹环。
-2. RT 线程每周期只弹出一帧，调用驱动器窄接口并写回反馈。
-3. 两域之间只共享命令、承诺轨迹、反馈、状态快照四条 SPSC 队列。
+1. The planning thread is the sole writer of `AxisGroup` and `AxisModel`. It
+   drains commands, runs function blocks and `cycle()`, and fills the
+   committed-trajectory ring.
+2. The RT thread pops exactly one frame per cycle, calls the narrow drive
+   interface, and publishes feedback.
+3. The domains share only four SPSC queues: commands, committed trajectory,
+   feedback, and state snapshots.
 
-RT 线程不调用 `submit_*`、look-ahead、kinematics 求解或可能扩容的规划函数。
-规划慢时前瞻深度下降，RT 周期不等待规划线程。参考实现：
-`core/demo/rt_executor_demo.cpp`。
+The RT thread does not call `submit_*`, look-ahead, kinematics solvers, or
+planning functions that may grow storage. If planning slows down, look-ahead
+depth falls; the RT cycle never waits for the planning thread. See
+`core/demo/rt_executor_demo.cpp` for the reference implementation.
 
-## 周期骨架
+## Cycle skeleton
 
 ```cpp
 // Planning domain owns these objects for their entire lifetime.
@@ -27,20 +31,26 @@ axis.cycle();
 // Do not call planning APIs from this thread.
 ```
 
-实际 EtherCAT、线程调度、时钟同步和总线 IO 不在本仓库内；宿主执行器在
-周期边界调用 `adapters::Servo`，并使用 `set_actual_feedback()`、
-`set_digital_input()` 等钩子回写。Feetech STS 当前只有纯软件协议层，
-不含串口 IO，也不能替代工业实时总线。
+Real EtherCAT access, thread scheduling, clock synchronization, and bus I/O
+live outside this repository. At the cycle boundary, the host executor calls
+`adapters::Servo` and returns feedback through hooks such as
+`set_actual_feedback()` and `set_digital_input()`. The current Feetech STS
+adapter is a software protocol layer only: it has no serial I/O and does not
+replace an industrial real-time bus.
 
-## RT 清单
+## RT checklist
 
-- 周期路径零堆分配、零阻塞锁、无异常、无系统调用。
-- 时间使用整数 cycle counter，禁止浮点时间累加。
-- 固定容量容器在初始化/规划域准备，RT 只读已承诺数据。
-- 驱动器适配器实现窄接口，不把总线对象或线程所有权塞进核心。
-- 反馈、命令和快照使用单写者队列，禁止跨线程共享可变 `AxisModel`。
+- No heap allocation, blocking lock, exception, or system call on the cyclic
+  path.
+- Use an integer cycle counter for time; never accumulate floating-point time.
+- Prepare fixed-capacity containers during initialization or in the planning
+  domain. RT reads only committed data.
+- Drive adapters implement the narrow interface; do not move bus objects or
+  thread ownership into the core.
+- Feedback, commands, and snapshots use single-writer queues. Never share a
+  mutable `AxisModel` between threads.
 
-提交前运行：
+Run before submitting:
 
 ```bash
 cmake --build build-sync --config Debug
@@ -48,6 +58,8 @@ ctest --test-dir build-sync -C Debug --output-on-failure
 cmake -P cmake/rt_safety_scan.cmake
 ```
 
-规划域提交失败时保留当前承诺轨迹，记录 `rt::ErrorCode`，不要在 RT 线程
-重试同一提交。承诺环耗尽时由宿主监控 ring level 并进入自己的安全策略，
-不让驱动器线程阻塞等待规划结果。
+If a planning-domain submission fails, retain the current committed
+trajectory and record its `rt::ErrorCode`; do not retry the same submission
+from the RT thread. If the committed ring runs dry, the host monitors the ring
+level and enters its own safety policy instead of blocking the drive thread
+while it waits for planning.

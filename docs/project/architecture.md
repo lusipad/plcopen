@@ -38,5 +38,6 @@ not imply that every layer includes the one immediately below it.
 The complete diagrams, current implementation cross-check, and invariant
 table are maintained in
 [the canonical architecture document](https://github.com/lusipad/plcopen/blob/main/doc/design/core/architecture.md).
-Architecture rationale is recorded separately in
-[ADRs](https://github.com/lusipad/plcopen/tree/main/doc/design/decisions).
+Architecture rationale and rejected alternatives are organized in the
+[architecture-decision guide](../references/architecture-decisions.md), with
+each entry linked to its canonical ADR.

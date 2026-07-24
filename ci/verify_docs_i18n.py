@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 from html.parser import HTMLParser
 from pathlib import Path
+import re
 import sys
 import xml.etree.ElementTree as ET
 
@@ -13,8 +14,7 @@ import xml.etree.ElementTree as ET
 PROJECT_SOURCE_LINKS = {
     Path("project/index.md"): (
         "https://github.com/lusipad/plcopen/blob/main/STATUS.md",
-        "https://github.com/lusipad/plcopen/blob/main/"
-        "doc/design/core/architecture.md",
+        "https://github.com/lusipad/plcopen/blob/main/doc/design/core/architecture.md",
         "https://github.com/lusipad/plcopen/blob/main/"
         "doc/compliance/plcopen-conformance-audit.md",
         "https://github.com/lusipad/plcopen/blob/main/"
@@ -28,8 +28,7 @@ PROJECT_SOURCE_LINKS = {
         "https://github.com/lusipad/plcopen/blob/main/STATUS.md",
     ),
     Path("project/architecture.md"): (
-        "https://github.com/lusipad/plcopen/blob/main/"
-        "doc/design/core/architecture.md",
+        "https://github.com/lusipad/plcopen/blob/main/doc/design/core/architecture.md",
     ),
     Path("project/compliance.md"): (
         "https://github.com/lusipad/plcopen/blob/main/"
@@ -53,12 +52,45 @@ PROJECT_SOURCE_LINKS = {
     ),
 }
 
+REFERENCE_SOURCE_LINKS = {
+    Path("references/st-runtime.md"): (
+        "https://github.com/lusipad/plcopen/blob/main/"
+        "doc/design/core/st-runtime-design.md",
+        "https://github.com/lusipad/plcopen/blob/main/"
+        "doc/compliance/st-feature-table.md",
+        "https://github.com/lusipad/plcopen/blob/main/"
+        "doc/compliance/st-l0-semantics.md",
+    ),
+    Path("references/standards-evidence.md"): (
+        "https://github.com/lusipad/plcopen/blob/main/"
+        "doc/compliance/plcopen-conformance-audit.md",
+        "https://github.com/lusipad/plcopen/blob/main/"
+        "doc/compliance/plcopen-beckhoff-parity-matrix.md",
+        "https://github.com/lusipad/plcopen/blob/main/doc/compliance/ci-gates.md",
+        "https://github.com/lusipad/plcopen/tree/main/doc/compliance/generated",
+    ),
+    Path("references/architecture-decisions.md"): tuple(
+        "https://github.com/lusipad/plcopen/blob/main/"
+        f"doc/design/decisions/{number:04d}-{slug}.md"
+        for number, slug in (
+            (1, "v0x-license-strategy"),
+            (2, "core-cpp17-standard"),
+            (3, "ruckig-oracle-boundary"),
+            (4, "servo-adapter-interface"),
+            (5, "humanoid-multi-chain-model"),
+            (6, "fieldbus-process-model"),
+            (7, "executor-committed-trajectory"),
+        )
+    ),
+}
+
+REQUIRED_SOURCE_LINKS = PROJECT_SOURCE_LINKS | REFERENCE_SOURCE_LINKS
+HAN_CHARACTER = re.compile(r"[\u3400-\u4dbf\u4e00-\u9fff]")
+
 LEGACY_PROJECT_NAV_LINKS = {
     "https://github.com/lusipad/plcopen/tree/main/doc/compliance",
-    "https://github.com/lusipad/plcopen/blob/main/"
-    "doc/design/core/architecture.md",
-    "https://github.com/lusipad/plcopen/blob/main/"
-    "doc/compliance/known-boundaries.md",
+    "https://github.com/lusipad/plcopen/blob/main/doc/design/core/architecture.md",
+    "https://github.com/lusipad/plcopen/blob/main/doc/compliance/known-boundaries.md",
     "https://github.com/lusipad/plcopen/blob/main/CONTRIBUTING.md",
     "https://github.com/lusipad/plcopen/blob/main/GOVERNANCE.md",
     "https://github.com/lusipad/plcopen/blob/main/SECURITY.md",
@@ -74,22 +106,16 @@ class PageMetadata(HTMLParser):
         self.link_alternates: set[tuple[str | None, str | None]] = set()
         self.selector_alternates: set[tuple[str | None, str | None]] = set()
 
-    def handle_starttag(
-        self, tag: str, attrs: list[tuple[str, str | None]]
-    ) -> None:
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         values = dict(attrs)
         if tag == "html":
             self.lang = values.get("lang")
         elif tag == "link" and values.get("rel") == "canonical":
             self.canonical = values.get("href")
         elif tag == "link" and values.get("rel") == "alternate":
-            self.link_alternates.add(
-                (values.get("hreflang"), values.get("href"))
-            )
+            self.link_alternates.add((values.get("hreflang"), values.get("href")))
         elif tag == "a" and values.get("hreflang"):
-            self.selector_alternates.add(
-                (values.get("hreflang"), values.get("href"))
-            )
+            self.selector_alternates.add((values.get("hreflang"), values.get("href")))
 
 
 def markdown_files(root: Path) -> set[Path]:
@@ -125,12 +151,12 @@ def sitemap_urls(path: Path) -> set[str]:
     }
 
 
-def verify_project_sources(root: Path, label: str) -> list[str]:
+def verify_source_links(root: Path, label: str) -> list[str]:
     errors: list[str] = []
-    for source, canonical_links in PROJECT_SOURCE_LINKS.items():
+    for source, canonical_links in REQUIRED_SOURCE_LINKS.items():
         path = root / source
         if not path.is_file():
-            errors.append(f"missing {label} project source: {source.as_posix()}")
+            errors.append(f"missing {label} source: {source.as_posix()}")
             continue
         text = path.read_text(encoding="utf-8")
         errors.extend(
@@ -141,11 +167,11 @@ def verify_project_sources(root: Path, label: str) -> list[str]:
     return errors
 
 
-def verify_project_navigation(config: Path, label: str) -> list[str]:
+def verify_navigation(config: Path, label: str) -> list[str]:
     text = config.read_text(encoding="utf-8")
     errors = [
         f"{config}: {label} navigation missing {source.as_posix()}"
-        for source in PROJECT_SOURCE_LINKS
+        for source in REQUIRED_SOURCE_LINKS
         if source.as_posix() not in text
     ]
     errors.extend(
@@ -153,6 +179,17 @@ def verify_project_navigation(config: Path, label: str) -> list[str]:
         for link in LEGACY_PROJECT_NAV_LINKS
         if link in text
     )
+    return errors
+
+
+def verify_english_language(root: Path) -> list[str]:
+    errors: list[str] = []
+    for source in sorted(markdown_files(root)):
+        text = (root / source).read_text(encoding="utf-8")
+        match = HAN_CHARACTER.search(text)
+        if match is not None:
+            line = text.count("\n", 0, match.start()) + 1
+            errors.append(f"{root / source}:{line}: English source contains Han text")
     return errors
 
 
@@ -174,16 +211,13 @@ def verify(
             errors.append(f"missing English source: {source.as_posix()}")
         return errors
 
-    errors.extend(verify_project_sources(english_docs, "English"))
-    errors.extend(verify_project_sources(chinese_docs, "Chinese"))
-    errors.extend(verify_project_navigation(english_config, "English"))
-    errors.extend(verify_project_navigation(chinese_config, "Chinese"))
+    errors.extend(verify_source_links(english_docs, "English"))
+    errors.extend(verify_source_links(chinese_docs, "Chinese"))
+    errors.extend(verify_navigation(english_config, "English"))
+    errors.extend(verify_navigation(chinese_config, "Chinese"))
+    errors.extend(verify_english_language(english_docs))
 
     base_url = base_url.rstrip("/") + "/"
-    expected_alternates = {
-        ("zh", "/plcopen/"),
-        ("en", "/plcopen/en/"),
-    }
     try:
         chinese_sitemap = sitemap_urls(site / "sitemap.xml")
         english_sitemap = sitemap_urls(site / "en" / "sitemap.xml")
@@ -192,6 +226,14 @@ def verify(
 
     for source in sorted(english_sources):
         suffix = url_suffix(source)
+        expected_link_alternates = {
+            ("zh", "/plcopen/"),
+            ("en", "/plcopen/en/"),
+        }
+        expected_selector_alternates = {
+            ("zh", f"/plcopen/{suffix}"),
+            ("en", f"/plcopen/en/{suffix}"),
+        }
         pairs = (
             (
                 "Chinese",
@@ -214,18 +256,18 @@ def verify(
                 continue
             page = parse_page(output)
             if page.lang != lang:
-                errors.append(
-                    f"{output}: expected lang={lang!r}, got {page.lang!r}"
-                )
+                errors.append(f"{output}: expected lang={lang!r}, got {page.lang!r}")
             if page.canonical != canonical:
                 errors.append(
                     f"{output}: expected canonical {canonical!r}, "
                     f"got {page.canonical!r}"
                 )
-            if not expected_alternates.issubset(page.link_alternates):
+            if not expected_link_alternates.issubset(page.link_alternates):
                 errors.append(f"{output}: incomplete alternate link metadata")
-            if not expected_alternates.issubset(page.selector_alternates):
-                errors.append(f"{output}: incomplete language selector")
+            if not expected_selector_alternates.issubset(page.selector_alternates):
+                errors.append(
+                    f"{output}: language selector does not preserve page path"
+                )
             if canonical not in sitemap:
                 errors.append(f"{output}: canonical missing from sitemap")
 
@@ -240,15 +282,9 @@ def main() -> int:
     parser.add_argument("--site-dir", type=Path, default=Path("site"))
     parser.add_argument("--english-docs", type=Path, default=Path("docs"))
     parser.add_argument("--chinese-docs", type=Path, default=Path("docs.zh"))
-    parser.add_argument(
-        "--english-config", type=Path, default=Path("mkdocs.en.yml")
-    )
-    parser.add_argument(
-        "--chinese-config", type=Path, default=Path("mkdocs.yml")
-    )
-    parser.add_argument(
-        "--base-url", default="https://lusipad.com/plcopen/"
-    )
+    parser.add_argument("--english-config", type=Path, default=Path("mkdocs.en.yml"))
+    parser.add_argument("--chinese-config", type=Path, default=Path("mkdocs.yml"))
+    parser.add_argument("--base-url", default="https://lusipad.com/plcopen/")
     args = parser.parse_args()
 
     errors = verify(

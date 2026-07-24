@@ -99,7 +99,7 @@ gear-cam / coordinate systems / kinematics / trajectory streaming）而不想
 已发布于
 [PLCopen / Beckhoff parity matrix](https://github.com/lusipad/plcopen/blob/main/doc/compliance/plcopen-beckhoff-parity-matrix.md)；
 逐条款审计发布于
-[doc/compliance](https://github.com/lusipad/plcopen/tree/main/doc/compliance)。
+[标准与证据](references/standards-evidence.md)。
 
 ### 运行时形态（ADR-0007）
 

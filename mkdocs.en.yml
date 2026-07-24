@@ -38,6 +38,9 @@ nav:
   - References:
     - Algorithm White-Box: getting-started/algorithms.md
     - Function-block reference: references/fb-reference.md
+    - ST runtime: references/st-runtime.md
+    - Standards and evidence: references/standards-evidence.md
+    - Architecture decisions: references/architecture-decisions.md
     - C++ API (generated): https://lusipad.com/plcopen/api/
   - Project:
     - Overview: project/index.md

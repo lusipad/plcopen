@@ -1,58 +1,65 @@
-# 运维手册
+# Operations manual
 
-## 故障处置总则
+## Incident-response rule
 
-先停止提交新命令，保留最后一个错误码和轴/组快照，再判断是否允许
-`FbReset` 或需要宿主安全系统接管。`FbReset` 只清除可复位错误，不替代
-STO/SS1，也不证明驱动器已经安全。
+Stop submitting new commands, preserve the last error code and axis/group
+snapshots, then decide whether `FbReset` is permitted or the host safety
+system must take control. `FbReset` only clears resettable motion errors. It
+does not replace STO/SS1 and does not prove that a drive is safe.
 
-## 错误码表
+## Error-code table
 
-| `ErrorCode` | 常见原因 | 处置 |
-|-------------|----------|------|
-| `ok` | 调用成功，无恢复动作 | 继续执行下一条命令；无需复位 |
-| `invalid_argument` | 空引用、NaN/Inf、零或负动力学参数、无效组合 | 修正输入；确认 Execute 上升沿只提交一次 |
-| `out_of_range` | 超出固定数组、软限位或表点范围 | 检查维数、目标和固定容量；不要扩大 RT 容器 |
-| `capacity_exceeded` | 队列、窗口或固定表已满 | 降低连续段数/窗口深度，等待已承诺段完成 |
-| `infeasible` | 动力学约束下没有可行 OTG/TOPP 解 | 增加可用周期或放宽合法动力学限值，保留原轨迹 |
-| `not_converged` | 有界数值求解用尽 32 次迭代仍未同时满足位置/姿态门 | 换用更接近目标的 seed；仅在诊断场景显式调用 best-effort |
-| `singular_region` | 数值 IK 在病态区域把阻尼提高到上限仍不能下降残差 | 改变目标或 seed 以离开奇异构型，不要反复提交同一输入 |
-| `limit_infeasible` | 硬关节限位投影阻止数值 IK 到达目标 | 检查关节限位与目标可达性；成功前保留原承诺轨迹 |
-| `precondition_failed` | 轴未上电、组非 standby、所有权/同步状态不满足 | 读取状态快照，按生命周期解除 owner 或先停止 |
-| `unsupported` | 当前矩阵明确未实现，如 CENTER/RADIUS 圆弧、EtherCAT | 不重试同一输入；切换到已声明支持的路径或宿主实现 |
-| `bytecode_version_mismatch` | ST 工件字节码版本与当前运行时不匹配 | 用当前工具链重新编译 ST 程序，或成对升级编译器与运行时 |
+| `ErrorCode` | Common cause | Response |
+|---|---|---|
+| `ok` | Call succeeded; no recovery is needed | Continue to the next command; do not reset |
+| `invalid_argument` | Null reference, NaN/Inf, zero or negative dynamics, invalid combination | Correct the input; ensure one submission per Execute rising edge |
+| `out_of_range` | Fixed array, software limit, or table-point range exceeded | Check dimensions, target, and fixed capacity; do not enlarge an RT container |
+| `capacity_exceeded` | Queue, window, or fixed table is full | Reduce consecutive segments/window depth or wait for committed segments |
+| `infeasible` | No feasible OTG/TOPP solution under the dynamic limits | Add available cycles or relax valid limits; retain the current trajectory |
+| `not_converged` | A bounded numeric solver exhausted 32 iterations without satisfying position/orientation gates | Use a seed closer to the target; request best-effort only in diagnostics |
+| `singular_region` | Numeric IK raised damping to its limit but residuals would not fall | Change target or seed to leave the singular configuration; do not resubmit unchanged input |
+| `limit_infeasible` | Hard joint-limit projection prevents numeric IK from reaching the target | Check reachability and joint limits; retain the old committed trajectory |
+| `precondition_failed` | Axis is unpowered, group is not standby, or ownership/synchronization is invalid | Read snapshots; release the owner or stop first according to lifecycle |
+| `unsupported` | The current matrix explicitly excludes the request, such as CENTER/RADIUS arc or EtherCAT | Do not retry unchanged input; choose a declared path or host implementation |
+| `bytecode_version_mismatch` | ST artifact bytecode version does not match the runtime | Recompile with the current toolchain or upgrade compiler and runtime together |
 
-## 典型现象
+## Common symptoms
 
-| 现象 | 首查项 | 不要做 |
-|------|--------|----------|
-| 命令一直 `busy` | 是否在 buffered 队列、组是否被窗口承诺 | 不要在 RT 线程强行改目标 |
-| `command_aborted` | 是否有 aborting 接管、GroupStop 或掉电 | 不要把它当作规划失败 |
-| blending 变 buffered | `last_blend_degraded_command()` 和提交时机 | 不要盲目增大公差掩盖反折/过迟提交 |
-| cam 换表拒绝 | 当前 master 相位、新旧 slave 位置差和 tolerance | 不要忽略位置连续性门 |
-| stream 进入 stopped | timeout/extrapolation 配置、生产者心跳 | 不要在断流时直接写零目标 |
-| 组进入 errorstop | `last_cartesian_error()`、成员掉电/错误快照 | 不要只重置组而不检查驱动器 |
+| Symptom | Check first | Do not |
+|---|---|---|
+| Command remains `busy` | Whether it is buffered and whether the group window committed it | Force a target change from the RT thread |
+| `command_aborted` | Aborting takeover, GroupStop, or power loss | Treat it as a planning failure |
+| Blending degrades to buffered | `last_blend_degraded_command()` and submission timing | Increase tolerance blindly to hide reversal or late submission |
+| Cam-table switch is rejected | Current master phase, old/new slave positions, and tolerance | Ignore the position-continuity gate |
+| Stream enters stopped | Timeout/extrapolation settings and producer heartbeat | Write a zero target immediately after dropout |
+| Group enters errorstop | `last_cartesian_error()` and member power/error snapshots | Reset only the group without checking drives |
 
-## 事故记录
+## Incident record
 
-每次现场事件至少记录：版本/tag、周期配置、轴/组配置、输入命令、错误码
-文本（`rt::to_string`）、最后 100 个快照、是否触发安全系统，以及回放
-语料 ID。修复后先在 ServoSim 和黄金回放复现，再安排真机验证。
+For every field incident, record at least the version/tag, cycle
+configuration, axis/group configuration, input command, textual error code
+(`rt::to_string`), final 100 snapshots, whether the safety system activated,
+and the replay corpus ID. Reproduce with ServoSim and golden replay before
+scheduling hardware verification.
 
-## Trace 可视化
+## Trace visualization
 
-参考 executor 的 `PLCT v1` 二进制 trace 可以直接导出为 CSV 或单文件 HTML：
+The reference executor's `PLCT v1` binary trace can be exported directly to
+CSV or a single HTML file:
 
 ```bash
 python tools/plcopen_trace.py rt_executor_trace.bin --csv rt_executor_trace.csv --html rt_executor_trace.html
 ```
 
-HTML 输出是自包含的 SVG 时序图：每个轴一条 lane，横轴是 tick，绿线是命令位置，
-并附带最终位置、最大速度/加速度和最大单周期位置步长摘要。先用它判断是命令
-序列、动力学约束还是宿主桥接出了问题，再决定是否需要更深的 replay/真机复现。
+The HTML is a self-contained SVG timeline with one lane per axis, tick on the
+horizontal axis, and command position in green. It also reports final
+position, maximum velocity/acceleration, and maximum one-cycle position step.
+Use it first to distinguish a command-sequence, dynamic-constraint, or host
+bridge problem before deeper replay or hardware reproduction.
 
-## 安全边界
+## Safety boundary
 
-普通运动错误处理不能宣称 STO、SS1、SIL 或 PL。安全相关动作必须走已验证
-的外部安全系统；项目责任矩阵见
-[STO/SS1 integration boundary](https://github.com/lusipad/plcopen/blob/main/doc/compliance/sto-ss1-integration-boundary.md)。
+Ordinary motion-error handling cannot claim STO, SS1, SIL, or PL. Safety
+actions must go through a validated external safety system. See the canonical
+[STO/SS1 integration boundary](https://github.com/lusipad/plcopen/blob/main/doc/compliance/sto-ss1-integration-boundary.md)
+for the responsibility matrix.
