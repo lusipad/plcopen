@@ -96,15 +96,21 @@ workspace 启动指定解释器。固定 npm lock、9 包 production 许可证/i
 [Twin](https://github.com/lusipad/plcopen/actions/runs/30132203971) 与
 [Documentation](https://github.com/lusipad/plcopen/actions/runs/30132203996)
 主线门禁全绿。Marketplace、PyPI、tag 和 GitHub Release 均未授权、未执行；
-当前按授权队列转入 T2b 大模型孪生。
-**T2b 七关节孪生候选已完成本地实现（2026-07-25，KB-093）**：
+当前授权队列中的 H1 已完成。
+**T2b 七关节孪生已完成并合入（2026-07-25，KB-093）**：
 当前源码的 `JointStreamSim` 以最小 q/dq Python 门面复用 H1 原子帧，
 仓库自有 `seven_link.xml` 经 100 Hz→1 kHz 升频完成 2,000 tick /
 200 帧 MuJoCo 闭环，并以 Rerun 记录七组时序与七级 link transform。
 本地专项、T2a 回归、feasibility、binding smoke 和 `.rrd` footer 均已通过，
-实测最大末误差 `0.01133902048 rad`；远端 PR 与合并后主线证据尚未形成，
-因此仍处于候选态，不前移到 H3。`tau_ff/kp/kd`、H2/L5、厂商模型、真机、
-安全和 sim2real 均不属于本批。
+实测最大末误差 `0.01133902048 rad`；[PR #32](https://github.com/lusipad/plcopen/pull/32)
+及合入后的 [Windows](https://github.com/lusipad/plcopen/actions/runs/30136405358)、
+[Linux](https://github.com/lusipad/plcopen/actions/runs/30136405371)、
+[Language Tools](https://github.com/lusipad/plcopen/actions/runs/30136405372)、
+[Twin](https://github.com/lusipad/plcopen/actions/runs/30136405364) 与
+[Documentation](https://github.com/lusipad/plcopen/actions/runs/30136405336)
+主线门禁全绿，四个中英文公开页面均返回 200 并含 T2b 标记。
+`tau_ff/kp/kd`、H2/L5、厂商模型、真机、安全和 sim2real 均不属于本批；
+当前按授权队列转入 H3 动力学前馈。
 
 ## 历史刻度（处于哪一步）
 
@@ -168,7 +174,7 @@ sink 门面，生产层无反向引用）。分层健康度见
 | **D3 在线调试示波器** | **已完成并上线（2026-07-24，KB-091）**：`PLCT v1` 在线落盘不改格式，RT 侧仅 SPSC push/丢样计数，非 RT writer 独占文件 I/O；工具侧提供 rising/falling 阈值、精确前后窗口、严格截断拒绝、PLCT/CSV/HTML 与可选 Rerun `.rrd`。本地定向 14/14、Debug CTest 97/97、RT scan、replay 与双语文档门通过；PR #23、合并后四条主线工作流及中英文公网页面均已复验。不声明 actual/error/ST watch、远程服务或认证测量能力 |
 | **D1 ST Language Server** | **已完成并合入（2026-07-24，KB-092）**：C++ 权威诊断/POU 索引、Python stdio LSP、wheel、trusted-workspace VS Code client、固定 lock/许可证证据、本地 VSIX、Windows/Linux workflow 与双语指南均已实现。Windows Debug 98/98（含 11 fuzz）、15 项 Python、4 项 Node、RT scan、18/2409 replay、安装态 C++/wheel、双语 strict、`npm audit --omit=dev` 与 VSIX 9 包/dev-tree 检查通过；PR #26 及合并后 Windows/Linux/Language Tools/Twin/Documentation 五门全绿，双语公网页面已复验；不声明跨文件 IDE、在线 PLC、Marketplace/PyPI/tag/GitHub Release 发布 |
 | **H1 同步关节流** | **已完成并合入（2026-07-25，KB-035）**：48 关节原子帧、direct/upsample 分层延迟、每拍最多 10 个慢解、组级 watchdog/断流、混合字段斜坡与命令快照均已落地。Windows Debug 99/99（含 11 fuzz）、Release 四项 H1 指标均低于 300µs、RT scan 31 文件、18/2409 replay、安装态/FetchContent、双语 strict 与 PR #29/main 五门全绿；不声明 actual feedback、T18、Python/T2b/H3、跨线程或真机完成 |
-| **T2b 七关节 MuJoCo/Rerun 孪生** | **候选实现完成，待远端/主线证据（2026-07-25，KB-093）**：1～48 关节装载校验、最小 H1 q/dq Python 门面、仓库自有 7DOF fixture、2,000 tick/200 帧 headless 闭环、确定性/原子拒绝/组级断流与 `.rrd` footer 已本地通过；T2a 行为保持，不消费 torque/gain，不声明真机、安全或 sim2real |
+| **T2b 七关节 MuJoCo/Rerun 孪生** | **已完成并合入（2026-07-25，KB-093）**：1～48 关节装载校验、最小 H1 q/dq Python 门面、仓库自有 7DOF fixture、2,000 tick/200 帧 headless 闭环、确定性/原子拒绝/组级断流与 `.rrd` footer 均通过；PR #32 与合并后五门全绿，双语公网四页复验通过。T2a 行为保持，不消费 torque/gain，不声明真机、安全或 sim2real |
 | AxisGroup 架构债 | **第 1-5 批全部完成（2026-07-21）**：connector、joint look-ahead、Cartesian path/window、frame/pose/kinematics 与 MoveDirect lifecycle/path 各自形成明确 owner；第 2-5 批累计 75 个 `AxisGroup` 方法原样迁出，`group.h` 7744→4487 行；93/93、RT scan、18/2409 replay 与 find_package/FetchContent consumer 全绿。共享 queue/status/error 与 management 调度按设计保留在 `AxisGroup` |
 | Y2 epsilon 政策 | **已声明化**（KB-057：段时长钳零 + 复验，整数量化天然覆盖） |
 | Y2 Ruckig 对照 | **人工门控**（ADR-0003：需先审查上游许可证，不进 R1） |

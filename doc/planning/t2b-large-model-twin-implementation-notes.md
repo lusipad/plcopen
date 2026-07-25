@@ -57,4 +57,7 @@
   [PR #31](https://github.com/lusipad/plcopen/pull/31) 的 Windows、
   Linux GCC/clang、ARM64、Twin、Language Tools 与 E5 全绿后已合入
   `d9b246a`。
-- 实现 PR 与合并后主线门禁尚未形成；本节只登记本地候选和规格基线证据。
+- 实现 [PR #32](https://github.com/lusipad/plcopen/pull/32) 全门通过后合入
+  `2c73fa7`；合入后的 Windows、Linux、Language Tools、Twin 与
+  Documentation 五条主线 workflow 全绿。中英文 Python 与实时集成四个
+  公网页面均返回 200，并包含七关节 H1/`JointStreamSim` 标记。
