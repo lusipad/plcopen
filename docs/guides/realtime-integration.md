@@ -70,6 +70,29 @@ The returned frame is a **command snapshot**, not actual feedback. H1 carries
 requires the separate T18 torque-limit, velocity-supervision, and position-
 fence contract.
 
+For planning-domain Python experiments, the current source provides a narrow
+q/dq-only facade over the same primitive:
+
+```python
+import pyplcopen
+
+stream = pyplcopen.JointStreamSim(
+    7, "upsample",
+    velocity_limit=0.8,
+    acceleration_limit=0.08,
+    jerk_limit=0.02,
+)
+stream.reset([0.0] * 7)
+stream.push_frame([0.1] * 7, timestamp_cycles=1, velocities=[0.0] * 7)
+stream.cycle(10)
+command = stream.setpoint_frame()
+```
+
+`JointStreamSim` validates every Python vector before touching the group and
+rejects an invalid frame atomically. It is not a cross-thread RT API and does
+not expose `tau_ff`, `kp`, or `kd`; use the C++ primitive for integration and
+keep torque application disabled until the separate H3/T18 contracts close.
+
 Real EtherCAT access, thread scheduling, clock synchronization, and bus I/O
 live outside this repository. At the cycle boundary, the host executor calls
 `adapters::Servo` and returns feedback through hooks such as

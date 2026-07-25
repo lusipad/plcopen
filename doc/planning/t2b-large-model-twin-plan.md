@@ -1,6 +1,6 @@
 # T2b 七关节大模型孪生实施计划
 
-> 状态：**已批准（2026-07-25）**。
+> 状态：**已批准；候选实现与本地门已完成，待远端/主线证据（2026-07-25）**。
 >
 > 语义基线：
 > [`t2b-large-model-twin-semantics.md`](../compliance/t2b-large-model-twin-semantics.md)。

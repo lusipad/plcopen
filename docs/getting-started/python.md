@@ -180,6 +180,29 @@ T2a requires hinge joints and a 1 ms model timestep. It does not download or
 bundle Menagerie/vendor models, and the software result is not hardware,
 functional-safety, calibration, or sim2real evidence.
 
+### Seven-joint H1 twin from the current source
+
+The T2b source candidate adds a repository-owned seven-joint primitive model
+and a minimal `JointStreamSim` facade. Install the current checkout with the
+same optional extra, then run:
+
+```bash
+python -m pip install ".[twin]"
+python tools/twin/mujoco_joint_stream_demo.py --output seven-joint.rrd
+python -m rerun rrd verify --check-footers true seven-joint.rrd
+```
+
+This path submits 200 complete q/dq frames at 100 Hz, upsamples them through
+the H1 joint-group filter, advances 2,000 fixed 1 kHz MuJoCo ticks, and records
+seven target/command/actual/error series plus seven link transforms. It stays
+headless unless `--spawn` is explicit and never downloads a robot model.
+
+!!! note "Current source API"
+    `JointStreamSim` and the seven-joint command are not part of the published
+    `pyplcopen==0.20.0` wheel. They require a source build until a later
+    maintainer-authorized release. The facade intentionally exposes only q/dq;
+    H1 torque and gain fields remain behind the separate H3/T18 safety work.
+
 ## 25–30 minutes: inspect a diagnostic
 
 The current source exposes the same stable error metadata used by the C++

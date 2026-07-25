@@ -169,6 +169,27 @@ python tools/twin/mujoco_rerun_demo.py \
 T2a 要求使用 hinge joint 和 1 ms 模型步长。它不会下载或打包 Menagerie/vendor
 model，软件仿真结果也不构成硬件、功能安全、标定或 sim2real 证据。
 
+### 当前源码的七关节 H1 孪生
+
+T2b 源码候选新增仓库自有七关节 primitive 模型与最小 `JointStreamSim`
+门面。使用同一个可选 extra 安装当前 checkout，然后运行：
+
+```bash
+python -m pip install ".[twin]"
+python tools/twin/mujoco_joint_stream_demo.py --output seven-joint.rrd
+python -m rerun rrd verify --check-footers true seven-joint.rrd
+```
+
+该路径以 100 Hz 提交 200 个完整 q/dq 帧，经 H1 关节组滤波升频后执行
+2,000 个固定 1 kHz MuJoCo tick，并记录七组 target/command/actual/error
+时序与七级 link transform。除非显式指定 `--spawn`，否则保持 headless；
+全程不会下载机器人模型。
+
+!!! note "Current source API"
+    `JointStreamSim` 和七关节命令尚未进入已发布的
+    `pyplcopen==0.20.0` wheel，需从当前源码构建，直到维护者另行授权发布。
+    该门面有意只暴露 q/dq；H1 的扭矩和增益字段仍由 H3/T18 独立安全工作门控。
+
 ## 25–30 分钟：查看一条诊断
 
 当前源码暴露了与 C++ load-domain API 相同的稳定错误元数据：

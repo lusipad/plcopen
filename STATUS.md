@@ -3,7 +3,7 @@
 > 本页是"现在在哪"的唯一入口，每个批次收口时更新。术语见
 > [CONTEXT.md](CONTEXT.md)；边界细节见
 > [已知边界注册表](doc/compliance/known-boundaries.md)。
-> 最后更新：**2026-07-24**。
+> 最后更新：**2026-07-25**。
 
 ## 一句话
 
@@ -97,6 +97,14 @@ workspace 启动指定解释器。固定 npm lock、9 包 production 许可证/i
 [Documentation](https://github.com/lusipad/plcopen/actions/runs/30132203996)
 主线门禁全绿。Marketplace、PyPI、tag 和 GitHub Release 均未授权、未执行；
 当前按授权队列转入 T2b 大模型孪生。
+**T2b 七关节孪生候选已完成本地实现（2026-07-25，KB-093）**：
+当前源码的 `JointStreamSim` 以最小 q/dq Python 门面复用 H1 原子帧，
+仓库自有 `seven_link.xml` 经 100 Hz→1 kHz 升频完成 2,000 tick /
+200 帧 MuJoCo 闭环，并以 Rerun 记录七组时序与七级 link transform。
+本地专项、T2a 回归、feasibility、binding smoke 和 `.rrd` footer 均已通过，
+实测最大末误差 `0.01133902048 rad`；远端 PR 与合并后主线证据尚未形成，
+因此仍处于候选态，不前移到 H3。`tau_ff/kp/kd`、H2/L5、厂商模型、真机、
+安全和 sim2real 均不属于本批。
 
 ## 历史刻度（处于哪一步）
 
@@ -125,7 +133,7 @@ sink 门面，生产层无反向引用）。分层健康度见
 | 支撑库 kin | 阶梯旁支撑库（依赖 geom/rt，被 L5 消费）：kinematics 插件 ABI + 合规 harness、龙门/SCARA 解析解、球腕 6R（Pieper + 8 分支 seed 选支、奇异 margin）；H2 固定容量 1～8 轴 DH/modified-DH `SerialChain`（数值雅可比 + 自适应 DLS + 7DOF 偏好，严格/best-effort 分流） | KB-037/041/089 |
 | 支撑库 stream | 阶梯旁支撑库（依赖 otg/rt，被 L5 消费）：B9 单关节 OTG 在线滤波与断流看门狗；H1 48 关节固定容量原子 `{q,dq,tau,kp,kd}` 帧、direct/upsample 隔离、组级断流与命令快照；`tau_ff` 仅数据通路 | KB-035 |
 | st 语言层（ST L0-L7、L∀） | **外圈消费面之一**（与 L7 adapters 平行、居 L6 之上，纯 sink）。IEC 61131-3 ST：容错前端、确定性字节码 VM、标量/枚举/子范围/聚合/字符串日期类型、用户 POU 与 134 个标准 FB 完整绑定；49 个公开绑定类型、AXIS/GROUP/序列/对象 typed registry 均只向 ST 暴露 1-based handle。L3-L7 已完成并按 L 系列总账闭合；仍不宣称完整 IEC 平台或 PLCopen 官方认证 | KB-069/070/071；[L 系列总账](doc/planning/l-series-work-breakdown.md) |
-| 工具面 | pyplcopen（单轴/流/PoseArmSim，`0.20.0` 的 Windows/Linux/macOS wheels + sdist 已发布到 PyPI，CycleConfig 与轴/组 SI 配置；当前源码另有可选 `twin` MuJoCo/Rerun 闭环）、可执行 notebook、Python/C++/ST 三条 30 分钟旅程、18 份回放黄金语料、28 关节 @1kHz 预算基准 + 笛卡尔 IK 预算门、参考 executor demo（canonical `planning → committed trajectory → RT` 双域，ADR-0007，TSAN 零报告）、X5 固定 ABI Servo IPC（默认纯内存合同 + 显式 Windows/Linux 两进程 harness）、D3 在线 `PLCT v1` Scope（非 RT writer、阈值触发、窗口冻结、HTML/CSV 与可选 Rerun）、D1 单文档多 POU ST LSP + trusted-workspace VS Code client（当前仅源码/CI VSIX）、**[中文默认](https://lusipad.com/plcopen/) + [`/en/` 英文](https://lusipad.com/plcopen/en/)的双语文档站**、已通过消费者预检的 Conan recipe 与 vcpkg overlay port（中央 registry 尚未收录）、结构化 ErrorCode 诊断 | KB-091/092 |
+| 工具面 | pyplcopen（单轴/流/PoseArmSim，`0.20.0` 的 Windows/Linux/macOS wheels + sdist 已发布到 PyPI，CycleConfig 与轴/组 SI 配置；当前源码另有 `JointStreamSim` 与可选 `twin` 的 T2a 双关节/T2b 七关节 MuJoCo/Rerun 闭环）、可执行 notebook、Python/C++/ST 三条 30 分钟旅程、18 份回放黄金语料、28/48 关节 @1kHz 预算基准 + 笛卡尔 IK 预算门、参考 executor demo（canonical `planning → committed trajectory → RT` 双域，ADR-0007，TSAN 零报告）、X5 固定 ABI Servo IPC（默认纯内存合同 + 显式 Windows/Linux 两进程 harness）、D3 在线 `PLCT v1` Scope（非 RT writer、阈值触发、窗口冻结、HTML/CSV 与可选 Rerun）、D1 单文档多 POU ST LSP + trusted-workspace VS Code client（当前仅源码/CI VSIX）、**[中文默认](https://lusipad.com/plcopen/) + [`/en/` 英文](https://lusipad.com/plcopen/en/)的双语文档站**、已通过消费者预检的 Conan recipe 与 vcpkg overlay port（中央 registry 尚未收录）、结构化 ErrorCode 诊断 | KB-091/092/093 |
 
 ## 质量门禁现状
 
@@ -160,6 +168,7 @@ sink 门面，生产层无反向引用）。分层健康度见
 | **D3 在线调试示波器** | **已完成并上线（2026-07-24，KB-091）**：`PLCT v1` 在线落盘不改格式，RT 侧仅 SPSC push/丢样计数，非 RT writer 独占文件 I/O；工具侧提供 rising/falling 阈值、精确前后窗口、严格截断拒绝、PLCT/CSV/HTML 与可选 Rerun `.rrd`。本地定向 14/14、Debug CTest 97/97、RT scan、replay 与双语文档门通过；PR #23、合并后四条主线工作流及中英文公网页面均已复验。不声明 actual/error/ST watch、远程服务或认证测量能力 |
 | **D1 ST Language Server** | **已完成并合入（2026-07-24，KB-092）**：C++ 权威诊断/POU 索引、Python stdio LSP、wheel、trusted-workspace VS Code client、固定 lock/许可证证据、本地 VSIX、Windows/Linux workflow 与双语指南均已实现。Windows Debug 98/98（含 11 fuzz）、15 项 Python、4 项 Node、RT scan、18/2409 replay、安装态 C++/wheel、双语 strict、`npm audit --omit=dev` 与 VSIX 9 包/dev-tree 检查通过；PR #26 及合并后 Windows/Linux/Language Tools/Twin/Documentation 五门全绿，双语公网页面已复验；不声明跨文件 IDE、在线 PLC、Marketplace/PyPI/tag/GitHub Release 发布 |
 | **H1 同步关节流** | **已完成并合入（2026-07-25，KB-035）**：48 关节原子帧、direct/upsample 分层延迟、每拍最多 10 个慢解、组级 watchdog/断流、混合字段斜坡与命令快照均已落地。Windows Debug 99/99（含 11 fuzz）、Release 四项 H1 指标均低于 300µs、RT scan 31 文件、18/2409 replay、安装态/FetchContent、双语 strict 与 PR #29/main 五门全绿；不声明 actual feedback、T18、Python/T2b/H3、跨线程或真机完成 |
+| **T2b 七关节 MuJoCo/Rerun 孪生** | **候选实现完成，待远端/主线证据（2026-07-25，KB-093）**：1～48 关节装载校验、最小 H1 q/dq Python 门面、仓库自有 7DOF fixture、2,000 tick/200 帧 headless 闭环、确定性/原子拒绝/组级断流与 `.rrd` footer 已本地通过；T2a 行为保持，不消费 torque/gain，不声明真机、安全或 sim2real |
 | AxisGroup 架构债 | **第 1-5 批全部完成（2026-07-21）**：connector、joint look-ahead、Cartesian path/window、frame/pose/kinematics 与 MoveDirect lifecycle/path 各自形成明确 owner；第 2-5 批累计 75 个 `AxisGroup` 方法原样迁出，`group.h` 7744→4487 行；93/93、RT scan、18/2409 replay 与 find_package/FetchContent consumer 全绿。共享 queue/status/error 与 management 调度按设计保留在 `AxisGroup` |
 | Y2 epsilon 政策 | **已声明化**（KB-057：段时长钳零 + 复验，整数量化天然覆盖） |
 | Y2 Ruckig 对照 | **人工门控**（ADR-0003：需先审查上游许可证，不进 R1） |
