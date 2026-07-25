@@ -41,10 +41,20 @@
 
 - MSVC Release `pyplcopen` 构建通过；`ci/smoke_test.py` 与
   `pyplcopen_smoke` 通过。
+- Windows Debug 全量 99/99（含 11 fuzz）通过；RT scan 31 文件、
+  replay 18 文件/2,409 样本通过。
 - T2b 专项 4/4、T2a 回归 7/7、feasibility 2/2 通过；默认 CLI 完成
   2,000 tick / 200 帧、零拒绝、零断流，实测最大末误差
   `0.01133902048 rad`。
 - CLI 生成的 `.rrd` 为 2,832,521 bytes，并通过
   `rerun rrd verify --check-footers true`；七关节四类时序实体与七级
   link transform 均由测试锁定。
-- 远端 PR 与合并后主线门禁尚未形成；本节只登记本地候选证据。
+- Python 3.14 从干净临时目录构建
+  `pyplcopen-0.20.0-cp314-cp314-win_amd64.whl`，隔离安装后的
+  `ci/smoke_test.py` 与七关节 `JointStreamSim` smoke 均通过；这只是
+  当前源码安装态证据，不构成发布动作。
+- 中英文 MkDocs strict 与 26 对页面 i18n 通过。规格
+  [PR #31](https://github.com/lusipad/plcopen/pull/31) 的 Windows、
+  Linux GCC/clang、ARM64、Twin、Language Tools 与 E5 全绿后已合入
+  `d9b246a`。
+- 实现 PR 与合并后主线门禁尚未形成；本节只登记本地候选和规格基线证据。
