@@ -68,7 +68,7 @@ IEC 61131-3 全语言成熟编译器（看 MatIEC——我们的 ST 层是**运�
 | ST 语言层 | ✅ 声明集闭合 | L0-L7、L∀ 已完成；134 个 FB、1476 个 pin，feature-set `pending=0` |
 | Python/文档/包 | ✅ 已发布 | 文档站已上线；`pyplcopen==0.20.0` 已在 PyPI 提供三平台 wheels 与 sdist |
 | EtherCAT | 🔴 未开工 | 最大剩余软件块，也是实时台架和实际部署的前置 |
-| 真机/人形/孪生 | 🟠 软件孪生已落地 | T2a 双关节与 T2b 七关节 MuJoCo/Rerun 闭环已有源码候选；真机、完整 H/F/T 轨仍未闭环 |
+| 真机/人形/孪生 | 🟠 软件孪生已落地 | T2a 双关节与 T2b 七关节 MuJoCo/Rerun 闭环已在当前源码完成；真机、完整 H/F/T 轨仍未闭环 |
 | 用户采纳 | 🔴 尚未形成 | 灯塔用户、现场案例、外部贡献者和有效下载信号仍不足 |
 | 商用认证 | 🔴 未启动 | PLCopen membership、提交、审核均未开始 |
 
@@ -139,7 +139,7 @@ python -m pip install ".[twin]"
 python tools/twin/mujoco_joint_stream_demo.py --output seven-joint.rrd
 ```
 
-该入口属于 T2b 源码候选，尚未进入已发布的 `pyplcopen==0.20.0` wheel；
+该入口已在 T2b 当前源码中完成，但尚未进入已发布的 `pyplcopen==0.20.0` wheel；
 边界和本地模型映射见 [Python 数字孪生指南](docs.zh/getting-started/python.md)。
 
 ---

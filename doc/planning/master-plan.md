@@ -53,7 +53,7 @@
  │                                       │
  ├─✅ D3 Scope（主线/公网证据闭合）────────┤  已完成
  │   → ✅ D1 ST LSP → ✅ H1 同步关节流     │
- │   → 🟡 T2b 大模型孪生 → H3 动力学前馈   │  当前 T2b
+ │   → ✅ T2b 大模型孪生 → 🟡 H3 动力学前馈 │  当前 H3
  ├─🟢 D2 WASM Playground ────────────────┤  候选，不插入当前队列
  │                                       │
  │  ═══ 以上全部完成 = 软件面到头 ═══     │
@@ -94,8 +94,8 @@
 | 工程债 | A1 浮点合同 / A2 WCET / G1 治理 / AxisGroup 2-5 批 / X5 IPC | 1.5 L0 | **A1/A2/G1/X5 与 AxisGroup 第 1-5 批全部完成** |
 | 证据 | E5 趋势管线 / E6 竞品对拍 | 0.6 L0 | **E5 软件实现、远端 bootstrap 与真实比较均完成；E6 保持手动** |
 | **F 轨** | **EtherCAT 主站抽象 + 虚拟从站 CI + 驱动品牌矩阵** | **~2 L0** | **★未开工** |
-| H 轨 | 同步关节流 / 数值 IK / 动力学前馈 | ~1.5 L0 | H2 已完成；H1/H3 已进入授权队列 |
-| T 轨 | MuJoCo 闭环孪生 | ~0.5 L0 | T2a 已完成；T2b 已进入授权队列 |
+| H 轨 | 同步关节流 / 数值 IK / 动力学前馈 | ~1.5 L0 | H1/H2 已完成；H3 为当前授权项 |
+| T 轨 | MuJoCo 闭环孪生 | ~0.5 L0 | T2a/T2b 均已完成并通过主线证据 |
 | R 系列 | 舵机 adapter / 六轴臂 / LeRobot 集成 | ~0.8 L0 | R1 纯软件已交付；R2/R3 等设备 |
 | D 系列 | LSP / WASM Playground / 示波器 | ~1 L0 | D3 已完成并上线；D1 已完成并合入；D2 保留候选 |
 | 补遗 | Y7b/Y4b/Y3′/T28 反馈毒性防线 | ~1 L0 | 已挂号 |
@@ -167,7 +167,8 @@ Linux、Twin/Scope、Documentation 与双语公网页面均已复验。D1（KB-0
 均全绿，中英文指南已上线。H1（KB-035）也已由
 [PR #29](https://github.com/lusipad/plcopen/pull/29) 合入，合并后
 Windows、Linux、Language Tools、Twin 与 Documentation 五门均全绿；
-当前转入 T2b。
+T2b（KB-093）随后由 PR #32 合入，合并后的 Windows、Linux、Language
+Tools、Twin、Documentation 与双语公网四页均复验通过；当前转入 H3。
 F 轨仍是最后一块大软件和 #1/#4 的前置，ADR-0006 许可证核验与
 台架决策完成后立即插队，按 F1→F2→F3 推进。
 
@@ -183,7 +184,7 @@ F 轨仍是最后一块大软件和 #1/#4 的前置，ADR-0006 许可证核验�
 
 ---
 
-*创建：2026-07-12；2026-07-24 按 D3→D1→H1→T2b→H3 授权队列重基线。
+*创建：2026-07-12；2026-07-25 按 D3→D1→H1→T2b→H3 授权队列重基线。
 本文是复盘第一入口；细表在 [软件极致计划](software-excellence-plan.md)、
 [L 系列拆解](l-series-work-breakdown.md)、[采纳计划](adoption-plan.md)；
 关键路径与八项硬指标仍以 [长期规划](long-term-plan.md) 为准。*

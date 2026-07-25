@@ -83,13 +83,19 @@ sprint 记录）在 [doc/archive/roadmap-history.md](doc/archive/roadmap-history
    [Language Tools](https://github.com/lusipad/plcopen/actions/runs/30132204009)、
    [Twin](https://github.com/lusipad/plcopen/actions/runs/30132203971) 与
    [Documentation](https://github.com/lusipad/plcopen/actions/runs/30132203996)
-   主线全绿。T2b（KB-093）候选实现现已完成本地门：最小
+   主线全绿。T2b（KB-093）也已由
+   [PR #32](https://github.com/lusipad/plcopen/pull/32) 合入：最小
    `JointStreamSim` q/dq facade、仓库自有七关节 primitive 模型、
    100 Hz→1 kHz H1 升频、2,000 tick/200 帧 MuJoCo/Rerun headless
-   闭环与 T2a 回归均通过，最大末误差 `0.01133902048 rad`；远端 PR 和
-   合并后主线证据尚未形成，队列暂不前移到 H3。Marketplace、PyPI、tag
-   与 GitHub Release 均未执行。D2 WASM Playground 与 RL 保留候选，
-   不插入本队列。
+   闭环与 T2a 回归均通过，最大末误差 `0.01133902048 rad`；合入后的
+   [Windows](https://github.com/lusipad/plcopen/actions/runs/30136405358)、
+   [Linux](https://github.com/lusipad/plcopen/actions/runs/30136405371)、
+   [Language Tools](https://github.com/lusipad/plcopen/actions/runs/30136405372)、
+   [Twin](https://github.com/lusipad/plcopen/actions/runs/30136405364) 与
+   [Documentation](https://github.com/lusipad/plcopen/actions/runs/30136405336)
+   主线全绿，双语公网四页复验为 200。当前转入 H3 动力学前馈。
+   Marketplace、PyPI、tag 与 GitHub Release 均未执行。D2 WASM
+   Playground 与 RL 保留候选，不插入本队列。
 7. **F 轨 EtherCAT**：仍是最大的剩余软件块和商用指标 #1/#4 的上游；
    ADR-0006 许可证人工核验与台架决策完成后立即插队，按 F1→F2→F3 推进。
 8. **完成面守护**：PLCopen/Beckhoff C0→C6 与 ST L0→L7、L∀ 已完成；只
@@ -238,4 +244,4 @@ VS Code 扩展与 D2 WASM Playground，挂在 L 系列拆解的触发表。）
 
 ---
 
-*最后更新：2026-07-25（T2b 候选实现完成，等待远端/主线证据）*
+*最后更新：2026-07-25（T2b 主线/公网证据闭合，当前转入 H3 动力学前馈）*
