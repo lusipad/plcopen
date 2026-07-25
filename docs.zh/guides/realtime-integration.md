@@ -63,6 +63,27 @@ producer 时间戳只用于排序和回显，不会安排未来拍生效；生�
 drive adapter 或 executor 使用它；消费前必须另行完成 T18 的扭矩限幅、
 速度监督与位置围栏合同。
 
+当前源码为规划域 Python 实验提供了同一原语的 q/dq 窄门面：
+
+```python
+import pyplcopen
+
+stream = pyplcopen.JointStreamSim(
+    7, "upsample",
+    velocity_limit=0.8,
+    acceleration_limit=0.08,
+    jerk_limit=0.02,
+)
+stream.reset([0.0] * 7)
+stream.push_frame([0.1] * 7, timestamp_cycles=1, velocities=[0.0] * 7)
+stream.cycle(10)
+command = stream.setpoint_frame()
+```
+
+`JointStreamSim` 会在触碰组状态前校验完整 Python 向量，非法帧整体拒绝。
+它不是跨线程 RT API，也不暴露 `tau_ff`、`kp` 或 `kd`；生产集成应使用
+C++ 原语，并在 H3/T18 独立合同关闭前保持扭矩消费禁用。
+
 实际 EtherCAT、线程调度、时钟同步和总线 IO 不在本仓库内；宿主执行器在
 周期边界调用 `adapters::Servo`，并使用 `set_actual_feedback()`、
 `set_digital_input()` 等钩子回写。Feetech STS 当前只有纯软件协议层，

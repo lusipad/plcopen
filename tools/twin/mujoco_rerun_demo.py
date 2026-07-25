@@ -36,11 +36,11 @@ class DependencyError(ValidationError):
 @dataclass(frozen=True)
 class LoadedModel:
     model: Any
-    joint_ids: tuple[int, int]
-    actuator_ids: tuple[int, int]
-    qpos_addresses: tuple[int, int]
-    dof_addresses: tuple[int, int]
-    body_ids: tuple[int, int]
+    joint_ids: tuple[int, ...]
+    actuator_ids: tuple[int, ...]
+    qpos_addresses: tuple[int, ...]
+    dof_addresses: tuple[int, ...]
+    body_ids: tuple[int, ...]
 
 
 @dataclass(frozen=True)
@@ -85,9 +85,15 @@ def load_model(
     model_path = path.expanduser().resolve()
     if not model_path.is_file():
         raise ValidationError(f"model does not exist: {model_path}")
-    if len(joint_names) != 2 or len(actuator_names) != 2:
-        raise ValidationError("exactly two joints and two actuators are required")
-    if len(set(joint_names)) != 2 or len(set(actuator_names)) != 2:
+    if (
+        len(joint_names) < 1
+        or len(joint_names) > 48
+        or len(actuator_names) != len(joint_names)
+    ):
+        raise ValidationError("one to 48 paired joints and actuators are required")
+    if len(set(joint_names)) != len(joint_names) or len(set(actuator_names)) != len(
+        actuator_names
+    ):
         raise ValidationError("duplicate joint or actuator names are not allowed")
 
     try:
@@ -127,15 +133,15 @@ def load_model(
 
     return LoadedModel(
         model=model,
-        joint_ids=(int(joint_ids[0]), int(joint_ids[1])),
-        actuator_ids=(int(actuator_ids[0]), int(actuator_ids[1])),
+        joint_ids=tuple(int(identifier) for identifier in joint_ids),
+        actuator_ids=tuple(int(identifier) for identifier in actuator_ids),
         qpos_addresses=tuple(
             int(model.jnt_qposadr[joint_id]) for joint_id in joint_ids
         ),
         dof_addresses=tuple(
             int(model.jnt_dofadr[joint_id]) for joint_id in joint_ids
         ),
-        body_ids=(body_ids[0], body_ids[1]),
+        body_ids=body_ids,
     )
 
 
@@ -228,6 +234,8 @@ def run_closed_loop(
     *,
     spawn: bool = False,
 ) -> TwinResult:
+    if len(loaded.joint_ids) != 2:
+        raise ValidationError("the T2a journey requires exactly two mapped joints")
     mujoco, numpy, pyplcopen, rerun = _dependencies()
     data = mujoco.MjData(loaded.model)
     cycle = pyplcopen.CycleConfig.at_1khz()

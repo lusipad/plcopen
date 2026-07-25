@@ -6,6 +6,14 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- T2b（KB-093）在不增加默认依赖的前提下加入仓库自有 7DOF primitive
+  孪生：最小 `JointStreamSim` Python 门面把 H1 的 q/dq 原子帧从
+  100 Hz 升频到 1 kHz，通用装载层校验 1～48 组本地 joint/actuator
+  映射，独立 headless CLI 完成 2,000 tick、200 帧 MuJoCo 闭环并以
+  Rerun 记录七组 target/command/actual/error 与七级 link transform。
+  T2a 双关节旅程保持兼容；本批不消费 `tau_ff/kp/kd`，不扩 H2/L5，
+  也不声明厂商模型、真机保真、安全或 sim2real 完成。
+
 - H1（KB-035）把 `stream::JointStreamGroup` 扩为 48 关节固定容量原子
   `{q_des,dq_des,tau_ff,kp,kd}` 命令帧：`direct` 在下一 group cycle
   同拍呈现，`upsample` 复用既有 OTG 滤波并把慢解限制为每拍 10 关节；
