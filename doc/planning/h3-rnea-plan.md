@@ -13,7 +13,7 @@
 namespace plcopen::core::dyn {
 
 struct RevoluteBody {
-    geom::RigidTransform parent_to_joint_zero;
+    geom::RigidTransform parent_from_joint_zero;
     geom::Vec3 joint_axis;
     double mass;
     geom::Vec3 center_of_mass;
@@ -44,7 +44,7 @@ public:
 | 决策 | 默认方案 | 置信度 | 什么会推翻它 |
 |------|----------|--------|----------------|
 | 模型边界 | 一个实例 = 一条 1～8 关节固定基座转动链；人形多链由调用方并列持有 | 高 | 已批准 ADR 改为库内 KinematicTree |
-| 几何输入 | 零位父→关节刚体变换 + 子坐标单位转轴，不把 standard/modified-DH 歧义带进动力学 API | 中 | 现有消费者只能提供 H2 `SerialChainSpec` 且无法无损转换 |
+| 几何输入 | 零位子/关节→父坐标刚体变换（`parent_from_joint_zero`）+ 子坐标单位转轴，不把 standard/modified-DH 歧义带进动力学 API | 中 | 现有消费者只能提供 H2 `SerialChainSpec` 且无法无损转换 |
 | 惯量 | 质心处完整 3×3 对称惯量张量，不复用 AxisGroup 的三项对角惯量 | 高 | PLCopen 配置结构先经独立语义批次升级为完整张量 |
 | 求值 | 纯 `tau_ff(q,dq,ddq,g)`；不接线 H1、不接受 `tau_policy` | 高 | T18 先完成并明确批准同批集成 |
 | 错误合同 | 构造时冻结模型有效性；求值失败原子返回，输出不变 | 高 | 仓库统一迁移到 `Result<std::array<...>>` 且获批准 |
