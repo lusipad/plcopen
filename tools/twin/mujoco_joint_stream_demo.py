@@ -215,6 +215,11 @@ def run_closed_loop(
 
             stream.cycle()
             snapshot = stream.setpoint_frame()
+            if tick % TARGET_INTERVAL == 0 and (
+                int(snapshot["frame_sequence"]) != accepted_frames
+                or int(snapshot["producer_timestamp_cycles"]) != tick + 1
+            ):
+                raise RuntimeError("H1 frame identity did not activate atomically")
             commands = tuple(float(value) for value in snapshot["positions"])
             command_velocities = tuple(
                 float(value) for value in snapshot["velocities"]

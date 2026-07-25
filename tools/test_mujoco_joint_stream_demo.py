@@ -99,6 +99,16 @@ class MujocoJointStreamDemoTest(unittest.TestCase):
             40,
             math.pi,
         )
+        initial = stream.setpoint_frame()
+        with self.assertRaisesRegex(RuntimeError, "invalid_argument"):
+            stream.reset([0.0] * 6)
+        self.assertEqual(stream.setpoint_frame(), initial)
+        invalid_reset = [0.0] * 7
+        invalid_reset[4] = math.inf
+        with self.assertRaisesRegex(RuntimeError, "invalid_argument"):
+            stream.reset(invalid_reset)
+        self.assertEqual(stream.setpoint_frame(), initial)
+
         stream.reset([0.0] * 7)
         positions = [0.01 * joint for joint in range(7)]
         velocities = [0.001 * (joint + 1) for joint in range(7)]
@@ -150,4 +160,3 @@ class MujocoJointStreamDemoTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-
