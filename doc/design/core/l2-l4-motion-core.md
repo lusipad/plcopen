@@ -25,9 +25,12 @@ Kinematics and coordinate-system transforms were out of scope for this R2
 slice; both have since shipped — FK/IK lives in the `kin` support library
 ([core/kin](../../../core/kin/README.md): gantry / SCARA / 6R with
 wrist-singularity bands, pose primitives), rigid-body frames with full RPY
-primitives are in L2 (KB-036), and the L5 coordinate-system stack /
-kinematics cascade is in [core/axis](../../../core/axis/README.md)
-(KB-036/041/042/045).
+primitives are in L2 (KB-036), and the L5 coordinate-system stack is in
+[core/axis](../../../core/axis/README.md) (KB-036/041/042/045). L5 exposes
+kinematics as two parallel, mutually exclusive plugin contracts —
+`kin::Kinematics` (translational) and `kin::PoseKinematics` (Pose6) —
+wired through `AxisGroup::set_kinematics` / `AxisGroup::set_pose_kinematics`;
+they are alternatives, not stages of a cascade.
 
 ## L3 Planning
 

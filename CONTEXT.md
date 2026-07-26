@@ -42,6 +42,8 @@ AI 与人协作时的共享语言，避免每次会话重新解释。测试命�
 | **帧栈** | ACS/MCS/PCS 坐标语义（KB-036）：换算全部前置到 submit，周期路径不见帧 |
 | **ACS / MCS / PCS** | 轴坐标系（关节域）/ 机床笛卡尔系 / 工件（程序）坐标系 |
 | **seed 选支** | 逆解以当前关节位置选解支，不跳支（KB-037/041）；无同支解显式 infeasible |
+| **承诺轨迹环 / committed trajectory ring** | ADR-0007 规划域→RT 的逐周期 setpoint 帧交接缓冲。**内核不提供该类型**，属宿主侧组合；参考实现为 `core/demo/rt_executor_demo.cpp` 中的 `rt::SpscQueue<CommittedFrame, 16>` |
+| **kinematics 插件契约** | 两个并列且互斥的契约：`kin::Kinematics`（平移）与 `kin::PoseKinematics`（Pose6），分别由 `AxisGroup::set_kinematics` / `set_pose_kinematics` 装配；二选一，**不是级联（cascade）** |
 
 ## 惯例
 

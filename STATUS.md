@@ -172,7 +172,7 @@ sink 门面，生产层无反向引用）。分层健康度见
 | **CI 反馈时长** | **P1 已完成，候选复验稳定**：普通 PR 不跑 fuzz 且不重复触发两套主门禁；Windows 13:45，Linux 16:29，重型 sanitizer/fuzz 留在 20:56 的 Nightly |
 | 抽查评审 | 2026-07-05 批次核心提交（OTG/流/kin/adapters）开放抽查，证据链在各提交信息；非合入门槛 |
 | 旧 `src/` v0.11 线 EOL 窗口 | v1.0.0-alpha 实验预览已发布（2026-07-06）；旧 `src/` 线 90 天 P0-only 窗口至 2026-10-04，不影响新核采用 v0.20.0 版本号 |
-| 硬件阶段（B5 真栈/B6 台架/B7 RT 报告） | 等台架或灯塔环境；参考 executor 双域已落地（ADR-0007，TSAN 零报告），真机测量链待硬件 |
+| 硬件阶段（B5 真栈/B6 台架/B7 RT 报告，定义见[长期规划](doc/planning/long-term-plan.md) §3.2） | 等台架或灯塔环境；参考 executor 双域已落地（ADR-0007，TSAN 零报告），真机测量链待硬件 |
 | 72h 分配断言 soak | **周期等效口径关闭（2026-07-11）**：07-06 墙钟版证据链断裂（无结束日志，如实登记）；改交付 2,592,000,000 冻结周期（72h@1kHz ×10）Release 零分配 PASS；真实 72h 墙钟连续运行归 B7 真机 RT 报告。口径调整开放维护者复核 |
 | **KB-051/086/087/088 组接管** | **Y7/Y7b1/Y7b2a/Y4b 已修复（2026-07-22）**：plain ACS joint-domain linear/circular 的 aborting 接管均按实时成员状态进入有界公差管；plain Cartesian LINE 来源也可用统一 odometer 的真实成员输出历史连续接到 plain joint-domain LINE/circular 目标，不扩 kinematics ABI。vector connector 的全部非零 residual 现以共同 `T_sync=max(T_min[i])` fixed-time 重解，同拍汇入共享标量路径；GroupStop 仍独立制动。Y7b2b 固定 fraction A 与 B v0 `K=6` 均已 NO-GO；`K=40` 因成本、覆盖与 holdout 缺口只保留 planning/WCET spike。Cartesian 目标默认继续 rest-start，未获生产实现授权；Cartesian ARC/chain/window 来源和动态 PCS/tracking 仍不消费该 bridge |
 | Part 4 管理/路径表/变换 FB | **已交付**（GroupHome/MoveDirect/GroupSetOverride/GroupInterrupt·Continue + PathSelect/MovePath/SetKinTransform/ReadCartesianTransform，验收测试已接入 CTest） |
@@ -180,6 +180,7 @@ sink 门面，生产层无反向引用）。分层健康度见
 | A1 浮点数值语义合同 | **已完成（`805a363`）**：严格编译选项传递、运行环境禁止项、跨平台基本运算与超越函数容差均已合同化并远端复验 |
 | A2 T30 WCET 度量 | **已完成（2026-07-20）**：87-opcode 版本锚定成本表、静态无环工作量与调用/实例深度、无分配 `WcetReport`、原生 FB/线性字节校准要求和 Release `observed_*` 基准均已落地；`fb_store_object` 低报已修，VM budget/字节码不变，真机 certified WCET 明确不声明 |
 | G1 治理文档 | **已完成（2026-07-21）**：[贡献流程](CONTRIBUTING.md)、[单维护者决策/继任声明](GOVERNANCE.md)与[安全政策](SECURITY.md)已落地；ST 不可信输入面和默认资源上限公开，bus factor=1、无指定继任者、无 SLA/LTS 如实声明；私密漏洞报告与 GitHub org 迁移仍为人侧动作 |
+| 许可证/出处三件（人专属，待人工确认） | ① [ADR-0001](doc/design/decisions/0001-v0x-license-strategy.md) v0.x 许可证策略仍为 `Status: proposed`，待人工 D-LIC 评审；② [ADR-0006 附录 A](doc/design/decisions/0006-fieldbus-process-model.md) 的 GPL/LGPL 口径为**待人工核验的假设，不构成法律意见**；③ [PROVENANCE.md](PROVENANCE.md) 仍为 `Status: draft for human review`。AI 只起草与登记状态、不能代批；三项不阻塞软件门禁，但阻塞任何对外许可证/出处声明 |
 | E5 基准趋势管线 | **已完成（2026-07-22）**：OTG 完整样本账 + ST 混合指令成本 + 笛卡尔 IK + 64 段窗口重规划统一入 schema v1 JSON；同 runner 9 对 AB/BA、二次确认、90 天 artifact 与只读 report-only PR 边界已接入 Linux workflow。本地工具 15/15、Windows/Linux record、Linux 自对拍通过，[主干首次 bootstrap](https://github.com/lusipad/plcopen/actions/runs/29873287478) 与 [PR #9 真实 base/head 比较](https://github.com/lusipad/plcopen/actions/runs/29874743112/job/88782685662) 均成功，artifact 为 `mode=compare`、`verdict=pass` |
 | X5 executor IPC | **已完成（2026-07-22）**：固定 ABI Servo setpoint/feedback SPSC + 状态双缓冲、一次性 owner claim、整帧 NaN/Inf 拒绝与完整 lifecycle 已落地；默认纯内存门、Windows/Linux 两进程和 Linux TSan 本地通过，[Core Nightly](https://github.com/lusipad/plcopen/actions/runs/29873304328) 9/9 job 全绿并形成两平台进程/TSan 远端证据；不声称恶意 peer 隔离、DC/真栈/硬实时或许可证结论 |
 | Z0′ 冷用户首轮 | **已完成（2026-07-22）**：隔离环境不使用本地源码或 `PYTHONPATH`；Linux CPython 3.13 强制 binary wheel 安装、Windows CPython 3.14 sdist 构建与 README stream 旅程通过，Python 指南 single-axis/SI/stream/pose/cam 五组示例全部跑通。文档已说清 3.14+ 本地构建工具链，SI 示例不再用停稳后零速冒充配置速度；见 [实施记录](doc/planning/z0-cold-user-test-implementation-notes.md) |
