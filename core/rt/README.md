@@ -7,7 +7,9 @@
 Responsibilities:
 
 - integer cycle ticks and durations;
-- 全核 RT 基础设施所需的定长容器（fixed-capacity containers）;
+- 全核 RT 基础设施所需的定长容器（fixed-capacity containers）；`StaticVector`
+  急构造存储、`pop_back()/clear()` 只动 size 不析构元素，元素类型必须
+  trivially destructible + trivially copyable（编译期 `static_assert` 强制）;
 - single-producer / single-consumer queues;
 - small error-code based `Result` values;
 - 辅助头：`error_text.h`（错误码到文本，仅供非周期路径/加载域的诊断与日志
