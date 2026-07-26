@@ -1,6 +1,7 @@
 // H3 public-contract tests: analytic pendulums, model rejection, atomic input
 // rejection, and deterministic fixed-capacity evaluation.
 
+#include <array>
 #include <cmath>
 #include <cstdio>
 #include <cstring>
@@ -14,6 +15,8 @@ namespace
 
 using namespace plcopen::core;
 
+constexpr std::size_t MaxJoints = dyn::FixedBaseChain::MaxJoints;
+
 int fail(const char *name)
 {
     std::printf("FAIL %s\n", name);
@@ -23,6 +26,16 @@ int fail(const char *name)
 bool close(double actual, double expected, double tolerance = 1e-10)
 {
     return std::fabs(actual - expected) <= tolerance;
+}
+
+template <std::size_t Size>
+bool same_bits(const double (&lhs)[Size], const double (&rhs)[Size])
+{
+    std::array<unsigned char, sizeof(lhs)> lhs_bytes{};
+    std::array<unsigned char, sizeof(rhs)> rhs_bytes{};
+    std::memcpy(lhs_bytes.data(), lhs, sizeof(lhs));
+    std::memcpy(rhs_bytes.data(), rhs, sizeof(rhs));
+    return lhs_bytes == rhs_bytes;
 }
 
 dyn::FixedBaseChainSpec one_link_spec()
@@ -64,11 +77,11 @@ int check_one_link_analytic()
     constexpr double Q = 0.37;
     constexpr double Ddq = -1.2;
     constexpr double GravityMagnitude = 9.81;
-    const double q[1] = {Q};
-    const double dq[1] = {0.7};
-    const double ddq[1] = {Ddq};
+    const double q[MaxJoints] = {Q};
+    const double dq[MaxJoints] = {0.7};
+    const double ddq[MaxJoints] = {Ddq};
     const double gravity[3] = {0.0, -GravityMagnitude, 0.0};
-    double tau[1] = {};
+    double tau[MaxJoints] = {};
     if (chain.inverse_dynamics(q, dq, ddq, gravity, tau) != rt::ErrorCode::ok)
     {
         return fail("one-link inverse dynamics");
@@ -86,12 +99,12 @@ int check_one_link_analytic()
 int check_two_link_analytic()
 {
     const dyn::FixedBaseChain chain(two_link_spec());
-    const double q[2] = {0.31, -0.52};
-    const double dq[2] = {0.8, -0.4};
-    const double ddq[2] = {1.1, -0.9};
+    const double q[MaxJoints] = {0.31, -0.52};
+    const double dq[MaxJoints] = {0.8, -0.4};
+    const double ddq[MaxJoints] = {1.1, -0.9};
     constexpr double GravityMagnitude = 9.81;
     const double gravity[3] = {0.0, -GravityMagnitude, 0.0};
-    double tau[2] = {};
+    double tau[MaxJoints] = {};
     if (chain.inverse_dynamics(q, dq, ddq, gravity, tau) != rt::ErrorCode::ok)
     {
         return fail("two-link inverse dynamics");
@@ -217,27 +230,27 @@ int check_model_rejection()
 int check_input_rejection_and_atomicity()
 {
     const dyn::FixedBaseChain chain(two_link_spec());
-    const double q[2] = {0.1, 0.2};
-    const double dq[2] = {0.3, 0.4};
-    const double ddq[2] = {0.5, 0.6};
+    const double q[MaxJoints] = {0.1, 0.2};
+    const double dq[MaxJoints] = {0.3, 0.4};
+    const double ddq[MaxJoints] = {0.5, 0.6};
     const double gravity[3] = {0.0, 0.0, -9.81};
-    const double original[2] = {91.25, -72.5};
-    double tau[2] = {original[0], original[1]};
+    const double original[MaxJoints] = {91.25, -72.5};
+    double tau[MaxJoints] = {original[0], original[1]};
     if (chain.inverse_dynamics(nullptr, dq, ddq, gravity, tau) !=
             rt::ErrorCode::invalid_argument ||
-        std::memcmp(tau, original, sizeof(tau)) != 0)
+        !same_bits(tau, original))
     {
         return fail("null input leaves output untouched");
     }
     if (chain.inverse_dynamics(q, nullptr, ddq, gravity, tau) !=
             rt::ErrorCode::invalid_argument ||
-        std::memcmp(tau, original, sizeof(tau)) != 0 ||
+        !same_bits(tau, original) ||
         chain.inverse_dynamics(q, dq, nullptr, gravity, tau) !=
             rt::ErrorCode::invalid_argument ||
-        std::memcmp(tau, original, sizeof(tau)) != 0 ||
+        !same_bits(tau, original) ||
         chain.inverse_dynamics(q, dq, ddq, nullptr, tau) !=
             rt::ErrorCode::invalid_argument ||
-        std::memcmp(tau, original, sizeof(tau)) != 0)
+        !same_bits(tau, original))
     {
         return fail("null state vectors leave output untouched");
     }
@@ -246,35 +259,35 @@ int check_input_rejection_and_atomicity()
     {
         return fail("null output rejected");
     }
-    double bad_q[2] = {q[0], std::numeric_limits<double>::quiet_NaN()};
+    double bad_q[MaxJoints] = {q[0], std::numeric_limits<double>::quiet_NaN()};
     if (chain.inverse_dynamics(bad_q, dq, ddq, gravity, tau) !=
             rt::ErrorCode::invalid_argument ||
-        std::memcmp(tau, original, sizeof(tau)) != 0)
+        !same_bits(tau, original))
     {
         return fail("NaN joint leaves output untouched");
     }
-    double bad_dq[2] = {dq[0], std::numeric_limits<double>::infinity()};
-    double bad_ddq[2] = {ddq[0], std::numeric_limits<double>::quiet_NaN()};
+    double bad_dq[MaxJoints] = {dq[0], std::numeric_limits<double>::infinity()};
+    double bad_ddq[MaxJoints] = {ddq[0], std::numeric_limits<double>::quiet_NaN()};
     if (chain.inverse_dynamics(q, bad_dq, ddq, gravity, tau) !=
             rt::ErrorCode::invalid_argument ||
-        std::memcmp(tau, original, sizeof(tau)) != 0 ||
+        !same_bits(tau, original) ||
         chain.inverse_dynamics(q, dq, bad_ddq, gravity, tau) !=
             rt::ErrorCode::invalid_argument ||
-        std::memcmp(tau, original, sizeof(tau)) != 0)
+        !same_bits(tau, original))
     {
         return fail("non-finite state leaves output untouched");
     }
     double bad_gravity[3] = {0.0, std::numeric_limits<double>::infinity(), 0.0};
     if (chain.inverse_dynamics(q, dq, ddq, bad_gravity, tau) !=
             rt::ErrorCode::invalid_argument ||
-        std::memcmp(tau, original, sizeof(tau)) != 0)
+        !same_bits(tau, original))
     {
         return fail("infinite gravity leaves output untouched");
     }
-    double overflowing_dq[2] = {1e308, 1e308};
+    double overflowing_dq[MaxJoints] = {1e308, 1e308};
     if (chain.inverse_dynamics(q, overflowing_dq, ddq, gravity, tau) !=
             rt::ErrorCode::invalid_argument ||
-        std::memcmp(tau, original, sizeof(tau)) != 0)
+        !same_bits(tau, original))
     {
         return fail("non-finite result leaves output untouched");
     }
@@ -283,7 +296,7 @@ int check_input_rejection_and_atomicity()
     const dyn::FixedBaseChain invalid_chain(invalid_spec);
     if (invalid_chain.inverse_dynamics(q, dq, ddq, gravity, tau) !=
             rt::ErrorCode::invalid_argument ||
-        std::memcmp(tau, original, sizeof(tau)) != 0 || invalid_chain.joint_count() != 0)
+        !same_bits(tau, original) || invalid_chain.joint_count() != 0)
     {
         return fail("invalid model leaves output untouched");
     }
@@ -305,7 +318,7 @@ int check_determinism()
     double second[8] = {};
     if (chain.inverse_dynamics(q, dq, ddq, gravity, first) != rt::ErrorCode::ok ||
         chain.inverse_dynamics(q, dq, ddq, gravity, second) != rt::ErrorCode::ok ||
-        std::memcmp(first, second, sizeof(first)) != 0)
+        !same_bits(first, second))
     {
         return fail("deterministic spatial result");
     }
