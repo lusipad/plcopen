@@ -5,7 +5,7 @@
 [doc/planning/](doc/planning/README.md)，历史里程碑（v0.2 → v0.11 全部
 sprint 记录）在 [doc/archive/roadmap-history.md](doc/archive/roadmap-history.md)。
 
-## 当前承诺（2026-07-25，唯一优先级声明）
+## 当前承诺（2026-07-26，唯一优先级声明）
 
 优先级只在本节声明一次，下列各节只承载明细，不再各自宣称"当前/最高"：
 
@@ -93,7 +93,13 @@ sprint 记录）在 [doc/archive/roadmap-history.md](doc/archive/roadmap-history
    [Language Tools](https://github.com/lusipad/plcopen/actions/runs/30136405372)、
    [Twin](https://github.com/lusipad/plcopen/actions/runs/30136405364) 与
    [Documentation](https://github.com/lusipad/plcopen/actions/runs/30136405336)
-   主线全绿，双语公网四页复验为 200。当前转入 H3 动力学前馈。
+   主线全绿，双语公网四页复验为 200。H3（KB-094）固定基座动力学
+   前馈实现候选现也已完成：1～8 关节固定容量 O(n) RNEA、严格物理模型
+   与输入校验、失败输出原子性、解析单摆/2R、独立 ABA 往返和势能梯度
+   oracle 均已落地；Windows Debug 91/91 非 fuzz + 11/11 fuzz、RT scan
+   32 文件、两类消费者全绿，Release 六条 8 关节链实测
+   `5.050 µs/cycle`（硬门 10 µs）。当前只剩实现 PR 与合入后主线远端
+   证据闭环；本批不消费 H1 `tau_ff`，T18/浮动基座/接触/真机安全不在范围。
    Marketplace、PyPI、tag 与 GitHub Release 均未执行。D2 WASM
    Playground 与 RL 保留候选，不插入本队列。
 7. **F 轨 EtherCAT**：仍是最大的剩余软件块和商用指标 #1/#4 的上游；
@@ -244,4 +250,4 @@ VS Code 扩展与 D2 WASM Playground，挂在 L 系列拆解的触发表。）
 
 ---
 
-*最后更新：2026-07-25（T2b 主线/公网证据闭合，当前转入 H3 动力学前馈）*
+*最后更新：2026-07-26（H3 实现候选与本地证据完成，远端闭环待办）*

@@ -95,10 +95,11 @@ anchor hash**。规范见
 ## 架构分层
 
 内核把关注点分成 L0-L7 的阶梯，并严格限制依赖方向：每一层只能依赖下层。阶梯
-旁边还有两个支持库：`kin`（FK/IK，依赖 geom/rt）和 `stream`
-（OTG-filtered streaming input，依赖 otg/rt），两者都只被 L5 消费。外环则有
+旁边还有三个支持库：`kin`（FK/IK，依赖 geom/rt）、`stream`
+（OTG-filtered streaming input，依赖 otg/rt）和调用方持有的 `dyn`
+（固定基座 RNEA，依赖 geom/rt）；kin/stream 由 L5 消费。外环则有
 两条并行的 pure-sink facade：`st` 语言层和 L7 `adapters`。L0-L4 再加上
-kin/stream 完全不携带 PLCopen 语义，因此也可以独立拿来做原始轨迹生成。
+kin/stream/dyn 完全不携带 PLCopen 语义，因此也可以独立拿来做原始轨迹生成。
 
 可先看[首页](../index.md#架构)上的图，再看完整设计文档：
 [architecture.md](https://github.com/lusipad/plcopen/blob/main/doc/design/core/architecture.md)

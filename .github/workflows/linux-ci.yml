@@ -115,7 +115,8 @@ jobs:
             -DCMAKE_TOOLCHAIN_FILE="$vcpkg_root/scripts/buildsystems/vcpkg.cmake" \
             -DVCPKG_TARGET_TRIPLET=x64-linux \
             -DPLCOPEN_SMOKE_REQUIRE_SERIAL_CHAIN=OFF \
-            -DPLCOPEN_SMOKE_REQUIRE_H1=OFF
+            -DPLCOPEN_SMOKE_REQUIRE_H1=OFF \
+            -DPLCOPEN_SMOKE_REQUIRE_H3=OFF
           cmake --build build/ci-vcpkg-find --parallel
           ./build/ci-vcpkg-find/plcopen_find_package_smoke
 

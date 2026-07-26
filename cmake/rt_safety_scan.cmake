@@ -7,6 +7,7 @@ set(RT_DIRS
     core/rt
     core/otg
     core/geom
+    core/dyn
     core/exec
     core/kin
     core/stream)

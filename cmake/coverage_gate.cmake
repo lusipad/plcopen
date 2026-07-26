@@ -87,14 +87,14 @@ if(NOT line_rc EQUAL 0)
     message(FATAL_ERROR "coverage-gate: full-core line coverage < ${LINE_THRESHOLD}%")
 endif()
 
-# This fixed scope is the production motion stack (L0-L6 plus kin/stream).
+# This fixed scope is the production motion stack (L0-L6 plus kin/stream/dyn).
 # ST and adapters are outer sink consumers and remain visible in the all-core report above.
 message(STATUS "coverage-gate: computing production-motion-stack branch coverage...")
 execute_process(
     COMMAND ${GCOVR}
         --root "${ROOT}"
         "${BUILD}"
-        --filter "core/(rt|otg|geom|plan|exec|axis|fb|kin|stream)/"
+        --filter "core/(rt|otg|geom|plan|exec|axis|fb|kin|stream|dyn)/"
         --exclude "core/test/"
         --exclude "core/bench/"
         --exclude "core/demo/"

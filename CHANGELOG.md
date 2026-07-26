@@ -6,6 +6,14 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- H3（KB-094）新增无 PLCopen 语义的 `dyn::FixedBaseChain`：以固定容量
+  O(n) RNEA 计算 1～8 关节固定基座转动串联链的惯性、科氏与重力前馈
+  扭矩，模型和运行输入均严格校验且失败时输出逐位不变。解析单摆/2R、
+  独立 ABA 往返与势能梯度三类 oracle 均通过；六个独立 8 关节实例的
+  Windows Release 本地实测为 5.050 µs/周期，低于 10 µs 硬门，并已接入
+  install/find_package、FetchContent 与 RT 扫描。本批只产生纯 `tau_ff`
+  数值，不接入 H1/T18 扭矩消费，不覆盖浮动基座、接触动力学或真机安全。
+
 - T2b（KB-093）在不增加默认依赖的前提下加入仓库自有 7DOF primitive
   孪生：最小 `JointStreamSim` Python 门面把 H1 的 q/dq 原子帧从
   100 Hz 升频到 1 kHz，通用装载层校验 1～48 组本地 joint/actuator

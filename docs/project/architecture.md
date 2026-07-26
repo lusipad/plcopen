@@ -19,13 +19,14 @@ outer consumer surfaces.
 | L6 `fb` | PLCopen-style function-block facades |
 | L7 `adapters` | Narrow hardware and protocol adapters |
 
-`kin` and `stream` are support libraries consumed by L5. The IEC 61131-3
+`kin` and `stream` are support libraries consumed by L5. `dyn` is a
+caller-owned pure-math support library for fixed-base RNEA. The IEC 61131-3
 `st` compiler and VM form an outer consumer surface beside L7.
 
 ## Load-bearing invariants
 
 - Dependencies point inward; the production graph is a DAG.
-- L0–L4 plus `kin` and `stream` contain no PLCopen semantics.
+- L0–L4 plus `kin`, `stream`, and `dyn` contain no PLCopen semantics.
 - The planning domain owns planning state and commits trajectory frames.
 - The real-time domain consumes one committed frame per tick.
 - Hardware access stays behind the narrow `Servo` boundary.

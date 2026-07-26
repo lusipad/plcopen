@@ -18,13 +18,14 @@ plcopen 是可嵌入的 C++17 运动控制内核。生产内核按依赖只向�
 | L6 `fb` | PLCopen 风格功能块门面 |
 | L7 `adapters` | 窄硬件与协议适配器 |
 
-`kin` 与 `stream` 是由 L5 消费的支撑库。IEC 61131-3 `st` 编译器和 VM
+`kin` 与 `stream` 是由 L5 消费的支撑库；`dyn` 是调用方持有、用于固定
+基座 RNEA 的纯数学支撑库。IEC 61131-3 `st` 编译器和 VM
 位于外圈，与 L7 构成并行消费面。
 
 ## 承重不变量
 
 - 依赖只向内，生产依赖图是 DAG。
-- L0～L4 以及 `kin`、`stream` 不包含 PLCopen 语义。
+- L0～L4 以及 `kin`、`stream`、`dyn` 不包含 PLCopen 语义。
 - 规划域持有规划状态并提交轨迹 frame。
 - 实时域每个 tick 只消费一个已提交 frame。
 - 硬件访问保持在窄 `Servo` 边界之后。

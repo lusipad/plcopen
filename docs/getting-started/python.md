@@ -201,7 +201,7 @@ headless unless `--spawn` is explicit and never downloads a robot model.
     `JointStreamSim` and the seven-joint command are not part of the published
     `pyplcopen==0.20.0` wheel. They require a source build until a later
     maintainer-authorized release. The facade intentionally exposes only q/dq;
-    H1 torque and gain fields remain behind the separate H3/T18 safety work.
+    H1 torque and gain fields remain behind the separate T18 safety work.
 
 ## 25–30 minutes: inspect a diagnostic
 

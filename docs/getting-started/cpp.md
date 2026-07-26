@@ -117,8 +117,8 @@ The core library is designed for hard real-time:
 
 - **Zero heap allocation, zero locks, no exceptions** on the entire cycle
   path — this covers the full RT scan surface (rt / otg / geom / exec /
-  kin / stream / adapters, plus the L5 axis and L6 fb cycle paths)
-- **L0-L4 carry zero PLCopen semantics** — the generic trajectory kernel
+  kin / stream / dyn / adapters, plus the L5 axis and L6 fb cycle paths)
+- **L0-L4 plus kin/stream/dyn carry zero PLCopen semantics** — the generic trajectory kernel
   is reusable on its own
 - **No exceptions, no RTTI** (`-fno-exceptions -fno-rtti`)
 - **No OS calls** in the cycle loop

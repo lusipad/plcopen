@@ -117,9 +117,9 @@ committed-frame executor，或者接入你自己的 scheduler 和 `Servo` adapte
 核心库面向硬实时设计：
 
 - **整个 cycle path 都禁止堆分配、加锁和抛异常**。这覆盖完整 RT scan surface
-  （rt / otg / geom / exec / kin / stream / adapters，以及 L5 axis 和 L6
+  （rt / otg / geom / exec / kin / stream / dyn / adapters，以及 L5 axis 和 L6
   fb 的 cycle 路径）
-- **L0-L4 完全不带 PLCopen 语义**，因此通用轨迹内核可以单独复用
+- **L0-L4 与 kin/stream/dyn 完全不带 PLCopen 语义**，因此通用轨迹内核可以单独复用
 - **禁用异常与 RTTI**（`-fno-exceptions -fno-rtti`）
 - cycle loop 中**不允许 OS 调用**
 - **不允许浮点时间累加**（使用整数周期计数器）

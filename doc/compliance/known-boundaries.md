@@ -144,4 +144,6 @@
 
 - `KB-093`：T2b 交付仓库自有七关节 MuJoCo/Rerun 孪生候选。`JointStreamSim` 仅把 H1 的 1～48 关节 q/dq 原子帧、整组 reset、cycle、命令快照及拒绝/断流计数暴露给 Python；默认旅程以 100 Hz 完整帧驱动 1 kHz `upsample`，七关节同一拍进入组级 watchdog。通用模型装载层接受 1～48 个唯一 hinge joint 与等长 position actuator 映射，T2a 运行入口仍显式限制为两个。仓库 `seven_link.xml` 只由 primitive 几何构成；独立 CLI 固定运行 2,000 tick / 200 帧，记录七组 target/command/actual/error 和七级 link transform，保持段末最大物理跟踪误差门为 0.02 rad。**边界**：`JointStreamSim` 是工具/规划域 facade，不是跨线程 RT API；不暴露或消费 H1 的 `tau_ff/kp/kd`，不扩 H2/L5，不下载或 vendor 厂商模型，不提供反馈回灌到 H1、碰撞/接触真实性、硬实时、真机、安全、标定或 sim2real 证据；已发布的 `pyplcopen==0.20.0` wheel 不含该源码候选。规格、计划与证据见 `t2b-large-model-twin-semantics.md`、`t2b-large-model-twin-plan.md` 与 `t2b-large-model-twin-implementation-notes.md`。
 
+- `KB-094`：H3 交付 `dyn::FixedBaseChain` 固定基座逆动力学。每实例表示 1～8 个转动关节、每关节一个刚体的串联链；调用方提供零位 child/joint→parent 变换、局部单位转轴、质量、质心和质心处完整惯量。构造严格拒绝非有限/非右手正交旋转、非单位轴、非正质量以及非对称、非正定或违反主惯量三角关系的惯量；运行以 SI 秒制执行固定容量 O(n) RNEA，任一非法指针/输入/溢出返回 `invalid_argument` 且输出逐位不变。独立 ABA 往返、单摆/2R 闭式公式和势能梯度 oracle 共同验收；六条独立 8 关节链的 Windows Release 本地实测 `5.050 µs/cycle`，低于 10 µs 硬门。**边界**：H3 只返回纯 `tau_ff` 数值，不拥有 H1 会话、AxisGroup、adapter 或 executor；T18 扭矩限幅/速度监督/位置围栏关闭前不得消费。浮动基座、接触/约束、全身跨链耦合、树/闭链、棱柱/固定体、URDF/MJCF、辨识/摩擦/电机模型、Python/MuJoCo 控制器、真机与功能安全均不属于本批。规格与证据见 `dynamics-feedforward-semantics.md`、`h3-rnea-plan.md` 与 `h3-rnea-implementation-notes.md`。
+
 ---

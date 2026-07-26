@@ -31,8 +31,8 @@
 
 ## 2. 假设
 
-- `ROADMAP.md` 当前唯一优先级已把 T2 写为下一无外部前置批次；H1 仍等
-  真机，H3/T18 仍缺语义矩阵。
+- 计划制定时，`ROADMAP.md` 把 T2 写为下一无外部前置批次，H1 仍等真机且
+  H3/T18 尚缺语义矩阵；后续 H3 已按 KB-094 完成纯数学切片，T18 仍独立门控。
 - T2a 的价值是先证明
   `policy target → plcopen setpoint → MuJoCo physics → feedback/readback →
   Rerun recording` 的完整数据流，不用双关节 fixture 冒充人形产品验证。

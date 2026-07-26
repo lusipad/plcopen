@@ -63,6 +63,28 @@ producer 时间戳只用于排序和回显，不会安排未来拍生效；生�
 drive adapter 或 executor 使用它；消费前必须另行完成 T18 的扭矩限幅、
 速度监督与位置围栏合同。
 
+## 固定基座动力学前馈
+
+`dyn::FixedBaseChain` 为一条调用方持有的 1～8 关节转动串联链计算纯前馈
+扭矩。初始化阶段构造并验证模型，之后以 SI 量调用有界 O(n) RNEA：
+
+```cpp
+dyn::FixedBaseChain chain(spec);
+if (!chain.valid()) {
+    // Reject the configuration before starting the cyclic task.
+}
+
+double tau_ff[8]{};
+const double gravity[3]{0.0, 0.0, -9.80665};
+const auto error =
+    chain.inverse_dynamics(q_rad, dq_rad_s, ddq_rad_s2, gravity, tau_ff);
+```
+
+失败不会修改 `tau_ff`。臂、腿、腰等链各自使用独立实例。H3 只产生数值；
+规划域 producer 可以在完成单位与所有权检查后把结果复制到 H1 命令帧，
+但在 T18 定义并验证扭矩限幅、速度监督和位置围栏之前，drive/executor
+仍必须忽略 `tau_ff`。
+
 当前源码为规划域 Python 实验提供了同一原语的 q/dq 窄门面：
 
 ```python
@@ -82,7 +104,7 @@ command = stream.setpoint_frame()
 
 `JointStreamSim` 会在触碰组状态前校验完整 Python 向量，非法帧整体拒绝。
 它不是跨线程 RT API，也不暴露 `tau_ff`、`kp` 或 `kd`；生产集成应使用
-C++ 原语，并在 H3/T18 独立合同关闭前保持扭矩消费禁用。
+C++ 原语，并在 T18 独立合同关闭前保持扭矩消费禁用。
 
 实际 EtherCAT、线程调度、时钟同步和总线 IO 不在本仓库内；宿主执行器在
 周期边界调用 `adapters::Servo`，并使用 `set_actual_feedback()`、
