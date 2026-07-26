@@ -146,4 +146,6 @@
 
 - `KB-094`：H3 交付 `dyn::FixedBaseChain` 固定基座逆动力学。每实例表示 1～8 个转动关节、每关节一个刚体的串联链；调用方提供零位 child/joint→parent 变换、局部单位转轴、质量、质心和质心处完整惯量。构造严格拒绝非有限/非右手正交旋转、非单位轴、非正质量以及非对称、非正定或违反主惯量三角关系的惯量；运行以 SI 秒制执行固定容量 O(n) RNEA，任一非法指针/输入/溢出返回 `invalid_argument` 且输出逐位不变。独立 ABA 往返、单摆/2R 闭式公式和势能梯度 oracle 共同验收；六条独立 8 关节链的 Windows Release 本地实测 `5.050 µs/cycle`，低于 10 µs 硬门。**边界**：H3 只返回纯 `tau_ff` 数值，不拥有 H1 会话、AxisGroup、adapter 或 executor；T18 扭矩限幅/速度监督/位置围栏关闭前不得消费。浮动基座、接触/约束、全身跨链耦合、树/闭链、棱柱/固定体、URDF/MJCF、辨识/摩擦/电机模型、Python/MuJoCo 控制器、真机与功能安全均不属于本批。规格与证据见 `dynamics-feedforward-semantics.md`、`h3-rnea-plan.md` 与 `h3-rnea-implementation-notes.md`。
 
+- `KB-095`：`exec::CamSpline` 非周期表边界导数契约（评审 §7.A-5 处置）。表外语义为"钳位保持"：master 严格越出表端时 slave 保持端点值，故各阶 master 导数**恰为 0**——这是钳位语义的自洽结果而非缺陷，显式登记为契约。修复点：master **精确落在边界节点**时（`==` 端点），旧实现也返回 0，与域内单侧导数不一致；现改为落入区间求值返回真实单侧导数（自然样条二阶端点仍为 0，一阶为真实端点斜率）。生产周期路径只经 `cam_slave_value → sample`（位置采样），不消费 `sample_derivative`，故本变更不影响任何周期输出与回放语料；linear C0 字节等同模式（`CamTableView`）无导数 API，不受影响。主轴驶出表端时的前馈阶跃是"端点保持"语义的固有物理结果，若表端斜率非零则不可避免；需要连续停驻的凸轮应设计表端零斜率。验收：`plcopen_core_cam_tests` 新增 `check_aperiodic_boundary_derivatives`（外部导数零、边界节点单侧导数与域内极限一致、非零端斜率不被外部零污染），`r3_sync_tests` 既有严格越界断言保持。
+
 ---

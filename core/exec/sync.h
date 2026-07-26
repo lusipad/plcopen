@@ -410,12 +410,19 @@ private:
             }
             position += begin;
         } else if(position <= points_[0].master || position >= points_[size_ - 1].master) {
-            if(order != 0) {
+            // Aperiodic boundary contract: outside the table the slave holds
+            // the endpoint value, so every master-derivative is exactly zero.
+            // At the boundary nodes themselves the sample is in-domain and the
+            // derivatives must match the one-sided interior limit — fall
+            // through to the interval evaluation for exact node hits.
+            if(order == 0) {
+                const double endpoint =
+                    position <= points_[0].master ? points_[0].slave : points_[size_ - 1].slave;
+                return rt::Result<double>::success(endpoint);
+            }
+            if(position < points_[0].master || position > points_[size_ - 1].master) {
                 return rt::Result<double>::success(0.0);
             }
-            const double endpoint =
-                position <= points_[0].master ? points_[0].slave : points_[size_ - 1].slave;
-            return rt::Result<double>::success(endpoint);
         }
 
         std::size_t index = 1;
