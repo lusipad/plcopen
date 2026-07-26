@@ -1,6 +1,6 @@
 # H3 固定基座动力学前馈语义矩阵 v1
 
-> 状态：**已批准并完成实现候选（2026-07-26，KB-094；PR/main 远端证据待闭合）**。维护者先前明确
+> 状态：**已实现并合入（2026-07-26，KB-094，PR #35）**。维护者先前明确
 > 授权按 D3→D1→H1→T2b→H3 顺序开发，并在 T2b 主线证据闭合后再次要求
 > 继续。本矩阵把该授权收敛为 T15/H3 的最小纯数学切片；任何扭矩执行、
 > 安全包络或全身动力学扩展仍需另行批准。
@@ -71,8 +71,16 @@ H3 不做隐式归一化、惯量修补、NaN 归零或部分扭矩提交。参�
 
 本地实现证据（2026-07-26）：Windows Debug 91/91 非 fuzz 与 11/11 fuzz；
 Release 合约/oracle/预算 3/3，48 关节为 `5.050 µs/cycle`；RT scan 32
-文件；install/find_package 与 FetchContent 消费者均可运行。ARM64/QEMU、
-clang-tidy 和主线门仍以实现 PR 合入后的远端结果为准。
+文件；install/find_package 与 FetchContent 消费者均可运行。
+[PR #35](https://github.com/lusipad/plcopen/pull/35) 的 Windows、Linux
+GCC/Clang、ARM64/QEMU、E5 与消费面全绿；合入后
+[Windows](https://github.com/lusipad/plcopen/actions/runs/30197177055)、
+[Linux](https://github.com/lusipad/plcopen/actions/runs/30197177063)、
+[Language Tools](https://github.com/lusipad/plcopen/actions/runs/30197177059)、
+[Twin](https://github.com/lusipad/plcopen/actions/runs/30197177072) 与
+[Documentation](https://github.com/lusipad/plcopen/actions/runs/30197177048)
+也全绿。手动 Coverage Gate 中 H3 头为 line 99.5% / branch 92.9%；
+全局运动栈/ST 的既有 84.5%/84.3% 漂移另行修复，不改变本合同门槛。
 
 ## 5. 显式非目标
 
@@ -85,4 +93,4 @@ clang-tidy 和主线门仍以实现 PR 合入后的远端结果为准。
 
 ---
 
-*创建并批准：2026-07-25；实现候选与本地证据更新：2026-07-26。*
+*创建并批准：2026-07-25；实现与 PR/main 证据闭合：2026-07-27。*
