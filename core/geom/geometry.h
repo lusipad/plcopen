@@ -176,12 +176,19 @@ inline double normalize_sweep(double sweep, double orientation)
 
 inline rt::Result<ArcSegment> make_arc(Vec3 start, Vec3 via, Vec3 finish)
 {
-    const double ax = start.x;
-    const double ay = start.y;
-    const double bx = via.x;
-    const double by = via.y;
-    const double cx = finish.x;
-    const double cy = finish.y;
+    // Solve the circumcenter in centroid-relative coordinates: the |p|^2
+    // terms then cancel on the triangle's own scale instead of against the
+    // absolute origin, so the fit stays conditioned at machine offsets
+    // (PCS translation, tool offsets). Mathematically identical to the
+    // absolute-coordinate determinant form.
+    const double gx = (start.x + via.x + finish.x) / 3.0;
+    const double gy = (start.y + via.y + finish.y) / 3.0;
+    const double ax = start.x - gx;
+    const double ay = start.y - gy;
+    const double bx = via.x - gx;
+    const double by = via.y - gy;
+    const double cx = finish.x - gx;
+    const double cy = finish.y - gy;
     const double d = 2.0 * (ax * (by - cy) + bx * (cy - ay) + cx * (ay - by));
 
     if(!std::isfinite(d) || std::fabs(d) <= 1e-12) {
@@ -192,8 +199,8 @@ inline rt::Result<ArcSegment> make_arc(Vec3 start, Vec3 via, Vec3 finish)
     const double b2 = bx * bx + by * by;
     const double c2 = cx * cx + cy * cy;
     const Vec3 center{
-        (a2 * (by - cy) + b2 * (cy - ay) + c2 * (ay - by)) / d,
-        (a2 * (cx - bx) + b2 * (ax - cx) + c2 * (bx - ax)) / d,
+        (a2 * (by - cy) + b2 * (cy - ay) + c2 * (ay - by)) / d + gx,
+        (a2 * (cx - bx) + b2 * (ax - cx) + c2 * (bx - ax)) / d + gy,
         0.0,
     };
     const double radius = norm({start.x - center.x, start.y - center.y, 0.0});

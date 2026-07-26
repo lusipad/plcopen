@@ -76,6 +76,31 @@ int check_arc_geometry()
        !near(table.parameter_at_length(arc.value().length * 0.25), 0.25, 1e-12)) {
         return fail("arc length table");
     }
+
+    // Conditioning at machine offsets: the center fit must stay on the
+    // triangle's own scale, not degrade with distance from the origin
+    // (PCS translation / tool offsets put production arcs there routinely).
+    const double offset = 1.0e6;
+    const rt::Result<geom::ArcSegment> far = geom::make_arc(
+        {offset + 1.0, offset, 0.0},
+        {offset + 0.70710678118654752, offset + 0.70710678118654752, 0.0},
+        {offset, offset + 1.0, 0.0});
+    if(!far || !near(far.value().radius, 1.0, 1e-11)) {
+        return fail("far arc radius conditioning");
+    }
+    const geom::Vec3 far_points[3] = {
+        {offset + 1.0, offset, 0.0},
+        {offset + 0.70710678118654752, offset + 0.70710678118654752, 0.0},
+        {offset, offset + 1.0, 0.0}};
+    for(int i = 0; i < 3; ++i) {
+        const double dx = far_points[i].x - far.value().center.x;
+        const double dy = far_points[i].y - far.value().center.y;
+        const double residual =
+            std::fabs(std::sqrt(dx * dx + dy * dy) - far.value().radius);
+        if(residual > 1e-11) {
+            return fail("far arc circle-fit residual");
+        }
+    }
     return 0;
 }
 
