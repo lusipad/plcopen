@@ -105,8 +105,9 @@ sprint 记录）在 [doc/archive/roadmap-history.md](doc/archive/roadmap-history
    [Language Tools](https://github.com/lusipad/plcopen/actions/runs/30197177059)、
    [Twin](https://github.com/lusipad/plcopen/actions/runs/30197177072) 与
    [Documentation](https://github.com/lusipad/plcopen/actions/runs/30197177048)
-   主线全绿，D3→D1→H1→T2b→H3 授权队列已全部完成。本批不消费 H1
-   `tau_ff`，T18/浮动基座/接触/真机安全不在范围。独立
+   主线全绿，D3→D1→H1→T2b→H3 授权功能均已交付；但队列收口仍受
+   下述全局覆盖率硬门阻塞。本批不消费 H1 `tau_ff`，T18/浮动基座/接触/
+   真机安全不在范围。独立
    [Coverage Gate 手动复验](https://github.com/lusipad/plcopen/actions/runs/30195318284)
    证明 H3 头 line 99.5% / branch 92.9%，同时暴露既有全局运动栈
    84.5% 与 ST 84.3% 漂移；该测试债不靠放宽 85% 阈值掩盖。
@@ -260,4 +261,4 @@ VS Code 扩展与 D2 WASM Playground，挂在 L 系列拆解的触发表。）
 
 ---
 
-*最后更新：2026-07-27（H3 PR/main 证据闭合；授权软件队列全部完成）*
+*最后更新：2026-07-27（H3 PR/main 证据闭合；全局覆盖率修复仍阻塞队列收口）*
