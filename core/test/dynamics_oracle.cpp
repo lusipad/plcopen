@@ -366,9 +366,9 @@ int check_rnea_aba_round_trip()
     Lcg random{};
     for (int sample = 0; sample < 48; ++sample)
     {
-        double q[MaxJoints];
-        double dq[MaxJoints];
-        double expected_ddq[MaxJoints];
+        double q[MaxJoints] = {};
+        double dq[MaxJoints] = {};
+        double expected_ddq[MaxJoints] = {};
         double tau[MaxJoints] = {};
         double recovered_ddq[MaxJoints] = {};
         for (std::size_t joint = 0; joint < spec.joint_count; ++joint)
