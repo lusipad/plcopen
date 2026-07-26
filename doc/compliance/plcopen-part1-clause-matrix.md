@@ -82,10 +82,10 @@
 
 | 条款 | 要求（自述） | 判定 | 证据/说明 |
 |------|-------------|------|----------|
-| 2.4.2-a | Aborting 为缺省模式，新命令立即接管并清空已有缓冲 | ✅符合 | 枚举缺省及 `abort_motion()` 接管路径（`core/axis/state.h:39-45,707-735`） |
-| 2.4.2-b | Buffered 等当前命令达到相应完成信号后再启动，无速度 blending | ✅符合 | 后继进入固定队列，自然完成时同周期启动（`core/axis/state.h:738-742,1830-1866`; `core/test/r3_motion_family_tests.cpp:559-592`） |
-| 2.4.2-c | 标准枚举包含 Low/Previous/Next/High 四种 blending，厂商扩展只能追加 | ❌缺失 | 仅有 Low/High，缺 Previous/Next；见附录 A A-3～A-6（`core/axis/state.h:39-45`） |
-| 2.4.2-d | Low/High 的交接速度分别取前后两命令速度的较低/较高者 | ⚠️偏差(KB-029 已声明) | 当前采用前命令标称速度 30%/70% 阈值，不按两命令速度求 min/max（`known-boundaries.md:44`; `core/axis/state.h:1830-1866`） |
+| 2.4.2-a | Aborting 为缺省模式，新命令立即接管并清空已有缓冲 | ✅符合 | 枚举缺省及 `abort_motion()` 接管路径（`core/axis/state.h:41-47,187,1388-1406,3691`） |
+| 2.4.2-b | Buffered 等当前命令达到相应完成信号后再启动，无速度 blending | ✅符合 | 后继进入固定队列，自然完成时同周期启动（`core/axis/state.h:1417-1431,3630,3675-3690`; `core/test/r3_motion_family_tests.cpp:611-648`） |
+| 2.4.2-c | 标准枚举包含 Low/Previous/Next/High 四种 blending，厂商扩展只能追加 | ❌缺失 | 仅有 Low/High，缺 Previous/Next；见附录 A A-3～A-6（`core/axis/state.h:41-47,397-401`）；规格：[part1-buffer-mode-blending-semantics.md](part1-buffer-mode-blending-semantics.md) |
+| 2.4.2-d | Low/High 的交接速度分别取前后两命令速度的较低/较高者 | ⚠️偏差(KB-029 已声明) | 当前采用前命令标称速度 30%/70% 阈值触发交接，交接速度为涌现量（0, 阈值]，不按两命令速度求 min/max（`known-boundaries.md:44`; `core/axis/state.h:3535-3553,3668-3673`）；规格：[part1-buffer-mode-blending-semantics.md](part1-buffer-mode-blending-semantics.md) |
 | 2.4.2-e | 可缓冲 FB、可被缓冲后继以及激活后继的信号须符合正文表 | ⚠️部分支持 | C4 已补持续 Inxxx、运行期错误接续与命令终态；BufferMode 仍只承载仓库声明的 0/1/2/5 子集（KB-071/079） |
 | 2.4.2-f | 行政类 FB 默认不参与缓冲；供应商可另行扩展并声明 | ✅符合 | 参数、IO、CamTableSelect 等不进入 AxisModel 命令队列（`core/fb/parameter.h`; `core/fb/io.h`; `core/fb/sync.h:248-286`） |
 | 2.4.2-g | Aborting 接管在制动距离不足时仍需形成可解释的后续轨迹 | ✅符合 | 接管保存当前速度/加速度并从实时状态重规划（KB-026；`core/axis/state.h:707-720`） |
