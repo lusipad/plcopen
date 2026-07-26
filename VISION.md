@@ -24,7 +24,7 @@
 ## 定位：一个内核，多种控制方式（2026-07-06 定调）
 
 项目名就是 plcopen，不改——PLCopen 合规是立身之本与认证路径。但按
-分层纪律，内核＝阶梯 L0-L4 + 支撑库 kin/stream，生而无 PLCopen 语义
+分层纪律，内核＝阶梯 L0-L4 + 支撑库 kin/stream/dyn，生而无 PLCopen 语义
 （2026-07-12 include 图审计 0 违规，见
 [架构审查报告](doc/design/architecture-review-2026-07.md)）：它是一个
 通用运动控制内核，向不同世界提供不同的控制方式——
@@ -110,7 +110,7 @@ plcopen 站在两个世界的交叉点上：**学习栈下面的工业级确定�
 
 **现状**（始终以 [STATUS.md](STATUS.md) 为准，本段不做快照）：v0.x
 旧线在 `v0.11.0` 后冻结为回放基线；新核 `core/`（L0-L7 阶梯 +
-kin/stream 支撑库）已完成重写与 Phase B 纯软件批次——Part 1/2 门面
+kin/stream/dyn 支撑库）已完成重写与 Phase B 纯软件批次——Part 1/2 门面
 43/43（B 级 I/O 齐备 22/43 为 2026-07-12 审计时点口径，P1-A 结构缺口
 其后已补，条款差距见
 [doc/compliance/](doc/compliance/plcopen-conformance-audit.md)）、

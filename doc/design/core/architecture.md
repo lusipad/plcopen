@@ -16,11 +16,12 @@
 
 - **阶梯 L0→L7**：堆叠 = 向下包含许可，不是逐边声明（例如 L4 并不
   include L3）；全部 include 边只向内，全图为 DAG。
-- **支撑库 kin / stream**：阶梯旁的口袋库，依赖只向内（kin→geom/rt、
-  stream→otg/rt），仅被 L5 消费。
+- **支撑库 kin / stream / dyn**：阶梯旁的口袋库，依赖只向内
+  （kin→geom/rt、stream→otg/rt、dyn→geom/rt）。kin/stream 被 L5
+  消费；dyn 是调用方持有的纯数学模块，不接入语义或执行层。
 - **外圈两张纯 sink 消费面**：st 语言层与 L7 adapters 平行；生产层
   无人反向引用（审计核实）。
-- **L0-L4 + kin/stream 零 PLCopen 语义**：通用运动内核，可独立复用；
+- **L0-L4 + kin/stream/dyn 零 PLCopen 语义**：通用运动内核，可独立复用；
   `otg/` 可单独发布。
 
 ```text
@@ -47,7 +48,7 @@
 | coordinate, kinematics, stream integration  +--+
 +---------------------------------------------+  |
 | L4 exec    cyclic sampling, gear / cam      |  |  SUPPORT LIBS (pocket):
-+---------------------------------------------+  |  consumed by L5 only;
++---------------------------------------------+  |  deps point inward only;
 | L3 plan   lookahead scan + blending         |  |  deps point inward only
 +---------------------------------------------+  |
 | L2 geom   line / arc / spline, frames       |  |  +------------------------+
@@ -56,12 +57,16 @@
 +---------------------------------------------+  |  | deps: geom, rt         |
 | L0 rt      cycle time, static vectors,      |  |  +------------------------+
 |                 SPSC rings, error codes     |  +->| stream        streaming|
-+---------------------------------------------+     | OTG-filtered input (B9)|
-                                                    | deps: otg, rt          |
-                                                    +------------------------+
++---------------------------------------------+  |  | OTG-filtered input (B9)|
+                                               |  | deps: otg, rt          |
+                                               |  +------------------------+
+                                               +->| dyn   fixed-base RNEA  |
+                                                  | caller-owned (H3)      |
+                                                  | deps: geom, rt         |
+                                                  +------------------------+
  reading rules: stacking = downward include permission, not per-edge
  claim (audit 2026-07-12: 0 violations, DAG; L4 does NOT include L3);
- L0-L4 + kin/stream carry zero PLCopen semantics -- generic kernel
+ L0-L4 + kin/stream/dyn carry zero PLCopen semantics -- generic kernel
 ```
 
 ---
@@ -232,7 +237,7 @@ Y7/Y7b1 修复；KB-087 又关闭 plain Cartesian LINE 来源到 joint LINE/circ
 | 不变量 | 口径 | 验证手段 |
 |--------|------|----------|
 | 依赖只向内 | 全部 include 边严格指向等于或更内层；全图 DAG 无循环；堆叠 = 向下包含许可而非逐边声明（L4 不 include L3） | include 图审计（[2026-07-12](../architecture-review-2026-07.md)：0 违规）；任一层新增 >2k 行 / 新顶层目录 / 规则修订即复检 |
-| L0-L4 零 PLCopen 语义 | L0-L4 与 kin/stream 不得引用 axis/fb/st——通用运动内核可独立复用，`otg/` 可单独发布 | 同上审计（plan/exec 的 include 面仅含 geom/otg/rt） |
+| L0-L4 零 PLCopen 语义 | L0-L4 与 kin/stream/dyn 不得引用 axis/fb/st——通用运动内核可独立复用，`otg/` 可单独发布 | 同上审计（plan/exec 的 include 面仅含 geom/otg/rt）；dyn 纳入 RT 扫描 |
 | 周期路径五禁 | 零堆分配、零阻塞锁、无异常、无系统调用、禁浮点时间累加（时间一律整型周期计数） | RT 扫描门禁；纪律细则见 `plcopen-rt-safety` 技能 |
 | 声明变更纪律 | 改变既有周期路径输出必须：KB 登记 + 回放基线重录 + 提交信息注明；未声明变更 = 回放零差异 | 黄金回放门禁（`plcopen_core_replay_regression`）；流程见 `plcopen-replay-baseline` 技能 |
 | 单写者 + 边界分层 | 进程内规划/RT 共享仍为四条 SPSC（命令/承诺帧/反馈/快照）；X5 只在外层 `Servo` 进程边界使用两条固定 ABI SPSC + 状态双缓冲，owner 映射期不可转让 | [ADR-0007](../decisions/0007-executor-committed-trajectory.md)、[X5 合同](../../compliance/executor-ipc-semantics.md)；纯内存并发测试 + 显式两进程门 |
@@ -251,7 +256,7 @@ Y7/Y7b1 修复；KB-087 又关闭 plain Cartesian LINE 来源到 joint LINE/circ
 | [otg-oracle-design.md](otg-oracle-design.md) | Y0 双 oracle（打靶 + 值迭代）+ Ruckig 第三对照方法学 | 已落地（`core/test/otg_optimality_oracle.cpp`）；Y2 已补齐 |
 | [algorithm-contracts.md](algorithm-contracts.md) | 七份算法合同 + 落地顺序（算法线权威口径） | Y7/Y0/Y2/Y4/T24/H2 已交付；Y3 影子中 |
 | [priority-tracks-design.md](priority-tracks-design.md) | 人形/EtherCAT/孪生三轨的模块地图与建造顺序 | 随轨推进更新 |
-| `core/*/README.md` 系列 | 各模块「随码写」的详细设计（11 份） | 与代码同提交维护 |
+| `core/*/README.md` 系列 | 各模块「随码写」的详细设计（12 份） | 与代码同提交维护 |
 | [ADR-0004](../decisions/0004-servo-adapter-interface.md) | Servo 窄接口 + 桥接 | Accepted，已落地 |
 | [ADR-0005](../decisions/0005-humanoid-multi-chain-model.md) | 人形多链模型（分链前馈，非全身动力学） | Accepted |
 | [ADR-0007](../decisions/0007-executor-committed-trajectory.md) | 承诺轨迹环双域 executor | Accepted；2026-07-11 起进程内 canonical 落地 |
@@ -271,5 +276,5 @@ Y7/Y7b1 修复；KB-087 又关闭 plain Cartesian LINE 来源到 joint LINE/circ
 
 ---
 
-*本文档最后更新：2026-07-21（X5 executor ↔ fieldbus IPC 软件形态落地；
-分层与 L6 合规诚实口径仍依据 2026-07-12 include 审计）*
+*本文档最后更新：2026-07-26（H3 `core/dyn` 固定基座 RNEA 支撑库落地；
+既有分层与 L6 合规口径仍依据 2026-07-12 include 审计）*

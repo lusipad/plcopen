@@ -342,6 +342,16 @@ if(BUILD_TESTING AND PLCOPEN_BUILD_CORE_TESTS)
     plcopen_core_rt_compile_options(plcopen_core_serial_chain_tests)
     add_test(NAME plcopen_core_serial_chain_tests COMMAND plcopen_core_serial_chain_tests)
 
+    add_executable(plcopen_core_dynamics_tests test/dynamics_tests.cpp)
+    target_link_libraries(plcopen_core_dynamics_tests PRIVATE plcopen::core)
+    plcopen_core_rt_compile_options(plcopen_core_dynamics_tests)
+    add_test(NAME plcopen_core_dynamics_tests COMMAND plcopen_core_dynamics_tests)
+
+    add_executable(plcopen_core_dynamics_oracle test/dynamics_oracle.cpp)
+    target_link_libraries(plcopen_core_dynamics_oracle PRIVATE plcopen::core)
+    plcopen_core_rt_compile_options(plcopen_core_dynamics_oracle)
+    add_test(NAME plcopen_core_dynamics_oracle COMMAND plcopen_core_dynamics_oracle)
+
     add_executable(plcopen_core_pose_tests test/pose_tests.cpp)
     target_link_libraries(plcopen_core_pose_tests PRIVATE plcopen::core)
     plcopen_core_rt_compile_options(plcopen_core_pose_tests)
@@ -509,6 +519,9 @@ if(BUILD_TESTING AND PLCOPEN_BUILD_CORE_TESTS)
     add_test(NAME plcopen_core_serial_chain_benchmark
              COMMAND plcopen_core_benchmark --serial-chain-only)
     set_tests_properties(plcopen_core_serial_chain_benchmark PROPERTIES LABELS benchmark)
+    add_test(NAME plcopen_core_dynamics_benchmark
+             COMMAND plcopen_core_benchmark --dynamics-only)
+    set_tests_properties(plcopen_core_dynamics_benchmark PROPERTIES LABELS benchmark)
 endif()
 
 if((WIN32 OR (UNIX AND NOT APPLE)) AND
@@ -586,6 +599,6 @@ endif()
 install(TARGETS plcopen_core
     EXPORT plcopenTargets)
 
-install(DIRECTORY adapters axis exec fb geom kin otg plan rt st stream
+install(DIRECTORY adapters axis dyn exec fb geom kin otg plan rt st stream
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/plcopen
     FILES_MATCHING PATTERN "*.h")

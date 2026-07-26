@@ -70,6 +70,30 @@ The returned frame is a **command snapshot**, not actual feedback. H1 carries
 requires the separate T18 torque-limit, velocity-supervision, and position-
 fence contract.
 
+## Fixed-base dynamics feedforward
+
+`dyn::FixedBaseChain` computes pure feedforward torque for one caller-owned
+1–8 joint revolute chain. Build and validate the model during initialization,
+then call the bounded O(n) RNEA with SI quantities:
+
+```cpp
+dyn::FixedBaseChain chain(spec);
+if (!chain.valid()) {
+    // Reject the configuration before starting the cyclic task.
+}
+
+double tau_ff[8]{};
+const double gravity[3]{0.0, 0.0, -9.80665};
+const auto error =
+    chain.inverse_dynamics(q_rad, dq_rad_s, ddq_rad_s2, gravity, tau_ff);
+```
+
+An error leaves `tau_ff` unchanged. Separate arms, legs, and torso chains use
+separate instances. H3 only produces numbers; a planning-domain producer may
+copy them into an H1 command frame after unit and ownership checks, but the
+drive/executor must continue ignoring `tau_ff` until T18 defines and verifies
+torque limiting, velocity supervision, and position fencing.
+
 For planning-domain Python experiments, the current source provides a narrow
 q/dq-only facade over the same primitive:
 
@@ -91,7 +115,7 @@ command = stream.setpoint_frame()
 `JointStreamSim` validates every Python vector before touching the group and
 rejects an invalid frame atomically. It is not a cross-thread RT API and does
 not expose `tau_ff`, `kp`, or `kd`; use the C++ primitive for integration and
-keep torque application disabled until the separate H3/T18 contracts close.
+keep torque application disabled until the separate T18 contract closes.
 
 Real EtherCAT access, thread scheduling, clock synchronization, and bus I/O
 live outside this repository. At the cycle boundary, the host executor calls

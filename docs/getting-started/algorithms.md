@@ -103,10 +103,11 @@ usage: [core/st/README.md](https://github.com/lusipad/plcopen/blob/main/core/st/
 
 The kernel separates concerns into an L0-L7 ladder with strict dependency
 rules — each layer only depends on layers below it. Beside the ladder sit
-two support libraries, `kin` (FK/IK, depends on geom/rt) and `stream`
-(OTG-filtered streaming input, depends on otg/rt), consumed by L5 only.
+three support libraries: `kin` (FK/IK, depends on geom/rt), `stream`
+(OTG-filtered streaming input, depends on otg/rt), and caller-owned `dyn`
+(fixed-base RNEA, depends on geom/rt). `kin` and `stream` are consumed by L5.
 On the outer ring, the `st` language layer and L7 `adapters` are two
-parallel pure-sink facades. L0-L4 plus kin/stream carry zero PLCopen
+parallel pure-sink facades. L0-L4 plus kin/stream/dyn carry zero PLCopen
 semantics and can be used independently for raw trajectory generation.
 
 See the diagrams on the [home page](../index.md#architecture) and the full

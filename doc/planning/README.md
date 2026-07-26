@@ -26,7 +26,7 @@
 | [software-excellence-plan.md](software-excellence-plan.md) | 软件极致候选清单（Y 算法/P 标准面/Z 采纳/E 证据四线） | 2026-07-21 重基线；当前起手见文末 |
 | [t2-mujoco-rerun-plan.md](t2-mujoco-rerun-plan.md) / [实施记录](t2-mujoco-rerun-implementation-notes.md) | T2a MuJoCo 物理闭环 + Rerun 离线记录首批，保持 H1/H2/L5 边界 | **已完成，Windows/Linux 远端复验通过（2026-07-24）** |
 | [t2b-large-model-twin-plan.md](t2b-large-model-twin-plan.md) / [实施记录](t2b-large-model-twin-implementation-notes.md) | T2b 仓库自有 7DOF 模型 + H1 q/dq 原子帧 + 通用 N 关节孪生 | **已完成并合入，PR #32、合并后五门与双语公网四页全绿（2026-07-25，KB-093）** |
-| [h3-rnea-plan.md](h3-rnea-plan.md) / [实施记录](h3-rnea-implementation-notes.md) | H3 固定基座 1～8 关节 RNEA、独立 ABA/势能 oracle 与 48 关节预算门 | **规格已批准，待实现（2026-07-25）** |
+| [h3-rnea-plan.md](h3-rnea-plan.md) / [实施记录](h3-rnea-implementation-notes.md) | H3 固定基座 1～8 关节 RNEA、独立 ABA/势能 oracle 与 48 关节预算门 | **实现候选与本地门已完成（2026-07-26，KB-094）；PR/main 远端证据待闭合** |
 | [d3-online-scope-plan.md](d3-online-scope-plan.md) / [实施记录](d3-online-scope-implementation-notes.md) | D3 `PLCT v1` 在线 Scope：非 RT 落盘、阈值触发、窗口冻结与可选 Rerun | **已完成并上线，PR #23 与主线四门全绿（2026-07-24，KB-091）** |
 | [d1-st-language-server-plan.md](d1-st-language-server-plan.md) / [实施记录](d1-st-language-server-implementation-notes.md) | D1 单文档多 POU ST LSP + trusted-workspace VS Code client | **已完成并合入，PR #26 与合并后五门全绿（2026-07-24，KB-092）** |
 | [h1-synchronized-joint-stream-plan.md](h1-synchronized-joint-stream-plan.md) / [实施记录](h1-synchronized-joint-stream-implementation-notes.md) | H1 48 关节原子混合命令帧、direct/upsample 延迟与组级断流实施基线 | **已完成并合入，PR #29 与合并后五门全绿（2026-07-25，KB-035）** |
@@ -53,4 +53,4 @@
 
 ---
 
-*本索引最后更新：2026-07-25（T2b 主线/公网证据闭合，当前转入 H3）*
+*本索引最后更新：2026-07-26（H3 实现候选与本地证据完成，远端闭环待办）*

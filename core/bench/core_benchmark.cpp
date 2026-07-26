@@ -6,6 +6,7 @@
 
 #include "axis/group.h"
 #include "axis/state.h"
+#include "dyn/fixed_base_chain.h"
 #include "exec/sampler.h"
 #include "exec/sync.h"
 #include "geom/geometry.h"
@@ -18,6 +19,7 @@
 #include "rt/static_vector.h"
 #include "st/st.h"
 #include "stream/joint_group.h"
+#include "test_support/dynamics_fixture.h"
 #include "test_support/serial_chain_fixture.h"
 
 namespace
@@ -338,6 +340,58 @@ struct SerialChainBenchmark
     double checksum = 0.0;
 };
 
+struct DynamicsBenchmark
+{
+    double dynamics_48_joint_us = 0.0;
+    double checksum = 0.0;
+};
+
+int run_dynamics_benchmark(bool enforce_budget, DynamicsBenchmark &result)
+{
+    using namespace plcopen::core;
+
+    const dyn::FixedBaseChainSpec spec = test_support::eight_joint_dynamics_spec();
+    const std::array<dyn::FixedBaseChain, 6> chains = {
+        dyn::FixedBaseChain(spec), dyn::FixedBaseChain(spec), dyn::FixedBaseChain(spec),
+        dyn::FixedBaseChain(spec), dyn::FixedBaseChain(spec), dyn::FixedBaseChain(spec)};
+    double q[8] = {0.2, -0.3, 0.4, -0.5, 0.6, -0.7, 0.8, -0.9};
+    const double dq[8] = {-0.4, 0.3, -0.2, 0.1, 0.2, -0.3, 0.4, -0.5};
+    const double ddq[8] = {0.7, -0.6, 0.5, -0.4, 0.3, -0.2, 0.1, 0.0};
+    const double gravity[3] = {0.0, 0.0, -9.81};
+    double tau[8] = {};
+    for(int warmup = 0; warmup < 1000; ++warmup) {
+        for(const dyn::FixedBaseChain &chain : chains) {
+            if(chain.inverse_dynamics(q, dq, ddq, gravity, tau) !=
+               rt::ErrorCode::ok) {
+                std::printf("BENCH_FAIL H3 dynamics warmup\n");
+                return 1;
+            }
+        }
+    }
+
+    constexpr int DynamicsIterations = 100000;
+    const std::clock_t start = std::clock();
+    for(int cycle = 0; cycle < DynamicsIterations; ++cycle) {
+        q[0] = 0.2 + 1e-9 * static_cast<double>(cycle & 1023);
+        for(const dyn::FixedBaseChain &chain : chains) {
+            if(chain.inverse_dynamics(q, dq, ddq, gravity, tau) !=
+               rt::ErrorCode::ok) {
+                std::printf("BENCH_FAIL H3 dynamics evaluation\n");
+                return 1;
+            }
+            result.checksum += tau[0] + tau[7];
+        }
+    }
+    result.dynamics_48_joint_us =
+        1000.0 * millis_since(start) / DynamicsIterations;
+    if(enforce_budget && result.dynamics_48_joint_us > 10.0) {
+        std::printf("BENCH_FAIL dynamics_48_joint_us=%.3f exceeds 10us gate\n",
+                    result.dynamics_48_joint_us);
+        return 1;
+    }
+    return 0;
+}
+
 int run_serial_chain_benchmark(bool enforce_budget, SerialChainBenchmark &result)
 {
     using namespace plcopen::core;
@@ -415,6 +469,17 @@ int main(int argc, char **argv)
         std::printf(
             "SERIAL_CHAIN_METRICS serial_chain_ik_us=%.3f serial_chain_budget_us=30\n",
             serial_chain.ik_us);
+        return 0;
+    }
+    if(argc == 2 && std::strcmp(argv[1], "--dynamics-only") == 0) {
+        DynamicsBenchmark dynamics;
+        if(run_dynamics_benchmark(BenchCalibrationEligible != 0, dynamics) != 0) {
+            return 1;
+        }
+        std::printf(
+            "DYNAMICS_METRICS dynamics_48_joint_us=%.3f dynamics_budget_us=10 "
+            "checksum=%.3f\n",
+            dynamics.dynamics_48_joint_us, dynamics.checksum);
         return 0;
     }
     if(argc != 1) {
@@ -812,11 +877,21 @@ int main(int argc, char **argv)
     }
     position_sum += serial_chain.checksum * 1e-12;
 
+    DynamicsBenchmark dynamics;
+    if(run_dynamics_benchmark(BenchCalibrationEligible != 0, dynamics) != 0) {
+        return 1;
+    }
+    position_sum += dynamics.checksum * 1e-12;
+
     std::printf("CARTESIAN_METRICS cartesian_ik_cycle_us=%.3f budget_us=50\n",
                 cartesian_ik_us);
     std::printf(
         "SERIAL_CHAIN_METRICS serial_chain_ik_us=%.3f serial_chain_budget_us=30\n",
         serial_chain.ik_us);
+    std::printf(
+        "DYNAMICS_METRICS dynamics_48_joint_us=%.3f dynamics_budget_us=10 "
+        "checksum=%.3f\n",
+        dynamics.dynamics_48_joint_us, dynamics.checksum);
     std::printf("WINDOW_METRICS segments=%zu window_replan_us=%.3f\n",
                 WindowSegments, window_replan_us);
     std::printf(

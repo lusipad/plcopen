@@ -8,6 +8,8 @@ option(PLCOPEN_SMOKE_REQUIRE_SERIAL_CHAIN
        "Require the unreleased H2 SerialChain install surface" ON)
 option(PLCOPEN_SMOKE_REQUIRE_H1
        "Require the unreleased H1 synchronized joint stream install surface" ON)
+option(PLCOPEN_SMOKE_REQUIRE_H3
+       "Require the unreleased H3 fixed-base dynamics install surface" ON)
 
 find_package(plcopen REQUIRED CONFIG)
 
@@ -26,4 +28,11 @@ if(PLCOPEN_SMOKE_REQUIRE_H1)
 else()
     target_compile_definitions(plcopen_find_package_smoke
                                PRIVATE PLCOPEN_SMOKE_REQUIRE_H1=0)
+endif()
+if(PLCOPEN_SMOKE_REQUIRE_H3)
+    target_compile_definitions(plcopen_find_package_smoke
+                               PRIVATE PLCOPEN_SMOKE_REQUIRE_H3=1)
+else()
+    target_compile_definitions(plcopen_find_package_smoke
+                               PRIVATE PLCOPEN_SMOKE_REQUIRE_H3=0)
 endif()

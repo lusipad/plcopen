@@ -75,7 +75,7 @@ gear-cam / coordinate systems / kinematics / trajectory streaming）而不想
 | coordinate, kinematics, stream integration  +--+
 +---------------------------------------------+  |
 | L4 exec    cyclic sampling, gear / cam      |  |  SUPPORT LIBS (pocket):
-+---------------------------------------------+  |  consumed by L5 only;
++---------------------------------------------+  |  deps point inward only;
 | L3 plan   lookahead scan + blending         |  |  deps point inward only
 +---------------------------------------------+  |
 | L2 geom   line / arc / spline, frames       |  |  +------------------------+
@@ -84,12 +84,16 @@ gear-cam / coordinate systems / kinematics / trajectory streaming）而不想
 +---------------------------------------------+  |  | deps: geom, rt         |
 | L0 rt      cycle time, static vectors,      |  |  +------------------------+
 |                 SPSC rings, error codes     |  +->| stream        streaming|
-+---------------------------------------------+     | OTG-filtered input (B9)|
-                                                    | deps: otg, rt          |
-                                                    +------------------------+
++---------------------------------------------+  |  | OTG-filtered input (B9)|
+                                               |  | deps: otg, rt          |
+                                               |  +------------------------+
+                                               +->| dyn   fixed-base RNEA  |
+                                                  | caller-owned (H3)      |
+                                                  | deps: geom, rt         |
+                                                  +------------------------+
  reading rules: stacking = downward include permission, not per-edge
  claim (audit 2026-07-12: 0 violations, DAG; L4 does NOT include L3);
- L0-L4 + kin/stream carry zero PLCopen semantics -- generic kernel
+ L0-L4 + kin/stream/dyn carry zero PLCopen semantics -- generic kernel
 ```
 
 **合规状态（如实数字）**：Part 1 为 43/43 个 facade，且 D-01..D-20 已由 C4

@@ -82,7 +82,7 @@ systems / kinematics / trajectory streaming) without platform lock-in.
 | coordinate, kinematics, stream integration  +--+
 +---------------------------------------------+  |
 | L4 exec    cyclic sampling, gear / cam      |  |  SUPPORT LIBS (pocket):
-+---------------------------------------------+  |  consumed by L5 only;
++---------------------------------------------+  |  deps point inward only;
 | L3 plan   lookahead scan + blending         |  |  deps point inward only
 +---------------------------------------------+  |
 | L2 geom   line / arc / spline, frames       |  |  +------------------------+
@@ -91,12 +91,16 @@ systems / kinematics / trajectory streaming) without platform lock-in.
 +---------------------------------------------+  |  | deps: geom, rt         |
 | L0 rt      cycle time, static vectors,      |  |  +------------------------+
 |                 SPSC rings, error codes     |  +->| stream        streaming|
-+---------------------------------------------+     | OTG-filtered input (B9)|
-                                                    | deps: otg, rt          |
-                                                    +------------------------+
++---------------------------------------------+  |  | OTG-filtered input (B9)|
+                                               |  | deps: otg, rt          |
+                                               |  +------------------------+
+                                               +->| dyn   fixed-base RNEA  |
+                                                  | caller-owned (H3)      |
+                                                  | deps: geom, rt         |
+                                                  +------------------------+
  reading rules: stacking = downward include permission, not per-edge
  claim (audit 2026-07-12: 0 violations, DAG; L4 does NOT include L3);
- L0-L4 + kin/stream carry zero PLCopen semantics -- generic kernel
+ L0-L4 + kin/stream/dyn carry zero PLCopen semantics -- generic kernel
 ```
 
 **Compliance status (honest numbers)** — Part 1: 43/43 facades and

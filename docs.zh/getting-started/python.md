@@ -188,7 +188,7 @@ python -m rerun rrd verify --check-footers true seven-joint.rrd
 !!! note "Current source API"
     `JointStreamSim` 和七关节命令尚未进入已发布的
     `pyplcopen==0.20.0` wheel，需从当前源码构建，直到维护者另行授权发布。
-    该门面有意只暴露 q/dq；H1 的扭矩和增益字段仍由 H3/T18 独立安全工作门控。
+    该门面有意只暴露 q/dq；H1 的扭矩和增益字段仍由 T18 独立安全工作门控。
 
 ## 25–30 分钟：查看一条诊断
 

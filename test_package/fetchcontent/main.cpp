@@ -1,4 +1,5 @@
 #include "axis/group.h"
+#include "dyn/fixed_base_chain.h"
 #include "fb/motion.h"
 #include "kin/serial_chain.h"
 #include "stream/joint_group.h"
@@ -46,6 +47,29 @@ bool verify_h1_joint_stream()
            std::fabs(setpoint.joints[0].position - 0.25) < 1e-12 &&
            std::fabs(setpoint.joints[0].velocity - 0.1) < 1e-12 &&
            std::fabs(setpoint.joints[0].tau_ff - 0.5) < 1e-12;
+}
+
+bool verify_h3_dynamics()
+{
+    using namespace plcopen::core;
+
+    dyn::FixedBaseChainSpec spec{};
+    spec.joint_count = 1;
+    spec.bodies[0].joint_axis = {0.0, 0.0, 1.0};
+    spec.bodies[0].mass = 2.0;
+    spec.bodies[0].center_of_mass = {0.4, 0.0, 0.0};
+    spec.bodies[0].inertia_com[0][0] = 0.20;
+    spec.bodies[0].inertia_com[1][1] = 0.25;
+    spec.bodies[0].inertia_com[2][2] = 0.30;
+    const dyn::FixedBaseChain chain(spec);
+    const double zero[1] = {};
+    const double acceleration[1] = {1.0};
+    const double gravity[3] = {};
+    double tau[1] = {};
+    return chain.valid() &&
+           chain.inverse_dynamics(zero, zero, acceleration, gravity, tau) ==
+               rt::ErrorCode::ok &&
+           std::fabs(tau[0] - 0.62) < 1e-12;
 }
 
 } // namespace
@@ -100,6 +124,7 @@ int main()
     }
 
     return move.outputs.done && !move.outputs.error && verify_h1_joint_stream() &&
+                   verify_h3_dynamics() &&
                    std::fabs(x.snapshot().command_position - 3.0) < 1e-8 &&
                    std::fabs(y.snapshot().command_position - 4.0) < 1e-8
                ? 0

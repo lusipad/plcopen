@@ -1,6 +1,16 @@
 #include "axis/group.h"
 #include "fb/motion.h"
 
+#if PLCOPEN_SMOKE_REQUIRE_H3
+#include "dyn/fixed_base_chain.h"
+#define PLCOPEN_SMOKE_HAS_H3 1
+#elif __has_include("dyn/fixed_base_chain.h")
+#include "dyn/fixed_base_chain.h"
+#define PLCOPEN_SMOKE_HAS_H3 1
+#else
+#define PLCOPEN_SMOKE_HAS_H3 0
+#endif
+
 #if PLCOPEN_SMOKE_REQUIRE_H1
 #include "stream/joint_group.h"
 #define PLCOPEN_SMOKE_HAS_H1 1
@@ -67,6 +77,33 @@ bool verify_h1_joint_stream()
 #endif
 }
 
+bool verify_h3_dynamics()
+{
+#if PLCOPEN_SMOKE_HAS_H3
+    using namespace plcopen::core;
+
+    dyn::FixedBaseChainSpec spec{};
+    spec.joint_count = 1;
+    spec.bodies[0].joint_axis = {0.0, 0.0, 1.0};
+    spec.bodies[0].mass = 2.0;
+    spec.bodies[0].center_of_mass = {0.4, 0.0, 0.0};
+    spec.bodies[0].inertia_com[0][0] = 0.20;
+    spec.bodies[0].inertia_com[1][1] = 0.25;
+    spec.bodies[0].inertia_com[2][2] = 0.30;
+    const dyn::FixedBaseChain chain(spec);
+    const double zero[1] = {};
+    const double acceleration[1] = {1.0};
+    const double gravity[3] = {};
+    double tau[1] = {};
+    return chain.valid() &&
+           chain.inverse_dynamics(zero, zero, acceleration, gravity, tau) ==
+               rt::ErrorCode::ok &&
+           std::fabs(tau[0] - 0.62) < 1e-12;
+#else
+    return true;
+#endif
+}
+
 } // namespace
 
 int main()
@@ -121,6 +158,7 @@ int main()
     }
 
     return move.outputs.done && !move.outputs.error && verify_h1_joint_stream() &&
+                   verify_h3_dynamics() &&
                    std::fabs(x.snapshot().command_position - 3.0) < 1e-8 &&
                    std::fabs(y.snapshot().command_position - 4.0) < 1e-8
                ? 0
