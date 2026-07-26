@@ -2,7 +2,7 @@
 
 Plan: [h3-rnea-plan.md](h3-rnea-plan.md)
 
-> 状态：实现候选与本地验证已完成（2026-07-26）；PR/main 远端证据待闭合。
+> 状态：已完成并合入（2026-07-26，KB-094，PR #35）；PR/main 远端证据闭合。
 
 ## Decisions
 
@@ -44,5 +44,15 @@ Plan: [h3-rnea-plan.md](h3-rnea-plan.md)
 - H3 Release：合约、oracle、48 关节预算 3/3；`5.050 µs/cycle`。
 - RT safety scan：32 个生产头文件通过。
 - 安装态 `find_package` 与 FetchContent consumer：构建并运行通过。
-- PR 分支 ARM64/QEMU、clang-tidy、Linux/Windows 与文档 strict：待远端
-  CI；完成后在证据闭环提交补链接。
+- [PR #35](https://github.com/lusipad/plcopen/pull/35)：Windows、Linux
+  GCC/Clang、ARM64/QEMU、E5、消费面与文档 strict 全绿。
+- 合入后 main：
+  [Windows](https://github.com/lusipad/plcopen/actions/runs/30197177055)、
+  [Linux](https://github.com/lusipad/plcopen/actions/runs/30197177063)、
+  [Language Tools](https://github.com/lusipad/plcopen/actions/runs/30197177059)、
+  [Twin](https://github.com/lusipad/plcopen/actions/runs/30197177072)、
+  [Documentation](https://github.com/lusipad/plcopen/actions/runs/30197177048)
+  全绿。
+- [Coverage Gate 手动复验](https://github.com/lusipad/plcopen/actions/runs/30195318284)：
+  H3 头 line 99.5% / branch 92.9%；全局运动栈 84.5%、ST 84.3% 的既有
+  漂移使整门失败，已登记为独立测试债，不放宽阈值。
