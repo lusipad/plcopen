@@ -13,12 +13,21 @@ surfaces:
 
 - the BS1.7 legacy surface banks up to 48 independent filters behind one
   shared configuration call and makes no cross-joint synchronization promise;
-- the H1 frame surface accepts a fixed-capacity atomic
+- the H1 frame surface accepts a fixed-capacity transactional (whole-frame)
   `{q_des, dq_des, tau_ff, kp, kd}` frame with per-joint policy. `direct`
   presents all accepted q/dq/tau fields in the next group cycle, while
   `upsample` reuses `StreamFilter1D` and limits slow replans to 10 joints per
   cycle. Both modes use one group-local watchdog and publish one command
   snapshot through `read_setpoint_frame()`.
+
+帧的"原子"只指整帧事务语义（整帧接受、整帧生效），不含无锁或内存序
+承诺：`JointStreamGroup` 内没有任何 `std::atomic`，也不做同步。
+`push_frame()`、`cycle()`、`read_setpoint_frame()` 构成一份**单线程
+（规划域）合同**，必须在同一个持有线程调用；并发 producer 就是数据竞争。
+跨线程投递属于矩阵决策 #12 的范围外事项：其它线程的 producer 必须先经由
+调用方自己持有的 SPSC（`rt::SpscQueue`）把帧交给规划线程，再由规划线程
+调用 `push_frame()`。`read_setpoint_frame()` 返回的是活存储引用，下一次
+`cycle()` 会覆写它，跨周期或交给别处前必须先拷贝。
 
 Producer timestamps only order and identify frames; group-local cycles control
 activation and dropout age. Rejected frames change no joint target, mixed

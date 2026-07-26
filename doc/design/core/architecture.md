@@ -93,6 +93,9 @@
 +--------------------------------------------------+
 | USER THREADS -- any thread, may block            |
 | fb (L6) facades / st programs / stream producers |
+| (producers hand frames over a caller-owned SPSC; |
+|  JointStreamGroup itself is planning-domain,     |
+|  single-thread)                                  |
 | submit MC_* commands, poll Done / Busy / Active  |
 | / CommandAborted, read state snapshots           |<---------------+
 +------------------------+-------------------------+                |

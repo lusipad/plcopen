@@ -34,8 +34,11 @@ axis.cycle();
 ## Synchronized joint command frames
 
 `stream::JointStreamGroup` provides the fixed-capacity H1 command primitive
-for up to 48 joints. Configure and reset every member before the session, then
-submit complete frames through `push_frame()`:
+for up to 48 joints. The group is planning-domain-owned and single-threaded:
+`push_frame()`, `cycle()`, and `read_setpoint_frame()` must all run on the
+owning planning thread, and a producer on any other thread must hand frames
+over through its own SPSC queue first. Configure and reset every member before
+the session, then submit complete frames through `push_frame()`:
 
 ```cpp
 stream::JointStreamGroupConfig config{};
