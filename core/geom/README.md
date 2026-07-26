@@ -20,9 +20,17 @@ L3 plan、L4 exec、L5 axis 直接消费本层，kin 支撑库亦依赖 geom/rt�
   `relative_axis_angle` / `rodrigues` / `rotation_multiply`
   (Cartesian-interpolation batch, KB-044).
 
-The cubic Bezier length is a bounded chord approximation. It is deterministic and sufficient for
-the first R2 path execution chain; higher-fidelity spline policies can replace it behind the same
-segment contract later.
+The cubic Bezier length is a bounded chord approximation (32 chords,
+measured relative error ~2e-4 on the reference S-curve). Its `sample` and
+`path_*_derivative` share the same `u = s/L` map, so the pair is an exact,
+self-consistent parametrized curve — but the parameter is NOT arc length:
+`|q_s|` measures 0.85–1.28 on the reference curve instead of the unit
+tangent the quintic blend delivers via its arc-length table. Fidelity
+boundary and consumer scope are declared in KB-059: cubic Bezier and
+quadratic blend currently have no production consumers (tests and TOPP
+shadow oracles only, which consume the self-consistent pair correctly).
+Promoting cubic Bezier to a production path type requires the quintic-style
+arc-length reparametrization first (semantic-matrix item).
 
 RT constraints:
 
