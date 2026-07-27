@@ -7,7 +7,8 @@
 namespace plcopen::core::rt
 {
 
-template <typename T, std::size_t Capacity> class SpscQueue
+template <typename T, std::size_t Capacity>
+class SpscQueue // NOLINT(clang-analyzer-optin.performance.Padding)
 {
 public:
     static_assert(Capacity > 0, "SpscQueue capacity must be positive");

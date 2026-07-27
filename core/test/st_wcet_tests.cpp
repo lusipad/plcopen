@@ -168,6 +168,12 @@ void report_keeps_unbounded_control_flow_explicit()
 
 void report_rejects_unreviewed_and_malformed_artifacts()
 {
+    const st::WcetBudgetRule unknown_budget_rule =
+        static_cast<st::WcetBudgetRule>(255); // NOLINT(clang-analyzer-optin.core.EnumCastOutOfRange)
+    const st::WcetTimingClass unknown_timing_class =
+        static_cast<st::WcetTimingClass>(255); // NOLINT(clang-analyzer-optin.core.EnumCastOutOfRange)
+    const st::Op unknown_opcode =
+        static_cast<st::Op>(255); // NOLINT(clang-analyzer-optin.core.EnumCastOutOfRange)
     check(std::string_view(st::wcet_budget_rule_name(
               st::WcetBudgetRule::fixed_one)) == "fixed_one" &&
               std::string_view(st::wcet_budget_rule_name(
@@ -181,7 +187,7 @@ void report_rejects_unreviewed_and_malformed_artifacts()
               std::string_view(st::wcet_budget_rule_name(
                   st::WcetBudgetRule::output_count)) == "output_count" &&
               std::string_view(st::wcet_budget_rule_name(
-                  static_cast<st::WcetBudgetRule>(255))) == "unreviewed",
+                  unknown_budget_rule)) == "unreviewed",
           "A2 budget rule names are total");
     check(std::string_view(st::wcet_timing_class_name(
               st::WcetTimingClass::fixed)) == "fixed" &&
@@ -193,9 +199,9 @@ void report_rejects_unreviewed_and_malformed_artifacts()
               std::string_view(st::wcet_timing_class_name(
                   st::WcetTimingClass::native_fb)) == "native_fb" &&
               std::string_view(st::wcet_timing_class_name(
-                  static_cast<st::WcetTimingClass>(255))) == "unreviewed",
+                  unknown_timing_class)) == "unreviewed",
           "A2 timing class names are total");
-    check(st::wcet_opcode_cost(static_cast<st::Op>(255)).budget_rule ==
+    check(st::wcet_opcode_cost(unknown_opcode).budget_rule ==
               st::WcetBudgetRule::unreviewed,
           "A2 unknown opcodes remain unreviewed");
 
@@ -401,15 +407,16 @@ void diagnostic_names_cover_the_complete_code_space()
 {
     std::size_t known = 0;
     for(int value = 0; value <= 600; ++value) {
-        if(std::string_view(st::to_string(
-               static_cast<st::DiagCode>(value))) != "unknown") {
+        const st::DiagCode code =
+            static_cast<st::DiagCode>(value); // NOLINT(clang-analyzer-optin.core.EnumCastOutOfRange)
+        if(std::string_view(st::to_string(code)) != "unknown") {
             ++known;
         }
     }
+    const st::DiagCode unknown_code =
+        static_cast<st::DiagCode>(600); // NOLINT(clang-analyzer-optin.core.EnumCastOutOfRange)
     check(known == 81 &&
-              std::string_view(st::to_string(
-                  static_cast<st::DiagCode>(600))) ==
-                  "unknown",
+              std::string_view(st::to_string(unknown_code)) == "unknown",
           "A2 diagnostic names cover all declared codes and the fallback");
 }
 

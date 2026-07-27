@@ -162,14 +162,16 @@ void binding_registry_helpers_reject_unknown_values()
               first.id, static_cast<st::BindingPinId>(first.pin_count)),
           "L2c registry rejects a pin beyond the manifest");
 
-    check(st::binding_manifest_detail::binding_set(
-              static_cast<st::generated::StBindingSet>(255)) ==
+    const st::generated::StBindingSet unknown_set =
+        static_cast<st::generated::StBindingSet>(255); // NOLINT(clang-analyzer-optin.core.EnumCastOutOfRange)
+    const st::generated::StBindingPinDirection unknown_direction =
+        static_cast<st::generated::StBindingPinDirection>(255); // NOLINT(clang-analyzer-optin.core.EnumCastOutOfRange)
+    check(st::binding_manifest_detail::binding_set(unknown_set) ==
               st::BindingSet::iec_basic &&
               st::binding_manifest_detail::pin_direction(
                   st::generated::StBindingPinDirection::unresolved) ==
                   st::PinDirection::input &&
-              st::binding_manifest_detail::pin_direction(
-                  static_cast<st::generated::StBindingPinDirection>(255)) ==
+              st::binding_manifest_detail::pin_direction(unknown_direction) ==
                   st::PinDirection::input,
           "L2c manifest enum fallbacks are conservative");
 

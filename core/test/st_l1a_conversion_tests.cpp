@@ -435,6 +435,8 @@ void special_cells()
 
 void public_conversion_resolution_boundaries()
 {
+    const st::ConvKind unknown_kind =
+        static_cast<st::ConvKind>(255); // NOLINT(clang-analyzer-optin.core.EnumCastOutOfRange)
     if(st::conv_kind(st::Type::dint, st::Type::dint) !=
            st::ConvKind::unsupported ||
        st::conv_kind(st::Type::time, st::Type::lint) !=
@@ -449,7 +451,7 @@ void public_conversion_resolution_boundaries()
            st::ConvKind::uint_to_float ||
        st::conv_kind(st::Type::lreal, st::Type::bool_) !=
            st::ConvKind::to_bool_float ||
-       std::strcmp(st::to_string(static_cast<st::ConvKind>(255)), "?") != 0) {
+       std::strcmp(st::to_string(unknown_kind), "?") != 0) {
         fail("public conversion kind boundaries");
     }
     for(int value = static_cast<int>(st::ConvKind::unsupported);
@@ -478,12 +480,14 @@ void public_conversion_resolution_boundaries()
         fail("public conversion name resolution boundaries");
     }
 
-    if(st::type_id(static_cast<st::Type>(255)) != st::invalid_type_id ||
+    const st::Type unknown_type =
+        static_cast<st::Type>(255); // NOLINT(clang-analyzer-optin.core.EnumCastOutOfRange)
+    if(st::type_id(unknown_type) != st::invalid_type_id ||
        st::width_bits(st::Type::bool_) != 1 ||
        st::widens_to(st::Type::dint, st::Type::dint) ||
        st::detail::wrap_double_to_u64(9223372036854775808.0) !=
            0x8000000000000000ULL ||
-       std::strcmp(st::to_string(static_cast<st::Type>(255)), "?") != 0) {
+       std::strcmp(st::to_string(unknown_type), "?") != 0) {
         fail("public type helper boundaries");
     }
 }
