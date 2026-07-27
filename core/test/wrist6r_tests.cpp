@@ -118,6 +118,26 @@ int check_branch_gate_and_workspace()
     if(arm.inverse(far, q, 3.0, solved) != rt::ErrorCode::infeasible) {
         return fail("6r workspace rejection");
     }
+
+    kin::Pose6 inside_inner_radius;
+    inside_inner_radius.position[2] = 0.38;
+    if(arm.inverse(inside_inner_radius, q, 4.0, solved) !=
+       rt::ErrorCode::infeasible) {
+        return fail("6r inner workspace rejection");
+    }
+
+    kin::Pose6 near_inner_radius;
+    near_inner_radius.position[2] = 0.43 - 1e-13;
+    kin::Pose6 near_outer_radius;
+    near_outer_radius.position[0] = 0.75 + 1e-13;
+    near_outer_radius.position[2] = 0.38;
+    const double neutral_seed[6] = {};
+    if(arm.inverse(near_inner_radius, neutral_seed, 4.0, solved) !=
+           rt::ErrorCode::ok ||
+       arm.inverse(near_outer_radius, neutral_seed, 4.0, solved) !=
+           rt::ErrorCode::ok) {
+        return fail("6r workspace clamp tolerance");
+    }
     return 0;
 }
 
@@ -127,9 +147,11 @@ int check_singularity_margin()
     const double healthy[6] = {0.5, 0.8, 1.2, 0.4, 1.2, -0.3};
     const double wrist_singular[6] = {0.5, 0.8, 1.2, 0.4, 0.01, -0.3};
     const double elbow_singular[6] = {0.5, 0.8, 0.01, 0.4, 1.2, -0.3};
+    const double wrapped_wrist[6] = {0.5, 0.8, 1.2, 0.4, 4.0, -0.3};
     if(!(arm.singularity_margin(healthy) > 0.3) ||
        !(arm.singularity_margin(wrist_singular) < 0.02) ||
-       !(arm.singularity_margin(elbow_singular) < 0.02)) {
+       !(arm.singularity_margin(elbow_singular) < 0.02) ||
+       arm.singularity_margin(wrapped_wrist) < 0.0) {
         return fail("6r singularity margin");
     }
     return 0;

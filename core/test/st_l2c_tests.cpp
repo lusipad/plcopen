@@ -116,6 +116,99 @@ const char *kCanonicalGroupProgram =
     "ErrorStop := Read.GroupErrorStop;\n"
     "END_PROGRAM\n";
 
+void binding_registry_helpers_reject_unknown_values()
+{
+    st::BindingDispatcher dispatcher;
+    constexpr st::BindingPinId pin = 5;
+    constexpr std::uint64_t mask = std::uint64_t{1} << pin;
+    dispatcher.store_mask = mask;
+    dispatcher.load_mask = mask;
+    dispatcher.object_store_mask = mask;
+    dispatcher.object_load_mask = mask;
+    dispatcher.sequence_store_mask = mask;
+    dispatcher.sequence_load_mask = mask;
+    dispatcher.tagged_reference_store_mask = mask;
+    dispatcher.tagged_reference_load_mask = mask;
+
+    check(dispatcher.stores(pin) && dispatcher.loads(pin) &&
+              dispatcher.stores_object(pin) && dispatcher.loads_object(pin) &&
+              dispatcher.stores_sequence(pin) &&
+              dispatcher.loads_sequence(pin) &&
+              dispatcher.stores_tagged_reference(pin) &&
+              dispatcher.loads_tagged_reference(pin),
+          "L2c registry masks accept their declared pin");
+    check(!dispatcher.stores(pin - 1U) && !dispatcher.loads(pin - 1U) &&
+              !dispatcher.stores_object(pin - 1U) &&
+              !dispatcher.loads_object(pin - 1U) &&
+              !dispatcher.stores_sequence(pin - 1U) &&
+              !dispatcher.loads_sequence(pin - 1U) &&
+              !dispatcher.stores_tagged_reference(pin - 1U) &&
+              !dispatcher.loads_tagged_reference(pin - 1U),
+          "L2c registry masks reject an unset pin");
+    check(!dispatcher.stores(64U) && !dispatcher.loads(64U) &&
+              !dispatcher.stores_object(64U) &&
+              !dispatcher.loads_object(64U) &&
+              !dispatcher.stores_sequence(64U) &&
+              !dispatcher.loads_sequence(64U) &&
+              !dispatcher.stores_tagged_reference(64U) &&
+              !dispatcher.loads_tagged_reference(64U),
+          "L2c registry masks reject shifts outside uint64");
+
+    check(st::binding_dispatcher(st::BindingFbId::invalid) == nullptr &&
+              !st::binding_pin_registered(st::BindingFbId::invalid, 0),
+          "L2c registry rejects an unknown FB");
+    const st::BindingFbDesc &first = st::binding_manifest().fb(0);
+    check(!st::binding_pin_registered(
+              first.id, static_cast<st::BindingPinId>(first.pin_count)),
+          "L2c registry rejects a pin beyond the manifest");
+
+    check(st::binding_manifest_detail::binding_set(
+              static_cast<st::generated::StBindingSet>(255)) ==
+              st::BindingSet::iec_basic &&
+              st::binding_manifest_detail::pin_direction(
+                  st::generated::StBindingPinDirection::unresolved) ==
+                  st::PinDirection::input &&
+              st::binding_manifest_detail::pin_direction(
+                  static_cast<st::generated::StBindingPinDirection>(255)) ==
+                  st::PinDirection::input,
+          "L2c manifest enum fallbacks are conservative");
+
+    struct TypeCase
+    {
+        std::string_view name;
+        st::TypeId id;
+    };
+    const TypeCase types[] = {
+        {"BOOL", st::builtin::bool_},   {"SINT", st::builtin::sint},
+        {"INT", st::builtin::int_},     {"DINT", st::builtin::dint},
+        {"LINT", st::builtin::lint},    {"USINT", st::builtin::usint},
+        {"UINT", st::builtin::uint_},   {"REAL", st::builtin::real},
+        {"LREAL", st::builtin::lreal},  {"TIME", st::builtin::time},
+        {"UDINT", st::builtin::udint},  {"ULINT", st::builtin::ulint},
+        {"BYTE", st::builtin::byte_},   {"WORD", st::builtin::word},
+        {"DWORD", st::builtin::dword},  {"LWORD", st::builtin::lword},
+        {"DATE", st::builtin::date},    {"TOD", st::builtin::tod},
+        {"DT", st::builtin::dt},
+    };
+    for(const TypeCase &type : types) {
+        check(st::binding_manifest_detail::pin_type_id(type.name) == type.id,
+              "L2c manifest resolves every builtin pin type");
+    }
+    check(st::binding_manifest_detail::pin_type_id("AXIS_REF") ==
+              st::binding_type::axis_ref &&
+              st::binding_manifest_detail::pin_type_id("NOT_A_TYPE") ==
+                  st::invalid_type_id,
+          "L2c manifest resolves generated and unknown pin types");
+
+    std::string digits;
+    st::binding_manifest_detail::append_unsigned(digits, 0);
+    digits.push_back(',');
+    st::binding_manifest_detail::append_unsigned(
+        digits, std::numeric_limits<std::uint64_t>::max());
+    check(digits == "0,18446744073709551615",
+          "L2c manifest unsigned formatting covers zero and max");
+}
+
 void manifest_closure_uses_one_production_schema()
 {
     const st::BindingManifest &manifest = st::binding_manifest();
@@ -3349,6 +3442,7 @@ void broad_output_pin_loading_exercises_all_load_codecs()
 
 int main()
 {
+    binding_registry_helpers_reject_unknown_values();
     manifest_closure_uses_one_production_schema();
     generated_lifecycle_covers_every_declared_fb();
     generated_pin_codecs_cover_every_registered_pin();

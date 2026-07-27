@@ -105,12 +105,14 @@ sprint 记录）在 [doc/archive/roadmap-history.md](doc/archive/roadmap-history
    [Language Tools](https://github.com/lusipad/plcopen/actions/runs/30197177059)、
    [Twin](https://github.com/lusipad/plcopen/actions/runs/30197177072) 与
    [Documentation](https://github.com/lusipad/plcopen/actions/runs/30197177048)
-   主线全绿，D3→D1→H1→T2b→H3 授权功能均已交付；但队列收口仍受
-   下述全局覆盖率硬门阻塞。本批不消费 H1 `tau_ff`，T18/浮动基座/接触/
+   主线全绿，D3→D1→H1→T2b→H3 授权功能均已交付。本批不消费
+   H1 `tau_ff`，T18/浮动基座/接触/
    真机安全不在范围。独立
    [Coverage Gate 手动复验](https://github.com/lusipad/plcopen/actions/runs/30195318284)
    证明 H3 头 line 99.5% / branch 92.9%，同时暴露既有全局运动栈
-   84.5% 与 ST 84.3% 漂移；该测试债不靠放宽 85% 阈值掩盖。
+   84.5% 与 ST 84.3% 漂移。该测试债已于 2026-07-27 用公开行为边界
+   补测关闭：本地固定门复验为运动栈 85.014%（10319/12138）、ST
+   85.003%（14810/17423），未放宽 85% 阈值或改变统计目录。
    Marketplace、PyPI、tag 与 GitHub Release 均未执行。D2 WASM
    Playground 与 RL 保留候选，不插入本队列。
 7. **F 轨 EtherCAT**：仍是最大的剩余软件块和商用指标 #1/#4 的上游；

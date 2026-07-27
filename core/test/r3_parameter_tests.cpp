@@ -566,8 +566,22 @@ int check_fb_error_paths()
         fb::FbReadBoolParameter rb;
         rb.enable = true;
         rb.call();
+        rb.call();
         if(!rb.error || rb.error_id != rt::ErrorCode::invalid_argument) {
             return fail("read bool null axis");
+        }
+    }
+    // FbReadBoolParameter: numeric parameter is rejected and latched
+    {
+        fb::FbReadBoolParameter rb;
+        rb.axis_ref = &axis;
+        rb.parameter_number = axis::AxisParameter::sw_limit_pos;
+        rb.enable = true;
+        rb.call();
+        rb.call();
+        if(!rb.error || rb.error_id != rt::ErrorCode::unsupported ||
+           rb.value) {
+            return fail("read bool unsupported parameter");
         }
     }
 
@@ -634,6 +648,7 @@ int check_fb_error_paths()
         fb::FbReadActualPosition ap;
         ap.enable = true;
         ap.call();
+        ap.call();
         if(!ap.error || ap.error_id != rt::ErrorCode::invalid_argument) {
             return fail("actual pos null axis");
         }
@@ -661,6 +676,17 @@ int check_fb_error_paths()
         ae.call();
         if(ae.valid || ae.error || ae.axis_error) {
             return fail("axis error enable=false");
+        }
+    }
+    // FbReadAxisError: null axis error remains latched while enabled
+    {
+        fb::FbReadAxisError ae;
+        ae.enable = true;
+        ae.call();
+        ae.call();
+        if(!ae.error || ae.error_id != rt::ErrorCode::invalid_argument ||
+           ae.axis_error) {
+            return fail("axis error null axis");
         }
     }
 

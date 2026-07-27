@@ -14,6 +14,7 @@
 #include <vector>
 
 #include "st/st.h"
+#include "st/standard_names.h"
 
 namespace
 {
@@ -270,6 +271,53 @@ void exact_function_manifest()
     check(st::standard_function_manifest_dump() ==
               st::standard_function_manifest_dump(),
           "L4-A01 canonical manifest dump deterministic");
+}
+
+void standard_function_helper_boundaries()
+{
+    st::StandardFunction function = st::StandardFunction::count;
+    check(st::resolve_standard_function("abs", function) &&
+              function == st::StandardFunction::abs &&
+              !st::resolve_standard_function("abe", function) &&
+              !st::resolve_standard_function("not_registered", function),
+          "L4-A01 standard resolver requires an exact lowercase name");
+
+    const std::uint32_t capacities[] = {3U, 4U};
+    const std::uint32_t zero_capacity[] = {0U};
+    check(st::saturating_cost_add(1U, 2U) == 3U &&
+              st::saturating_cost_add(
+                  std::numeric_limits<std::uint32_t>::max(), 1U) ==
+                  std::numeric_limits<std::uint32_t>::max() &&
+              st::saturating_cost_mul(3U, 4U) == 12U &&
+              st::saturating_cost_mul(
+                  std::numeric_limits<std::uint32_t>::max(), 2U) ==
+                  std::numeric_limits<std::uint32_t>::max(),
+          "L4-B04 cost arithmetic saturates without wrapping");
+    check(st::standard_string_cost(st::StandardFunction::concat, nullptr,
+                                   0, 0) == 1U &&
+              st::standard_string_cost(st::StandardFunction::len,
+                                       zero_capacity, 1, 0) == 1U &&
+              st::standard_string_cost(st::StandardFunction::find,
+                                       capacities, 2, 0) == 19U &&
+              st::standard_string_cost(st::StandardFunction::concat,
+                                       capacities, 2, 5) == 48U,
+          "L4-B04 string cost handles empty, LEN, FIND and general forms");
+    const std::uint32_t saturated[] = {
+        std::numeric_limits<std::uint32_t>::max()};
+    check(st::standard_string_cost(st::StandardFunction::concat,
+                                   saturated, 1,
+                                   std::numeric_limits<std::uint32_t>::max()) ==
+              std::numeric_limits<std::uint32_t>::max(),
+          "L4-B04 string cost saturates its general form");
+
+    check(st::is_reserved_standard_function("dint_to_lint") &&
+              st::is_reserved_standard_function("usint_to_char") &&
+              st::is_reserved_standard_function("char_to_usint") &&
+              st::is_reserved_standard_function("udint_to_wchar") &&
+              st::is_reserved_standard_function("wchar_to_udint") &&
+              st::is_reserved_standard_function("abs") &&
+              !st::is_reserved_standard_function("user_function"),
+          "L4-A01 reserved standard names cover conversion aliases");
 }
 
 // L4-A02/D01-D08: ANY join, return types, variadic bounds, selection and
@@ -883,6 +931,7 @@ void prior_layer_regression()
 int main()
 {
     exact_function_manifest();
+    standard_function_helper_boundaries();
     any_resolution_arithmetic_selection_and_comparison();
     numeric_domains_faults_and_evaluation_order();
     integer_division_and_checked_date_time_boundaries();

@@ -194,6 +194,8 @@ int check_scara_semantics()
        planar.forward(planar_joints, 2, pose) != rt::ErrorCode::ok || pose.z != 0.0 ||
        planar.inverse({NAN, 0.0, 0.0}, planar_seed, 2, planar_out) !=
            rt::ErrorCode::invalid_argument ||
+       planar.inverse({0.4, NAN, 0.0}, planar_seed, 2, planar_out) !=
+           rt::ErrorCode::invalid_argument ||
        planar.inverse({0.4, 0.1, 0.0}, planar_seed, 3, planar_out) !=
            rt::ErrorCode::invalid_argument ||
        scara.inverse({0.4, 0.1, NAN}, seed, 3, joints) !=
@@ -201,10 +203,19 @@ int check_scara_semantics()
        planar.singularity_margin(planar_joints, 3) != 0.0) {
         return fail("scara public boundary validation");
     }
+    if(planar.inverse({0.4, 0.1, 0.0}, planar_seed, 2, planar_out) !=
+           rt::ErrorCode::ok ||
+       scara.inverse({0.7 + 1e-14, 0.0, 0.0}, seed, 3, joints) !=
+           rt::ErrorCode::ok ||
+       scara.inverse({0.1 - 1e-14, 0.0, 0.0}, seed, 3, joints) !=
+           rt::ErrorCode::ok) {
+        return fail("scara planar and clamp boundaries");
+    }
     const double wrapped[2] = {0.0, 4.0};
     if(!(planar.singularity_margin(wrapped, 2) > 0.0)) {
         return fail("scara folded-angle normalization");
     }
+
     return 0;
 }
 

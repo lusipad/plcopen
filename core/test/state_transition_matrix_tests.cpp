@@ -66,6 +66,43 @@ axis::AxisCommand command(axis::CommandKind kind, axis::BufferMode mode)
     return value;
 }
 
+int check_axis_command_numeric_boundaries()
+{
+    axis::AxisCommand value =
+        command(axis::CommandKind::move_absolute, axis::BufferMode::aborting);
+    if(!axis::is_finite_command(value)) {
+        return fail("finite command accepted");
+    }
+
+    value.torque_limit = std::numeric_limits<double>::quiet_NaN();
+    if(axis::is_finite_command(value)) {
+        return fail("non-finite torque limit rejected");
+    }
+    value.torque_limit = -1.0;
+    if(axis::is_finite_command(value)) {
+        return fail("negative torque limit rejected");
+    }
+    value.torque_limit = 0.0;
+    value.torque_ramp = std::numeric_limits<double>::infinity();
+    if(axis::is_finite_command(value)) {
+        return fail("non-finite torque ramp rejected");
+    }
+    value.torque_ramp = -1.0;
+    if(axis::is_finite_command(value)) {
+        return fail("negative torque ramp rejected");
+    }
+    value.torque_ramp = 0.0;
+    value.end_velocity = std::numeric_limits<double>::quiet_NaN();
+    if(axis::is_finite_command(value)) {
+        return fail("non-finite end velocity rejected");
+    }
+    axis::AxisModel feedback;
+    if(feedback.set_power_feedback(true) != rt::ErrorCode::ok) {
+        return fail("available power feedback is accepted");
+    }
+    return 0;
+}
+
 rt::Result<std::uint32_t> submit_direct(axis::AxisGroup &group,
                                         axis::GroupPosition target,
                                         bool relative,
@@ -4182,6 +4219,7 @@ int check_homing_and_io_paths()
 int main()
 {
     if(check_static_vector_instantiation_matrix() != 0 ||
+       check_axis_command_numeric_boundaries() != 0 ||
        check_axis_command_matrix() != 0 || check_axis_queue_matrix() != 0 ||
        check_axis_submit_admissibility_matrix() != 0 ||
        check_group_transition_matrix() != 0 || check_sync_and_stream_matrix() != 0 ||
