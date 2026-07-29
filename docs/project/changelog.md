@@ -9,7 +9,8 @@ the installable state of a specific version.
 
 | Need | Document |
 |---|---|
-| Unreleased repository changes | [CHANGELOG.md](https://github.com/lusipad/plcopen/blob/main/CHANGELOG.md) |
+| v0.21.0 candidate changes | [v0.21.0 candidate record](../releases/v0.21.0.md) |
+| Repository change history | [CHANGELOG.md](https://github.com/lusipad/plcopen/blob/main/CHANGELOG.md) |
 | Install, artifacts, evidence, and limits for v0.20.0 | [v0.20.0 release record](../releases/v0.20.0.md) |
 | Published source artifacts | [GitHub Releases](https://github.com/lusipad/plcopen/releases) |
 | Published Python packages | [PyPI project history](https://pypi.org/project/pyplcopen/#history) |

@@ -6,7 +6,7 @@ import os
 
 class PlcopenConan(ConanFile):
     name = "plcopen"
-    version = "0.20.0"
+    version = "0.21.0"
     license = "Apache-2.0"
     url = "https://github.com/lusipad/plcopen"
     description = "PLCopen motion-control kernel — C++17 header-only library"

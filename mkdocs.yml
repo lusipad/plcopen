@@ -66,4 +66,5 @@ nav:
     - 安全: project/security.md
     - 变更日志: project/changelog.md
   - 版本:
+    - v0.21.0 候选: releases/v0.21.0.md
     - v0.20.0: releases/v0.20.0.md

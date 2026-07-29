@@ -14,11 +14,12 @@
 行为边界：[已知边界注册表](doc/compliance/known-boundaries.md)
 · 商用八项：[证据总账](doc/compliance/commercial-gate-evidence.md)
 
-> **当前版本：[v0.20.0](https://github.com/lusipad/plcopen/releases/tag/v0.20.0)。**
+> **最新正式版本：[v0.20.0](https://github.com/lusipad/plcopen/releases/tag/v0.20.0)。**
 > 2026-07-20 已正式发布；C++ source/header-only 包由 GitHub Release 交付，
 > Python 3.10～3.13 的 Windows、Linux、macOS wheels 与 sdist 已发布到
 > [PyPI](https://pypi.org/project/pyplcopen/0.20.0/)。版本内容见
-> [v0.20.0 发布记录](docs/releases/v0.20.0.md)。
+> [v0.20.0 发布记录](docs/releases/v0.20.0.md)。当前 `main` 正在准备
+> [v0.21.0 发布候选](docs.zh/releases/v0.21.0.md)，尚未打 tag 或发布到 PyPI。
 
 ---
 
@@ -57,6 +58,7 @@ IEC 61131-3 全语言成熟编译器（看 MatIEC——我们的 ST 层是**运�
 
 | 领域 | 状态 | 当前结论 |
 |------|------|----------|
+| v0.21.0 | 🟡 候选准备中 | 版本面与双语发布资料正在收口；完整 Wheels/Nightly/Coverage/Mutation 发布门禁尚待同一候选提交复验 |
 | v0.20.0 | ✅ 已发布 | 七组候选门禁、最终 `main` 门禁与 tag 发布工作流全绿；GitHub Release、20 个 wheels 与 1 个 sdist 已上线 |
 | 新核重写 R0-R4 | ✅ 完成 | `core/` 已成为默认消费面，旧线进入 P0-only 冻结期 |
 | Phase B 纯软件 | ✅ 完成 | 坐标系、运动学、轨迹流、cam、前瞻、适配器骨架全部落地 |
@@ -204,8 +206,10 @@ Part 5 已关闭 11/11 标准 FB 与 45 B + 102 E 机读声明。正式 B/E/V �
 | 三条入门旅程与 notebook | [Python](docs/getting-started/python.md) · [C++](docs/getting-started/cpp.md) · [ST](docs/getting-started/st.md) · [5 分钟 notebook](docs/notebooks/five-minute-digital-twin.ipynb) |
 | ErrorCode 排障与 trace 图表 | [诊断指南](docs/guides/diagnostics.md) · [在线调试示波器](docs.zh/guides/online-scope.md) |
 | 版本变化 | [CHANGELOG.md](CHANGELOG.md) |
+| v0.21.0 候选包含什么 | [中文候选记录](docs.zh/releases/v0.21.0.md) · [英文 Release body](docs/releases/v0.21.0.md) |
+| v0.21.0 怎么验证、还缺什么 | [发布候选检查单](doc/planning/v0.21.0-release-draft.md) |
 | v0.20.0 对使用者意味着什么 | [正式发布记录](docs/releases/v0.20.0.md) |
-| v0.20.0 怎么发布、还缺什么 | [发布检查单](doc/planning/v0.20.0-release-draft.md) |
+| v0.20.0 如何发布 | [发布执行记录](doc/planning/v0.20.0-release-draft.md) |
 | AI/人协作规范与工程技能 | [CLAUDE.md](CLAUDE.md) · [AGENTS.md](AGENTS.md) · `.claude/skills/` |
 
 ---

@@ -4,7 +4,7 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "pyplcopen"
-version = "0.20.0"
+version = "0.21.0"
 description = "PLCopen motion control kernel — Python simulation facade"
 requires-python = ">=3.10"
 license = "Apache-2.0"

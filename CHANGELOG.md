@@ -8,6 +8,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.21.0] - 2026-07-30
+
 ### Added
 
 - H3（KB-094）新增无 PLCopen 语义的 `dyn::FixedBaseChain`：以固定容量

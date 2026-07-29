@@ -11,6 +11,11 @@ in your controller, or put it under your learning stack.**
     or install the Python package with `pip install pyplcopen==0.20.0`. See the
     [v0.20.0 release record](releases/v0.20.0.md).
 
+!!! info "v0.21.0 release candidate"
+    The source tree is preparing `v0.21.0`. The candidate
+    [release record](releases/v0.21.0.md) describes the planned artifacts and
+    limits, but no `v0.21.0` tag, PyPI package, or GitHub Release exists yet.
+
 ## One Kernel, Multiple Control Styles
 
 | Control Style | What You Get | Entry Point |
@@ -152,6 +157,8 @@ unchanged; the process harness is not a security, license, or real-time claim.
 - [Governance](project/governance.md) — decision authority and succession status
 - [Security](project/security.md) — vulnerability reporting and trust boundaries
 - [Changelog](project/changelog.md) — repository and release history
+- [v0.21.0 candidate record](releases/v0.21.0.md) — planned install surface, highlights, pending gates, and limits
+- [v0.21.0 release checklist](https://github.com/lusipad/plcopen/blob/main/doc/planning/v0.21.0-release-draft.md) — candidate scope, required evidence, and publication sequence
 - [v0.20.0 release record](releases/v0.20.0.md) — install, highlights, artifacts, verification, and known limits
 - [v0.20.0 release checklist](https://github.com/lusipad/plcopen/blob/main/doc/planning/v0.20.0-release-draft.md) — release form, verified gates, and remaining actions
 
