@@ -9,7 +9,7 @@ the installable state of a specific version.
 
 | Need | Document |
 |---|---|
-| v0.21.0 candidate changes | [v0.21.0 candidate record](../releases/v0.21.0.md) |
+| v0.21.0 release install, artifacts, evidence, and limits | [v0.21.0 release record](../releases/v0.21.0.md) |
 | Repository change history | [CHANGELOG.md](https://github.com/lusipad/plcopen/blob/main/CHANGELOG.md) |
 | Install, artifacts, evidence, and limits for v0.20.0 | [v0.20.0 release record](../releases/v0.20.0.md) |
 | Published source artifacts | [GitHub Releases](https://github.com/lusipad/plcopen/releases) |
@@ -20,6 +20,9 @@ The
 records notable changes on the repository timeline. A changelog entry does
 not prove that a tag, GitHub Release, or registry package has been published;
 those states must be checked independently.
+
+As of `v0.21.0`, the GitHub Release and PyPI package are public, but
+ConanCenter and vcpkg central registry assets remain on the `v0.20.0` line.
 
 ## Versioning note
 

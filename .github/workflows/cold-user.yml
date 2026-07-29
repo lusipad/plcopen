@@ -14,9 +14,9 @@ on:
         default: main
         type: string
       docs-base-url:
-        description: Public documentation site root
+        description: Public English documentation root
         required: true
-        default: https://lusipad.com/plcopen
+        default: https://lusipad.com/plcopen/en
         type: string
 
 permissions:

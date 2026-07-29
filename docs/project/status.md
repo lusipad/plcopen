@@ -20,13 +20,14 @@ commitments beat long-term aspirations.
 ## Current public baseline
 
 The latest published user baseline is documented in the
-[v0.20.0 release record](../releases/v0.20.0.md). It includes the C++ package,
-`pyplcopen`, the IEC 61131-3 ST runtime, verification evidence, and declared
-limits.
+[v0.21.0 release record](../releases/v0.21.0.md). It covers the C++ source /
+header-only package, `pyplcopen`, the IEC 61131-3 ST runtime, verification
+evidence, and declared limits.
 
-The source tree is preparing a separate
-[v0.21.0 candidate](../releases/v0.21.0.md). Its candidate record and passing
-branch checks do not make it a published version.
+That public `v0.21.0` state does not imply every downstream registry moved in
+lockstep. ConanCenter and vcpkg central registry assets remain fixed at the
+published `v0.20.0` line, even though the `v0.21.0` GitHub tag/Release and
+PyPI package are public.
 
 For facts newer than that release, use the canonical
 [project status](https://github.com/lusipad/plcopen/blob/main/STATUS.md).

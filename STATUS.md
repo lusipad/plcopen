@@ -9,12 +9,15 @@
 
 新核 `core/` 主体能力已落地（R0-R4 重写 + Phase B 纯软件 + 位姿闭环 +
 软件收尾批，KB-034~081）。`v1.0.0-alpha`（2026-07-06）保留为历史实验性
-预览，当前版本线已校准回 pre-1.0，**v0.20.0 已于 2026-07-20 正式发布**：
-[GitHub Release](https://github.com/lusipad/plcopen/releases/tag/v0.20.0) 与
-[PyPI](https://pypi.org/project/pyplcopen/0.20.0/) 均已上线。当前
-`main@bae8a72` 正在准备 `v0.21.0` 候选：源码版本面与双语发布资料开始
-收口，tag/PyPI/GitHub Release 均未授权、未执行；完整 Wheels/Nightly/
-Coverage/Mutation 候选证据仍待同一最终提交复验。Part 4 管理/路径表/变换 + Part 5
+预览，当前版本线已校准回 pre-1.0，**v0.21.0 已于 2026-07-30 正式发布**：
+[GitHub Release](https://github.com/lusipad/plcopen/releases/tag/v0.21.0) 为
+Latest，annotated tag `v0.21.0` 已推送（object
+`9985312fd8c862ae435bec28adcd5f2943966288` → target
+`08d62b1b16e841a88509284b4c8c75d778592efc`），
+[PyPI](https://pypi.org/project/pyplcopen/0.21.0/) 已公开且未撤回，提供
+20 个 wheels 与 1 个 sdist。`ports/plcopen` 与
+`packaging/conan-center/` 仍是外部中央 registry 提交资产，当前继续固定
+`v0.20.0`，不冒充已随本仓同步到 `v0.21.0`。Part 4 管理/路径表/变换 + Part 5
 回零 FB 已交付。2026-07-19 候选门禁 Windows/Linux/Wheels/Nightly/
 Coverage/Mutation/Docs 全通过。**中英双语文档站已上线**，本批
 [Documentation build/deploy](https://github.com/lusipad/plcopen/actions/runs/30035093781)
@@ -135,7 +138,7 @@ Python/MuJoCo 控制器和真机安全仍未授权。
 | v0.x 旧线（fork 自 i5cnc） | 2026-04 → 07 | Part 1/2 FB 面 45/45 收口于 v0.11.0，冻结为回放/迁移基线 |
 | R0-R4 新核重写 | 2026-07 | `core/` L0-L7 阶梯 + kin/stream 支撑库完成重写；H3 后续新增 dyn 支撑库，与旧线 DoD 对照 PASS |
 | Phase B 纯软件 | 2026-07 | 坐标系/kinematics/轨迹流/cam/前瞻 v2/adapters（KB-034~041） |
-| **← 现在** | 2026-07-20 | v0.20.0 已正式发布；PLCopen / Beckhoff 软件收束 C0～C6 与 ST L0～L7、L∀ 已完成；134/134 FB、1476/1476 pins、feature-set `pending=0`，逐项对等状态见 [能力矩阵](doc/compliance/plcopen-beckhoff-parity-matrix.md) |
+| **← 现在** | 2026-07-30 | v0.21.0 已正式发布；PLCopen / Beckhoff 软件收束 C0～C6 与 ST L0～L7、L∀ 已完成；134/134 FB、1476/1476 pins、feature-set `pending=0`，逐项对等状态见 [能力矩阵](doc/compliance/plcopen-beckhoff-parity-matrix.md) |
 
 ## 能力面（新核，默认消费面 `plcopen::plcopen`）
 
@@ -156,7 +159,7 @@ sink 门面，生产层无反向引用）。分层健康度见
 | 支撑库 stream | 阶梯旁支撑库（依赖 otg/rt，被 L5 消费）：B9 单关节 OTG 在线滤波与断流看门狗；H1 48 关节固定容量原子 `{q,dq,tau,kp,kd}` 帧、direct/upsample 隔离、组级断流与命令快照；`tau_ff` 仅数据通路 | KB-035 |
 | 支撑库 dyn | 阶梯旁 L2 级纯数学支撑库（依赖 geom/rt，调用方持有）：1～8 关节固定基座转动串联链 O(n) RNEA、严格物理模型校验、SI 秒制与失败输出原子性；独立 ABA/势能 oracle 和 48 关节 Release 预算门 | KB-094 |
 | st 语言层（ST L0-L7、L∀） | **外圈消费面之一**（与 L7 adapters 平行、居 L6 之上，纯 sink）。IEC 61131-3 ST：容错前端、确定性字节码 VM、标量/枚举/子范围/聚合/字符串日期类型、用户 POU 与 134 个标准 FB 完整绑定；49 个公开绑定类型、AXIS/GROUP/序列/对象 typed registry 均只向 ST 暴露 1-based handle。L3-L7 已完成并按 L 系列总账闭合；仍不宣称完整 IEC 平台或 PLCopen 官方认证 | KB-069/070/071；[L 系列总账](doc/planning/l-series-work-breakdown.md) |
-| 工具面 | pyplcopen（单轴/流/PoseArmSim，`0.20.0` 的 Windows/Linux/macOS wheels + sdist 已发布到 PyPI，CycleConfig 与轴/组 SI 配置；当前源码另有 `JointStreamSim` 与可选 `twin` 的 T2a 双关节/T2b 七关节 MuJoCo/Rerun 闭环）、可执行 notebook、Python/C++/ST 三条 30 分钟旅程、18 份回放黄金语料、28/48 关节 @1kHz 预算基准 + 笛卡尔 IK/动力学预算门、参考 executor demo（canonical `planning → committed trajectory → RT` 双域，ADR-0007，TSAN 零报告）、X5 固定 ABI Servo IPC（默认纯内存合同 + 显式 Windows/Linux 两进程 harness）、D3 在线 `PLCT v1` Scope（非 RT writer、阈值触发、窗口冻结、HTML/CSV 与可选 Rerun）、D1 单文档多 POU ST LSP + trusted-workspace VS Code client（当前仅源码/CI VSIX）、**[中文默认](https://lusipad.com/plcopen/) + [`/en/` 英文](https://lusipad.com/plcopen/en/)的双语文档站**、已通过消费者预检的 Conan recipe 与 vcpkg overlay port（中央 registry 尚未收录）、结构化 ErrorCode 诊断 | KB-091/092/093/094 |
+| 工具面 | pyplcopen（单轴/流/PoseArmSim、`JointStreamSim` 与可选 `twin` 的 T2a 双关节/T2b 七关节 MuJoCo/Rerun 闭环；`0.21.0` 的 Windows/Linux/macOS wheels + sdist 已发布到 PyPI，含 CycleConfig 与轴/组 SI 配置）、可执行 notebook、Python/C++/ST 三条 30 分钟旅程、18 份回放黄金语料、28/48 关节 @1kHz 预算基准 + 笛卡尔 IK/动力学预算门、参考 executor demo（canonical `planning → committed trajectory → RT` 双域，ADR-0007，TSAN 零报告）、X5 固定 ABI Servo IPC（默认纯内存合同 + 显式 Windows/Linux 两进程 harness）、D3 在线 `PLCT v1` Scope（非 RT writer、阈值触发、窗口冻结、HTML/CSV 与可选 Rerun）、D1 单文档多 POU ST LSP + trusted-workspace VS Code client（当前仅源码/CI VSIX）、**[中文默认](https://lusipad.com/plcopen/) + [`/en/` 英文](https://lusipad.com/plcopen/en/)的双语文档站**、已通过消费者预检的 Conan recipe 与 vcpkg overlay port（中央 registry 尚未收录）、结构化 ErrorCode 诊断 | KB-091/092/093/094 |
 
 ## 质量门禁现状
 
@@ -166,14 +169,15 @@ sink 门面，生产层无反向引用）。分层健康度见
 - 分层：2026-07-12 include 图审计 **0 违规**（L0-L4 零 PLCopen 语义引用、无循环依赖、L4 不引 L3），见 [架构审查报告](doc/design/architecture-review-2026-07.md)
 - RT：静态扫描 32 文件（含 st vm/bind、Feetech adapter、X5 OS-free IPC 原语、Z 系列 ST 旅程、H2 SerialChain 与 H3 FixedBaseChain）+ 冻结窗口分配断言；DoD §5.3 的周期耗时对比通过（新核 = 旧线 9.3%）；分配 soak 以周期等效口径关闭（25.92 亿周期零分配，2026-07-11），墙钟 72h/抖动证据归 B7 真机报告
 - CI（v0.20.0）：候选 `5a5cf81` 的 [Windows CI](https://github.com/lusipad/plcopen/actions/runs/29692190516)、[Linux CI](https://github.com/lusipad/plcopen/actions/runs/29692190521)、[三平台 Wheels + sdist](https://github.com/lusipad/plcopen/actions/runs/29692204896)、[Core Nightly](https://github.com/lusipad/plcopen/actions/runs/29692206177)、[Coverage Gate](https://github.com/lusipad/plcopen/actions/runs/29692207269)、[Mutation Score Gate](https://github.com/lusipad/plcopen/actions/runs/29692208327) 与 [Documentation](https://github.com/lusipad/plcopen/actions/runs/29692209416) 全部通过；最终 tag 提交 `7788a85` 的 Windows/Linux/Documentation 主线门禁 0 annotations，[tag Wheels/PyPI run](https://github.com/lusipad/plcopen/actions/runs/29709944703) 5/5 job 全绿。合并提交 `78d287c` 的 [Windows CI](https://github.com/lusipad/plcopen/actions/runs/29873287504)、[Linux CI](https://github.com/lusipad/plcopen/actions/runs/29873287478)、[Documentation](https://github.com/lusipad/plcopen/actions/runs/29873287492) 与新版 [Core Nightly](https://github.com/lusipad/plcopen/actions/runs/29873304328) 也全部通过；Nightly 9/9 job 全绿。11 项 fuzz 只进入 Nightly；H1 接入后，普通 PR 当前登记 88 项非 fuzz 测试。PR 分支不再同时触发 push 与 pull_request 两套 Windows/Linux 主门禁。`main` 仍无 branch protection/ruleset，这些是 workflow 证据而非技术强制的 required checks。触发边界见 [CI gate 矩阵](doc/compliance/ci-gates.md)
-- CI（v0.21.0 候选基线）：`main@bae8a72` 的 [Windows](https://github.com/lusipad/plcopen/actions/runs/30472192369)、[Linux](https://github.com/lusipad/plcopen/actions/runs/30472193320)、[Language Tools](https://github.com/lusipad/plcopen/actions/runs/30472192855)、[Twin](https://github.com/lusipad/plcopen/actions/runs/30472192377) 与 [Documentation](https://github.com/lusipad/plcopen/actions/runs/30472194316) 全绿；候选版本提交仍需重新闭合这些主门与 Wheels/Nightly/Coverage/Mutation 深门
+- CI（v0.21.0 发布证据）：候选提交 `b4f2b87ea7a2cf5bdd0a9ee262dc5ddbcf1ca807` 的 9/9 候选 CI 已全绿；annotated tag `v0.21.0` 的 [tag workflow](https://github.com/lusipad/plcopen/actions/runs/30496916708) 5/5 job 全绿，PyPI 公开发布确认未撤回。中央 registry 的 ConanCenter/vcpkg 版本仍按独立上游流程停留在 `v0.20.0`
+- Cold User（v0.21.0 公开入口）：[run 30497974380](https://github.com/lusipad/plcopen/actions/runs/30497974380) 已用 `python-version=0.21.0`、`source-ref=v0.21.0`、`docs-base-url=https://lusipad.com/plcopen/en` 复验 Notebook、C++ installed package、ST 与 docs entrypoints，全部通过
 
 ## 进行中 / 待办
 
 | 项 | 状态 |
 |----|------|
-| **v0.21.0** | **候选准备中（2026-07-30）**：版本元数据、CHANGELOG、双语 Release body 与检查单正在对齐；未打 tag，PyPI/GitHub Release 未执行，最终候选 SHA 与完整发布门禁尚未形成 |
-| **v0.20.0** | **已发布（2026-07-20）**：annotated tag 固定到 `7788a85`；GitHub Release 为 Latest、非 prerelease；PyPI 已上线 20 个 wheels 与 1 个 sdist，公开 wheel 下载校验通过 |
+| **v0.21.0** | **已发布（2026-07-30）**：annotated tag `v0.21.0` 已推送（object `9985312fd8c862ae435bec28adcd5f2943966288` → target `08d62b1b16e841a88509284b4c8c75d778592efc`）；候选提交 `b4f2b87ea7a2cf5bdd0a9ee262dc5ddbcf1ca807` 的 9/9 候选门禁、tag workflow 5/5 job 与公开 [Cold User run 30497974380](https://github.com/lusipad/plcopen/actions/runs/30497974380) 全绿；GitHub Release 为 Latest、PyPI 已公开 20 个 wheels 与 1 个 sdist |
+| **v0.20.0** | **已发布（2026-07-20，上一版本）**：annotated tag 固定到 `7788a85`；GitHub Release、PyPI 与公开 wheel 下载校验均已完成；`ports/plcopen` / `packaging/conan-center` 当前仍以这一版作为中央 registry 提交资产基线 |
 | **CI 反馈时长** | **P1 已完成，候选复验稳定**：普通 PR 不跑 fuzz 且不重复触发两套主门禁；Windows 13:45，Linux 16:29，重型 sanitizer/fuzz 留在 20:56 的 Nightly |
 | 抽查评审 | 2026-07-05 批次核心提交（OTG/流/kin/adapters）开放抽查，证据链在各提交信息；非合入门槛 |
 | 旧 `src/` v0.11 线 EOL 窗口 | v1.0.0-alpha 实验预览已发布（2026-07-06）；旧 `src/` 线 90 天 P0-only 窗口至 2026-10-04，不影响新核采用 v0.20.0 版本号 |

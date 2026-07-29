@@ -5,22 +5,23 @@
 **Modern C++ PLCopen motion-control kernel + IEC 61131-3 ST runtime. Embed it
 in your controller, or put it under your learning stack.**
 
-!!! success "v0.20.0 released"
-    `v0.20.0` was published on 2026-07-20. Get the C++ source/header-only
-    package from the [GitHub Release](https://github.com/lusipad/plcopen/releases/tag/v0.20.0),
-    or install the Python package with `pip install pyplcopen==0.20.0`. See the
-    [v0.20.0 release record](releases/v0.20.0.md).
+!!! success "v0.21.0 released"
+    `v0.21.0` is now published. Get the C++ source/header-only package from the
+    [GitHub Release](https://github.com/lusipad/plcopen/releases/tag/v0.21.0),
+    or install the Python package with `pip install pyplcopen==0.21.0`. See the
+    [v0.21.0 release record](releases/v0.21.0.md).
 
-!!! info "v0.21.0 release candidate"
-    The source tree is preparing `v0.21.0`. The candidate
-    [release record](releases/v0.21.0.md) describes the planned artifacts and
-    limits, but no `v0.21.0` tag, PyPI package, or GitHub Release exists yet.
+!!! info "Registry boundary"
+    The `v0.21.0` public release covers the GitHub tag/Release and the PyPI
+    package. ConanCenter and vcpkg central registry assets still remain fixed at
+    the published `v0.20.0` line. Repository entries and passing CI runs are
+    supporting evidence, not substitutes for each public publication state.
 
 ## One Kernel, Multiple Control Styles
 
 | Control Style | What You Get | Entry Point |
 |---|---|---|
-| Python digital twin | `pip install pyplcopen==0.20.0` | [Python guide](getting-started/python.md) · [5-minute notebook](notebooks/five-minute-digital-twin.ipynb) |
+| Python digital twin | `pip install pyplcopen==0.21.0` | [Python guide](getting-started/python.md) · [5-minute notebook](notebooks/five-minute-digital-twin.ipynb) |
 | C++ embedded library | `find_package(plcopen)` or `FetchContent` | [C++ guide](getting-started/cpp.md) |
 | IEC 61131-3 ST | `compile()` → bytecode VM → cyclic `scan()` | [ST guide](getting-started/st.md) |
 | Algorithm white-box | Compliance matrices, oracles, known boundaries | [Algorithm guide](getting-started/algorithms.md) |
@@ -157,8 +158,8 @@ unchanged; the process harness is not a security, license, or real-time claim.
 - [Governance](project/governance.md) — decision authority and succession status
 - [Security](project/security.md) — vulnerability reporting and trust boundaries
 - [Changelog](project/changelog.md) — repository and release history
-- [v0.21.0 candidate record](releases/v0.21.0.md) — planned install surface, highlights, pending gates, and limits
-- [v0.21.0 release checklist](https://github.com/lusipad/plcopen/blob/main/doc/planning/v0.21.0-release-draft.md) — candidate scope, required evidence, and publication sequence
+- [v0.21.0 release record](releases/v0.21.0.md) — install surface, highlights, published artifacts, verification, and limits
+- [v0.21.0 release checklist](https://github.com/lusipad/plcopen/blob/main/doc/planning/v0.21.0-release-draft.md) — release evidence, remaining registry boundary, and publication sequence
 - [v0.20.0 release record](releases/v0.20.0.md) — install, highlights, artifacts, verification, and known limits
 - [v0.20.0 release checklist](https://github.com/lusipad/plcopen/blob/main/doc/planning/v0.20.0-release-draft.md) — release form, verified gates, and remaining actions
 

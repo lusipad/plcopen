@@ -3,12 +3,25 @@
 All notable changes to this project will be documented in this file.
 
 > 版本线说明：下方的 v1.0.0-alpha（2026-07-06）是历史实验性预览；自
-> 2026-07-19 起，稳定版本线已重新校准为 v0.20.0（pre-1.0）。理由见
-> [0.20.0] 的 Changed 条目。
+> 2026-07-19 起，稳定版本线已重新校准为 pre-1.0；当前最新正式版本为
+> v0.21.0。重校准理由见 [0.20.0] 的 Changed 条目。
 
 ## [Unreleased]
 
+### Fixed
+
+- Cold User 的默认英文文档根从 `/plcopen` 修正为 `/plcopen/en`，避免双语站点
+  下公开 notebook 路径返回 404；`v0.21.0` 已由 run `30497974380` 复验
+  wheel notebook、C++ installed package、ST 与文档入口全部通过。
+
 ## [0.21.0] - 2026-07-30
+
+> 已作为 annotated tag `v0.21.0` 正式发布（object
+> `9985312fd8c862ae435bec28adcd5f2943966288` → target
+> `08d62b1b16e841a88509284b4c8c75d778592efc`）；GitHub Release 为 Latest，
+> [PyPI `pyplcopen==0.21.0`](https://pypi.org/project/pyplcopen/0.21.0/)
+> 已公开 20 个 wheels 与 1 个 sdist。`ports/plcopen` 与
+> `packaging/conan-center` 仍固定 `v0.20.0`，等待独立中央 registry 更新。
 
 ### Added
 
@@ -42,7 +55,7 @@ All notable changes to this project will be documented in this file.
   workspace 启动 machine-scope 指定解释器，file/untitled `.st` 共用官方
   client。固定 npm lock、9 包生产许可证/integrity 清单与 notices 草案、
   Windows/Linux Language Tools workflow 及不含 dev tree 的本地 VSIX
-  同步进入门禁；本批不发布 Marketplace、PyPI、tag 或 GitHub Release。
+  同步进入门禁；VS Code 扩展仍未发布到 Marketplace。
 
 - D3（KB-091）把参考 executor 的 `PLCT v1` trace 升级为在线 commissioning
   Scope：RT 线程只向固定容量 SPSC 发布记录，非 RT writer 持续落盘；工具侧

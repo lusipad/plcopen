@@ -9,12 +9,17 @@ sprint 记录）在 [doc/archive/roadmap-history.md](doc/archive/roadmap-history
 
 优先级只在本节声明一次，下列各节只承载明细，不再各自宣称"当前/最高"：
 
-1. **P0 v0.21.0 发布候选（进行中）**：以 `main@bae8a72` 为源码基线，
-   将 v0.20.0 之后已经合入的 H1/H2/H3、T2a/T2b、D1/D3、Z1～Z5、X5
-   与组接管收口为 pre-1.0 minor release。当前正在对齐版本元数据、
-   CHANGELOG、双语 Release body 与发布检查单；候选提交必须重新通过
-   Windows/Linux/Language Tools/Twin/Docs、三平台 Wheels、Nightly、
-   Coverage 与 Mutation。未获得版本和最终目标提交明确授权前不打 tag。
+1. **P0 v0.21.0 正式发布（已完成）**：v0.20.0 之后已经合入的
+   H1/H2/H3、T2a/T2b、D1/D3、Z1～Z5、X5 与组接管已收口为 pre-1.0 minor
+   release。候选提交 `b4f2b87ea7a2cf5bdd0a9ee262dc5ddbcf1ca807` 的
+   Windows/Linux/Language Tools/Twin/Docs/Wheels/Nightly/Coverage/Mutation
+   共 9/9 候选门禁全绿；annotated tag `v0.21.0` 已推送（object
+   `9985312fd8c862ae435bec28adcd5f2943966288` → target
+   `08d62b1b16e841a88509284b4c8c75d778592efc`），
+   [GitHub Release](https://github.com/lusipad/plcopen/releases/tag/v0.21.0)
+   为 Latest，[PyPI `pyplcopen==0.21.0`](https://pypi.org/project/pyplcopen/0.21.0/)
+   已公开 20 个 wheels 与 1 个 sdist。`ports/plcopen` 与
+   `packaging/conan-center` 仍按独立中央 registry 流程固定在 `v0.20.0`。
 2. **P0 v0.20.0 正式发布（已完成）**：版本信号已校准回 pre-1.0，
    [GitHub Release](https://github.com/lusipad/plcopen/releases/tag/v0.20.0)
    与 [PyPI `pyplcopen==0.20.0`](https://pypi.org/project/pyplcopen/0.20.0/)
@@ -121,8 +126,8 @@ sprint 记录）在 [doc/archive/roadmap-history.md](doc/archive/roadmap-history
    85.003%（14810/17423），未放宽 85% 阈值或改变统计目录；
    [PR #37](https://github.com/lusipad/plcopen/pull/37) 的 Windows、
    Linux GCC/Clang/ARM64、Language Tools、Twin 与 Documentation 门禁
-   均已通过。
-   Marketplace、PyPI、tag 与 GitHub Release 均未执行。D2 WASM
+   均已通过。随后 v0.21.0 已于 2026-07-30 正式发布；Marketplace 仍未发布，
+   `ports/plcopen` / `packaging/conan-center` 仍停留在 `v0.20.0`。D2 WASM
    Playground 与 RL 保留候选，不插入本队列。
 8. **F 轨 EtherCAT**：仍是最大的剩余软件块和商用指标 #1/#4 的上游；
    ADR-0006 许可证人工核验与台架决策完成后立即插队，按 F1→F2→F3 推进。
@@ -275,4 +280,4 @@ VS Code 扩展与 D2 WASM Playground，挂在 L 系列拆解的触发表。）
 
 ---
 
-*最后更新：2026-07-27（H3 主线证据与全局覆盖率修复 PR 证据闭合；授权软件队列收口）*
+*最后更新：2026-07-30（v0.21.0 正式发布；根层与规划口径同步）*

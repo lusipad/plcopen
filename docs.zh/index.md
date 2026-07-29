@@ -4,19 +4,24 @@
 
 **现代 C++ PLCopen 运动控制内核 + IEC 61131-3 ST 运行时。可嵌入你的控制器，也可置于你的学习栈之下。**
 
-!!! success "v0.20.0 已发布"
-    `v0.20.0` 已于 2026-07-20 发布。可从 [GitHub Release](https://github.com/lusipad/plcopen/releases/tag/v0.20.0) 获取 C++ 源码 / header-only 包，或使用 `pip install pyplcopen==0.20.0` 安装 Python 包。详见 [v0.20.0 发布记录](releases/v0.20.0.md)。
+!!! success "v0.21.0 已发布"
+    `v0.21.0` 现已公开发布。可从
+    [GitHub Release](https://github.com/lusipad/plcopen/releases/tag/v0.21.0)
+    获取 C++ 源码 / header-only 包，或使用
+    `pip install pyplcopen==0.21.0` 安装 Python 包。详见
+    [v0.21.0 发布记录](releases/v0.21.0.md)。
 
-!!! info "v0.21.0 发布候选"
-    当前源码正在准备 `v0.21.0`。[候选发布记录](releases/v0.21.0.md)
-    说明计划中的制品与边界，但 `v0.21.0` tag、PyPI 包和 GitHub Release
-    均尚未创建。
+!!! info "注册表边界"
+    `v0.21.0` 的公开发布范围包括 GitHub tag/Release 和 PyPI 包。
+    ConanCenter 与 vcpkg central registry 资产仍固定在已发布的 `v0.20.0`
+    线上。仓库条目与 CI 通过只能作为辅助证据，不能替代各公开渠道自身的
+    发布状态。
 
 ## 一个内核，多种控制风格
 
 | 控制风格 | 你将获得 | 入口 |
 |---|---|---|
-| Python 数字孪生 | `pip install pyplcopen==0.20.0` | [Python 指南](getting-started/python.md) · [5 分钟 Notebook（英文）](/plcopen/en/notebooks/five-minute-digital-twin.ipynb) |
+| Python 数字孪生 | `pip install pyplcopen==0.21.0` | [Python 指南](getting-started/python.md) · [5 分钟 Notebook（英文）](/plcopen/en/notebooks/five-minute-digital-twin.ipynb) |
 | C++ 嵌入式库 | `find_package(plcopen)` or `FetchContent` | [C++ 指南](getting-started/cpp.md) |
 | IEC 61131-3 ST | `compile()` → bytecode VM → cyclic `scan()` | [ST 指南](getting-started/st.md) |
 | 算法白盒 | 合规矩阵、oracle、已知边界 | [算法指南](getting-started/algorithms.md) |
@@ -147,8 +152,8 @@ SPSC ring，加上一个有界状态快照，并提供明确的 Windows/Linux �
 - [治理](project/governance.md) — 决策权限与继任状态
 - [安全](project/security.md) — 漏洞报告与信任边界
 - [变更日志](project/changelog.md) — 仓库与发布历史
-- [v0.21.0 候选发布记录](releases/v0.21.0.md) — 计划安装面、主要变化、待验证门禁与已知限制
-- [v0.21.0 发布候选检查单](https://github.com/lusipad/plcopen/blob/main/doc/planning/v0.21.0-release-draft.md) — 候选范围、必需证据与发布顺序
+- [v0.21.0 发布记录](releases/v0.21.0.md) — 安装面、主要变化、已公开制品、验证与已知限制
+- [v0.21.0 发布检查单](https://github.com/lusipad/plcopen/blob/main/doc/planning/v0.21.0-release-draft.md) — 发布证据、剩余注册表边界与发布顺序
 - [v0.20.0 发布记录](releases/v0.20.0.md) — 安装、亮点、制品、验证与已知限制
 - [v0.20.0 发布清单](https://github.com/lusipad/plcopen/blob/main/doc/planning/v0.20.0-release-draft.md) — 发布表单、已验证门禁与剩余动作
 
