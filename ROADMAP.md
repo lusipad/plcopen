@@ -59,7 +59,7 @@ sprint 记录）在 [doc/archive/roadmap-history.md](doc/archive/roadmap-history
    [PR #16](https://github.com/lusipad/plcopen/pull/16) 的
    [Windows/Linux Twin integration](https://github.com/lusipad/plcopen/actions/runs/30024648555)
    与 Windows/Linux 主门禁均已通过。
-6. **维护者授权的软件队列（进行中）**：2026-07-24 已明确按
+6. **维护者授权的软件队列（已完成）**：2026-07-24 已明确按
    **D3 Scope → D1 ST LSP → H1 同步关节流 → T2b 大模型孪生 →
    H3 动力学前馈** 顺序开发。D3 已由
    [PR #23](https://github.com/lusipad/plcopen/pull/23) 合并，合并后的
@@ -112,7 +112,10 @@ sprint 记录）在 [doc/archive/roadmap-history.md](doc/archive/roadmap-history
    证明 H3 头 line 99.5% / branch 92.9%，同时暴露既有全局运动栈
    84.5% 与 ST 84.3% 漂移。该测试债已于 2026-07-27 用公开行为边界
    补测关闭：本地固定门复验为运动栈 85.014%（10319/12138）、ST
-   85.003%（14810/17423），未放宽 85% 阈值或改变统计目录。
+   85.003%（14810/17423），未放宽 85% 阈值或改变统计目录；
+   [PR #37](https://github.com/lusipad/plcopen/pull/37) 的 Windows、
+   Linux GCC/Clang/ARM64、Language Tools、Twin 与 Documentation 门禁
+   均已通过。
    Marketplace、PyPI、tag 与 GitHub Release 均未执行。D2 WASM
    Playground 与 RL 保留候选，不插入本队列。
 7. **F 轨 EtherCAT**：仍是最大的剩余软件块和商用指标 #1/#4 的上游；
@@ -266,4 +269,4 @@ VS Code 扩展与 D2 WASM Playground，挂在 L 系列拆解的触发表。）
 
 ---
 
-*最后更新：2026-07-27（H3 PR/main 证据闭合；全局覆盖率修复仍阻塞队列收口）*
+*最后更新：2026-07-27（H3 主线证据与全局覆盖率修复 PR 证据闭合；授权软件队列收口）*
