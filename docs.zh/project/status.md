@@ -19,12 +19,12 @@ plcopen 将当前事实、近期承诺和长期方向分开维护，避免把愿
 ## 当前公开基线
 
 最新发布的用户基线记录在
-[v0.20.0 发布记录](../releases/v0.20.0.md)，其中包括 C++ 包、
-`pyplcopen`、IEC 61131-3 ST 运行时、验证证据和已声明限制。
+[v0.21.0 发布记录](../releases/v0.21.0.md)，其中包括 C++ 源码 /
+header-only 包、`pyplcopen`、IEC 61131-3 ST 运行时、验证证据和已声明限制。
 
-当前源码正在准备独立的
-[v0.21.0 候选](../releases/v0.21.0.md)。候选记录和分支门禁通过都不等于
-版本已经公开发布。
+这个公开的 `v0.21.0` 状态并不意味着所有下游注册表都已同步。即使
+`v0.21.0` 的 GitHub tag/Release 与 PyPI 包已经公开，ConanCenter 与 vcpkg
+central registry 资产仍固定在已发布的 `v0.20.0` 线上。
 
 比该版本更新的事实以权威
 [项目现状](https://github.com/lusipad/plcopen/blob/main/STATUS.md) 为准。

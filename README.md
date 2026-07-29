@@ -14,12 +14,14 @@
 行为边界：[已知边界注册表](doc/compliance/known-boundaries.md)
 · 商用八项：[证据总账](doc/compliance/commercial-gate-evidence.md)
 
-> **最新正式版本：[v0.20.0](https://github.com/lusipad/plcopen/releases/tag/v0.20.0)。**
-> 2026-07-20 已正式发布；C++ source/header-only 包由 GitHub Release 交付，
-> Python 3.10～3.13 的 Windows、Linux、macOS wheels 与 sdist 已发布到
-> [PyPI](https://pypi.org/project/pyplcopen/0.20.0/)。版本内容见
-> [v0.20.0 发布记录](docs/releases/v0.20.0.md)。当前 `main` 正在准备
-> [v0.21.0 发布候选](docs.zh/releases/v0.21.0.md)，尚未打 tag 或发布到 PyPI。
+> **最新正式版本：[v0.21.0](https://github.com/lusipad/plcopen/releases/tag/v0.21.0)。**
+> 2026-07-30 已正式发布；annotated tag `v0.21.0` 已推送（object
+> `9985312fd8c862ae435bec28adcd5f2943966288` → target
+> `08d62b1b16e841a88509284b4c8c75d778592efc`）。C++ source/header-only 包由
+> GitHub Release 交付，Python 3.10～3.13 的 Windows、Linux、macOS 共
+> 20 个 wheels 与 1 个 sdist 已发布到
+> [PyPI](https://pypi.org/project/pyplcopen/0.21.0/)。版本内容见
+> [v0.21.0 发布记录](docs/releases/v0.21.0.md)。
 
 ---
 
@@ -58,8 +60,8 @@ IEC 61131-3 全语言成熟编译器（看 MatIEC——我们的 ST 层是**运�
 
 | 领域 | 状态 | 当前结论 |
 |------|------|----------|
-| v0.21.0 | 🟡 候选准备中 | 版本面与双语发布资料正在收口；完整 Wheels/Nightly/Coverage/Mutation 发布门禁尚待同一候选提交复验 |
-| v0.20.0 | ✅ 已发布 | 七组候选门禁、最终 `main` 门禁与 tag 发布工作流全绿；GitHub Release、20 个 wheels 与 1 个 sdist 已上线 |
+| v0.21.0 | ✅ 已发布 | annotated tag `v0.21.0` 已推送；GitHub Release 为 Latest，PyPI 已上线 20 个 wheels 与 1 个 sdist |
+| v0.20.0 | ✅ 历史前一版 | 2026-07-20 已发布；`ports/plcopen` 与 `packaging/conan-center` 中央 registry 提交资产当前仍固定在这一版 |
 | 新核重写 R0-R4 | ✅ 完成 | `core/` 已成为默认消费面，旧线进入 P0-only 冻结期 |
 | Phase B 纯软件 | ✅ 完成 | 坐标系、运动学、轨迹流、cam、前瞻、适配器骨架全部落地 |
 | 核心算法 | 🟢 主体完成 | jerk-limited OTG、固定时长求解、TOPP、oracle、周期执行均已实现 |
@@ -68,7 +70,7 @@ IEC 61131-3 全语言成熟编译器（看 MatIEC——我们的 ST 层是**运�
 | PLCopen Part 5 | 🟡 软件合同闭合 | C5 已关闭 11/11 标准 FB 与 45 B + 102 E 软件声明；真机与认证证据仍独立 |
 | PLCopen Part 6 | ⛔ 未解锁 | 等流体动力行业真实需求 |
 | ST 语言层 | ✅ 声明集闭合 | L0-L7、L∀ 已完成；134 个 FB、1476 个 pin，feature-set `pending=0` |
-| Python/文档/包 | ✅ 已发布 | 文档站已上线；`pyplcopen==0.20.0` 已在 PyPI 提供三平台 wheels 与 sdist |
+| Python/文档/包 | ✅ 已发布 | 文档站已上线；`pyplcopen==0.21.0` 已在 PyPI 提供三平台 wheels 与 sdist |
 | EtherCAT | 🔴 未开工 | 最大剩余软件块，也是实时台架和实际部署的前置 |
 | 真机/人形/孪生 | 🟠 软件孪生已落地 | T2a 双关节与 T2b 七关节 MuJoCo/Rerun 闭环已在当前源码完成；真机、完整 H/F/T 轨仍未闭环 |
 | 用户采纳 | 🔴 尚未形成 | 灯塔用户、现场案例、外部贡献者和有效下载信号仍不足 |
@@ -118,12 +120,12 @@ axis.stream_disengage()
 安装 Python 绑定：
 
 ```bash
-python -m pip install pyplcopen==0.20.0
+python -m pip install pyplcopen==0.21.0
 # 或在需要源码构建时：python -m pip install .（需要 C++17 编译器 + CMake ≥ 3.21）
 ```
 
 无编译器的安装请使用 CPython 3.10～3.13；这些版本有 Windows、Linux、
-macOS 预编译 wheel。对当前 `v0.20.0`，Python 3.14 及更新版本会从
+macOS 预编译 wheel。对当前 `v0.21.0`，Python 3.14 及更新版本会从
 sdist 本地构建，因此需要 C++17 编译器与 CMake ≥ 3.21。
 
 从零开始的三条主旅程见 [Python 数字孪生](docs/getting-started/python.md)、
@@ -141,7 +143,8 @@ python -m pip install ".[twin]"
 python tools/twin/mujoco_joint_stream_demo.py --output seven-joint.rrd
 ```
 
-该入口已在 T2b 当前源码中完成，但尚未进入已发布的 `pyplcopen==0.20.0` wheel；
+该入口已进入已发布的 `pyplcopen==0.21.0` 包；旧版 `pyplcopen==0.20.0`
+不包含这一七关节入口；
 边界和本地模型映射见 [Python 数字孪生指南](docs.zh/getting-started/python.md)。
 
 ---
@@ -206,8 +209,8 @@ Part 5 已关闭 11/11 标准 FB 与 45 B + 102 E 机读声明。正式 B/E/V �
 | 三条入门旅程与 notebook | [Python](docs/getting-started/python.md) · [C++](docs/getting-started/cpp.md) · [ST](docs/getting-started/st.md) · [5 分钟 notebook](docs/notebooks/five-minute-digital-twin.ipynb) |
 | ErrorCode 排障与 trace 图表 | [诊断指南](docs/guides/diagnostics.md) · [在线调试示波器](docs.zh/guides/online-scope.md) |
 | 版本变化 | [CHANGELOG.md](CHANGELOG.md) |
-| v0.21.0 候选包含什么 | [中文候选记录](docs.zh/releases/v0.21.0.md) · [英文 Release body](docs/releases/v0.21.0.md) |
-| v0.21.0 怎么验证、还缺什么 | [发布候选检查单](doc/planning/v0.21.0-release-draft.md) |
+| v0.21.0 对使用者意味着什么 | [中文发布记录](docs.zh/releases/v0.21.0.md) · [英文 Release body](docs/releases/v0.21.0.md) |
+| v0.21.0 如何发布与验收 | [发布执行记录](doc/planning/v0.21.0-release-draft.md) |
 | v0.20.0 对使用者意味着什么 | [正式发布记录](docs/releases/v0.20.0.md) |
 | v0.20.0 如何发布 | [发布执行记录](doc/planning/v0.20.0-release-draft.md) |
 | AI/人协作规范与工程技能 | [CLAUDE.md](CLAUDE.md) · [AGENTS.md](AGENTS.md) · `.claude/skills/` |

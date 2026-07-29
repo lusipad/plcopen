@@ -16,7 +16,7 @@
 
 | 文档 | 内容 | 状态 |
 |------|------|------|
-| [v0.21.0-release-draft.md](v0.21.0-release-draft.md) | v0.21.0 版本判断、候选门禁与发布顺序；面向用户的双语候选记录见 [`docs/releases/v0.21.0.md`](../../docs/releases/v0.21.0.md) / [`docs.zh/releases/v0.21.0.md`](../../docs.zh/releases/v0.21.0.md) | **候选准备中（2026-07-30）** |
+| [v0.21.0-release-draft.md](v0.21.0-release-draft.md) | v0.21.0 版本判断、发布门禁与执行记录；面向用户的双语发布记录见 [`docs/releases/v0.21.0.md`](../../docs/releases/v0.21.0.md) / [`docs.zh/releases/v0.21.0.md`](../../docs.zh/releases/v0.21.0.md) | **已发布（2026-07-30）** |
 | [long-term-plan.md](long-term-plan.md) | 商业化战略：第 0 章 S0-S3 关键路径（现行）、商用级定义、收入模型、风险与 KPI、技术难点 T1-T12、算法权衡 | **第 7 稿（2026-07-06 重基线）**，季度复盘 KPI |
 | [phase-b-software-work-breakdown.md](phase-b-software-work-breakdown.md) | Phase B 纯软件拆解（BS1-BS6 已全部完成）+ 硬件延后清单与触发条件 | 已收口，留触发清单 |
 | [robot-integration.md](robot-integration.md) | 机器人集成蓝图：形态可行性、参考架构、差距→计划映射 | 现行 |
@@ -54,4 +54,4 @@
 
 ---
 
-*本索引最后更新：2026-07-27（H3 PR/main 证据闭合）*
+*本索引最后更新：2026-07-30（v0.21.0 正式发布，规划索引同步）*
