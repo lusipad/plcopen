@@ -59,7 +59,7 @@ sprint 记录）在 [doc/archive/roadmap-history.md](doc/archive/roadmap-history
    [PR #16](https://github.com/lusipad/plcopen/pull/16) 的
    [Windows/Linux Twin integration](https://github.com/lusipad/plcopen/actions/runs/30024648555)
    与 Windows/Linux 主门禁均已通过。
-6. **维护者授权的软件队列（进行中）**：2026-07-24 已明确按
+6. **维护者授权的软件队列（已完成）**：2026-07-24 已明确按
    **D3 Scope → D1 ST LSP → H1 同步关节流 → T2b 大模型孪生 →
    H3 动力学前馈** 顺序开发。D3 已由
    [PR #23](https://github.com/lusipad/plcopen/pull/23) 合并，合并后的
@@ -105,12 +105,17 @@ sprint 记录）在 [doc/archive/roadmap-history.md](doc/archive/roadmap-history
    [Language Tools](https://github.com/lusipad/plcopen/actions/runs/30197177059)、
    [Twin](https://github.com/lusipad/plcopen/actions/runs/30197177072) 与
    [Documentation](https://github.com/lusipad/plcopen/actions/runs/30197177048)
-   主线全绿，D3→D1→H1→T2b→H3 授权功能均已交付；但队列收口仍受
-   下述全局覆盖率硬门阻塞。本批不消费 H1 `tau_ff`，T18/浮动基座/接触/
+   主线全绿，D3→D1→H1→T2b→H3 授权功能均已交付。本批不消费
+   H1 `tau_ff`，T18/浮动基座/接触/
    真机安全不在范围。独立
    [Coverage Gate 手动复验](https://github.com/lusipad/plcopen/actions/runs/30195318284)
    证明 H3 头 line 99.5% / branch 92.9%，同时暴露既有全局运动栈
-   84.5% 与 ST 84.3% 漂移；该测试债不靠放宽 85% 阈值掩盖。
+   84.5% 与 ST 84.3% 漂移。该测试债已于 2026-07-27 用公开行为边界
+   补测关闭：本地固定门复验为运动栈 85.014%（10319/12138）、ST
+   85.003%（14810/17423），未放宽 85% 阈值或改变统计目录；
+   [PR #37](https://github.com/lusipad/plcopen/pull/37) 的 Windows、
+   Linux GCC/Clang/ARM64、Language Tools、Twin 与 Documentation 门禁
+   均已通过。
    Marketplace、PyPI、tag 与 GitHub Release 均未执行。D2 WASM
    Playground 与 RL 保留候选，不插入本队列。
 7. **F 轨 EtherCAT**：仍是最大的剩余软件块和商用指标 #1/#4 的上游；
@@ -232,7 +237,9 @@ E5 基准趋势管线 / Z0′ 冷用户首轮（已完成）/ Z3′ 文档站内
 以本页表格为准。此外：
 
 - **250µs 档启用**：预算证据已备（KB-044：占比 ~1-2%），随硬件阶段评估
-- 硬件阶段任一触发项到位则优先于软件线
+- 硬件阶段任一触发项（B5 EtherCAT 真栈 / B6 HIL 台架 / B7 PREEMPT_RT
+  72h 抖动报告；定义见[长期规划](doc/planning/long-term-plan.md) §3.2）
+  到位则优先于软件线
 
 ## 全景总图
 
@@ -241,8 +248,9 @@ E5 基准趋势管线 / Z0′ 冷用户首轮（已完成）/ Z3′ 文档站内
 L 系列、四项商用软件门与 X5 关闭后，剩余软件存货重估约 8 L0；F 轨
 EtherCAT 仍是最后一块大软件且是 #1/#4 的前置；**存货耗尽那天，项目速度
 = 维护者的速度**——所以
-人专属四件（台架决策 ★★★ / ADR-0006 许可证核验 ★★ / R 系列设备 /
-P0 账号与申请）越早做，AI 的产出越不会堆在仓库里。
+人专属四件（台架决策 ★★★ / 许可证与出处三件 ★★：ADR-0001、ADR-0006
+附录 A、PROVENANCE.md / R 系列设备 / P0 账号与申请）越早做，AI 的产出越
+不会堆在仓库里。
 
 ## 复盘节奏
 
@@ -261,4 +269,4 @@ VS Code 扩展与 D2 WASM Playground，挂在 L 系列拆解的触发表。）
 
 ---
 
-*最后更新：2026-07-27（H3 PR/main 证据闭合；全局覆盖率修复仍阻塞队列收口）*
+*最后更新：2026-07-27（H3 主线证据与全局覆盖率修复 PR 证据闭合；授权软件队列收口）*

@@ -136,6 +136,11 @@ int check_abort_trigger()
     if(!probe.outputs.command_aborted || probe.outputs.busy) {
         return fail("abort trigger disarms matching probe");
     }
+    probe.execute = false;
+    probe.call();
+    if(probe.outputs.command_aborted || probe.outputs.error) {
+        return fail("aborted probe clears on falling edge");
+    }
 
     fb::FbAbortTrigger unsupported;
     unsupported.axis_ref = &axis;
@@ -300,6 +305,45 @@ int check_probe_error_paths()
         probe.call();
         if(probe.outputs.busy || probe.outputs.error || probe.recorded_position != 0.0) {
             return fail("touch probe execute=false");
+        }
+    }
+
+    // A capture observed after Execute falls is cleared on the next low cycle.
+    {
+        axis::AxisModel axis;
+        axis.set_power(true);
+        fb::FbTouchProbe probe;
+        probe.axis_ref = &axis;
+        probe.execute = true;
+        probe.call();
+        probe.execute = false;
+        probe.call();
+        axis.set_digital_input(0, true);
+        axis.cycle();
+        probe.call();
+        if(!probe.outputs.done) {
+            return fail("touch probe captures during falling scan");
+        }
+        probe.call();
+        if(probe.outputs.done || probe.recorded_position != 0.0) {
+            return fail("touch probe clears terminal low cycle");
+        }
+    }
+
+    // A completed probe remains terminal while Execute stays high.
+    {
+        axis::AxisModel axis;
+        axis.set_power(true);
+        fb::FbTouchProbe probe;
+        probe.axis_ref = &axis;
+        probe.execute = true;
+        probe.call();
+        axis.set_digital_input(0, true);
+        axis.cycle();
+        probe.call();
+        probe.call();
+        if(!probe.outputs.done) {
+            return fail("touch probe terminal high cycle");
         }
     }
 

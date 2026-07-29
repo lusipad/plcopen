@@ -377,6 +377,27 @@ int check_public_boundaries()
        plan::verify_joint_limits(profile.value(), path, tight, 64, 1.0)) {
         return fail("public_boundaries: joint limit verification");
     }
+    const plan::ToppAxisLimits zero_limits[3] = {};
+    if(plan::solve_topp_ra(path, limits, 1).error() !=
+           rt::ErrorCode::invalid_argument ||
+       !plan::solve_topp_ra(empty, limits, 2) ||
+       plan::solve_topp_ra(path, limits, 1024).error() !=
+           rt::ErrorCode::invalid_argument ||
+       plan::solve_topp_ra(path, zero_limits, 8).error() !=
+           rt::ErrorCode::infeasible) {
+        return fail("public_boundaries: direct TOPP validation");
+    }
+    const plan::ToppJerkAxisLimits tiny_jerk_limits[3] = {
+        {1.0, 1.0, 1e-31}, {1.0, 1.0, 1.0}, {1.0, 1.0, 1.0}};
+    if(plan::solve_topp_ra_jerk(path, jerk_limits, 1).error() !=
+           rt::ErrorCode::invalid_argument ||
+       !plan::solve_topp_ra_jerk(empty, jerk_limits, 2) ||
+       plan::solve_topp_ra_jerk(path, jerk_limits, 1024).error() !=
+           rt::ErrorCode::invalid_argument ||
+       plan::solve_topp_ra_jerk(path, tiny_jerk_limits, 8).error() !=
+           rt::ErrorCode::infeasible) {
+        return fail("public_boundaries: direct jerk TOPP validation");
+    }
     return 0;
 }
 

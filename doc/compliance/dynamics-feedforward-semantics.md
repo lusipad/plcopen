@@ -80,7 +80,10 @@ GCC/Clang、ARM64/QEMU、E5 与消费面全绿；合入后
 [Twin](https://github.com/lusipad/plcopen/actions/runs/30197177072) 与
 [Documentation](https://github.com/lusipad/plcopen/actions/runs/30197177048)
 也全绿。手动 Coverage Gate 中 H3 头为 line 99.5% / branch 92.9%；
-全局运动栈/ST 的既有 84.5%/84.3% 漂移另行修复，不改变本合同门槛。
+全局运动栈/ST 的既有 84.5%/84.3% 漂移已由
+[PR #37](https://github.com/lusipad/plcopen/pull/37) 通过公开行为边界补测
+关闭，固定门复验分别为 85.014% / 85.003%，不改变本合同门槛与统计目录；
+口径见[分支覆盖基线](branch-coverage-baseline.md)。
 
 ## 5. 显式非目标
 

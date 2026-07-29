@@ -30,6 +30,9 @@ axis.cycle();
 ## 同步关节命令帧
 
 `stream::JointStreamGroup` 提供最多 48 关节的 H1 固定容量命令原语。
+该组由规划域持有且为单线程：`push_frame()`、`cycle()`、
+`read_setpoint_frame()` 必须都在持有的规划线程上调用，其它线程的 producer
+须先经由自己持有的 SPSC 队列把帧交过来。
 会话前配置并 reset 每个成员，之后只通过 `push_frame()` 提交完整帧：
 
 ```cpp

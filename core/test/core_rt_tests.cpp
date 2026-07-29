@@ -2,6 +2,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <new>
+#include <type_traits>
 
 #include "rt/cycle.h"
 #include "rt/error_diag.h"
@@ -176,6 +177,14 @@ int main()
     if(delta.to_nanoseconds(1000) != 250'000'000'000LL) {
         return fail("cycle duration boundary conversion");
     }
+
+    // The element-type fence is compile-enforced in the class body; assert
+    // the container itself stays trivial so aggregates of StaticVector keep
+    // the same guarantees.
+    static_assert(std::is_trivially_destructible_v<rt::StaticVector<int, 3>>,
+                  "StaticVector must stay trivially destructible");
+    static_assert(std::is_trivially_copyable_v<rt::StaticVector<int, 3>>,
+                  "StaticVector must stay trivially copyable");
 
     rt::StaticVector<int, 3> values;
     if(values.capacity() != 3 || !values.empty()) {

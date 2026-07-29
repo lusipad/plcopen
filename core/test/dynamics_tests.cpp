@@ -169,6 +169,20 @@ int check_model_rejection()
         return fail("reflection rotation rejected");
     }
     spec = one_link_spec();
+    spec.bodies[0].parent_from_joint_zero.rotation[1][1] =
+        std::numeric_limits<double>::quiet_NaN();
+    if (dyn::FixedBaseChain(spec).valid())
+    {
+        return fail("non-finite rotation rejected");
+    }
+    spec = one_link_spec();
+    spec.bodies[0].parent_from_joint_zero.translation.x =
+        std::numeric_limits<double>::quiet_NaN();
+    if (dyn::FixedBaseChain(spec).valid())
+    {
+        return fail("non-finite x translation rejected");
+    }
+    spec = one_link_spec();
     spec.bodies[0].parent_from_joint_zero.translation.y =
         std::numeric_limits<double>::quiet_NaN();
     if (dyn::FixedBaseChain(spec).valid())
@@ -192,6 +206,19 @@ int check_model_rejection()
     if (dyn::FixedBaseChain(spec).valid())
     {
         return fail("non-positive mass rejected");
+    }
+    spec = one_link_spec();
+    spec.bodies[0].mass = std::numeric_limits<double>::quiet_NaN();
+    if (dyn::FixedBaseChain(spec).valid())
+    {
+        return fail("non-finite mass rejected");
+    }
+    spec = one_link_spec();
+    spec.bodies[0].center_of_mass.z =
+        std::numeric_limits<double>::infinity();
+    if (dyn::FixedBaseChain(spec).valid())
+    {
+        return fail("non-finite z center of mass rejected");
     }
     spec = one_link_spec();
     spec.bodies[0].center_of_mass.x = std::numeric_limits<double>::infinity();
@@ -219,10 +246,65 @@ int check_model_rejection()
         return fail("non-positive-definite inertia rejected");
     }
     spec = one_link_spec();
+    spec.bodies[0].inertia_com[1][1] = 0.0;
+    if (dyn::FixedBaseChain(spec).valid())
+    {
+        return fail("singular leading inertia minor rejected");
+    }
+    spec = one_link_spec();
+    spec.bodies[0].inertia_com[2][2] = -0.01;
+    if (dyn::FixedBaseChain(spec).valid())
+    {
+        return fail("negative inertia determinant rejected");
+    }
+    spec = one_link_spec();
     spec.bodies[0].inertia_com[0][0] = 0.8;
     if (dyn::FixedBaseChain(spec).valid())
     {
         return fail("principal-inertia triangle rejected");
+    }
+    spec = one_link_spec();
+    spec.bodies[0].inertia_com[0][0] = 0.65;
+    spec.bodies[0].inertia_com[1][1] = 0.65;
+    spec.bodies[0].inertia_com[2][2] = 0.1;
+    spec.bodies[0].inertia_com[0][1] = 0.15;
+    spec.bodies[0].inertia_com[1][0] = 0.15;
+    if (dyn::FixedBaseChain(spec).valid())
+    {
+        return fail("first triangle inertia minor rejected");
+    }
+    spec = one_link_spec();
+    spec.bodies[0].inertia_com[0][0] = 0.45;
+    spec.bodies[0].inertia_com[1][1] = 0.5;
+    spec.bodies[0].inertia_com[2][2] = 0.45;
+    spec.bodies[0].inertia_com[0][2] = 0.35;
+    spec.bodies[0].inertia_com[2][0] = 0.35;
+    if (dyn::FixedBaseChain(spec).valid())
+    {
+        return fail("second triangle inertia minor rejected");
+    }
+    spec = one_link_spec();
+    spec.bodies[0].inertia_com[0][0] = 0.5;
+    spec.bodies[0].inertia_com[1][1] = 0.45;
+    spec.bodies[0].inertia_com[2][2] = 0.45;
+    spec.bodies[0].inertia_com[1][2] = 0.35;
+    spec.bodies[0].inertia_com[2][1] = 0.35;
+    if (dyn::FixedBaseChain(spec).valid())
+    {
+        return fail("third triangle inertia minor rejected");
+    }
+    spec = one_link_spec();
+    for (int row = 0; row < 3; ++row)
+    {
+        for (int column = 0; column < 3; ++column)
+        {
+            spec.bodies[0].inertia_com[row][column] =
+                row == column ? 1.0 : 0.375;
+        }
+    }
+    if (dyn::FixedBaseChain(spec).valid())
+    {
+        return fail("triangle inertia determinant rejected");
     }
     return 0;
 }
@@ -283,6 +365,22 @@ int check_input_rejection_and_atomicity()
         !same_bits(tau, original))
     {
         return fail("infinite gravity leaves output untouched");
+    }
+    bad_gravity[0] = std::numeric_limits<double>::infinity();
+    bad_gravity[1] = 0.0;
+    if (chain.inverse_dynamics(q, dq, ddq, bad_gravity, tau) !=
+            rt::ErrorCode::invalid_argument ||
+        !same_bits(tau, original))
+    {
+        return fail("infinite x gravity leaves output untouched");
+    }
+    bad_gravity[0] = 0.0;
+    bad_gravity[2] = std::numeric_limits<double>::infinity();
+    if (chain.inverse_dynamics(q, dq, ddq, bad_gravity, tau) !=
+            rt::ErrorCode::invalid_argument ||
+        !same_bits(tau, original))
+    {
+        return fail("infinite z gravity leaves output untouched");
     }
     double overflowing_dq[MaxJoints] = {1e308, 1e308};
     if (chain.inverse_dynamics(q, overflowing_dq, ddq, gravity, tau) !=

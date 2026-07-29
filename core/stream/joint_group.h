@@ -1,9 +1,22 @@
 #pragma once
 
 // B9/H1 multi-joint stream aggregation. The legacy API remains a fixed bank
-// of independent filters. Frame sessions add an atomic, keep-latest command
-// surface with synchronized group watchdog timing and fixed-capacity output
-// snapshots (trajectory-stream semantics v2.1).
+// of independent filters. Frame sessions add an atomic (whole-frame
+// transactional: a frame is accepted and activated all-or-nothing),
+// keep-latest command surface with synchronized group watchdog timing and
+// fixed-capacity output snapshots (trajectory-stream semantics v2.1).
+// "Atomic" here says nothing about lock-freedom or memory ordering: this
+// type holds no std::atomic and performs no synchronization.
+//
+// THREADING CONTRACT -- single thread (planning domain):
+// push_frame(), cycle(), and read_setpoint_frame() form one single-thread
+// contract and must all be called from the owning planning-domain thread.
+// Concurrent producers are a data race. Cross-thread frame delivery is out
+// of scope (trajectory-stream matrix decision #12): a producer on another
+// thread must hand frames over through its own SPSC queue (rt::SpscQueue)
+// that the planning thread drains before calling push_frame().
+// read_setpoint_frame() returns a reference into live storage that the next
+// cycle() overwrites -- copy the frame before yielding or passing it on.
 //
 // RT-SAFE cycle path: fixed storage only; no heap allocation, locks,
 // exceptions, OS calls, or wall-clock access.
@@ -190,8 +203,11 @@ public:
         return filters_[joint].push_target(target);
     }
 
-    // Producer-side frame transaction. Producer timestamps order and identify
-    // frames only; local cycle time controls activation and watchdog age.
+    // Producer-side frame transaction (whole-frame all-or-nothing, not a
+    // lock-free operation). Producer timestamps order and identify frames
+    // only; local cycle time controls activation and watchdog age. Must be
+    // called from the planning-domain thread that also calls cycle(); an
+    // off-thread producer marshals through its own SPSC first.
     rt::ErrorCode push_frame(const JointCommandFrame &frame)
     {
         if(session_kind_ != SessionKind::frame) {
@@ -269,6 +285,9 @@ public:
 
     std::size_t joint_count() const { return joint_count_; }
 
+    // Reference into live storage: the next cycle() overwrites it, and the
+    // call belongs to the same single planning-domain thread as cycle().
+    // Copy the frame before handing it to another cycle or thread.
     const JointSetpointFrame &read_setpoint_frame() const { return snapshot_; }
 
     std::uint32_t rejected_frames() const { return rejected_frames_; }

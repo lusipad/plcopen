@@ -41,6 +41,10 @@
 | tag / GitHub Release | 维护者明确指定版本与目标提交后才能执行 |
 | LICENSE/NOTICE/PROVENANCE、账号、签署、外部承诺 | 只由人落地；AI 只能起草 |
 
+当前待人工确认的许可证/出处三件：[ADR-0001](doc/design/decisions/0001-v0x-license-strategy.md)（v0.x 许可证策略）、
+[ADR-0006 附录 A](doc/design/decisions/0006-fieldbus-process-model.md)（现场总线 GPL/LGPL 口径）与
+[PROVENANCE.md](PROVENANCE.md)。三者当前状态与影响范围以 [STATUS.md](STATUS.md) 为准。
+
 项目不使用多数投票。维护者负责最终裁决，但必须把可复用的架构/语义理由
 写入 ADR、矩阵或已知边界，避免个人判断成为不可检索的隐性规则。CI 全绿
 是合并必要条件，不会覆盖未完成的语义、出处或安全审查。

@@ -72,9 +72,41 @@ int check_arc_geometry()
     }
 
     geom::ArcLengthTable<8> table;
-    if(table.build(geom::as_path_segment(arc.value())) != rt::ErrorCode::ok ||
+    if(table.total_length() != 0.0 ||
+       table.build(geom::as_path_segment(arc.value())) != rt::ErrorCode::ok ||
        !near(table.parameter_at_length(arc.value().length * 0.25), 0.25, 1e-12)) {
         return fail("arc length table");
+    }
+
+    const geom::PathSegment arc_path = geom::as_path_segment(arc.value());
+    if(!near(arc_path.sample(arc.value().length * 0.5).y, 1.0, 1e-12) ||
+       geom::norm(arc_path.tangent(0.0)) <= 0.0) {
+        return fail("arc path dispatch");
+    }
+
+    // Conditioning at machine offsets: the center fit must stay on the
+    // triangle's own scale, not degrade with distance from the origin
+    // (PCS translation / tool offsets put production arcs there routinely).
+    const double offset = 1.0e6;
+    const rt::Result<geom::ArcSegment> far = geom::make_arc(
+        {offset + 1.0, offset, 0.0},
+        {offset + 0.70710678118654752, offset + 0.70710678118654752, 0.0},
+        {offset, offset + 1.0, 0.0});
+    if(!far || !near(far.value().radius, 1.0, 1e-11)) {
+        return fail("far arc radius conditioning");
+    }
+    const geom::Vec3 far_points[3] = {
+        {offset + 1.0, offset, 0.0},
+        {offset + 0.70710678118654752, offset + 0.70710678118654752, 0.0},
+        {offset, offset + 1.0, 0.0}};
+    for(int i = 0; i < 3; ++i) {
+        const double dx = far_points[i].x - far.value().center.x;
+        const double dy = far_points[i].y - far.value().center.y;
+        const double residual =
+            std::fabs(std::sqrt(dx * dx + dy * dy) - far.value().radius);
+        if(residual > 1e-11) {
+            return fail("far arc circle-fit residual");
+        }
     }
     return 0;
 }
@@ -200,6 +232,11 @@ int check_spline_and_blending()
        !std::isfinite(geom::norm(quintic_path.path_third_derivative(0.5)))) {
         return fail("cubic and quintic path dispatch");
     }
+    if(geom::make_quintic_blend({}, {1.0, 0.0, 0.0},
+                                {2.0, 1.0, 0.0}, 1e-6).error() !=
+       rt::ErrorCode::out_of_range) {
+        return fail("quintic deviation boundary");
+    }
 
     geom::QuinticBlendSegment stationary{};
     stationary.length = 1.0;
@@ -278,7 +315,10 @@ int check_sampler()
     using namespace plcopen::core;
     const geom::LineSegment line = geom::make_line({0.0, 0.0, 0.0}, {4.0, 0.0, 0.0}).value();
     exec::CommittedPath<1> path;
-    if(path.push(geom::as_path_segment(line)) != rt::ErrorCode::ok) {
+    const geom::Vec3 initially_empty = path.sample_arclength(1.0);
+    if(initially_empty.x != 0.0 || initially_empty.y != 0.0 ||
+       initially_empty.z != 0.0 ||
+       path.push(geom::as_path_segment(line)) != rt::ErrorCode::ok) {
         return fail("committed path push");
     }
 
@@ -291,6 +331,10 @@ int check_sampler()
         path, profile.value(), rt::CycleTick::from_cycles(profile.value().duration_cycles()));
     if(!near(finish.x, 4.0, 1e-9) || !near(finish.y, 0.0, 1e-12)) {
         return fail("profiled path finish");
+    }
+    const geom::Vec3 beyond_single = path.sample_arclength(5.0);
+    if(!near(beyond_single.x, 4.0, 1e-12)) {
+        return fail("single committed path clamps to finish");
     }
 
     exec::CommittedPath<2> empty;
@@ -406,6 +450,17 @@ int check_profile_storage_and_envelope_boundaries()
        otg::state_within_limits({0.0, 0.0, -2.0}, limits)) {
         return fail("state envelope boundaries");
     }
+    if(otg::plan({NAN, 0.0, 0.0}, finish, limits) ||
+       otg::plan(start, {NAN, 0.0, 0.0}, limits) ||
+       otg::plan(start, finish, {NAN, 1.0, 1.0, 1.0}) ||
+       otg::plan(start, finish, {0.0, 1.0, 1.0, 1.0}) ||
+       otg::plan(start, finish, {1.0, 0.0, 1.0, 1.0}) ||
+       otg::plan(start, finish, {1.0, 1.0, 0.0, 1.0}) ||
+       otg::plan(start, finish, {1.0, 1.0, 1.0, 0.0}) ||
+       otg::plan({0.0, 2.0, 0.0}, finish, limits).error() !=
+           rt::ErrorCode::infeasible) {
+        return fail("profile planner input boundaries");
+    }
     return 0;
 }
 
@@ -420,6 +475,10 @@ int check_planning_numeric_boundary_matrix()
        plan::jerk_reachable_speed(0.5, 1.0, 0.0, 1.0) != 0.5 ||
        plan::jerk_reachable_speed(0.5, 1.0, 1.0, 0.0) != 0.5) {
         return fail("jerk reachability invalid dynamics");
+    }
+    if(!near(plan::jerk_reachable_speed(0.0, 1.0, 1.0, 1e30),
+             std::sqrt(2.0), 1e-12)) {
+        return fail("jerk reachability reaches trapezoid limit");
     }
     const geom::LineSegment line =
         geom::make_line({0.0, 0.0, 0.0}, {1.0, 0.0, 0.0}).value();

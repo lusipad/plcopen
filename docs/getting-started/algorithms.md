@@ -21,8 +21,18 @@ The single-axis online trajectory generator (OTG) finds the minimum-time
 jerk-limited profile from any initial state `(p, v, a)` to a target state.
 
 The jerk input `u(t)` switches between `{+j, 0, -j}`, producing up to
-7 segments. The solver enumerates feasible switch structures and picks
-the fastest.
+7 segments. The production solver does **not** enumerate switch
+structures. It builds the profile in closed form — entry ramp → cruise →
+exit ramp — selecting the monotone distance branch, bisecting the cruise
+velocity to hit the requested distance, flooring each phase to an integer
+number of cycles, and letting a quintic tail absorb the residue. A
+candidate cascade then picks the shortest feasible result: floored
+multiphase, exact multiphase, refined cruise, minimal single quintic, and
+a baseline backstop.
+
+Pontryagin switch-structure enumeration exists only on the test side, as
+the independent optimality oracle
+(`core/test/otg_optimality_oracle.cpp`).
 
 To see it in action, look at the optimality oracle test (CTest target
 `plcopen_core_otg_optimality_oracle`):

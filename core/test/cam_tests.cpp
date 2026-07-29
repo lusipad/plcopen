@@ -78,6 +78,47 @@ int check_c2_continuity()
     return 0;
 }
 
+// Aperiodic boundary contract: strictly outside the table the slave holds the
+// endpoint (all derivatives zero); exactly at the boundary nodes the
+// derivatives equal the one-sided interior limit, so an engaged cam whose
+// master range is fully used sees no artificial feedforward step at the ends.
+int check_aperiodic_boundary_derivatives()
+{
+    exec::CamTable<32> table;
+    fill_sine(table, 17, 8.0, false);
+    exec::CamSpline spline;
+    if(spline.build(table.view()) != rt::ErrorCode::ok) {
+        return fail("boundary build");
+    }
+    for(int order = 1; order <= 2; ++order) {
+        const rt::Result<double> below = spline.sample_derivative(-0.5, order);
+        const rt::Result<double> above = spline.sample_derivative(8.5, order);
+        if(!below || !above || !near(below.value(), 0.0, 1e-12) ||
+           !near(above.value(), 0.0, 1e-12)) {
+            return fail("outside derivative zero");
+        }
+        const rt::Result<double> at_first = spline.sample_derivative(0.0, order);
+        const rt::Result<double> inside_first = spline.sample_derivative(1e-9, order);
+        if(!at_first || !inside_first ||
+           !near(at_first.value(), inside_first.value(), 1e-6)) {
+            return fail("first node one-sided derivative");
+        }
+        const rt::Result<double> at_last = spline.sample_derivative(8.0, order);
+        const rt::Result<double> inside_last = spline.sample_derivative(8.0 - 1e-9, order);
+        if(!at_last || !inside_last ||
+           !near(at_last.value(), inside_last.value(), 1e-6)) {
+            return fail("last node one-sided derivative");
+        }
+    }
+    // The sine table has nonzero end slope: the node derivative must be the
+    // real interior slope, not the exterior zero.
+    const rt::Result<double> slope = spline.sample_derivative(0.0, 1);
+    if(!slope || std::fabs(slope.value()) < 0.1) {
+        return fail("first node slope nonzero");
+    }
+    return 0;
+}
+
 int check_periodic_wrap()
 {
     exec::CamTable<32> table;
@@ -358,6 +399,7 @@ int check_online_switch()
 int main()
 {
     if(check_spline_interpolates_nodes() != 0 || check_c2_continuity() != 0 ||
+       check_aperiodic_boundary_derivatives() != 0 ||
        check_periodic_wrap() != 0 || check_capacity_rejection() != 0 ||
        check_acceleration_impact() != 0 || check_online_switch() != 0 ||
        check_cam_law_oracle() != 0 || check_cam_law_generation() != 0) {

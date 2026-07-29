@@ -4,7 +4,8 @@
 
 运行时形态（[ADR-0007](../../doc/design/decisions/0007-executor-committed-trajectory.md)，
 已落地）：规划域线程是 `AxisGroup`/`AxisModel` 的唯一写者——排空命令队列、
-桥接反馈、运行 `cycle()`，向承诺轨迹环（SPSC，容量 = 前瞻深度 H）预填帧；
+桥接反馈、运行 `cycle()`，向宿主持有的承诺轨迹环（SPSC，容量 = 前瞻深度 H）
+预填帧——内核不提供该环类型，参考实现见 `core/demo/rt_executor_demo.cpp`；
 RT 线程每周期只从环中弹出一帧，O(1) 零分配采样。规划慢只缩前瞻深度，不扰
 RT 周期与运动平滑；跨域共享仅限命令/承诺轨迹/反馈/状态快照四条 SPSC 队列
 （TSAN 零报告为证）。

@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+> 版本线说明：下方的 v1.0.0-alpha（2026-07-06）是历史实验性预览；自
+> 2026-07-19 起，稳定版本线已重新校准为 v0.20.0（pre-1.0）。理由见
+> [0.20.0] 的 Changed 条目。
+
 ## [Unreleased]
 
 ### Added

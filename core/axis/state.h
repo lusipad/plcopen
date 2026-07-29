@@ -1295,7 +1295,17 @@ class AxisModel
                (group_status_ == nullptr || *group_status_ != GroupStatus::standby);
     }
 
-    rt::Result<std::uint32_t> submit_impl(AxisCommand command)
+    // Pure admissibility prefix of submit_impl(): every rejection that only
+    // reads state, in strict first-match order — each branch returns a
+    // different code, so reordering them is an observable behavior change.
+    //
+    // The seam sits exactly at the first mutation in submit_impl(), the
+    // command-id allocation. The two later rejections (the acceleration
+    // profile takeover rule and the soft-limit check) deliberately stay
+    // behind that allocation: a command rejected there has already consumed
+    // a command id, and hoisting them would shift the observable command-id
+    // sequence, which the golden replay baseline pins.
+    rt::ErrorCode submit_admissibility(const AxisCommand &command) const
     {
         const bool torque = command.kind == CommandKind::torque;
         if (!snapshot_.powered || snapshot_.status == AxisStatus::errorstop ||
@@ -1308,22 +1318,22 @@ class AxisModel
                     : (command.velocity <= 0.0 || command.acceleration <= 0.0 ||
                        command.deceleration <= 0.0 || command.jerk <= 0.0)))
         {
-            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
+            return rt::ErrorCode::invalid_argument;
         }
         if(torque && command.buffer_mode != BufferMode::aborting) {
             // A torque command has no natural completion point. Matching the
             // Beckhoff CST contract, only an aborting takeover is defined.
-            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported);
+            return rt::ErrorCode::unsupported;
         }
         if (stop_lock_id_ != 0 && command.kind != CommandKind::stop)
         {
-            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::precondition_failed);
+            return rt::ErrorCode::precondition_failed;
         }
         if ((command.kind == CommandKind::move_absolute ||
              command.kind == CommandKind::move_continuous_absolute) &&
             !is_valid_direction(command.direction))
         {
-            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
+            return rt::ErrorCode::invalid_argument;
         }
 
         // Queueing a motion command behind an engaged synchronization or a
@@ -1332,11 +1342,11 @@ class AxisModel
         if ((sync_kind_ != SyncKind::none || stream_active_) &&
             command.buffer_mode != BufferMode::aborting)
         {
-            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::invalid_argument);
+            return rt::ErrorCode::invalid_argument;
         }
         if (is_continuous_kind(command.kind) && command.end_velocity == 0.0)
         {
-            return rt::Result<std::uint32_t>::failure(rt::ErrorCode::unsupported);
+            return rt::ErrorCode::unsupported;
         }
         const double direction_reference =
             command.buffer_mode == BufferMode::aborting
@@ -1344,8 +1354,17 @@ class AxisModel
                 : queued_endpoint();
         if (!command_direction_enabled(command, direction_reference))
         {
-            return rt::Result<std::uint32_t>::failure(
-                rt::ErrorCode::precondition_failed);
+            return rt::ErrorCode::precondition_failed;
+        }
+        return rt::ErrorCode::ok;
+    }
+
+    rt::Result<std::uint32_t> submit_impl(AxisCommand command)
+    {
+        const rt::ErrorCode admissible = submit_admissibility(command);
+        if (admissible != rt::ErrorCode::ok)
+        {
+            return rt::Result<std::uint32_t>::failure(admissible);
         }
 
         if (command.command_id == 0)

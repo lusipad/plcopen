@@ -93,6 +93,9 @@
 +--------------------------------------------------+
 | USER THREADS -- any thread, may block            |
 | fb (L6) facades / st programs / stream producers |
+| (producers hand frames over a caller-owned SPSC; |
+|  JointStreamGroup itself is planning-domain,     |
+|  single-thread)                                  |
 | submit MC_* commands, poll Done / Busy / Active  |
 | / CommandAborted, read state snapshots           |<---------------+
 +------------------------+-------------------------+                |
@@ -198,7 +201,7 @@
 | L2 geom | [`core/geom`](../../../core/geom/README.md) | 1049 | 直线/三点圆弧/Bezier 段几何、刚体帧（含完整 RPY 原语）、弧长参数化 | KB-030/036 |
 | L3 plan | [`core/plan`](../../../core/plan/README.md) | 1217 | 路径缓冲、前瞻扫描（jerk 精确可达）、blending 决策；TOPP 标量路径律影子（topp.h / topp_jerk.h / topp_executor.h） | KB-031/032/033 |
 | L4 exec | [`core/exec`](../../../core/exec/README.md) | 529 | 周期采样、gear/cam 同步（C0 + C2 样条重建、在线换表）、cam 运动规律生成器、叠加 | KB-038/046 |
-| L5 axis | [`core/axis`](../../../core/axis/README.md) | 11912 | 单轴/组状态机、命令生命周期、坐标系栈、kinematics 级联、双空间限速、流会话、姿态编程面、笛卡尔管线、回读面 | KB-035~037/041~044/047~050 |
+| L5 axis | [`core/axis`](../../../core/axis/README.md) | 11912 | 单轴/组状态机、命令生命周期、坐标系栈、kinematics 插件接入（两条平行互斥契约）、双空间限速、流会话、姿态编程面、笛卡尔管线、回读面 | KB-035~037/041~044/047~050 |
 | L6 fb | [`core/fb`](../../../core/fb/README.md) | 8366 | Part 1/2 43、Part 4 68、Part 5 11 个标准门面与基础 FB，统一 Execute/Done/Busy/CommandAborted 契约 | 覆盖口径见下方诚实声明 |
 | L7 adapters | [`core/adapters`](../../../core/adapters/README.md) | 896 | Servo 窄接口 + 桥接（ADR-0004）、ServoSim、CiA402 状态机、CSP/CSV/CST 模式管理、Feetech STS 协议 0 总线/Servo/Sim；真机仍受 4.8 门控 | KB-040/074 |
 | 支撑库 kin | [`core/kin`](../../../core/kin/README.md) | 731 | FK/IK：龙门/SCARA/6R + 腕奇异带、位姿原语；依赖 geom/rt，仅被 L5 消费 | KB-039/041/045 |

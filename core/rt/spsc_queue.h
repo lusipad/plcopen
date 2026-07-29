@@ -7,7 +7,8 @@
 namespace plcopen::core::rt
 {
 
-template <typename T, std::size_t Capacity> class SpscQueue
+template <typename T, std::size_t Capacity>
+class SpscQueue // NOLINT(clang-analyzer-optin.performance.Padding)
 {
 public:
     static_assert(Capacity > 0, "SpscQueue capacity must be positive");
@@ -56,14 +57,19 @@ public:
 private:
     static constexpr std::size_t StorageSize = Capacity + 1;
 
+    // Producer-written head and consumer-written tail each get a full cache
+    // line so cross-core traffic stays on the payload, not on false sharing
+    // between the two indices (same line size the IPC TransportHeader uses).
+    static constexpr std::size_t CacheLineSize = 64;
+
     static constexpr std::size_t increment(std::size_t value)
     {
         return (value + 1) % StorageSize;
     }
 
     std::array<T, StorageSize> data_{};
-    std::atomic<std::size_t> head_{0};
-    std::atomic<std::size_t> tail_{0};
+    alignas(CacheLineSize) std::atomic<std::size_t> head_{0};
+    alignas(CacheLineSize) std::atomic<std::size_t> tail_{0};
 };
 
 } // namespace plcopen::core::rt

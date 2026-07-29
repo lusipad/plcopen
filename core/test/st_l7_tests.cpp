@@ -318,6 +318,47 @@ void stable_symbol_ids_use_qualified_names()
           "L7-D03 unqualified ambiguous lookup is not approximated");
 }
 
+void debug_value_types_and_source_lookup_are_exact()
+{
+    check(st::SymbolId{7} == st::SymbolId{7} &&
+              st::SymbolId{7} != st::SymbolId{8} &&
+              st::stable_symbol_id("PLANT.Main") ==
+                  st::stable_symbol_id("plant.main"),
+          "L7 debug symbol value semantics are stable");
+
+    const st::InstructionId base{1, 2, 3, 4,
+                                 st::DebugRegionKind::base};
+    st::InstructionId changed = base;
+    check(base == changed, "L7 instruction IDs compare equal field by field");
+    changed.artifact = 9;
+    check(base != changed, "L7 instruction ID includes artifact");
+    changed = base;
+    changed.mapping = 9;
+    check(base != changed, "L7 instruction ID includes mapping");
+    changed = base;
+    changed.region = 9;
+    check(base != changed, "L7 instruction ID includes region");
+    changed = base;
+    changed.offset = 9;
+    check(base != changed, "L7 instruction ID includes offset");
+    changed = base;
+    changed.region_kind = st::DebugRegionKind::sfc_action;
+    check(base != changed, "L7 instruction ID includes region kind");
+
+    st::SourceMap map;
+    st::SourceMapEntry entry;
+    entry.source_name = "Main.ST";
+    entry.line = 7;
+    entry.instruction = 42;
+    map.entries.push_back(entry);
+    check(map.first_instruction_at(nullptr, 7) == UINT32_MAX &&
+              map.first_instruction_at("Main.ST", 8) == UINT32_MAX &&
+              map.first_instruction_at("Main", 7) == UINT32_MAX &&
+              map.first_instruction_at("Main.SX", 7) == UINT32_MAX &&
+              map.first_instruction_at("MAIN.ST", 7) == 42,
+          "L7 source lookup is null-safe, exact and case-insensitive");
+}
+
 void attach_rejects_unknown_task_and_reattaches_cleanly()
 {
     Rig rig;
@@ -1537,6 +1578,7 @@ int main()
 {
     seqlock_snapshot_is_consistent_and_bounded();
     stable_symbol_ids_use_qualified_names();
+    debug_value_types_and_source_lookup_are_exact();
     attach_rejects_unknown_task_and_reattaches_cleanly();
     detached_debug_api_boundary_matrix();
     snapshot_supports_symbols_larger_than_sixty_four_bytes();

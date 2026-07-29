@@ -57,3 +57,22 @@
 各层职责细节见对应模块 README（`core/<模块>/README.md`）。权威结构事实以
 [架构文档](../doc/design/core/architecture.md)的分层职责表为准；本图不嵌入
 易漂移的源码行数。
+
+## 非拥有指针生命周期契约（KB-101）
+
+内核不拥有任何大对象（caller-owned 一切，见架构文档 §内存模型）。代价是
+一张**非拥有裸指针网**，其生命周期规则集中声明如下（悬垂即 UB，内核不做
+运行时代价的存活追踪——这是已登记的设计边界，不是疏漏）：
+
+| 指针边 | 规则 | 析构侧防护 |
+|---|---|---|
+| `AxisGroup` → `AxisModel*` | 成员必须比组长寿，或在 disabled 态先 `remove_axis` | 组析构会摘除仍注册的成员并清 owner 反链 |
+| FB（L6）→ `AxisModel*`/`AxisGroup*` | 轴/组必须比引用它的 FB 长寿；FB 无回调、只按命令 id 轮询快照 | 无（FB 是纯轮询者，悬垂读即 UB） |
+| gear/cam 命令 → master `AxisModel*` | 主轴必须比同步关系长寿；脱开同步后指针不再被读 | 轴析构不通知从轴 |
+| `set_kinematics`/`set_pose_kinematics` → 插件指针 | 插件必须比组内注册长寿；仅 standby 空队列可换 | 无 |
+| 凸轮表/路径表/轮廓段 caller-owned 存储 | 存储必须覆盖 engage/消费的整个窗口；在线换表经校验式切换 | 拒绝校验（NaN/越界），不做存活校验 |
+| ST registry → 轴/组 handle | 1-based handle 经 typed registry 解引用；对象须比 ST 程序生命周期长 | registry 边界校验 handle，非存活校验 |
+
+构造/析构顺序口诀：**先造被指者、后造持指者；析构反序**。参考 executor
+的线程级生命周期（绑定→启动→停→join→销毁）另见
+[runtime-thread-ownership-semantics.md](../doc/compliance/runtime-thread-ownership-semantics.md)。
