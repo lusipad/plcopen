@@ -3,7 +3,7 @@
 > 本页是"现在在哪"的唯一入口，每个批次收口时更新。术语见
 > [CONTEXT.md](CONTEXT.md)；边界细节见
 > [已知边界注册表](doc/compliance/known-boundaries.md)。
-> 最后更新：**2026-07-27**。
+> 最后更新：**2026-07-30**。
 
 ## 一句话
 
@@ -11,7 +11,10 @@
 软件收尾批，KB-034~081）。`v1.0.0-alpha`（2026-07-06）保留为历史实验性
 预览，当前版本线已校准回 pre-1.0，**v0.20.0 已于 2026-07-20 正式发布**：
 [GitHub Release](https://github.com/lusipad/plcopen/releases/tag/v0.20.0) 与
-[PyPI](https://pypi.org/project/pyplcopen/0.20.0/) 均已上线。Part 4 管理/路径表/变换 + Part 5
+[PyPI](https://pypi.org/project/pyplcopen/0.20.0/) 均已上线。当前
+`main@bae8a72` 正在准备 `v0.21.0` 候选：源码版本面与双语发布资料开始
+收口，tag/PyPI/GitHub Release 均未授权、未执行；完整 Wheels/Nightly/
+Coverage/Mutation 候选证据仍待同一最终提交复验。Part 4 管理/路径表/变换 + Part 5
 回零 FB 已交付。2026-07-19 候选门禁 Windows/Linux/Wheels/Nightly/
 Coverage/Mutation/Docs 全通过。**中英双语文档站已上线**，本批
 [Documentation build/deploy](https://github.com/lusipad/plcopen/actions/runs/30035093781)
@@ -163,11 +166,13 @@ sink 门面，生产层无反向引用）。分层健康度见
 - 分层：2026-07-12 include 图审计 **0 违规**（L0-L4 零 PLCopen 语义引用、无循环依赖、L4 不引 L3），见 [架构审查报告](doc/design/architecture-review-2026-07.md)
 - RT：静态扫描 32 文件（含 st vm/bind、Feetech adapter、X5 OS-free IPC 原语、Z 系列 ST 旅程、H2 SerialChain 与 H3 FixedBaseChain）+ 冻结窗口分配断言；DoD §5.3 的周期耗时对比通过（新核 = 旧线 9.3%）；分配 soak 以周期等效口径关闭（25.92 亿周期零分配，2026-07-11），墙钟 72h/抖动证据归 B7 真机报告
 - CI（v0.20.0）：候选 `5a5cf81` 的 [Windows CI](https://github.com/lusipad/plcopen/actions/runs/29692190516)、[Linux CI](https://github.com/lusipad/plcopen/actions/runs/29692190521)、[三平台 Wheels + sdist](https://github.com/lusipad/plcopen/actions/runs/29692204896)、[Core Nightly](https://github.com/lusipad/plcopen/actions/runs/29692206177)、[Coverage Gate](https://github.com/lusipad/plcopen/actions/runs/29692207269)、[Mutation Score Gate](https://github.com/lusipad/plcopen/actions/runs/29692208327) 与 [Documentation](https://github.com/lusipad/plcopen/actions/runs/29692209416) 全部通过；最终 tag 提交 `7788a85` 的 Windows/Linux/Documentation 主线门禁 0 annotations，[tag Wheels/PyPI run](https://github.com/lusipad/plcopen/actions/runs/29709944703) 5/5 job 全绿。合并提交 `78d287c` 的 [Windows CI](https://github.com/lusipad/plcopen/actions/runs/29873287504)、[Linux CI](https://github.com/lusipad/plcopen/actions/runs/29873287478)、[Documentation](https://github.com/lusipad/plcopen/actions/runs/29873287492) 与新版 [Core Nightly](https://github.com/lusipad/plcopen/actions/runs/29873304328) 也全部通过；Nightly 9/9 job 全绿。11 项 fuzz 只进入 Nightly；H1 接入后，普通 PR 当前登记 88 项非 fuzz 测试。PR 分支不再同时触发 push 与 pull_request 两套 Windows/Linux 主门禁。`main` 仍无 branch protection/ruleset，这些是 workflow 证据而非技术强制的 required checks。触发边界见 [CI gate 矩阵](doc/compliance/ci-gates.md)
+- CI（v0.21.0 候选基线）：`main@bae8a72` 的 [Windows](https://github.com/lusipad/plcopen/actions/runs/30472192369)、[Linux](https://github.com/lusipad/plcopen/actions/runs/30472193320)、[Language Tools](https://github.com/lusipad/plcopen/actions/runs/30472192855)、[Twin](https://github.com/lusipad/plcopen/actions/runs/30472192377) 与 [Documentation](https://github.com/lusipad/plcopen/actions/runs/30472194316) 全绿；候选版本提交仍需重新闭合这些主门与 Wheels/Nightly/Coverage/Mutation 深门
 
 ## 进行中 / 待办
 
 | 项 | 状态 |
 |----|------|
+| **v0.21.0** | **候选准备中（2026-07-30）**：版本元数据、CHANGELOG、双语 Release body 与检查单正在对齐；未打 tag，PyPI/GitHub Release 未执行，最终候选 SHA 与完整发布门禁尚未形成 |
 | **v0.20.0** | **已发布（2026-07-20）**：annotated tag 固定到 `7788a85`；GitHub Release 为 Latest、非 prerelease；PyPI 已上线 20 个 wheels 与 1 个 sdist，公开 wheel 下载校验通过 |
 | **CI 反馈时长** | **P1 已完成，候选复验稳定**：普通 PR 不跑 fuzz 且不重复触发两套主门禁；Windows 13:45，Linux 16:29，重型 sanitizer/fuzz 留在 20:56 的 Nightly |
 | 抽查评审 | 2026-07-05 批次核心提交（OTG/流/kin/adapters）开放抽查，证据链在各提交信息；非合入门槛 |

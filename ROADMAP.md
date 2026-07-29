@@ -5,11 +5,17 @@
 [doc/planning/](doc/planning/README.md)，历史里程碑（v0.2 → v0.11 全部
 sprint 记录）在 [doc/archive/roadmap-history.md](doc/archive/roadmap-history.md)。
 
-## 当前承诺（2026-07-27，唯一优先级声明）
+## 当前承诺（2026-07-30，唯一优先级声明）
 
 优先级只在本节声明一次，下列各节只承载明细，不再各自宣称"当前/最高"：
 
-1. **P0 v0.20.0 正式发布（已完成）**：版本信号已校准回 pre-1.0，
+1. **P0 v0.21.0 发布候选（进行中）**：以 `main@bae8a72` 为源码基线，
+   将 v0.20.0 之后已经合入的 H1/H2/H3、T2a/T2b、D1/D3、Z1～Z5、X5
+   与组接管收口为 pre-1.0 minor release。当前正在对齐版本元数据、
+   CHANGELOG、双语 Release body 与发布检查单；候选提交必须重新通过
+   Windows/Linux/Language Tools/Twin/Docs、三平台 Wheels、Nightly、
+   Coverage 与 Mutation。未获得版本和最终目标提交明确授权前不打 tag。
+2. **P0 v0.20.0 正式发布（已完成）**：版本信号已校准回 pre-1.0，
    [GitHub Release](https://github.com/lusipad/plcopen/releases/tag/v0.20.0)
    与 [PyPI `pyplcopen==0.20.0`](https://pypi.org/project/pyplcopen/0.20.0/)
    已于 2026-07-20 上线；tag 固定到 `7788a85`。候选门禁：
@@ -23,11 +29,11 @@ sprint 记录）在 [doc/archive/roadmap-history.md](doc/archive/roadmap-history
    交付形态为 GitHub source/header-only Release + PyPI 三平台 wheels/sdist；
    [tag 发布工作流](https://github.com/lusipad/plcopen/actions/runs/29709944703)
    5/5 job 全绿，发布了 20 个 wheels 与 1 个 sdist。
-2. **P0 主线复绿（已完成）**：`17932de` 已修复测试辅助函数无谓按值复制
+3. **P0 主线复绿（已完成）**：`17932de` 已修复测试辅助函数无谓按值复制
    `st::Program`；[Windows CI](https://github.com/lusipad/plcopen/actions/runs/29680604789)
    与 [Linux CI](https://github.com/lusipad/plcopen/actions/runs/29680604785) 均通过，
    包括 Linux/Clang 81 文件 `clang-tidy`、GCC 与 ARM64。
-3. **P1 CI 时长恢复（已完成）**：`0195739` 已把 11 项 fuzz CTest 统一移到原生
+4. **P1 CI 时长恢复（已完成）**：`0195739` 已把 11 项 fuzz CTest 统一移到原生
    Nightly，A2/X5 新增专项后日常门当前跑 82 项非 fuzz 测试；[Linux CI](https://github.com/lusipad/plcopen/actions/runs/29682295508)
    中 ARM/QEMU 测试由 28 分 40 秒降至 4 分 57 秒，[Core Nightly](https://github.com/lusipad/plcopen/actions/runs/29682299843)
    11/11 fuzz 仅用 5.30 秒并全绿。`7336379` 在不减少 81 个 TU 或检查项的
@@ -35,13 +41,13 @@ sprint 记录）在 [doc/archive/roadmap-history.md](doc/archive/roadmap-history
    E2 由 22 分 17 秒降至 10 分 31 秒，Linux 总时长由 27 分 59 秒降至
    16 分 46 秒；v0.20.0 候选复验 Linux 为 16 分 29 秒。PR 分支现仅由
    `pull_request` 触发，不再与 feature-branch `push` 重复运行主门禁。
-4. **A1 浮点数值语义合同（已完成）**：`805a363` 已向 header-only consumer
+5. **A1 浮点数值语义合同（已完成）**：`805a363` 已向 header-only consumer
    传递严格浮点选项，并以[数值语义合同](doc/design/core/floating-point-semantics.md)
    和跨平台运行值测试钉死 FMA、舍入、特殊值与超越函数容差；
    [Windows CI](https://github.com/lusipad/plcopen/actions/runs/29688920738)、
    [Linux CI](https://github.com/lusipad/plcopen/actions/runs/29688920705) 与
    [三平台 Wheels](https://github.com/lusipad/plcopen/actions/runs/29688932738) 复验通过。
-5. **无外部前置的软件队列**：v0.20.0、A2 T30 WCET、G1 治理与 X5
+6. **无外部前置的软件队列**：v0.20.0、A2 T30 WCET、G1 治理与 X5
    executor IPC 软件形态均已收口。X5 保留 ADR-0007 进程内承诺环，只在
    `Servo` 边界新增固定 ABI SPSC + 状态双缓冲；Windows/Linux 两进程与
    Linux TSan 已在 [Core Nightly](https://github.com/lusipad/plcopen/actions/runs/29873304328)
@@ -59,7 +65,7 @@ sprint 记录）在 [doc/archive/roadmap-history.md](doc/archive/roadmap-history
    [PR #16](https://github.com/lusipad/plcopen/pull/16) 的
    [Windows/Linux Twin integration](https://github.com/lusipad/plcopen/actions/runs/30024648555)
    与 Windows/Linux 主门禁均已通过。
-6. **维护者授权的软件队列（已完成）**：2026-07-24 已明确按
+7. **维护者授权的软件队列（已完成）**：2026-07-24 已明确按
    **D3 Scope → D1 ST LSP → H1 同步关节流 → T2b 大模型孪生 →
    H3 动力学前馈** 顺序开发。D3 已由
    [PR #23](https://github.com/lusipad/plcopen/pull/23) 合并，合并后的
@@ -118,9 +124,9 @@ sprint 记录）在 [doc/archive/roadmap-history.md](doc/archive/roadmap-history
    均已通过。
    Marketplace、PyPI、tag 与 GitHub Release 均未执行。D2 WASM
    Playground 与 RL 保留候选，不插入本队列。
-7. **F 轨 EtherCAT**：仍是最大的剩余软件块和商用指标 #1/#4 的上游；
+8. **F 轨 EtherCAT**：仍是最大的剩余软件块和商用指标 #1/#4 的上游；
    ADR-0006 许可证人工核验与台架决策完成后立即插队，按 F1→F2→F3 推进。
-8. **完成面守护**：PLCopen/Beckhoff C0→C6 与 ST L0→L7、L∀ 已完成；只
+9. **完成面守护**：PLCopen/Beckhoff C0→C6 与 ST L0→L7、L∀ 已完成；只
    维护能力矩阵、特性表和限制注册表不漂移，不扩张到 IDE、Safety、CNC。
    商用门板已关闭的软件面保持不回退，台架、部署、认证和日历证据不以
    软件模拟冒充。

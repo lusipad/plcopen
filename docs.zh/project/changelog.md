@@ -8,7 +8,8 @@
 
 | 需要 | 文档 |
 |---|---|
-| 尚未发布的仓库变更 | [CHANGELOG.md](https://github.com/lusipad/plcopen/blob/main/CHANGELOG.md) |
+| v0.21.0 候选变更 | [v0.21.0 候选发布记录](../releases/v0.21.0.md) |
+| 仓库变更历史 | [CHANGELOG.md](https://github.com/lusipad/plcopen/blob/main/CHANGELOG.md) |
 | v0.20.0 的安装、制品、证据与限制 | [v0.20.0 发布记录](../releases/v0.20.0.md) |
 | 已发布源码制品 | [GitHub Releases](https://github.com/lusipad/plcopen/releases) |
 | 已发布 Python 包 | [PyPI 项目历史](https://pypi.org/project/pyplcopen/#history) |

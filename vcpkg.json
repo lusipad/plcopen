@@ -1,6 +1,6 @@
 {
     "name": "plcopen",
-    "version": "0.20.0",
+    "version": "0.21.0",
     "description": "PLCopen motion-control kernel — C++17 header-only library for real-time coordinated motion",
     "homepage": "https://github.com/lusipad/plcopen",
     "license": "Apache-2.0",

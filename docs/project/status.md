@@ -24,6 +24,10 @@ The latest published user baseline is documented in the
 `pyplcopen`, the IEC 61131-3 ST runtime, verification evidence, and declared
 limits.
 
+The source tree is preparing a separate
+[v0.21.0 candidate](../releases/v0.21.0.md). Its candidate record and passing
+branch checks do not make it a published version.
+
 For facts newer than that release, use the canonical
 [project status](https://github.com/lusipad/plcopen/blob/main/STATUS.md).
 Do not infer a release from a branch name, a merged change, or a passing CI
