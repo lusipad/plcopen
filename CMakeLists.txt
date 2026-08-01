@@ -29,6 +29,8 @@ option(PLCOPEN_BUILD_CORE "Build plcopen rewrite core targets" ON)
 option(PLCOPEN_BUILD_LEGACY "Build legacy v0.x src targets" OFF)
 option(PLCOPEN_BUILD_DOCS "Build plcopen API docs with Doxygen" OFF)
 option(PLCOPEN_BUILD_PYTHON_BINDINGS "Build pybind11-based Python bindings" OFF)
+option(PLCOPEN_BUILD_SO101_TOOLS
+       "Build opt-in SO-ARM101 host tools" OFF)
 option(PLCOPEN_ENABLE_PROCESS_INTEGRATION_TESTS
        "Enable cooperative local tests that create named shared memory and child processes" OFF)
 set(PLCOPEN_DEFAULT_BUILD_TESTS OFF)
@@ -40,6 +42,17 @@ unset(PLCOPEN_DEFAULT_BUILD_TESTS)
 
 if(PLCOPEN_BUILD_CORE)
   add_subdirectory(core)
+endif()
+
+if(PLCOPEN_BUILD_SO101_TOOLS AND NOT PLCOPEN_BUILD_CORE)
+  message(FATAL_ERROR
+          "PLCOPEN_BUILD_SO101_TOOLS requires PLCOPEN_BUILD_CORE")
+endif()
+
+if(PLCOPEN_BUILD_CORE AND
+   (PLCOPEN_BUILD_SO101_TOOLS OR
+    (BUILD_TESTING AND PLCOPEN_BUILD_TESTS)))
+  add_subdirectory(tools/so101)
 endif()
 
 if(PLCOPEN_BUILD_LEGACY)
