@@ -1,0 +1,433 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh">
+<head>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=11"/>
+<meta name="generator" content="Doxygen 1.9.8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>plcopen: core/geom/geometry.h 文件参考</title>
+<link href="tabs.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="jquery.js"></script>
+<script type="text/javascript" src="dynsections.js"></script>
+<link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<link href="doxygen.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+<div id="top"><!-- do not remove this div, it is closed by doxygen! -->
+<div id="titlearea">
+<table cellspacing="0" cellpadding="0">
+ <tbody>
+ <tr id="projectrow">
+  <td id="projectalign">
+   <div id="projectname">plcopen<span id="projectnumber">&#160;0.21.0</span>
+   </div>
+  </td>
+ </tr>
+ </tbody>
+</table>
+</div>
+<!-- end header part -->
+<!-- 制作者 Doxygen 1.9.8 -->
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+var searchBox = new SearchBox("searchBox", "search/",'.html');
+/* @license-end */
+</script>
+<script type="text/javascript" src="menudata.js"></script>
+<script type="text/javascript" src="menu.js"></script>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+$(function() {
+  initMenu('',true,false,'search.php','搜索');
+  $(document).ready(function() { init_search(); });
+});
+/* @license-end */
+</script>
+<div id="main-nav"></div>
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<div id="MSearchResults">
+<div class="SRPage">
+<div id="SRIndex">
+<div id="SRResults"></div>
+<div class="SRStatus" id="Loading">载入中...</div>
+<div class="SRStatus" id="Searching">搜索中...</div>
+<div class="SRStatus" id="NoMatches">未找到</div>
+</div>
+</div>
+</div>
+</div>
+
+<div id="nav-path" class="navpath">
+  <ul>
+<li class="navelem"><a class="el" href="dir_4270bfced15e0e73154b13468c7c9ad9.html">core</a></li><li class="navelem"><a class="el" href="dir_c48d7276e7aa8f6753bb6241f22906fa.html">geom</a></li>  </ul>
+</div>
+</div><!-- top -->
+<div class="header">
+  <div class="summary">
+<a href="#nested-classes">类</a> &#124;
+<a href="#namespaces">命名空间</a> &#124;
+<a href="#enum-members">枚举</a> &#124;
+<a href="#func-members">函数</a>  </div>
+  <div class="headertitle"><div class="title">geometry.h 文件参考</div></div>
+</div><!--header-->
+<div class="contents">
+<div class="textblock"><code>#include &lt;algorithm&gt;</code><br />
+<code>#include &lt;cmath&gt;</code><br />
+<code>#include &lt;cstddef&gt;</code><br />
+<code>#include &quot;<a class="el" href="error_8h_source.html">rt/error.h</a>&quot;</code><br />
+<code>#include &quot;<a class="el" href="static__vector_8h_source.html">rt/static_vector.h</a>&quot;</code><br />
+</div><div class="textblock"><div class="dynheader">
+geometry.h 的引用(Include)关系图:</div>
+<div class="dyncontent">
+<div class="center"><img src="geometry_8h__incl.png" border="0" usemap="#acore_2geom_2geometry_8h" alt=""/></div>
+<map name="acore_2geom_2geometry_8h" id="acore_2geom_2geometry_8h">
+<area shape="rect" title=" " alt="" coords="132,5,300,31"/>
+<area shape="rect" title=" " alt="" coords="5,79,91,104"/>
+<area shape="poly" title=" " alt="" coords="190,33,89,76,87,71,188,28"/>
+<area shape="rect" title=" " alt="" coords="115,79,178,104"/>
+<area shape="poly" title=" " alt="" coords="206,33,169,71,165,67,203,29"/>
+<area shape="rect" title=" " alt="" coords="162,152,233,177"/>
+<area shape="poly" title=" " alt="" coords="217,31,203,139,198,138,212,31"/>
+<area shape="rect" href="error_8h.html" title=" " alt="" coords="257,152,335,177"/>
+<area shape="poly" title=" " alt="" coords="225,30,285,139,281,141,220,32"/>
+<area shape="rect" href="static__vector_8h.html" title=" " alt="" coords="304,79,435,104"/>
+<area shape="poly" title=" " alt="" coords="242,28,333,70,331,75,240,33"/>
+<area shape="poly" title=" " alt="" coords="343,106,239,149,237,144,341,102"/>
+<area shape="poly" title=" " alt="" coords="359,106,320,144,316,140,355,102"/>
+<area shape="rect" title=" " alt="" coords="360,152,416,177"/>
+<area shape="poly" title=" " alt="" coords="375,104,384,138,379,140,370,105"/>
+<area shape="rect" title=" " alt="" coords="441,152,533,177"/>
+<area shape="poly" title=" " alt="" coords="390,102,457,142,454,147,387,106"/>
+</map>
+</div>
+</div><div class="textblock"><div class="dynheader">
+此图展示该文件直接或间接的被哪些文件引用了:</div>
+<div class="dyncontent">
+<div class="center"><img src="geometry_8h__dep__incl.png" border="0" usemap="#acore_2geom_2geometry_8hdep" alt=""/></div>
+<map name="acore_2geom_2geometry_8hdep" id="acore_2geom_2geometry_8hdep">
+<area shape="rect" title=" " alt="" coords="1705,5,1873,31"/>
+<area shape="rect" href="axis_2group_8h.html" title=" " alt="" coords="1397,262,1532,287"/>
+<area shape="poly" title=" " alt="" coords="1691,30,1575,48,1527,62,1496,81,1480,101,1470,125,1460,177,1461,226,1465,261,1460,262,1455,227,1455,177,1465,124,1476,99,1492,77,1524,57,1574,43,1691,24"/>
+<area shape="rect" href="group__cartesian_8h.html" title=" " alt="" coords="1553,174,1755,199"/>
+<area shape="poly" title=" " alt="" coords="1773,43,1665,176,1661,172,1769,40"/>
+<area shape="rect" href="group__takeover__connector_8h.html" title=" " alt="" coords="1506,79,1693,119"/>
+<area shape="poly" title=" " alt="" coords="1749,38,1646,81,1644,76,1747,33"/>
+<area shape="rect" href="group__window_8h.html" title=" " alt="" coords="1088,86,1279,111"/>
+<area shape="poly" title=" " alt="" coords="1691,32,1505,53,1290,81,1245,89,1244,83,1290,76,1504,48,1691,27"/>
+<area shape="rect" href="sampler_8h.html" title=" " alt="" coords="2133,86,2285,111"/>
+<area shape="poly" title=" " alt="" coords="1870,30,2121,76,2157,83,2156,89,2120,81,1869,36"/>
+<area shape="rect" href="exec_2sync_8h.html" title=" " alt="" coords="933,86,1063,111"/>
+<area shape="poly" title=" " alt="" coords="1691,25,1413,42,1244,59,1076,81,1040,89,1039,83,1075,76,1244,53,1413,37,1691,20"/>
+<area shape="rect" href="frame_8h.html" title=" " alt="" coords="1774,86,1921,111"/>
+<area shape="poly" title=" " alt="" coords="1808,40,1841,84,1837,87,1803,43"/>
+<area shape="rect" href="kinematics_8h.html" title=" " alt="" coords="1946,86,2109,111"/>
+<area shape="poly" title=" " alt="" coords="1837,32,1993,83,1992,89,1836,37"/>
+<area shape="rect" href="path_8h.html" title=" " alt="" coords="1303,86,1429,111"/>
+<area shape="poly" title=" " alt="" coords="1705,36,1449,81,1415,89,1414,83,1448,76,1704,30"/>
+<area shape="rect" href="topp_8h.html" title=" " alt="" coords="2903,86,3029,111"/>
+<area shape="poly" title=" " alt="" coords="1887,23,2903,90,2902,96,1886,28"/>
+<area shape="rect" href="topp__executor_8h.html" title=" " alt="" coords="2989,262,3178,287"/>
+<area shape="poly" title=" " alt="" coords="1887,19,2554,38,2882,55,2991,65,3043,76,3064,95,3078,118,3087,144,3092,172,3092,224,3088,262,3083,261,3087,224,3086,172,3082,146,3073,120,3060,98,3041,81,2990,70,2881,60,2554,43,1887,24"/>
+<area shape="rect" href="topp__jerk_8h.html" title=" " alt="" coords="2887,174,3045,199"/>
+<area shape="poly" title=" " alt="" coords="1887,27,2297,76,2586,116,2874,164,2913,171,2912,177,2874,169,2586,121,2296,81,1886,32"/>
+<area shape="rect" href="fb_2group_8h.html" title=" " alt="" coords="938,431,1058,456"/>
+<area shape="poly" title=" " alt="" coords="1422,294,1171,385,1033,433,1031,428,1169,380,1420,289"/>
+<area shape="rect" href="management_8h.html" title=" " alt="" coords="1082,431,1253,456"/>
+<area shape="poly" title=" " alt="" coords="1455,301,1426,344,1406,366,1384,385,1353,402,1320,416,1254,434,1252,429,1318,411,1350,397,1380,380,1403,362,1422,341,1450,298"/>
+<area shape="rect" href="motion_8h.html" title=" " alt="" coords="933,350,1063,375"/>
+<area shape="poly" title=" " alt="" coords="1389,293,1061,353,1060,347,1388,287"/>
+<area shape="rect" href="binding__storage_8h.html" title=" " alt="" coords="1475,511,1662,537"/>
+<area shape="poly" title=" " alt="" coords="1501,292,1538,314,1579,345,1618,384,1647,430,1651,443,1649,456,1636,479,1614,499,1592,514,1589,509,1611,495,1631,476,1644,454,1645,443,1642,432,1614,387,1576,349,1535,319,1498,296"/>
+<area shape="rect" href="path__table_8h.html" title=" " alt="" coords="1437,431,1589,456"/>
+<area shape="poly" title=" " alt="" coords="1474,300,1512,430,1507,431,1469,301"/>
+<area shape="rect" href="fb_2sync_8h.html" title=" " alt="" coords="5,431,119,456"/>
+<area shape="poly" title=" " alt="" coords="1384,285,1173,307,1047,324,921,345,846,366,813,376,769,385,673,399,590,408,450,414,310,418,130,433,119,435,118,430,130,428,309,413,450,409,590,403,672,394,768,380,811,371,844,361,920,340,1046,319,1173,302,1383,280"/>
+<area shape="rect" href="tracking_8h.html" title=" " alt="" coords="1277,431,1413,456"/>
+<area shape="poly" title=" " alt="" coords="1465,301,1455,342,1447,364,1435,384,1405,413,1372,433,1369,428,1401,409,1431,381,1442,362,1450,340,1459,300"/>
+<area shape="rect" href="st__binding__native_8h.html" title=" " alt="" coords="714,504,866,544"/>
+<area shape="poly" title=" " alt="" coords="956,463,841,506,839,501,954,458"/>
+<area shape="rect" href="pins_8h.html" title=" " alt="" coords="753,592,862,617"/>
+<area shape="poly" title=" " alt="" coords="800,557,807,591,802,592,794,558"/>
+<area shape="rect" href="sema_8h.html" title=" " alt="" coords="841,665,960,691"/>
+<area shape="poly" title=" " alt="" coords="835,623,887,663,884,667,831,628"/>
+<area shape="rect" href="codegen_8h.html" title=" " alt="" coords="911,739,1048,764"/>
+<area shape="poly" title=" " alt="" coords="925,698,968,736,965,740,922,702"/>
+<area shape="rect" href="compile_8h.html" title=" " alt="" coords="1051,819,1185,845"/>
+<area shape="poly" title=" " alt="" coords="895,704,891,735,894,749,900,762,931,791,969,811,1010,822,1051,828,1050,833,1009,827,967,816,928,796,896,766,889,751,886,735,890,704"/>
+<area shape="poly" title=" " alt="" coords="1013,768,1099,817,1096,821,1010,773"/>
+<area shape="rect" href="st_8h.html" title=" " alt="" coords="1313,900,1408,925"/>
+<area shape="poly" title=" " alt="" coords="1167,846,1326,897,1325,903,1166,851"/>
+<area shape="poly" title=" " alt="" coords="1100,461,867,510,866,504,1099,456"/>
+<area shape="poly" title=" " alt="" coords="1001,389,1001,430,995,430,995,389"/>
+<area shape="poly" title=" " alt="" coords="935,381,859,404,828,418,808,432,798,449,793,468,791,504,785,504,788,467,793,447,804,429,825,414,857,399,933,376"/>
+<area shape="poly" title=" " alt="" coords="1036,379,1144,428,1142,433,1034,383"/>
+<area shape="rect" href="homing_8h.html" title=" " alt="" coords="143,431,275,456"/>
+<area shape="poly" title=" " alt="" coords="920,378,864,385,701,401,575,409,448,417,286,433,275,435,275,429,286,428,448,412,574,404,701,395,863,380,919,373"/>
+<area shape="rect" href="io_8h.html" title=" " alt="" coords="819,431,913,456"/>
+<area shape="poly" title=" " alt="" coords="968,385,887,433,884,428,966,380"/>
+<area shape="rect" href="parameter_8h.html" title=" " alt="" coords="299,431,449,456"/>
+<area shape="poly" title=" " alt="" coords="920,378,864,385,462,433,450,435,449,430,462,428,863,380,920,372"/>
+<area shape="poly" title=" " alt="" coords="1077,373,1438,428,1437,433,1076,379"/>
+<area shape="rect" href="probe_8h.html" title=" " alt="" coords="474,431,594,456"/>
+<area shape="poly" title=" " alt="" coords="920,380,595,435,594,429,919,375"/>
+<area shape="rect" href="profile_8h.html" title=" " alt="" coords="619,431,743,456"/>
+<area shape="poly" title=" " alt="" coords="939,381,728,433,726,428,938,376"/>
+<area shape="poly" title=" " alt="" coords="920,378,864,385,657,402,497,408,336,415,130,433,119,435,118,429,130,428,336,409,496,402,657,396,863,380,920,373"/>
+<area shape="poly" title=" " alt="" coords="1062,376,1295,428,1294,433,1061,381"/>
+<area shape="poly" title=" " alt="" coords="289,454,714,510,714,516,288,459"/>
+<area shape="poly" title=" " alt="" coords="847,468,810,506,806,502,844,464"/>
+<area shape="poly" title=" " alt="" coords="927,453,1232,490,1475,513,1475,518,1231,496,927,459"/>
+<area shape="rect" href="bytecode_8h.html" title=" " alt="" coords="1165,592,1308,617"/>
+<area shape="poly" title=" " alt="" coords="1508,542,1286,595,1284,589,1507,537"/>
+<area shape="rect" href="vm_8h.html" title=" " alt="" coords="1467,739,1569,764"/>
+<area shape="poly" title=" " alt="" coords="1566,551,1523,739,1518,738,1560,550"/>
+<area shape="poly" title=" " alt="" coords="1170,623,956,668,955,663,1169,618"/>
+<area shape="poly" title=" " alt="" coords="1205,627,1001,741,998,736,1203,622"/>
+<area shape="poly" title=" " alt="" coords="1235,632,1219,694,1206,731,1188,765,1162,797,1135,821,1132,817,1158,794,1184,763,1201,729,1214,693,1230,630"/>
+<area shape="rect" href="process__image_8h.html" title=" " alt="" coords="1300,665,1480,691"/>
+<area shape="poly" title=" " alt="" coords="1275,621,1366,663,1364,668,1272,625"/>
+<area shape="poly" title=" " alt="" coords="1322,614,1422,634,1465,647,1493,663,1506,681,1515,701,1520,738,1515,739,1509,703,1502,684,1490,667,1462,652,1421,639,1321,619"/>
+<area shape="rect" href="sfc_8h.html" title=" " alt="" coords="1073,739,1174,764"/>
+<area shape="poly" title=" " alt="" coords="1221,630,1135,740,1130,737,1217,627"/>
+<area shape="rect" href="wcet_8h.html" title=" " alt="" coords="1209,819,1323,845"/>
+<area shape="poly" title=" " alt="" coords="1243,631,1267,819,1262,819,1237,631"/>
+<area shape="poly" title=" " alt="" coords="1389,705,1365,900,1359,899,1384,704"/>
+<area shape="poly" title=" " alt="" coords="1424,695,1498,736,1496,741,1421,700"/>
+<area shape="poly" title=" " alt="" coords="1490,774,1439,814,1398,861,1370,901,1366,898,1394,857,1435,810,1486,769"/>
+<area shape="rect" href="configuration__runtime_8h.html" title=" " alt="" coords="1449,812,1603,852"/>
+<area shape="poly" title=" " alt="" coords="1523,778,1527,812,1521,812,1518,778"/>
+<area shape="poly" title=" " alt="" coords="1475,860,1386,902,1384,897,1473,855"/>
+<area shape="poly" title=" " alt="" coords="1124,778,1121,819,1116,819,1119,778"/>
+<area shape="poly" title=" " alt="" coords="1292,852,1348,898,1345,902,1289,856"/>
+<area shape="poly" title=" " alt="" coords="448,456,714,506,713,511,447,461"/>
+<area shape="poly" title=" " alt="" coords="1423,459,867,518,866,513,1422,454"/>
+<area shape="poly" title=" " alt="" coords="1531,466,1563,510,1558,513,1527,469"/>
+<area shape="poly" title=" " alt="" coords="585,457,729,501,728,506,583,462"/>
+<area shape="poly" title=" " alt="" coords="709,462,765,502,762,506,706,466"/>
+<area shape="poly" title=" " alt="" coords="133,454,460,491,714,514,713,519,459,496,132,459"/>
+<area shape="poly" title=" " alt="" coords="1264,459,866,515,866,509,1263,454"/>
+<area shape="poly" title=" " alt="" coords="1617,208,1491,264,1489,259,1615,203"/>
+<area shape="poly" title=" " alt="" coords="1575,130,1543,168,1474,263,1470,260,1539,165,1571,127"/>
+<area shape="poly" title=" " alt="" coords="1215,116,1448,260,1445,264,1212,121"/>
+<area shape="poly" title=" " alt="" coords="1058,112,1335,184,1470,223,1517,240,1545,252,1594,290,1627,327,1649,371,1669,430,1672,444,1668,457,1655,476,1637,492,1600,513,1598,509,1634,487,1651,473,1664,455,1666,444,1663,431,1644,373,1622,330,1590,294,1542,257,1515,245,1468,228,1334,189,1057,117"/>
+<area shape="poly" title=" " alt="" coords="919,108,731,124,495,152,378,172,272,196,183,224,148,240,121,257,102,275,88,297,71,347,64,395,64,431,59,431,59,395,66,345,83,294,98,271,118,253,146,235,181,219,270,191,377,167,495,147,731,118,919,102"/>
+<area shape="rect" href="state_8h.html" title=" " alt="" coords="933,174,1063,199"/>
+<area shape="poly" title=" " alt="" coords="1001,125,1001,173,995,173,995,125"/>
+<area shape="poly" title=" " alt="" coords="1075,199,1403,259,1402,265,1074,205"/>
+<area shape="poly" title=" " alt="" coords="1055,202,1092,222,1108,236,1122,253,1138,288,1144,319,1139,350,1122,384,1107,401,1090,415,1050,433,1048,428,1087,410,1104,397,1117,381,1134,348,1139,319,1133,289,1117,256,1105,240,1089,226,1053,207"/>
+<area shape="poly" title=" " alt="" coords="1071,201,1114,221,1133,235,1149,253,1162,276,1171,300,1178,351,1177,398,1172,431,1167,430,1172,397,1173,352,1166,302,1158,278,1145,256,1130,239,1111,226,1069,206"/>
+<area shape="poly" title=" " alt="" coords="1001,213,1001,350,995,350,995,213"/>
+<area shape="poly" title=" " alt="" coords="919,190,754,192,552,202,451,210,359,222,281,237,224,257,195,274,175,291,160,313,146,344,141,363,146,382,165,409,190,428,187,432,162,412,141,384,136,363,141,342,155,310,171,287,192,269,222,252,280,232,358,216,451,205,551,196,754,187,919,185"/>
+<area shape="poly" title=" " alt="" coords="1021,208,1050,243,1078,289,1087,313,1090,338,1088,362,1076,385,1054,396,1013,410,914,434,913,429,1011,404,1052,391,1072,381,1082,360,1085,338,1081,315,1073,291,1046,247,1017,211"/>
+<area shape="poly" title=" " alt="" coords="1059,200,1194,237,1360,292,1440,323,1511,357,1567,393,1588,411,1603,429,1609,452,1604,475,1593,496,1581,513,1577,510,1589,493,1599,473,1604,452,1598,432,1584,415,1564,397,1508,362,1438,328,1358,297,1192,243,1057,205"/>
+<area shape="poly" title=" " alt="" coords="918,192,731,201,617,211,500,225,387,245,287,271,245,286,209,304,180,323,159,344,151,363,159,381,180,396,214,409,299,429,298,434,212,414,177,401,155,384,146,363,154,341,176,319,206,299,243,281,286,266,386,240,499,220,616,206,731,196,918,187"/>
+<area shape="poly" title=" " alt="" coords="1060,201,1119,221,1178,252,1199,269,1215,286,1237,318,1259,350,1274,365,1295,380,1329,398,1366,412,1437,430,1436,435,1364,417,1327,403,1293,385,1271,369,1255,354,1232,321,1211,289,1196,273,1175,257,1117,226,1058,206"/>
+<area shape="poly" title=" " alt="" coords="973,209,910,257,770,385,738,398,692,411,593,433,592,428,691,406,736,393,767,380,907,253,969,205"/>
+<area shape="poly" title=" " alt="" coords="984,212,915,294,867,342,814,385,764,413,717,433,715,428,762,408,811,380,863,338,911,290,980,209"/>
+<area shape="poly" title=" " alt="" coords="919,193,727,200,492,212,282,231,208,243,166,257,144,275,124,297,95,347,76,396,67,431,62,430,71,394,90,345,120,294,140,271,163,252,206,238,281,226,492,207,727,194,919,187"/>
+<area shape="rect" href="servo_8h.html" title=" " alt="" coords="461,262,623,287"/>
+<area shape="poly" title=" " alt="" coords="924,205,603,265,602,259,923,199"/>
+<area shape="rect" href="feetech_8h.html" title=" " alt="" coords="345,350,521,375"/>
+<area shape="poly" title=" " alt="" coords="518,298,449,352,446,348,515,294"/>
+<area shape="rect" href="ipc__transport_8h.html" title=" " alt="" coords="545,350,757,375"/>
+<area shape="poly" title=" " alt="" coords="569,294,638,348,635,352,566,298"/>
+<area shape="rect" href="mode__manager_8h.html" title=" " alt="" coords="169,343,321,383"/>
+<area shape="poly" title=" " alt="" coords="489,294,311,345,310,340,488,289"/>
+<area shape="poly" title=" " alt="" coords="1838,125,1810,168,1790,190,1767,209,1710,238,1648,257,1587,268,1533,274,1532,269,1586,263,1646,252,1708,233,1765,204,1787,187,1806,165,1834,122"/>
+<area shape="poly" title=" " alt="" coords="1810,120,1681,176,1679,171,1808,115"/>
+<area shape="rect" href="group__pose__frames_8h.html" title=" " alt="" coords="1830,167,1990,207"/>
+<area shape="poly" title=" " alt="" coords="1866,121,1898,165,1894,168,1862,124"/>
+<area shape="rect" href="fixed__base__chain_8h.html" title=" " alt="" coords="2065,167,2216,207"/>
+<area shape="poly" title=" " alt="" coords="1901,113,2077,164,2075,169,1899,118"/>
+<area shape="rect" href="serial__chain_8h.html" title=" " alt="" coords="2241,174,2409,199"/>
+<area shape="poly" title=" " alt="" coords="1912,112,1934,116,2081,141,2228,164,2267,171,2266,177,2227,169,2080,146,1934,121,1911,117"/>
+<area shape="poly" title=" " alt="" coords="1817,209,1524,265,1523,259,1816,203"/>
+<area shape="rect" href="dynamics__fixture_8h.html" title=" " alt="" coords="2025,255,2227,295"/>
+<area shape="poly" title=" " alt="" coords="2138,221,2132,255,2127,254,2132,220"/>
+<area shape="rect" href="serial__chain__fixture_8h.html" title=" " alt="" coords="2252,255,2427,295"/>
+<area shape="poly" title=" " alt="" coords="2332,212,2339,254,2333,255,2326,213"/>
+<area shape="poly" title=" " alt="" coords="2032,125,2027,168,2018,190,2004,209,1969,229,1919,246,1858,257,1790,266,1650,275,1532,277,1532,272,1650,270,1789,261,1857,252,1917,240,1966,225,2000,205,2013,187,2021,167,2026,125"/>
+<area shape="poly" title=" " alt="" coords="2002,122,1937,169,1934,164,1999,117"/>
+<area shape="rect" href="gantry_8h.html" title=" " alt="" coords="2731,174,2862,199"/>
+<area shape="poly" title=" " alt="" coords="2093,111,2121,116,2289,133,2420,138,2552,144,2720,164,2755,171,2754,177,2719,169,2552,149,2420,143,2288,138,2120,121,2092,117"/>
+<area shape="rect" href="scara_8h.html" title=" " alt="" coords="2433,174,2558,199"/>
+<area shape="poly" title=" " alt="" coords="2096,111,2121,116,2271,139,2421,164,2453,171,2452,177,2420,169,2270,144,2120,121,2095,117"/>
+<area shape="rect" href="verify_8h.html" title=" " alt="" coords="2582,174,2707,199"/>
+<area shape="poly" title=" " alt="" coords="2094,111,2121,116,2247,131,2346,138,2445,146,2570,164,2604,171,2603,177,2570,169,2444,151,2345,144,2247,137,2120,121,2093,117"/>
+<area shape="poly" title=" " alt="" coords="1381,122,1460,260,1456,263,1377,124"/>
+<area shape="poly" title=" " alt="" coords="3004,116,3034,137,3060,165,3073,190,3080,217,3086,261,3081,262,3075,218,3068,192,3056,168,3031,141,3001,120"/>
+<area shape="poly" title=" " alt="" coords="2969,125,2969,173,2963,173,2963,125"/>
+<area shape="poly" title=" " alt="" coords="2994,205,3069,260,3066,264,2991,210"/>
+</map>
+</div>
+</div>
+<p><a href="geometry_8h_source.html">浏览源代码.</a></p>
+<table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="nested-classes" name="nested-classes"></a>
+类</h2></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">plcopen::core::geom::Vec3</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1geom_1_1LineSegment.html">plcopen::core::geom::LineSegment</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1geom_1_1ArcSegment.html">plcopen::core::geom::ArcSegment</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1geom_1_1CubicBezierSegment.html">plcopen::core::geom::CubicBezierSegment</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1geom_1_1QuadraticBlendSegment.html">plcopen::core::geom::QuadraticBlendSegment</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1geom_1_1QuinticBlendSegment.html">plcopen::core::geom::QuinticBlendSegment</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1geom_1_1PathSegment.html">plcopen::core::geom::PathSegment</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1geom_1_1ArcLengthTable.html">plcopen::core::geom::ArcLengthTable&lt; Capacity &gt;</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="namespaces" name="namespaces"></a>
+命名空间</h2></td></tr>
+<tr class="memitem:namespaceplcopen" id="r_namespaceplcopen"><td class="memItemLeft" align="right" valign="top">namespace &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen.html">plcopen</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:namespaceplcopen_1_1core" id="r_namespaceplcopen_1_1core"><td class="memItemLeft" align="right" valign="top">namespace &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core.html">plcopen::core</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:namespaceplcopen_1_1core_1_1geom" id="r_namespaceplcopen_1_1core_1_1geom"><td class="memItemLeft" align="right" valign="top">namespace &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1geom.html">plcopen::core::geom</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="enum-members" name="enum-members"></a>
+枚举</h2></td></tr>
+<tr class="memitem:a202eeab8253e4d5d80b4e2e6b4c7b707" id="r_a202eeab8253e4d5d80b4e2e6b4c7b707"><td class="memItemLeft" align="right" valign="top">enum class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1geom.html#a202eeab8253e4d5d80b4e2e6b4c7b707">plcopen::core::geom::SegmentKind</a> { <br />
+&#160;&#160;<a class="el" href="namespaceplcopen_1_1core_1_1geom.html#a202eeab8253e4d5d80b4e2e6b4c7b707a6438c669e0d0de98e6929c2cc0fac474">plcopen::core::geom::line</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1geom.html#a202eeab8253e4d5d80b4e2e6b4c7b707a909ba4ad2bda46b10aac3c5b7f01abd5">plcopen::core::geom::arc</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1geom.html#a202eeab8253e4d5d80b4e2e6b4c7b707ad266eafdff0806ce9165586251424e1a">plcopen::core::geom::cubic_bezier</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1geom.html#a202eeab8253e4d5d80b4e2e6b4c7b707a765bd10abd4cdfcc7ec114f3cf3d523e">plcopen::core::geom::quadratic_blend</a>
+, <br />
+&#160;&#160;<a class="el" href="namespaceplcopen_1_1core_1_1geom.html#a202eeab8253e4d5d80b4e2e6b4c7b707a6f6c001e26aed486ee33adfcad00e861">plcopen::core::geom::quintic_blend</a>
+<br />
+ }</td></tr>
+<tr class="separator:a202eeab8253e4d5d80b4e2e6b4c7b707"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
+函数</h2></td></tr>
+<tr class="memitem:a1b3bfc3eaca6ea3be35eb454b5716866" id="r_a1b3bfc3eaca6ea3be35eb454b5716866"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">Vec3</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1geom.html#a1b3bfc3eaca6ea3be35eb454b5716866">plcopen::core::geom::operator+</a> (<a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">Vec3</a> lhs, <a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">Vec3</a> rhs)</td></tr>
+<tr class="separator:a1b3bfc3eaca6ea3be35eb454b5716866"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a382690ed65cf14701acdbbb68dbe6e6b" id="r_a382690ed65cf14701acdbbb68dbe6e6b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">Vec3</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1geom.html#a382690ed65cf14701acdbbb68dbe6e6b">plcopen::core::geom::operator-</a> (<a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">Vec3</a> lhs, <a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">Vec3</a> rhs)</td></tr>
+<tr class="separator:a382690ed65cf14701acdbbb68dbe6e6b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a838eb058561685c894d403498ae1e09e" id="r_a838eb058561685c894d403498ae1e09e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">Vec3</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1geom.html#a838eb058561685c894d403498ae1e09e">plcopen::core::geom::operator*</a> (<a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">Vec3</a> value, double scale)</td></tr>
+<tr class="separator:a838eb058561685c894d403498ae1e09e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa634e342c55912a110b86844315cf52e" id="r_aa634e342c55912a110b86844315cf52e"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1geom.html#aa634e342c55912a110b86844315cf52e">plcopen::core::geom::dot</a> (<a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">Vec3</a> lhs, <a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">Vec3</a> rhs)</td></tr>
+<tr class="separator:aa634e342c55912a110b86844315cf52e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa56a7ca635367a9758396d594e230bff" id="r_aa56a7ca635367a9758396d594e230bff"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1geom.html#aa56a7ca635367a9758396d594e230bff">plcopen::core::geom::norm</a> (<a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">Vec3</a> value)</td></tr>
+<tr class="separator:aa56a7ca635367a9758396d594e230bff"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae3322904f443e45cc8eba823728dc60b" id="r_ae3322904f443e45cc8eba823728dc60b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">Vec3</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1geom.html#ae3322904f443e45cc8eba823728dc60b">plcopen::core::geom::normalize</a> (<a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">Vec3</a> value)</td></tr>
+<tr class="separator:ae3322904f443e45cc8eba823728dc60b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:accaf88ab6c4732d76ba8aa59be765d39" id="r_accaf88ab6c4732d76ba8aa59be765d39"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1geom.html#accaf88ab6c4732d76ba8aa59be765d39">plcopen::core::geom::clamp_arclength</a> (double value, double length)</td></tr>
+<tr class="separator:accaf88ab6c4732d76ba8aa59be765d39"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abf5467b49a81a4e9a9e5e9e4252fed4b" id="r_abf5467b49a81a4e9a9e5e9e4252fed4b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classplcopen_1_1core_1_1rt_1_1Result.html">rt::Result</a>&lt; <a class="el" href="structplcopen_1_1core_1_1geom_1_1LineSegment.html">LineSegment</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1geom.html#abf5467b49a81a4e9a9e5e9e4252fed4b">plcopen::core::geom::make_line</a> (<a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">Vec3</a> start, <a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">Vec3</a> finish)</td></tr>
+<tr class="separator:abf5467b49a81a4e9a9e5e9e4252fed4b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8130bb41892da2d653fc4e9d6d41c3fc" id="r_a8130bb41892da2d653fc4e9d6d41c3fc"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">Vec3</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1geom.html#a8130bb41892da2d653fc4e9d6d41c3fc">plcopen::core::geom::sample</a> (<a class="el" href="structplcopen_1_1core_1_1geom_1_1LineSegment.html">LineSegment</a> <a class="el" href="namespaceplcopen_1_1core_1_1geom.html#a202eeab8253e4d5d80b4e2e6b4c7b707a6438c669e0d0de98e6929c2cc0fac474">line</a>, double arclength)</td></tr>
+<tr class="separator:a8130bb41892da2d653fc4e9d6d41c3fc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa50d828325cc744de2c4d698f8a76332" id="r_aa50d828325cc744de2c4d698f8a76332"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">Vec3</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1geom.html#aa50d828325cc744de2c4d698f8a76332">plcopen::core::geom::tangent</a> (<a class="el" href="structplcopen_1_1core_1_1geom_1_1LineSegment.html">LineSegment</a> <a class="el" href="namespaceplcopen_1_1core_1_1geom.html#a202eeab8253e4d5d80b4e2e6b4c7b707a6438c669e0d0de98e6929c2cc0fac474">line</a>)</td></tr>
+<tr class="separator:aa50d828325cc744de2c4d698f8a76332"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6f06382329cec6df30b1d0d9d8596e2c" id="r_a6f06382329cec6df30b1d0d9d8596e2c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">Vec3</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1geom.html#a6f06382329cec6df30b1d0d9d8596e2c">plcopen::core::geom::path_derivative</a> (<a class="el" href="structplcopen_1_1core_1_1geom_1_1LineSegment.html">LineSegment</a> <a class="el" href="namespaceplcopen_1_1core_1_1geom.html#a202eeab8253e4d5d80b4e2e6b4c7b707a6438c669e0d0de98e6929c2cc0fac474">line</a>)</td></tr>
+<tr class="separator:a6f06382329cec6df30b1d0d9d8596e2c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac0627600a20c97f86705b656e5232f2c" id="r_ac0627600a20c97f86705b656e5232f2c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">Vec3</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1geom.html#ac0627600a20c97f86705b656e5232f2c">plcopen::core::geom::path_second_derivative</a> (<a class="el" href="structplcopen_1_1core_1_1geom_1_1LineSegment.html">LineSegment</a>)</td></tr>
+<tr class="separator:ac0627600a20c97f86705b656e5232f2c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ade09cc78fdf2e4fc148abffcd6ab1025" id="r_ade09cc78fdf2e4fc148abffcd6ab1025"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">Vec3</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1geom.html#ade09cc78fdf2e4fc148abffcd6ab1025">plcopen::core::geom::path_third_derivative</a> (<a class="el" href="structplcopen_1_1core_1_1geom_1_1LineSegment.html">LineSegment</a>)</td></tr>
+<tr class="separator:ade09cc78fdf2e4fc148abffcd6ab1025"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac410fd2ce704b444063dcbd9fe8c9981" id="r_ac410fd2ce704b444063dcbd9fe8c9981"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1geom.html#ac410fd2ce704b444063dcbd9fe8c9981">plcopen::core::geom::angle_of</a> (<a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">Vec3</a> point, <a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">Vec3</a> center)</td></tr>
+<tr class="separator:ac410fd2ce704b444063dcbd9fe8c9981"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adbb995501392f924686891cbd359e439" id="r_adbb995501392f924686891cbd359e439"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1geom.html#adbb995501392f924686891cbd359e439">plcopen::core::geom::normalize_sweep</a> (double sweep, double orientation)</td></tr>
+<tr class="separator:adbb995501392f924686891cbd359e439"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aae4e5b94d5e39b3921f7ee4bac00a881" id="r_aae4e5b94d5e39b3921f7ee4bac00a881"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classplcopen_1_1core_1_1rt_1_1Result.html">rt::Result</a>&lt; <a class="el" href="structplcopen_1_1core_1_1geom_1_1ArcSegment.html">ArcSegment</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1geom.html#aae4e5b94d5e39b3921f7ee4bac00a881">plcopen::core::geom::make_arc</a> (<a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">Vec3</a> start, <a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">Vec3</a> via, <a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">Vec3</a> finish)</td></tr>
+<tr class="separator:aae4e5b94d5e39b3921f7ee4bac00a881"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6607ca53cb907239facf5dff70d66c3f" id="r_a6607ca53cb907239facf5dff70d66c3f"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">Vec3</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1geom.html#a6607ca53cb907239facf5dff70d66c3f">plcopen::core::geom::sample</a> (<a class="el" href="structplcopen_1_1core_1_1geom_1_1ArcSegment.html">ArcSegment</a> <a class="el" href="namespaceplcopen_1_1core_1_1geom.html#a202eeab8253e4d5d80b4e2e6b4c7b707a909ba4ad2bda46b10aac3c5b7f01abd5">arc</a>, double arclength)</td></tr>
+<tr class="separator:a6607ca53cb907239facf5dff70d66c3f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0cf61ab42e5a5b7bd1cffabe0e0b5ab6" id="r_a0cf61ab42e5a5b7bd1cffabe0e0b5ab6"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">Vec3</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1geom.html#a0cf61ab42e5a5b7bd1cffabe0e0b5ab6">plcopen::core::geom::tangent</a> (<a class="el" href="structplcopen_1_1core_1_1geom_1_1ArcSegment.html">ArcSegment</a> <a class="el" href="namespaceplcopen_1_1core_1_1geom.html#a202eeab8253e4d5d80b4e2e6b4c7b707a909ba4ad2bda46b10aac3c5b7f01abd5">arc</a>, double arclength)</td></tr>
+<tr class="separator:a0cf61ab42e5a5b7bd1cffabe0e0b5ab6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5906415956dc210f84d6b0879ac09c7c" id="r_a5906415956dc210f84d6b0879ac09c7c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">Vec3</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1geom.html#a5906415956dc210f84d6b0879ac09c7c">plcopen::core::geom::path_derivative</a> (<a class="el" href="structplcopen_1_1core_1_1geom_1_1ArcSegment.html">ArcSegment</a> <a class="el" href="namespaceplcopen_1_1core_1_1geom.html#a202eeab8253e4d5d80b4e2e6b4c7b707a909ba4ad2bda46b10aac3c5b7f01abd5">arc</a>, double arclength)</td></tr>
+<tr class="separator:a5906415956dc210f84d6b0879ac09c7c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac995eb27692d64902814f76b51f3334f" id="r_ac995eb27692d64902814f76b51f3334f"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">Vec3</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1geom.html#ac995eb27692d64902814f76b51f3334f">plcopen::core::geom::path_second_derivative</a> (<a class="el" href="structplcopen_1_1core_1_1geom_1_1ArcSegment.html">ArcSegment</a> <a class="el" href="namespaceplcopen_1_1core_1_1geom.html#a202eeab8253e4d5d80b4e2e6b4c7b707a909ba4ad2bda46b10aac3c5b7f01abd5">arc</a>, double arclength)</td></tr>
+<tr class="separator:ac995eb27692d64902814f76b51f3334f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae70360de5f01291ae223ba01565df6b2" id="r_ae70360de5f01291ae223ba01565df6b2"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">Vec3</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1geom.html#ae70360de5f01291ae223ba01565df6b2">plcopen::core::geom::path_third_derivative</a> (<a class="el" href="structplcopen_1_1core_1_1geom_1_1ArcSegment.html">ArcSegment</a> <a class="el" href="namespaceplcopen_1_1core_1_1geom.html#a202eeab8253e4d5d80b4e2e6b4c7b707a909ba4ad2bda46b10aac3c5b7f01abd5">arc</a>, double arclength)</td></tr>
+<tr class="separator:ae70360de5f01291ae223ba01565df6b2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a197cff4e71b1c4f18e6cc9bc691e989f" id="r_a197cff4e71b1c4f18e6cc9bc691e989f"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">Vec3</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1geom.html#a197cff4e71b1c4f18e6cc9bc691e989f">plcopen::core::geom::bezier_point</a> (<a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">Vec3</a> p0, <a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">Vec3</a> p1, <a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">Vec3</a> p2, <a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">Vec3</a> p3, double u)</td></tr>
+<tr class="separator:a197cff4e71b1c4f18e6cc9bc691e989f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a935d5620f1bd97a25438bba0e569b078" id="r_a935d5620f1bd97a25438bba0e569b078"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">Vec3</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1geom.html#a935d5620f1bd97a25438bba0e569b078">plcopen::core::geom::quadratic_point</a> (<a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">Vec3</a> p0, <a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">Vec3</a> p1, <a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">Vec3</a> p2, double u)</td></tr>
+<tr class="separator:a935d5620f1bd97a25438bba0e569b078"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae0fef92f5f4b38feb0f25349747ae37d" id="r_ae0fef92f5f4b38feb0f25349747ae37d"><td class="memTemplParams" colspan="2">template&lt;typename SampleFn &gt; </td></tr>
+<tr class="memitem:ae0fef92f5f4b38feb0f25349747ae37d"><td class="memTemplItemLeft" align="right" valign="top">double&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1geom.html#ae0fef92f5f4b38feb0f25349747ae37d">plcopen::core::geom::approximate_length</a> (SampleFn sample_fn)</td></tr>
+<tr class="separator:ae0fef92f5f4b38feb0f25349747ae37d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a54c1153f433a17ba6a478f26c21ab33c" id="r_a54c1153f433a17ba6a478f26c21ab33c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classplcopen_1_1core_1_1rt_1_1Result.html">rt::Result</a>&lt; <a class="el" href="structplcopen_1_1core_1_1geom_1_1CubicBezierSegment.html">CubicBezierSegment</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1geom.html#a54c1153f433a17ba6a478f26c21ab33c">plcopen::core::geom::make_cubic_bezier</a> (<a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">Vec3</a> p0, <a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">Vec3</a> p1, <a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">Vec3</a> p2, <a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">Vec3</a> p3)</td></tr>
+<tr class="separator:a54c1153f433a17ba6a478f26c21ab33c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae48d84880a56ad7814a3fa3a47c7f287" id="r_ae48d84880a56ad7814a3fa3a47c7f287"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">Vec3</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1geom.html#ae48d84880a56ad7814a3fa3a47c7f287">plcopen::core::geom::sample</a> (<a class="el" href="structplcopen_1_1core_1_1geom_1_1CubicBezierSegment.html">CubicBezierSegment</a> curve, double arclength)</td></tr>
+<tr class="separator:ae48d84880a56ad7814a3fa3a47c7f287"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3054b1b1aec6f32c775188ec1ddef6c1" id="r_a3054b1b1aec6f32c775188ec1ddef6c1"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">Vec3</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1geom.html#a3054b1b1aec6f32c775188ec1ddef6c1">plcopen::core::geom::tangent</a> (<a class="el" href="structplcopen_1_1core_1_1geom_1_1CubicBezierSegment.html">CubicBezierSegment</a> curve, double arclength)</td></tr>
+<tr class="separator:a3054b1b1aec6f32c775188ec1ddef6c1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8b472d4f026a1ce473c9d1197814d5e1" id="r_a8b472d4f026a1ce473c9d1197814d5e1"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">Vec3</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1geom.html#a8b472d4f026a1ce473c9d1197814d5e1">plcopen::core::geom::path_derivative</a> (<a class="el" href="structplcopen_1_1core_1_1geom_1_1CubicBezierSegment.html">CubicBezierSegment</a> curve, double arclength)</td></tr>
+<tr class="separator:a8b472d4f026a1ce473c9d1197814d5e1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afc3a9dfc244e4dde4a7c3c2bfa2240a6" id="r_afc3a9dfc244e4dde4a7c3c2bfa2240a6"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">Vec3</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1geom.html#afc3a9dfc244e4dde4a7c3c2bfa2240a6">plcopen::core::geom::path_second_derivative</a> (<a class="el" href="structplcopen_1_1core_1_1geom_1_1CubicBezierSegment.html">CubicBezierSegment</a> curve, double arclength)</td></tr>
+<tr class="separator:afc3a9dfc244e4dde4a7c3c2bfa2240a6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a78d03c4839a95b66d6c4bd165f3b431c" id="r_a78d03c4839a95b66d6c4bd165f3b431c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">Vec3</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1geom.html#a78d03c4839a95b66d6c4bd165f3b431c">plcopen::core::geom::path_third_derivative</a> (<a class="el" href="structplcopen_1_1core_1_1geom_1_1CubicBezierSegment.html">CubicBezierSegment</a> curve, double)</td></tr>
+<tr class="separator:a78d03c4839a95b66d6c4bd165f3b431c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad42c5a0c355a2352c1539a07cc6be8c6" id="r_ad42c5a0c355a2352c1539a07cc6be8c6"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classplcopen_1_1core_1_1rt_1_1Result.html">rt::Result</a>&lt; <a class="el" href="structplcopen_1_1core_1_1geom_1_1QuadraticBlendSegment.html">QuadraticBlendSegment</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1geom.html#ad42c5a0c355a2352c1539a07cc6be8c6">plcopen::core::geom::make_quadratic_blend</a> (<a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">Vec3</a> start, <a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">Vec3</a> control, <a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">Vec3</a> finish, double tolerance)</td></tr>
+<tr class="separator:ad42c5a0c355a2352c1539a07cc6be8c6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae3409e65793bd75dc1e21d61af76de0d" id="r_ae3409e65793bd75dc1e21d61af76de0d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">Vec3</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1geom.html#ae3409e65793bd75dc1e21d61af76de0d">plcopen::core::geom::sample</a> (<a class="el" href="structplcopen_1_1core_1_1geom_1_1QuadraticBlendSegment.html">QuadraticBlendSegment</a> blend, double arclength)</td></tr>
+<tr class="separator:ae3409e65793bd75dc1e21d61af76de0d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2645937d600e83ba082e2c03b532dc3b" id="r_a2645937d600e83ba082e2c03b532dc3b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">Vec3</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1geom.html#a2645937d600e83ba082e2c03b532dc3b">plcopen::core::geom::tangent</a> (<a class="el" href="structplcopen_1_1core_1_1geom_1_1QuadraticBlendSegment.html">QuadraticBlendSegment</a> blend, double arclength)</td></tr>
+<tr class="separator:a2645937d600e83ba082e2c03b532dc3b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a182ffc66ac6e838a5c60b479c0fa1f76" id="r_a182ffc66ac6e838a5c60b479c0fa1f76"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">Vec3</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1geom.html#a182ffc66ac6e838a5c60b479c0fa1f76">plcopen::core::geom::path_derivative</a> (<a class="el" href="structplcopen_1_1core_1_1geom_1_1QuadraticBlendSegment.html">QuadraticBlendSegment</a> blend, double arclength)</td></tr>
+<tr class="separator:a182ffc66ac6e838a5c60b479c0fa1f76"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abb9d10744ef9358bd110d1ed3808022e" id="r_abb9d10744ef9358bd110d1ed3808022e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">Vec3</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1geom.html#abb9d10744ef9358bd110d1ed3808022e">plcopen::core::geom::path_second_derivative</a> (<a class="el" href="structplcopen_1_1core_1_1geom_1_1QuadraticBlendSegment.html">QuadraticBlendSegment</a> blend, double)</td></tr>
+<tr class="separator:abb9d10744ef9358bd110d1ed3808022e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a57b50545fa2f142e3600db6850301fcb" id="r_a57b50545fa2f142e3600db6850301fcb"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">Vec3</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1geom.html#a57b50545fa2f142e3600db6850301fcb">plcopen::core::geom::path_third_derivative</a> (<a class="el" href="structplcopen_1_1core_1_1geom_1_1QuadraticBlendSegment.html">QuadraticBlendSegment</a>, double)</td></tr>
+<tr class="separator:a57b50545fa2f142e3600db6850301fcb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad1b13eb05636e56e4f18db89bc68c2cd" id="r_ad1b13eb05636e56e4f18db89bc68c2cd"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">Vec3</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1geom.html#ad1b13eb05636e56e4f18db89bc68c2cd">plcopen::core::geom::quintic_point</a> (const <a class="el" href="structplcopen_1_1core_1_1geom_1_1QuinticBlendSegment.html">QuinticBlendSegment</a> &amp;blend, double u)</td></tr>
+<tr class="separator:ad1b13eb05636e56e4f18db89bc68c2cd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae8b7af3c744d96c5bde3787635aa0418" id="r_ae8b7af3c744d96c5bde3787635aa0418"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">Vec3</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1geom.html#ae8b7af3c744d96c5bde3787635aa0418">plcopen::core::geom::quintic_derivative</a> (const <a class="el" href="structplcopen_1_1core_1_1geom_1_1QuinticBlendSegment.html">QuinticBlendSegment</a> &amp;blend, double u)</td></tr>
+<tr class="separator:ae8b7af3c744d96c5bde3787635aa0418"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3055d5edffec9a6cc42ff75dac539387" id="r_a3055d5edffec9a6cc42ff75dac539387"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">Vec3</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1geom.html#a3055d5edffec9a6cc42ff75dac539387">plcopen::core::geom::quintic_second_derivative</a> (const <a class="el" href="structplcopen_1_1core_1_1geom_1_1QuinticBlendSegment.html">QuinticBlendSegment</a> &amp;blend, double u)</td></tr>
+<tr class="separator:a3055d5edffec9a6cc42ff75dac539387"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a293f0cf28c7aaad7c93e32bf628df045" id="r_a293f0cf28c7aaad7c93e32bf628df045"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">Vec3</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1geom.html#a293f0cf28c7aaad7c93e32bf628df045">plcopen::core::geom::quintic_third_derivative</a> (const <a class="el" href="structplcopen_1_1core_1_1geom_1_1QuinticBlendSegment.html">QuinticBlendSegment</a> &amp;blend, double u)</td></tr>
+<tr class="separator:a293f0cf28c7aaad7c93e32bf628df045"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a824c1c8d6bba482e85c05cc0b63f14c4" id="r_a824c1c8d6bba482e85c05cc0b63f14c4"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">Vec3</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1geom.html#a824c1c8d6bba482e85c05cc0b63f14c4">plcopen::core::geom::cross</a> (<a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">Vec3</a> lhs, <a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">Vec3</a> rhs)</td></tr>
+<tr class="separator:a824c1c8d6bba482e85c05cc0b63f14c4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af347c98ff8c08ad799bd35de75b844e1" id="r_af347c98ff8c08ad799bd35de75b844e1"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classplcopen_1_1core_1_1rt_1_1Result.html">rt::Result</a>&lt; <a class="el" href="structplcopen_1_1core_1_1geom_1_1QuinticBlendSegment.html">QuinticBlendSegment</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1geom.html#af347c98ff8c08ad799bd35de75b844e1">plcopen::core::geom::make_quintic_blend</a> (<a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">Vec3</a> start, <a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">Vec3</a> corner, <a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">Vec3</a> finish, double tolerance)</td></tr>
+<tr class="separator:af347c98ff8c08ad799bd35de75b844e1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa6264e4e539e67e49b1e47e30f8f7170" id="r_aa6264e4e539e67e49b1e47e30f8f7170"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1geom.html#aa6264e4e539e67e49b1e47e30f8f7170">plcopen::core::geom::quintic_parameter_at_length</a> (const <a class="el" href="structplcopen_1_1core_1_1geom_1_1QuinticBlendSegment.html">QuinticBlendSegment</a> &amp;blend, double arclength)</td></tr>
+<tr class="separator:aa6264e4e539e67e49b1e47e30f8f7170"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a391b4fb23be08e254b8709a99b84de0b" id="r_a391b4fb23be08e254b8709a99b84de0b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">Vec3</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1geom.html#a391b4fb23be08e254b8709a99b84de0b">plcopen::core::geom::sample</a> (const <a class="el" href="structplcopen_1_1core_1_1geom_1_1QuinticBlendSegment.html">QuinticBlendSegment</a> &amp;blend, double arclength)</td></tr>
+<tr class="separator:a391b4fb23be08e254b8709a99b84de0b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7c194f4d889589572ae703ff700d953d" id="r_a7c194f4d889589572ae703ff700d953d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">Vec3</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1geom.html#a7c194f4d889589572ae703ff700d953d">plcopen::core::geom::tangent</a> (const <a class="el" href="structplcopen_1_1core_1_1geom_1_1QuinticBlendSegment.html">QuinticBlendSegment</a> &amp;blend, double arclength)</td></tr>
+<tr class="separator:a7c194f4d889589572ae703ff700d953d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab5efdcd584b659339e595fab4de0abcc" id="r_ab5efdcd584b659339e595fab4de0abcc"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">Vec3</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1geom.html#ab5efdcd584b659339e595fab4de0abcc">plcopen::core::geom::path_derivative</a> (const <a class="el" href="structplcopen_1_1core_1_1geom_1_1QuinticBlendSegment.html">QuinticBlendSegment</a> &amp;blend, double arclength)</td></tr>
+<tr class="separator:ab5efdcd584b659339e595fab4de0abcc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1299be0bf7fb2e2280a0e730915a3958" id="r_a1299be0bf7fb2e2280a0e730915a3958"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">Vec3</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1geom.html#a1299be0bf7fb2e2280a0e730915a3958">plcopen::core::geom::path_second_derivative</a> (const <a class="el" href="structplcopen_1_1core_1_1geom_1_1QuinticBlendSegment.html">QuinticBlendSegment</a> &amp;blend, double arclength)</td></tr>
+<tr class="separator:a1299be0bf7fb2e2280a0e730915a3958"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac0e1e7f22fa462d30dacc5cff22ee6aa" id="r_ac0e1e7f22fa462d30dacc5cff22ee6aa"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">Vec3</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1geom.html#ac0e1e7f22fa462d30dacc5cff22ee6aa">plcopen::core::geom::path_third_derivative</a> (const <a class="el" href="structplcopen_1_1core_1_1geom_1_1QuinticBlendSegment.html">QuinticBlendSegment</a> &amp;blend, double arclength)</td></tr>
+<tr class="separator:ac0e1e7f22fa462d30dacc5cff22ee6aa"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7bd6ca7c4e6f7636df7d0e37707b24b7" id="r_a7bd6ca7c4e6f7636df7d0e37707b24b7"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structplcopen_1_1core_1_1geom_1_1PathSegment.html">PathSegment</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1geom.html#a7bd6ca7c4e6f7636df7d0e37707b24b7">plcopen::core::geom::as_path_segment</a> (<a class="el" href="structplcopen_1_1core_1_1geom_1_1LineSegment.html">LineSegment</a> <a class="el" href="namespaceplcopen_1_1core_1_1geom.html#a202eeab8253e4d5d80b4e2e6b4c7b707a6438c669e0d0de98e6929c2cc0fac474">line</a>)</td></tr>
+<tr class="separator:a7bd6ca7c4e6f7636df7d0e37707b24b7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0af6f850041a8baf590ffe42b9368a01" id="r_a0af6f850041a8baf590ffe42b9368a01"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structplcopen_1_1core_1_1geom_1_1PathSegment.html">PathSegment</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1geom.html#a0af6f850041a8baf590ffe42b9368a01">plcopen::core::geom::as_path_segment</a> (<a class="el" href="structplcopen_1_1core_1_1geom_1_1ArcSegment.html">ArcSegment</a> <a class="el" href="namespaceplcopen_1_1core_1_1geom.html#a202eeab8253e4d5d80b4e2e6b4c7b707a909ba4ad2bda46b10aac3c5b7f01abd5">arc</a>)</td></tr>
+<tr class="separator:a0af6f850041a8baf590ffe42b9368a01"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a11dcc220353bba57f81c3050d5769038" id="r_a11dcc220353bba57f81c3050d5769038"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structplcopen_1_1core_1_1geom_1_1PathSegment.html">PathSegment</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1geom.html#a11dcc220353bba57f81c3050d5769038">plcopen::core::geom::as_path_segment</a> (<a class="el" href="structplcopen_1_1core_1_1geom_1_1CubicBezierSegment.html">CubicBezierSegment</a> cubic)</td></tr>
+<tr class="separator:a11dcc220353bba57f81c3050d5769038"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2dfe320b0b25237bd3c3f131bdc4a41f" id="r_a2dfe320b0b25237bd3c3f131bdc4a41f"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structplcopen_1_1core_1_1geom_1_1PathSegment.html">PathSegment</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1geom.html#a2dfe320b0b25237bd3c3f131bdc4a41f">plcopen::core::geom::as_path_segment</a> (<a class="el" href="structplcopen_1_1core_1_1geom_1_1QuadraticBlendSegment.html">QuadraticBlendSegment</a> blend)</td></tr>
+<tr class="separator:a2dfe320b0b25237bd3c3f131bdc4a41f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a02022a260f8c12eda06b7fd91e936715" id="r_a02022a260f8c12eda06b7fd91e936715"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structplcopen_1_1core_1_1geom_1_1PathSegment.html">PathSegment</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1geom.html#a02022a260f8c12eda06b7fd91e936715">plcopen::core::geom::as_path_segment</a> (const <a class="el" href="structplcopen_1_1core_1_1geom_1_1QuinticBlendSegment.html">QuinticBlendSegment</a> &amp;blend)</td></tr>
+<tr class="separator:a02022a260f8c12eda06b7fd91e936715"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table>
+</div><!-- contents -->
+<!-- start footer part -->
+<hr class="footer"/><address class="footer"><small>
+制作者&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.8
+</small></address>
+</body>
+</html>

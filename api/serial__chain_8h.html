@@ -1,0 +1,181 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh">
+<head>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=11"/>
+<meta name="generator" content="Doxygen 1.9.8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>plcopen: core/kin/serial_chain.h 文件参考</title>
+<link href="tabs.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="jquery.js"></script>
+<script type="text/javascript" src="dynsections.js"></script>
+<link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<link href="doxygen.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+<div id="top"><!-- do not remove this div, it is closed by doxygen! -->
+<div id="titlearea">
+<table cellspacing="0" cellpadding="0">
+ <tbody>
+ <tr id="projectrow">
+  <td id="projectalign">
+   <div id="projectname">plcopen<span id="projectnumber">&#160;0.21.0</span>
+   </div>
+  </td>
+ </tr>
+ </tbody>
+</table>
+</div>
+<!-- end header part -->
+<!-- 制作者 Doxygen 1.9.8 -->
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+var searchBox = new SearchBox("searchBox", "search/",'.html');
+/* @license-end */
+</script>
+<script type="text/javascript" src="menudata.js"></script>
+<script type="text/javascript" src="menu.js"></script>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+$(function() {
+  initMenu('',true,false,'search.php','搜索');
+  $(document).ready(function() { init_search(); });
+});
+/* @license-end */
+</script>
+<div id="main-nav"></div>
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<div id="MSearchResults">
+<div class="SRPage">
+<div id="SRIndex">
+<div id="SRResults"></div>
+<div class="SRStatus" id="Loading">载入中...</div>
+<div class="SRStatus" id="Searching">搜索中...</div>
+<div class="SRStatus" id="NoMatches">未找到</div>
+</div>
+</div>
+</div>
+</div>
+
+<div id="nav-path" class="navpath">
+  <ul>
+<li class="navelem"><a class="el" href="dir_4270bfced15e0e73154b13468c7c9ad9.html">core</a></li><li class="navelem"><a class="el" href="dir_b4427dcb03b3017093e6d5e0336f7606.html">kin</a></li>  </ul>
+</div>
+</div><!-- top -->
+<div class="header">
+  <div class="summary">
+<a href="#nested-classes">类</a> &#124;
+<a href="#namespaces">命名空间</a> &#124;
+<a href="#enum-members">枚举</a> &#124;
+<a href="#var-members">变量</a>  </div>
+  <div class="headertitle"><div class="title">serial_chain.h 文件参考</div></div>
+</div><!--header-->
+<div class="contents">
+<div class="textblock"><code>#include &lt;array&gt;</code><br />
+<code>#include &lt;cmath&gt;</code><br />
+<code>#include &lt;cstddef&gt;</code><br />
+<code>#include &quot;<a class="el" href="frame_8h_source.html">geom/frame.h</a>&quot;</code><br />
+<code>#include &quot;<a class="el" href="pose_8h_source.html">kin/pose.h</a>&quot;</code><br />
+<code>#include &quot;<a class="el" href="error_8h_source.html">rt/error.h</a>&quot;</code><br />
+</div><div class="textblock"><div class="dynheader">
+serial_chain.h 的引用(Include)关系图:</div>
+<div class="dyncontent">
+<div class="center"><img src="serial__chain_8h__incl.png" border="0" usemap="#acore_2kin_2serial__chain_8h" alt=""/></div>
+<map name="acore_2kin_2serial__chain_8h" id="acore_2kin_2serial__chain_8h">
+<area shape="rect" title=" " alt="" coords="64,5,232,31"/>
+<area shape="rect" title=" " alt="" coords="30,299,86,324"/>
+<area shape="poly" title=" " alt="" coords="125,33,92,53,59,81,33,113,18,153,8,202,10,223,17,250,27,269,39,287,35,290,22,272,12,252,5,224,3,201,13,151,28,111,55,77,89,49,123,29"/>
+<area shape="rect" title=" " alt="" coords="43,225,106,251"/>
+<area shape="poly" title=" " alt="" coords="146,32,129,80,85,213,80,211,124,78,141,30"/>
+<area shape="rect" title=" " alt="" coords="162,299,232,324"/>
+<area shape="poly" title=" " alt="" coords="135,33,93,71,48,126,30,157,20,189,20,220,33,249,56,272,86,289,118,299,149,305,148,310,116,304,83,293,53,277,28,252,15,221,15,188,25,155,43,123,90,67,131,29"/>
+<area shape="rect" href="frame_8h.html" title=" " alt="" coords="138,79,253,104"/>
+<area shape="poly" title=" " alt="" coords="158,30,183,66,178,69,154,33"/>
+<area shape="rect" href="error_8h.html" title=" " alt="" coords="470,299,548,324"/>
+<area shape="poly" title=" " alt="" coords="232,23,334,41,391,56,450,76,508,102,562,135,610,175,650,224,656,239,654,252,647,264,634,274,601,291,563,302,561,297,599,286,631,270,643,261,649,250,651,239,645,227,606,179,559,139,505,107,448,81,390,61,333,46,231,29"/>
+<area shape="rect" href="pose_8h.html" title=" " alt="" coords="547,225,636,251"/>
+<area shape="poly" title=" " alt="" coords="172,28,557,217,555,221,170,33"/>
+<area shape="poly" title=" " alt="" coords="188,106,95,216,91,213,184,103"/>
+<area shape="rect" href="geometry_8h.html" title=" " alt="" coords="158,152,294,177"/>
+<area shape="poly" title=" " alt="" coords="203,103,219,139,214,141,198,105"/>
+<area shape="poly" title=" " alt="" coords="239,101,290,119,350,144,413,179,468,223,490,253,504,284,499,286,485,256,465,227,410,183,348,149,288,124,237,107"/>
+<area shape="poly" title=" " alt="" coords="203,180,113,222,110,217,201,175"/>
+<area shape="poly" title=" " alt="" coords="212,179,189,200,172,226,169,241,170,257,183,286,178,288,165,258,163,241,167,224,185,196,208,175"/>
+<area shape="rect" title=" " alt="" coords="181,225,266,251"/>
+<area shape="poly" title=" " alt="" coords="229,178,227,212,222,212,223,178"/>
+<area shape="poly" title=" " alt="" coords="295,173,365,191,401,205,435,223,470,253,496,285,492,289,466,257,432,228,399,210,363,196,294,178"/>
+<area shape="rect" href="static__vector_8h.html" title=" " alt="" coords="290,225,421,251"/>
+<area shape="poly" title=" " alt="" coords="249,175,324,216,321,221,246,180"/>
+<area shape="poly" title=" " alt="" coords="309,253,101,303,99,298,307,248"/>
+<area shape="poly" title=" " alt="" coords="331,253,236,295,234,291,329,248"/>
+<area shape="poly" title=" " alt="" coords="382,248,473,290,471,295,379,253"/>
+<area shape="rect" title=" " alt="" coords="310,299,402,324"/>
+<area shape="poly" title=" " alt="" coords="358,251,358,285,353,285,353,251"/>
+<area shape="poly" title=" " alt="" coords="547,250,247,304,246,299,546,245"/>
+<area shape="poly" title=" " alt="" coords="580,253,535,292,531,287,577,249"/>
+</map>
+</div>
+</div><div class="textblock"><div class="dynheader">
+此图展示该文件直接或间接的被哪些文件引用了:</div>
+<div class="dyncontent">
+<div class="center"><img src="serial__chain_8h__dep__incl.png" border="0" usemap="#acore_2kin_2serial__chain_8hdep" alt=""/></div>
+<map name="acore_2kin_2serial__chain_8hdep" id="acore_2kin_2serial__chain_8hdep">
+<area shape="rect" title=" " alt="" coords="9,5,177,31"/>
+<area shape="rect" href="serial__chain__fixture_8h.html" title=" " alt="" coords="5,79,180,119"/>
+<area shape="poly" title=" " alt="" coords="95,44,95,79,90,79,90,44"/>
+</map>
+</div>
+</div>
+<p><a href="serial__chain_8h_source.html">浏览源代码.</a></p>
+<table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="nested-classes" name="nested-classes"></a>
+类</h2></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1kin_1_1DhLink.html">plcopen::core::kin::DhLink</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1kin_1_1SerialChainSpec.html">plcopen::core::kin::SerialChainSpec</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1kin_1_1SerialChainSolveOptions.html">plcopen::core::kin::SerialChainSolveOptions</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1kin_1_1SerialChainSolveResult.html">plcopen::core::kin::SerialChainSolveResult</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1kin_1_1SerialChain.html">plcopen::core::kin::SerialChain</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="namespaces" name="namespaces"></a>
+命名空间</h2></td></tr>
+<tr class="memitem:namespaceplcopen" id="r_namespaceplcopen"><td class="memItemLeft" align="right" valign="top">namespace &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen.html">plcopen</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:namespaceplcopen_1_1core" id="r_namespaceplcopen_1_1core"><td class="memItemLeft" align="right" valign="top">namespace &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core.html">plcopen::core</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:namespaceplcopen_1_1core_1_1kin" id="r_namespaceplcopen_1_1core_1_1kin"><td class="memItemLeft" align="right" valign="top">namespace &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1kin.html">plcopen::core::kin</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="enum-members" name="enum-members"></a>
+枚举</h2></td></tr>
+<tr class="memitem:a489039edcc989e632b7aa748abe36515" id="r_a489039edcc989e632b7aa748abe36515"><td class="memItemLeft" align="right" valign="top">enum class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1kin.html#a489039edcc989e632b7aa748abe36515">plcopen::core::kin::DhConvention</a> { <a class="el" href="namespaceplcopen_1_1core_1_1kin.html#a489039edcc989e632b7aa748abe36515ac00f0c4675b91fb8b918e4079a0b1bac">plcopen::core::kin::standard</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1kin.html#a489039edcc989e632b7aa748abe36515a9ae73c65f418e6f79ceb4f0e4a4b98d5">plcopen::core::kin::modified</a>
+ }</td></tr>
+<tr class="separator:a489039edcc989e632b7aa748abe36515"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
+变量</h2></td></tr>
+<tr class="memitem:a718d0b95bf6fb8c9e02a19bb579635b0" id="r_a718d0b95bf6fb8c9e02a19bb579635b0"><td class="memItemLeft" align="right" valign="top">constexpr std::size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1kin.html#a718d0b95bf6fb8c9e02a19bb579635b0">plcopen::core::kin::SerialChainMaxJoints</a> = 8</td></tr>
+<tr class="separator:a718d0b95bf6fb8c9e02a19bb579635b0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table>
+</div><!-- contents -->
+<!-- start footer part -->
+<hr class="footer"/><address class="footer"><small>
+制作者&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.8
+</small></address>
+</body>
+</html>

@@ -1,0 +1,295 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh">
+<head>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=11"/>
+<meta name="generator" content="Doxygen 1.9.8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>plcopen: plcopen::core::fb::FbGroupReadCommandInfo类 参考</title>
+<link href="tabs.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="jquery.js"></script>
+<script type="text/javascript" src="dynsections.js"></script>
+<link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<link href="doxygen.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+<div id="top"><!-- do not remove this div, it is closed by doxygen! -->
+<div id="titlearea">
+<table cellspacing="0" cellpadding="0">
+ <tbody>
+ <tr id="projectrow">
+  <td id="projectalign">
+   <div id="projectname">plcopen<span id="projectnumber">&#160;0.21.0</span>
+   </div>
+  </td>
+ </tr>
+ </tbody>
+</table>
+</div>
+<!-- end header part -->
+<!-- 制作者 Doxygen 1.9.8 -->
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+var searchBox = new SearchBox("searchBox", "search/",'.html');
+/* @license-end */
+</script>
+<script type="text/javascript" src="menudata.js"></script>
+<script type="text/javascript" src="menu.js"></script>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+$(function() {
+  initMenu('',true,false,'search.php','搜索');
+  $(document).ready(function() { init_search(); });
+});
+/* @license-end */
+</script>
+<div id="main-nav"></div>
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<div id="MSearchResults">
+<div class="SRPage">
+<div id="SRIndex">
+<div id="SRResults"></div>
+<div class="SRStatus" id="Loading">载入中...</div>
+<div class="SRStatus" id="Searching">搜索中...</div>
+<div class="SRStatus" id="NoMatches">未找到</div>
+</div>
+</div>
+</div>
+</div>
+
+<div id="nav-path" class="navpath">
+  <ul>
+<li class="navelem"><a class="el" href="namespaceplcopen.html">plcopen</a></li><li class="navelem"><a class="el" href="namespaceplcopen_1_1core.html">core</a></li><li class="navelem"><a class="el" href="namespaceplcopen_1_1core_1_1fb.html">fb</a></li><li class="navelem"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbGroupReadCommandInfo.html">FbGroupReadCommandInfo</a></li>  </ul>
+</div>
+</div><!-- top -->
+<div class="header">
+  <div class="summary">
+<a href="#pub-methods">Public 成员函数</a> &#124;
+<a href="#pub-attribs">Public 属性</a> &#124;
+<a href="classplcopen_1_1core_1_1fb_1_1FbGroupReadCommandInfo-members.html">所有成员列表</a>  </div>
+  <div class="headertitle"><div class="title">plcopen::core::fb::FbGroupReadCommandInfo类 参考</div></div>
+</div><!--header-->
+<div class="contents">
+
+<p><code>#include &lt;<a class="el" href="fb_2group_8h_source.html">group.h</a>&gt;</code></p>
+<div class="dynheader">
+plcopen::core::fb::FbGroupReadCommandInfo 的协作图:</div>
+<div class="dyncontent">
+<div class="center"><img src="classplcopen_1_1core_1_1fb_1_1FbGroupReadCommandInfo__coll__graph.png" border="0" usemap="#aplcopen_1_1core_1_1fb_1_1FbGroupReadCommandInfo_coll__map" alt="Collaboration graph"/></div>
+<map name="aplcopen_1_1core_1_1fb_1_1FbGroupReadCommandInfo_coll__map" id="aplcopen_1_1core_1_1fb_1_1FbGroupReadCommandInfo_coll__map">
+<area shape="rect" title=" " alt="" coords="153,211,356,251"/>
+<area shape="rect" href="classplcopen_1_1core_1_1axis_1_1AxisGroup.html" title=" " alt="" coords="95,108,239,148"/>
+<area shape="poly" title=" " alt="" coords="194,157,240,209,236,212,190,160"/>
+<area shape="rect" href="structplcopen_1_1core_1_1axis_1_1GroupPosition.html" title=" " alt="" coords="5,5,149,45"/>
+<area shape="poly" title=" " alt="" coords="75,59,81,83,92,96,107,106,104,110,89,100,76,85,70,60"/>
+<area shape="rect" href="structplcopen_1_1core_1_1axis_1_1JogCommandOptions.html" title=" " alt="" coords="174,5,341,45"/>
+<area shape="poly" title=" " alt="" coords="247,60,230,86,202,110,199,106,226,82,242,57"/>
+<area shape="rect" href="structplcopen_1_1core_1_1axis_1_1GroupCommandInfo.html" title=" " alt="" coords="263,108,425,148"/>
+<area shape="poly" title=" " alt="" coords="320,160,273,212,269,209,316,157"/>
+</map>
+<center><span class="legend">[<a href="graph_legend.html">图例</a>]</span></center></div>
+<table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
+Public 成员函数</h2></td></tr>
+<tr class="memitem:ad243bf7ae223a3114921d0a54c84d9b6" id="r_ad243bf7ae223a3114921d0a54c84d9b6"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbGroupReadCommandInfo.html#ad243bf7ae223a3114921d0a54c84d9b6">call</a> ()</td></tr>
+<tr class="separator:ad243bf7ae223a3114921d0a54c84d9b6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
+Public 属性</h2></td></tr>
+<tr class="memitem:aca52a5158f64628dae3748fe2508cc4a" id="r_aca52a5158f64628dae3748fe2508cc4a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classplcopen_1_1core_1_1axis_1_1AxisGroup.html">axis::AxisGroup</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbGroupReadCommandInfo.html#aca52a5158f64628dae3748fe2508cc4a">group_ref</a> = nullptr</td></tr>
+<tr class="separator:aca52a5158f64628dae3748fe2508cc4a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a21982984ccb2badd595d056190f0a8e7" id="r_a21982984ccb2badd595d056190f0a8e7"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbGroupReadCommandInfo.html#a21982984ccb2badd595d056190f0a8e7">enable</a> = false</td></tr>
+<tr class="separator:a21982984ccb2badd595d056190f0a8e7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2dfebdf391d7ff226c5e33fbec5876e6" id="r_a2dfebdf391d7ff226c5e33fbec5876e6"><td class="memItemLeft" align="right" valign="top">std::uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbGroupReadCommandInfo.html#a2dfebdf391d7ff226c5e33fbec5876e6">command_id</a> = 0</td></tr>
+<tr class="separator:a2dfebdf391d7ff226c5e33fbec5876e6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9fe94c3de794fde64930b1c0948e302e" id="r_a9fe94c3de794fde64930b1c0948e302e"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbGroupReadCommandInfo.html#a9fe94c3de794fde64930b1c0948e302e">valid</a> = false</td></tr>
+<tr class="separator:a9fe94c3de794fde64930b1c0948e302e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a00c34eed1200b2b83c57f4c2a44709d4" id="r_a00c34eed1200b2b83c57f4c2a44709d4"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbGroupReadCommandInfo.html#a00c34eed1200b2b83c57f4c2a44709d4">busy</a> = false</td></tr>
+<tr class="separator:a00c34eed1200b2b83c57f4c2a44709d4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a580026b5150da49c1fe0a8426ff90e0f" id="r_a580026b5150da49c1fe0a8426ff90e0f"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbGroupReadCommandInfo.html#a580026b5150da49c1fe0a8426ff90e0f">error</a> = false</td></tr>
+<tr class="separator:a580026b5150da49c1fe0a8426ff90e0f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aed9913b764179a7a7a0e86338c8d0c54" id="r_aed9913b764179a7a7a0e86338c8d0c54"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8">rt::ErrorCode</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbGroupReadCommandInfo.html#aed9913b764179a7a7a0e86338c8d0c54">error_id</a> = <a class="el" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8a444bcb3a3fcf8389296c49467f27e1d6">rt::ErrorCode::ok</a></td></tr>
+<tr class="separator:aed9913b764179a7a7a0e86338c8d0c54"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a86dd158846f89807a0e4c18134a79311" id="r_a86dd158846f89807a0e4c18134a79311"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structplcopen_1_1core_1_1axis_1_1GroupCommandInfo.html">axis::GroupCommandInfo</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbGroupReadCommandInfo.html#a86dd158846f89807a0e4c18134a79311">info</a> {}</td></tr>
+<tr class="separator:a86dd158846f89807a0e4c18134a79311"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table>
+<a name="details" id="details"></a><h2 class="groupheader">详细描述</h2>
+<div class="textblock">
+<p class="definition">在文件 <a class="el" href="fb_2group_8h_source.html">group.h</a> 第 <a class="el" href="fb_2group_8h_source.html#l00681">681</a> 行定义.</p>
+</div><h2 class="groupheader">成员函数说明</h2>
+<a id="ad243bf7ae223a3114921d0a54c84d9b6" name="ad243bf7ae223a3114921d0a54c84d9b6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad243bf7ae223a3114921d0a54c84d9b6">&#9670;&#160;</a></span>call()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void plcopen::core::fb::FbGroupReadCommandInfo::call </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="fb_2group_8h_source.html">group.h</a> 第 <a class="el" href="fb_2group_8h_source.html#l00693">693</a> 行定义.</p>
+
+</div>
+</div>
+<h2 class="groupheader">类成员变量说明</h2>
+<a id="a00c34eed1200b2b83c57f4c2a44709d4" name="a00c34eed1200b2b83c57f4c2a44709d4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a00c34eed1200b2b83c57f4c2a44709d4">&#9670;&#160;</a></span>busy</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool plcopen::core::fb::FbGroupReadCommandInfo::busy = false</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="fb_2group_8h_source.html">group.h</a> 第 <a class="el" href="fb_2group_8h_source.html#l00688">688</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a2dfebdf391d7ff226c5e33fbec5876e6" name="a2dfebdf391d7ff226c5e33fbec5876e6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2dfebdf391d7ff226c5e33fbec5876e6">&#9670;&#160;</a></span>command_id</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::uint32_t plcopen::core::fb::FbGroupReadCommandInfo::command_id = 0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="fb_2group_8h_source.html">group.h</a> 第 <a class="el" href="fb_2group_8h_source.html#l00686">686</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a21982984ccb2badd595d056190f0a8e7" name="a21982984ccb2badd595d056190f0a8e7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a21982984ccb2badd595d056190f0a8e7">&#9670;&#160;</a></span>enable</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool plcopen::core::fb::FbGroupReadCommandInfo::enable = false</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="fb_2group_8h_source.html">group.h</a> 第 <a class="el" href="fb_2group_8h_source.html#l00685">685</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a580026b5150da49c1fe0a8426ff90e0f" name="a580026b5150da49c1fe0a8426ff90e0f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a580026b5150da49c1fe0a8426ff90e0f">&#9670;&#160;</a></span>error</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool plcopen::core::fb::FbGroupReadCommandInfo::error = false</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="fb_2group_8h_source.html">group.h</a> 第 <a class="el" href="fb_2group_8h_source.html#l00689">689</a> 行定义.</p>
+
+</div>
+</div>
+<a id="aed9913b764179a7a7a0e86338c8d0c54" name="aed9913b764179a7a7a0e86338c8d0c54"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aed9913b764179a7a7a0e86338c8d0c54">&#9670;&#160;</a></span>error_id</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8">rt::ErrorCode</a> plcopen::core::fb::FbGroupReadCommandInfo::error_id = <a class="el" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8a444bcb3a3fcf8389296c49467f27e1d6">rt::ErrorCode::ok</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="fb_2group_8h_source.html">group.h</a> 第 <a class="el" href="fb_2group_8h_source.html#l00690">690</a> 行定义.</p>
+
+</div>
+</div>
+<a id="aca52a5158f64628dae3748fe2508cc4a" name="aca52a5158f64628dae3748fe2508cc4a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aca52a5158f64628dae3748fe2508cc4a">&#9670;&#160;</a></span>group_ref</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classplcopen_1_1core_1_1axis_1_1AxisGroup.html">axis::AxisGroup</a>* plcopen::core::fb::FbGroupReadCommandInfo::group_ref = nullptr</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="fb_2group_8h_source.html">group.h</a> 第 <a class="el" href="fb_2group_8h_source.html#l00684">684</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a86dd158846f89807a0e4c18134a79311" name="a86dd158846f89807a0e4c18134a79311"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a86dd158846f89807a0e4c18134a79311">&#9670;&#160;</a></span>info</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="structplcopen_1_1core_1_1axis_1_1GroupCommandInfo.html">axis::GroupCommandInfo</a> plcopen::core::fb::FbGroupReadCommandInfo::info {}</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="fb_2group_8h_source.html">group.h</a> 第 <a class="el" href="fb_2group_8h_source.html#l00691">691</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a9fe94c3de794fde64930b1c0948e302e" name="a9fe94c3de794fde64930b1c0948e302e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9fe94c3de794fde64930b1c0948e302e">&#9670;&#160;</a></span>valid</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool plcopen::core::fb::FbGroupReadCommandInfo::valid = false</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="fb_2group_8h_source.html">group.h</a> 第 <a class="el" href="fb_2group_8h_source.html#l00687">687</a> 行定义.</p>
+
+</div>
+</div>
+<hr/>该类的文档由以下文件生成:<ul>
+<li>core/fb/<a class="el" href="fb_2group_8h_source.html">group.h</a></li>
+</ul>
+</div><!-- contents -->
+<!-- start footer part -->
+<hr class="footer"/><address class="footer"><small>
+制作者&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.8
+</small></address>
+</body>
+</html>

@@ -1,0 +1,7 @@
+<map id="plcopen::core::axis::KinTransformRef" name="plcopen::core::axis::KinTransformRef">
+<area shape="rect" id="Node000001" title=" " alt="" coords="82,108,226,148"/>
+<area shape="rect" id="Node000002" href="$classplcopen_1_1core_1_1kin_1_1Kinematics.html" title=" " alt="" coords="5,5,143,45"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="100,55,141,106,137,110,96,58"/>
+<area shape="rect" id="Node000003" href="$classplcopen_1_1core_1_1kin_1_1PoseKinematics.html" title=" " alt="" coords="167,5,304,45"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="222,59,204,86,180,110,176,106,200,82,217,57"/>
+</map>

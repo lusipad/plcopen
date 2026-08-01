@@ -1,0 +1,99 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh">
+<head>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=11"/>
+<meta name="generator" content="Doxygen 1.9.8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>plcopen: L3 plan</title>
+<link href="tabs.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="jquery.js"></script>
+<script type="text/javascript" src="dynsections.js"></script>
+<link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<link href="doxygen.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+<div id="top"><!-- do not remove this div, it is closed by doxygen! -->
+<div id="titlearea">
+<table cellspacing="0" cellpadding="0">
+ <tbody>
+ <tr id="projectrow">
+  <td id="projectalign">
+   <div id="projectname">plcopen<span id="projectnumber">&#160;0.21.0</span>
+   </div>
+  </td>
+ </tr>
+ </tbody>
+</table>
+</div>
+<!-- end header part -->
+<!-- 制作者 Doxygen 1.9.8 -->
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+var searchBox = new SearchBox("searchBox", "search/",'.html');
+/* @license-end */
+</script>
+<script type="text/javascript" src="menudata.js"></script>
+<script type="text/javascript" src="menu.js"></script>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+$(function() {
+  initMenu('',true,false,'search.php','搜索');
+  $(document).ready(function() { init_search(); });
+});
+/* @license-end */
+</script>
+<div id="main-nav"></div>
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<div id="MSearchResults">
+<div class="SRPage">
+<div id="SRIndex">
+<div id="SRResults"></div>
+<div class="SRStatus" id="Loading">载入中...</div>
+<div class="SRStatus" id="Searching">搜索中...</div>
+<div class="SRStatus" id="NoMatches">未找到</div>
+</div>
+</div>
+</div>
+</div>
+
+</div><!-- top -->
+<div><div class="header">
+  <div class="headertitle"><div class="title">L3 plan</div></div>
+</div><!--header-->
+<div class="contents">
+<div class="textblock"><p><a class="anchor" id="autotoc_md27"></a> <code>core/plan</code> owns planning-domain path buffers and conservative planning decisions. 本层是 ADR-0007 规划域的核心层：在规划线程内运行，产出供 RT 域消费的承诺数据；周期路径只 采样已承诺结果（阶梯全貌见 <a class="el" href="md_core_2README.html">core/README.md</a>）。</p>
+<p>当前 L3 范围：</p>
+<ul>
+<li>fixed-capacity path buffer;</li>
+<li>monotonic front consumption;</li>
+<li>bounded look-ahead speed pass over the current buffer;</li>
+<li>blending decisions that produce a bounded quadratic Bezier curve constrained by tolerance.</li>
+</ul>
+<p>本层保持曲线插入策略显式：the caller receives the blend segment and chooses where to splice it into a committed path. The planner does not mutate source buffers in place.</p>
+<h1><a class="anchor" id="autotoc_md28"></a>
+TOPP-RA 路径参数化</h1>
+<ul>
+<li><code><a class="el" href="topp_8h.html">topp.h</a></code>：TOPP-RA Layer 1（加速度限制）——对标量路径参数 s 做逐轴速度/ 加速度约束下的时间最优 rest-to-rest 求解（离散化 + 反向可达性 + 正向积分）；</li>
+<li><code><a class="el" href="topp__jerk_8h.html">topp_jerk.h</a></code>：Layer 2（jerk-aware）——在 Layer 1 之上叠加 jerk 约束， 正向/反向 S 曲线包络取逐点最小后做梯形时间积分；</li>
+<li><code><a class="el" href="topp__executor_8h.html">topp_executor.h</a></code>：TOPP → <code>Profile1D</code> → RT 采样的桥：把规划域求得的最优 时长构造成整周期 profile，并在网格点后验校核逐轴限值（不通过则回退标量 OTG）。</li>
+</ul>
+<p>三者均为 planning-domain only，无 RT 约束（可分配、可迭代求解）；周期路径 只消费其产出的 profile。 </p>
+</div></div><!-- contents -->
+</div><!-- PageDoc -->
+<!-- start footer part -->
+<hr class="footer"/><address class="footer"><small>
+制作者&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.8
+</small></address>
+</body>
+</html>

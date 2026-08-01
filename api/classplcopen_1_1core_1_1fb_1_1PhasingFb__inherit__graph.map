@@ -1,0 +1,7 @@
+<map id="plcopen::core::fb::PhasingFb" name="plcopen::core::fb::PhasingFb">
+<area shape="rect" id="Node000001" title=" " alt="" coords="93,5,232,45"/>
+<area shape="rect" id="Node000002" href="$classplcopen_1_1core_1_1fb_1_1FbPhasingAbsolute.html" title=" " alt="" coords="5,93,152,133"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="137,57,99,95,95,91,133,53"/>
+<area shape="rect" id="Node000003" href="$classplcopen_1_1core_1_1fb_1_1FbPhasingRelative.html" title=" " alt="" coords="177,93,319,133"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="193,53,231,91,227,95,189,57"/>
+</map>

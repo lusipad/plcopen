@@ -1,0 +1,381 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh">
+<head>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=11"/>
+<meta name="generator" content="Doxygen 1.9.8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>plcopen: plcopen::core::fb::FbStepBlock类 参考</title>
+<link href="tabs.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="jquery.js"></script>
+<script type="text/javascript" src="dynsections.js"></script>
+<link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<link href="doxygen.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+<div id="top"><!-- do not remove this div, it is closed by doxygen! -->
+<div id="titlearea">
+<table cellspacing="0" cellpadding="0">
+ <tbody>
+ <tr id="projectrow">
+  <td id="projectalign">
+   <div id="projectname">plcopen<span id="projectnumber">&#160;0.21.0</span>
+   </div>
+  </td>
+ </tr>
+ </tbody>
+</table>
+</div>
+<!-- end header part -->
+<!-- 制作者 Doxygen 1.9.8 -->
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+var searchBox = new SearchBox("searchBox", "search/",'.html');
+/* @license-end */
+</script>
+<script type="text/javascript" src="menudata.js"></script>
+<script type="text/javascript" src="menu.js"></script>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+$(function() {
+  initMenu('',true,false,'search.php','搜索');
+  $(document).ready(function() { init_search(); });
+});
+/* @license-end */
+</script>
+<div id="main-nav"></div>
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<div id="MSearchResults">
+<div class="SRPage">
+<div id="SRIndex">
+<div id="SRResults"></div>
+<div class="SRStatus" id="Loading">载入中...</div>
+<div class="SRStatus" id="Searching">搜索中...</div>
+<div class="SRStatus" id="NoMatches">未找到</div>
+</div>
+</div>
+</div>
+</div>
+
+<div id="nav-path" class="navpath">
+  <ul>
+<li class="navelem"><a class="el" href="namespaceplcopen.html">plcopen</a></li><li class="navelem"><a class="el" href="namespaceplcopen_1_1core.html">core</a></li><li class="navelem"><a class="el" href="namespaceplcopen_1_1core_1_1fb.html">fb</a></li><li class="navelem"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbStepBlock.html">FbStepBlock</a></li>  </ul>
+</div>
+</div><!-- top -->
+<div class="header">
+  <div class="summary">
+<a href="#pub-methods">Public 成员函数</a> &#124;
+<a href="#pub-attribs">Public 属性</a> &#124;
+<a href="classplcopen_1_1core_1_1fb_1_1FbStepBlock-members.html">所有成员列表</a>  </div>
+  <div class="headertitle"><div class="title">plcopen::core::fb::FbStepBlock类 参考</div></div>
+</div><!--header-->
+<div class="contents">
+
+<p><code>#include &lt;<a class="el" href="homing_8h_source.html">homing.h</a>&gt;</code></p>
+<div class="dynheader">
+plcopen::core::fb::FbStepBlock 的协作图:</div>
+<div class="dyncontent">
+<div class="center"><img src="classplcopen_1_1core_1_1fb_1_1FbStepBlock__coll__graph.png" border="0" usemap="#aplcopen_1_1core_1_1fb_1_1FbStepBlock_coll__map" alt="Collaboration graph"/></div>
+<map name="aplcopen_1_1core_1_1fb_1_1FbStepBlock_coll__map" id="aplcopen_1_1core_1_1fb_1_1FbStepBlock_coll__map">
+<area shape="rect" title=" " alt="" coords="91,108,229,148"/>
+<area shape="rect" href="classplcopen_1_1core_1_1axis_1_1AxisModel.html" title=" " alt="" coords="5,5,149,45"/>
+<area shape="poly" title=" " alt="" coords="104,54,147,106,142,110,99,58"/>
+<area shape="rect" href="structplcopen_1_1core_1_1fb_1_1MotionOutputs.html" title=" " alt="" coords="173,5,312,45"/>
+<area shape="poly" title=" " alt="" coords="221,58,178,110,173,106,216,54"/>
+</map>
+<center><span class="legend">[<a href="graph_legend.html">图例</a>]</span></center></div>
+<table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
+Public 成员函数</h2></td></tr>
+<tr class="memitem:a2fddcd5324008c00bbb4c502206c039f" id="r_a2fddcd5324008c00bbb4c502206c039f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbStepBlock.html#a2fddcd5324008c00bbb4c502206c039f">call</a> ()</td></tr>
+<tr class="separator:a2fddcd5324008c00bbb4c502206c039f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
+Public 属性</h2></td></tr>
+<tr class="memitem:a7f3803be402386865695c22617b7c2b4" id="r_a7f3803be402386865695c22617b7c2b4"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classplcopen_1_1core_1_1axis_1_1AxisModel.html">axis::AxisModel</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbStepBlock.html#a7f3803be402386865695c22617b7c2b4">axis_ref</a> = nullptr</td></tr>
+<tr class="separator:a7f3803be402386865695c22617b7c2b4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6ecd54212d4e9d24bfa58cf20e3e4877" id="r_a6ecd54212d4e9d24bfa58cf20e3e4877"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbStepBlock.html#a6ecd54212d4e9d24bfa58cf20e3e4877">execute</a> = false</td></tr>
+<tr class="separator:a6ecd54212d4e9d24bfa58cf20e3e4877"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a83696cc693746e1c38f9398f4d316dfa" id="r_a83696cc693746e1c38f9398f4d316dfa"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceplcopen_1_1core_1_1axis.html#a962aac05022b5bdc210266cd4e40b6c2">axis::HomeDirection</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbStepBlock.html#a83696cc693746e1c38f9398f4d316dfa">direction</a> = <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#a962aac05022b5bdc210266cd4e40b6c2a82082716189f80fd070b89ac716570ba">axis::HomeDirection::positive</a></td></tr>
+<tr class="separator:a83696cc693746e1c38f9398f4d316dfa"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aad38697342df7ec873163973d2f46bce" id="r_aad38697342df7ec873163973d2f46bce"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbStepBlock.html#aad38697342df7ec873163973d2f46bce">velocity</a> = 1.0</td></tr>
+<tr class="separator:aad38697342df7ec873163973d2f46bce"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1f24064d79ca5b685ef6d40f27297757" id="r_a1f24064d79ca5b685ef6d40f27297757"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbStepBlock.html#a1f24064d79ca5b685ef6d40f27297757">set_position</a> = 0.0</td></tr>
+<tr class="separator:a1f24064d79ca5b685ef6d40f27297757"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad7630b096590091bcd5b0ee54f89287b" id="r_ad7630b096590091bcd5b0ee54f89287b"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbStepBlock.html#ad7630b096590091bcd5b0ee54f89287b">set_position_enabled</a> = false</td></tr>
+<tr class="separator:ad7630b096590091bcd5b0ee54f89287b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a204d4d3093449bbc54c48c68cfdc28f2" id="r_a204d4d3093449bbc54c48c68cfdc28f2"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbStepBlock.html#a204d4d3093449bbc54c48c68cfdc28f2">detection_velocity_limit</a> = 0.0</td></tr>
+<tr class="separator:a204d4d3093449bbc54c48c68cfdc28f2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6cbc51a7b2cfc8756ffc38a6f70ecd04" id="r_a6cbc51a7b2cfc8756ffc38a6f70ecd04"><td class="memItemLeft" align="right" valign="top">std::int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbStepBlock.html#a6cbc51a7b2cfc8756ffc38a6f70ecd04">detection_velocity_time</a> = 0</td></tr>
+<tr class="separator:a6cbc51a7b2cfc8756ffc38a6f70ecd04"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a69ab78fbd31a96a2a7ac31c38bfa7281" id="r_a69ab78fbd31a96a2a7ac31c38bfa7281"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbStepBlock.html#a69ab78fbd31a96a2a7ac31c38bfa7281">torque_limit</a> = 0.0</td></tr>
+<tr class="separator:a69ab78fbd31a96a2a7ac31c38bfa7281"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adde84b607791a057d5f50c6c2193595b" id="r_adde84b607791a057d5f50c6c2193595b"><td class="memItemLeft" align="right" valign="top">std::int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbStepBlock.html#adde84b607791a057d5f50c6c2193595b">time_limit</a> = 0</td></tr>
+<tr class="separator:adde84b607791a057d5f50c6c2193595b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afa328f8a2e3724960bbc1f86c191acad" id="r_afa328f8a2e3724960bbc1f86c191acad"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbStepBlock.html#afa328f8a2e3724960bbc1f86c191acad">distance_limit</a> = 0.0</td></tr>
+<tr class="separator:afa328f8a2e3724960bbc1f86c191acad"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac196a05b9c3ed339b331214f352a0723" id="r_ac196a05b9c3ed339b331214f352a0723"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceplcopen_1_1core_1_1axis.html#ac37c626dcb946b45368197dcafa1eb34">axis::BufferMode</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbStepBlock.html#ac196a05b9c3ed339b331214f352a0723">buffer_mode</a> = <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#ac37c626dcb946b45368197dcafa1eb34af3376270ea6836eac66441a6ef3c55c3">axis::BufferMode::aborting</a></td></tr>
+<tr class="separator:ac196a05b9c3ed339b331214f352a0723"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac58c4f3dbcf2793a2040e9174a243cbf" id="r_ac58c4f3dbcf2793a2040e9174a243cbf"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structplcopen_1_1core_1_1fb_1_1MotionOutputs.html">MotionOutputs</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbStepBlock.html#ac58c4f3dbcf2793a2040e9174a243cbf">outputs</a> {}</td></tr>
+<tr class="separator:ac58c4f3dbcf2793a2040e9174a243cbf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table>
+<a name="details" id="details"></a><h2 class="groupheader">详细描述</h2>
+<div class="textblock">
+<p class="definition">在文件 <a class="el" href="homing_8h_source.html">homing.h</a> 第 <a class="el" href="homing_8h_source.html#l00866">866</a> 行定义.</p>
+</div><h2 class="groupheader">成员函数说明</h2>
+<a id="a2fddcd5324008c00bbb4c502206c039f" name="a2fddcd5324008c00bbb4c502206c039f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2fddcd5324008c00bbb4c502206c039f">&#9670;&#160;</a></span>call()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void plcopen::core::fb::FbStepBlock::call </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="homing_8h_source.html">homing.h</a> 第 <a class="el" href="homing_8h_source.html#l00884">884</a> 行定义.</p>
+
+</div>
+</div>
+<h2 class="groupheader">类成员变量说明</h2>
+<a id="a7f3803be402386865695c22617b7c2b4" name="a7f3803be402386865695c22617b7c2b4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7f3803be402386865695c22617b7c2b4">&#9670;&#160;</a></span>axis_ref</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classplcopen_1_1core_1_1axis_1_1AxisModel.html">axis::AxisModel</a>* plcopen::core::fb::FbStepBlock::axis_ref = nullptr</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="homing_8h_source.html">homing.h</a> 第 <a class="el" href="homing_8h_source.html#l00870">870</a> 行定义.</p>
+
+</div>
+</div>
+<a id="ac196a05b9c3ed339b331214f352a0723" name="ac196a05b9c3ed339b331214f352a0723"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac196a05b9c3ed339b331214f352a0723">&#9670;&#160;</a></span>buffer_mode</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="namespaceplcopen_1_1core_1_1axis.html#ac37c626dcb946b45368197dcafa1eb34">axis::BufferMode</a> plcopen::core::fb::FbStepBlock::buffer_mode = <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#ac37c626dcb946b45368197dcafa1eb34af3376270ea6836eac66441a6ef3c55c3">axis::BufferMode::aborting</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="homing_8h_source.html">homing.h</a> 第 <a class="el" href="homing_8h_source.html#l00881">881</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a204d4d3093449bbc54c48c68cfdc28f2" name="a204d4d3093449bbc54c48c68cfdc28f2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a204d4d3093449bbc54c48c68cfdc28f2">&#9670;&#160;</a></span>detection_velocity_limit</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">double plcopen::core::fb::FbStepBlock::detection_velocity_limit = 0.0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="homing_8h_source.html">homing.h</a> 第 <a class="el" href="homing_8h_source.html#l00876">876</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a6cbc51a7b2cfc8756ffc38a6f70ecd04" name="a6cbc51a7b2cfc8756ffc38a6f70ecd04"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6cbc51a7b2cfc8756ffc38a6f70ecd04">&#9670;&#160;</a></span>detection_velocity_time</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::int64_t plcopen::core::fb::FbStepBlock::detection_velocity_time = 0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="homing_8h_source.html">homing.h</a> 第 <a class="el" href="homing_8h_source.html#l00877">877</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a83696cc693746e1c38f9398f4d316dfa" name="a83696cc693746e1c38f9398f4d316dfa"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a83696cc693746e1c38f9398f4d316dfa">&#9670;&#160;</a></span>direction</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="namespaceplcopen_1_1core_1_1axis.html#a962aac05022b5bdc210266cd4e40b6c2">axis::HomeDirection</a> plcopen::core::fb::FbStepBlock::direction = <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#a962aac05022b5bdc210266cd4e40b6c2a82082716189f80fd070b89ac716570ba">axis::HomeDirection::positive</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="homing_8h_source.html">homing.h</a> 第 <a class="el" href="homing_8h_source.html#l00872">872</a> 行定义.</p>
+
+</div>
+</div>
+<a id="afa328f8a2e3724960bbc1f86c191acad" name="afa328f8a2e3724960bbc1f86c191acad"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afa328f8a2e3724960bbc1f86c191acad">&#9670;&#160;</a></span>distance_limit</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">double plcopen::core::fb::FbStepBlock::distance_limit = 0.0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="homing_8h_source.html">homing.h</a> 第 <a class="el" href="homing_8h_source.html#l00880">880</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a6ecd54212d4e9d24bfa58cf20e3e4877" name="a6ecd54212d4e9d24bfa58cf20e3e4877"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6ecd54212d4e9d24bfa58cf20e3e4877">&#9670;&#160;</a></span>execute</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool plcopen::core::fb::FbStepBlock::execute = false</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="homing_8h_source.html">homing.h</a> 第 <a class="el" href="homing_8h_source.html#l00871">871</a> 行定义.</p>
+
+</div>
+</div>
+<a id="ac58c4f3dbcf2793a2040e9174a243cbf" name="ac58c4f3dbcf2793a2040e9174a243cbf"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac58c4f3dbcf2793a2040e9174a243cbf">&#9670;&#160;</a></span>outputs</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="structplcopen_1_1core_1_1fb_1_1MotionOutputs.html">MotionOutputs</a> plcopen::core::fb::FbStepBlock::outputs {}</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="homing_8h_source.html">homing.h</a> 第 <a class="el" href="homing_8h_source.html#l00882">882</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a1f24064d79ca5b685ef6d40f27297757" name="a1f24064d79ca5b685ef6d40f27297757"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1f24064d79ca5b685ef6d40f27297757">&#9670;&#160;</a></span>set_position</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">double plcopen::core::fb::FbStepBlock::set_position = 0.0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="homing_8h_source.html">homing.h</a> 第 <a class="el" href="homing_8h_source.html#l00874">874</a> 行定义.</p>
+
+</div>
+</div>
+<a id="ad7630b096590091bcd5b0ee54f89287b" name="ad7630b096590091bcd5b0ee54f89287b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad7630b096590091bcd5b0ee54f89287b">&#9670;&#160;</a></span>set_position_enabled</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool plcopen::core::fb::FbStepBlock::set_position_enabled = false</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="homing_8h_source.html">homing.h</a> 第 <a class="el" href="homing_8h_source.html#l00875">875</a> 行定义.</p>
+
+</div>
+</div>
+<a id="adde84b607791a057d5f50c6c2193595b" name="adde84b607791a057d5f50c6c2193595b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adde84b607791a057d5f50c6c2193595b">&#9670;&#160;</a></span>time_limit</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::int64_t plcopen::core::fb::FbStepBlock::time_limit = 0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="homing_8h_source.html">homing.h</a> 第 <a class="el" href="homing_8h_source.html#l00879">879</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a69ab78fbd31a96a2a7ac31c38bfa7281" name="a69ab78fbd31a96a2a7ac31c38bfa7281"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a69ab78fbd31a96a2a7ac31c38bfa7281">&#9670;&#160;</a></span>torque_limit</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">double plcopen::core::fb::FbStepBlock::torque_limit = 0.0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="homing_8h_source.html">homing.h</a> 第 <a class="el" href="homing_8h_source.html#l00878">878</a> 行定义.</p>
+
+</div>
+</div>
+<a id="aad38697342df7ec873163973d2f46bce" name="aad38697342df7ec873163973d2f46bce"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aad38697342df7ec873163973d2f46bce">&#9670;&#160;</a></span>velocity</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">double plcopen::core::fb::FbStepBlock::velocity = 1.0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="homing_8h_source.html">homing.h</a> 第 <a class="el" href="homing_8h_source.html#l00873">873</a> 行定义.</p>
+
+</div>
+</div>
+<hr/>该类的文档由以下文件生成:<ul>
+<li>core/fb/<a class="el" href="homing_8h_source.html">homing.h</a></li>
+</ul>
+</div><!-- contents -->
+<!-- start footer part -->
+<hr class="footer"/><address class="footer"><small>
+制作者&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.8
+</small></address>
+</body>
+</html>

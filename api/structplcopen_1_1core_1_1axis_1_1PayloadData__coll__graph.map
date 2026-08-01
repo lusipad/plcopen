@@ -1,0 +1,5 @@
+<map id="plcopen::core::axis::PayloadData" name="plcopen::core::axis::PayloadData">
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,108,149,148"/>
+<area shape="rect" id="Node000002" href="$structplcopen_1_1core_1_1axis_1_1ToolData.html" title=" " alt="" coords="5,5,149,45"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="80,59,80,108,75,108,75,59"/>
+</map>

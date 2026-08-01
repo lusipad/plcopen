@@ -1,0 +1,331 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh">
+<head>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=11"/>
+<meta name="generator" content="Doxygen 1.9.8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>plcopen: core/fb/base.h 源文件</title>
+<link href="tabs.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="jquery.js"></script>
+<script type="text/javascript" src="dynsections.js"></script>
+<link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<link href="doxygen.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+<div id="top"><!-- do not remove this div, it is closed by doxygen! -->
+<div id="titlearea">
+<table cellspacing="0" cellpadding="0">
+ <tbody>
+ <tr id="projectrow">
+  <td id="projectalign">
+   <div id="projectname">plcopen<span id="projectnumber">&#160;0.21.0</span>
+   </div>
+  </td>
+ </tr>
+ </tbody>
+</table>
+</div>
+<!-- end header part -->
+<!-- 制作者 Doxygen 1.9.8 -->
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+var searchBox = new SearchBox("searchBox", "search/",'.html');
+/* @license-end */
+</script>
+<script type="text/javascript" src="menudata.js"></script>
+<script type="text/javascript" src="menu.js"></script>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+$(function() {
+  initMenu('',true,false,'search.php','搜索');
+  $(document).ready(function() { init_search(); });
+});
+/* @license-end */
+</script>
+<div id="main-nav"></div>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+$(document).ready(function() { init_codefold(0); });
+/* @license-end */
+</script>
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<div id="MSearchResults">
+<div class="SRPage">
+<div id="SRIndex">
+<div id="SRResults"></div>
+<div class="SRStatus" id="Loading">载入中...</div>
+<div class="SRStatus" id="Searching">搜索中...</div>
+<div class="SRStatus" id="NoMatches">未找到</div>
+</div>
+</div>
+</div>
+</div>
+
+<div id="nav-path" class="navpath">
+  <ul>
+<li class="navelem"><a class="el" href="dir_4270bfced15e0e73154b13468c7c9ad9.html">core</a></li><li class="navelem"><a class="el" href="dir_8cd0741eebc4dd2e90328fddd7ceca47.html">fb</a></li>  </ul>
+</div>
+</div><!-- top -->
+<div class="header">
+  <div class="headertitle"><div class="title">base.h</div></div>
+</div><!--header-->
+<div class="contents">
+<a href="base_8h.html">浏览该文件的文档.</a><div class="fragment"><div class="line"><a id="l00001" name="l00001"></a><span class="lineno">    1</span><span class="preprocessor">#pragma once</span></div>
+<div class="line"><a id="l00002" name="l00002"></a><span class="lineno">    2</span> </div>
+<div class="line"><a id="l00003" name="l00003"></a><span class="lineno">    3</span><span class="preprocessor">#include &quot;<a class="code" href="error_8h.html">rt/error.h</a>&quot;</span></div>
+<div class="line"><a id="l00004" name="l00004"></a><span class="lineno">    4</span> </div>
+<div class="foldopen" id="foldopen00005" data-start="{" data-end="}">
+<div class="line"><a id="l00005" name="l00005"></a><span class="lineno"><a class="line" href="namespaceplcopen_1_1core_1_1fb.html">    5</a></span><span class="keyword">namespace </span><a class="code hl_namespace" href="namespaceplcopen_1_1core_1_1fb.html">plcopen::core::fb</a></div>
+<div class="line"><a id="l00006" name="l00006"></a><span class="lineno">    6</span>{</div>
+<div class="line"><a id="l00007" name="l00007"></a><span class="lineno">    7</span> </div>
+<div class="foldopen" id="foldopen00008" data-start="{" data-end="};">
+<div class="line"><a id="l00008" name="l00008"></a><span class="lineno"><a class="line" href="namespaceplcopen_1_1core_1_1fb.html#a9987504ab741614c7f341e5827889070">    8</a></span><span class="keyword">enum class</span> <a class="code hl_enumeration" href="namespaceplcopen_1_1core_1_1fb.html#a9987504ab741614c7f341e5827889070">ExecuteStep</a></div>
+<div class="line"><a id="l00009" name="l00009"></a><span class="lineno">    9</span>{</div>
+<div class="line"><a id="l00010" name="l00010"></a><span class="lineno">   10</span>    <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1fb.html#a9987504ab741614c7f341e5827889070a8bc1b2f84252c3df4edd53e4aad097a7">busy</a>,</div>
+<div class="line"><a id="l00011" name="l00011"></a><span class="lineno">   11</span>    <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1fb.html#a9987504ab741614c7f341e5827889070a6b2ded51d81a4403d8a4bd25fa1e57ee">done</a>,</div>
+<div class="line"><a id="l00012" name="l00012"></a><span class="lineno">   12</span>    <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1fb.html#a9987504ab741614c7f341e5827889070adfb7069bfc6e0064a6c667626eca07b4">aborted</a>,</div>
+<div class="line"><a id="l00013" name="l00013"></a><span class="lineno">   13</span>    <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1fb.html#a9987504ab741614c7f341e5827889070acb5e100e5a9a3e7f6d1fd97512215282">error</a>,</div>
+<div class="line"><a id="l00014" name="l00014"></a><span class="lineno">   14</span>};</div>
+</div>
+<div class="line"><a id="l00015" name="l00015"></a><span class="lineno">   15</span> </div>
+<div class="foldopen" id="foldopen00016" data-start="{" data-end="};">
+<div class="line"><a id="l00016" name="l00016"></a><span class="lineno"><a class="line" href="classplcopen_1_1core_1_1fb_1_1ExecuteLatch.html">   16</a></span><span class="keyword">class </span><a class="code hl_class" href="classplcopen_1_1core_1_1fb_1_1ExecuteLatch.html">ExecuteLatch</a></div>
+<div class="line"><a id="l00017" name="l00017"></a><span class="lineno">   17</span>{</div>
+<div class="line"><a id="l00018" name="l00018"></a><span class="lineno">   18</span><span class="keyword">public</span>:</div>
+<div class="line"><a id="l00019" name="l00019"></a><span class="lineno"><a class="line" href="classplcopen_1_1core_1_1fb_1_1ExecuteLatch.html#a901c96e08e433b7775f3cc056651527f">   19</a></span>    <span class="keywordtype">bool</span> <a class="code hl_variable" href="classplcopen_1_1core_1_1fb_1_1ExecuteLatch.html#a901c96e08e433b7775f3cc056651527f">done</a> = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00020" name="l00020"></a><span class="lineno"><a class="line" href="classplcopen_1_1core_1_1fb_1_1ExecuteLatch.html#ac2ebe3251f8ba19478dee2dedd879f3b">   20</a></span>    <span class="keywordtype">bool</span> <a class="code hl_variable" href="classplcopen_1_1core_1_1fb_1_1ExecuteLatch.html#ac2ebe3251f8ba19478dee2dedd879f3b">busy</a> = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00021" name="l00021"></a><span class="lineno"><a class="line" href="classplcopen_1_1core_1_1fb_1_1ExecuteLatch.html#a05f7d35b5343a53dc1c7e7cd9eac3321">   21</a></span>    <span class="keywordtype">bool</span> <a class="code hl_variable" href="classplcopen_1_1core_1_1fb_1_1ExecuteLatch.html#a05f7d35b5343a53dc1c7e7cd9eac3321">active</a> = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00022" name="l00022"></a><span class="lineno"><a class="line" href="classplcopen_1_1core_1_1fb_1_1ExecuteLatch.html#a305c5e7d42f076a871bb0c66ea4a8f63">   22</a></span>    <span class="keywordtype">bool</span> <a class="code hl_variable" href="classplcopen_1_1core_1_1fb_1_1ExecuteLatch.html#a305c5e7d42f076a871bb0c66ea4a8f63">command_aborted</a> = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00023" name="l00023"></a><span class="lineno"><a class="line" href="classplcopen_1_1core_1_1fb_1_1ExecuteLatch.html#a774439641bd7ded233a6c47079cfa577">   23</a></span>    <span class="keywordtype">bool</span> <a class="code hl_variable" href="classplcopen_1_1core_1_1fb_1_1ExecuteLatch.html#a774439641bd7ded233a6c47079cfa577">error</a> = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00024" name="l00024"></a><span class="lineno"><a class="line" href="classplcopen_1_1core_1_1fb_1_1ExecuteLatch.html#a18696fa6038d5481f51ada7fe0a55f38">   24</a></span>    <a class="code hl_enumeration" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8">rt::ErrorCode</a> <a class="code hl_variable" href="classplcopen_1_1core_1_1fb_1_1ExecuteLatch.html#a18696fa6038d5481f51ada7fe0a55f38">error_id</a> = <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8a444bcb3a3fcf8389296c49467f27e1d6">rt::ErrorCode::ok</a>;</div>
+<div class="line"><a id="l00025" name="l00025"></a><span class="lineno">   25</span> </div>
+<div class="foldopen" id="foldopen00026" data-start="{" data-end="}">
+<div class="line"><a id="l00026" name="l00026"></a><span class="lineno"><a class="line" href="classplcopen_1_1core_1_1fb_1_1ExecuteLatch.html#a5c106d4ce4f96d9a95b1f10266e55c77">   26</a></span>    <span class="keywordtype">void</span> <a class="code hl_function" href="classplcopen_1_1core_1_1fb_1_1ExecuteLatch.html#a5c106d4ce4f96d9a95b1f10266e55c77">cycle</a>(<span class="keywordtype">bool</span> execute, <a class="code hl_enumeration" href="namespaceplcopen_1_1core_1_1fb.html#a9987504ab741614c7f341e5827889070">ExecuteStep</a> step, <a class="code hl_enumeration" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8">rt::ErrorCode</a> step_error = <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8a444bcb3a3fcf8389296c49467f27e1d6">rt::ErrorCode::ok</a>)</div>
+<div class="line"><a id="l00027" name="l00027"></a><span class="lineno">   27</span>    {</div>
+<div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span>        <span class="keywordflow">if</span>(!execute) {</div>
+<div class="line"><a id="l00029" name="l00029"></a><span class="lineno">   29</span>            <a class="code hl_variable" href="classplcopen_1_1core_1_1fb_1_1ExecuteLatch.html#a901c96e08e433b7775f3cc056651527f">done</a> = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00030" name="l00030"></a><span class="lineno">   30</span>            <a class="code hl_variable" href="classplcopen_1_1core_1_1fb_1_1ExecuteLatch.html#ac2ebe3251f8ba19478dee2dedd879f3b">busy</a> = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00031" name="l00031"></a><span class="lineno">   31</span>            <a class="code hl_variable" href="classplcopen_1_1core_1_1fb_1_1ExecuteLatch.html#a05f7d35b5343a53dc1c7e7cd9eac3321">active</a> = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00032" name="l00032"></a><span class="lineno">   32</span>            <a class="code hl_variable" href="classplcopen_1_1core_1_1fb_1_1ExecuteLatch.html#a305c5e7d42f076a871bb0c66ea4a8f63">command_aborted</a> = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span>            <a class="code hl_variable" href="classplcopen_1_1core_1_1fb_1_1ExecuteLatch.html#a774439641bd7ded233a6c47079cfa577">error</a> = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span>            <a class="code hl_variable" href="classplcopen_1_1core_1_1fb_1_1ExecuteLatch.html#a18696fa6038d5481f51ada7fe0a55f38">error_id</a> = <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8a444bcb3a3fcf8389296c49467f27e1d6">rt::ErrorCode::ok</a>;</div>
+<div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span>            was_execute_ = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span>            <span class="keywordflow">return</span>;</div>
+<div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span>        }</div>
+<div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span> </div>
+<div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span>        <span class="keywordflow">if</span>(!was_execute_ || <a class="code hl_variable" href="classplcopen_1_1core_1_1fb_1_1ExecuteLatch.html#ac2ebe3251f8ba19478dee2dedd879f3b">busy</a> || <a class="code hl_variable" href="classplcopen_1_1core_1_1fb_1_1ExecuteLatch.html#a05f7d35b5343a53dc1c7e7cd9eac3321">active</a>) {</div>
+<div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span>            apply(step, step_error);</div>
+<div class="line"><a id="l00041" name="l00041"></a><span class="lineno">   41</span>        }</div>
+<div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span>        was_execute_ = <span class="keyword">true</span>;</div>
+<div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span>    }</div>
+</div>
+<div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span> </div>
+<div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span><span class="keyword">private</span>:</div>
+<div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span>    <span class="keywordtype">void</span> apply(<a class="code hl_enumeration" href="namespaceplcopen_1_1core_1_1fb.html#a9987504ab741614c7f341e5827889070">ExecuteStep</a> step, <a class="code hl_enumeration" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8">rt::ErrorCode</a> step_error)</div>
+<div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span>    {</div>
+<div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span>        <a class="code hl_variable" href="classplcopen_1_1core_1_1fb_1_1ExecuteLatch.html#a901c96e08e433b7775f3cc056651527f">done</a> = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span>        <a class="code hl_variable" href="classplcopen_1_1core_1_1fb_1_1ExecuteLatch.html#a305c5e7d42f076a871bb0c66ea4a8f63">command_aborted</a> = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00050" name="l00050"></a><span class="lineno">   50</span>        <a class="code hl_variable" href="classplcopen_1_1core_1_1fb_1_1ExecuteLatch.html#a774439641bd7ded233a6c47079cfa577">error</a> = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span>        <a class="code hl_variable" href="classplcopen_1_1core_1_1fb_1_1ExecuteLatch.html#a18696fa6038d5481f51ada7fe0a55f38">error_id</a> = <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8a444bcb3a3fcf8389296c49467f27e1d6">rt::ErrorCode::ok</a>;</div>
+<div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span> </div>
+<div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span>        <span class="keywordflow">if</span>(step == <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1fb.html#a9987504ab741614c7f341e5827889070a8bc1b2f84252c3df4edd53e4aad097a7">ExecuteStep::busy</a>) {</div>
+<div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span>            <a class="code hl_variable" href="classplcopen_1_1core_1_1fb_1_1ExecuteLatch.html#ac2ebe3251f8ba19478dee2dedd879f3b">busy</a> = <span class="keyword">true</span>;</div>
+<div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span>            <a class="code hl_variable" href="classplcopen_1_1core_1_1fb_1_1ExecuteLatch.html#a05f7d35b5343a53dc1c7e7cd9eac3321">active</a> = <span class="keyword">true</span>;</div>
+<div class="line"><a id="l00056" name="l00056"></a><span class="lineno">   56</span>        } <span class="keywordflow">else</span> <span class="keywordflow">if</span>(step == <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1fb.html#a9987504ab741614c7f341e5827889070a6b2ded51d81a4403d8a4bd25fa1e57ee">ExecuteStep::done</a>) {</div>
+<div class="line"><a id="l00057" name="l00057"></a><span class="lineno">   57</span>            <a class="code hl_variable" href="classplcopen_1_1core_1_1fb_1_1ExecuteLatch.html#a901c96e08e433b7775f3cc056651527f">done</a> = <span class="keyword">true</span>;</div>
+<div class="line"><a id="l00058" name="l00058"></a><span class="lineno">   58</span>            <a class="code hl_variable" href="classplcopen_1_1core_1_1fb_1_1ExecuteLatch.html#ac2ebe3251f8ba19478dee2dedd879f3b">busy</a> = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00059" name="l00059"></a><span class="lineno">   59</span>            <a class="code hl_variable" href="classplcopen_1_1core_1_1fb_1_1ExecuteLatch.html#a05f7d35b5343a53dc1c7e7cd9eac3321">active</a> = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00060" name="l00060"></a><span class="lineno">   60</span>        } <span class="keywordflow">else</span> <span class="keywordflow">if</span>(step == <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1fb.html#a9987504ab741614c7f341e5827889070adfb7069bfc6e0064a6c667626eca07b4">ExecuteStep::aborted</a>) {</div>
+<div class="line"><a id="l00061" name="l00061"></a><span class="lineno">   61</span>            <a class="code hl_variable" href="classplcopen_1_1core_1_1fb_1_1ExecuteLatch.html#a305c5e7d42f076a871bb0c66ea4a8f63">command_aborted</a> = <span class="keyword">true</span>;</div>
+<div class="line"><a id="l00062" name="l00062"></a><span class="lineno">   62</span>            <a class="code hl_variable" href="classplcopen_1_1core_1_1fb_1_1ExecuteLatch.html#ac2ebe3251f8ba19478dee2dedd879f3b">busy</a> = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00063" name="l00063"></a><span class="lineno">   63</span>            <a class="code hl_variable" href="classplcopen_1_1core_1_1fb_1_1ExecuteLatch.html#a05f7d35b5343a53dc1c7e7cd9eac3321">active</a> = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00064" name="l00064"></a><span class="lineno">   64</span>        } <span class="keywordflow">else</span> {</div>
+<div class="line"><a id="l00065" name="l00065"></a><span class="lineno">   65</span>            <a class="code hl_variable" href="classplcopen_1_1core_1_1fb_1_1ExecuteLatch.html#a774439641bd7ded233a6c47079cfa577">error</a> = <span class="keyword">true</span>;</div>
+<div class="line"><a id="l00066" name="l00066"></a><span class="lineno">   66</span>            <a class="code hl_variable" href="classplcopen_1_1core_1_1fb_1_1ExecuteLatch.html#a18696fa6038d5481f51ada7fe0a55f38">error_id</a> = step_error == <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8a444bcb3a3fcf8389296c49467f27e1d6">rt::ErrorCode::ok</a> ? <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8ae55d43eabeefe5a8271b4a3c898bd18f">rt::ErrorCode::invalid_argument</a> : step_error;</div>
+<div class="line"><a id="l00067" name="l00067"></a><span class="lineno">   67</span>            <a class="code hl_variable" href="classplcopen_1_1core_1_1fb_1_1ExecuteLatch.html#ac2ebe3251f8ba19478dee2dedd879f3b">busy</a> = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00068" name="l00068"></a><span class="lineno">   68</span>            <a class="code hl_variable" href="classplcopen_1_1core_1_1fb_1_1ExecuteLatch.html#a05f7d35b5343a53dc1c7e7cd9eac3321">active</a> = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00069" name="l00069"></a><span class="lineno">   69</span>        }</div>
+<div class="line"><a id="l00070" name="l00070"></a><span class="lineno">   70</span>    }</div>
+<div class="line"><a id="l00071" name="l00071"></a><span class="lineno">   71</span> </div>
+<div class="line"><a id="l00072" name="l00072"></a><span class="lineno">   72</span>    <span class="keywordtype">bool</span> was_execute_ = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00073" name="l00073"></a><span class="lineno">   73</span>};</div>
+</div>
+<div class="line"><a id="l00074" name="l00074"></a><span class="lineno">   74</span> </div>
+<div class="foldopen" id="foldopen00075" data-start="{" data-end="};">
+<div class="line"><a id="l00075" name="l00075"></a><span class="lineno"><a class="line" href="classplcopen_1_1core_1_1fb_1_1ReadInfoLatch.html">   75</a></span><span class="keyword">class </span><a class="code hl_class" href="classplcopen_1_1core_1_1fb_1_1ReadInfoLatch.html">ReadInfoLatch</a></div>
+<div class="line"><a id="l00076" name="l00076"></a><span class="lineno">   76</span>{</div>
+<div class="line"><a id="l00077" name="l00077"></a><span class="lineno">   77</span><span class="keyword">public</span>:</div>
+<div class="line"><a id="l00078" name="l00078"></a><span class="lineno"><a class="line" href="classplcopen_1_1core_1_1fb_1_1ReadInfoLatch.html#aeb102171f552ac257dbcb59e24ab8836">   78</a></span>    <span class="keywordtype">bool</span> <a class="code hl_variable" href="classplcopen_1_1core_1_1fb_1_1ReadInfoLatch.html#aeb102171f552ac257dbcb59e24ab8836">valid</a> = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00079" name="l00079"></a><span class="lineno"><a class="line" href="classplcopen_1_1core_1_1fb_1_1ReadInfoLatch.html#a626523ff750b750901edee09fbbefaf6">   79</a></span>    <span class="keywordtype">bool</span> <a class="code hl_variable" href="classplcopen_1_1core_1_1fb_1_1ReadInfoLatch.html#a626523ff750b750901edee09fbbefaf6">busy</a> = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00080" name="l00080"></a><span class="lineno"><a class="line" href="classplcopen_1_1core_1_1fb_1_1ReadInfoLatch.html#a85916cff75c82a0f008fdbf18b767355">   80</a></span>    <span class="keywordtype">bool</span> <a class="code hl_variable" href="classplcopen_1_1core_1_1fb_1_1ReadInfoLatch.html#a85916cff75c82a0f008fdbf18b767355">error</a> = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00081" name="l00081"></a><span class="lineno"><a class="line" href="classplcopen_1_1core_1_1fb_1_1ReadInfoLatch.html#a319bfe74aa0d75fd9f3f58d5a8092168">   81</a></span>    <a class="code hl_enumeration" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8">rt::ErrorCode</a> <a class="code hl_variable" href="classplcopen_1_1core_1_1fb_1_1ReadInfoLatch.html#a319bfe74aa0d75fd9f3f58d5a8092168">error_id</a> = <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8a444bcb3a3fcf8389296c49467f27e1d6">rt::ErrorCode::ok</a>;</div>
+<div class="line"><a id="l00082" name="l00082"></a><span class="lineno">   82</span> </div>
+<div class="foldopen" id="foldopen00083" data-start="{" data-end="}">
+<div class="line"><a id="l00083" name="l00083"></a><span class="lineno"><a class="line" href="classplcopen_1_1core_1_1fb_1_1ReadInfoLatch.html#a495abb8dcc83a1b7d92d89b3736db10d">   83</a></span>    <span class="keywordtype">void</span> <a class="code hl_function" href="classplcopen_1_1core_1_1fb_1_1ReadInfoLatch.html#a495abb8dcc83a1b7d92d89b3736db10d">cycle</a>(<span class="keywordtype">bool</span> enable, <span class="keywordtype">bool</span> source_valid, <a class="code hl_enumeration" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8">rt::ErrorCode</a> source_error = <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8a444bcb3a3fcf8389296c49467f27e1d6">rt::ErrorCode::ok</a>)</div>
+<div class="line"><a id="l00084" name="l00084"></a><span class="lineno">   84</span>    {</div>
+<div class="line"><a id="l00085" name="l00085"></a><span class="lineno">   85</span>        <span class="keywordflow">if</span>(!enable) {</div>
+<div class="line"><a id="l00086" name="l00086"></a><span class="lineno">   86</span>            <a class="code hl_variable" href="classplcopen_1_1core_1_1fb_1_1ReadInfoLatch.html#aeb102171f552ac257dbcb59e24ab8836">valid</a> = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00087" name="l00087"></a><span class="lineno">   87</span>            <a class="code hl_variable" href="classplcopen_1_1core_1_1fb_1_1ReadInfoLatch.html#a626523ff750b750901edee09fbbefaf6">busy</a> = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00088" name="l00088"></a><span class="lineno">   88</span>            <a class="code hl_variable" href="classplcopen_1_1core_1_1fb_1_1ReadInfoLatch.html#a85916cff75c82a0f008fdbf18b767355">error</a> = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00089" name="l00089"></a><span class="lineno">   89</span>            <a class="code hl_variable" href="classplcopen_1_1core_1_1fb_1_1ReadInfoLatch.html#a319bfe74aa0d75fd9f3f58d5a8092168">error_id</a> = <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8a444bcb3a3fcf8389296c49467f27e1d6">rt::ErrorCode::ok</a>;</div>
+<div class="line"><a id="l00090" name="l00090"></a><span class="lineno">   90</span>            <span class="keywordflow">return</span>;</div>
+<div class="line"><a id="l00091" name="l00091"></a><span class="lineno">   91</span>        }</div>
+<div class="line"><a id="l00092" name="l00092"></a><span class="lineno">   92</span>        <a class="code hl_variable" href="classplcopen_1_1core_1_1fb_1_1ReadInfoLatch.html#a626523ff750b750901edee09fbbefaf6">busy</a> = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00093" name="l00093"></a><span class="lineno">   93</span>        <a class="code hl_variable" href="classplcopen_1_1core_1_1fb_1_1ReadInfoLatch.html#aeb102171f552ac257dbcb59e24ab8836">valid</a> = source_valid &amp;&amp; source_error == <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8a444bcb3a3fcf8389296c49467f27e1d6">rt::ErrorCode::ok</a>;</div>
+<div class="line"><a id="l00094" name="l00094"></a><span class="lineno">   94</span>        <a class="code hl_variable" href="classplcopen_1_1core_1_1fb_1_1ReadInfoLatch.html#a85916cff75c82a0f008fdbf18b767355">error</a> = source_error != <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8a444bcb3a3fcf8389296c49467f27e1d6">rt::ErrorCode::ok</a>;</div>
+<div class="line"><a id="l00095" name="l00095"></a><span class="lineno">   95</span>        <a class="code hl_variable" href="classplcopen_1_1core_1_1fb_1_1ReadInfoLatch.html#a319bfe74aa0d75fd9f3f58d5a8092168">error_id</a> = source_error;</div>
+<div class="line"><a id="l00096" name="l00096"></a><span class="lineno">   96</span>    }</div>
+</div>
+<div class="line"><a id="l00097" name="l00097"></a><span class="lineno">   97</span>};</div>
+</div>
+<div class="line"><a id="l00098" name="l00098"></a><span class="lineno">   98</span> </div>
+<div class="foldopen" id="foldopen00099" data-start="{" data-end="};">
+<div class="line"><a id="l00099" name="l00099"></a><span class="lineno"><a class="line" href="classplcopen_1_1core_1_1fb_1_1EnableReadFb.html">   99</a></span><span class="keyword">class </span><a class="code hl_class" href="classplcopen_1_1core_1_1fb_1_1EnableReadFb.html">EnableReadFb</a></div>
+<div class="line"><a id="l00100" name="l00100"></a><span class="lineno">  100</span>{</div>
+<div class="line"><a id="l00101" name="l00101"></a><span class="lineno">  101</span><span class="keyword">public</span>:</div>
+<div class="line"><a id="l00102" name="l00102"></a><span class="lineno"><a class="line" href="classplcopen_1_1core_1_1fb_1_1EnableReadFb.html#a4a1f1a7a71d343bfd8340bd9d74e6e78">  102</a></span>    <span class="keywordtype">bool</span> <a class="code hl_variable" href="classplcopen_1_1core_1_1fb_1_1EnableReadFb.html#a4a1f1a7a71d343bfd8340bd9d74e6e78">enable</a> = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00103" name="l00103"></a><span class="lineno"><a class="line" href="classplcopen_1_1core_1_1fb_1_1EnableReadFb.html#ab5946726c48b06a1c3f71ae5aa286528">  103</a></span>    <span class="keywordtype">bool</span> <a class="code hl_variable" href="classplcopen_1_1core_1_1fb_1_1EnableReadFb.html#ab5946726c48b06a1c3f71ae5aa286528">valid</a> = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00104" name="l00104"></a><span class="lineno"><a class="line" href="classplcopen_1_1core_1_1fb_1_1EnableReadFb.html#aa615d9e83e0694cc7e64b06a60ea02a6">  104</a></span>    <span class="keywordtype">bool</span> <a class="code hl_variable" href="classplcopen_1_1core_1_1fb_1_1EnableReadFb.html#aa615d9e83e0694cc7e64b06a60ea02a6">busy</a> = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00105" name="l00105"></a><span class="lineno"><a class="line" href="classplcopen_1_1core_1_1fb_1_1EnableReadFb.html#a78300a7914f0544d0e6133e3c60b3ca7">  105</a></span>    <span class="keywordtype">bool</span> <a class="code hl_variable" href="classplcopen_1_1core_1_1fb_1_1EnableReadFb.html#a78300a7914f0544d0e6133e3c60b3ca7">error</a> = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00106" name="l00106"></a><span class="lineno"><a class="line" href="classplcopen_1_1core_1_1fb_1_1EnableReadFb.html#a8699dffb212b57ccc42d59f30a3a5d98">  106</a></span>    <a class="code hl_enumeration" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8">rt::ErrorCode</a> <a class="code hl_variable" href="classplcopen_1_1core_1_1fb_1_1EnableReadFb.html#a8699dffb212b57ccc42d59f30a3a5d98">error_id</a> = <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8a444bcb3a3fcf8389296c49467f27e1d6">rt::ErrorCode::ok</a>;</div>
+<div class="line"><a id="l00107" name="l00107"></a><span class="lineno">  107</span> </div>
+<div class="line"><a id="l00108" name="l00108"></a><span class="lineno">  108</span><span class="keyword">protected</span>:</div>
+<div class="foldopen" id="foldopen00109" data-start="{" data-end="}">
+<div class="line"><a id="l00109" name="l00109"></a><span class="lineno"><a class="line" href="classplcopen_1_1core_1_1fb_1_1EnableReadFb.html#a1f1c2bf9d7ae9344f0937db53fa47e51">  109</a></span>    <span class="keywordtype">bool</span> <a class="code hl_function" href="classplcopen_1_1core_1_1fb_1_1EnableReadFb.html#a1f1c2bf9d7ae9344f0937db53fa47e51">begin_enable</a>()</div>
+<div class="line"><a id="l00110" name="l00110"></a><span class="lineno">  110</span>    {</div>
+<div class="line"><a id="l00111" name="l00111"></a><span class="lineno">  111</span>        <span class="keywordflow">if</span>(!<a class="code hl_variable" href="classplcopen_1_1core_1_1fb_1_1EnableReadFb.html#a4a1f1a7a71d343bfd8340bd9d74e6e78">enable</a>) {</div>
+<div class="line"><a id="l00112" name="l00112"></a><span class="lineno">  112</span>            <a class="code hl_variable" href="classplcopen_1_1core_1_1fb_1_1EnableReadFb.html#ab5946726c48b06a1c3f71ae5aa286528">valid</a> = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00113" name="l00113"></a><span class="lineno">  113</span>            <a class="code hl_variable" href="classplcopen_1_1core_1_1fb_1_1EnableReadFb.html#aa615d9e83e0694cc7e64b06a60ea02a6">busy</a> = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00114" name="l00114"></a><span class="lineno">  114</span>            <a class="code hl_variable" href="classplcopen_1_1core_1_1fb_1_1EnableReadFb.html#a78300a7914f0544d0e6133e3c60b3ca7">error</a> = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00115" name="l00115"></a><span class="lineno">  115</span>            <a class="code hl_variable" href="classplcopen_1_1core_1_1fb_1_1EnableReadFb.html#a8699dffb212b57ccc42d59f30a3a5d98">error_id</a> = <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8a444bcb3a3fcf8389296c49467f27e1d6">rt::ErrorCode::ok</a>;</div>
+<div class="line"><a id="l00116" name="l00116"></a><span class="lineno">  116</span>            error_latched_ = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00117" name="l00117"></a><span class="lineno">  117</span>            latched_error_ = <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8a444bcb3a3fcf8389296c49467f27e1d6">rt::ErrorCode::ok</a>;</div>
+<div class="line"><a id="l00118" name="l00118"></a><span class="lineno">  118</span>            <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00119" name="l00119"></a><span class="lineno">  119</span>        }</div>
+<div class="line"><a id="l00120" name="l00120"></a><span class="lineno">  120</span>        <span class="keywordflow">if</span>(error_latched_) {</div>
+<div class="line"><a id="l00121" name="l00121"></a><span class="lineno">  121</span>            <a class="code hl_variable" href="classplcopen_1_1core_1_1fb_1_1EnableReadFb.html#ab5946726c48b06a1c3f71ae5aa286528">valid</a> = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00122" name="l00122"></a><span class="lineno">  122</span>            <a class="code hl_variable" href="classplcopen_1_1core_1_1fb_1_1EnableReadFb.html#aa615d9e83e0694cc7e64b06a60ea02a6">busy</a> = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00123" name="l00123"></a><span class="lineno">  123</span>            <a class="code hl_variable" href="classplcopen_1_1core_1_1fb_1_1EnableReadFb.html#a78300a7914f0544d0e6133e3c60b3ca7">error</a> = <span class="keyword">true</span>;</div>
+<div class="line"><a id="l00124" name="l00124"></a><span class="lineno">  124</span>            <a class="code hl_variable" href="classplcopen_1_1core_1_1fb_1_1EnableReadFb.html#a8699dffb212b57ccc42d59f30a3a5d98">error_id</a> = latched_error_;</div>
+<div class="line"><a id="l00125" name="l00125"></a><span class="lineno">  125</span>            <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00126" name="l00126"></a><span class="lineno">  126</span>        }</div>
+<div class="line"><a id="l00127" name="l00127"></a><span class="lineno">  127</span>        <a class="code hl_variable" href="classplcopen_1_1core_1_1fb_1_1EnableReadFb.html#ab5946726c48b06a1c3f71ae5aa286528">valid</a> = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00128" name="l00128"></a><span class="lineno">  128</span>        <a class="code hl_variable" href="classplcopen_1_1core_1_1fb_1_1EnableReadFb.html#aa615d9e83e0694cc7e64b06a60ea02a6">busy</a> = <span class="keyword">true</span>;</div>
+<div class="line"><a id="l00129" name="l00129"></a><span class="lineno">  129</span>        <a class="code hl_variable" href="classplcopen_1_1core_1_1fb_1_1EnableReadFb.html#a78300a7914f0544d0e6133e3c60b3ca7">error</a> = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00130" name="l00130"></a><span class="lineno">  130</span>        <a class="code hl_variable" href="classplcopen_1_1core_1_1fb_1_1EnableReadFb.html#a8699dffb212b57ccc42d59f30a3a5d98">error_id</a> = <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8a444bcb3a3fcf8389296c49467f27e1d6">rt::ErrorCode::ok</a>;</div>
+<div class="line"><a id="l00131" name="l00131"></a><span class="lineno">  131</span>        <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
+<div class="line"><a id="l00132" name="l00132"></a><span class="lineno">  132</span>    }</div>
+</div>
+<div class="line"><a id="l00133" name="l00133"></a><span class="lineno">  133</span> </div>
+<div class="foldopen" id="foldopen00134" data-start="{" data-end="}">
+<div class="line"><a id="l00134" name="l00134"></a><span class="lineno"><a class="line" href="classplcopen_1_1core_1_1fb_1_1EnableReadFb.html#a8c27606c6b3cd66ecab4130d4161c70e">  134</a></span>    <span class="keywordtype">void</span> <a class="code hl_function" href="classplcopen_1_1core_1_1fb_1_1EnableReadFb.html#a8c27606c6b3cd66ecab4130d4161c70e">complete_enable</a>()</div>
+<div class="line"><a id="l00135" name="l00135"></a><span class="lineno">  135</span>    {</div>
+<div class="line"><a id="l00136" name="l00136"></a><span class="lineno">  136</span>        <a class="code hl_variable" href="classplcopen_1_1core_1_1fb_1_1EnableReadFb.html#ab5946726c48b06a1c3f71ae5aa286528">valid</a> = <span class="keyword">true</span>;</div>
+<div class="line"><a id="l00137" name="l00137"></a><span class="lineno">  137</span>        <a class="code hl_variable" href="classplcopen_1_1core_1_1fb_1_1EnableReadFb.html#aa615d9e83e0694cc7e64b06a60ea02a6">busy</a> = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00138" name="l00138"></a><span class="lineno">  138</span>        <a class="code hl_variable" href="classplcopen_1_1core_1_1fb_1_1EnableReadFb.html#a78300a7914f0544d0e6133e3c60b3ca7">error</a> = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00139" name="l00139"></a><span class="lineno">  139</span>        <a class="code hl_variable" href="classplcopen_1_1core_1_1fb_1_1EnableReadFb.html#a8699dffb212b57ccc42d59f30a3a5d98">error_id</a> = <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8a444bcb3a3fcf8389296c49467f27e1d6">rt::ErrorCode::ok</a>;</div>
+<div class="line"><a id="l00140" name="l00140"></a><span class="lineno">  140</span>    }</div>
+</div>
+<div class="line"><a id="l00141" name="l00141"></a><span class="lineno">  141</span> </div>
+<div class="foldopen" id="foldopen00142" data-start="{" data-end="}">
+<div class="line"><a id="l00142" name="l00142"></a><span class="lineno"><a class="line" href="classplcopen_1_1core_1_1fb_1_1EnableReadFb.html#a34858e0e6cb17b4912baa5b6aaec1f28">  142</a></span>    <span class="keywordtype">void</span> <a class="code hl_function" href="classplcopen_1_1core_1_1fb_1_1EnableReadFb.html#a34858e0e6cb17b4912baa5b6aaec1f28">fail_enable</a>(<a class="code hl_enumeration" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8">rt::ErrorCode</a> code)</div>
+<div class="line"><a id="l00143" name="l00143"></a><span class="lineno">  143</span>    {</div>
+<div class="line"><a id="l00144" name="l00144"></a><span class="lineno">  144</span>        <a class="code hl_variable" href="classplcopen_1_1core_1_1fb_1_1EnableReadFb.html#ab5946726c48b06a1c3f71ae5aa286528">valid</a> = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00145" name="l00145"></a><span class="lineno">  145</span>        <a class="code hl_variable" href="classplcopen_1_1core_1_1fb_1_1EnableReadFb.html#aa615d9e83e0694cc7e64b06a60ea02a6">busy</a> = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00146" name="l00146"></a><span class="lineno">  146</span>        <a class="code hl_variable" href="classplcopen_1_1core_1_1fb_1_1EnableReadFb.html#a78300a7914f0544d0e6133e3c60b3ca7">error</a> = <span class="keyword">true</span>;</div>
+<div class="line"><a id="l00147" name="l00147"></a><span class="lineno">  147</span>        <a class="code hl_variable" href="classplcopen_1_1core_1_1fb_1_1EnableReadFb.html#a8699dffb212b57ccc42d59f30a3a5d98">error_id</a> = code;</div>
+<div class="line"><a id="l00148" name="l00148"></a><span class="lineno">  148</span>        error_latched_ = <span class="keyword">true</span>;</div>
+<div class="line"><a id="l00149" name="l00149"></a><span class="lineno">  149</span>        latched_error_ = code;</div>
+<div class="line"><a id="l00150" name="l00150"></a><span class="lineno">  150</span>    }</div>
+</div>
+<div class="line"><a id="l00151" name="l00151"></a><span class="lineno">  151</span> </div>
+<div class="line"><a id="l00152" name="l00152"></a><span class="lineno">  152</span><span class="keyword">private</span>:</div>
+<div class="line"><a id="l00153" name="l00153"></a><span class="lineno">  153</span>    <span class="keywordtype">bool</span> error_latched_ = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00154" name="l00154"></a><span class="lineno">  154</span>    <a class="code hl_enumeration" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8">rt::ErrorCode</a> latched_error_ = <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8a444bcb3a3fcf8389296c49467f27e1d6">rt::ErrorCode::ok</a>;</div>
+<div class="line"><a id="l00155" name="l00155"></a><span class="lineno">  155</span>};</div>
+</div>
+<div class="line"><a id="l00156" name="l00156"></a><span class="lineno">  156</span> </div>
+<div class="foldopen" id="foldopen00157" data-start="{" data-end="};">
+<div class="line"><a id="l00157" name="l00157"></a><span class="lineno"><a class="line" href="classplcopen_1_1core_1_1fb_1_1StartSyncPulse.html">  157</a></span><span class="keyword">class </span><a class="code hl_class" href="classplcopen_1_1core_1_1fb_1_1StartSyncPulse.html">StartSyncPulse</a></div>
+<div class="line"><a id="l00158" name="l00158"></a><span class="lineno">  158</span>{</div>
+<div class="line"><a id="l00159" name="l00159"></a><span class="lineno">  159</span><span class="keyword">public</span>:</div>
+<div class="line"><a id="l00160" name="l00160"></a><span class="lineno"><a class="line" href="classplcopen_1_1core_1_1fb_1_1StartSyncPulse.html#af68e068e4428db218a6fd00a7195598d">  160</a></span>    <span class="keywordtype">bool</span> <a class="code hl_variable" href="classplcopen_1_1core_1_1fb_1_1StartSyncPulse.html#af68e068e4428db218a6fd00a7195598d">start_sync</a> = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00161" name="l00161"></a><span class="lineno">  161</span> </div>
+<div class="foldopen" id="foldopen00162" data-start="{" data-end="}">
+<div class="line"><a id="l00162" name="l00162"></a><span class="lineno"><a class="line" href="classplcopen_1_1core_1_1fb_1_1StartSyncPulse.html#aede9a7c9a2a2bc390173544397be67d5">  162</a></span>    <span class="keywordtype">void</span> <a class="code hl_function" href="classplcopen_1_1core_1_1fb_1_1StartSyncPulse.html#aede9a7c9a2a2bc390173544397be67d5">complete</a>(<span class="keywordtype">bool</span> active_sync)</div>
+<div class="line"><a id="l00163" name="l00163"></a><span class="lineno">  163</span>    {</div>
+<div class="line"><a id="l00164" name="l00164"></a><span class="lineno">  164</span>        <a class="code hl_variable" href="classplcopen_1_1core_1_1fb_1_1StartSyncPulse.html#af68e068e4428db218a6fd00a7195598d">start_sync</a> = active_sync &amp;&amp; !emitted_;</div>
+<div class="line"><a id="l00165" name="l00165"></a><span class="lineno">  165</span>        emitted_ = emitted_ || <a class="code hl_variable" href="classplcopen_1_1core_1_1fb_1_1StartSyncPulse.html#af68e068e4428db218a6fd00a7195598d">start_sync</a>;</div>
+<div class="line"><a id="l00166" name="l00166"></a><span class="lineno">  166</span>    }</div>
+</div>
+<div class="line"><a id="l00167" name="l00167"></a><span class="lineno">  167</span> </div>
+<div class="foldopen" id="foldopen00168" data-start="{" data-end="}">
+<div class="line"><a id="l00168" name="l00168"></a><span class="lineno"><a class="line" href="classplcopen_1_1core_1_1fb_1_1StartSyncPulse.html#a87ffa5cca5cae57ed4205b51e7e3ed4e">  168</a></span>    <span class="keywordtype">void</span> <a class="code hl_function" href="classplcopen_1_1core_1_1fb_1_1StartSyncPulse.html#a87ffa5cca5cae57ed4205b51e7e3ed4e">reset</a>()</div>
+<div class="line"><a id="l00169" name="l00169"></a><span class="lineno">  169</span>    {</div>
+<div class="line"><a id="l00170" name="l00170"></a><span class="lineno">  170</span>        <a class="code hl_variable" href="classplcopen_1_1core_1_1fb_1_1StartSyncPulse.html#af68e068e4428db218a6fd00a7195598d">start_sync</a> = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00171" name="l00171"></a><span class="lineno">  171</span>        emitted_ = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00172" name="l00172"></a><span class="lineno">  172</span>    }</div>
+</div>
+<div class="line"><a id="l00173" name="l00173"></a><span class="lineno">  173</span> </div>
+<div class="line"><a id="l00174" name="l00174"></a><span class="lineno">  174</span><span class="keyword">private</span>:</div>
+<div class="line"><a id="l00175" name="l00175"></a><span class="lineno">  175</span>    <span class="keywordtype">bool</span> emitted_ = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00176" name="l00176"></a><span class="lineno">  176</span>};</div>
+</div>
+<div class="line"><a id="l00177" name="l00177"></a><span class="lineno">  177</span> </div>
+<div class="line"><a id="l00178" name="l00178"></a><span class="lineno">  178</span>} <span class="comment">// namespace plcopen::core::fb</span></div>
+</div>
+<div class="ttc" id="aclassplcopen_1_1core_1_1fb_1_1EnableReadFb_html"><div class="ttname"><a href="classplcopen_1_1core_1_1fb_1_1EnableReadFb.html">plcopen::core::fb::EnableReadFb</a></div><div class="ttdef"><b>Definition</b> <a href="base_8h_source.html#l00099">base.h:100</a></div></div>
+<div class="ttc" id="aclassplcopen_1_1core_1_1fb_1_1EnableReadFb_html_a1f1c2bf9d7ae9344f0937db53fa47e51"><div class="ttname"><a href="classplcopen_1_1core_1_1fb_1_1EnableReadFb.html#a1f1c2bf9d7ae9344f0937db53fa47e51">plcopen::core::fb::EnableReadFb::begin_enable</a></div><div class="ttdeci">bool begin_enable()</div><div class="ttdef"><b>Definition</b> <a href="base_8h_source.html#l00109">base.h:109</a></div></div>
+<div class="ttc" id="aclassplcopen_1_1core_1_1fb_1_1EnableReadFb_html_a34858e0e6cb17b4912baa5b6aaec1f28"><div class="ttname"><a href="classplcopen_1_1core_1_1fb_1_1EnableReadFb.html#a34858e0e6cb17b4912baa5b6aaec1f28">plcopen::core::fb::EnableReadFb::fail_enable</a></div><div class="ttdeci">void fail_enable(rt::ErrorCode code)</div><div class="ttdef"><b>Definition</b> <a href="base_8h_source.html#l00142">base.h:142</a></div></div>
+<div class="ttc" id="aclassplcopen_1_1core_1_1fb_1_1EnableReadFb_html_a4a1f1a7a71d343bfd8340bd9d74e6e78"><div class="ttname"><a href="classplcopen_1_1core_1_1fb_1_1EnableReadFb.html#a4a1f1a7a71d343bfd8340bd9d74e6e78">plcopen::core::fb::EnableReadFb::enable</a></div><div class="ttdeci">bool enable</div><div class="ttdef"><b>Definition</b> <a href="base_8h_source.html#l00102">base.h:102</a></div></div>
+<div class="ttc" id="aclassplcopen_1_1core_1_1fb_1_1EnableReadFb_html_a78300a7914f0544d0e6133e3c60b3ca7"><div class="ttname"><a href="classplcopen_1_1core_1_1fb_1_1EnableReadFb.html#a78300a7914f0544d0e6133e3c60b3ca7">plcopen::core::fb::EnableReadFb::error</a></div><div class="ttdeci">bool error</div><div class="ttdef"><b>Definition</b> <a href="base_8h_source.html#l00105">base.h:105</a></div></div>
+<div class="ttc" id="aclassplcopen_1_1core_1_1fb_1_1EnableReadFb_html_a8699dffb212b57ccc42d59f30a3a5d98"><div class="ttname"><a href="classplcopen_1_1core_1_1fb_1_1EnableReadFb.html#a8699dffb212b57ccc42d59f30a3a5d98">plcopen::core::fb::EnableReadFb::error_id</a></div><div class="ttdeci">rt::ErrorCode error_id</div><div class="ttdef"><b>Definition</b> <a href="base_8h_source.html#l00106">base.h:106</a></div></div>
+<div class="ttc" id="aclassplcopen_1_1core_1_1fb_1_1EnableReadFb_html_a8c27606c6b3cd66ecab4130d4161c70e"><div class="ttname"><a href="classplcopen_1_1core_1_1fb_1_1EnableReadFb.html#a8c27606c6b3cd66ecab4130d4161c70e">plcopen::core::fb::EnableReadFb::complete_enable</a></div><div class="ttdeci">void complete_enable()</div><div class="ttdef"><b>Definition</b> <a href="base_8h_source.html#l00134">base.h:134</a></div></div>
+<div class="ttc" id="aclassplcopen_1_1core_1_1fb_1_1EnableReadFb_html_aa615d9e83e0694cc7e64b06a60ea02a6"><div class="ttname"><a href="classplcopen_1_1core_1_1fb_1_1EnableReadFb.html#aa615d9e83e0694cc7e64b06a60ea02a6">plcopen::core::fb::EnableReadFb::busy</a></div><div class="ttdeci">bool busy</div><div class="ttdef"><b>Definition</b> <a href="base_8h_source.html#l00104">base.h:104</a></div></div>
+<div class="ttc" id="aclassplcopen_1_1core_1_1fb_1_1EnableReadFb_html_ab5946726c48b06a1c3f71ae5aa286528"><div class="ttname"><a href="classplcopen_1_1core_1_1fb_1_1EnableReadFb.html#ab5946726c48b06a1c3f71ae5aa286528">plcopen::core::fb::EnableReadFb::valid</a></div><div class="ttdeci">bool valid</div><div class="ttdef"><b>Definition</b> <a href="base_8h_source.html#l00103">base.h:103</a></div></div>
+<div class="ttc" id="aclassplcopen_1_1core_1_1fb_1_1ExecuteLatch_html"><div class="ttname"><a href="classplcopen_1_1core_1_1fb_1_1ExecuteLatch.html">plcopen::core::fb::ExecuteLatch</a></div><div class="ttdef"><b>Definition</b> <a href="base_8h_source.html#l00016">base.h:17</a></div></div>
+<div class="ttc" id="aclassplcopen_1_1core_1_1fb_1_1ExecuteLatch_html_a05f7d35b5343a53dc1c7e7cd9eac3321"><div class="ttname"><a href="classplcopen_1_1core_1_1fb_1_1ExecuteLatch.html#a05f7d35b5343a53dc1c7e7cd9eac3321">plcopen::core::fb::ExecuteLatch::active</a></div><div class="ttdeci">bool active</div><div class="ttdef"><b>Definition</b> <a href="base_8h_source.html#l00021">base.h:21</a></div></div>
+<div class="ttc" id="aclassplcopen_1_1core_1_1fb_1_1ExecuteLatch_html_a18696fa6038d5481f51ada7fe0a55f38"><div class="ttname"><a href="classplcopen_1_1core_1_1fb_1_1ExecuteLatch.html#a18696fa6038d5481f51ada7fe0a55f38">plcopen::core::fb::ExecuteLatch::error_id</a></div><div class="ttdeci">rt::ErrorCode error_id</div><div class="ttdef"><b>Definition</b> <a href="base_8h_source.html#l00024">base.h:24</a></div></div>
+<div class="ttc" id="aclassplcopen_1_1core_1_1fb_1_1ExecuteLatch_html_a305c5e7d42f076a871bb0c66ea4a8f63"><div class="ttname"><a href="classplcopen_1_1core_1_1fb_1_1ExecuteLatch.html#a305c5e7d42f076a871bb0c66ea4a8f63">plcopen::core::fb::ExecuteLatch::command_aborted</a></div><div class="ttdeci">bool command_aborted</div><div class="ttdef"><b>Definition</b> <a href="base_8h_source.html#l00022">base.h:22</a></div></div>
+<div class="ttc" id="aclassplcopen_1_1core_1_1fb_1_1ExecuteLatch_html_a5c106d4ce4f96d9a95b1f10266e55c77"><div class="ttname"><a href="classplcopen_1_1core_1_1fb_1_1ExecuteLatch.html#a5c106d4ce4f96d9a95b1f10266e55c77">plcopen::core::fb::ExecuteLatch::cycle</a></div><div class="ttdeci">void cycle(bool execute, ExecuteStep step, rt::ErrorCode step_error=rt::ErrorCode::ok)</div><div class="ttdef"><b>Definition</b> <a href="base_8h_source.html#l00026">base.h:26</a></div></div>
+<div class="ttc" id="aclassplcopen_1_1core_1_1fb_1_1ExecuteLatch_html_a774439641bd7ded233a6c47079cfa577"><div class="ttname"><a href="classplcopen_1_1core_1_1fb_1_1ExecuteLatch.html#a774439641bd7ded233a6c47079cfa577">plcopen::core::fb::ExecuteLatch::error</a></div><div class="ttdeci">bool error</div><div class="ttdef"><b>Definition</b> <a href="base_8h_source.html#l00023">base.h:23</a></div></div>
+<div class="ttc" id="aclassplcopen_1_1core_1_1fb_1_1ExecuteLatch_html_a901c96e08e433b7775f3cc056651527f"><div class="ttname"><a href="classplcopen_1_1core_1_1fb_1_1ExecuteLatch.html#a901c96e08e433b7775f3cc056651527f">plcopen::core::fb::ExecuteLatch::done</a></div><div class="ttdeci">bool done</div><div class="ttdef"><b>Definition</b> <a href="base_8h_source.html#l00019">base.h:19</a></div></div>
+<div class="ttc" id="aclassplcopen_1_1core_1_1fb_1_1ExecuteLatch_html_ac2ebe3251f8ba19478dee2dedd879f3b"><div class="ttname"><a href="classplcopen_1_1core_1_1fb_1_1ExecuteLatch.html#ac2ebe3251f8ba19478dee2dedd879f3b">plcopen::core::fb::ExecuteLatch::busy</a></div><div class="ttdeci">bool busy</div><div class="ttdef"><b>Definition</b> <a href="base_8h_source.html#l00020">base.h:20</a></div></div>
+<div class="ttc" id="aclassplcopen_1_1core_1_1fb_1_1ReadInfoLatch_html"><div class="ttname"><a href="classplcopen_1_1core_1_1fb_1_1ReadInfoLatch.html">plcopen::core::fb::ReadInfoLatch</a></div><div class="ttdef"><b>Definition</b> <a href="base_8h_source.html#l00075">base.h:76</a></div></div>
+<div class="ttc" id="aclassplcopen_1_1core_1_1fb_1_1ReadInfoLatch_html_a319bfe74aa0d75fd9f3f58d5a8092168"><div class="ttname"><a href="classplcopen_1_1core_1_1fb_1_1ReadInfoLatch.html#a319bfe74aa0d75fd9f3f58d5a8092168">plcopen::core::fb::ReadInfoLatch::error_id</a></div><div class="ttdeci">rt::ErrorCode error_id</div><div class="ttdef"><b>Definition</b> <a href="base_8h_source.html#l00081">base.h:81</a></div></div>
+<div class="ttc" id="aclassplcopen_1_1core_1_1fb_1_1ReadInfoLatch_html_a495abb8dcc83a1b7d92d89b3736db10d"><div class="ttname"><a href="classplcopen_1_1core_1_1fb_1_1ReadInfoLatch.html#a495abb8dcc83a1b7d92d89b3736db10d">plcopen::core::fb::ReadInfoLatch::cycle</a></div><div class="ttdeci">void cycle(bool enable, bool source_valid, rt::ErrorCode source_error=rt::ErrorCode::ok)</div><div class="ttdef"><b>Definition</b> <a href="base_8h_source.html#l00083">base.h:83</a></div></div>
+<div class="ttc" id="aclassplcopen_1_1core_1_1fb_1_1ReadInfoLatch_html_a626523ff750b750901edee09fbbefaf6"><div class="ttname"><a href="classplcopen_1_1core_1_1fb_1_1ReadInfoLatch.html#a626523ff750b750901edee09fbbefaf6">plcopen::core::fb::ReadInfoLatch::busy</a></div><div class="ttdeci">bool busy</div><div class="ttdef"><b>Definition</b> <a href="base_8h_source.html#l00079">base.h:79</a></div></div>
+<div class="ttc" id="aclassplcopen_1_1core_1_1fb_1_1ReadInfoLatch_html_a85916cff75c82a0f008fdbf18b767355"><div class="ttname"><a href="classplcopen_1_1core_1_1fb_1_1ReadInfoLatch.html#a85916cff75c82a0f008fdbf18b767355">plcopen::core::fb::ReadInfoLatch::error</a></div><div class="ttdeci">bool error</div><div class="ttdef"><b>Definition</b> <a href="base_8h_source.html#l00080">base.h:80</a></div></div>
+<div class="ttc" id="aclassplcopen_1_1core_1_1fb_1_1ReadInfoLatch_html_aeb102171f552ac257dbcb59e24ab8836"><div class="ttname"><a href="classplcopen_1_1core_1_1fb_1_1ReadInfoLatch.html#aeb102171f552ac257dbcb59e24ab8836">plcopen::core::fb::ReadInfoLatch::valid</a></div><div class="ttdeci">bool valid</div><div class="ttdef"><b>Definition</b> <a href="base_8h_source.html#l00078">base.h:78</a></div></div>
+<div class="ttc" id="aclassplcopen_1_1core_1_1fb_1_1StartSyncPulse_html"><div class="ttname"><a href="classplcopen_1_1core_1_1fb_1_1StartSyncPulse.html">plcopen::core::fb::StartSyncPulse</a></div><div class="ttdef"><b>Definition</b> <a href="base_8h_source.html#l00157">base.h:158</a></div></div>
+<div class="ttc" id="aclassplcopen_1_1core_1_1fb_1_1StartSyncPulse_html_a87ffa5cca5cae57ed4205b51e7e3ed4e"><div class="ttname"><a href="classplcopen_1_1core_1_1fb_1_1StartSyncPulse.html#a87ffa5cca5cae57ed4205b51e7e3ed4e">plcopen::core::fb::StartSyncPulse::reset</a></div><div class="ttdeci">void reset()</div><div class="ttdef"><b>Definition</b> <a href="base_8h_source.html#l00168">base.h:168</a></div></div>
+<div class="ttc" id="aclassplcopen_1_1core_1_1fb_1_1StartSyncPulse_html_aede9a7c9a2a2bc390173544397be67d5"><div class="ttname"><a href="classplcopen_1_1core_1_1fb_1_1StartSyncPulse.html#aede9a7c9a2a2bc390173544397be67d5">plcopen::core::fb::StartSyncPulse::complete</a></div><div class="ttdeci">void complete(bool active_sync)</div><div class="ttdef"><b>Definition</b> <a href="base_8h_source.html#l00162">base.h:162</a></div></div>
+<div class="ttc" id="aclassplcopen_1_1core_1_1fb_1_1StartSyncPulse_html_af68e068e4428db218a6fd00a7195598d"><div class="ttname"><a href="classplcopen_1_1core_1_1fb_1_1StartSyncPulse.html#af68e068e4428db218a6fd00a7195598d">plcopen::core::fb::StartSyncPulse::start_sync</a></div><div class="ttdeci">bool start_sync</div><div class="ttdef"><b>Definition</b> <a href="base_8h_source.html#l00160">base.h:160</a></div></div>
+<div class="ttc" id="aerror_8h_html"><div class="ttname"><a href="error_8h.html">error.h</a></div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1fb_html"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1fb.html">plcopen::core::fb</a></div><div class="ttdef"><b>Definition</b> <a href="base_8h_source.html#l00005">base.h:6</a></div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1fb_html_a9987504ab741614c7f341e5827889070"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1fb.html#a9987504ab741614c7f341e5827889070">plcopen::core::fb::ExecuteStep</a></div><div class="ttdeci">ExecuteStep</div><div class="ttdef"><b>Definition</b> <a href="base_8h_source.html#l00008">base.h:9</a></div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1fb_html_a9987504ab741614c7f341e5827889070a6b2ded51d81a4403d8a4bd25fa1e57ee"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1fb.html#a9987504ab741614c7f341e5827889070a6b2ded51d81a4403d8a4bd25fa1e57ee">plcopen::core::fb::ExecuteStep::done</a></div><div class="ttdeci">@ done</div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1fb_html_a9987504ab741614c7f341e5827889070a8bc1b2f84252c3df4edd53e4aad097a7"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1fb.html#a9987504ab741614c7f341e5827889070a8bc1b2f84252c3df4edd53e4aad097a7">plcopen::core::fb::ExecuteStep::busy</a></div><div class="ttdeci">@ busy</div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1fb_html_a9987504ab741614c7f341e5827889070acb5e100e5a9a3e7f6d1fd97512215282"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1fb.html#a9987504ab741614c7f341e5827889070acb5e100e5a9a3e7f6d1fd97512215282">plcopen::core::fb::ExecuteStep::error</a></div><div class="ttdeci">@ error</div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1fb_html_a9987504ab741614c7f341e5827889070adfb7069bfc6e0064a6c667626eca07b4"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1fb.html#a9987504ab741614c7f341e5827889070adfb7069bfc6e0064a6c667626eca07b4">plcopen::core::fb::ExecuteStep::aborted</a></div><div class="ttdeci">@ aborted</div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1rt_html_acb478bbb9e8dc7611816f04327d9fce8"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8">plcopen::core::rt::ErrorCode</a></div><div class="ttdeci">ErrorCode</div><div class="ttdef"><b>Definition</b> <a href="error_8h_source.html#l00006">error.h:7</a></div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1rt_html_acb478bbb9e8dc7611816f04327d9fce8a444bcb3a3fcf8389296c49467f27e1d6"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8a444bcb3a3fcf8389296c49467f27e1d6">plcopen::core::rt::ErrorCode::ok</a></div><div class="ttdeci">@ ok</div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1rt_html_acb478bbb9e8dc7611816f04327d9fce8ae55d43eabeefe5a8271b4a3c898bd18f"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8ae55d43eabeefe5a8271b4a3c898bd18f">plcopen::core::rt::ErrorCode::invalid_argument</a></div><div class="ttdeci">@ invalid_argument</div></div>
+</div><!-- fragment --></div><!-- contents -->
+<!-- start footer part -->
+<hr class="footer"/><address class="footer"><small>
+制作者&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.8
+</small></address>
+</body>
+</html>

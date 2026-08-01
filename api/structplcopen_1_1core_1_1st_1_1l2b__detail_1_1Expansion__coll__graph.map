@@ -1,0 +1,7 @@
+<map id="plcopen::core::st::l2b_detail::Expansion" name="plcopen::core::st::l2b_detail::Expansion">
+<area shape="rect" id="Node000001" title=" " alt="" coords="75,108,237,148"/>
+<area shape="rect" id="Node000002" href="$structplcopen_1_1core_1_1st_1_1l2b__detail_1_1Project.html" title=" " alt="" coords="5,5,144,45"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="100,54,143,106,139,110,96,58"/>
+<area shape="rect" id="Node000003" href="$structplcopen_1_1core_1_1st_1_1CompileOptions.html" title=" " alt="" coords="169,5,306,45"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="216,58,173,110,169,106,212,54"/>
+</map>

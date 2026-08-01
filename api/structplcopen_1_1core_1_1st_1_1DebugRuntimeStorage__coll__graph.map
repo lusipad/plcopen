@@ -1,0 +1,8 @@
+<map id="plcopen::core::st::DebugRuntimeStorage" name="plcopen::core::st::DebugRuntimeStorage">
+<area shape="rect" id="Node000001" title=" " alt="" coords="33,211,203,251"/>
+<area shape="rect" id="Node000002" href="$structplcopen_1_1core_1_1st_1_1SourceMapEntry.html" title=" " alt="" coords="201,108,339,148"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="231,158,148,213,145,208,228,153"/>
+<area shape="rect" id="Node000003" href="$structplcopen_1_1core_1_1st_1_1InstructionId.html" title=" " alt="" coords="5,5,143,45"/>
+<area shape="poly" id="edge3_Node000001_Node000003" title=" " alt="" coords="69,59,64,102,69,147,84,181,103,209,99,212,79,183,63,149,58,102,63,59"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="124,49,235,106,232,110,122,54"/>
+</map>

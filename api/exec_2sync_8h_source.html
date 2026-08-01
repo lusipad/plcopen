@@ -1,0 +1,659 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh">
+<head>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=11"/>
+<meta name="generator" content="Doxygen 1.9.8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>plcopen: core/exec/sync.h 源文件</title>
+<link href="tabs.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="jquery.js"></script>
+<script type="text/javascript" src="dynsections.js"></script>
+<link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<link href="doxygen.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+<div id="top"><!-- do not remove this div, it is closed by doxygen! -->
+<div id="titlearea">
+<table cellspacing="0" cellpadding="0">
+ <tbody>
+ <tr id="projectrow">
+  <td id="projectalign">
+   <div id="projectname">plcopen<span id="projectnumber">&#160;0.21.0</span>
+   </div>
+  </td>
+ </tr>
+ </tbody>
+</table>
+</div>
+<!-- end header part -->
+<!-- 制作者 Doxygen 1.9.8 -->
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+var searchBox = new SearchBox("searchBox", "search/",'.html');
+/* @license-end */
+</script>
+<script type="text/javascript" src="menudata.js"></script>
+<script type="text/javascript" src="menu.js"></script>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+$(function() {
+  initMenu('',true,false,'search.php','搜索');
+  $(document).ready(function() { init_search(); });
+});
+/* @license-end */
+</script>
+<div id="main-nav"></div>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+$(document).ready(function() { init_codefold(0); });
+/* @license-end */
+</script>
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<div id="MSearchResults">
+<div class="SRPage">
+<div id="SRIndex">
+<div id="SRResults"></div>
+<div class="SRStatus" id="Loading">载入中...</div>
+<div class="SRStatus" id="Searching">搜索中...</div>
+<div class="SRStatus" id="NoMatches">未找到</div>
+</div>
+</div>
+</div>
+</div>
+
+<div id="nav-path" class="navpath">
+  <ul>
+<li class="navelem"><a class="el" href="dir_4270bfced15e0e73154b13468c7c9ad9.html">core</a></li><li class="navelem"><a class="el" href="dir_461b7bcf38a1fe08b26982c5e7d586f1.html">exec</a></li>  </ul>
+</div>
+</div><!-- top -->
+<div class="header">
+  <div class="headertitle"><div class="title">sync.h</div></div>
+</div><!--header-->
+<div class="contents">
+<a href="exec_2sync_8h.html">浏览该文件的文档.</a><div class="fragment"><div class="line"><a id="l00001" name="l00001"></a><span class="lineno">    1</span><span class="preprocessor">#pragma once</span></div>
+<div class="line"><a id="l00002" name="l00002"></a><span class="lineno">    2</span> </div>
+<div class="line"><a id="l00003" name="l00003"></a><span class="lineno">    3</span><span class="preprocessor">#include &lt;cmath&gt;</span></div>
+<div class="line"><a id="l00004" name="l00004"></a><span class="lineno">    4</span><span class="preprocessor">#include &lt;cstddef&gt;</span></div>
+<div class="line"><a id="l00005" name="l00005"></a><span class="lineno">    5</span> </div>
+<div class="line"><a id="l00006" name="l00006"></a><span class="lineno">    6</span><span class="preprocessor">#include &quot;<a class="code" href="geometry_8h.html">geom/geometry.h</a>&quot;</span></div>
+<div class="line"><a id="l00007" name="l00007"></a><span class="lineno">    7</span><span class="preprocessor">#include &quot;<a class="code" href="error_8h.html">rt/error.h</a>&quot;</span></div>
+<div class="line"><a id="l00008" name="l00008"></a><span class="lineno">    8</span><span class="preprocessor">#include &quot;<a class="code" href="static__vector_8h.html">rt/static_vector.h</a>&quot;</span></div>
+<div class="line"><a id="l00009" name="l00009"></a><span class="lineno">    9</span> </div>
+<div class="line"><a id="l00010" name="l00010"></a><span class="lineno">   10</span><span class="keyword">namespace </span><a class="code hl_namespace" href="namespaceplcopen_1_1core_1_1exec.html">plcopen::core::exec</a></div>
+<div class="line"><a id="l00011" name="l00011"></a><span class="lineno">   11</span>{</div>
+<div class="line"><a id="l00012" name="l00012"></a><span class="lineno">   12</span> </div>
+<div class="foldopen" id="foldopen00013" data-start="{" data-end="};">
+<div class="line"><a id="l00013" name="l00013"></a><span class="lineno"><a class="line" href="structplcopen_1_1core_1_1exec_1_1GearMap.html">   13</a></span><span class="keyword">struct </span><a class="code hl_struct" href="structplcopen_1_1core_1_1exec_1_1GearMap.html">GearMap</a></div>
+<div class="line"><a id="l00014" name="l00014"></a><span class="lineno">   14</span>{</div>
+<div class="line"><a id="l00015" name="l00015"></a><span class="lineno"><a class="line" href="structplcopen_1_1core_1_1exec_1_1GearMap.html#a8c1af0b0ce770c0f669e2f958bf2a1b1">   15</a></span>    <span class="keywordtype">double</span> <a class="code hl_variable" href="structplcopen_1_1core_1_1exec_1_1GearMap.html#a8c1af0b0ce770c0f669e2f958bf2a1b1">ratio</a> = 1.0;</div>
+<div class="line"><a id="l00016" name="l00016"></a><span class="lineno"><a class="line" href="structplcopen_1_1core_1_1exec_1_1GearMap.html#a33ed6e9419b8f6ee913272d2376c2b34">   16</a></span>    <span class="keywordtype">double</span> <a class="code hl_variable" href="structplcopen_1_1core_1_1exec_1_1GearMap.html#a33ed6e9419b8f6ee913272d2376c2b34">offset</a> = 0.0;</div>
+<div class="line"><a id="l00017" name="l00017"></a><span class="lineno">   17</span>};</div>
+</div>
+<div class="line"><a id="l00018" name="l00018"></a><span class="lineno">   18</span> </div>
+<div class="foldopen" id="foldopen00019" data-start="{" data-end="}">
+<div class="line"><a id="l00019" name="l00019"></a><span class="lineno"><a class="line" href="namespaceplcopen_1_1core_1_1exec.html#a95e8e36dcbd206a2d325f4f86f58b519">   19</a></span><span class="keyword">inline</span> <span class="keywordtype">double</span> <a class="code hl_function" href="namespaceplcopen_1_1core_1_1exec.html#a95e8e36dcbd206a2d325f4f86f58b519">sample_gear</a>(<span class="keywordtype">double</span> master_position, <a class="code hl_struct" href="structplcopen_1_1core_1_1exec_1_1GearMap.html">GearMap</a> map)</div>
+<div class="line"><a id="l00020" name="l00020"></a><span class="lineno">   20</span>{</div>
+<div class="line"><a id="l00021" name="l00021"></a><span class="lineno">   21</span>    <span class="keywordflow">return</span> master_position * map.<a class="code hl_variable" href="structplcopen_1_1core_1_1exec_1_1GearMap.html#a8c1af0b0ce770c0f669e2f958bf2a1b1">ratio</a> + map.<a class="code hl_variable" href="structplcopen_1_1core_1_1exec_1_1GearMap.html#a33ed6e9419b8f6ee913272d2376c2b34">offset</a>;</div>
+<div class="line"><a id="l00022" name="l00022"></a><span class="lineno">   22</span>}</div>
+</div>
+<div class="line"><a id="l00023" name="l00023"></a><span class="lineno">   23</span> </div>
+<div class="foldopen" id="foldopen00024" data-start="{" data-end="};">
+<div class="line"><a id="l00024" name="l00024"></a><span class="lineno"><a class="line" href="structplcopen_1_1core_1_1exec_1_1CamPoint.html">   24</a></span><span class="keyword">struct </span><a class="code hl_struct" href="structplcopen_1_1core_1_1exec_1_1CamPoint.html">CamPoint</a></div>
+<div class="line"><a id="l00025" name="l00025"></a><span class="lineno">   25</span>{</div>
+<div class="line"><a id="l00026" name="l00026"></a><span class="lineno"><a class="line" href="structplcopen_1_1core_1_1exec_1_1CamPoint.html#a73854c0901ab70ddea224d242b51a530">   26</a></span>    <span class="keywordtype">double</span> <a class="code hl_variable" href="structplcopen_1_1core_1_1exec_1_1CamPoint.html#a73854c0901ab70ddea224d242b51a530">master</a> = 0.0;</div>
+<div class="line"><a id="l00027" name="l00027"></a><span class="lineno"><a class="line" href="structplcopen_1_1core_1_1exec_1_1CamPoint.html#a5d1c7920f5155f091710bad60bf345bb">   27</a></span>    <span class="keywordtype">double</span> <a class="code hl_variable" href="structplcopen_1_1core_1_1exec_1_1CamPoint.html#a5d1c7920f5155f091710bad60bf345bb">slave</a> = 0.0;</div>
+<div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span>};</div>
+</div>
+<div class="line"><a id="l00029" name="l00029"></a><span class="lineno">   29</span> </div>
+<div class="line"><a id="l00030" name="l00030"></a><span class="lineno">   30</span><span class="comment">// Cam v2 addendum (approved 2026-07-06, KB-046): classical rest-to-rest</span></div>
+<div class="line"><a id="l00031" name="l00031"></a><span class="lineno">   31</span><span class="comment">// motion-law generation, offline/submit domain. cam_law_value evaluates the</span></div>
+<div class="line"><a id="l00032" name="l00032"></a><span class="lineno">   32</span><span class="comment">// unit-domain law (x in [0,1] maps to s in [0,1]); the modified-sine</span></div>
+<div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span><span class="comment">// constants come from the exact piecewise antiderivatives at run time, not</span></div>
+<div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span><span class="comment">// copied from handbooks. generate_cam_law discretizes into a caller-owned</span></div>
+<div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span><span class="comment">// point array consumable by the existing linear/spline reconstruction</span></div>
+<div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span><span class="comment">// (strictly increasing master by construction).</span></div>
+<div class="foldopen" id="foldopen00037" data-start="{" data-end="};">
+<div class="line"><a id="l00037" name="l00037"></a><span class="lineno"><a class="line" href="namespaceplcopen_1_1core_1_1exec.html#ae56383735082a7bf8babc47822ea2722">   37</a></span><span class="keyword">enum class</span> <a class="code hl_enumeration" href="namespaceplcopen_1_1core_1_1exec.html#ae56383735082a7bf8babc47822ea2722">CamLaw</a></div>
+<div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span>{</div>
+<div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span>    <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1exec.html#ae56383735082a7bf8babc47822ea2722a4ae3235b21f6d9c29294d1473bbc030a">cycloidal</a>,</div>
+<div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span>    <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1exec.html#ae56383735082a7bf8babc47822ea2722a55b5e526106369d7a244f08c8ec10e6d">modified_sine</a>,</div>
+<div class="line"><a id="l00041" name="l00041"></a><span class="lineno">   41</span>    <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1exec.html#ae56383735082a7bf8babc47822ea2722a8beb2bc9a0ff80f0674049ff5e4f68a1">poly345</a>,</div>
+<div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span>};</div>
+</div>
+<div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span> </div>
+<div class="foldopen" id="foldopen00044" data-start="{" data-end="}">
+<div class="line"><a id="l00044" name="l00044"></a><span class="lineno"><a class="line" href="namespaceplcopen_1_1core_1_1exec.html#a882f8370474f75165935e563a0a3b921">   44</a></span><span class="keyword">inline</span> <span class="keywordtype">double</span> <a class="code hl_function" href="namespaceplcopen_1_1core_1_1exec.html#a882f8370474f75165935e563a0a3b921">cam_law_value</a>(<a class="code hl_enumeration" href="namespaceplcopen_1_1core_1_1exec.html#ae56383735082a7bf8babc47822ea2722">CamLaw</a> law, <span class="keywordtype">double</span> x)</div>
+<div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span>{</div>
+<div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span>    <span class="keyword">constexpr</span> <span class="keywordtype">double</span> Pi = 3.14159265358979323846;</div>
+<div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span>    x = x &lt; 0.0 ? 0.0 : (x &gt; 1.0 ? 1.0 : x);</div>
+<div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span>    <span class="keywordflow">if</span>(law == <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1exec.html#ae56383735082a7bf8babc47822ea2722a4ae3235b21f6d9c29294d1473bbc030a">CamLaw::cycloidal</a>) {</div>
+<div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span>        <span class="keywordflow">return</span> x - std::sin(2.0 * Pi * x) / (2.0 * Pi);</div>
+<div class="line"><a id="l00050" name="l00050"></a><span class="lineno">   50</span>    }</div>
+<div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span>    <span class="keywordflow">if</span>(law == <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1exec.html#ae56383735082a7bf8babc47822ea2722a8beb2bc9a0ff80f0674049ff5e4f68a1">CamLaw::poly345</a>) {</div>
+<div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span>        <span class="keywordflow">return</span> x * x * x * (10.0 + x * (-15.0 + 6.0 * x));</div>
+<div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span>    }</div>
+<div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span>    <span class="comment">// Modified sine: acceleration sin(w1*x) on [0,1/8] and [7/8,1],</span></div>
+<div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span>    <span class="comment">// cos(w2*(x-1/8)) between; velocity/position from the exact</span></div>
+<div class="line"><a id="l00056" name="l00056"></a><span class="lineno">   56</span>    <span class="comment">// antiderivatives with continuity constants, normalized by the total.</span></div>
+<div class="line"><a id="l00057" name="l00057"></a><span class="lineno">   57</span>    <span class="keyword">const</span> <span class="keywordtype">double</span> w1 = 4.0 * Pi;</div>
+<div class="line"><a id="l00058" name="l00058"></a><span class="lineno">   58</span>    <span class="keyword">const</span> <span class="keywordtype">double</span> w2 = 4.0 * Pi / 3.0;</div>
+<div class="line"><a id="l00059" name="l00059"></a><span class="lineno">   59</span>    <span class="keyword">const</span> <span class="keywordtype">double</span> v18 = 1.0 / w1;</div>
+<div class="line"><a id="l00060" name="l00060"></a><span class="lineno">   60</span>    <span class="keyword">const</span> <span class="keywordtype">double</span> s18 = (0.125 - 1.0 / w1) / w1;</div>
+<div class="line"><a id="l00061" name="l00061"></a><span class="lineno">   61</span>    <span class="keyword">const</span> <span class="keywordtype">double</span> s78 = s18 + v18 * 0.75 + 2.0 / (w2 * w2);</div>
+<div class="line"><a id="l00062" name="l00062"></a><span class="lineno">   62</span>    <span class="keyword">const</span> <span class="keywordtype">double</span> total = s78 + v18 * 0.125 - 1.0 / (w1 * w1);</div>
+<div class="line"><a id="l00063" name="l00063"></a><span class="lineno">   63</span>    <span class="keywordtype">double</span> s = 0.0;</div>
+<div class="line"><a id="l00064" name="l00064"></a><span class="lineno">   64</span>    <span class="keywordflow">if</span>(x &lt; 0.125) {</div>
+<div class="line"><a id="l00065" name="l00065"></a><span class="lineno">   65</span>        s = (x - std::sin(w1 * x) / w1) / w1;</div>
+<div class="line"><a id="l00066" name="l00066"></a><span class="lineno">   66</span>    } <span class="keywordflow">else</span> <span class="keywordflow">if</span>(x &lt;= 0.875) {</div>
+<div class="line"><a id="l00067" name="l00067"></a><span class="lineno">   67</span>        <span class="keyword">const</span> <span class="keywordtype">double</span> u = x - 0.125;</div>
+<div class="line"><a id="l00068" name="l00068"></a><span class="lineno">   68</span>        s = s18 + v18 * u + (1.0 - std::cos(w2 * u)) / (w2 * w2);</div>
+<div class="line"><a id="l00069" name="l00069"></a><span class="lineno">   69</span>    } <span class="keywordflow">else</span> {</div>
+<div class="line"><a id="l00070" name="l00070"></a><span class="lineno">   70</span>        s = s78 + v18 * (x - 0.875) - (std::sin(w1 * x) + 1.0) / (w1 * w1);</div>
+<div class="line"><a id="l00071" name="l00071"></a><span class="lineno">   71</span>    }</div>
+<div class="line"><a id="l00072" name="l00072"></a><span class="lineno">   72</span>    <span class="keywordflow">return</span> s / total;</div>
+<div class="line"><a id="l00073" name="l00073"></a><span class="lineno">   73</span>}</div>
+</div>
+<div class="line"><a id="l00074" name="l00074"></a><span class="lineno">   74</span> </div>
+<div class="foldopen" id="foldopen00075" data-start="{" data-end="}">
+<div class="line"><a id="l00075" name="l00075"></a><span class="lineno"><a class="line" href="namespaceplcopen_1_1core_1_1exec.html#ae0809f4c0d5b5fc630fcab26af20e5a4">   75</a></span><span class="keyword">inline</span> <a class="code hl_enumeration" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8">rt::ErrorCode</a> <a class="code hl_function" href="namespaceplcopen_1_1core_1_1exec.html#ae0809f4c0d5b5fc630fcab26af20e5a4">generate_cam_law</a>(<a class="code hl_enumeration" href="namespaceplcopen_1_1core_1_1exec.html#ae56383735082a7bf8babc47822ea2722">CamLaw</a> law,</div>
+<div class="line"><a id="l00076" name="l00076"></a><span class="lineno">   76</span>                                      <span class="keywordtype">double</span> master_span,</div>
+<div class="line"><a id="l00077" name="l00077"></a><span class="lineno">   77</span>                                      <span class="keywordtype">double</span> rise,</div>
+<div class="line"><a id="l00078" name="l00078"></a><span class="lineno">   78</span>                                      <a class="code hl_struct" href="structplcopen_1_1core_1_1exec_1_1CamPoint.html">CamPoint</a> *points,</div>
+<div class="line"><a id="l00079" name="l00079"></a><span class="lineno">   79</span>                                      std::size_t point_count)</div>
+<div class="line"><a id="l00080" name="l00080"></a><span class="lineno">   80</span>{</div>
+<div class="line"><a id="l00081" name="l00081"></a><span class="lineno">   81</span>    <span class="keywordflow">if</span>(points == <span class="keyword">nullptr</span> || point_count &lt; 8 || point_count &gt; 64 ||</div>
+<div class="line"><a id="l00082" name="l00082"></a><span class="lineno">   82</span>       !std::isfinite(master_span) || master_span &lt;= 0.0 || !std::isfinite(rise)) {</div>
+<div class="line"><a id="l00083" name="l00083"></a><span class="lineno">   83</span>        <span class="keywordflow">return</span> <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8ae55d43eabeefe5a8271b4a3c898bd18f">rt::ErrorCode::invalid_argument</a>;</div>
+<div class="line"><a id="l00084" name="l00084"></a><span class="lineno">   84</span>    }</div>
+<div class="line"><a id="l00085" name="l00085"></a><span class="lineno">   85</span>    <span class="keywordflow">for</span>(std::size_t i = 0; i &lt; point_count; ++i) {</div>
+<div class="line"><a id="l00086" name="l00086"></a><span class="lineno">   86</span>        <span class="keyword">const</span> <span class="keywordtype">double</span> x =</div>
+<div class="line"><a id="l00087" name="l00087"></a><span class="lineno">   87</span>            <span class="keyword">static_cast&lt;</span><span class="keywordtype">double</span><span class="keyword">&gt;</span>(i) / <span class="keyword">static_cast&lt;</span><span class="keywordtype">double</span><span class="keyword">&gt;</span>(point_count - 1);</div>
+<div class="line"><a id="l00088" name="l00088"></a><span class="lineno">   88</span>        points[i].<a class="code hl_variable" href="structplcopen_1_1core_1_1exec_1_1CamPoint.html#a73854c0901ab70ddea224d242b51a530">master</a> = master_span * x;</div>
+<div class="line"><a id="l00089" name="l00089"></a><span class="lineno">   89</span>        points[i].<a class="code hl_variable" href="structplcopen_1_1core_1_1exec_1_1CamPoint.html#a5d1c7920f5155f091710bad60bf345bb">slave</a> = rise * <a class="code hl_function" href="namespaceplcopen_1_1core_1_1exec.html#a882f8370474f75165935e563a0a3b921">cam_law_value</a>(law, x);</div>
+<div class="line"><a id="l00090" name="l00090"></a><span class="lineno">   90</span>    }</div>
+<div class="line"><a id="l00091" name="l00091"></a><span class="lineno">   91</span>    <span class="keywordflow">return</span> <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8a444bcb3a3fcf8389296c49467f27e1d6">rt::ErrorCode::ok</a>;</div>
+<div class="line"><a id="l00092" name="l00092"></a><span class="lineno">   92</span>}</div>
+</div>
+<div class="line"><a id="l00093" name="l00093"></a><span class="lineno">   93</span> </div>
+<div class="line"><a id="l00094" name="l00094"></a><span class="lineno">   94</span><span class="comment">// Non-owning cam table handle: L5/L6 consumers keep the point storage alive.</span></div>
+<div class="foldopen" id="foldopen00095" data-start="{" data-end="};">
+<div class="line"><a id="l00095" name="l00095"></a><span class="lineno"><a class="line" href="structplcopen_1_1core_1_1exec_1_1CamTableView.html">   95</a></span><span class="keyword">struct </span><a class="code hl_struct" href="structplcopen_1_1core_1_1exec_1_1CamTableView.html">CamTableView</a></div>
+<div class="line"><a id="l00096" name="l00096"></a><span class="lineno">   96</span>{</div>
+<div class="line"><a id="l00097" name="l00097"></a><span class="lineno"><a class="line" href="structplcopen_1_1core_1_1exec_1_1CamTableView.html#a851b80080cf25003f4b0fb11f43d03a2">   97</a></span>    <span class="keyword">const</span> <a class="code hl_struct" href="structplcopen_1_1core_1_1exec_1_1CamPoint.html">CamPoint</a> *<a class="code hl_variable" href="structplcopen_1_1core_1_1exec_1_1CamTableView.html#a851b80080cf25003f4b0fb11f43d03a2">points</a> = <span class="keyword">nullptr</span>;</div>
+<div class="line"><a id="l00098" name="l00098"></a><span class="lineno"><a class="line" href="structplcopen_1_1core_1_1exec_1_1CamTableView.html#a0b5ccf24c7de7a0a6687f1b6df194a40">   98</a></span>    std::size_t <a class="code hl_variable" href="structplcopen_1_1core_1_1exec_1_1CamTableView.html#a0b5ccf24c7de7a0a6687f1b6df194a40">size</a> = 0;</div>
+<div class="line"><a id="l00099" name="l00099"></a><span class="lineno"><a class="line" href="structplcopen_1_1core_1_1exec_1_1CamTableView.html#a60e2ed27efe45e42d1f2aacf15a1de3c">   99</a></span>    <span class="keywordtype">bool</span> <a class="code hl_variable" href="structplcopen_1_1core_1_1exec_1_1CamTableView.html#a60e2ed27efe45e42d1f2aacf15a1de3c">periodic</a> = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00100" name="l00100"></a><span class="lineno">  100</span> </div>
+<div class="foldopen" id="foldopen00101" data-start="{" data-end="}">
+<div class="line"><a id="l00101" name="l00101"></a><span class="lineno"><a class="line" href="structplcopen_1_1core_1_1exec_1_1CamTableView.html#acfabe7d4e0365e86c6c8c39572aafe0f">  101</a></span>    <span class="keywordtype">bool</span> <a class="code hl_function" href="structplcopen_1_1core_1_1exec_1_1CamTableView.html#acfabe7d4e0365e86c6c8c39572aafe0f">valid</a>()<span class="keyword"> const</span></div>
+<div class="line"><a id="l00102" name="l00102"></a><span class="lineno">  102</span><span class="keyword">    </span>{</div>
+<div class="line"><a id="l00103" name="l00103"></a><span class="lineno">  103</span>        <span class="keywordflow">if</span>(<a class="code hl_variable" href="structplcopen_1_1core_1_1exec_1_1CamTableView.html#a851b80080cf25003f4b0fb11f43d03a2">points</a> == <span class="keyword">nullptr</span> || <a class="code hl_variable" href="structplcopen_1_1core_1_1exec_1_1CamTableView.html#a0b5ccf24c7de7a0a6687f1b6df194a40">size</a> &lt; 2) {</div>
+<div class="line"><a id="l00104" name="l00104"></a><span class="lineno">  104</span>            <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00105" name="l00105"></a><span class="lineno">  105</span>        }</div>
+<div class="line"><a id="l00106" name="l00106"></a><span class="lineno">  106</span>        <span class="keywordflow">for</span>(std::size_t i = 0; i &lt; <a class="code hl_variable" href="structplcopen_1_1core_1_1exec_1_1CamTableView.html#a0b5ccf24c7de7a0a6687f1b6df194a40">size</a>; ++i) {</div>
+<div class="line"><a id="l00107" name="l00107"></a><span class="lineno">  107</span>            <span class="keywordflow">if</span>(!std::isfinite(<a class="code hl_variable" href="structplcopen_1_1core_1_1exec_1_1CamTableView.html#a851b80080cf25003f4b0fb11f43d03a2">points</a>[i].master) || !std::isfinite(<a class="code hl_variable" href="structplcopen_1_1core_1_1exec_1_1CamTableView.html#a851b80080cf25003f4b0fb11f43d03a2">points</a>[i].slave)) {</div>
+<div class="line"><a id="l00108" name="l00108"></a><span class="lineno">  108</span>                <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00109" name="l00109"></a><span class="lineno">  109</span>            }</div>
+<div class="line"><a id="l00110" name="l00110"></a><span class="lineno">  110</span>            <span class="keywordflow">if</span>(i &gt; 0 &amp;&amp; <a class="code hl_variable" href="structplcopen_1_1core_1_1exec_1_1CamTableView.html#a851b80080cf25003f4b0fb11f43d03a2">points</a>[i].master &lt;= <a class="code hl_variable" href="structplcopen_1_1core_1_1exec_1_1CamTableView.html#a851b80080cf25003f4b0fb11f43d03a2">points</a>[i - 1].master) {</div>
+<div class="line"><a id="l00111" name="l00111"></a><span class="lineno">  111</span>                <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00112" name="l00112"></a><span class="lineno">  112</span>            }</div>
+<div class="line"><a id="l00113" name="l00113"></a><span class="lineno">  113</span>        }</div>
+<div class="line"><a id="l00114" name="l00114"></a><span class="lineno">  114</span>        <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
+<div class="line"><a id="l00115" name="l00115"></a><span class="lineno">  115</span>    }</div>
+</div>
+<div class="line"><a id="l00116" name="l00116"></a><span class="lineno">  116</span> </div>
+<div class="line"><a id="l00117" name="l00117"></a><span class="lineno">  117</span>    <span class="comment">// Full table validation is an engage-time concern (valid()); the cycle-path</span></div>
+<div class="line"><a id="l00118" name="l00118"></a><span class="lineno">  118</span>    <span class="comment">// sample only guards the cheap emptiness/finiteness preconditions.</span></div>
+<div class="foldopen" id="foldopen00119" data-start="{" data-end="}">
+<div class="line"><a id="l00119" name="l00119"></a><span class="lineno"><a class="line" href="structplcopen_1_1core_1_1exec_1_1CamTableView.html#a22b72d520d212d4679bb4acc0c434cec">  119</a></span>    <a class="code hl_class" href="classplcopen_1_1core_1_1rt_1_1Result.html">rt::Result&lt;double&gt;</a> <a class="code hl_function" href="structplcopen_1_1core_1_1exec_1_1CamTableView.html#a22b72d520d212d4679bb4acc0c434cec">sample</a>(<span class="keywordtype">double</span> master_position)<span class="keyword"> const</span></div>
+<div class="line"><a id="l00120" name="l00120"></a><span class="lineno">  120</span><span class="keyword">    </span>{</div>
+<div class="line"><a id="l00121" name="l00121"></a><span class="lineno">  121</span>        <span class="keywordflow">if</span>(<a class="code hl_variable" href="structplcopen_1_1core_1_1exec_1_1CamTableView.html#a851b80080cf25003f4b0fb11f43d03a2">points</a> == <span class="keyword">nullptr</span> || <a class="code hl_variable" href="structplcopen_1_1core_1_1exec_1_1CamTableView.html#a0b5ccf24c7de7a0a6687f1b6df194a40">size</a> &lt; 2 || !std::isfinite(master_position)) {</div>
+<div class="line"><a id="l00122" name="l00122"></a><span class="lineno">  122</span>            <span class="keywordflow">return</span> <a class="code hl_function" href="classplcopen_1_1core_1_1rt_1_1Result.html#adabbee61b3f30cf0c2ac27f685ea5b92">rt::Result&lt;double&gt;::failure</a>(<a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8ae55d43eabeefe5a8271b4a3c898bd18f">rt::ErrorCode::invalid_argument</a>);</div>
+<div class="line"><a id="l00123" name="l00123"></a><span class="lineno">  123</span>        }</div>
+<div class="line"><a id="l00124" name="l00124"></a><span class="lineno">  124</span>        <span class="keywordtype">double</span> position = master_position;</div>
+<div class="line"><a id="l00125" name="l00125"></a><span class="lineno">  125</span>        <span class="keywordflow">if</span>(<a class="code hl_variable" href="structplcopen_1_1core_1_1exec_1_1CamTableView.html#a60e2ed27efe45e42d1f2aacf15a1de3c">periodic</a>) {</div>
+<div class="line"><a id="l00126" name="l00126"></a><span class="lineno">  126</span>            <span class="keyword">const</span> <span class="keywordtype">double</span> begin = <a class="code hl_variable" href="structplcopen_1_1core_1_1exec_1_1CamTableView.html#a851b80080cf25003f4b0fb11f43d03a2">points</a>[0].<a class="code hl_variable" href="structplcopen_1_1core_1_1exec_1_1CamPoint.html#a73854c0901ab70ddea224d242b51a530">master</a>;</div>
+<div class="line"><a id="l00127" name="l00127"></a><span class="lineno">  127</span>            <span class="keyword">const</span> <span class="keywordtype">double</span> span = <a class="code hl_variable" href="structplcopen_1_1core_1_1exec_1_1CamTableView.html#a851b80080cf25003f4b0fb11f43d03a2">points</a>[<a class="code hl_variable" href="structplcopen_1_1core_1_1exec_1_1CamTableView.html#a0b5ccf24c7de7a0a6687f1b6df194a40">size</a> - 1].<a class="code hl_variable" href="structplcopen_1_1core_1_1exec_1_1CamPoint.html#a73854c0901ab70ddea224d242b51a530">master</a> - begin;</div>
+<div class="line"><a id="l00128" name="l00128"></a><span class="lineno">  128</span>            position = std::fmod(position - begin, span);</div>
+<div class="line"><a id="l00129" name="l00129"></a><span class="lineno">  129</span>            <span class="keywordflow">if</span>(position &lt; 0.0) {</div>
+<div class="line"><a id="l00130" name="l00130"></a><span class="lineno">  130</span>                position += span;</div>
+<div class="line"><a id="l00131" name="l00131"></a><span class="lineno">  131</span>            }</div>
+<div class="line"><a id="l00132" name="l00132"></a><span class="lineno">  132</span>            position += begin;</div>
+<div class="line"><a id="l00133" name="l00133"></a><span class="lineno">  133</span>        }</div>
+<div class="line"><a id="l00134" name="l00134"></a><span class="lineno">  134</span>        <span class="keywordflow">if</span>(position &lt;= <a class="code hl_variable" href="structplcopen_1_1core_1_1exec_1_1CamTableView.html#a851b80080cf25003f4b0fb11f43d03a2">points</a>[0].master) {</div>
+<div class="line"><a id="l00135" name="l00135"></a><span class="lineno">  135</span>            <span class="keywordflow">return</span> <a class="code hl_function" href="classplcopen_1_1core_1_1rt_1_1Result.html#ac818eef35186a51dc08606fe43449855">rt::Result&lt;double&gt;::success</a>(<a class="code hl_variable" href="structplcopen_1_1core_1_1exec_1_1CamTableView.html#a851b80080cf25003f4b0fb11f43d03a2">points</a>[0].slave);</div>
+<div class="line"><a id="l00136" name="l00136"></a><span class="lineno">  136</span>        }</div>
+<div class="line"><a id="l00137" name="l00137"></a><span class="lineno">  137</span>        <span class="keywordflow">for</span>(std::size_t i = 1; i &lt; <a class="code hl_variable" href="structplcopen_1_1core_1_1exec_1_1CamTableView.html#a0b5ccf24c7de7a0a6687f1b6df194a40">size</a>; ++i) {</div>
+<div class="line"><a id="l00138" name="l00138"></a><span class="lineno">  138</span>            <span class="keywordflow">if</span>(position &lt;= <a class="code hl_variable" href="structplcopen_1_1core_1_1exec_1_1CamTableView.html#a851b80080cf25003f4b0fb11f43d03a2">points</a>[i].master) {</div>
+<div class="line"><a id="l00139" name="l00139"></a><span class="lineno">  139</span>                <span class="keyword">const</span> <a class="code hl_struct" href="structplcopen_1_1core_1_1exec_1_1CamPoint.html">CamPoint</a> before = <a class="code hl_variable" href="structplcopen_1_1core_1_1exec_1_1CamTableView.html#a851b80080cf25003f4b0fb11f43d03a2">points</a>[i - 1];</div>
+<div class="line"><a id="l00140" name="l00140"></a><span class="lineno">  140</span>                <span class="keyword">const</span> <a class="code hl_struct" href="structplcopen_1_1core_1_1exec_1_1CamPoint.html">CamPoint</a> after = <a class="code hl_variable" href="structplcopen_1_1core_1_1exec_1_1CamTableView.html#a851b80080cf25003f4b0fb11f43d03a2">points</a>[i];</div>
+<div class="line"><a id="l00141" name="l00141"></a><span class="lineno">  141</span>                <span class="keyword">const</span> <span class="keywordtype">double</span> ratio = (position - before.<a class="code hl_variable" href="structplcopen_1_1core_1_1exec_1_1CamPoint.html#a73854c0901ab70ddea224d242b51a530">master</a>) / (after.<a class="code hl_variable" href="structplcopen_1_1core_1_1exec_1_1CamPoint.html#a73854c0901ab70ddea224d242b51a530">master</a> - before.<a class="code hl_variable" href="structplcopen_1_1core_1_1exec_1_1CamPoint.html#a73854c0901ab70ddea224d242b51a530">master</a>);</div>
+<div class="line"><a id="l00142" name="l00142"></a><span class="lineno">  142</span>                <span class="keywordflow">return</span> <a class="code hl_function" href="classplcopen_1_1core_1_1rt_1_1Result.html#ac818eef35186a51dc08606fe43449855">rt::Result&lt;double&gt;::success</a>(before.<a class="code hl_variable" href="structplcopen_1_1core_1_1exec_1_1CamPoint.html#a5d1c7920f5155f091710bad60bf345bb">slave</a> +</div>
+<div class="line"><a id="l00143" name="l00143"></a><span class="lineno">  143</span>                                                   (after.<a class="code hl_variable" href="structplcopen_1_1core_1_1exec_1_1CamPoint.html#a5d1c7920f5155f091710bad60bf345bb">slave</a> - before.<a class="code hl_variable" href="structplcopen_1_1core_1_1exec_1_1CamPoint.html#a5d1c7920f5155f091710bad60bf345bb">slave</a>) * ratio);</div>
+<div class="line"><a id="l00144" name="l00144"></a><span class="lineno">  144</span>            }</div>
+<div class="line"><a id="l00145" name="l00145"></a><span class="lineno">  145</span>        }</div>
+<div class="line"><a id="l00146" name="l00146"></a><span class="lineno">  146</span>        <span class="keywordflow">return</span> <a class="code hl_function" href="classplcopen_1_1core_1_1rt_1_1Result.html#ac818eef35186a51dc08606fe43449855">rt::Result&lt;double&gt;::success</a>(<a class="code hl_variable" href="structplcopen_1_1core_1_1exec_1_1CamTableView.html#a851b80080cf25003f4b0fb11f43d03a2">points</a>[<a class="code hl_variable" href="structplcopen_1_1core_1_1exec_1_1CamTableView.html#a0b5ccf24c7de7a0a6687f1b6df194a40">size</a> - 1].slave);</div>
+<div class="line"><a id="l00147" name="l00147"></a><span class="lineno">  147</span>    }</div>
+</div>
+<div class="line"><a id="l00148" name="l00148"></a><span class="lineno">  148</span>};</div>
+</div>
+<div class="line"><a id="l00149" name="l00149"></a><span class="lineno">  149</span> </div>
+<div class="foldopen" id="foldopen00150" data-start="{" data-end="};">
+<div class="line"><a id="l00150" name="l00150"></a><span class="lineno"><a class="line" href="classplcopen_1_1core_1_1exec_1_1CamTable.html">  150</a></span><span class="keyword">template</span> &lt;std::<span class="keywordtype">size_t</span> Capacity&gt; <span class="keyword">class </span><a class="code hl_class" href="classplcopen_1_1core_1_1exec_1_1CamTable.html">CamTable</a></div>
+<div class="line"><a id="l00151" name="l00151"></a><span class="lineno">  151</span>{</div>
+<div class="line"><a id="l00152" name="l00152"></a><span class="lineno">  152</span><span class="keyword">public</span>:</div>
+<div class="foldopen" id="foldopen00153" data-start="{" data-end="}">
+<div class="line"><a id="l00153" name="l00153"></a><span class="lineno"><a class="line" href="classplcopen_1_1core_1_1exec_1_1CamTable.html#ab2fd31a36049537a59ff120192999704">  153</a></span>    <a class="code hl_enumeration" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8">rt::ErrorCode</a> <a class="code hl_function" href="classplcopen_1_1core_1_1exec_1_1CamTable.html#ab2fd31a36049537a59ff120192999704">push</a>(<a class="code hl_struct" href="structplcopen_1_1core_1_1exec_1_1CamPoint.html">CamPoint</a> point)</div>
+<div class="line"><a id="l00154" name="l00154"></a><span class="lineno">  154</span>    {</div>
+<div class="line"><a id="l00155" name="l00155"></a><span class="lineno">  155</span>        <span class="keywordflow">if</span>(points_.size() &gt; 0 &amp;&amp; point.<a class="code hl_variable" href="structplcopen_1_1core_1_1exec_1_1CamPoint.html#a73854c0901ab70ddea224d242b51a530">master</a> &lt;= points_[points_.size() - 1].master) {</div>
+<div class="line"><a id="l00156" name="l00156"></a><span class="lineno">  156</span>            <span class="keywordflow">return</span> <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8ae55d43eabeefe5a8271b4a3c898bd18f">rt::ErrorCode::invalid_argument</a>;</div>
+<div class="line"><a id="l00157" name="l00157"></a><span class="lineno">  157</span>        }</div>
+<div class="line"><a id="l00158" name="l00158"></a><span class="lineno">  158</span>        <span class="keywordflow">return</span> points_.push_back(point);</div>
+<div class="line"><a id="l00159" name="l00159"></a><span class="lineno">  159</span>    }</div>
+</div>
+<div class="line"><a id="l00160" name="l00160"></a><span class="lineno">  160</span> </div>
+<div class="foldopen" id="foldopen00161" data-start="{" data-end="}">
+<div class="line"><a id="l00161" name="l00161"></a><span class="lineno"><a class="line" href="classplcopen_1_1core_1_1exec_1_1CamTable.html#a69a90d931cf86000202f82f5e4ab67c0">  161</a></span>    std::size_t <a class="code hl_function" href="classplcopen_1_1core_1_1exec_1_1CamTable.html#a69a90d931cf86000202f82f5e4ab67c0">size</a>()<span class="keyword"> const</span></div>
+<div class="line"><a id="l00162" name="l00162"></a><span class="lineno">  162</span><span class="keyword">    </span>{</div>
+<div class="line"><a id="l00163" name="l00163"></a><span class="lineno">  163</span>        <span class="keywordflow">return</span> points_.size();</div>
+<div class="line"><a id="l00164" name="l00164"></a><span class="lineno">  164</span>    }</div>
+</div>
+<div class="line"><a id="l00165" name="l00165"></a><span class="lineno">  165</span> </div>
+<div class="foldopen" id="foldopen00166" data-start="{" data-end="}">
+<div class="line"><a id="l00166" name="l00166"></a><span class="lineno"><a class="line" href="classplcopen_1_1core_1_1exec_1_1CamTable.html#aad6be5936e7ac91bbff2a117bdf0e4a0">  166</a></span>    <span class="keywordtype">void</span> <a class="code hl_function" href="classplcopen_1_1core_1_1exec_1_1CamTable.html#aad6be5936e7ac91bbff2a117bdf0e4a0">set_periodic</a>(<span class="keywordtype">bool</span> <a class="code hl_function" href="classplcopen_1_1core_1_1exec_1_1CamTable.html#aadfe297a4b77f74562b82f9dc5877ff1">periodic</a>)</div>
+<div class="line"><a id="l00167" name="l00167"></a><span class="lineno">  167</span>    {</div>
+<div class="line"><a id="l00168" name="l00168"></a><span class="lineno">  168</span>        periodic_ = <a class="code hl_function" href="classplcopen_1_1core_1_1exec_1_1CamTable.html#aadfe297a4b77f74562b82f9dc5877ff1">periodic</a>;</div>
+<div class="line"><a id="l00169" name="l00169"></a><span class="lineno">  169</span>    }</div>
+</div>
+<div class="line"><a id="l00170" name="l00170"></a><span class="lineno">  170</span> </div>
+<div class="foldopen" id="foldopen00171" data-start="{" data-end="}">
+<div class="line"><a id="l00171" name="l00171"></a><span class="lineno"><a class="line" href="classplcopen_1_1core_1_1exec_1_1CamTable.html#aadfe297a4b77f74562b82f9dc5877ff1">  171</a></span>    <span class="keywordtype">bool</span> <a class="code hl_function" href="classplcopen_1_1core_1_1exec_1_1CamTable.html#aadfe297a4b77f74562b82f9dc5877ff1">periodic</a>()<span class="keyword"> const</span></div>
+<div class="line"><a id="l00172" name="l00172"></a><span class="lineno">  172</span><span class="keyword">    </span>{</div>
+<div class="line"><a id="l00173" name="l00173"></a><span class="lineno">  173</span>        <span class="keywordflow">return</span> periodic_;</div>
+<div class="line"><a id="l00174" name="l00174"></a><span class="lineno">  174</span>    }</div>
+</div>
+<div class="line"><a id="l00175" name="l00175"></a><span class="lineno">  175</span> </div>
+<div class="foldopen" id="foldopen00176" data-start="{" data-end="}">
+<div class="line"><a id="l00176" name="l00176"></a><span class="lineno"><a class="line" href="classplcopen_1_1core_1_1exec_1_1CamTable.html#ac4af6802872cdcfb49452eb50078830f">  176</a></span>    <a class="code hl_struct" href="structplcopen_1_1core_1_1exec_1_1CamTableView.html">CamTableView</a> <a class="code hl_function" href="classplcopen_1_1core_1_1exec_1_1CamTable.html#ac4af6802872cdcfb49452eb50078830f">view</a>()<span class="keyword"> const</span></div>
+<div class="line"><a id="l00177" name="l00177"></a><span class="lineno">  177</span><span class="keyword">    </span>{</div>
+<div class="line"><a id="l00178" name="l00178"></a><span class="lineno">  178</span>        <span class="keywordflow">return</span> <a class="code hl_struct" href="structplcopen_1_1core_1_1exec_1_1CamTableView.html">CamTableView</a>{points_.data(), points_.size(), periodic_};</div>
+<div class="line"><a id="l00179" name="l00179"></a><span class="lineno">  179</span>    }</div>
+</div>
+<div class="line"><a id="l00180" name="l00180"></a><span class="lineno">  180</span> </div>
+<div class="foldopen" id="foldopen00181" data-start="{" data-end="}">
+<div class="line"><a id="l00181" name="l00181"></a><span class="lineno"><a class="line" href="classplcopen_1_1core_1_1exec_1_1CamTable.html#ac7910e328ff58861405b6fc30b67b45c">  181</a></span>    <a class="code hl_class" href="classplcopen_1_1core_1_1rt_1_1Result.html">rt::Result&lt;double&gt;</a> <a class="code hl_function" href="classplcopen_1_1core_1_1exec_1_1CamTable.html#ac7910e328ff58861405b6fc30b67b45c">sample</a>(<span class="keywordtype">double</span> master_position)<span class="keyword"> const</span></div>
+<div class="line"><a id="l00182" name="l00182"></a><span class="lineno">  182</span><span class="keyword">    </span>{</div>
+<div class="line"><a id="l00183" name="l00183"></a><span class="lineno">  183</span>        <span class="keywordflow">return</span> <a class="code hl_function" href="classplcopen_1_1core_1_1exec_1_1CamTable.html#ac4af6802872cdcfb49452eb50078830f">view</a>().<a class="code hl_function" href="structplcopen_1_1core_1_1exec_1_1CamTableView.html#a22b72d520d212d4679bb4acc0c434cec">sample</a>(master_position);</div>
+<div class="line"><a id="l00184" name="l00184"></a><span class="lineno">  184</span>    }</div>
+</div>
+<div class="line"><a id="l00185" name="l00185"></a><span class="lineno">  185</span> </div>
+<div class="line"><a id="l00186" name="l00186"></a><span class="lineno">  186</span><span class="keyword">private</span>:</div>
+<div class="line"><a id="l00187" name="l00187"></a><span class="lineno">  187</span>    <span class="keyword">static_assert</span>(Capacity &gt;= 2, <span class="stringliteral">&quot;CamTable capacity must be at least two&quot;</span>);</div>
+<div class="line"><a id="l00188" name="l00188"></a><span class="lineno">  188</span>    <a class="code hl_class" href="classplcopen_1_1core_1_1rt_1_1StaticVector.html">rt::StaticVector&lt;CamPoint, Capacity&gt;</a> points_{};</div>
+<div class="line"><a id="l00189" name="l00189"></a><span class="lineno">  189</span>    <span class="keywordtype">bool</span> periodic_ = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00190" name="l00190"></a><span class="lineno">  190</span>};</div>
+</div>
+<div class="line"><a id="l00191" name="l00191"></a><span class="lineno">  191</span> </div>
+<div class="line"><a id="l00192" name="l00192"></a><span class="lineno">  192</span><span class="comment">// Cam run-layer interpolation (approved cam matrix, decision #2): linear is</span></div>
+<div class="line"><a id="l00193" name="l00193"></a><span class="lineno">  193</span><span class="comment">// the byte-identical C0 compatibility mode; spline is the C2 cubic</span></div>
+<div class="line"><a id="l00194" name="l00194"></a><span class="lineno">  194</span><span class="comment">// reconstruction below.</span></div>
+<div class="foldopen" id="foldopen00195" data-start="{" data-end="};">
+<div class="line"><a id="l00195" name="l00195"></a><span class="lineno"><a class="line" href="namespaceplcopen_1_1core_1_1exec.html#a15b13aae7f25eb5d68a1d27411fba7d6">  195</a></span><span class="keyword">enum class</span> <a class="code hl_enumeration" href="namespaceplcopen_1_1core_1_1exec.html#a15b13aae7f25eb5d68a1d27411fba7d6">CamInterpolation</a></div>
+<div class="line"><a id="l00196" name="l00196"></a><span class="lineno">  196</span>{</div>
+<div class="line"><a id="l00197" name="l00197"></a><span class="lineno">  197</span>    <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1exec.html#a15b13aae7f25eb5d68a1d27411fba7d6a9a932b3cb396238423eb2f33ec17d6aa">linear</a>,</div>
+<div class="line"><a id="l00198" name="l00198"></a><span class="lineno">  198</span>    <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1exec.html#a15b13aae7f25eb5d68a1d27411fba7d6ab1f1bf466909fa829f364cb0ffeac2db">spline</a>,</div>
+<div class="line"><a id="l00199" name="l00199"></a><span class="lineno">  199</span>};</div>
+</div>
+<div class="line"><a id="l00200" name="l00200"></a><span class="lineno">  200</span> </div>
+<div class="line"><a id="l00201" name="l00201"></a><span class="lineno">  201</span><span class="comment">// C2 cubic-spline reconstruction over a cam table (approved cam matrix,</span></div>
+<div class="line"><a id="l00202" name="l00202"></a><span class="lineno">  202</span><span class="comment">// decisions #1/#3/#4): natural boundary for aperiodic tables, fully periodic</span></div>
+<div class="line"><a id="l00203" name="l00203"></a><span class="lineno">  203</span><span class="comment">// boundary (position/velocity/acceleration continuous across the wrap) for</span></div>
+<div class="line"><a id="l00204" name="l00204"></a><span class="lineno">  204</span><span class="comment">// periodic ones. build() solves the tridiagonal moment system once in the</span></div>
+<div class="line"><a id="l00205" name="l00205"></a><span class="lineno">  205</span><span class="comment">// planning domain; sample() locates the interval and evaluates one cubic, so</span></div>
+<div class="line"><a id="l00206" name="l00206"></a><span class="lineno">  206</span><span class="comment">// the cycle-path cost stays in the C0 order of magnitude. Fixed storage, no</span></div>
+<div class="line"><a id="l00207" name="l00207"></a><span class="lineno">  207</span><span class="comment">// allocation.</span></div>
+<div class="foldopen" id="foldopen00208" data-start="{" data-end="};">
+<div class="line"><a id="l00208" name="l00208"></a><span class="lineno"><a class="line" href="classplcopen_1_1core_1_1exec_1_1CamSpline.html">  208</a></span><span class="keyword">class </span><a class="code hl_class" href="classplcopen_1_1core_1_1exec_1_1CamSpline.html">CamSpline</a></div>
+<div class="line"><a id="l00209" name="l00209"></a><span class="lineno">  209</span>{</div>
+<div class="line"><a id="l00210" name="l00210"></a><span class="lineno">  210</span><span class="keyword">public</span>:</div>
+<div class="line"><a id="l00211" name="l00211"></a><span class="lineno"><a class="line" href="classplcopen_1_1core_1_1exec_1_1CamSpline.html#a3fd479b71c2eeb1974cf7522ff4d16ee">  211</a></span>    <span class="keyword">static</span> <span class="keyword">constexpr</span> std::size_t <a class="code hl_variable" href="classplcopen_1_1core_1_1exec_1_1CamSpline.html#a3fd479b71c2eeb1974cf7522ff4d16ee">MaxPoints</a> = 64;</div>
+<div class="line"><a id="l00212" name="l00212"></a><span class="lineno">  212</span> </div>
+<div class="foldopen" id="foldopen00213" data-start="{" data-end="}">
+<div class="line"><a id="l00213" name="l00213"></a><span class="lineno"><a class="line" href="classplcopen_1_1core_1_1exec_1_1CamSpline.html#a8577ae5436bc0c50849f1ca2a4c97360">  213</a></span>    <a class="code hl_enumeration" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8">rt::ErrorCode</a> <a class="code hl_function" href="classplcopen_1_1core_1_1exec_1_1CamSpline.html#a8577ae5436bc0c50849f1ca2a4c97360">build</a>(<span class="keyword">const</span> <a class="code hl_struct" href="structplcopen_1_1core_1_1exec_1_1CamTableView.html">CamTableView</a> &amp;table)</div>
+<div class="line"><a id="l00214" name="l00214"></a><span class="lineno">  214</span>    {</div>
+<div class="line"><a id="l00215" name="l00215"></a><span class="lineno">  215</span>        size_ = 0;</div>
+<div class="line"><a id="l00216" name="l00216"></a><span class="lineno">  216</span>        <span class="keywordflow">if</span>(!table.<a class="code hl_function" href="structplcopen_1_1core_1_1exec_1_1CamTableView.html#acfabe7d4e0365e86c6c8c39572aafe0f">valid</a>() || table.<a class="code hl_variable" href="structplcopen_1_1core_1_1exec_1_1CamTableView.html#a0b5ccf24c7de7a0a6687f1b6df194a40">size</a> &gt; <a class="code hl_variable" href="classplcopen_1_1core_1_1exec_1_1CamSpline.html#a3fd479b71c2eeb1974cf7522ff4d16ee">MaxPoints</a>) {</div>
+<div class="line"><a id="l00217" name="l00217"></a><span class="lineno">  217</span>            <span class="keywordflow">return</span> <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8ae55d43eabeefe5a8271b4a3c898bd18f">rt::ErrorCode::invalid_argument</a>;</div>
+<div class="line"><a id="l00218" name="l00218"></a><span class="lineno">  218</span>        }</div>
+<div class="line"><a id="l00219" name="l00219"></a><span class="lineno">  219</span>        <span class="keywordflow">if</span>(table.<a class="code hl_variable" href="structplcopen_1_1core_1_1exec_1_1CamTableView.html#a60e2ed27efe45e42d1f2aacf15a1de3c">periodic</a> &amp;&amp;</div>
+<div class="line"><a id="l00220" name="l00220"></a><span class="lineno">  220</span>           std::fabs(table.<a class="code hl_variable" href="structplcopen_1_1core_1_1exec_1_1CamTableView.html#a851b80080cf25003f4b0fb11f43d03a2">points</a>[0].<a class="code hl_variable" href="structplcopen_1_1core_1_1exec_1_1CamPoint.html#a5d1c7920f5155f091710bad60bf345bb">slave</a> - table.<a class="code hl_variable" href="structplcopen_1_1core_1_1exec_1_1CamTableView.html#a851b80080cf25003f4b0fb11f43d03a2">points</a>[table.<a class="code hl_variable" href="structplcopen_1_1core_1_1exec_1_1CamTableView.html#a0b5ccf24c7de7a0a6687f1b6df194a40">size</a> - 1].<a class="code hl_variable" href="structplcopen_1_1core_1_1exec_1_1CamPoint.html#a5d1c7920f5155f091710bad60bf345bb">slave</a>) &gt; 1e-12) {</div>
+<div class="line"><a id="l00221" name="l00221"></a><span class="lineno">  221</span>            <span class="comment">// A periodic spline over a mismatched wrap has no definition.</span></div>
+<div class="line"><a id="l00222" name="l00222"></a><span class="lineno">  222</span>            <span class="keywordflow">return</span> <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8ae55d43eabeefe5a8271b4a3c898bd18f">rt::ErrorCode::invalid_argument</a>;</div>
+<div class="line"><a id="l00223" name="l00223"></a><span class="lineno">  223</span>        }</div>
+<div class="line"><a id="l00224" name="l00224"></a><span class="lineno">  224</span>        <span class="keywordflow">for</span>(std::size_t i = 0; i &lt; table.<a class="code hl_variable" href="structplcopen_1_1core_1_1exec_1_1CamTableView.html#a0b5ccf24c7de7a0a6687f1b6df194a40">size</a>; ++i) {</div>
+<div class="line"><a id="l00225" name="l00225"></a><span class="lineno">  225</span>            points_[i] = table.<a class="code hl_variable" href="structplcopen_1_1core_1_1exec_1_1CamTableView.html#a851b80080cf25003f4b0fb11f43d03a2">points</a>[i];</div>
+<div class="line"><a id="l00226" name="l00226"></a><span class="lineno">  226</span>        }</div>
+<div class="line"><a id="l00227" name="l00227"></a><span class="lineno">  227</span>        size_ = table.<a class="code hl_variable" href="structplcopen_1_1core_1_1exec_1_1CamTableView.html#a0b5ccf24c7de7a0a6687f1b6df194a40">size</a>;</div>
+<div class="line"><a id="l00228" name="l00228"></a><span class="lineno">  228</span>        periodic_ = table.<a class="code hl_variable" href="structplcopen_1_1core_1_1exec_1_1CamTableView.html#a60e2ed27efe45e42d1f2aacf15a1de3c">periodic</a>;</div>
+<div class="line"><a id="l00229" name="l00229"></a><span class="lineno">  229</span> </div>
+<div class="line"><a id="l00230" name="l00230"></a><span class="lineno">  230</span>        <span class="keyword">const</span> std::size_t n = size_;</div>
+<div class="line"><a id="l00231" name="l00231"></a><span class="lineno">  231</span>        <span class="keywordtype">double</span> h[<a class="code hl_variable" href="classplcopen_1_1core_1_1exec_1_1CamSpline.html#a3fd479b71c2eeb1974cf7522ff4d16ee">MaxPoints</a>] = {};</div>
+<div class="line"><a id="l00232" name="l00232"></a><span class="lineno">  232</span>        <span class="keywordflow">for</span>(std::size_t i = 0; i + 1 &lt; n; ++i) {</div>
+<div class="line"><a id="l00233" name="l00233"></a><span class="lineno">  233</span>            h[i] = points_[i + 1].<a class="code hl_variable" href="structplcopen_1_1core_1_1exec_1_1CamPoint.html#a73854c0901ab70ddea224d242b51a530">master</a> - points_[i].<a class="code hl_variable" href="structplcopen_1_1core_1_1exec_1_1CamPoint.html#a73854c0901ab70ddea224d242b51a530">master</a>;</div>
+<div class="line"><a id="l00234" name="l00234"></a><span class="lineno">  234</span>        }</div>
+<div class="line"><a id="l00235" name="l00235"></a><span class="lineno">  235</span> </div>
+<div class="line"><a id="l00236" name="l00236"></a><span class="lineno">  236</span>        <span class="keywordflow">if</span>(!periodic_) {</div>
+<div class="line"><a id="l00237" name="l00237"></a><span class="lineno">  237</span>            <span class="comment">// Natural boundary: m[0] = m[n-1] = 0, Thomas elimination.</span></div>
+<div class="line"><a id="l00238" name="l00238"></a><span class="lineno">  238</span>            <span class="keywordtype">double</span> diagonal[<a class="code hl_variable" href="classplcopen_1_1core_1_1exec_1_1CamSpline.html#a3fd479b71c2eeb1974cf7522ff4d16ee">MaxPoints</a>] = {};</div>
+<div class="line"><a id="l00239" name="l00239"></a><span class="lineno">  239</span>            <span class="keywordtype">double</span> upper[<a class="code hl_variable" href="classplcopen_1_1core_1_1exec_1_1CamSpline.html#a3fd479b71c2eeb1974cf7522ff4d16ee">MaxPoints</a>] = {};</div>
+<div class="line"><a id="l00240" name="l00240"></a><span class="lineno">  240</span>            <span class="keywordtype">double</span> rhs[<a class="code hl_variable" href="classplcopen_1_1core_1_1exec_1_1CamSpline.html#a3fd479b71c2eeb1974cf7522ff4d16ee">MaxPoints</a>] = {};</div>
+<div class="line"><a id="l00241" name="l00241"></a><span class="lineno">  241</span>            m2_[0] = 0.0;</div>
+<div class="line"><a id="l00242" name="l00242"></a><span class="lineno">  242</span>            m2_[n - 1] = 0.0;</div>
+<div class="line"><a id="l00243" name="l00243"></a><span class="lineno">  243</span>            <span class="keywordflow">if</span>(n == 2) {</div>
+<div class="line"><a id="l00244" name="l00244"></a><span class="lineno">  244</span>                <span class="keywordflow">return</span> <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8a444bcb3a3fcf8389296c49467f27e1d6">rt::ErrorCode::ok</a>;</div>
+<div class="line"><a id="l00245" name="l00245"></a><span class="lineno">  245</span>            }</div>
+<div class="line"><a id="l00246" name="l00246"></a><span class="lineno">  246</span>            <span class="keywordflow">for</span>(std::size_t i = 1; i + 1 &lt; n; ++i) {</div>
+<div class="line"><a id="l00247" name="l00247"></a><span class="lineno">  247</span>                diagonal[i] = (h[i - 1] + h[i]) / 3.0;</div>
+<div class="line"><a id="l00248" name="l00248"></a><span class="lineno">  248</span>                upper[i] = h[i] / 6.0;</div>
+<div class="line"><a id="l00249" name="l00249"></a><span class="lineno">  249</span>                rhs[i] = (points_[i + 1].<a class="code hl_variable" href="structplcopen_1_1core_1_1exec_1_1CamPoint.html#a5d1c7920f5155f091710bad60bf345bb">slave</a> - points_[i].<a class="code hl_variable" href="structplcopen_1_1core_1_1exec_1_1CamPoint.html#a5d1c7920f5155f091710bad60bf345bb">slave</a>) / h[i] -</div>
+<div class="line"><a id="l00250" name="l00250"></a><span class="lineno">  250</span>                         (points_[i].slave - points_[i - 1].slave) / h[i - 1];</div>
+<div class="line"><a id="l00251" name="l00251"></a><span class="lineno">  251</span>            }</div>
+<div class="line"><a id="l00252" name="l00252"></a><span class="lineno">  252</span>            <span class="keywordflow">for</span>(std::size_t i = 2; i + 1 &lt; n; ++i) {</div>
+<div class="line"><a id="l00253" name="l00253"></a><span class="lineno">  253</span>                <span class="keyword">const</span> <span class="keywordtype">double</span> factor = (h[i - 1] / 6.0) / diagonal[i - 1];</div>
+<div class="line"><a id="l00254" name="l00254"></a><span class="lineno">  254</span>                diagonal[i] -= factor * upper[i - 1];</div>
+<div class="line"><a id="l00255" name="l00255"></a><span class="lineno">  255</span>                rhs[i] -= factor * rhs[i - 1];</div>
+<div class="line"><a id="l00256" name="l00256"></a><span class="lineno">  256</span>            }</div>
+<div class="line"><a id="l00257" name="l00257"></a><span class="lineno">  257</span>            <span class="keywordflow">for</span>(std::size_t i = n - 2; i &gt;= 1; --i) {</div>
+<div class="line"><a id="l00258" name="l00258"></a><span class="lineno">  258</span>                <span class="keyword">const</span> <span class="keywordtype">double</span> above = i + 2 &lt; n ? upper[i] * m2_[i + 1] : 0.0;</div>
+<div class="line"><a id="l00259" name="l00259"></a><span class="lineno">  259</span>                m2_[i] = (rhs[i] - above) / diagonal[i];</div>
+<div class="line"><a id="l00260" name="l00260"></a><span class="lineno">  260</span>                <span class="keywordflow">if</span>(i == 1) {</div>
+<div class="line"><a id="l00261" name="l00261"></a><span class="lineno">  261</span>                    <span class="keywordflow">break</span>;</div>
+<div class="line"><a id="l00262" name="l00262"></a><span class="lineno">  262</span>                }</div>
+<div class="line"><a id="l00263" name="l00263"></a><span class="lineno">  263</span>            }</div>
+<div class="line"><a id="l00264" name="l00264"></a><span class="lineno">  264</span>            <span class="keywordflow">return</span> <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8a444bcb3a3fcf8389296c49467f27e1d6">rt::ErrorCode::ok</a>;</div>
+<div class="line"><a id="l00265" name="l00265"></a><span class="lineno">  265</span>        }</div>
+<div class="line"><a id="l00266" name="l00266"></a><span class="lineno">  266</span> </div>
+<div class="line"><a id="l00267" name="l00267"></a><span class="lineno">  267</span>        <span class="comment">// Periodic boundary: unknowns m[0..n-2] on a cyclic tridiagonal</span></div>
+<div class="line"><a id="l00268" name="l00268"></a><span class="lineno">  268</span>        <span class="comment">// equations (m[n-1] = m[0]); Sherman-Morrison over the Thomas solve</span></div>
+<div class="line"><a id="l00269" name="l00269"></a><span class="lineno">  269</span>        <span class="comment">// (needs &gt;= 3 unknowns; the 1- and 2-unknown wraps solve directly).</span></div>
+<div class="line"><a id="l00270" name="l00270"></a><span class="lineno">  270</span>        <span class="keyword">const</span> std::size_t cyclic = n - 1;</div>
+<div class="line"><a id="l00271" name="l00271"></a><span class="lineno">  271</span>        <span class="keywordflow">if</span>(cyclic &lt; 2) {</div>
+<div class="line"><a id="l00272" name="l00272"></a><span class="lineno">  272</span>            m2_[0] = 0.0;</div>
+<div class="line"><a id="l00273" name="l00273"></a><span class="lineno">  273</span>            m2_[n - 1] = 0.0;</div>
+<div class="line"><a id="l00274" name="l00274"></a><span class="lineno">  274</span>            <span class="keywordflow">return</span> <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8a444bcb3a3fcf8389296c49467f27e1d6">rt::ErrorCode::ok</a>;</div>
+<div class="line"><a id="l00275" name="l00275"></a><span class="lineno">  275</span>        }</div>
+<div class="line"><a id="l00276" name="l00276"></a><span class="lineno">  276</span>        <span class="keywordflow">if</span>(cyclic == 2) {</div>
+<div class="line"><a id="l00277" name="l00277"></a><span class="lineno">  277</span>            <span class="keyword">const</span> <span class="keywordtype">double</span> h0 = h[0];</div>
+<div class="line"><a id="l00278" name="l00278"></a><span class="lineno">  278</span>            <span class="keyword">const</span> <span class="keywordtype">double</span> h1 = h[1];</div>
+<div class="line"><a id="l00279" name="l00279"></a><span class="lineno">  279</span>            <span class="keyword">const</span> <span class="keywordtype">double</span> d0 = (points_[1].<a class="code hl_variable" href="structplcopen_1_1core_1_1exec_1_1CamPoint.html#a5d1c7920f5155f091710bad60bf345bb">slave</a> - points_[0].<a class="code hl_variable" href="structplcopen_1_1core_1_1exec_1_1CamPoint.html#a5d1c7920f5155f091710bad60bf345bb">slave</a>) / h0 -</div>
+<div class="line"><a id="l00280" name="l00280"></a><span class="lineno">  280</span>                              (points_[0].slave - points_[1].slave) / h1;</div>
+<div class="line"><a id="l00281" name="l00281"></a><span class="lineno">  281</span>            <span class="keyword">const</span> <span class="keywordtype">double</span> d1 = (points_[2].<a class="code hl_variable" href="structplcopen_1_1core_1_1exec_1_1CamPoint.html#a5d1c7920f5155f091710bad60bf345bb">slave</a> - points_[1].<a class="code hl_variable" href="structplcopen_1_1core_1_1exec_1_1CamPoint.html#a5d1c7920f5155f091710bad60bf345bb">slave</a>) / h1 -</div>
+<div class="line"><a id="l00282" name="l00282"></a><span class="lineno">  282</span>                              (points_[1].slave - points_[0].slave) / h0;</div>
+<div class="line"><a id="l00283" name="l00283"></a><span class="lineno">  283</span>            <span class="keyword">const</span> <span class="keywordtype">double</span> b0 = (h1 + h0) / 3.0;</div>
+<div class="line"><a id="l00284" name="l00284"></a><span class="lineno">  284</span>            <span class="keyword">const</span> <span class="keywordtype">double</span> c0 = h0 / 6.0 + h1 / 6.0; <span class="comment">// both couplings reach the other node</span></div>
+<div class="line"><a id="l00285" name="l00285"></a><span class="lineno">  285</span>            <span class="keyword">const</span> <span class="keywordtype">double</span> determinant = b0 * b0 - c0 * c0;</div>
+<div class="line"><a id="l00286" name="l00286"></a><span class="lineno">  286</span>            <span class="keywordflow">if</span>(determinant == 0.0) {</div>
+<div class="line"><a id="l00287" name="l00287"></a><span class="lineno">  287</span>                size_ = 0;</div>
+<div class="line"><a id="l00288" name="l00288"></a><span class="lineno">  288</span>                <span class="keywordflow">return</span> <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8ae55d43eabeefe5a8271b4a3c898bd18f">rt::ErrorCode::invalid_argument</a>;</div>
+<div class="line"><a id="l00289" name="l00289"></a><span class="lineno">  289</span>            }</div>
+<div class="line"><a id="l00290" name="l00290"></a><span class="lineno">  290</span>            m2_[0] = (b0 * d0 - c0 * d1) / determinant;</div>
+<div class="line"><a id="l00291" name="l00291"></a><span class="lineno">  291</span>            m2_[1] = (b0 * d1 - c0 * d0) / determinant;</div>
+<div class="line"><a id="l00292" name="l00292"></a><span class="lineno">  292</span>            m2_[2] = m2_[0];</div>
+<div class="line"><a id="l00293" name="l00293"></a><span class="lineno">  293</span>            <span class="keywordflow">return</span> <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8a444bcb3a3fcf8389296c49467f27e1d6">rt::ErrorCode::ok</a>;</div>
+<div class="line"><a id="l00294" name="l00294"></a><span class="lineno">  294</span>        }</div>
+<div class="line"><a id="l00295" name="l00295"></a><span class="lineno">  295</span>        <span class="keywordtype">double</span> a[<a class="code hl_variable" href="classplcopen_1_1core_1_1exec_1_1CamSpline.html#a3fd479b71c2eeb1974cf7522ff4d16ee">MaxPoints</a>] = {}; <span class="comment">// sub-diagonal</span></div>
+<div class="line"><a id="l00296" name="l00296"></a><span class="lineno">  296</span>        <span class="keywordtype">double</span> b[<a class="code hl_variable" href="classplcopen_1_1core_1_1exec_1_1CamSpline.html#a3fd479b71c2eeb1974cf7522ff4d16ee">MaxPoints</a>] = {}; <span class="comment">// diagonal</span></div>
+<div class="line"><a id="l00297" name="l00297"></a><span class="lineno">  297</span>        <span class="keywordtype">double</span> c[<a class="code hl_variable" href="classplcopen_1_1core_1_1exec_1_1CamSpline.html#a3fd479b71c2eeb1974cf7522ff4d16ee">MaxPoints</a>] = {}; <span class="comment">// super-diagonal</span></div>
+<div class="line"><a id="l00298" name="l00298"></a><span class="lineno">  298</span>        <span class="keywordtype">double</span> d[<a class="code hl_variable" href="classplcopen_1_1core_1_1exec_1_1CamSpline.html#a3fd479b71c2eeb1974cf7522ff4d16ee">MaxPoints</a>] = {}; <span class="comment">// right-hand side</span></div>
+<div class="line"><a id="l00299" name="l00299"></a><span class="lineno">  299</span>        <span class="keywordflow">for</span>(std::size_t j = 0; j &lt; cyclic; ++j) {</div>
+<div class="line"><a id="l00300" name="l00300"></a><span class="lineno">  300</span>            <span class="keyword">const</span> std::size_t previous = j == 0 ? cyclic - 1 : j - 1;</div>
+<div class="line"><a id="l00301" name="l00301"></a><span class="lineno">  301</span>            <span class="keyword">const</span> <span class="keywordtype">double</span> h_prev = h[previous];</div>
+<div class="line"><a id="l00302" name="l00302"></a><span class="lineno">  302</span>            <span class="keyword">const</span> <span class="keywordtype">double</span> h_next = h[j];</div>
+<div class="line"><a id="l00303" name="l00303"></a><span class="lineno">  303</span>            <span class="keyword">const</span> <span class="keywordtype">double</span> y_prev = points_[previous].<a class="code hl_variable" href="structplcopen_1_1core_1_1exec_1_1CamPoint.html#a5d1c7920f5155f091710bad60bf345bb">slave</a>;</div>
+<div class="line"><a id="l00304" name="l00304"></a><span class="lineno">  304</span>            <span class="keyword">const</span> <span class="keywordtype">double</span> y_here = points_[j].<a class="code hl_variable" href="structplcopen_1_1core_1_1exec_1_1CamPoint.html#a5d1c7920f5155f091710bad60bf345bb">slave</a>;</div>
+<div class="line"><a id="l00305" name="l00305"></a><span class="lineno">  305</span>            <span class="keyword">const</span> <span class="keywordtype">double</span> y_next = points_[j + 1].<a class="code hl_variable" href="structplcopen_1_1core_1_1exec_1_1CamPoint.html#a5d1c7920f5155f091710bad60bf345bb">slave</a>;</div>
+<div class="line"><a id="l00306" name="l00306"></a><span class="lineno">  306</span>            a[j] = h_prev / 6.0;</div>
+<div class="line"><a id="l00307" name="l00307"></a><span class="lineno">  307</span>            b[j] = (h_prev + h_next) / 3.0;</div>
+<div class="line"><a id="l00308" name="l00308"></a><span class="lineno">  308</span>            c[j] = h_next / 6.0;</div>
+<div class="line"><a id="l00309" name="l00309"></a><span class="lineno">  309</span>            d[j] = (y_next - y_here) / h_next - (y_here - y_prev) / h_prev;</div>
+<div class="line"><a id="l00310" name="l00310"></a><span class="lineno">  310</span>        }</div>
+<div class="line"><a id="l00311" name="l00311"></a><span class="lineno">  311</span> </div>
+<div class="line"><a id="l00312" name="l00312"></a><span class="lineno">  312</span>        <span class="comment">// Sherman-Morrison: fold the two cyclic corners into u v^T.</span></div>
+<div class="line"><a id="l00313" name="l00313"></a><span class="lineno">  313</span>        <span class="keyword">const</span> <span class="keywordtype">double</span> corner_first = a[0];       <span class="comment">// couples m[0] to m[cyclic-1]</span></div>
+<div class="line"><a id="l00314" name="l00314"></a><span class="lineno">  314</span>        <span class="keyword">const</span> <span class="keywordtype">double</span> corner_last = c[cyclic - 1]; <span class="comment">// couples m[cyclic-1] to m[0]</span></div>
+<div class="line"><a id="l00315" name="l00315"></a><span class="lineno">  315</span>        <span class="keyword">const</span> <span class="keywordtype">double</span> gamma = -b[0];</div>
+<div class="line"><a id="l00316" name="l00316"></a><span class="lineno">  316</span>        <span class="keywordtype">double</span> b_mod[<a class="code hl_variable" href="classplcopen_1_1core_1_1exec_1_1CamSpline.html#a3fd479b71c2eeb1974cf7522ff4d16ee">MaxPoints</a>] = {};</div>
+<div class="line"><a id="l00317" name="l00317"></a><span class="lineno">  317</span>        <span class="keywordflow">for</span>(std::size_t j = 0; j &lt; cyclic; ++j) {</div>
+<div class="line"><a id="l00318" name="l00318"></a><span class="lineno">  318</span>            b_mod[j] = b[j];</div>
+<div class="line"><a id="l00319" name="l00319"></a><span class="lineno">  319</span>        }</div>
+<div class="line"><a id="l00320" name="l00320"></a><span class="lineno">  320</span>        b_mod[0] -= gamma;</div>
+<div class="line"><a id="l00321" name="l00321"></a><span class="lineno">  321</span>        b_mod[cyclic - 1] -= corner_first * corner_last / gamma;</div>
+<div class="line"><a id="l00322" name="l00322"></a><span class="lineno">  322</span> </div>
+<div class="line"><a id="l00323" name="l00323"></a><span class="lineno">  323</span>        <span class="keywordtype">double</span> x[<a class="code hl_variable" href="classplcopen_1_1core_1_1exec_1_1CamSpline.html#a3fd479b71c2eeb1974cf7522ff4d16ee">MaxPoints</a>] = {};</div>
+<div class="line"><a id="l00324" name="l00324"></a><span class="lineno">  324</span>        <span class="keywordtype">double</span> z[<a class="code hl_variable" href="classplcopen_1_1core_1_1exec_1_1CamSpline.html#a3fd479b71c2eeb1974cf7522ff4d16ee">MaxPoints</a>] = {};</div>
+<div class="line"><a id="l00325" name="l00325"></a><span class="lineno">  325</span>        <span class="keywordtype">double</span> u[<a class="code hl_variable" href="classplcopen_1_1core_1_1exec_1_1CamSpline.html#a3fd479b71c2eeb1974cf7522ff4d16ee">MaxPoints</a>] = {};</div>
+<div class="line"><a id="l00326" name="l00326"></a><span class="lineno">  326</span>        u[0] = gamma;</div>
+<div class="line"><a id="l00327" name="l00327"></a><span class="lineno">  327</span>        u[cyclic - 1] = corner_last;</div>
+<div class="line"><a id="l00328" name="l00328"></a><span class="lineno">  328</span>        <span class="keywordflow">if</span>(!solve_tridiagonal(a, b_mod, c, d, x, cyclic) ||</div>
+<div class="line"><a id="l00329" name="l00329"></a><span class="lineno">  329</span>           !solve_tridiagonal(a, b_mod, c, u, z, cyclic)) {</div>
+<div class="line"><a id="l00330" name="l00330"></a><span class="lineno">  330</span>            size_ = 0;</div>
+<div class="line"><a id="l00331" name="l00331"></a><span class="lineno">  331</span>            <span class="keywordflow">return</span> <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8ae55d43eabeefe5a8271b4a3c898bd18f">rt::ErrorCode::invalid_argument</a>;</div>
+<div class="line"><a id="l00332" name="l00332"></a><span class="lineno">  332</span>        }</div>
+<div class="line"><a id="l00333" name="l00333"></a><span class="lineno">  333</span>        <span class="keyword">const</span> <span class="keywordtype">double</span> v_dot_x = x[0] + (corner_first / gamma) * x[cyclic - 1];</div>
+<div class="line"><a id="l00334" name="l00334"></a><span class="lineno">  334</span>        <span class="keyword">const</span> <span class="keywordtype">double</span> v_dot_z = 1.0 + z[0] + (corner_first / gamma) * z[cyclic - 1];</div>
+<div class="line"><a id="l00335" name="l00335"></a><span class="lineno">  335</span>        <span class="keywordflow">if</span>(v_dot_z == 0.0) {</div>
+<div class="line"><a id="l00336" name="l00336"></a><span class="lineno">  336</span>            size_ = 0;</div>
+<div class="line"><a id="l00337" name="l00337"></a><span class="lineno">  337</span>            <span class="keywordflow">return</span> <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8ae55d43eabeefe5a8271b4a3c898bd18f">rt::ErrorCode::invalid_argument</a>;</div>
+<div class="line"><a id="l00338" name="l00338"></a><span class="lineno">  338</span>        }</div>
+<div class="line"><a id="l00339" name="l00339"></a><span class="lineno">  339</span>        <span class="keywordflow">for</span>(std::size_t j = 0; j &lt; cyclic; ++j) {</div>
+<div class="line"><a id="l00340" name="l00340"></a><span class="lineno">  340</span>            m2_[j] = x[j] - z[j] * (v_dot_x / v_dot_z);</div>
+<div class="line"><a id="l00341" name="l00341"></a><span class="lineno">  341</span>        }</div>
+<div class="line"><a id="l00342" name="l00342"></a><span class="lineno">  342</span>        m2_[n - 1] = m2_[0];</div>
+<div class="line"><a id="l00343" name="l00343"></a><span class="lineno">  343</span>        <span class="keywordflow">return</span> <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8a444bcb3a3fcf8389296c49467f27e1d6">rt::ErrorCode::ok</a>;</div>
+<div class="line"><a id="l00344" name="l00344"></a><span class="lineno">  344</span>    }</div>
+</div>
+<div class="line"><a id="l00345" name="l00345"></a><span class="lineno">  345</span> </div>
+<div class="foldopen" id="foldopen00346" data-start="{" data-end="}">
+<div class="line"><a id="l00346" name="l00346"></a><span class="lineno"><a class="line" href="classplcopen_1_1core_1_1exec_1_1CamSpline.html#ae8ddbf5feccf5bc4c7accb846b31c3ae">  346</a></span>    <span class="keywordtype">bool</span> <a class="code hl_function" href="classplcopen_1_1core_1_1exec_1_1CamSpline.html#ae8ddbf5feccf5bc4c7accb846b31c3ae">valid</a>()<span class="keyword"> const</span></div>
+<div class="line"><a id="l00347" name="l00347"></a><span class="lineno">  347</span><span class="keyword">    </span>{</div>
+<div class="line"><a id="l00348" name="l00348"></a><span class="lineno">  348</span>        <span class="keywordflow">return</span> size_ &gt;= 2;</div>
+<div class="line"><a id="l00349" name="l00349"></a><span class="lineno">  349</span>    }</div>
+</div>
+<div class="line"><a id="l00350" name="l00350"></a><span class="lineno">  350</span> </div>
+<div class="foldopen" id="foldopen00351" data-start="{" data-end="}">
+<div class="line"><a id="l00351" name="l00351"></a><span class="lineno"><a class="line" href="classplcopen_1_1core_1_1exec_1_1CamSpline.html#a7b4ef9cfee0d2d6e27a101e0f71d53ae">  351</a></span>    <a class="code hl_class" href="classplcopen_1_1core_1_1rt_1_1Result.html">rt::Result&lt;double&gt;</a> <a class="code hl_function" href="classplcopen_1_1core_1_1exec_1_1CamSpline.html#a7b4ef9cfee0d2d6e27a101e0f71d53ae">sample</a>(<span class="keywordtype">double</span> master_position)<span class="keyword"> const</span></div>
+<div class="line"><a id="l00352" name="l00352"></a><span class="lineno">  352</span><span class="keyword">    </span>{</div>
+<div class="line"><a id="l00353" name="l00353"></a><span class="lineno">  353</span>        <span class="keywordflow">return</span> evaluate(master_position, 0);</div>
+<div class="line"><a id="l00354" name="l00354"></a><span class="lineno">  354</span>    }</div>
+</div>
+<div class="line"><a id="l00355" name="l00355"></a><span class="lineno">  355</span> </div>
+<div class="line"><a id="l00356" name="l00356"></a><span class="lineno">  356</span>    <span class="comment">// Analytic derivatives with respect to the master position (order 1 or</span></div>
+<div class="line"><a id="l00357" name="l00357"></a><span class="lineno">  357</span>    <span class="comment">// 2); the acceptance tests assert C2 continuity through these.</span></div>
+<div class="foldopen" id="foldopen00358" data-start="{" data-end="}">
+<div class="line"><a id="l00358" name="l00358"></a><span class="lineno"><a class="line" href="classplcopen_1_1core_1_1exec_1_1CamSpline.html#aea31566f6c20b832b2f0c4006d7ce0aa">  358</a></span>    <a class="code hl_class" href="classplcopen_1_1core_1_1rt_1_1Result.html">rt::Result&lt;double&gt;</a> <a class="code hl_function" href="classplcopen_1_1core_1_1exec_1_1CamSpline.html#aea31566f6c20b832b2f0c4006d7ce0aa">sample_derivative</a>(<span class="keywordtype">double</span> master_position, <span class="keywordtype">int</span> order)<span class="keyword"> const</span></div>
+<div class="line"><a id="l00359" name="l00359"></a><span class="lineno">  359</span><span class="keyword">    </span>{</div>
+<div class="line"><a id="l00360" name="l00360"></a><span class="lineno">  360</span>        <span class="keywordflow">return</span> evaluate(master_position, order);</div>
+<div class="line"><a id="l00361" name="l00361"></a><span class="lineno">  361</span>    }</div>
+</div>
+<div class="line"><a id="l00362" name="l00362"></a><span class="lineno">  362</span> </div>
+<div class="line"><a id="l00363" name="l00363"></a><span class="lineno">  363</span><span class="keyword">private</span>:</div>
+<div class="line"><a id="l00364" name="l00364"></a><span class="lineno">  364</span>    <span class="keyword">static</span> <span class="keywordtype">bool</span> solve_tridiagonal(<span class="keyword">const</span> <span class="keywordtype">double</span> *a,</div>
+<div class="line"><a id="l00365" name="l00365"></a><span class="lineno">  365</span>                                  <span class="keyword">const</span> <span class="keywordtype">double</span> *b,</div>
+<div class="line"><a id="l00366" name="l00366"></a><span class="lineno">  366</span>                                  <span class="keyword">const</span> <span class="keywordtype">double</span> *c,</div>
+<div class="line"><a id="l00367" name="l00367"></a><span class="lineno">  367</span>                                  <span class="keyword">const</span> <span class="keywordtype">double</span> *d,</div>
+<div class="line"><a id="l00368" name="l00368"></a><span class="lineno">  368</span>                                  <span class="keywordtype">double</span> *x,</div>
+<div class="line"><a id="l00369" name="l00369"></a><span class="lineno">  369</span>                                  std::size_t n)</div>
+<div class="line"><a id="l00370" name="l00370"></a><span class="lineno">  370</span>    {</div>
+<div class="line"><a id="l00371" name="l00371"></a><span class="lineno">  371</span>        <span class="keywordtype">double</span> diagonal[<a class="code hl_variable" href="classplcopen_1_1core_1_1exec_1_1CamSpline.html#a3fd479b71c2eeb1974cf7522ff4d16ee">MaxPoints</a>] = {};</div>
+<div class="line"><a id="l00372" name="l00372"></a><span class="lineno">  372</span>        <span class="keywordtype">double</span> rhs[<a class="code hl_variable" href="classplcopen_1_1core_1_1exec_1_1CamSpline.html#a3fd479b71c2eeb1974cf7522ff4d16ee">MaxPoints</a>] = {};</div>
+<div class="line"><a id="l00373" name="l00373"></a><span class="lineno">  373</span>        <span class="keywordflow">for</span>(std::size_t i = 0; i &lt; n; ++i) {</div>
+<div class="line"><a id="l00374" name="l00374"></a><span class="lineno">  374</span>            diagonal[i] = b[i];</div>
+<div class="line"><a id="l00375" name="l00375"></a><span class="lineno">  375</span>            rhs[i] = d[i];</div>
+<div class="line"><a id="l00376" name="l00376"></a><span class="lineno">  376</span>        }</div>
+<div class="line"><a id="l00377" name="l00377"></a><span class="lineno">  377</span>        <span class="keywordflow">for</span>(std::size_t i = 1; i &lt; n; ++i) {</div>
+<div class="line"><a id="l00378" name="l00378"></a><span class="lineno">  378</span>            <span class="keywordflow">if</span>(diagonal[i - 1] == 0.0) {</div>
+<div class="line"><a id="l00379" name="l00379"></a><span class="lineno">  379</span>                <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00380" name="l00380"></a><span class="lineno">  380</span>            }</div>
+<div class="line"><a id="l00381" name="l00381"></a><span class="lineno">  381</span>            <span class="keyword">const</span> <span class="keywordtype">double</span> factor = a[i] / diagonal[i - 1];</div>
+<div class="line"><a id="l00382" name="l00382"></a><span class="lineno">  382</span>            diagonal[i] -= factor * c[i - 1];</div>
+<div class="line"><a id="l00383" name="l00383"></a><span class="lineno">  383</span>            rhs[i] -= factor * rhs[i - 1];</div>
+<div class="line"><a id="l00384" name="l00384"></a><span class="lineno">  384</span>        }</div>
+<div class="line"><a id="l00385" name="l00385"></a><span class="lineno">  385</span>        <span class="keywordflow">if</span>(diagonal[n - 1] == 0.0) {</div>
+<div class="line"><a id="l00386" name="l00386"></a><span class="lineno">  386</span>            <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00387" name="l00387"></a><span class="lineno">  387</span>        }</div>
+<div class="line"><a id="l00388" name="l00388"></a><span class="lineno">  388</span>        x[<a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1st.html#a0244f8a1f094530576692a8153cc8cfda7b8b965ad4bca0e41ab51de7b31363a1">n</a> - 1] = rhs[<a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1st.html#a0244f8a1f094530576692a8153cc8cfda7b8b965ad4bca0e41ab51de7b31363a1">n</a> - 1] / diagonal[<a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1st.html#a0244f8a1f094530576692a8153cc8cfda7b8b965ad4bca0e41ab51de7b31363a1">n</a> - 1];</div>
+<div class="line"><a id="l00389" name="l00389"></a><span class="lineno">  389</span>        <span class="keywordflow">for</span>(std::size_t i = n - 1; i &gt;= 1; --i) {</div>
+<div class="line"><a id="l00390" name="l00390"></a><span class="lineno">  390</span>            x[i - 1] = (rhs[i - 1] - c[i - 1] * x[i]) / diagonal[i - 1];</div>
+<div class="line"><a id="l00391" name="l00391"></a><span class="lineno">  391</span>            <span class="keywordflow">if</span>(i == 1) {</div>
+<div class="line"><a id="l00392" name="l00392"></a><span class="lineno">  392</span>                <span class="keywordflow">break</span>;</div>
+<div class="line"><a id="l00393" name="l00393"></a><span class="lineno">  393</span>            }</div>
+<div class="line"><a id="l00394" name="l00394"></a><span class="lineno">  394</span>        }</div>
+<div class="line"><a id="l00395" name="l00395"></a><span class="lineno">  395</span>        <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
+<div class="line"><a id="l00396" name="l00396"></a><span class="lineno">  396</span>    }</div>
+<div class="line"><a id="l00397" name="l00397"></a><span class="lineno">  397</span> </div>
+<div class="line"><a id="l00398" name="l00398"></a><span class="lineno">  398</span>    rt::Result&lt;double&gt; evaluate(<span class="keywordtype">double</span> master_position, <span class="keywordtype">int</span> order)<span class="keyword"> const</span></div>
+<div class="line"><a id="l00399" name="l00399"></a><span class="lineno">  399</span><span class="keyword">    </span>{</div>
+<div class="line"><a id="l00400" name="l00400"></a><span class="lineno">  400</span>        <span class="keywordflow">if</span>(size_ &lt; 2 || !std::isfinite(master_position)) {</div>
+<div class="line"><a id="l00401" name="l00401"></a><span class="lineno">  401</span>            <span class="keywordflow">return</span> <a class="code hl_function" href="classplcopen_1_1core_1_1rt_1_1Result.html#adabbee61b3f30cf0c2ac27f685ea5b92">rt::Result&lt;double&gt;::failure</a>(<a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8ae55d43eabeefe5a8271b4a3c898bd18f">rt::ErrorCode::invalid_argument</a>);</div>
+<div class="line"><a id="l00402" name="l00402"></a><span class="lineno">  402</span>        }</div>
+<div class="line"><a id="l00403" name="l00403"></a><span class="lineno">  403</span>        <span class="keywordtype">double</span> position = master_position;</div>
+<div class="line"><a id="l00404" name="l00404"></a><span class="lineno">  404</span>        <span class="keywordflow">if</span>(periodic_) {</div>
+<div class="line"><a id="l00405" name="l00405"></a><span class="lineno">  405</span>            <span class="keyword">const</span> <span class="keywordtype">double</span> begin = points_[0].<a class="code hl_variable" href="structplcopen_1_1core_1_1exec_1_1CamPoint.html#a73854c0901ab70ddea224d242b51a530">master</a>;</div>
+<div class="line"><a id="l00406" name="l00406"></a><span class="lineno">  406</span>            <span class="keyword">const</span> <span class="keywordtype">double</span> <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1st_1_1generated.html#acf4da6b72b44a114c5615a3c557d0ea9aeac828e40705bfafd82ef1a82e3f5ab8">span</a> = points_[size_ - 1].<a class="code hl_variable" href="structplcopen_1_1core_1_1exec_1_1CamPoint.html#a73854c0901ab70ddea224d242b51a530">master</a> - begin;</div>
+<div class="line"><a id="l00407" name="l00407"></a><span class="lineno">  407</span>            position = std::fmod(position - begin, span);</div>
+<div class="line"><a id="l00408" name="l00408"></a><span class="lineno">  408</span>            <span class="keywordflow">if</span>(position &lt; 0.0) {</div>
+<div class="line"><a id="l00409" name="l00409"></a><span class="lineno">  409</span>                position += <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1st_1_1generated.html#acf4da6b72b44a114c5615a3c557d0ea9aeac828e40705bfafd82ef1a82e3f5ab8">span</a>;</div>
+<div class="line"><a id="l00410" name="l00410"></a><span class="lineno">  410</span>            }</div>
+<div class="line"><a id="l00411" name="l00411"></a><span class="lineno">  411</span>            position += begin;</div>
+<div class="line"><a id="l00412" name="l00412"></a><span class="lineno">  412</span>        } <span class="keywordflow">else</span> <span class="keywordflow">if</span>(position &lt;= points_[0].master || position &gt;= points_[size_ - 1].master) {</div>
+<div class="line"><a id="l00413" name="l00413"></a><span class="lineno">  413</span>            <span class="comment">// Aperiodic boundary contract: outside the table the slave holds</span></div>
+<div class="line"><a id="l00414" name="l00414"></a><span class="lineno">  414</span>            <span class="comment">// the endpoint value, so every master-derivative is exactly zero.</span></div>
+<div class="line"><a id="l00415" name="l00415"></a><span class="lineno">  415</span>            <span class="comment">// At the boundary nodes themselves the sample is in-domain and the</span></div>
+<div class="line"><a id="l00416" name="l00416"></a><span class="lineno">  416</span>            <span class="comment">// derivatives must match the one-sided interior limit — fall</span></div>
+<div class="line"><a id="l00417" name="l00417"></a><span class="lineno">  417</span>            <span class="comment">// through to the interval evaluation for exact node hits.</span></div>
+<div class="line"><a id="l00418" name="l00418"></a><span class="lineno">  418</span>            <span class="keywordflow">if</span>(order == 0) {</div>
+<div class="line"><a id="l00419" name="l00419"></a><span class="lineno">  419</span>                <span class="keyword">const</span> <span class="keywordtype">double</span> endpoint =</div>
+<div class="line"><a id="l00420" name="l00420"></a><span class="lineno">  420</span>                    position &lt;= points_[0].<a class="code hl_variable" href="structplcopen_1_1core_1_1exec_1_1CamPoint.html#a73854c0901ab70ddea224d242b51a530">master</a> ? points_[0].<a class="code hl_variable" href="structplcopen_1_1core_1_1exec_1_1CamPoint.html#a5d1c7920f5155f091710bad60bf345bb">slave</a> : points_[size_ - 1].<a class="code hl_variable" href="structplcopen_1_1core_1_1exec_1_1CamPoint.html#a5d1c7920f5155f091710bad60bf345bb">slave</a>;</div>
+<div class="line"><a id="l00421" name="l00421"></a><span class="lineno">  421</span>                <span class="keywordflow">return</span> <a class="code hl_function" href="classplcopen_1_1core_1_1rt_1_1Result.html#ac818eef35186a51dc08606fe43449855">rt::Result&lt;double&gt;::success</a>(endpoint);</div>
+<div class="line"><a id="l00422" name="l00422"></a><span class="lineno">  422</span>            }</div>
+<div class="line"><a id="l00423" name="l00423"></a><span class="lineno">  423</span>            <span class="keywordflow">if</span>(position &lt; points_[0].master || position &gt; points_[size_ - 1].master) {</div>
+<div class="line"><a id="l00424" name="l00424"></a><span class="lineno">  424</span>                <span class="keywordflow">return</span> <a class="code hl_function" href="classplcopen_1_1core_1_1rt_1_1Result.html#ac818eef35186a51dc08606fe43449855">rt::Result&lt;double&gt;::success</a>(0.0);</div>
+<div class="line"><a id="l00425" name="l00425"></a><span class="lineno">  425</span>            }</div>
+<div class="line"><a id="l00426" name="l00426"></a><span class="lineno">  426</span>        }</div>
+<div class="line"><a id="l00427" name="l00427"></a><span class="lineno">  427</span> </div>
+<div class="line"><a id="l00428" name="l00428"></a><span class="lineno">  428</span>        std::size_t index = 1;</div>
+<div class="line"><a id="l00429" name="l00429"></a><span class="lineno">  429</span>        <span class="keywordflow">while</span>(index &lt; size_ - 1 &amp;&amp; position &gt; points_[index].master) {</div>
+<div class="line"><a id="l00430" name="l00430"></a><span class="lineno">  430</span>            ++index;</div>
+<div class="line"><a id="l00431" name="l00431"></a><span class="lineno">  431</span>        }</div>
+<div class="line"><a id="l00432" name="l00432"></a><span class="lineno">  432</span>        <span class="keyword">const</span> CamPoint before = points_[index - 1];</div>
+<div class="line"><a id="l00433" name="l00433"></a><span class="lineno">  433</span>        <span class="keyword">const</span> CamPoint after = points_[index];</div>
+<div class="line"><a id="l00434" name="l00434"></a><span class="lineno">  434</span>        <span class="keyword">const</span> <span class="keywordtype">double</span> interval = after.<a class="code hl_variable" href="structplcopen_1_1core_1_1exec_1_1CamPoint.html#a73854c0901ab70ddea224d242b51a530">master</a> - before.master;</div>
+<div class="line"><a id="l00435" name="l00435"></a><span class="lineno">  435</span>        <span class="keyword">const</span> <span class="keywordtype">double</span> <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1st.html#a371ce294c808c472fa417458d3be1a23a811882fecd5c7618d7099ebbd39ea254">left</a> = after.master - position;</div>
+<div class="line"><a id="l00436" name="l00436"></a><span class="lineno">  436</span>        <span class="keyword">const</span> <span class="keywordtype">double</span> <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1st.html#a371ce294c808c472fa417458d3be1a23a7c4f29407893c334a6cb7a87bf045c0d">right</a> = position - before.master;</div>
+<div class="line"><a id="l00437" name="l00437"></a><span class="lineno">  437</span>        <span class="keyword">const</span> <span class="keywordtype">double</span> m_before = m2_[index - 1];</div>
+<div class="line"><a id="l00438" name="l00438"></a><span class="lineno">  438</span>        <span class="keyword">const</span> <span class="keywordtype">double</span> m_after = m2_[index];</div>
+<div class="line"><a id="l00439" name="l00439"></a><span class="lineno">  439</span> </div>
+<div class="line"><a id="l00440" name="l00440"></a><span class="lineno">  440</span>        <span class="keywordflow">if</span>(order == 0) {</div>
+<div class="line"><a id="l00441" name="l00441"></a><span class="lineno">  441</span>            <span class="keyword">const</span> <span class="keywordtype">double</span> value =</div>
+<div class="line"><a id="l00442" name="l00442"></a><span class="lineno">  442</span>                m_before * <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1st.html#a371ce294c808c472fa417458d3be1a23a811882fecd5c7618d7099ebbd39ea254">left</a> * <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1st.html#a371ce294c808c472fa417458d3be1a23a811882fecd5c7618d7099ebbd39ea254">left</a> * <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1st.html#a371ce294c808c472fa417458d3be1a23a811882fecd5c7618d7099ebbd39ea254">left</a> / (6.0 * interval) +</div>
+<div class="line"><a id="l00443" name="l00443"></a><span class="lineno">  443</span>                m_after * right * right * right / (6.0 * interval) +</div>
+<div class="line"><a id="l00444" name="l00444"></a><span class="lineno">  444</span>                (before.slave - m_before * interval * interval / 6.0) * left / interval +</div>
+<div class="line"><a id="l00445" name="l00445"></a><span class="lineno">  445</span>                (after.slave - m_after * interval * interval / 6.0) * <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1st.html#a371ce294c808c472fa417458d3be1a23a7c4f29407893c334a6cb7a87bf045c0d">right</a> / interval;</div>
+<div class="line"><a id="l00446" name="l00446"></a><span class="lineno">  446</span>            <span class="keywordflow">return</span> <a class="code hl_function" href="classplcopen_1_1core_1_1rt_1_1Result.html#ac818eef35186a51dc08606fe43449855">rt::Result&lt;double&gt;::success</a>(value);</div>
+<div class="line"><a id="l00447" name="l00447"></a><span class="lineno">  447</span>        }</div>
+<div class="line"><a id="l00448" name="l00448"></a><span class="lineno">  448</span>        <span class="keywordflow">if</span>(order == 1) {</div>
+<div class="line"><a id="l00449" name="l00449"></a><span class="lineno">  449</span>            <span class="keyword">const</span> <span class="keywordtype">double</span> value =</div>
+<div class="line"><a id="l00450" name="l00450"></a><span class="lineno">  450</span>                -m_before * <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1st.html#a371ce294c808c472fa417458d3be1a23a811882fecd5c7618d7099ebbd39ea254">left</a> * <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1st.html#a371ce294c808c472fa417458d3be1a23a811882fecd5c7618d7099ebbd39ea254">left</a> / (2.0 * interval) +</div>
+<div class="line"><a id="l00451" name="l00451"></a><span class="lineno">  451</span>                m_after * right * right / (2.0 * interval) +</div>
+<div class="line"><a id="l00452" name="l00452"></a><span class="lineno">  452</span>                (after.slave - before.slave) / interval -</div>
+<div class="line"><a id="l00453" name="l00453"></a><span class="lineno">  453</span>                (m_after - m_before) * interval / 6.0;</div>
+<div class="line"><a id="l00454" name="l00454"></a><span class="lineno">  454</span>            <span class="keywordflow">return</span> <a class="code hl_function" href="classplcopen_1_1core_1_1rt_1_1Result.html#ac818eef35186a51dc08606fe43449855">rt::Result&lt;double&gt;::success</a>(value);</div>
+<div class="line"><a id="l00455" name="l00455"></a><span class="lineno">  455</span>        }</div>
+<div class="line"><a id="l00456" name="l00456"></a><span class="lineno">  456</span>        <span class="keyword">const</span> <span class="keywordtype">double</span> value = (m_before * <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1st.html#a371ce294c808c472fa417458d3be1a23a811882fecd5c7618d7099ebbd39ea254">left</a> + m_after * <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1st.html#a371ce294c808c472fa417458d3be1a23a7c4f29407893c334a6cb7a87bf045c0d">right</a>) / interval;</div>
+<div class="line"><a id="l00457" name="l00457"></a><span class="lineno">  457</span>        <span class="keywordflow">return</span> <a class="code hl_function" href="classplcopen_1_1core_1_1rt_1_1Result.html#ac818eef35186a51dc08606fe43449855">rt::Result&lt;double&gt;::success</a>(value);</div>
+<div class="line"><a id="l00458" name="l00458"></a><span class="lineno">  458</span>    }</div>
+<div class="line"><a id="l00459" name="l00459"></a><span class="lineno">  459</span> </div>
+<div class="line"><a id="l00460" name="l00460"></a><span class="lineno">  460</span>    CamPoint points_[<a class="code hl_variable" href="classplcopen_1_1core_1_1exec_1_1CamSpline.html#a3fd479b71c2eeb1974cf7522ff4d16ee">MaxPoints</a>] = {};</div>
+<div class="line"><a id="l00461" name="l00461"></a><span class="lineno">  461</span>    <span class="keywordtype">double</span> m2_[<a class="code hl_variable" href="classplcopen_1_1core_1_1exec_1_1CamSpline.html#a3fd479b71c2eeb1974cf7522ff4d16ee">MaxPoints</a>] = {};</div>
+<div class="line"><a id="l00462" name="l00462"></a><span class="lineno">  462</span>    std::size_t size_ = 0;</div>
+<div class="line"><a id="l00463" name="l00463"></a><span class="lineno">  463</span>    <span class="keywordtype">bool</span> periodic_ = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00464" name="l00464"></a><span class="lineno">  464</span>};</div>
+</div>
+<div class="line"><a id="l00465" name="l00465"></a><span class="lineno">  465</span> </div>
+<div class="foldopen" id="foldopen00466" data-start="{" data-end="}">
+<div class="line"><a id="l00466" name="l00466"></a><span class="lineno"><a class="line" href="namespaceplcopen_1_1core_1_1exec.html#a5748b3ad06f67e0270961155fb14d66e">  466</a></span><span class="keyword">inline</span> <a class="code hl_struct" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">geom::Vec3</a> <a class="code hl_function" href="namespaceplcopen_1_1core_1_1exec.html#a5748b3ad06f67e0270961155fb14d66e">apply_overlay</a>(<a class="code hl_struct" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">geom::Vec3</a> base, <a class="code hl_struct" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">geom::Vec3</a> overlay)</div>
+<div class="line"><a id="l00467" name="l00467"></a><span class="lineno">  467</span>{</div>
+<div class="line"><a id="l00468" name="l00468"></a><span class="lineno">  468</span>    <span class="keywordflow">return</span> base + overlay;</div>
+<div class="line"><a id="l00469" name="l00469"></a><span class="lineno">  469</span>}</div>
+</div>
+<div class="line"><a id="l00470" name="l00470"></a><span class="lineno">  470</span> </div>
+<div class="line"><a id="l00471" name="l00471"></a><span class="lineno">  471</span>} <span class="comment">// namespace plcopen::core::exec</span></div>
+<div class="ttc" id="aclassplcopen_1_1core_1_1exec_1_1CamSpline_html"><div class="ttname"><a href="classplcopen_1_1core_1_1exec_1_1CamSpline.html">plcopen::core::exec::CamSpline</a></div><div class="ttdef"><b>Definition</b> <a href="exec_2sync_8h_source.html#l00208">sync.h:209</a></div></div>
+<div class="ttc" id="aclassplcopen_1_1core_1_1exec_1_1CamSpline_html_a3fd479b71c2eeb1974cf7522ff4d16ee"><div class="ttname"><a href="classplcopen_1_1core_1_1exec_1_1CamSpline.html#a3fd479b71c2eeb1974cf7522ff4d16ee">plcopen::core::exec::CamSpline::MaxPoints</a></div><div class="ttdeci">static constexpr std::size_t MaxPoints</div><div class="ttdef"><b>Definition</b> <a href="exec_2sync_8h_source.html#l00211">sync.h:211</a></div></div>
+<div class="ttc" id="aclassplcopen_1_1core_1_1exec_1_1CamSpline_html_a7b4ef9cfee0d2d6e27a101e0f71d53ae"><div class="ttname"><a href="classplcopen_1_1core_1_1exec_1_1CamSpline.html#a7b4ef9cfee0d2d6e27a101e0f71d53ae">plcopen::core::exec::CamSpline::sample</a></div><div class="ttdeci">rt::Result&lt; double &gt; sample(double master_position) const</div><div class="ttdef"><b>Definition</b> <a href="exec_2sync_8h_source.html#l00351">sync.h:351</a></div></div>
+<div class="ttc" id="aclassplcopen_1_1core_1_1exec_1_1CamSpline_html_a8577ae5436bc0c50849f1ca2a4c97360"><div class="ttname"><a href="classplcopen_1_1core_1_1exec_1_1CamSpline.html#a8577ae5436bc0c50849f1ca2a4c97360">plcopen::core::exec::CamSpline::build</a></div><div class="ttdeci">rt::ErrorCode build(const CamTableView &amp;table)</div><div class="ttdef"><b>Definition</b> <a href="exec_2sync_8h_source.html#l00213">sync.h:213</a></div></div>
+<div class="ttc" id="aclassplcopen_1_1core_1_1exec_1_1CamSpline_html_ae8ddbf5feccf5bc4c7accb846b31c3ae"><div class="ttname"><a href="classplcopen_1_1core_1_1exec_1_1CamSpline.html#ae8ddbf5feccf5bc4c7accb846b31c3ae">plcopen::core::exec::CamSpline::valid</a></div><div class="ttdeci">bool valid() const</div><div class="ttdef"><b>Definition</b> <a href="exec_2sync_8h_source.html#l00346">sync.h:346</a></div></div>
+<div class="ttc" id="aclassplcopen_1_1core_1_1exec_1_1CamSpline_html_aea31566f6c20b832b2f0c4006d7ce0aa"><div class="ttname"><a href="classplcopen_1_1core_1_1exec_1_1CamSpline.html#aea31566f6c20b832b2f0c4006d7ce0aa">plcopen::core::exec::CamSpline::sample_derivative</a></div><div class="ttdeci">rt::Result&lt; double &gt; sample_derivative(double master_position, int order) const</div><div class="ttdef"><b>Definition</b> <a href="exec_2sync_8h_source.html#l00358">sync.h:358</a></div></div>
+<div class="ttc" id="aclassplcopen_1_1core_1_1exec_1_1CamTable_html"><div class="ttname"><a href="classplcopen_1_1core_1_1exec_1_1CamTable.html">plcopen::core::exec::CamTable</a></div><div class="ttdef"><b>Definition</b> <a href="exec_2sync_8h_source.html#l00150">sync.h:151</a></div></div>
+<div class="ttc" id="aclassplcopen_1_1core_1_1exec_1_1CamTable_html_a69a90d931cf86000202f82f5e4ab67c0"><div class="ttname"><a href="classplcopen_1_1core_1_1exec_1_1CamTable.html#a69a90d931cf86000202f82f5e4ab67c0">plcopen::core::exec::CamTable::size</a></div><div class="ttdeci">std::size_t size() const</div><div class="ttdef"><b>Definition</b> <a href="exec_2sync_8h_source.html#l00161">sync.h:161</a></div></div>
+<div class="ttc" id="aclassplcopen_1_1core_1_1exec_1_1CamTable_html_aad6be5936e7ac91bbff2a117bdf0e4a0"><div class="ttname"><a href="classplcopen_1_1core_1_1exec_1_1CamTable.html#aad6be5936e7ac91bbff2a117bdf0e4a0">plcopen::core::exec::CamTable::set_periodic</a></div><div class="ttdeci">void set_periodic(bool periodic)</div><div class="ttdef"><b>Definition</b> <a href="exec_2sync_8h_source.html#l00166">sync.h:166</a></div></div>
+<div class="ttc" id="aclassplcopen_1_1core_1_1exec_1_1CamTable_html_aadfe297a4b77f74562b82f9dc5877ff1"><div class="ttname"><a href="classplcopen_1_1core_1_1exec_1_1CamTable.html#aadfe297a4b77f74562b82f9dc5877ff1">plcopen::core::exec::CamTable::periodic</a></div><div class="ttdeci">bool periodic() const</div><div class="ttdef"><b>Definition</b> <a href="exec_2sync_8h_source.html#l00171">sync.h:171</a></div></div>
+<div class="ttc" id="aclassplcopen_1_1core_1_1exec_1_1CamTable_html_ab2fd31a36049537a59ff120192999704"><div class="ttname"><a href="classplcopen_1_1core_1_1exec_1_1CamTable.html#ab2fd31a36049537a59ff120192999704">plcopen::core::exec::CamTable::push</a></div><div class="ttdeci">rt::ErrorCode push(CamPoint point)</div><div class="ttdef"><b>Definition</b> <a href="exec_2sync_8h_source.html#l00153">sync.h:153</a></div></div>
+<div class="ttc" id="aclassplcopen_1_1core_1_1exec_1_1CamTable_html_ac4af6802872cdcfb49452eb50078830f"><div class="ttname"><a href="classplcopen_1_1core_1_1exec_1_1CamTable.html#ac4af6802872cdcfb49452eb50078830f">plcopen::core::exec::CamTable::view</a></div><div class="ttdeci">CamTableView view() const</div><div class="ttdef"><b>Definition</b> <a href="exec_2sync_8h_source.html#l00176">sync.h:176</a></div></div>
+<div class="ttc" id="aclassplcopen_1_1core_1_1exec_1_1CamTable_html_ac7910e328ff58861405b6fc30b67b45c"><div class="ttname"><a href="classplcopen_1_1core_1_1exec_1_1CamTable.html#ac7910e328ff58861405b6fc30b67b45c">plcopen::core::exec::CamTable::sample</a></div><div class="ttdeci">rt::Result&lt; double &gt; sample(double master_position) const</div><div class="ttdef"><b>Definition</b> <a href="exec_2sync_8h_source.html#l00181">sync.h:181</a></div></div>
+<div class="ttc" id="aclassplcopen_1_1core_1_1rt_1_1Result_html"><div class="ttname"><a href="classplcopen_1_1core_1_1rt_1_1Result.html">plcopen::core::rt::Result</a></div><div class="ttdef"><b>Definition</b> <a href="error_8h_source.html#l00021">error.h:22</a></div></div>
+<div class="ttc" id="aclassplcopen_1_1core_1_1rt_1_1Result_html_ac818eef35186a51dc08606fe43449855"><div class="ttname"><a href="classplcopen_1_1core_1_1rt_1_1Result.html#ac818eef35186a51dc08606fe43449855">plcopen::core::rt::Result::success</a></div><div class="ttdeci">static constexpr Result success(const T &amp;value)</div><div class="ttdef"><b>Definition</b> <a href="error_8h_source.html#l00024">error.h:24</a></div></div>
+<div class="ttc" id="aclassplcopen_1_1core_1_1rt_1_1Result_html_adabbee61b3f30cf0c2ac27f685ea5b92"><div class="ttname"><a href="classplcopen_1_1core_1_1rt_1_1Result.html#adabbee61b3f30cf0c2ac27f685ea5b92">plcopen::core::rt::Result::failure</a></div><div class="ttdeci">static constexpr Result failure(ErrorCode error)</div><div class="ttdef"><b>Definition</b> <a href="error_8h_source.html#l00029">error.h:29</a></div></div>
+<div class="ttc" id="aclassplcopen_1_1core_1_1rt_1_1StaticVector_html"><div class="ttname"><a href="classplcopen_1_1core_1_1rt_1_1StaticVector.html">plcopen::core::rt::StaticVector</a></div><div class="ttdef"><b>Definition</b> <a href="static__vector_8h_source.html#l00012">static_vector.h:13</a></div></div>
+<div class="ttc" id="aerror_8h_html"><div class="ttname"><a href="error_8h.html">error.h</a></div></div>
+<div class="ttc" id="ageometry_8h_html"><div class="ttname"><a href="geometry_8h.html">geometry.h</a></div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1exec_html"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1exec.html">plcopen::core::exec</a></div><div class="ttdef"><b>Definition</b> <a href="sampler_8h_source.html#l00010">sampler.h:11</a></div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1exec_html_a15b13aae7f25eb5d68a1d27411fba7d6"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1exec.html#a15b13aae7f25eb5d68a1d27411fba7d6">plcopen::core::exec::CamInterpolation</a></div><div class="ttdeci">CamInterpolation</div><div class="ttdef"><b>Definition</b> <a href="exec_2sync_8h_source.html#l00195">sync.h:196</a></div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1exec_html_a15b13aae7f25eb5d68a1d27411fba7d6a9a932b3cb396238423eb2f33ec17d6aa"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1exec.html#a15b13aae7f25eb5d68a1d27411fba7d6a9a932b3cb396238423eb2f33ec17d6aa">plcopen::core::exec::CamInterpolation::linear</a></div><div class="ttdeci">@ linear</div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1exec_html_a15b13aae7f25eb5d68a1d27411fba7d6ab1f1bf466909fa829f364cb0ffeac2db"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1exec.html#a15b13aae7f25eb5d68a1d27411fba7d6ab1f1bf466909fa829f364cb0ffeac2db">plcopen::core::exec::CamInterpolation::spline</a></div><div class="ttdeci">@ spline</div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1exec_html_a5748b3ad06f67e0270961155fb14d66e"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1exec.html#a5748b3ad06f67e0270961155fb14d66e">plcopen::core::exec::apply_overlay</a></div><div class="ttdeci">geom::Vec3 apply_overlay(geom::Vec3 base, geom::Vec3 overlay)</div><div class="ttdef"><b>Definition</b> <a href="exec_2sync_8h_source.html#l00466">sync.h:466</a></div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1exec_html_a882f8370474f75165935e563a0a3b921"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1exec.html#a882f8370474f75165935e563a0a3b921">plcopen::core::exec::cam_law_value</a></div><div class="ttdeci">double cam_law_value(CamLaw law, double x)</div><div class="ttdef"><b>Definition</b> <a href="exec_2sync_8h_source.html#l00044">sync.h:44</a></div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1exec_html_a95e8e36dcbd206a2d325f4f86f58b519"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1exec.html#a95e8e36dcbd206a2d325f4f86f58b519">plcopen::core::exec::sample_gear</a></div><div class="ttdeci">double sample_gear(double master_position, GearMap map)</div><div class="ttdef"><b>Definition</b> <a href="exec_2sync_8h_source.html#l00019">sync.h:19</a></div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1exec_html_ae0809f4c0d5b5fc630fcab26af20e5a4"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1exec.html#ae0809f4c0d5b5fc630fcab26af20e5a4">plcopen::core::exec::generate_cam_law</a></div><div class="ttdeci">rt::ErrorCode generate_cam_law(CamLaw law, double master_span, double rise, CamPoint *points, std::size_t point_count)</div><div class="ttdef"><b>Definition</b> <a href="exec_2sync_8h_source.html#l00075">sync.h:75</a></div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1exec_html_ae56383735082a7bf8babc47822ea2722"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1exec.html#ae56383735082a7bf8babc47822ea2722">plcopen::core::exec::CamLaw</a></div><div class="ttdeci">CamLaw</div><div class="ttdef"><b>Definition</b> <a href="exec_2sync_8h_source.html#l00037">sync.h:38</a></div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1exec_html_ae56383735082a7bf8babc47822ea2722a4ae3235b21f6d9c29294d1473bbc030a"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1exec.html#ae56383735082a7bf8babc47822ea2722a4ae3235b21f6d9c29294d1473bbc030a">plcopen::core::exec::CamLaw::cycloidal</a></div><div class="ttdeci">@ cycloidal</div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1exec_html_ae56383735082a7bf8babc47822ea2722a55b5e526106369d7a244f08c8ec10e6d"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1exec.html#ae56383735082a7bf8babc47822ea2722a55b5e526106369d7a244f08c8ec10e6d">plcopen::core::exec::CamLaw::modified_sine</a></div><div class="ttdeci">@ modified_sine</div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1exec_html_ae56383735082a7bf8babc47822ea2722a8beb2bc9a0ff80f0674049ff5e4f68a1"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1exec.html#ae56383735082a7bf8babc47822ea2722a8beb2bc9a0ff80f0674049ff5e4f68a1">plcopen::core::exec::CamLaw::poly345</a></div><div class="ttdeci">@ poly345</div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1rt_html_acb478bbb9e8dc7611816f04327d9fce8"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8">plcopen::core::rt::ErrorCode</a></div><div class="ttdeci">ErrorCode</div><div class="ttdef"><b>Definition</b> <a href="error_8h_source.html#l00006">error.h:7</a></div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1rt_html_acb478bbb9e8dc7611816f04327d9fce8a444bcb3a3fcf8389296c49467f27e1d6"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8a444bcb3a3fcf8389296c49467f27e1d6">plcopen::core::rt::ErrorCode::ok</a></div><div class="ttdeci">@ ok</div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1rt_html_acb478bbb9e8dc7611816f04327d9fce8ae55d43eabeefe5a8271b4a3c898bd18f"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8ae55d43eabeefe5a8271b4a3c898bd18f">plcopen::core::rt::ErrorCode::invalid_argument</a></div><div class="ttdeci">@ invalid_argument</div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1st_1_1generated_html_acf4da6b72b44a114c5615a3c557d0ea9aeac828e40705bfafd82ef1a82e3f5ab8"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1st_1_1generated.html#acf4da6b72b44a114c5615a3c557d0ea9aeac828e40705bfafd82ef1a82e3f5ab8">plcopen::core::st::generated::StBindingTypeKind::span</a></div><div class="ttdeci">@ span</div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1st_html_a0244f8a1f094530576692a8153cc8cfda7b8b965ad4bca0e41ab51de7b31363a1"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1st.html#a0244f8a1f094530576692a8153cc8cfda7b8b965ad4bca0e41ab51de7b31363a1">plcopen::core::st::SfcQualifier::n</a></div><div class="ttdeci">@ n</div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1st_html_a371ce294c808c472fa417458d3be1a23a7c4f29407893c334a6cb7a87bf045c0d"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1st.html#a371ce294c808c472fa417458d3be1a23a7c4f29407893c334a6cb7a87bf045c0d">plcopen::core::st::StandardFunction::right</a></div><div class="ttdeci">@ right</div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1st_html_a371ce294c808c472fa417458d3be1a23a811882fecd5c7618d7099ebbd39ea254"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1st.html#a371ce294c808c472fa417458d3be1a23a811882fecd5c7618d7099ebbd39ea254">plcopen::core::st::StandardFunction::left</a></div><div class="ttdeci">@ left</div></div>
+<div class="ttc" id="astatic__vector_8h_html"><div class="ttname"><a href="static__vector_8h.html">static_vector.h</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1exec_1_1CamPoint_html"><div class="ttname"><a href="structplcopen_1_1core_1_1exec_1_1CamPoint.html">plcopen::core::exec::CamPoint</a></div><div class="ttdef"><b>Definition</b> <a href="exec_2sync_8h_source.html#l00024">sync.h:25</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1exec_1_1CamPoint_html_a5d1c7920f5155f091710bad60bf345bb"><div class="ttname"><a href="structplcopen_1_1core_1_1exec_1_1CamPoint.html#a5d1c7920f5155f091710bad60bf345bb">plcopen::core::exec::CamPoint::slave</a></div><div class="ttdeci">double slave</div><div class="ttdef"><b>Definition</b> <a href="exec_2sync_8h_source.html#l00027">sync.h:27</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1exec_1_1CamPoint_html_a73854c0901ab70ddea224d242b51a530"><div class="ttname"><a href="structplcopen_1_1core_1_1exec_1_1CamPoint.html#a73854c0901ab70ddea224d242b51a530">plcopen::core::exec::CamPoint::master</a></div><div class="ttdeci">double master</div><div class="ttdef"><b>Definition</b> <a href="exec_2sync_8h_source.html#l00026">sync.h:26</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1exec_1_1CamTableView_html"><div class="ttname"><a href="structplcopen_1_1core_1_1exec_1_1CamTableView.html">plcopen::core::exec::CamTableView</a></div><div class="ttdef"><b>Definition</b> <a href="exec_2sync_8h_source.html#l00095">sync.h:96</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1exec_1_1CamTableView_html_a0b5ccf24c7de7a0a6687f1b6df194a40"><div class="ttname"><a href="structplcopen_1_1core_1_1exec_1_1CamTableView.html#a0b5ccf24c7de7a0a6687f1b6df194a40">plcopen::core::exec::CamTableView::size</a></div><div class="ttdeci">std::size_t size</div><div class="ttdef"><b>Definition</b> <a href="exec_2sync_8h_source.html#l00098">sync.h:98</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1exec_1_1CamTableView_html_a22b72d520d212d4679bb4acc0c434cec"><div class="ttname"><a href="structplcopen_1_1core_1_1exec_1_1CamTableView.html#a22b72d520d212d4679bb4acc0c434cec">plcopen::core::exec::CamTableView::sample</a></div><div class="ttdeci">rt::Result&lt; double &gt; sample(double master_position) const</div><div class="ttdef"><b>Definition</b> <a href="exec_2sync_8h_source.html#l00119">sync.h:119</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1exec_1_1CamTableView_html_a60e2ed27efe45e42d1f2aacf15a1de3c"><div class="ttname"><a href="structplcopen_1_1core_1_1exec_1_1CamTableView.html#a60e2ed27efe45e42d1f2aacf15a1de3c">plcopen::core::exec::CamTableView::periodic</a></div><div class="ttdeci">bool periodic</div><div class="ttdef"><b>Definition</b> <a href="exec_2sync_8h_source.html#l00099">sync.h:99</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1exec_1_1CamTableView_html_a851b80080cf25003f4b0fb11f43d03a2"><div class="ttname"><a href="structplcopen_1_1core_1_1exec_1_1CamTableView.html#a851b80080cf25003f4b0fb11f43d03a2">plcopen::core::exec::CamTableView::points</a></div><div class="ttdeci">const CamPoint * points</div><div class="ttdef"><b>Definition</b> <a href="exec_2sync_8h_source.html#l00097">sync.h:97</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1exec_1_1CamTableView_html_acfabe7d4e0365e86c6c8c39572aafe0f"><div class="ttname"><a href="structplcopen_1_1core_1_1exec_1_1CamTableView.html#acfabe7d4e0365e86c6c8c39572aafe0f">plcopen::core::exec::CamTableView::valid</a></div><div class="ttdeci">bool valid() const</div><div class="ttdef"><b>Definition</b> <a href="exec_2sync_8h_source.html#l00101">sync.h:101</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1exec_1_1GearMap_html"><div class="ttname"><a href="structplcopen_1_1core_1_1exec_1_1GearMap.html">plcopen::core::exec::GearMap</a></div><div class="ttdef"><b>Definition</b> <a href="exec_2sync_8h_source.html#l00013">sync.h:14</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1exec_1_1GearMap_html_a33ed6e9419b8f6ee913272d2376c2b34"><div class="ttname"><a href="structplcopen_1_1core_1_1exec_1_1GearMap.html#a33ed6e9419b8f6ee913272d2376c2b34">plcopen::core::exec::GearMap::offset</a></div><div class="ttdeci">double offset</div><div class="ttdef"><b>Definition</b> <a href="exec_2sync_8h_source.html#l00016">sync.h:16</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1exec_1_1GearMap_html_a8c1af0b0ce770c0f669e2f958bf2a1b1"><div class="ttname"><a href="structplcopen_1_1core_1_1exec_1_1GearMap.html#a8c1af0b0ce770c0f669e2f958bf2a1b1">plcopen::core::exec::GearMap::ratio</a></div><div class="ttdeci">double ratio</div><div class="ttdef"><b>Definition</b> <a href="exec_2sync_8h_source.html#l00015">sync.h:15</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1geom_1_1Vec3_html"><div class="ttname"><a href="structplcopen_1_1core_1_1geom_1_1Vec3.html">plcopen::core::geom::Vec3</a></div><div class="ttdef"><b>Definition</b> <a href="geometry_8h_source.html#l00013">geometry.h:14</a></div></div>
+</div><!-- fragment --></div><!-- contents -->
+<!-- start footer part -->
+<hr class="footer"/><address class="footer"><small>
+制作者&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.8
+</small></address>
+</body>
+</html>

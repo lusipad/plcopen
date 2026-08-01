@@ -1,0 +1,7 @@
+<map id="plcopen::core::st::LanguageHover" name="plcopen::core::st::LanguageHover">
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,225,143,265"/>
+<area shape="rect" id="Node000002" href="$structplcopen_1_1core_1_1st_1_1LanguageRange.html" title=" " alt="" coords="5,123,143,163"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="77,177,77,225,71,225,71,177"/>
+<area shape="rect" id="Node000003" href="$structplcopen_1_1core_1_1st_1_1LanguagePosition.html" title=" " alt="" coords="5,5,143,45"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="77,59,77,122,71,122,71,59"/>
+</map>

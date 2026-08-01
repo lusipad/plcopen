@@ -1,0 +1,5 @@
+<map id="plcopen::core::fb::DistanceCodeMap" name="plcopen::core::fb::DistanceCodeMap">
+<area shape="rect" id="Node000001" title=" " alt="" coords="9,108,149,148"/>
+<area shape="rect" id="Node000002" href="$structplcopen_1_1core_1_1fb_1_1DistanceCodeEntry.html" title=" " alt="" coords="5,5,152,45"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="81,59,81,108,76,108,76,59"/>
+</map>

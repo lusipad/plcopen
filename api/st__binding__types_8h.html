@@ -1,0 +1,418 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh">
+<head>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=11"/>
+<meta name="generator" content="Doxygen 1.9.8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>plcopen: core/st/generated/st_binding_types.h 文件参考</title>
+<link href="tabs.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="jquery.js"></script>
+<script type="text/javascript" src="dynsections.js"></script>
+<link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<link href="doxygen.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+<div id="top"><!-- do not remove this div, it is closed by doxygen! -->
+<div id="titlearea">
+<table cellspacing="0" cellpadding="0">
+ <tbody>
+ <tr id="projectrow">
+  <td id="projectalign">
+   <div id="projectname">plcopen<span id="projectnumber">&#160;0.21.0</span>
+   </div>
+  </td>
+ </tr>
+ </tbody>
+</table>
+</div>
+<!-- end header part -->
+<!-- 制作者 Doxygen 1.9.8 -->
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+var searchBox = new SearchBox("searchBox", "search/",'.html');
+/* @license-end */
+</script>
+<script type="text/javascript" src="menudata.js"></script>
+<script type="text/javascript" src="menu.js"></script>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+$(function() {
+  initMenu('',true,false,'search.php','搜索');
+  $(document).ready(function() { init_search(); });
+});
+/* @license-end */
+</script>
+<div id="main-nav"></div>
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<div id="MSearchResults">
+<div class="SRPage">
+<div id="SRIndex">
+<div id="SRResults"></div>
+<div class="SRStatus" id="Loading">载入中...</div>
+<div class="SRStatus" id="Searching">搜索中...</div>
+<div class="SRStatus" id="NoMatches">未找到</div>
+</div>
+</div>
+</div>
+</div>
+
+<div id="nav-path" class="navpath">
+  <ul>
+<li class="navelem"><a class="el" href="dir_4270bfced15e0e73154b13468c7c9ad9.html">core</a></li><li class="navelem"><a class="el" href="dir_58fdb30801db36767d5a9420a346ac9a.html">st</a></li><li class="navelem"><a class="el" href="dir_b6b4308f9cefb17a2f5743b0b0f90ea3.html">generated</a></li>  </ul>
+</div>
+</div><!-- top -->
+<div class="header">
+  <div class="summary">
+<a href="#nested-classes">类</a> &#124;
+<a href="#namespaces">命名空间</a> &#124;
+<a href="#enum-members">枚举</a> &#124;
+<a href="#func-members">函数</a> &#124;
+<a href="#var-members">变量</a>  </div>
+  <div class="headertitle"><div class="title">st_binding_types.h 文件参考</div></div>
+</div><!--header-->
+<div class="contents">
+<div class="textblock"><code>#include &lt;array&gt;</code><br />
+<code>#include &lt;cstdint&gt;</code><br />
+<code>#include &lt;limits&gt;</code><br />
+<code>#include &lt;string_view&gt;</code><br />
+</div><div class="textblock"><div class="dynheader">
+st_binding_types.h 的引用(Include)关系图:</div>
+<div class="dyncontent">
+<div class="center"><img src="st__binding__types_8h__incl.png" border="0" usemap="#acore_2st_2generated_2st__binding__types_8h" alt=""/></div>
+<map name="acore_2st_2generated_2st__binding__types_8h" id="acore_2st_2generated_2st__binding__types_8h">
+<area shape="rect" title=" " alt="" coords="85,5,237,45"/>
+<area shape="rect" title=" " alt="" coords="5,93,61,119"/>
+<area shape="poly" title=" " alt="" coords="132,48,65,88,62,84,129,43"/>
+<area shape="rect" title=" " alt="" coords="85,93,152,119"/>
+<area shape="poly" title=" " alt="" coords="153,47,134,83,129,80,149,44"/>
+<area shape="rect" title=" " alt="" coords="176,93,235,119"/>
+<area shape="poly" title=" " alt="" coords="174,44,194,80,190,83,170,47"/>
+<area shape="rect" title=" " alt="" coords="259,93,357,119"/>
+<area shape="poly" title=" " alt="" coords="198,43,276,84,273,89,195,48"/>
+</map>
+</div>
+</div><div class="textblock"><div class="dynheader">
+此图展示该文件直接或间接的被哪些文件引用了:</div>
+<div class="dyncontent">
+<div class="center"><img src="st__binding__types_8h__dep__incl.png" border="0" usemap="#acore_2st_2generated_2st__binding__types_8hdep" alt=""/></div>
+<map name="acore_2st_2generated_2st__binding__types_8hdep" id="acore_2st_2generated_2st__binding__types_8hdep">
+<area shape="rect" title=" " alt="" coords="1320,5,1472,45"/>
+<area shape="rect" href="type__desc_8h.html" title=" " alt="" coords="1322,93,1470,119"/>
+<area shape="poly" title=" " alt="" coords="1399,59,1399,93,1393,93,1393,59"/>
+<area shape="rect" href="ast_8h.html" title=" " alt="" coords="783,328,886,353"/>
+<area shape="poly" title=" " alt="" coords="1357,126,864,330,862,325,1355,121"/>
+<area shape="rect" href="language_8h.html" title=" " alt="" coords="1087,856,1230,881"/>
+<area shape="poly" title=" " alt="" coords="1484,107,1571,118,1616,129,1659,144,1697,165,1727,192,1747,225,1755,266,1755,709,1750,729,1738,747,1719,764,1694,779,1629,804,1551,825,1465,840,1379,852,1230,866,1230,861,1378,847,1464,835,1550,819,1628,799,1691,774,1716,760,1734,744,1745,727,1749,708,1749,266,1742,227,1723,195,1693,169,1656,149,1614,134,1570,124,1484,112"/>
+<area shape="rect" href="binding__manifest_8h.html" title=" " alt="" coords="1520,621,1715,647"/>
+<area shape="poly" title=" " alt="" coords="1434,123,1472,146,1510,178,1527,197,1540,218,1549,241,1552,266,1552,488,1558,528,1574,565,1593,597,1610,620,1605,623,1588,600,1569,568,1553,530,1547,489,1547,266,1544,242,1535,220,1522,200,1506,182,1468,150,1431,127"/>
+<area shape="rect" href="st__binding__native_8h.html" title=" " alt="" coords="1320,167,1472,207"/>
+<area shape="poly" title=" " alt="" coords="1399,132,1399,167,1393,167,1393,132"/>
+<area shape="rect" href="types_8h.html" title=" " alt="" coords="639,174,758,199"/>
+<area shape="poly" title=" " alt="" coords="1308,120,758,181,758,176,1308,115"/>
+<area shape="rect" href="codegen_8h.html" title=" " alt="" coords="873,695,1010,720"/>
+<area shape="poly" title=" " alt="" coords="871,359,893,377,910,400,923,435,927,466,925,495,920,522,908,578,908,610,913,646,923,672,936,693,931,696,918,674,908,647,902,610,903,577,915,521,920,494,922,466,918,436,906,403,889,380,868,363"/>
+<area shape="rect" href="parser_8h.html" title=" " alt="" coords="773,401,896,427"/>
+<area shape="poly" title=" " alt="" coords="837,367,837,401,832,401,832,367"/>
+<area shape="rect" href="sema_8h.html" title=" " alt="" coords="923,621,1042,647"/>
+<area shape="poly" title=" " alt="" coords="894,356,927,373,954,400,970,428,982,460,992,524,991,582,987,622,982,621,986,581,986,524,976,461,966,431,950,403,923,378,891,361"/>
+<area shape="rect" href="sfc_8h.html" title=" " alt="" coords="645,621,747,647"/>
+<area shape="poly" title=" " alt="" coords="805,363,783,381,764,403,734,463,715,526,704,582,699,621,694,621,699,582,709,525,729,461,759,400,779,377,802,359"/>
+<area shape="rect" href="compile_8h.html" title=" " alt="" coords="849,775,983,801"/>
+<area shape="poly" title=" " alt="" coords="936,734,922,776,917,774,931,732"/>
+<area shape="poly" title=" " alt="" coords="965,802,1124,853,1123,859,964,807"/>
+<area shape="rect" href="st_8h.html" title=" " alt="" coords="554,929,649,955"/>
+<area shape="poly" title=" " alt="" coords="881,809,626,932,624,927,879,804"/>
+<area shape="poly" title=" " alt="" coords="1074,883,649,937,648,932,1073,878"/>
+<area shape="poly" title=" " alt="" coords="837,440,837,559,837,635,843,679,862,719,884,749,906,773,902,777,879,753,858,721,838,680,832,636,832,559,832,440"/>
+<area shape="poly" title=" " alt="" coords="971,660,950,696,946,693,967,657"/>
+<area shape="poly" title=" " alt="" coords="1007,656,1025,686,1028,704,1024,721,1009,741,991,756,951,778,949,773,988,752,1005,737,1019,719,1023,704,1020,688,1002,659"/>
+<area shape="poly" title=" " alt="" coords="725,653,818,718,900,773,897,777,814,722,722,657"/>
+<area shape="poly" title=" " alt="" coords="1507,650,1453,668,1428,681,1404,697,1392,710,1384,723,1376,752,1369,781,1361,796,1347,810,1320,829,1291,843,1231,861,1230,856,1289,838,1318,824,1344,806,1356,793,1364,779,1371,750,1379,721,1387,707,1401,693,1425,676,1451,663,1506,645"/>
+<area shape="poly" title=" " alt="" coords="1625,660,1625,691,1614,721,1581,765,1548,797,1514,820,1477,837,1395,859,1293,884,1236,896,1160,907,976,924,649,942,649,936,976,918,1159,901,1235,891,1291,879,1394,854,1476,832,1511,816,1545,793,1577,762,1610,719,1619,690,1619,660"/>
+<area shape="rect" href="binding__registry_8h.html" title=" " alt="" coords="1415,695,1601,720"/>
+<area shape="poly" title=" " alt="" coords="1590,656,1527,697,1524,692,1587,652"/>
+<area shape="poly" title=" " alt="" coords="1488,731,1445,767,1387,811,1318,852,1280,870,1242,884,1190,896,1120,906,952,923,649,941,649,936,951,918,1120,901,1189,891,1241,879,1278,865,1315,848,1384,806,1442,763,1484,727"/>
+<area shape="rect" href="pins_8h.html" title=" " alt="" coords="1341,548,1451,573"/>
+<area shape="poly" title=" " alt="" coords="1399,221,1399,339,1399,415,1399,548,1393,548,1393,415,1393,339,1393,221"/>
+<area shape="poly" title=" " alt="" coords="1328,576,1043,625,1042,620,1327,571"/>
+<area shape="poly" title=" " alt="" coords="1445,575,1582,619,1581,624,1444,580"/>
+<area shape="rect" href="bind_8h.html" title=" " alt="" coords="1385,621,1495,647"/>
+<area shape="poly" title=" " alt="" coords="1413,584,1435,620,1431,623,1408,587"/>
+<area shape="poly" title=" " alt="" coords="1462,655,1499,693,1495,696,1459,658"/>
+<area shape="rect" href="vm_8h.html" title=" " alt="" coords="246,695,349,720"/>
+<area shape="poly" title=" " alt="" coords="1371,645,1320,649,751,686,349,706,349,701,751,681,1320,644,1371,640"/>
+<area shape="poly" title=" " alt="" coords="289,734,281,770,281,789,286,807,304,835,324,852,380,879,424,898,471,912,554,931,553,936,469,918,423,903,378,884,321,856,300,838,282,809,276,790,276,769,284,733"/>
+<area shape="rect" href="configuration__runtime_8h.html" title=" " alt="" coords="435,768,589,808"/>
+<area shape="poly" title=" " alt="" coords="342,722,461,765,459,770,341,727"/>
+<area shape="poly" title=" " alt="" coords="533,819,597,928,592,930,528,822"/>
+<area shape="rect" href="debug_8h.html" title=" " alt="" coords="416,856,539,881"/>
+<area shape="poly" title=" " alt="" coords="501,822,485,857,480,855,496,819"/>
+<area shape="poly" title=" " alt="" coords="510,886,582,927,580,931,508,890"/>
+<area shape="poly" title=" " alt="" coords="725,207,771,253,829,326,825,330,767,256,721,211"/>
+<area shape="poly" title=" " alt="" coords="772,186,834,191,906,202,980,222,1049,252,1080,269,1105,285,1122,307,1128,339,1128,415,1134,448,1150,475,1174,497,1205,515,1239,529,1275,539,1342,552,1341,557,1274,545,1237,534,1202,520,1171,501,1146,478,1129,450,1123,416,1123,340,1117,309,1102,289,1077,274,1047,257,978,227,905,208,834,196,772,191"/>
+<area shape="poly" title=" " alt="" coords="626,191,454,199,351,207,249,221,155,240,78,266,49,281,27,299,13,318,8,340,8,562,15,597,33,626,61,649,95,667,134,681,173,690,246,701,245,706,172,696,132,686,93,672,58,654,29,630,10,599,3,562,3,339,8,316,23,295,46,277,76,261,154,235,248,215,351,202,453,193,625,186"/>
+<area shape="rect" href="binding__storage_8h.html" title=" " alt="" coords="43,475,229,500"/>
+<area shape="poly" title=" " alt="" coords="626,193,528,199,417,211,317,230,278,242,250,257,223,281,201,309,183,340,169,372,149,433,140,475,135,474,144,431,164,370,178,338,197,306,219,277,246,252,275,237,315,225,417,206,528,194,626,188"/>
+<area shape="rect" href="bytecode_8h.html" title=" " alt="" coords="334,548,477,573"/>
+<area shape="poly" title=" " alt="" coords="626,201,518,220,401,250,349,269,307,290,279,314,272,327,269,340,269,415,273,460,280,478,294,498,310,514,329,527,368,545,365,550,326,531,307,518,290,502,275,481,267,462,264,415,264,339,267,325,275,311,304,286,347,264,399,245,517,215,625,196"/>
+<area shape="rect" href="conv_8h.html" title=" " alt="" coords="1024,548,1136,573"/>
+<area shape="poly" title=" " alt="" coords="772,185,861,193,909,203,955,217,996,236,1029,263,1052,297,1058,317,1060,339,1060,415,1067,491,1080,547,1074,548,1062,492,1055,415,1055,339,1053,318,1047,299,1026,266,993,241,953,222,908,208,860,199,772,190"/>
+<area shape="rect" href="debug__types_8h.html" title=" " alt="" coords="304,475,469,500"/>
+<area shape="poly" title=" " alt="" coords="675,210,576,291,515,346,457,403,423,442,397,476,393,473,418,439,453,400,512,342,573,287,671,206"/>
+<area shape="rect" href="token_8h.html" title=" " alt="" coords="639,255,758,280"/>
+<area shape="poly" title=" " alt="" coords="701,213,701,254,696,254,696,213"/>
+<area shape="poly" title=" " alt="" coords="128,514,118,543,112,578,113,613,118,630,126,645,151,669,181,685,214,696,246,701,245,706,213,701,179,690,147,673,122,648,113,632,108,614,106,577,113,542,123,512"/>
+<area shape="poly" title=" " alt="" coords="193,501,362,545,361,550,192,506"/>
+<area shape="poly" title=" " alt="" coords="445,576,531,610,634,644,760,674,873,693,872,699,759,679,633,649,529,615,443,581"/>
+<area shape="poly" title=" " alt="" coords="436,578,489,611,553,644,645,685,737,721,882,773,880,778,735,726,643,690,551,649,487,615,433,583"/>
+<area shape="poly" title=" " alt="" coords="490,570,924,623,923,628,490,575"/>
+<area shape="poly" title=" " alt="" coords="466,574,650,619,648,624,465,579"/>
+<area shape="poly" title=" " alt="" coords="390,586,308,696,304,693,386,583"/>
+<area shape="rect" href="process__image_8h.html" title=" " alt="" coords="137,621,317,647"/>
+<area shape="poly" title=" " alt="" coords="365,581,257,624,255,619,363,576"/>
+<area shape="rect" href="wcet_8h.html" title=" " alt="" coords="297,775,410,801"/>
+<area shape="poly" title=" " alt="" coords="402,588,359,776,353,774,397,586"/>
+<area shape="poly" title=" " alt="" coords="229,661,231,689,236,719,249,771,262,812,284,846,323,879,350,895,380,908,442,926,503,935,554,939,554,944,502,941,441,932,378,913,348,900,320,884,280,850,257,814,244,773,231,721,225,690,224,661"/>
+<area shape="poly" title=" " alt="" coords="250,655,288,693,284,696,246,659"/>
+<area shape="poly" title=" " alt="" coords="363,812,379,847,391,865,406,879,441,902,480,917,519,928,554,934,554,939,518,933,478,922,438,906,402,883,387,868,375,850,358,815"/>
+<area shape="poly" title=" " alt="" coords="1080,588,1072,619,1055,648,1039,665,1019,678,980,697,978,692,1017,673,1035,661,1051,645,1067,617,1075,587"/>
+<area shape="poly" title=" " alt="" coords="1150,567,1251,586,1295,601,1322,619,1332,637,1338,654,1336,690,1321,725,1296,759,1266,790,1233,818,1178,858,1175,854,1230,814,1262,786,1292,755,1316,722,1331,688,1333,655,1328,639,1318,623,1292,606,1250,591,1149,572"/>
+<area shape="poly" title=" " alt="" coords="1055,584,1000,623,997,619,1052,579"/>
+<area shape="rect" href="standard__names_8h.html" title=" " alt="" coords="1118,621,1309,647"/>
+<area shape="poly" title=" " alt="" coords="1115,577,1193,619,1190,623,1112,582"/>
+<area shape="rect" href="l2b_8h.html" title=" " alt="" coords="1125,695,1227,720"/>
+<area shape="poly" title=" " alt="" coords="1203,660,1184,696,1180,693,1199,658"/>
+<area shape="poly" title=" " alt="" coords="1126,726,955,778,953,773,1125,721"/>
+<area shape="poly" title=" " alt="" coords="396,513,405,547,400,549,391,514"/>
+<area shape="poly" title=" " alt="" coords="734,284,814,325,811,330,731,289"/>
+<area shape="rect" href="lexer_8h.html" title=" " alt="" coords="629,328,742,353"/>
+<area shape="poly" title=" " alt="" coords="697,294,690,328,685,327,691,293"/>
+<area shape="poly" title=" " alt="" coords="705,363,730,398,757,446,778,501,784,530,787,559,787,709,789,741,797,765,813,785,837,806,881,825,946,840,1087,859,1087,864,945,845,879,830,835,810,809,789,793,767,784,742,781,709,781,559,779,531,773,502,752,448,725,401,701,366"/>
+<area shape="poly" title=" " alt="" coords="723,357,811,399,809,404,720,362"/>
+<area shape="poly" title=" " alt="" coords="678,367,669,402,666,466,673,530,685,584,695,620,690,622,679,585,668,530,661,466,664,401,673,366"/>
+<area shape="rect" href="tasking_8h.html" title=" " alt="" coords="467,401,597,427"/>
+<area shape="poly" title=" " alt="" coords="650,361,558,404,556,399,647,357"/>
+<area shape="poly" title=" " alt="" coords="554,435,573,459,591,489,605,523,611,559,611,635,604,929,599,929,605,635,605,560,600,524,586,491,568,462,550,439"/>
+<area shape="poly" title=" " alt="" coords="533,441,516,768,510,768,528,440"/>
+<area shape="poly" title=" " alt="" coords="523,441,506,471,483,502,454,529,425,550,422,546,451,525,479,498,501,468,518,438"/>
+<area shape="poly" title=" " alt="" coords="498,435,412,477,409,472,495,430"/>
+</map>
+</div>
+</div>
+<p><a href="st__binding__types_8h_source.html">浏览源代码.</a></p>
+<table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="nested-classes" name="nested-classes"></a>
+类</h2></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1generated_1_1StBindingEnumMapping.html">plcopen::core::st::generated::StBindingEnumMapping</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1generated_1_1StBindingFieldMetadata.html">plcopen::core::st::generated::StBindingFieldMetadata</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1generated_1_1StBindingTypeMetadata.html">plcopen::core::st::generated::StBindingTypeMetadata</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1generated_1_1StBindingInstalledShape.html">plcopen::core::st::generated::StBindingInstalledShape</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="namespaces" name="namespaces"></a>
+命名空间</h2></td></tr>
+<tr class="memitem:namespaceplcopen" id="r_namespaceplcopen"><td class="memItemLeft" align="right" valign="top">namespace &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen.html">plcopen</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:namespaceplcopen_1_1core" id="r_namespaceplcopen_1_1core"><td class="memItemLeft" align="right" valign="top">namespace &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core.html">plcopen::core</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:namespaceplcopen_1_1core_1_1st" id="r_namespaceplcopen_1_1core_1_1st"><td class="memItemLeft" align="right" valign="top">namespace &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1st.html">plcopen::core::st</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:namespaceplcopen_1_1core_1_1st_1_1binding__type" id="r_namespaceplcopen_1_1core_1_1st_1_1binding__type"><td class="memItemLeft" align="right" valign="top">namespace &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1st_1_1binding__type.html">plcopen::core::st::binding_type</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:namespaceplcopen_1_1core_1_1st_1_1generated" id="r_namespaceplcopen_1_1core_1_1st_1_1generated"><td class="memItemLeft" align="right" valign="top">namespace &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1st_1_1generated.html">plcopen::core::st::generated</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="enum-members" name="enum-members"></a>
+枚举</h2></td></tr>
+<tr class="memitem:acf4da6b72b44a114c5615a3c557d0ea9" id="r_acf4da6b72b44a114c5615a3c557d0ea9"><td class="memItemLeft" align="right" valign="top">enum class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1st_1_1generated.html#acf4da6b72b44a114c5615a3c557d0ea9">plcopen::core::st::generated::StBindingTypeKind</a> : std::uint8_t { <br />
+&#160;&#160;<a class="el" href="namespaceplcopen_1_1core_1_1st_1_1generated.html#acf4da6b72b44a114c5615a3c557d0ea9af18cd75185ae2187982ea78eaac7acaa">plcopen::core::st::generated::enum_</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1st_1_1generated.html#acf4da6b72b44a114c5615a3c557d0ea9a297f2fc08bc2cf5a3f6b1202d260d428">plcopen::core::st::generated::struct_</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1st_1_1generated.html#acf4da6b72b44a114c5615a3c557d0ea9ae63169bae616f08aa56c45ea3a5cd79b">plcopen::core::st::generated::fixed_array</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1st_1_1generated.html#acf4da6b72b44a114c5615a3c557d0ea9a18389a4a9ad5795744699cff0ba66c15">plcopen::core::st::generated::ref</a>
+, <br />
+&#160;&#160;<a class="el" href="namespaceplcopen_1_1core_1_1st_1_1generated.html#acf4da6b72b44a114c5615a3c557d0ea9ac14a36e53ee19ed2cd52bae7846086d0">plcopen::core::st::generated::host_ref</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1st_1_1generated.html#acf4da6b72b44a114c5615a3c557d0ea9aeac828e40705bfafd82ef1a82e3f5ab8">plcopen::core::st::generated::span</a>
+<br />
+ }</td></tr>
+<tr class="separator:acf4da6b72b44a114c5615a3c557d0ea9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a818eb7648145b1dfb1022901a0ae0f36" id="r_a818eb7648145b1dfb1022901a0ae0f36"><td class="memItemLeft" align="right" valign="top">enum class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1st_1_1generated.html#a818eb7648145b1dfb1022901a0ae0f36">plcopen::core::st::generated::StBindingCodecKind</a> : std::uint8_t { <br />
+&#160;&#160;<a class="el" href="namespaceplcopen_1_1core_1_1st_1_1generated.html#a818eb7648145b1dfb1022901a0ae0f36a8810036fb06946838756674f2b760d8a">plcopen::core::st::generated::enum_map</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1st_1_1generated.html#a818eb7648145b1dfb1022901a0ae0f36ad05b6ed7d2345020440df396d6da7f73">plcopen::core::st::generated::fields</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1st_1_1generated.html#a818eb7648145b1dfb1022901a0ae0f36ae63169bae616f08aa56c45ea3a5cd79b">plcopen::core::st::generated::fixed_array</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1st_1_1generated.html#a818eb7648145b1dfb1022901a0ae0f36a9ae14acd34fefc119dfca4cded14a3ca">plcopen::core::st::generated::counted_array</a>
+, <br />
+&#160;&#160;<a class="el" href="namespaceplcopen_1_1core_1_1st_1_1generated.html#a818eb7648145b1dfb1022901a0ae0f36aa520dfafed2f20c3cbcdee3215d53e7a">plcopen::core::st::generated::binding_ref</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1st_1_1generated.html#a818eb7648145b1dfb1022901a0ae0f36a70ea67b6c5243c321b4ec761c7e45b8d">plcopen::core::st::generated::ref_alias</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1st_1_1generated.html#a818eb7648145b1dfb1022901a0ae0f36aaa4799fe7c96c82cdc10a49aae0826a8">plcopen::core::st::generated::span_registry</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1st_1_1generated.html#a818eb7648145b1dfb1022901a0ae0f36a1706a66fec6825a60a1ce28012df5a46">plcopen::core::st::generated::profile_sequence</a>
+, <br />
+&#160;&#160;<a class="el" href="namespaceplcopen_1_1core_1_1st_1_1generated.html#a818eb7648145b1dfb1022901a0ae0f36a2a73b1f2e31032c47d50ae7288781c97">plcopen::core::st::generated::tagged_reference</a>
+<br />
+ }</td></tr>
+<tr class="separator:a818eb7648145b1dfb1022901a0ae0f36"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afb0cb4e2a92a28c22410113e28702888" id="r_afb0cb4e2a92a28c22410113e28702888"><td class="memItemLeft" align="right" valign="top">enum class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1st_1_1generated.html#afb0cb4e2a92a28c22410113e28702888">plcopen::core::st::generated::StBindingTimeRounding</a> : std::uint8_t { <a class="el" href="namespaceplcopen_1_1core_1_1st_1_1generated.html#afb0cb4e2a92a28c22410113e28702888a334c4a4c42fdb79d7ebc3e73b517e6f8">plcopen::core::st::generated::none</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1st_1_1generated.html#afb0cb4e2a92a28c22410113e28702888a6fee666d16bfa3ecbc516290cb59aa0a">plcopen::core::st::generated::ceil</a>
+ }</td></tr>
+<tr class="separator:afb0cb4e2a92a28c22410113e28702888"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
+函数</h2></td></tr>
+<tr class="memitem:a5397416dea0f3cf9732d035932f55cce" id="r_a5397416dea0f3cf9732d035932f55cce"><td class="memItemLeft" align="right" valign="top">constexpr bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1st_1_1generated.html#a5397416dea0f3cf9732d035932f55cce">plcopen::core::st::generated::st_binding_handle_valid</a> (std::uint64_t handle) noexcept</td></tr>
+<tr class="separator:a5397416dea0f3cf9732d035932f55cce"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5338e3be304c687cc45a822dae726ca0" id="r_a5338e3be304c687cc45a822dae726ca0"><td class="memItemLeft" align="right" valign="top">constexpr const <a class="el" href="structplcopen_1_1core_1_1st_1_1generated_1_1StBindingTypeMetadata.html">StBindingTypeMetadata</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1st_1_1generated.html#a5338e3be304c687cc45a822dae726ca0">plcopen::core::st::generated::st_binding_type_metadata</a> (<a class="el" href="namespaceplcopen_1_1core_1_1st.html#af07c71ef14c07e2c4c0110e091a36299">TypeId</a> <a class="el" href="namespaceplcopen_1_1core_1_1st.html#a28fead38fbf9a5e744a017ec25734023a599dcce2998a6b40b1e38e8c6006cb0a">type</a>) noexcept</td></tr>
+<tr class="separator:a5338e3be304c687cc45a822dae726ca0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1f71bcf387be1385f70b29ab1d4f17c0" id="r_a1f71bcf387be1385f70b29ab1d4f17c0"><td class="memItemLeft" align="right" valign="top">constexpr bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1st_1_1generated.html#a1f71bcf387be1385f70b29ab1d4f17c0">plcopen::core::st::generated::st_binding_enum_to_native</a> (<a class="el" href="namespaceplcopen_1_1core_1_1st.html#af07c71ef14c07e2c4c0110e091a36299">TypeId</a> <a class="el" href="namespaceplcopen_1_1core_1_1st.html#a28fead38fbf9a5e744a017ec25734023a599dcce2998a6b40b1e38e8c6006cb0a">type</a>, std::int64_t iec, std::int64_t &amp;native) noexcept</td></tr>
+<tr class="separator:a1f71bcf387be1385f70b29ab1d4f17c0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1602fd624ba82c012148dce07038c94f" id="r_a1602fd624ba82c012148dce07038c94f"><td class="memItemLeft" align="right" valign="top">constexpr bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1st_1_1generated.html#a1602fd624ba82c012148dce07038c94f">plcopen::core::st::generated::st_binding_enum_from_native</a> (<a class="el" href="namespaceplcopen_1_1core_1_1st.html#af07c71ef14c07e2c4c0110e091a36299">TypeId</a> <a class="el" href="namespaceplcopen_1_1core_1_1st.html#a28fead38fbf9a5e744a017ec25734023a599dcce2998a6b40b1e38e8c6006cb0a">type</a>, std::int64_t native, std::int64_t &amp;iec) noexcept</td></tr>
+<tr class="separator:a1602fd624ba82c012148dce07038c94f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0a68d5a7d57a150c9abb752c05e69c5d" id="r_a0a68d5a7d57a150c9abb752c05e69c5d"><td class="memItemLeft" align="right" valign="top">constexpr bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1st_1_1generated.html#a0a68d5a7d57a150c9abb752c05e69c5d">plcopen::core::st::generated::st_binding_time_ns_to_cycles</a> (std::int64_t time_ns, std::int64_t task_period_ns, std::int64_t &amp;cycles) noexcept</td></tr>
+<tr class="separator:a0a68d5a7d57a150c9abb752c05e69c5d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6acd17cf28e7f1f3b802df0460de1bbb" id="r_a6acd17cf28e7f1f3b802df0460de1bbb"><td class="memItemLeft" align="right" valign="top">constexpr std::uint64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1st_1_1generated.html#a6acd17cf28e7f1f3b802df0460de1bbb">plcopen::core::st::generated::st_binding_hash_byte</a> (std::uint64_t state, std::uint8_t value) noexcept</td></tr>
+<tr class="separator:a6acd17cf28e7f1f3b802df0460de1bbb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2e9a845e031223c4a0ba4d672e22aa5e" id="r_a2e9a845e031223c4a0ba4d672e22aa5e"><td class="memItemLeft" align="right" valign="top">constexpr std::uint64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1st_1_1generated.html#a2e9a845e031223c4a0ba4d672e22aa5e">plcopen::core::st::generated::st_binding_hash_u64</a> (std::uint64_t state, std::uint64_t value) noexcept</td></tr>
+<tr class="separator:a2e9a845e031223c4a0ba4d672e22aa5e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a391e9ba86f77c774ff8d7c31a057a2f1" id="r_a391e9ba86f77c774ff8d7c31a057a2f1"><td class="memItemLeft" align="right" valign="top">std::uint64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1st_1_1generated.html#a391e9ba86f77c774ff8d7c31a057a2f1">plcopen::core::st::generated::st_binding_hash_text</a> (std::uint64_t state, std::string_view value) noexcept</td></tr>
+<tr class="separator:a391e9ba86f77c774ff8d7c31a057a2f1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a59ca8360634ca36608eb7733f88e73f9" id="r_a59ca8360634ca36608eb7733f88e73f9"><td class="memItemLeft" align="right" valign="top">std::uint64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1st_1_1generated.html#a59ca8360634ca36608eb7733f88e73f9">plcopen::core::st::generated::st_binding_shape_hash</a> (const <a class="el" href="structplcopen_1_1core_1_1st_1_1TypeDesc.html">TypeDesc</a> &amp;desc) noexcept</td></tr>
+<tr class="separator:a59ca8360634ca36608eb7733f88e73f9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acdff6dd32e4a0a8a7df3d690a5e84f66" id="r_acdff6dd32e4a0a8a7df3d690a5e84f66"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1st_1_1generated.html#acdff6dd32e4a0a8a7df3d690a5e84f66">plcopen::core::st::generated::st_binding_installed_types_match</a> (const <a class="el" href="classplcopen_1_1core_1_1st_1_1TypeTable.html">TypeTable</a> &amp;types) noexcept</td></tr>
+<tr class="separator:acdff6dd32e4a0a8a7df3d690a5e84f66"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a598ab439f18cd7ae5fd72424c1f75ba8" id="r_a598ab439f18cd7ae5fd72424c1f75ba8"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceplcopen_1_1core_1_1st.html#ad36488d8c972e233087f13e49a094703">TypeError</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1st.html#a598ab439f18cd7ae5fd72424c1f75ba8">plcopen::core::st::install_binding_types</a> (<a class="el" href="classplcopen_1_1core_1_1st_1_1TypeTable.html">TypeTable</a> &amp;types)</td></tr>
+<tr class="separator:a598ab439f18cd7ae5fd72424c1f75ba8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
+变量</h2></td></tr>
+<tr class="memitem:abba8c2e162fbd919e9ef6ebed812e735" id="r_abba8c2e162fbd919e9ef6ebed812e735"><td class="memItemLeft" align="right" valign="top">constexpr <a class="el" href="namespaceplcopen_1_1core_1_1st.html#af07c71ef14c07e2c4c0110e091a36299">TypeId</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1st_1_1binding__type.html#abba8c2e162fbd919e9ef6ebed812e735">plcopen::core::st::binding_type::mc_buffer_mode</a> = 65536U</td></tr>
+<tr class="separator:abba8c2e162fbd919e9ef6ebed812e735"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab1d96add935186bf0a9b4adf4a98983d" id="r_ab1d96add935186bf0a9b4adf4a98983d"><td class="memItemLeft" align="right" valign="top">constexpr <a class="el" href="namespaceplcopen_1_1core_1_1st.html#af07c71ef14c07e2c4c0110e091a36299">TypeId</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1st_1_1binding__type.html#ab1d96add935186bf0a9b4adf4a98983d">plcopen::core::st::binding_type::mc_direction</a> = 65537U</td></tr>
+<tr class="separator:ab1d96add935186bf0a9b4adf4a98983d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a25295dde8208fd3c69be3fca64f37d46" id="r_a25295dde8208fd3c69be3fca64f37d46"><td class="memItemLeft" align="right" valign="top">constexpr <a class="el" href="namespaceplcopen_1_1core_1_1st.html#af07c71ef14c07e2c4c0110e091a36299">TypeId</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1st_1_1binding__type.html#a25295dde8208fd3c69be3fca64f37d46">plcopen::core::st::binding_type::mc_home_direction</a> = 65538U</td></tr>
+<tr class="separator:a25295dde8208fd3c69be3fca64f37d46"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adb70cbf5497bf0ad59ab376be19eb11c" id="r_adb70cbf5497bf0ad59ab376be19eb11c"><td class="memItemLeft" align="right" valign="top">constexpr <a class="el" href="namespaceplcopen_1_1core_1_1st.html#af07c71ef14c07e2c4c0110e091a36299">TypeId</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1st_1_1binding__type.html#adb70cbf5497bf0ad59ab376be19eb11c">plcopen::core::st::binding_type::mc_switch_mode</a> = 65539U</td></tr>
+<tr class="separator:adb70cbf5497bf0ad59ab376be19eb11c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a84e2a21874b52b700fd2eb8803836129" id="r_a84e2a21874b52b700fd2eb8803836129"><td class="memItemLeft" align="right" valign="top">constexpr <a class="el" href="namespaceplcopen_1_1core_1_1st.html#af07c71ef14c07e2c4c0110e091a36299">TypeId</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1st_1_1binding__type.html#a84e2a21874b52b700fd2eb8803836129">plcopen::core::st::binding_type::axis_ref</a> = 65540U</td></tr>
+<tr class="separator:a84e2a21874b52b700fd2eb8803836129"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2ff5ae670ce71eb87953eed9fd8c101b" id="r_a2ff5ae670ce71eb87953eed9fd8c101b"><td class="memItemLeft" align="right" valign="top">constexpr <a class="el" href="namespaceplcopen_1_1core_1_1st.html#af07c71ef14c07e2c4c0110e091a36299">TypeId</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1st_1_1binding__type.html#a2ff5ae670ce71eb87953eed9fd8c101b">plcopen::core::st::binding_type::group_ref</a> = 65541U</td></tr>
+<tr class="separator:a2ff5ae670ce71eb87953eed9fd8c101b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac2a5f877ac48317e57481f67a6429fd5" id="r_ac2a5f877ac48317e57481f67a6429fd5"><td class="memItemLeft" align="right" valign="top">constexpr <a class="el" href="namespaceplcopen_1_1core_1_1st.html#af07c71ef14c07e2c4c0110e091a36299">TypeId</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1st_1_1binding__type.html#ac2a5f877ac48317e57481f67a6429fd5">plcopen::core::st::binding_type::mc_ident_in_group</a> = 65542U</td></tr>
+<tr class="separator:ac2a5f877ac48317e57481f67a6429fd5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a817cd2b1b394ffd8b8bbd21e8ad18d38" id="r_a817cd2b1b394ffd8b8bbd21e8ad18d38"><td class="memItemLeft" align="right" valign="top">constexpr <a class="el" href="namespaceplcopen_1_1core_1_1st.html#af07c71ef14c07e2c4c0110e091a36299">TypeId</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1st_1_1binding__type.html#a817cd2b1b394ffd8b8bbd21e8ad18d38">plcopen::core::st::binding_type::mc_axis_parameter</a> = 65543U</td></tr>
+<tr class="separator:a817cd2b1b394ffd8b8bbd21e8ad18d38"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af0b73f80fe5d6f5bbcfdacbd69c3081b" id="r_af0b73f80fe5d6f5bbcfdacbd69c3081b"><td class="memItemLeft" align="right" valign="top">constexpr <a class="el" href="namespaceplcopen_1_1core_1_1st.html#af07c71ef14c07e2c4c0110e091a36299">TypeId</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1st_1_1binding__type.html#af0b73f80fe5d6f5bbcfdacbd69c3081b">plcopen::core::st::binding_type::mc_circ_mode</a> = 65544U</td></tr>
+<tr class="separator:af0b73f80fe5d6f5bbcfdacbd69c3081b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0383f72b953df2ece620ca3bac00bcd3" id="r_a0383f72b953df2ece620ca3bac00bcd3"><td class="memItemLeft" align="right" valign="top">constexpr <a class="el" href="namespaceplcopen_1_1core_1_1st.html#af07c71ef14c07e2c4c0110e091a36299">TypeId</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1st_1_1binding__type.html#a0383f72b953df2ece620ca3bac00bcd3">plcopen::core::st::binding_type::mc_circ_path_choice</a> = 65545U</td></tr>
+<tr class="separator:a0383f72b953df2ece620ca3bac00bcd3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2251efa152677c5f290bfa04b42614c6" id="r_a2251efa152677c5f290bfa04b42614c6"><td class="memItemLeft" align="right" valign="top">constexpr <a class="el" href="namespaceplcopen_1_1core_1_1st.html#af07c71ef14c07e2c4c0110e091a36299">TypeId</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1st_1_1binding__type.html#a2251efa152677c5f290bfa04b42614c6">plcopen::core::st::binding_type::mc_combine_mode</a> = 65546U</td></tr>
+<tr class="separator:a2251efa152677c5f290bfa04b42614c6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab54457ee56d5521181bccc04c0c6eb3a" id="r_ab54457ee56d5521181bccc04c0c6eb3a"><td class="memItemLeft" align="right" valign="top">constexpr <a class="el" href="namespaceplcopen_1_1core_1_1st.html#af07c71ef14c07e2c4c0110e091a36299">TypeId</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1st_1_1binding__type.html#ab54457ee56d5521181bccc04c0c6eb3a">plcopen::core::st::binding_type::mc_coord_system</a> = 65547U</td></tr>
+<tr class="separator:ab54457ee56d5521181bccc04c0c6eb3a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac5cdb3da14ca5ba36a3da7ea7cc2b0d0" id="r_ac5cdb3da14ca5ba36a3da7ea7cc2b0d0"><td class="memItemLeft" align="right" valign="top">constexpr <a class="el" href="namespaceplcopen_1_1core_1_1st.html#af07c71ef14c07e2c4c0110e091a36299">TypeId</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1st_1_1binding__type.html#ac5cdb3da14ca5ba36a3da7ea7cc2b0d0">plcopen::core::st::binding_type::mc_execution_mode</a> = 65548U</td></tr>
+<tr class="separator:ac5cdb3da14ca5ba36a3da7ea7cc2b0d0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a700d62955bb7594874747e5bf5643bca" id="r_a700d62955bb7594874747e5bf5643bca"><td class="memItemLeft" align="right" valign="top">constexpr <a class="el" href="namespaceplcopen_1_1core_1_1st.html#af07c71ef14c07e2c4c0110e091a36299">TypeId</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1st_1_1binding__type.html#a700d62955bb7594874747e5bf5643bca">plcopen::core::st::binding_type::mc_group_value_source</a> = 65549U</td></tr>
+<tr class="separator:a700d62955bb7594874747e5bf5643bca"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a67eba234d70652b6dde8243435d8a552" id="r_a67eba234d70652b6dde8243435d8a552"><td class="memItemLeft" align="right" valign="top">constexpr <a class="el" href="namespaceplcopen_1_1core_1_1st.html#af07c71ef14c07e2c4c0110e091a36299">TypeId</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1st_1_1binding__type.html#a67eba234d70652b6dde8243435d8a552">plcopen::core::st::binding_type::mc_master_value_source</a> = 65550U</td></tr>
+<tr class="separator:a67eba234d70652b6dde8243435d8a552"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1b0c136cbd4eaac88b7c2d08572c7c35" id="r_a1b0c136cbd4eaac88b7c2d08572c7c35"><td class="memItemLeft" align="right" valign="top">constexpr <a class="el" href="namespaceplcopen_1_1core_1_1st.html#af07c71ef14c07e2c4c0110e091a36299">TypeId</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1st_1_1binding__type.html#a1b0c136cbd4eaac88b7c2d08572c7c35">plcopen::core::st::binding_type::mc_path_mode</a> = 65551U</td></tr>
+<tr class="separator:a1b0c136cbd4eaac88b7c2d08572c7c35"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab311297b8775604389819dc4eba67894" id="r_ab311297b8775604389819dc4eba67894"><td class="memItemLeft" align="right" valign="top">constexpr <a class="el" href="namespaceplcopen_1_1core_1_1st.html#af07c71ef14c07e2c4c0110e091a36299">TypeId</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1st_1_1binding__type.html#ab311297b8775604389819dc4eba67894">plcopen::core::st::binding_type::mc_transition_mode</a> = 65552U</td></tr>
+<tr class="separator:ab311297b8775604389819dc4eba67894"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6c948aa612d1ecbfe496cc0949790bff" id="r_a6c948aa612d1ecbfe496cc0949790bff"><td class="memItemLeft" align="right" valign="top">constexpr <a class="el" href="namespaceplcopen_1_1core_1_1st.html#af07c71ef14c07e2c4c0110e091a36299">TypeId</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1st_1_1binding__type.html#a6c948aa612d1ecbfe496cc0949790bff">plcopen::core::st::binding_type::mc_path_table</a> = 65553U</td></tr>
+<tr class="separator:a6c948aa612d1ecbfe496cc0949790bff"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1b8561a70b61c5b49b36d45755dcf2b9" id="r_a1b8561a70b61c5b49b36d45755dcf2b9"><td class="memItemLeft" align="right" valign="top">constexpr <a class="el" href="namespaceplcopen_1_1core_1_1st.html#af07c71ef14c07e2c4c0110e091a36299">TypeId</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1st_1_1binding__type.html#a1b8561a70b61c5b49b36d45755dcf2b9">plcopen::core::st::binding_type::mc_input_ref</a> = 65554U</td></tr>
+<tr class="separator:a1b8561a70b61c5b49b36d45755dcf2b9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a13e74f30dc504f2e083a8b90d20521f6" id="r_a13e74f30dc504f2e083a8b90d20521f6"><td class="memItemLeft" align="right" valign="top">constexpr <a class="el" href="namespaceplcopen_1_1core_1_1st.html#af07c71ef14c07e2c4c0110e091a36299">TypeId</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1st_1_1binding__type.html#a13e74f30dc504f2e083a8b90d20521f6">plcopen::core::st::binding_type::mc_output_ref</a> = 65555U</td></tr>
+<tr class="separator:a13e74f30dc504f2e083a8b90d20521f6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a10278dd28a0fedf648d16c3cccce1125" id="r_a10278dd28a0fedf648d16c3cccce1125"><td class="memItemLeft" align="right" valign="top">constexpr <a class="el" href="namespaceplcopen_1_1core_1_1st.html#af07c71ef14c07e2c4c0110e091a36299">TypeId</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1st_1_1binding__type.html#a10278dd28a0fedf648d16c3cccce1125">plcopen::core::st::binding_type::mc_reference_signal_ref</a> = 65556U</td></tr>
+<tr class="separator:a10278dd28a0fedf648d16c3cccce1125"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa7340f0eb07aae6a1bc7f6215ae84646" id="r_aa7340f0eb07aae6a1bc7f6215ae84646"><td class="memItemLeft" align="right" valign="top">constexpr <a class="el" href="namespaceplcopen_1_1core_1_1st.html#af07c71ef14c07e2c4c0110e091a36299">TypeId</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1st_1_1binding__type.html#aa7340f0eb07aae6a1bc7f6215ae84646">plcopen::core::st::binding_type::mc_tool_data</a> = 65558U</td></tr>
+<tr class="separator:aa7340f0eb07aae6a1bc7f6215ae84646"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5533aa13b5f9faccc2e6da6948940cdf" id="r_a5533aa13b5f9faccc2e6da6948940cdf"><td class="memItemLeft" align="right" valign="top">constexpr <a class="el" href="namespaceplcopen_1_1core_1_1st.html#af07c71ef14c07e2c4c0110e091a36299">TypeId</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1st_1_1binding__type.html#a5533aa13b5f9faccc2e6da6948940cdf">plcopen::core::st::binding_type::mc_group_position</a> = 65560U</td></tr>
+<tr class="separator:a5533aa13b5f9faccc2e6da6948940cdf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a56e37edea8d7103f4b866f86a0ad44dd" id="r_a56e37edea8d7103f4b866f86a0ad44dd"><td class="memItemLeft" align="right" valign="top">constexpr <a class="el" href="namespaceplcopen_1_1core_1_1st.html#af07c71ef14c07e2c4c0110e091a36299">TypeId</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1st_1_1binding__type.html#a56e37edea8d7103f4b866f86a0ad44dd">plcopen::core::st::binding_type::mc_payload_data</a> = 65561U</td></tr>
+<tr class="separator:a56e37edea8d7103f4b866f86a0ad44dd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae79ca3a109873497cf15709b2b4d1622" id="r_ae79ca3a109873497cf15709b2b4d1622"><td class="memItemLeft" align="right" valign="top">constexpr <a class="el" href="namespaceplcopen_1_1core_1_1st.html#af07c71ef14c07e2c4c0110e091a36299">TypeId</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1st_1_1binding__type.html#ae79ca3a109873497cf15709b2b4d1622">plcopen::core::st::binding_type::mc_jog_boolean_array</a> = 65563U</td></tr>
+<tr class="separator:ae79ca3a109873497cf15709b2b4d1622"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9b6bda1aab27b93377120adf93733d32" id="r_a9b6bda1aab27b93377120adf93733d32"><td class="memItemLeft" align="right" valign="top">constexpr <a class="el" href="namespaceplcopen_1_1core_1_1st.html#af07c71ef14c07e2c4c0110e091a36299">TypeId</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1st_1_1binding__type.html#a9b6bda1aab27b93377120adf93733d32">plcopen::core::st::binding_type::mc_group_s_w_limits</a> = 65566U</td></tr>
+<tr class="separator:a9b6bda1aab27b93377120adf93733d32"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a63d3b0281e70b594055478bd7b9fd247" id="r_a63d3b0281e70b594055478bd7b9fd247"><td class="memItemLeft" align="right" valign="top">constexpr <a class="el" href="namespaceplcopen_1_1core_1_1st.html#af07c71ef14c07e2c4c0110e091a36299">TypeId</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1st_1_1binding__type.html#a63d3b0281e70b594055478bd7b9fd247">plcopen::core::st::binding_type::mc_rigid_body_dynamic</a> = 65568U</td></tr>
+<tr class="separator:a63d3b0281e70b594055478bd7b9fd247"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4267ba34eff5f5d585e9581a39acd0dd" id="r_a4267ba34eff5f5d585e9581a39acd0dd"><td class="memItemLeft" align="right" valign="top">constexpr <a class="el" href="namespaceplcopen_1_1core_1_1st.html#af07c71ef14c07e2c4c0110e091a36299">TypeId</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1st_1_1binding__type.html#a4267ba34eff5f5d585e9581a39acd0dd">plcopen::core::st::binding_type::mc_tu_c_numerator</a> = 65569U</td></tr>
+<tr class="separator:a4267ba34eff5f5d585e9581a39acd0dd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a99f18c14d4012e15ca7ff0a14c5dd09c" id="r_a99f18c14d4012e15ca7ff0a14c5dd09c"><td class="memItemLeft" align="right" valign="top">constexpr <a class="el" href="namespaceplcopen_1_1core_1_1st.html#af07c71ef14c07e2c4c0110e091a36299">TypeId</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1st_1_1binding__type.html#a99f18c14d4012e15ca7ff0a14c5dd09c">plcopen::core::st::binding_type::mc_tu_c_denominator</a> = 65570U</td></tr>
+<tr class="separator:a99f18c14d4012e15ca7ff0a14c5dd09c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a84c30bcd6af32034e705f2f8d8b540f5" id="r_a84c30bcd6af32034e705f2f8d8b540f5"><td class="memItemLeft" align="right" valign="top">constexpr <a class="el" href="namespaceplcopen_1_1core_1_1st.html#af07c71ef14c07e2c4c0110e091a36299">TypeId</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1st_1_1binding__type.html#a84c30bcd6af32034e705f2f8d8b540f5">plcopen::core::st::binding_type::mc_cam_switch_table_view</a> = 65571U</td></tr>
+<tr class="separator:a84c30bcd6af32034e705f2f8d8b540f5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a54ee491e944a18ece238971d32be17b6" id="r_a54ee491e944a18ece238971d32be17b6"><td class="memItemLeft" align="right" valign="top">constexpr <a class="el" href="namespaceplcopen_1_1core_1_1st.html#af07c71ef14c07e2c4c0110e091a36299">TypeId</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1st_1_1binding__type.html#a54ee491e944a18ece238971d32be17b6">plcopen::core::st::binding_type::mc_cam_table_view</a> = 65572U</td></tr>
+<tr class="separator:a54ee491e944a18ece238971d32be17b6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab2e81fb028143bbf3533baad8f1bdf41" id="r_ab2e81fb028143bbf3533baad8f1bdf41"><td class="memItemLeft" align="right" valign="top">constexpr <a class="el" href="namespaceplcopen_1_1core_1_1st.html#af07c71ef14c07e2c4c0110e091a36299">TypeId</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1st_1_1binding__type.html#ab2e81fb028143bbf3533baad8f1bdf41">plcopen::core::st::binding_type::mc_time_position</a> = 65573U</td></tr>
+<tr class="separator:ab2e81fb028143bbf3533baad8f1bdf41"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab45cb8f44e614f138ea2b3cd0edb7acf" id="r_ab45cb8f44e614f138ea2b3cd0edb7acf"><td class="memItemLeft" align="right" valign="top">constexpr <a class="el" href="namespaceplcopen_1_1core_1_1st.html#af07c71ef14c07e2c4c0110e091a36299">TypeId</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1st_1_1binding__type.html#ab45cb8f44e614f138ea2b3cd0edb7acf">plcopen::core::st::binding_type::mc_time_velocity</a> = 65574U</td></tr>
+<tr class="separator:ab45cb8f44e614f138ea2b3cd0edb7acf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a46fb1a48870fa8b68afde67e1577c04c" id="r_a46fb1a48870fa8b68afde67e1577c04c"><td class="memItemLeft" align="right" valign="top">constexpr <a class="el" href="namespaceplcopen_1_1core_1_1st.html#af07c71ef14c07e2c4c0110e091a36299">TypeId</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1st_1_1binding__type.html#a46fb1a48870fa8b68afde67e1577c04c">plcopen::core::st::binding_type::mc_time_acceleration</a> = 65575U</td></tr>
+<tr class="separator:a46fb1a48870fa8b68afde67e1577c04c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a84da167ccea78a86b8b2149b177b0ef2" id="r_a84da167ccea78a86b8b2149b177b0ef2"><td class="memItemLeft" align="right" valign="top">constexpr <a class="el" href="namespaceplcopen_1_1core_1_1st.html#af07c71ef14c07e2c4c0110e091a36299">TypeId</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1st_1_1binding__type.html#a84da167ccea78a86b8b2149b177b0ef2">plcopen::core::st::binding_type::mc_dh_parameter_array</a> = 65578U</td></tr>
+<tr class="separator:a84da167ccea78a86b8b2149b177b0ef2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac8bf2c91ebf6d61beca36c13582c808a" id="r_ac8bf2c91ebf6d61beca36c13582c808a"><td class="memItemLeft" align="right" valign="top">constexpr <a class="el" href="namespaceplcopen_1_1core_1_1st.html#af07c71ef14c07e2c4c0110e091a36299">TypeId</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1st_1_1binding__type.html#ac8bf2c91ebf6d61beca36c13582c808a">plcopen::core::st::binding_type::mc_joint_info_array</a> = 65581U</td></tr>
+<tr class="separator:ac8bf2c91ebf6d61beca36c13582c808a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad47e4d12d0fd494a55b3052421d7c020" id="r_ad47e4d12d0fd494a55b3052421d7c020"><td class="memItemLeft" align="right" valign="top">constexpr <a class="el" href="namespaceplcopen_1_1core_1_1st.html#af07c71ef14c07e2c4c0110e091a36299">TypeId</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1st_1_1binding__type.html#ad47e4d12d0fd494a55b3052421d7c020">plcopen::core::st::binding_type::mc_axis_velocity_array</a> = 65582U</td></tr>
+<tr class="separator:ad47e4d12d0fd494a55b3052421d7c020"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7ca2726ef85fb29dde67f102092d2dc4" id="r_a7ca2726ef85fb29dde67f102092d2dc4"><td class="memItemLeft" align="right" valign="top">constexpr <a class="el" href="namespaceplcopen_1_1core_1_1st.html#af07c71ef14c07e2c4c0110e091a36299">TypeId</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1st_1_1binding__type.html#a7ca2726ef85fb29dde67f102092d2dc4">plcopen::core::st::binding_type::mc_axis_acceleration_array</a> = 65583U</td></tr>
+<tr class="separator:a7ca2726ef85fb29dde67f102092d2dc4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a39f48d1693c20fa64cea5ef9f9718637" id="r_a39f48d1693c20fa64cea5ef9f9718637"><td class="memItemLeft" align="right" valign="top">constexpr <a class="el" href="namespaceplcopen_1_1core_1_1st.html#af07c71ef14c07e2c4c0110e091a36299">TypeId</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1st_1_1binding__type.html#a39f48d1693c20fa64cea5ef9f9718637">plcopen::core::st::binding_type::mc_axis_deceleration_array</a> = 65584U</td></tr>
+<tr class="separator:a39f48d1693c20fa64cea5ef9f9718637"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a539aea5d25ae02121052043250b36b2e" id="r_a539aea5d25ae02121052043250b36b2e"><td class="memItemLeft" align="right" valign="top">constexpr <a class="el" href="namespaceplcopen_1_1core_1_1st.html#af07c71ef14c07e2c4c0110e091a36299">TypeId</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1st_1_1binding__type.html#a539aea5d25ae02121052043250b36b2e">plcopen::core::st::binding_type::mc_axis_jerk_array</a> = 65585U</td></tr>
+<tr class="separator:a539aea5d25ae02121052043250b36b2e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a224b27bd6da8665f7935f66a67b6a3f0" id="r_a224b27bd6da8665f7935f66a67b6a3f0"><td class="memItemLeft" align="right" valign="top">constexpr <a class="el" href="namespaceplcopen_1_1core_1_1st.html#af07c71ef14c07e2c4c0110e091a36299">TypeId</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1st_1_1binding__type.html#a224b27bd6da8665f7935f66a67b6a3f0">plcopen::core::st::binding_type::mc_orientation_mode</a> = 65586U</td></tr>
+<tr class="separator:a224b27bd6da8665f7935f66a67b6a3f0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7eaa0c41209e337ed52cc5998f70ea34" id="r_a7eaa0c41209e337ed52cc5998f70ea34"><td class="memItemLeft" align="right" valign="top">constexpr <a class="el" href="namespaceplcopen_1_1core_1_1st.html#af07c71ef14c07e2c4c0110e091a36299">TypeId</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1st_1_1binding__type.html#a7eaa0c41209e337ed52cc5998f70ea34">plcopen::core::st::binding_type::mc_kin_transform_ref</a> = 65587U</td></tr>
+<tr class="separator:a7eaa0c41209e337ed52cc5998f70ea34"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5f48e667df340b85e34b4187d9c54e9f" id="r_a5f48e667df340b85e34b4187d9c54e9f"><td class="memItemLeft" align="right" valign="top">constexpr <a class="el" href="namespaceplcopen_1_1core_1_1st.html#af07c71ef14c07e2c4c0110e091a36299">TypeId</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1st_1_1binding__type.html#a5f48e667df340b85e34b4187d9c54e9f">plcopen::core::st::binding_type::mc_path_description</a> = 65588U</td></tr>
+<tr class="separator:a5f48e667df340b85e34b4187d9c54e9f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acacf2301c1bb2b0924c6e240ada4989d" id="r_acacf2301c1bb2b0924c6e240ada4989d"><td class="memItemLeft" align="right" valign="top">constexpr <a class="el" href="namespaceplcopen_1_1core_1_1st.html#af07c71ef14c07e2c4c0110e091a36299">TypeId</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1st_1_1binding__type.html#acacf2301c1bb2b0924c6e240ada4989d">plcopen::core::st::binding_type::mc_sync_mode</a> = 65589U</td></tr>
+<tr class="separator:acacf2301c1bb2b0924c6e240ada4989d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8a6cfcdc1387a59bb30960a99861d5d7" id="r_a8a6cfcdc1387a59bb30960a99861d5d7"><td class="memItemLeft" align="right" valign="top">constexpr <a class="el" href="namespaceplcopen_1_1core_1_1st.html#af07c71ef14c07e2c4c0110e091a36299">TypeId</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1st_1_1binding__type.html#a8a6cfcdc1387a59bb30960a99861d5d7">plcopen::core::st::binding_type::mc_cam_start_mode</a> = 65590U</td></tr>
+<tr class="separator:a8a6cfcdc1387a59bb30960a99861d5d7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acef8a43351092fc2233b84fe317f5d2b" id="r_acef8a43351092fc2233b84fe317f5d2b"><td class="memItemLeft" align="right" valign="top">constexpr <a class="el" href="namespaceplcopen_1_1core_1_1st.html#af07c71ef14c07e2c4c0110e091a36299">TypeId</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1st_1_1binding__type.html#acef8a43351092fc2233b84fe317f5d2b">plcopen::core::st::binding_type::mc_cam_axis_direction</a> = 65591U</td></tr>
+<tr class="separator:acef8a43351092fc2233b84fe317f5d2b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad61d27cc7c5a16aca93eb05462090009" id="r_ad61d27cc7c5a16aca93eb05462090009"><td class="memItemLeft" align="right" valign="top">constexpr <a class="el" href="namespaceplcopen_1_1core_1_1st.html#af07c71ef14c07e2c4c0110e091a36299">TypeId</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1st_1_1binding__type.html#ad61d27cc7c5a16aca93eb05462090009">plcopen::core::st::binding_type::mc_cam_switch_mode</a> = 65592U</td></tr>
+<tr class="separator:ad61d27cc7c5a16aca93eb05462090009"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6b28d08b18634223477c408a935d45bf" id="r_a6b28d08b18634223477c408a935d45bf"><td class="memItemLeft" align="right" valign="top">constexpr <a class="el" href="namespaceplcopen_1_1core_1_1st.html#af07c71ef14c07e2c4c0110e091a36299">TypeId</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1st_1_1binding__type.html#a6b28d08b18634223477c408a935d45bf">plcopen::core::st::binding_type::mc_cam_switch_outputs_view</a> = 65593U</td></tr>
+<tr class="separator:a6b28d08b18634223477c408a935d45bf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a53b9c791f30c7240a053b9292d25828c" id="r_a53b9c791f30c7240a053b9292d25828c"><td class="memItemLeft" align="right" valign="top">constexpr <a class="el" href="namespaceplcopen_1_1core_1_1st.html#af07c71ef14c07e2c4c0110e091a36299">TypeId</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1st_1_1binding__type.html#a53b9c791f30c7240a053b9292d25828c">plcopen::core::st::binding_type::mc_cam_track_options_view</a> = 65594U</td></tr>
+<tr class="separator:a53b9c791f30c7240a053b9292d25828c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3cfd74965661fa5082905671363ea2d8" id="r_a3cfd74965661fa5082905671363ea2d8"><td class="memItemLeft" align="right" valign="top">constexpr std::size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1st_1_1binding__type.html#a3cfd74965661fa5082905671363ea2d8">plcopen::core::st::binding_type::public_count</a> = 49U</td></tr>
+<tr class="separator:a3cfd74965661fa5082905671363ea2d8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afff878c6730a037c3268e781da07bb57" id="r_afff878c6730a037c3268e781da07bb57"><td class="memItemLeft" align="right" valign="top">constexpr std::size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1st_1_1binding__type.html#afff878c6730a037c3268e781da07bb57">plcopen::core::st::binding_type::count</a> = 59U</td></tr>
+<tr class="separator:afff878c6730a037c3268e781da07bb57"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5b061f362d6d5b0f3aef9fb4c5f2088a" id="r_a5b061f362d6d5b0f3aef9fb4c5f2088a"><td class="memItemLeft" align="right" valign="top">constexpr std::array&lt; <a class="el" href="structplcopen_1_1core_1_1st_1_1generated_1_1StBindingEnumMapping.html">StBindingEnumMapping</a>, 76 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1st_1_1generated.html#a5b061f362d6d5b0f3aef9fb4c5f2088a">plcopen::core::st::generated::kStBindingEnumMappings</a></td></tr>
+<tr class="separator:a5b061f362d6d5b0f3aef9fb4c5f2088a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7126ca181dd0900f37e23f698489e555" id="r_a7126ca181dd0900f37e23f698489e555"><td class="memItemLeft" align="right" valign="top">constexpr std::array&lt; <a class="el" href="structplcopen_1_1core_1_1st_1_1generated_1_1StBindingFieldMetadata.html">StBindingFieldMetadata</a>, 54 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1st_1_1generated.html#a7126ca181dd0900f37e23f698489e555">plcopen::core::st::generated::kStBindingFields</a></td></tr>
+<tr class="separator:a7126ca181dd0900f37e23f698489e555"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6fe300e38f99ff8075ffbf009a4d6150" id="r_a6fe300e38f99ff8075ffbf009a4d6150"><td class="memItemLeft" align="right" valign="top">constexpr std::array&lt; <a class="el" href="structplcopen_1_1core_1_1st_1_1generated_1_1StBindingTypeMetadata.html">StBindingTypeMetadata</a>, 49 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1st_1_1generated.html#a6fe300e38f99ff8075ffbf009a4d6150">plcopen::core::st::generated::kStBindingTypes</a></td></tr>
+<tr class="separator:a6fe300e38f99ff8075ffbf009a4d6150"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8a43f310e817f7542b2fde8c9008781a" id="r_a8a43f310e817f7542b2fde8c9008781a"><td class="memItemLeft" align="right" valign="top">constexpr std::uint64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1st_1_1generated.html#a8a43f310e817f7542b2fde8c9008781a">plcopen::core::st::generated::st_binding_null_handle</a> = 0U</td></tr>
+<tr class="separator:a8a43f310e817f7542b2fde8c9008781a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acbde299a7de86fa9ddb5fa8fc9b64960" id="r_acbde299a7de86fa9ddb5fa8fc9b64960"><td class="memItemLeft" align="right" valign="top">constexpr std::array&lt; <a class="el" href="structplcopen_1_1core_1_1st_1_1generated_1_1StBindingInstalledShape.html">StBindingInstalledShape</a>, 59 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1st_1_1generated.html#acbde299a7de86fa9ddb5fa8fc9b64960">plcopen::core::st::generated::kStBindingInstalledShapes</a></td></tr>
+<tr class="separator:acbde299a7de86fa9ddb5fa8fc9b64960"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table>
+</div><!-- contents -->
+<!-- start footer part -->
+<hr class="footer"/><address class="footer"><small>
+制作者&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.8
+</small></address>
+</body>
+</html>

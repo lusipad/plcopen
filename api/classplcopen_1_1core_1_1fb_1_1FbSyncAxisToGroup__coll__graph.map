@@ -1,0 +1,15 @@
+<map id="plcopen::core::fb::FbSyncAxisToGroup" name="plcopen::core::fb::FbSyncAxisToGroup">
+<area shape="rect" id="Node000001" title=" " alt="" coords="628,101,779,141"/>
+<area shape="rect" id="Node000002" href="$classplcopen_1_1core_1_1fb_1_1SyncExecuteFb.html" title=" " alt="" coords="372,69,511,109"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="525,97,628,110,628,115,524,102"/>
+<area shape="rect" id="Node000003" href="$classplcopen_1_1core_1_1axis_1_1AxisModel.html" title=" " alt="" coords="17,5,161,45"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="175,36,346,67,372,72,371,77,345,72,174,42"/>
+<area shape="rect" id="Node000004" href="$structplcopen_1_1core_1_1fb_1_1MotionOutputs.html" title=" " alt="" coords="19,69,158,109"/>
+<area shape="poly" id="edge3_Node000002_Node000004" title=" " alt="" coords="172,87,372,87,372,92,172,92"/>
+<area shape="rect" id="Node000005" href="$classplcopen_1_1core_1_1axis_1_1AxisGroup.html" title=" " alt="" coords="369,133,513,173"/>
+<area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="527,140,627,128,628,133,527,146"/>
+<area shape="rect" id="Node000006" href="$structplcopen_1_1core_1_1axis_1_1GroupPosition.html" title=" " alt="" coords="17,133,161,173"/>
+<area shape="poly" id="edge5_Node000005_Node000006" title=" " alt="" coords="174,151,369,151,369,156,174,156"/>
+<area shape="rect" id="Node000007" href="$structplcopen_1_1core_1_1axis_1_1JogCommandOptions.html" title=" " alt="" coords="5,197,172,237"/>
+<area shape="poly" id="edge6_Node000005_Node000007" title=" " alt="" coords="185,199,345,171,369,166,370,171,346,176,186,204"/>
+</map>

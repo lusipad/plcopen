@@ -1,0 +1,5 @@
+<map id="plcopen::core::stream::JointCommandFrame" name="plcopen::core::stream::JointCommandFrame">
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,108,172,148"/>
+<area shape="rect" id="Node000002" href="$structplcopen_1_1core_1_1stream_1_1JointCommand.html" title=" " alt="" coords="7,5,170,45"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="91,59,91,108,86,108,86,59"/>
+</map>

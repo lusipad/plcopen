@@ -1,0 +1,106 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh">
+<head>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=11"/>
+<meta name="generator" content="Doxygen 1.9.8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>plcopen: core/fb</title>
+<link href="tabs.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="jquery.js"></script>
+<script type="text/javascript" src="dynsections.js"></script>
+<link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<link href="doxygen.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+<div id="top"><!-- do not remove this div, it is closed by doxygen! -->
+<div id="titlearea">
+<table cellspacing="0" cellpadding="0">
+ <tbody>
+ <tr id="projectrow">
+  <td id="projectalign">
+   <div id="projectname">plcopen<span id="projectnumber">&#160;0.21.0</span>
+   </div>
+  </td>
+ </tr>
+ </tbody>
+</table>
+</div>
+<!-- end header part -->
+<!-- 制作者 Doxygen 1.9.8 -->
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+var searchBox = new SearchBox("searchBox", "search/",'.html');
+/* @license-end */
+</script>
+<script type="text/javascript" src="menudata.js"></script>
+<script type="text/javascript" src="menu.js"></script>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+$(function() {
+  initMenu('',true,false,'search.php','搜索');
+  $(document).ready(function() { init_search(); });
+});
+/* @license-end */
+</script>
+<div id="main-nav"></div>
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<div id="MSearchResults">
+<div class="SRPage">
+<div id="SRIndex">
+<div id="SRResults"></div>
+<div class="SRStatus" id="Loading">载入中...</div>
+<div class="SRStatus" id="Searching">搜索中...</div>
+<div class="SRStatus" id="NoMatches">未找到</div>
+</div>
+</div>
+</div>
+</div>
+
+</div><!-- top -->
+<div><div class="header">
+  <div class="headertitle"><div class="title">core/fb</div></div>
+</div><!--header-->
+<div class="contents">
+<div class="textblock"><p><a class="anchor" id="autotoc_md23"></a> <code>core/fb</code> is the R3 L6 PLCopen function-block contract layer.</p>
+<p>本层现有 82 个 PLCopen 同名 <code>Fb*</code> 门面，按头文件分组组织：共享 Execute/Enable 生命周期锁存与基础 IEC 块（<code><a class="el" href="base_8h.html">base.h</a></code>/<code><a class="el" href="basic_8h.html">basic.h</a></code>），单轴与群组 运动门面通过 <code><a class="el" href="motion_8h.html">motion.h</a></code> 绑定 <code>core/axis</code> 命令契约。 <code><a class="el" href="motion_8h.html">motion.h</a></code> also carries the A3 circular facades (<code>FbMoveCircularAbsolute/Relative</code>, BORDER-only, KB-030): CENTER/RADIUS circ modes and blending buffer modes surface explicit errors per the approved circular matrix. The linear facades carry the A4 transition inputs (<code>transition_mode</code>, <code>transition_parameter</code>, KB-031): MaxCornerDeviation with a blending buffer mode requests the quintic corner blend, and unlisted TransitionMode combinations surface explicit errors per the approved blending matrix.</p>
+<p><code>sync.h</code> carries the multi-axis synchronization facades (<code>FbGearIn</code>, <code>FbGearInPos</code>, <code>FbGearOut</code>, <code>FbCamTableSelect</code>, <code>FbCamIn</code>, <code>FbCamOut</code>, <code>FbPhasingAbsolute/Relative</code>, <code>FbCombineAxes</code>). Boundaries carried from the v0.x executable spec:</p>
+<ul>
+<li><code>in_sync</code> maps to the v0.x <code>InGear</code>/<code>InSync</code> outputs; <code>start_sync</code> pulses one cycle at approach start and at sync entry.</li>
+<li>Gear/cam require master and slave in the same enabled group (<code>precondition_failed</code>); combine does not require a group.</li>
+<li>Approach segments use master-progress interpolation with an optional per-cycle velocity cap; acceleration/jerk-shaped approach profiles are not modeled in the rewrite core.</li>
+<li>Phase inputs of the phasing blocks are latched on the rising edge.</li>
+</ul>
+<p><code><a class="el" href="parameter_8h.html">parameter.h</a></code> carries the parameter and state read/write facades: enable-based reads (<code>FbReadParameter</code>, <code>FbReadBoolParameter</code>, <code>FbReadActual*</code>, <code>FbReadCommand*</code>, <code>FbReadStatus</code>, <code>FbReadAxisError</code>) and execute-based writes (<code>FbWriteParameter</code>, <code>FbWriteBoolParameter</code>, <code>FbSetPosition</code>). The supported parameter registry lives on <code>axis::AxisModel</code>; unsupported parameters report <code>rt::ErrorCode::unsupported</code> instead of guessing (KB-006 carried over).</p>
+<p><code><a class="el" href="profile_8h.html">profile.h</a></code> carries the profile-table facades (<code>FbPositionProfile</code>, <code>FbVelocityProfile</code>, <code>FbAccelerationProfile</code>): tables are caller-owned fixed arrays of <code>axis::ProfileSegment</code> (≤ queue capacity), durations are cycle counts, and <code>TimeScale</code> must be finite and positive. Before the first submit, all three FBs pre-validate scaled-duration representability: every positive PositionProfile duration and every non-final Velocity/AccelerationProfile duration must round to at least one cycle and fit in <code>int64_t</code>; the final velocity-driving segment holds indefinitely. PositionProfile materializes its fixed command table and preflights every resolved endpoint and OTG profile before the first segment starts. Velocity/AccelerationProfile atomically validate the full transformed table (target velocity, acceleration/deceleration, and jerk). An invalid or infeasible successor therefore causes no partial execution. PositionProfile reports Done only when the axis reports its last command ID completed; tracked active or pending segments stay Busy, and takeover reports CommandAborted. External profile-table import stays out of the runtime (KB-010).</p>
+<p><code><a class="el" href="management_8h.html">management.h</a></code> carries GroupHome, MoveDirect, GroupSetOverride, and GroupInterrupt/Continue. MoveDirect uses the dedicated group-owned Direct lifecycle from KB-068: natural all-member completion reports Done; GroupStop/GroupDisable report CommandAborted for the tracked Direct ID; a member power loss or ErrorStop reports Error (<code>precondition_failed</code>). While Direct is active, linear/circular and Direct re-entry are rejected with <code>invalid_argument</code>, and GroupSetOverride/GroupInterrupt are rejected with <code>unsupported</code>.</p>
+<p><code><a class="el" href="probe_8h.html">probe.h</a></code> carries <code>FbTouchProbe</code>, <code>FbAbortTrigger</code>, and <code>FbEmergencyStop</code>. Trigger levels are the digital inputs on <code>AxisModel</code> (adapters call <code>set_digital_input</code>); capture is the rising edge evaluated in the axis cycle, optionally gated by the position window.</p>
+<p><code><a class="el" href="io_8h.html">io.h</a></code> carries the digital IO and diagnostic facades (<code>FbReadDigitalInput/Output</code>, <code>FbWriteDigitalOutput</code>, <code>FbDigitalCamSwitch</code>, <code>FbReadAxisInfo</code>, <code>FbReadMotionState</code>) over the fixed <code>AxisModel</code> IO banks and info bits. With it the v0.x public FB surface is fully carried。 门面覆盖≠合规：诚实口径为 Part 1 门面 43/43 但 B 级 I/O 齐备 22/43 （2026-07-12 审计时点 C++ 字段面；P1-A 已补 4 项结构缺口，其余命名/形态 缺口归 L2a 引脚层）、条款级问题 D-01~D-20 中 16 项未清（D-05/D-12/D-13/ D-15 已关；不能宣称合规），Part 4 同名门面 68/68（KB-078，接口/语义仍 逐项部分覆盖），Part 5 11/11 已完成标准名称、派生类型、逐 I/O 和 可软件验证语义收口（KB-080）—— 逐条审计公开于 <a href="../../doc/compliance/">doc/compliance/</a>。硬件 <code>Servo</code> 窄接口 已在 <a class="el" href="md_core_2adapters_2README.html">core/adapters</a> 交付（ADR-0004，含 CiA402 状态机 与 CSP/CSV/CST 模式管理）。</p>
+<p><code>group.h</code> carries the execute-based group administration facades (<code>FbAddAxisToGroup</code>, <code>FbRemoveAxisFromGroup</code>, <code>FbGroupReset</code>, <code>FbGroupReadStatus</code>, <code>FbGroupReadPosition</code>)：群组管理方法在触发周期内完成，done 随 execute 下降沿清除；位置回读通过标准 <code>Source</code> 输入选择 actual/command/set， 其中 set 当前显式返回 <code>unsupported</code>，不保留旧名包装。 P4-B2（KB-076）另提供工具/载荷固定容量库与 active/selected 回读，以及 <code>FbGroupJog</code>/<code>FbGroupJogVector</code> 的 Enable 生命周期；Jog 消费专用 Dynamics， 按 jerk/acc 包络持续驱动 ACS/MCS/PCS，并在松键、GroupStop 或接管时受控停车。 P4-B3（KB-077）增加刚体动态整体读写、组里程到单轴同步、PathData 驱动轴组， 以及动态坐标、输送带和转台跟踪。带 Dynamics 的轴到组同步先报告 <code>approaching</code>，追上后才报告 <code>InSync</code>；首次同步后采用 position-locking。</p>
+<p><code><a class="el" href="homing_8h.html">homing.h</a></code> carries all 11 Part 5 FB facades: <code>FbStepAbsoluteSwitch</code>、 <code>FbStepLimitSwitch</code>、<code>FbStepBlock</code>、<code>FbStepReferencePulse</code>、 <code>FbStepDistanceCoded</code>、<code>FbHomeDirect</code>、<code>FbHomeAbsolute</code>、 <code>FbFinishHoming</code>、两项 Flying 与 <code>FbAbortPassiveHoming</code>。主动 Step 保持 Homing 状态，HomeDirect/HomeAbsolute/FinishHoming 完成最终状态转换； Flying 在线重标定保持绝对目标值不变。机读逐 I/O 声明见 <code>doc/compliance/generated/plcopen-motion-part5-io.md</code>。这些软件合同不替代 真机堵转安全、厂商编码器协议/时间戳、多圈真实性或 PLCopen 正式批准。</p>
+<p><code><a class="el" href="path__table_8h.html">path_table.h</a></code> carries the Part 4 path table and transform FBs（<code>FbPathSelect</code>、 <code>FbMovePath</code>、<code>FbSetKinTransform</code>、<code>FbReadCartesianTransform</code>、 <code>FbSyncGroupToAxis</code>，已批矩阵 2026-07-07）：调用方持有的定长 waypoint 表经校验后以句柄交给 MC_MovePath 逐段执行。</p>
+<p><code><a class="el" href="tracking_8h.html">tracking.h</a></code> carries <code>FbSetDynCoordTransform</code>、<code>FbTrackConveyorBelt</code> 与 <code>FbTrackRotaryTable</code>。动态 PCS 在每个组周期消费主组位姿或输送带/转台增量； PCS 运动结束后仍保持同一 PCS 位姿。当前只支持 Aborting 动态 PCS，buffered 动态 PCS 返回显式错误。</p>
+<p>Non-goals:</p>
+<ul>
+<li>No one-class-per-legacy-FB copy：门面按语义矩阵组织，不逐一复刻旧线类形状。</li>
+<li>No new behavior beyond the existing compliance matrix and known-boundary IDs.</li>
+</ul>
+<p>外圈消费者：st 语言层（<code>core/st</code>）只消费本层的 <code><a class="el" href="basic_8h.html">fb/basic.h</a></code>（连同 <code><a class="el" href="error_8h.html">rt/error.h</a></code>），是纯 sink——生产层不反向引用 st。 </p>
+</div></div><!-- contents -->
+</div><!-- PageDoc -->
+<!-- start footer part -->
+<hr class="footer"/><address class="footer"><small>
+制作者&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.8
+</small></address>
+</body>
+</html>

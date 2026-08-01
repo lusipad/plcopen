@@ -1,0 +1,21 @@
+<map id="plcopen::core::plan::BlendDecision" name="plcopen::core::plan::BlendDecision">
+<area shape="rect" id="Node000001" title=" " alt="" coords="787,167,932,207"/>
+<area shape="rect" id="Node000002" href="$structplcopen_1_1core_1_1geom_1_1PathSegment.html" title=" " alt="" coords="543,167,697,207"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="711,184,786,184,786,189,711,189"/>
+<area shape="rect" id="Node000003" href="$structplcopen_1_1core_1_1geom_1_1LineSegment.html" title=" " alt="" coords="274,8,429,48"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="404,52,447,76,589,164,586,169,444,81,401,57"/>
+<area shape="rect" id="Node000004" href="$structplcopen_1_1core_1_1geom_1_1Vec3.html" title=" " alt="" coords="5,167,160,207"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="97,153,130,99,154,72,183,50,227,32,274,24,274,29,229,37,185,54,158,76,135,102,101,156"/>
+<area shape="rect" id="Node000005" href="$structplcopen_1_1core_1_1geom_1_1ArcSegment.html" title=" " alt="" coords="274,91,429,131"/>
+<area shape="poly" id="edge5_Node000005_Node000004" title=" " alt="" coords="120,157,150,139,183,124,228,113,273,108,274,114,229,119,185,129,152,143,123,161"/>
+<area shape="rect" id="Node000006" href="$structplcopen_1_1core_1_1geom_1_1CubicBezierSegment.html" title=" " alt="" coords="269,167,434,207"/>
+<area shape="poly" id="edge7_Node000006_Node000004" title=" " alt="" coords="174,184,269,184,269,189,174,189"/>
+<area shape="rect" id="Node000007" href="$structplcopen_1_1core_1_1geom_1_1QuadraticBlendSegment.html" title=" " alt="" coords="257,236,445,276"/>
+<area shape="poly" id="edge9_Node000007_Node000004" title=" " alt="" coords="131,211,185,233,258,248,257,253,183,239,129,216"/>
+<area shape="rect" id="Node000008" href="$structplcopen_1_1core_1_1geom_1_1QuinticBlendSegment.html" title=" " alt="" coords="266,332,437,372"/>
+<area shape="poly" id="edge11_Node000008_Node000004" title=" " alt="" coords="98,219,111,250,130,283,155,314,185,339,224,354,266,359,266,364,223,359,183,344,151,318,126,286,106,252,93,221"/>
+<area shape="poly" id="edge4_Node000002_Node000005" title=" " alt="" coords="437,132,549,164,548,169,435,137"/>
+<area shape="poly" id="edge6_Node000002_Node000006" title=" " alt="" coords="448,184,543,184,543,189,448,189"/>
+<area shape="poly" id="edge8_Node000002_Node000007" title=" " alt="" coords="442,230,542,204,543,209,443,235"/>
+<area shape="poly" id="edge10_Node000002_Node000008" title=" " alt="" coords="395,322,585,205,588,209,398,327"/>
+</map>

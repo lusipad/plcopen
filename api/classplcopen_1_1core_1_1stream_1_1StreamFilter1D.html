@@ -1,0 +1,668 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh">
+<head>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=11"/>
+<meta name="generator" content="Doxygen 1.9.8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>plcopen: plcopen::core::stream::StreamFilter1D类 参考</title>
+<link href="tabs.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="jquery.js"></script>
+<script type="text/javascript" src="dynsections.js"></script>
+<link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<link href="doxygen.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+<div id="top"><!-- do not remove this div, it is closed by doxygen! -->
+<div id="titlearea">
+<table cellspacing="0" cellpadding="0">
+ <tbody>
+ <tr id="projectrow">
+  <td id="projectalign">
+   <div id="projectname">plcopen<span id="projectnumber">&#160;0.21.0</span>
+   </div>
+  </td>
+ </tr>
+ </tbody>
+</table>
+</div>
+<!-- end header part -->
+<!-- 制作者 Doxygen 1.9.8 -->
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+var searchBox = new SearchBox("searchBox", "search/",'.html');
+/* @license-end */
+</script>
+<script type="text/javascript" src="menudata.js"></script>
+<script type="text/javascript" src="menu.js"></script>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+$(function() {
+  initMenu('',true,false,'search.php','搜索');
+  $(document).ready(function() { init_search(); });
+});
+/* @license-end */
+</script>
+<div id="main-nav"></div>
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<div id="MSearchResults">
+<div class="SRPage">
+<div id="SRIndex">
+<div id="SRResults"></div>
+<div class="SRStatus" id="Loading">载入中...</div>
+<div class="SRStatus" id="Searching">搜索中...</div>
+<div class="SRStatus" id="NoMatches">未找到</div>
+</div>
+</div>
+</div>
+</div>
+
+<div id="nav-path" class="navpath">
+  <ul>
+<li class="navelem"><a class="el" href="namespaceplcopen.html">plcopen</a></li><li class="navelem"><a class="el" href="namespaceplcopen_1_1core.html">core</a></li><li class="navelem"><a class="el" href="namespaceplcopen_1_1core_1_1stream.html">stream</a></li><li class="navelem"><a class="el" href="classplcopen_1_1core_1_1stream_1_1StreamFilter1D.html">StreamFilter1D</a></li>  </ul>
+</div>
+</div><!-- top -->
+<div class="header">
+  <div class="summary">
+<a href="#pub-types">Public 类型</a> &#124;
+<a href="#pub-methods">Public 成员函数</a> &#124;
+<a href="classplcopen_1_1core_1_1stream_1_1StreamFilter1D-members.html">所有成员列表</a>  </div>
+  <div class="headertitle"><div class="title">plcopen::core::stream::StreamFilter1D类 参考</div></div>
+</div><!--header-->
+<div class="contents">
+
+<p><code>#include &lt;<a class="el" href="filter_8h_source.html">filter.h</a>&gt;</code></p>
+<table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-types" name="pub-types"></a>
+Public 类型</h2></td></tr>
+<tr class="memitem:abbf12ff27005b5347cd7bd8be041925a" id="r_abbf12ff27005b5347cd7bd8be041925a"><td class="memItemLeft" align="right" valign="top">enum class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1stream_1_1StreamFilter1D.html#abbf12ff27005b5347cd7bd8be041925a">Mode</a> { <br />
+&#160;&#160;<a class="el" href="classplcopen_1_1core_1_1stream_1_1StreamFilter1D.html#abbf12ff27005b5347cd7bd8be041925aaec2f993aec2c27fc750119ab17b16cdb">idle</a>
+, <a class="el" href="classplcopen_1_1core_1_1stream_1_1StreamFilter1D.html#abbf12ff27005b5347cd7bd8be041925aa1879966223c3e382e14c6524c84942f1">tracking</a>
+, <a class="el" href="classplcopen_1_1core_1_1stream_1_1StreamFilter1D.html#abbf12ff27005b5347cd7bd8be041925aa1276ae734a6eca6fe63fada076fc1298">extrapolating</a>
+, <a class="el" href="classplcopen_1_1core_1_1stream_1_1StreamFilter1D.html#abbf12ff27005b5347cd7bd8be041925aa3b2a3c8ed19fc3647432e72885d633e7">stopping</a>
+, <br />
+&#160;&#160;<a class="el" href="classplcopen_1_1core_1_1stream_1_1StreamFilter1D.html#abbf12ff27005b5347cd7bd8be041925aaf0a0bfe6bc7d2c58d2989034f83183e0">stopped</a>
+<br />
+ }</td></tr>
+<tr class="separator:abbf12ff27005b5347cd7bd8be041925a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a59b4cf53be875b9ec95ff5e26be443ec" id="r_a59b4cf53be875b9ec95ff5e26be443ec"><td class="memItemLeft" align="right" valign="top">enum class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1stream_1_1StreamFilter1D.html#a59b4cf53be875b9ec95ff5e26be443ec">ReplanResult</a> { <br />
+&#160;&#160;<a class="el" href="classplcopen_1_1core_1_1stream_1_1StreamFilter1D.html#a59b4cf53be875b9ec95ff5e26be443eca334c4a4c42fdb79d7ebc3e73b517e6f8">none</a>
+, <a class="el" href="classplcopen_1_1core_1_1stream_1_1StreamFilter1D.html#a59b4cf53be875b9ec95ff5e26be443eca31d4541b8e926a24f0c9b835b68cfdf3">fast</a>
+, <a class="el" href="classplcopen_1_1core_1_1stream_1_1StreamFilter1D.html#a59b4cf53be875b9ec95ff5e26be443eca4fe9dfe784a2be25dd8aec3b403c3654">slow</a>
+, <a class="el" href="classplcopen_1_1core_1_1stream_1_1StreamFilter1D.html#a59b4cf53be875b9ec95ff5e26be443eca43fff3df3fc0b3417c86dc3040fb2d86">deferred</a>
+, <br />
+&#160;&#160;<a class="el" href="classplcopen_1_1core_1_1stream_1_1StreamFilter1D.html#a59b4cf53be875b9ec95ff5e26be443eca3881bfd1571f85c6562ddfac94ea80ba">fault</a>
+<br />
+ }</td></tr>
+<tr class="separator:a59b4cf53be875b9ec95ff5e26be443ec"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
+Public 成员函数</h2></td></tr>
+<tr class="memitem:ab43b40ac473f7df19c02d47edf5103a9" id="r_ab43b40ac473f7df19c02d47edf5103a9"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8">rt::ErrorCode</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1stream_1_1StreamFilter1D.html#ab43b40ac473f7df19c02d47edf5103a9">configure</a> (const <a class="el" href="structplcopen_1_1core_1_1stream_1_1StreamFilterConfig.html">StreamFilterConfig</a> &amp;config)</td></tr>
+<tr class="separator:ab43b40ac473f7df19c02d47edf5103a9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a95e54336e57fdb9a373a0c7e6f07ccdf" id="r_a95e54336e57fdb9a373a0c7e6f07ccdf"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1stream_1_1StreamFilter1D.html#a95e54336e57fdb9a373a0c7e6f07ccdf">can_configure</a> (const <a class="el" href="structplcopen_1_1core_1_1stream_1_1StreamFilterConfig.html">StreamFilterConfig</a> &amp;config) const</td></tr>
+<tr class="separator:a95e54336e57fdb9a373a0c7e6f07ccdf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a101baa337a85114d90917ca39acd8c1a" id="r_a101baa337a85114d90917ca39acd8c1a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8">rt::ErrorCode</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1stream_1_1StreamFilter1D.html#a101baa337a85114d90917ca39acd8c1a">reset</a> (<a class="el" href="structplcopen_1_1core_1_1otg_1_1State1D.html">otg::State1D</a> <a class="el" href="classplcopen_1_1core_1_1stream_1_1StreamFilter1D.html#af4ed2cc5190a0608ec34213d461cbb20">state</a>)</td></tr>
+<tr class="separator:a101baa337a85114d90917ca39acd8c1a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a946c97f90884129fb92a16912f4bebc1" id="r_a946c97f90884129fb92a16912f4bebc1"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1stream_1_1StreamFilter1D.html#a946c97f90884129fb92a16912f4bebc1">end_session</a> ()</td></tr>
+<tr class="separator:a946c97f90884129fb92a16912f4bebc1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0a4cd8c14fd6d6b91b10b71ec40b1832" id="r_a0a4cd8c14fd6d6b91b10b71ec40b1832"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8">rt::ErrorCode</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1stream_1_1StreamFilter1D.html#a0a4cd8c14fd6d6b91b10b71ec40b1832">begin_dropout_from</a> (<a class="el" href="structplcopen_1_1core_1_1otg_1_1State1D.html">otg::State1D</a> <a class="el" href="classplcopen_1_1core_1_1stream_1_1StreamFilter1D.html#af4ed2cc5190a0608ec34213d461cbb20">state</a>)</td></tr>
+<tr class="separator:a0a4cd8c14fd6d6b91b10b71ec40b1832"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a10549f04d003094e3bed8f5e532339cd" id="r_a10549f04d003094e3bed8f5e532339cd"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8">rt::ErrorCode</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1stream_1_1StreamFilter1D.html#a10549f04d003094e3bed8f5e532339cd">push_target</a> (<a class="el" href="structplcopen_1_1core_1_1stream_1_1StreamTarget.html">StreamTarget</a> target)</td></tr>
+<tr class="separator:a10549f04d003094e3bed8f5e532339cd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a444ea09e56c223a21719695c5d138d29" id="r_a444ea09e56c223a21719695c5d138d29"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structplcopen_1_1core_1_1otg_1_1State1D.html">otg::State1D</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1stream_1_1StreamFilter1D.html#a444ea09e56c223a21719695c5d138d29">cycle</a> ()</td></tr>
+<tr class="separator:a444ea09e56c223a21719695c5d138d29"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae3cae82ad99475f3090cec1c3b54c753" id="r_ae3cae82ad99475f3090cec1c3b54c753"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structplcopen_1_1core_1_1otg_1_1State1D.html">otg::State1D</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1stream_1_1StreamFilter1D.html#ae3cae82ad99475f3090cec1c3b54c753">cycle_with_replan_budget</a> (bool allow_slow_replan, <a class="el" href="classplcopen_1_1core_1_1stream_1_1StreamFilter1D.html#a59b4cf53be875b9ec95ff5e26be443ec">ReplanResult</a> &amp;replan_result)</td></tr>
+<tr class="separator:ae3cae82ad99475f3090cec1c3b54c753"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a87037ed5cfc82a25f9e716a33fcac34d" id="r_a87037ed5cfc82a25f9e716a33fcac34d"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1stream_1_1StreamFilter1D.html#a87037ed5cfc82a25f9e716a33fcac34d">replan_pending</a> () const</td></tr>
+<tr class="separator:a87037ed5cfc82a25f9e716a33fcac34d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af4ed2cc5190a0608ec34213d461cbb20" id="r_af4ed2cc5190a0608ec34213d461cbb20"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structplcopen_1_1core_1_1otg_1_1State1D.html">otg::State1D</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1stream_1_1StreamFilter1D.html#af4ed2cc5190a0608ec34213d461cbb20">state</a> () const</td></tr>
+<tr class="separator:af4ed2cc5190a0608ec34213d461cbb20"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af1c0f97d7c2bddb1b703245891815fa2" id="r_af1c0f97d7c2bddb1b703245891815fa2"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classplcopen_1_1core_1_1stream_1_1StreamFilter1D.html#abbf12ff27005b5347cd7bd8be041925a">Mode</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1stream_1_1StreamFilter1D.html#af1c0f97d7c2bddb1b703245891815fa2">mode</a> () const</td></tr>
+<tr class="separator:af1c0f97d7c2bddb1b703245891815fa2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afbc149ecceab234989bc19769bdd586a" id="r_afbc149ecceab234989bc19769bdd586a"><td class="memItemLeft" align="right" valign="top">std::int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1stream_1_1StreamFilter1D.html#afbc149ecceab234989bc19769bdd586a">now_cycles</a> () const</td></tr>
+<tr class="separator:afbc149ecceab234989bc19769bdd586a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a68eab93e736ef5585b6b44dc982aa9b2" id="r_a68eab93e736ef5585b6b44dc982aa9b2"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1stream_1_1StreamFilter1D.html#a68eab93e736ef5585b6b44dc982aa9b2">clamped</a> () const</td></tr>
+<tr class="separator:a68eab93e736ef5585b6b44dc982aa9b2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa5e0151864a6fe6daa439b23c967c54c" id="r_aa5e0151864a6fe6daa439b23c967c54c"><td class="memItemLeft" align="right" valign="top">std::uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1stream_1_1StreamFilter1D.html#aa5e0151864a6fe6daa439b23c967c54c">rejected_targets</a> () const</td></tr>
+<tr class="separator:aa5e0151864a6fe6daa439b23c967c54c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a042bddccbe96c5212fa76ccbfff509ab" id="r_a042bddccbe96c5212fa76ccbfff509ab"><td class="memItemLeft" align="right" valign="top">std::uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1stream_1_1StreamFilter1D.html#a042bddccbe96c5212fa76ccbfff509ab">dropout_count</a> () const</td></tr>
+<tr class="separator:a042bddccbe96c5212fa76ccbfff509ab"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a439009a00d549de87221093970dc4d2f" id="r_a439009a00d549de87221093970dc4d2f"><td class="memItemLeft" align="right" valign="top">std::uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1stream_1_1StreamFilter1D.html#a439009a00d549de87221093970dc4d2f">filter_faults</a> () const</td></tr>
+<tr class="separator:a439009a00d549de87221093970dc4d2f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table>
+<a name="details" id="details"></a><h2 class="groupheader">详细描述</h2>
+<div class="textblock">
+<p class="definition">在文件 <a class="el" href="filter_8h_source.html">filter.h</a> 第 <a class="el" href="filter_8h_source.html#l00065">65</a> 行定义.</p>
+</div><h2 class="groupheader">成员枚举类型说明</h2>
+<a id="abbf12ff27005b5347cd7bd8be041925a" name="abbf12ff27005b5347cd7bd8be041925a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abbf12ff27005b5347cd7bd8be041925a">&#9670;&#160;</a></span>Mode</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">enum class <a class="el" href="classplcopen_1_1core_1_1stream_1_1StreamFilter1D.html#abbf12ff27005b5347cd7bd8be041925a">plcopen::core::stream::StreamFilter1D::Mode</a></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">strong</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<table class="fieldtable">
+<tr><th colspan="2">枚举值</th></tr><tr><td class="fieldname"><a id="abbf12ff27005b5347cd7bd8be041925aaec2f993aec2c27fc750119ab17b16cdb" name="abbf12ff27005b5347cd7bd8be041925aaec2f993aec2c27fc750119ab17b16cdb"></a>idle&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="abbf12ff27005b5347cd7bd8be041925aa1879966223c3e382e14c6524c84942f1" name="abbf12ff27005b5347cd7bd8be041925aa1879966223c3e382e14c6524c84942f1"></a>tracking&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="abbf12ff27005b5347cd7bd8be041925aa1276ae734a6eca6fe63fada076fc1298" name="abbf12ff27005b5347cd7bd8be041925aa1276ae734a6eca6fe63fada076fc1298"></a>extrapolating&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="abbf12ff27005b5347cd7bd8be041925aa3b2a3c8ed19fc3647432e72885d633e7" name="abbf12ff27005b5347cd7bd8be041925aa3b2a3c8ed19fc3647432e72885d633e7"></a>stopping&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="abbf12ff27005b5347cd7bd8be041925aaf0a0bfe6bc7d2c58d2989034f83183e0" name="abbf12ff27005b5347cd7bd8be041925aaf0a0bfe6bc7d2c58d2989034f83183e0"></a>stopped&#160;</td><td class="fielddoc"></td></tr>
+</table>
+
+<p class="definition">在文件 <a class="el" href="filter_8h_source.html">filter.h</a> 第 <a class="el" href="filter_8h_source.html#l00068">68</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a59b4cf53be875b9ec95ff5e26be443ec" name="a59b4cf53be875b9ec95ff5e26be443ec"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a59b4cf53be875b9ec95ff5e26be443ec">&#9670;&#160;</a></span>ReplanResult</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">enum class <a class="el" href="classplcopen_1_1core_1_1stream_1_1StreamFilter1D.html#a59b4cf53be875b9ec95ff5e26be443ec">plcopen::core::stream::StreamFilter1D::ReplanResult</a></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">strong</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<table class="fieldtable">
+<tr><th colspan="2">枚举值</th></tr><tr><td class="fieldname"><a id="a59b4cf53be875b9ec95ff5e26be443eca334c4a4c42fdb79d7ebc3e73b517e6f8" name="a59b4cf53be875b9ec95ff5e26be443eca334c4a4c42fdb79d7ebc3e73b517e6f8"></a>none&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a59b4cf53be875b9ec95ff5e26be443eca31d4541b8e926a24f0c9b835b68cfdf3" name="a59b4cf53be875b9ec95ff5e26be443eca31d4541b8e926a24f0c9b835b68cfdf3"></a>fast&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a59b4cf53be875b9ec95ff5e26be443eca4fe9dfe784a2be25dd8aec3b403c3654" name="a59b4cf53be875b9ec95ff5e26be443eca4fe9dfe784a2be25dd8aec3b403c3654"></a>slow&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a59b4cf53be875b9ec95ff5e26be443eca43fff3df3fc0b3417c86dc3040fb2d86" name="a59b4cf53be875b9ec95ff5e26be443eca43fff3df3fc0b3417c86dc3040fb2d86"></a>deferred&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a59b4cf53be875b9ec95ff5e26be443eca3881bfd1571f85c6562ddfac94ea80ba" name="a59b4cf53be875b9ec95ff5e26be443eca3881bfd1571f85c6562ddfac94ea80ba"></a>fault&#160;</td><td class="fielddoc"></td></tr>
+</table>
+
+<p class="definition">在文件 <a class="el" href="filter_8h_source.html">filter.h</a> 第 <a class="el" href="filter_8h_source.html#l00077">77</a> 行定义.</p>
+
+</div>
+</div>
+<h2 class="groupheader">成员函数说明</h2>
+<a id="a0a4cd8c14fd6d6b91b10b71ec40b1832" name="a0a4cd8c14fd6d6b91b10b71ec40b1832"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0a4cd8c14fd6d6b91b10b71ec40b1832">&#9670;&#160;</a></span>begin_dropout_from()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8">rt::ErrorCode</a> plcopen::core::stream::StreamFilter1D::begin_dropout_from </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="structplcopen_1_1core_1_1otg_1_1State1D.html">otg::State1D</a>&#160;</td>
+          <td class="paramname"><em>state</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="filter_8h_source.html">filter.h</a> 第 <a class="el" href="filter_8h_source.html#l00163">163</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a95e54336e57fdb9a373a0c7e6f07ccdf" name="a95e54336e57fdb9a373a0c7e6f07ccdf"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a95e54336e57fdb9a373a0c7e6f07ccdf">&#9670;&#160;</a></span>can_configure()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool plcopen::core::stream::StreamFilter1D::can_configure </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="structplcopen_1_1core_1_1stream_1_1StreamFilterConfig.html">StreamFilterConfig</a> &amp;&#160;</td>
+          <td class="paramname"><em>config</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="filter_8h_source.html">filter.h</a> 第 <a class="el" href="filter_8h_source.html#l00097">97</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a68eab93e736ef5585b6b44dc982aa9b2" name="a68eab93e736ef5585b6b44dc982aa9b2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a68eab93e736ef5585b6b44dc982aa9b2">&#9670;&#160;</a></span>clamped()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool plcopen::core::stream::StreamFilter1D::clamped </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="filter_8h_source.html">filter.h</a> 第 <a class="el" href="filter_8h_source.html#l00402">402</a> 行定义.</p>
+
+</div>
+</div>
+<a id="ab43b40ac473f7df19c02d47edf5103a9" name="ab43b40ac473f7df19c02d47edf5103a9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab43b40ac473f7df19c02d47edf5103a9">&#9670;&#160;</a></span>configure()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8">rt::ErrorCode</a> plcopen::core::stream::StreamFilter1D::configure </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="structplcopen_1_1core_1_1stream_1_1StreamFilterConfig.html">StreamFilterConfig</a> &amp;&#160;</td>
+          <td class="paramname"><em>config</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="filter_8h_source.html">filter.h</a> 第 <a class="el" href="filter_8h_source.html#l00086">86</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a444ea09e56c223a21719695c5d138d29" name="a444ea09e56c223a21719695c5d138d29"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a444ea09e56c223a21719695c5d138d29">&#9670;&#160;</a></span>cycle()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="structplcopen_1_1core_1_1otg_1_1State1D.html">otg::State1D</a> plcopen::core::stream::StreamFilter1D::cycle </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="filter_8h_source.html">filter.h</a> 第 <a class="el" href="filter_8h_source.html#l00257">257</a> 行定义.</p>
+
+</div>
+</div>
+<a id="ae3cae82ad99475f3090cec1c3b54c753" name="ae3cae82ad99475f3090cec1c3b54c753"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae3cae82ad99475f3090cec1c3b54c753">&#9670;&#160;</a></span>cycle_with_replan_budget()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="structplcopen_1_1core_1_1otg_1_1State1D.html">otg::State1D</a> plcopen::core::stream::StreamFilter1D::cycle_with_replan_budget </td>
+          <td>(</td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>allow_slow_replan</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classplcopen_1_1core_1_1stream_1_1StreamFilter1D.html#a59b4cf53be875b9ec95ff5e26be443ec">ReplanResult</a> &amp;&#160;</td>
+          <td class="paramname"><em>replan_result</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="filter_8h_source.html">filter.h</a> 第 <a class="el" href="filter_8h_source.html#l00266">266</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a042bddccbe96c5212fa76ccbfff509ab" name="a042bddccbe96c5212fa76ccbfff509ab"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a042bddccbe96c5212fa76ccbfff509ab">&#9670;&#160;</a></span>dropout_count()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::uint32_t plcopen::core::stream::StreamFilter1D::dropout_count </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="filter_8h_source.html">filter.h</a> 第 <a class="el" href="filter_8h_source.html#l00412">412</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a946c97f90884129fb92a16912f4bebc1" name="a946c97f90884129fb92a16912f4bebc1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a946c97f90884129fb92a16912f4bebc1">&#9670;&#160;</a></span>end_session()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void plcopen::core::stream::StreamFilter1D::end_session </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="filter_8h_source.html">filter.h</a> 第 <a class="el" href="filter_8h_source.html#l00149">149</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a439009a00d549de87221093970dc4d2f" name="a439009a00d549de87221093970dc4d2f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a439009a00d549de87221093970dc4d2f">&#9670;&#160;</a></span>filter_faults()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::uint32_t plcopen::core::stream::StreamFilter1D::filter_faults </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="filter_8h_source.html">filter.h</a> 第 <a class="el" href="filter_8h_source.html#l00417">417</a> 行定义.</p>
+
+</div>
+</div>
+<a id="af1c0f97d7c2bddb1b703245891815fa2" name="af1c0f97d7c2bddb1b703245891815fa2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af1c0f97d7c2bddb1b703245891815fa2">&#9670;&#160;</a></span>mode()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classplcopen_1_1core_1_1stream_1_1StreamFilter1D.html#abbf12ff27005b5347cd7bd8be041925a">Mode</a> plcopen::core::stream::StreamFilter1D::mode </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="filter_8h_source.html">filter.h</a> 第 <a class="el" href="filter_8h_source.html#l00389">389</a> 行定义.</p>
+
+</div>
+</div>
+<a id="afbc149ecceab234989bc19769bdd586a" name="afbc149ecceab234989bc19769bdd586a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afbc149ecceab234989bc19769bdd586a">&#9670;&#160;</a></span>now_cycles()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::int64_t plcopen::core::stream::StreamFilter1D::now_cycles </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="filter_8h_source.html">filter.h</a> 第 <a class="el" href="filter_8h_source.html#l00396">396</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a10549f04d003094e3bed8f5e532339cd" name="a10549f04d003094e3bed8f5e532339cd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a10549f04d003094e3bed8f5e532339cd">&#9670;&#160;</a></span>push_target()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8">rt::ErrorCode</a> plcopen::core::stream::StreamFilter1D::push_target </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="structplcopen_1_1core_1_1stream_1_1StreamTarget.html">StreamTarget</a>&#160;</td>
+          <td class="paramname"><em>target</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="filter_8h_source.html">filter.h</a> 第 <a class="el" href="filter_8h_source.html#l00193">193</a> 行定义.</p>
+
+</div>
+</div>
+<a id="aa5e0151864a6fe6daa439b23c967c54c" name="aa5e0151864a6fe6daa439b23c967c54c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa5e0151864a6fe6daa439b23c967c54c">&#9670;&#160;</a></span>rejected_targets()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::uint32_t plcopen::core::stream::StreamFilter1D::rejected_targets </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="filter_8h_source.html">filter.h</a> 第 <a class="el" href="filter_8h_source.html#l00407">407</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a87037ed5cfc82a25f9e716a33fcac34d" name="a87037ed5cfc82a25f9e716a33fcac34d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a87037ed5cfc82a25f9e716a33fcac34d">&#9670;&#160;</a></span>replan_pending()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool plcopen::core::stream::StreamFilter1D::replan_pending </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="filter_8h_source.html">filter.h</a> 第 <a class="el" href="filter_8h_source.html#l00379">379</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a101baa337a85114d90917ca39acd8c1a" name="a101baa337a85114d90917ca39acd8c1a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a101baa337a85114d90917ca39acd8c1a">&#9670;&#160;</a></span>reset()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8">rt::ErrorCode</a> plcopen::core::stream::StreamFilter1D::reset </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="structplcopen_1_1core_1_1otg_1_1State1D.html">otg::State1D</a>&#160;</td>
+          <td class="paramname"><em>state</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="filter_8h_source.html">filter.h</a> 第 <a class="el" href="filter_8h_source.html#l00121">121</a> 行定义.</p>
+
+</div>
+</div>
+<a id="af4ed2cc5190a0608ec34213d461cbb20" name="af4ed2cc5190a0608ec34213d461cbb20"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af4ed2cc5190a0608ec34213d461cbb20">&#9670;&#160;</a></span>state()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="structplcopen_1_1core_1_1otg_1_1State1D.html">otg::State1D</a> plcopen::core::stream::StreamFilter1D::state </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="filter_8h_source.html">filter.h</a> 第 <a class="el" href="filter_8h_source.html#l00384">384</a> 行定义.</p>
+
+</div>
+</div>
+<hr/>该类的文档由以下文件生成:<ul>
+<li>core/stream/<a class="el" href="filter_8h_source.html">filter.h</a></li>
+</ul>
+</div><!-- contents -->
+<!-- start footer part -->
+<hr class="footer"/><address class="footer"><small>
+制作者&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.8
+</small></address>
+</body>
+</html>

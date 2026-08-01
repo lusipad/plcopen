@@ -1,0 +1,19 @@
+<map id="plcopen::core::fb::FbPathSelect" name="plcopen::core::fb::FbPathSelect">
+<area shape="rect" id="Node000001" title=" " alt="" coords="933,107,1072,147"/>
+<area shape="rect" id="Node000002" href="$classplcopen_1_1core_1_1axis_1_1AxisGroup.html" title=" " alt="" coords="369,128,513,168"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="527,142,772,133,933,127,933,132,772,139,527,148"/>
+<area shape="rect" id="Node000003" href="$structplcopen_1_1core_1_1axis_1_1GroupPosition.html" title=" " alt="" coords="17,64,161,104"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="174,97,370,132,369,138,174,102"/>
+<area shape="rect" id="Node000006" href="$structplcopen_1_1core_1_1fb_1_1PathWaypoint.html" title=" " alt="" coords="372,51,511,91"/>
+<area shape="poly" id="edge6_Node000006_Node000003" title=" " alt="" coords="174,78,372,71,372,76,174,83"/>
+<area shape="rect" id="Node000004" href="$structplcopen_1_1core_1_1axis_1_1JogCommandOptions.html" title=" " alt="" coords="5,141,172,181"/>
+<area shape="poly" id="edge3_Node000002_Node000004" title=" " alt="" coords="186,161,345,157,369,155,370,161,345,163,186,166"/>
+<area shape="rect" id="Node000005" href="$structplcopen_1_1core_1_1fb_1_1PathTable.html" title=" " alt="" coords="633,69,772,109"/>
+<area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="786,97,933,115,933,121,785,102"/>
+<area shape="poly" id="edge5_Node000005_Node000006" title=" " alt="" coords="525,74,633,82,633,87,524,79"/>
+<area shape="rect" id="Node000007" href="$structplcopen_1_1core_1_1fb_1_1PathDescription.html" title=" " alt="" coords="633,5,772,45"/>
+<area shape="poly" id="edge8_Node000007_Node000006" title=" " alt="" coords="524,54,633,35,634,40,525,59"/>
+<area shape="poly" id="edge7_Node000001_Node000007" title=" " alt="" coords="786,42,910,80,964,104,962,109,908,85,785,47"/>
+<area shape="rect" id="Node000008" href="$structplcopen_1_1core_1_1fb_1_1MotionOutputs.html" title=" " alt="" coords="633,196,772,236"/>
+<area shape="poly" id="edge9_Node000001_Node000008" title=" " alt="" coords="785,207,846,196,908,179,942,163,972,145,975,149,945,168,910,184,848,201,786,212"/>
+</map>

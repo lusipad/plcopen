@@ -1,0 +1,7 @@
+<map id="plcopen::core::st::SemaResult" name="plcopen::core::st::SemaResult">
+<area shape="rect" id="Node000001" title=" " alt="" coords="87,108,224,148"/>
+<area shape="rect" id="Node000002" href="$classplcopen_1_1core_1_1st_1_1TypeTable.html" title=" " alt="" coords="5,5,143,45"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="100,54,142,106,138,110,96,58"/>
+<area shape="rect" id="Node000003" href="$structplcopen_1_1core_1_1st_1_1ProcessImageInfo.html" title=" " alt="" coords="167,5,306,45"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="215,58,173,110,168,106,211,54"/>
+</map>

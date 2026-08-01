@@ -1,0 +1,177 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh">
+<head>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=11"/>
+<meta name="generator" content="Doxygen 1.9.8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>plcopen: core/rt/ipc_channel.h 文件参考</title>
+<link href="tabs.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="jquery.js"></script>
+<script type="text/javascript" src="dynsections.js"></script>
+<link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<link href="doxygen.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+<div id="top"><!-- do not remove this div, it is closed by doxygen! -->
+<div id="titlearea">
+<table cellspacing="0" cellpadding="0">
+ <tbody>
+ <tr id="projectrow">
+  <td id="projectalign">
+   <div id="projectname">plcopen<span id="projectnumber">&#160;0.21.0</span>
+   </div>
+  </td>
+ </tr>
+ </tbody>
+</table>
+</div>
+<!-- end header part -->
+<!-- 制作者 Doxygen 1.9.8 -->
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+var searchBox = new SearchBox("searchBox", "search/",'.html');
+/* @license-end */
+</script>
+<script type="text/javascript" src="menudata.js"></script>
+<script type="text/javascript" src="menu.js"></script>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+$(function() {
+  initMenu('',true,false,'search.php','搜索');
+  $(document).ready(function() { init_search(); });
+});
+/* @license-end */
+</script>
+<div id="main-nav"></div>
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<div id="MSearchResults">
+<div class="SRPage">
+<div id="SRIndex">
+<div id="SRResults"></div>
+<div class="SRStatus" id="Loading">载入中...</div>
+<div class="SRStatus" id="Searching">搜索中...</div>
+<div class="SRStatus" id="NoMatches">未找到</div>
+</div>
+</div>
+</div>
+</div>
+
+<div id="nav-path" class="navpath">
+  <ul>
+<li class="navelem"><a class="el" href="dir_4270bfced15e0e73154b13468c7c9ad9.html">core</a></li><li class="navelem"><a class="el" href="dir_050a4a3933e0974a9901c53971ffad68.html">rt</a></li>  </ul>
+</div>
+</div><!-- top -->
+<div class="header">
+  <div class="summary">
+<a href="#nested-classes">类</a> &#124;
+<a href="#namespaces">命名空间</a> &#124;
+<a href="#enum-members">枚举</a> &#124;
+<a href="#func-members">函数</a>  </div>
+  <div class="headertitle"><div class="title">ipc_channel.h 文件参考</div></div>
+</div><!--header-->
+<div class="contents">
+<div class="textblock"><code>#include &lt;array&gt;</code><br />
+<code>#include &lt;atomic&gt;</code><br />
+<code>#include &lt;cstddef&gt;</code><br />
+<code>#include &lt;cstdint&gt;</code><br />
+<code>#include &lt;cstring&gt;</code><br />
+<code>#include &lt;type_traits&gt;</code><br />
+</div><div class="textblock"><div class="dynheader">
+ipc_channel.h 的引用(Include)关系图:</div>
+<div class="dyncontent">
+<div class="center"><img src="ipc__channel_8h__incl.png" border="0" usemap="#acore_2rt_2ipc__channel_8h" alt=""/></div>
+<map name="acore_2rt_2ipc__channel_8h" id="acore_2rt_2ipc__channel_8h">
+<area shape="rect" title=" " alt="" coords="180,5,337,31"/>
+<area shape="rect" title=" " alt="" coords="5,79,61,104"/>
+<area shape="poly" title=" " alt="" coords="223,33,75,80,74,75,222,28"/>
+<area shape="rect" title=" " alt="" coords="85,79,152,104"/>
+<area shape="poly" title=" " alt="" coords="237,33,155,75,152,70,235,28"/>
+<area shape="rect" title=" " alt="" coords="177,79,247,104"/>
+<area shape="poly" title=" " alt="" coords="253,32,229,69,225,66,249,30"/>
+<area shape="rect" title=" " alt="" coords="272,79,339,104"/>
+<area shape="poly" title=" " alt="" coords="269,30,292,66,288,69,264,32"/>
+<area shape="rect" title=" " alt="" coords="363,79,429,104"/>
+<area shape="poly" title=" " alt="" coords="282,28,363,70,360,75,280,33"/>
+<area shape="rect" title=" " alt="" coords="454,79,546,104"/>
+<area shape="poly" title=" " alt="" coords="298,28,448,72,447,77,297,33"/>
+</map>
+</div>
+</div><div class="textblock"><div class="dynheader">
+此图展示该文件直接或间接的被哪些文件引用了:</div>
+<div class="dyncontent">
+<div class="center"><img src="ipc__channel_8h__dep__incl.png" border="0" usemap="#acore_2rt_2ipc__channel_8hdep" alt=""/></div>
+<map name="acore_2rt_2ipc__channel_8hdep" id="acore_2rt_2ipc__channel_8hdep">
+<area shape="rect" title=" " alt="" coords="33,5,190,31"/>
+<area shape="rect" href="ipc__transport_8h.html" title=" " alt="" coords="5,79,217,104"/>
+<area shape="poly" title=" " alt="" coords="114,44,114,79,109,79,109,44"/>
+</map>
+</div>
+</div>
+<p><a href="ipc__channel_8h_source.html">浏览源代码.</a></p>
+<table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="nested-classes" name="nested-classes"></a>
+类</h2></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1rt_1_1IpcWriteReservation.html">plcopen::core::rt::IpcWriteReservation</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1rt_1_1detail_1_1AtomicPayloadTraits.html">plcopen::core::rt::detail::AtomicPayloadTraits&lt; T &gt;</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1rt_1_1IpcSpscRing.html">plcopen::core::rt::IpcSpscRing&lt; T, Capacity &gt;</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1rt_1_1IpcDoubleBuffer.html">plcopen::core::rt::IpcDoubleBuffer&lt; T &gt;</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="namespaces" name="namespaces"></a>
+命名空间</h2></td></tr>
+<tr class="memitem:namespaceplcopen" id="r_namespaceplcopen"><td class="memItemLeft" align="right" valign="top">namespace &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen.html">plcopen</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:namespaceplcopen_1_1core" id="r_namespaceplcopen_1_1core"><td class="memItemLeft" align="right" valign="top">namespace &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core.html">plcopen::core</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:namespaceplcopen_1_1core_1_1rt" id="r_namespaceplcopen_1_1core_1_1rt"><td class="memItemLeft" align="right" valign="top">namespace &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1rt.html">plcopen::core::rt</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:namespaceplcopen_1_1core_1_1rt_1_1detail" id="r_namespaceplcopen_1_1core_1_1rt_1_1detail"><td class="memItemLeft" align="right" valign="top">namespace &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1rt_1_1detail.html">plcopen::core::rt::detail</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="enum-members" name="enum-members"></a>
+枚举</h2></td></tr>
+<tr class="memitem:a9679d9d63300435577a8e42419e932ee" id="r_a9679d9d63300435577a8e42419e932ee"><td class="memItemLeft" align="right" valign="top">enum class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1rt.html#a9679d9d63300435577a8e42419e932ee">plcopen::core::rt::IpcStatus</a> { <br />
+&#160;&#160;<a class="el" href="namespaceplcopen_1_1core_1_1rt.html#a9679d9d63300435577a8e42419e932eea444bcb3a3fcf8389296c49467f27e1d6">plcopen::core::rt::ok</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1rt.html#a9679d9d63300435577a8e42419e932eeaa2e4822a98337283e39f7b60acf85ec9">plcopen::core::rt::empty</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1rt.html#a9679d9d63300435577a8e42419e932eeae9dc924f238fa6cc29465942875fe8f0">plcopen::core::rt::full</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1rt.html#a9679d9d63300435577a8e42419e932eea8bc1b2f84252c3df4edd53e4aad097a7">plcopen::core::rt::busy</a>
+, <br />
+&#160;&#160;<a class="el" href="namespaceplcopen_1_1core_1_1rt.html#a9679d9d63300435577a8e42419e932eea747dfcab92cdcefc0352afbd52198409">plcopen::core::rt::invalid_owner</a>
+<br />
+ }</td></tr>
+<tr class="separator:a9679d9d63300435577a8e42419e932ee"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
+函数</h2></td></tr>
+<tr class="memitem:a24601d79d6cde6c7ed784c4a81a7f1f4" id="r_a24601d79d6cde6c7ed784c4a81a7f1f4"><td class="memTemplParams" colspan="2">template&lt;typename T &gt; </td></tr>
+<tr class="memitem:a24601d79d6cde6c7ed784c4a81a7f1f4"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1rt_1_1detail.html#a24601d79d6cde6c7ed784c4a81a7f1f4">plcopen::core::rt::detail::store_payload</a> (typename <a class="el" href="structplcopen_1_1core_1_1rt_1_1detail_1_1AtomicPayloadTraits.html">AtomicPayloadTraits</a>&lt; T &gt;::AtomicWordArray &amp;storage, const T &amp;value)</td></tr>
+<tr class="separator:a24601d79d6cde6c7ed784c4a81a7f1f4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5fab55f5d1a4e6e6b2a5088464cc862f" id="r_a5fab55f5d1a4e6e6b2a5088464cc862f"><td class="memTemplParams" colspan="2">template&lt;typename T &gt; </td></tr>
+<tr class="memitem:a5fab55f5d1a4e6e6b2a5088464cc862f"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1rt_1_1detail.html#a5fab55f5d1a4e6e6b2a5088464cc862f">plcopen::core::rt::detail::load_payload</a> (const typename <a class="el" href="structplcopen_1_1core_1_1rt_1_1detail_1_1AtomicPayloadTraits.html">AtomicPayloadTraits</a>&lt; T &gt;::AtomicWordArray &amp;storage, T &amp;value)</td></tr>
+<tr class="separator:a5fab55f5d1a4e6e6b2a5088464cc862f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5b89ac0d1d3f8e12a12ae9d4719799d8" id="r_a5b89ac0d1d3f8e12a12ae9d4719799d8"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1rt_1_1detail.html#a5b89ac0d1d3f8e12a12ae9d4719799d8">plcopen::core::rt::detail::claim_owner</a> (std::atomic&lt; std::uint64_t &gt; &amp;owner, std::uint64_t id)</td></tr>
+<tr class="separator:a5b89ac0d1d3f8e12a12ae9d4719799d8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5c3258321896ac1a806c4b42ac7c0095" id="r_a5c3258321896ac1a806c4b42ac7c0095"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1rt_1_1detail.html#a5c3258321896ac1a806c4b42ac7c0095">plcopen::core::rt::detail::owner_matches</a> (const std::atomic&lt; std::uint64_t &gt; &amp;owner, std::uint64_t id)</td></tr>
+<tr class="separator:a5c3258321896ac1a806c4b42ac7c0095"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table>
+</div><!-- contents -->
+<!-- start footer part -->
+<hr class="footer"/><address class="footer"><small>
+制作者&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.8
+</small></address>
+</body>
+</html>

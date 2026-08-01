@@ -1,0 +1,1274 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh">
+<head>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=11"/>
+<meta name="generator" content="Doxygen 1.9.8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>plcopen: plcopen::core::st::Program结构体 参考</title>
+<link href="tabs.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="jquery.js"></script>
+<script type="text/javascript" src="dynsections.js"></script>
+<link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<link href="doxygen.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+<div id="top"><!-- do not remove this div, it is closed by doxygen! -->
+<div id="titlearea">
+<table cellspacing="0" cellpadding="0">
+ <tbody>
+ <tr id="projectrow">
+  <td id="projectalign">
+   <div id="projectname">plcopen<span id="projectnumber">&#160;0.21.0</span>
+   </div>
+  </td>
+ </tr>
+ </tbody>
+</table>
+</div>
+<!-- end header part -->
+<!-- 制作者 Doxygen 1.9.8 -->
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+var searchBox = new SearchBox("searchBox", "search/",'.html');
+/* @license-end */
+</script>
+<script type="text/javascript" src="menudata.js"></script>
+<script type="text/javascript" src="menu.js"></script>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+$(function() {
+  initMenu('',true,false,'search.php','搜索');
+  $(document).ready(function() { init_search(); });
+});
+/* @license-end */
+</script>
+<div id="main-nav"></div>
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<div id="MSearchResults">
+<div class="SRPage">
+<div id="SRIndex">
+<div id="SRResults"></div>
+<div class="SRStatus" id="Loading">载入中...</div>
+<div class="SRStatus" id="Searching">搜索中...</div>
+<div class="SRStatus" id="NoMatches">未找到</div>
+</div>
+</div>
+</div>
+</div>
+
+<div id="nav-path" class="navpath">
+  <ul>
+<li class="navelem"><a class="el" href="namespaceplcopen.html">plcopen</a></li><li class="navelem"><a class="el" href="namespaceplcopen_1_1core.html">core</a></li><li class="navelem"><a class="el" href="namespaceplcopen_1_1core_1_1st.html">st</a></li><li class="navelem"><a class="el" href="structplcopen_1_1core_1_1st_1_1Program.html">Program</a></li>  </ul>
+</div>
+</div><!-- top -->
+<div class="header">
+  <div class="summary">
+<a href="#pub-methods">Public 成员函数</a> &#124;
+<a href="#pub-attribs">Public 属性</a> &#124;
+<a href="structplcopen_1_1core_1_1st_1_1Program-members.html">所有成员列表</a>  </div>
+  <div class="headertitle"><div class="title">plcopen::core::st::Program结构体 参考</div></div>
+</div><!--header-->
+<div class="contents">
+
+<p><code>#include &lt;<a class="el" href="bytecode_8h_source.html">bytecode.h</a>&gt;</code></p>
+<div class="dynheader">
+plcopen::core::st::Program 的协作图:</div>
+<div class="dyncontent">
+<div class="center"><img src="structplcopen_1_1core_1_1st_1_1Program__coll__graph.png" border="0" usemap="#aplcopen_1_1core_1_1st_1_1Program_coll__map" alt="Collaboration graph"/></div>
+<map name="aplcopen_1_1core_1_1st_1_1Program_coll__map" id="aplcopen_1_1core_1_1st_1_1Program_coll__map">
+<area shape="rect" title=" " alt="" coords="311,101,448,141"/>
+<area shape="rect" href="structplcopen_1_1core_1_1st_1_1ProcessImageInfo.html" title=" " alt="" coords="13,5,152,45"/>
+<area shape="poly" title=" " alt="" coords="166,43,288,79,337,99,335,104,286,84,165,48"/>
+<area shape="rect" href="classplcopen_1_1core_1_1st_1_1TypeTable.html" title=" " alt="" coords="14,69,151,109"/>
+<area shape="poly" title=" " alt="" coords="166,96,311,111,310,117,165,101"/>
+<area shape="rect" href="structplcopen_1_1core_1_1st_1_1SourceMap.html" title=" " alt="" coords="14,133,151,173"/>
+<area shape="poly" title=" " alt="" coords="165,142,286,129,310,127,310,132,287,135,165,148"/>
+<area shape="rect" href="structplcopen_1_1core_1_1st_1_1DebugArtifactReport.html" title=" " alt="" coords="5,197,160,237"/>
+<area shape="poly" title=" " alt="" coords="173,195,286,161,338,139,340,144,288,167,174,200"/>
+</map>
+<center><span class="legend">[<a href="graph_legend.html">图例</a>]</span></center></div>
+<table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
+Public 成员函数</h2></td></tr>
+<tr class="memitem:a225ff2f47933a78878797c311706d922" id="r_a225ff2f47933a78878797c311706d922"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8">rt::ErrorCode</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1Program.html#a225ff2f47933a78878797c311706d922">find_symbol</a> (const char *name, <a class="el" href="structplcopen_1_1core_1_1st_1_1SymbolInfo.html">SymbolInfo</a> &amp;info) const</td></tr>
+<tr class="separator:a225ff2f47933a78878797c311706d922"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6199c5c718822c6a21b7419d64c0a11f" id="r_a6199c5c718822c6a21b7419d64c0a11f"><td class="memItemLeft" align="right" valign="top">std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1Program.html#a6199c5c718822c6a21b7419d64c0a11f">canonical_manifest</a> () const</td></tr>
+<tr class="separator:a6199c5c718822c6a21b7419d64c0a11f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a87a5f91ad8d3a22dbcdad0a05c3beeec" id="r_a87a5f91ad8d3a22dbcdad0a05c3beeec"><td class="memItemLeft" align="right" valign="top">std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1Program.html#a87a5f91ad8d3a22dbcdad0a05c3beeec">canonical_sfc_report</a> () const</td></tr>
+<tr class="separator:a87a5f91ad8d3a22dbcdad0a05c3beeec"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6deefec253a5aa335ac8425432ada6a8" id="r_a6deefec253a5aa335ac8425432ada6a8"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1Program.html#a6deefec253a5aa335ac8425432ada6a8">contains_opcode</a> (<a class="el" href="namespaceplcopen_1_1core_1_1st.html#a53523e3246445560d0b88f0479b571d1">Op</a> opcode) const noexcept</td></tr>
+<tr class="separator:a6deefec253a5aa335ac8425432ada6a8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a70798aab5b0a5f7e3d9ea498070c1957" id="r_a70798aab5b0a5f7e3d9ea498070c1957"><td class="memItemLeft" align="right" valign="top">std::uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1Program.html#a70798aab5b0a5f7e3d9ea498070c1957">sfc_committed_shadow_offset</a> () const noexcept</td></tr>
+<tr class="separator:a70798aab5b0a5f7e3d9ea498070c1957"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aec317af4ffba1f5f979ff427091e5f3a" id="r_aec317af4ffba1f5f979ff427091e5f3a"><td class="memItemLeft" align="right" valign="top">std::uint64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1Program.html#aec317af4ffba1f5f979ff427091e5f3a">sfc_runner_fixed_cost</a> () const noexcept</td></tr>
+<tr class="separator:aec317af4ffba1f5f979ff427091e5f3a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7cb80a54928e5ab9b1056c570472c140" id="r_a7cb80a54928e5ab9b1056c570472c140"><td class="memItemLeft" align="right" valign="top">std::string_view&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1Program.html#a7cb80a54928e5ab9b1056c570472c140">artifact_pou_name</a> (std::uint32_t index) const noexcept</td></tr>
+<tr class="separator:a7cb80a54928e5ab9b1056c570472c140"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a61a424107be3b50d053c2660f4f766f3" id="r_a61a424107be3b50d053c2660f4f766f3"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="structplcopen_1_1core_1_1st_1_1Program.html">Program</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1Program.html#a61a424107be3b50d053c2660f4f766f3">artifact_program</a> (std::uint32_t pou_index) const noexcept</td></tr>
+<tr class="separator:a61a424107be3b50d053c2660f4f766f3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a22a6f7692dddb178015d6e621cd85f48" id="r_a22a6f7692dddb178015d6e621cd85f48"><td class="memItemLeft" align="right" valign="top">std::string_view&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1Program.html#a22a6f7692dddb178015d6e621cd85f48">artifact_sfc_name</a> (std::uint32_t pou_index, std::uint32_t sfc_index) const noexcept</td></tr>
+<tr class="separator:a22a6f7692dddb178015d6e621cd85f48"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afa4f5195388a9ed4ff4d081719466666" id="r_afa4f5195388a9ed4ff4d081719466666"><td class="memItemLeft" align="right" valign="top">std::string_view&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1Program.html#afa4f5195388a9ed4ff4d081719466666">artifact_sfc_action_name</a> (std::uint32_t pou_index, std::uint32_t sfc_index, std::uint32_t action_index) const noexcept</td></tr>
+<tr class="separator:afa4f5195388a9ed4ff4d081719466666"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a52e7d1777837028b81049701c628dd6b" id="r_a52e7d1777837028b81049701c628dd6b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8">rt::ErrorCode</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1Program.html#a52e7d1777837028b81049701c628dd6b">tasking_report</a> (const char *configuration, <a class="el" href="structplcopen_1_1core_1_1st_1_1TaskingReport.html">TaskingReport</a> &amp;report) const</td></tr>
+<tr class="separator:a52e7d1777837028b81049701c628dd6b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac1d07252ece401488f44979bd40084cf" id="r_ac1d07252ece401488f44979bd40084cf"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1Program.html#ac1d07252ece401488f44979bd40084cf">uses_binding_storage</a> (<a class="el" href="namespaceplcopen_1_1core_1_1st.html#a6161fdacea118704e2e5ecee17e2abe7">BindingStorageKind</a> kind) const</td></tr>
+<tr class="separator:ac1d07252ece401488f44979bd40084cf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a12353949c4e135ad30b17af968e4499e" id="r_a12353949c4e135ad30b17af968e4499e"><td class="memItemLeft" align="right" valign="top">std::size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1Program.html#a12353949c4e135ad30b17af968e4499e">binding_storage_offset</a> () const</td></tr>
+<tr class="separator:a12353949c4e135ad30b17af968e4499e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adac3e526823fb05c0432125ca67a30a5" id="r_adac3e526823fb05c0432125ca67a30a5"><td class="memItemLeft" align="right" valign="top">std::size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1Program.html#adac3e526823fb05c0432125ca67a30a5">sfc_runner_storage_offset</a> () const</td></tr>
+<tr class="separator:adac3e526823fb05c0432125ca67a30a5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adece72f14f40204ef48ab4bc442c9402" id="r_adece72f14f40204ef48ab4bc442c9402"><td class="memItemLeft" align="right" valign="top">std::size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1Program.html#adece72f14f40204ef48ab4bc442c9402">sfc_storage_offset</a> () const</td></tr>
+<tr class="separator:adece72f14f40204ef48ab4bc442c9402"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad37bdfd3df7d160e3b55f01775ca5c64" id="r_ad37bdfd3df7d160e3b55f01775ca5c64"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1Program.html#ad37bdfd3df7d160e3b55f01775ca5c64">needs_debug_runtime_storage</a> () const noexcept</td></tr>
+<tr class="separator:ad37bdfd3df7d160e3b55f01775ca5c64"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac3754c5d9874d01deb650d08326e859b" id="r_ac3754c5d9874d01deb650d08326e859b"><td class="memItemLeft" align="right" valign="top">std::size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1Program.html#ac3754c5d9874d01deb650d08326e859b">debug_runtime_storage_offset</a> () const</td></tr>
+<tr class="separator:ac3754c5d9874d01deb650d08326e859b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a84bf58a151aa300ff023c5cbb8d5f004" id="r_a84bf58a151aa300ff023c5cbb8d5f004"><td class="memItemLeft" align="right" valign="top">std::size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1Program.html#a84bf58a151aa300ff023c5cbb8d5f004">required_bytes</a> () const</td></tr>
+<tr class="separator:a84bf58a151aa300ff023c5cbb8d5f004"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
+Public 属性</h2></td></tr>
+<tr class="memitem:a527bf977a603f932a2fda0bc3f6da15b" id="r_a527bf977a603f932a2fda0bc3f6da15b"><td class="memItemLeft" align="right" valign="top">std::uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1Program.html#a527bf977a603f932a2fda0bc3f6da15b">format_version</a> = <a class="el" href="namespaceplcopen_1_1core_1_1st.html#ab2a50c0fd8a16524f68c4c4cb14c125c">kBytecodeFormatVersion</a></td></tr>
+<tr class="separator:a527bf977a603f932a2fda0bc3f6da15b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aedb665fa29aa872286d9852e48264ae3" id="r_aedb665fa29aa872286d9852e48264ae3"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::uint8_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1Program.html#aedb665fa29aa872286d9852e48264ae3">code</a></td></tr>
+<tr class="separator:aedb665fa29aa872286d9852e48264ae3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a61cdafd63188f8c65fb2435ab331a0a8" id="r_a61cdafd63188f8c65fb2435ab331a0a8"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::uint32_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1Program.html#a61cdafd63188f8c65fb2435ab331a0a8">instruction_offsets</a></td></tr>
+<tr class="separator:a61cdafd63188f8c65fb2435ab331a0a8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af3dee8a4430de45d92a6df037e4303d3" id="r_af3dee8a4430de45d92a6df037e4303d3"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::uint64_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1Program.html#af3dee8a4430de45d92a6df037e4303d3">constants</a></td></tr>
+<tr class="separator:af3dee8a4430de45d92a6df037e4303d3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aec16aae7e251b9c3538f0a7b49d0aecf" id="r_aec16aae7e251b9c3538f0a7b49d0aecf"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::uint8_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1Program.html#aec16aae7e251b9c3538f0a7b49d0aecf">string_constants</a></td></tr>
+<tr class="separator:aec16aae7e251b9c3538f0a7b49d0aecf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac8648e23f5db7b98d509700fed48abf9" id="r_ac8648e23f5db7b98d509700fed48abf9"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="structplcopen_1_1core_1_1st_1_1VarInfo.html">VarInfo</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1Program.html#ac8648e23f5db7b98d509700fed48abf9">vars</a></td></tr>
+<tr class="separator:ac8648e23f5db7b98d509700fed48abf9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad15047e4cb31132f454e454a1de7219b" id="r_ad15047e4cb31132f454e454a1de7219b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structplcopen_1_1core_1_1st_1_1ProcessImageInfo.html">ProcessImageInfo</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1Program.html#ad15047e4cb31132f454e454a1de7219b">process_image</a></td></tr>
+<tr class="separator:ad15047e4cb31132f454e454a1de7219b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a68d084f4a03cfa5264afc1051e3a42c8" id="r_a68d084f4a03cfa5264afc1051e3a42c8"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="structplcopen_1_1core_1_1st_1_1FbInfo.html">FbInfo</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1Program.html#a68d084f4a03cfa5264afc1051e3a42c8">fbs</a></td></tr>
+<tr class="separator:a68d084f4a03cfa5264afc1051e3a42c8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a794f66c37f969c19c9b31aee120b71d2" id="r_a794f66c37f969c19c9b31aee120b71d2"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classplcopen_1_1core_1_1st_1_1TypeTable.html">TypeTable</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1Program.html#a794f66c37f969c19c9b31aee120b71d2">types</a></td></tr>
+<tr class="separator:a794f66c37f969c19c9b31aee120b71d2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad74a7b85c2c2c9c5b20668c15a658e3b" id="r_ad74a7b85c2c2c9c5b20668c15a658e3b"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::uint8_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1Program.html#ad74a7b85c2c2c9c5b20668c15a658e3b">initial_data</a></td></tr>
+<tr class="separator:ad74a7b85c2c2c9c5b20668c15a658e3b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab0099046671aa0f6cf9d20852761c0cc" id="r_ab0099046671aa0f6cf9d20852761c0cc"><td class="memItemLeft" align="right" valign="top">std::uint16_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1Program.html#ab0099046671aa0f6cf9d20852761c0cc">stack_slots</a> = 0</td></tr>
+<tr class="separator:ab0099046671aa0f6cf9d20852761c0cc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac8f1a01730b574a7eda374b7b002f975" id="r_ac8f1a01730b574a7eda374b7b002f975"><td class="memItemLeft" align="right" valign="top">std::uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1Program.html#ac8f1a01730b574a7eda374b7b002f975">vars_bytes</a> = 0</td></tr>
+<tr class="separator:ac8f1a01730b574a7eda374b7b002f975"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a360f8d62e36a4e90524e2e5467355def" id="r_a360f8d62e36a4e90524e2e5467355def"><td class="memItemLeft" align="right" valign="top">std::uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1Program.html#a360f8d62e36a4e90524e2e5467355def">fb_bytes</a> = 0</td></tr>
+<tr class="separator:a360f8d62e36a4e90524e2e5467355def"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ace484aaf9ea1f4cb82c1f22534e49d95" id="r_ace484aaf9ea1f4cb82c1f22534e49d95"><td class="memItemLeft" align="right" valign="top">std::uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1Program.html#ace484aaf9ea1f4cb82c1f22534e49d95">max_string_operation_cost</a> = 0</td></tr>
+<tr class="separator:ace484aaf9ea1f4cb82c1f22534e49d95"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a805aec09b48ce6c04f6badb393fa4781" id="r_a805aec09b48ce6c04f6badb393fa4781"><td class="memItemLeft" align="right" valign="top">std::uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1Program.html#a805aec09b48ce6c04f6badb393fa4781">max_standard_function_cost</a> = 0</td></tr>
+<tr class="separator:a805aec09b48ce6c04f6badb393fa4781"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af4a7e2d3acc77982d7ece7e11a9ae1fc" id="r_af4a7e2d3acc77982d7ece7e11a9ae1fc"><td class="memItemLeft" align="right" valign="top">std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1Program.html#af4a7e2d3acc77982d7ece7e11a9ae1fc">program_name</a></td></tr>
+<tr class="separator:af4a7e2d3acc77982d7ece7e11a9ae1fc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aba92118c96328fc8769fc7816365766a" id="r_aba92118c96328fc8769fc7816365766a"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="structplcopen_1_1core_1_1st_1_1PouInfo.html">PouInfo</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1Program.html#aba92118c96328fc8769fc7816365766a">pous</a></td></tr>
+<tr class="separator:aba92118c96328fc8769fc7816365766a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aac9e840f404691ddfbc4d00040be7585" id="r_aac9e840f404691ddfbc4d00040be7585"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="structplcopen_1_1core_1_1st_1_1InstanceInfo.html">InstanceInfo</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1Program.html#aac9e840f404691ddfbc4d00040be7585">instances</a></td></tr>
+<tr class="separator:aac9e840f404691ddfbc4d00040be7585"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4d4d10e63b7bc01a47fdc90e4cb5d185" id="r_a4d4d10e63b7bc01a47fdc90e4cb5d185"><td class="memItemLeft" align="right" valign="top">std::uint16_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1Program.html#a4d4d10e63b7bc01a47fdc90e4cb5d185">max_call_depth</a> = 1</td></tr>
+<tr class="separator:a4d4d10e63b7bc01a47fdc90e4cb5d185"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8e9936de10c014d9dbb2633012de78b5" id="r_a8e9936de10c014d9dbb2633012de78b5"><td class="memItemLeft" align="right" valign="top">std::uint16_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1Program.html#a8e9936de10c014d9dbb2633012de78b5">max_instance_depth</a> = 1</td></tr>
+<tr class="separator:a8e9936de10c014d9dbb2633012de78b5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac622a8240a4a3b6fb5cb6f922c544b2b" id="r_ac622a8240a4a3b6fb5cb6f922c544b2b"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1Program.html#ac622a8240a4a3b6fb5cb6f922c544b2b">worst_case_bounded</a> = true</td></tr>
+<tr class="separator:ac622a8240a4a3b6fb5cb6f922c544b2b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0099a0a807fb36bdbdcfb3085a9afd08" id="r_a0099a0a807fb36bdbdcfb3085a9afd08"><td class="memItemLeft" align="right" valign="top">std::uint64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1Program.html#a0099a0a807fb36bdbdcfb3085a9afd08">worst_case_instructions</a> = 0</td></tr>
+<tr class="separator:a0099a0a807fb36bdbdcfb3085a9afd08"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a59848f4aa25e99c60804bda0d82c342d" id="r_a59848f4aa25e99c60804bda0d82c342d"><td class="memItemLeft" align="right" valign="top">std::uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1Program.html#a59848f4aa25e99c60804bda0d82c342d">layout_bytes</a> = 0</td></tr>
+<tr class="separator:a59848f4aa25e99c60804bda0d82c342d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a98e36f61fcc2315646e94976437a3746" id="r_a98e36f61fcc2315646e94976437a3746"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="structplcopen_1_1core_1_1st_1_1Program.html">Program</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1Program.html#a98e36f61fcc2315646e94976437a3746">programs</a></td></tr>
+<tr class="separator:a98e36f61fcc2315646e94976437a3746"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a17ebd6ade3b6b9e7648e5bca4b99dfa0" id="r_a17ebd6ade3b6b9e7648e5bca4b99dfa0"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="structplcopen_1_1core_1_1st_1_1ConfigurationInfo.html">ConfigurationInfo</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1Program.html#a17ebd6ade3b6b9e7648e5bca4b99dfa0">configurations</a></td></tr>
+<tr class="separator:a17ebd6ade3b6b9e7648e5bca4b99dfa0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae72727b9dcc30af81e96686be4b2eaa1" id="r_ae72727b9dcc30af81e96686be4b2eaa1"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="structplcopen_1_1core_1_1st_1_1SfcNetworkInfo.html">SfcNetworkInfo</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1Program.html#ae72727b9dcc30af81e96686be4b2eaa1">sfc_networks</a></td></tr>
+<tr class="separator:ae72727b9dcc30af81e96686be4b2eaa1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7fe876b47e7fc976712534964b529fe0" id="r_a7fe876b47e7fc976712534964b529fe0"><td class="memItemLeft" align="right" valign="top">std::uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1Program.html#a7fe876b47e7fc976712534964b529fe0">sfc_runtime_bytes</a> = 0</td></tr>
+<tr class="separator:a7fe876b47e7fc976712534964b529fe0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a22a4fb365e62109ec421b18721e3c792" id="r_a22a4fb365e62109ec421b18721e3c792"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceplcopen_1_1core_1_1st.html#aa2e135e13b1cbca165da9408b2bf20d3">DebugMode</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1Program.html#a22a4fb365e62109ec421b18721e3c792">debug_mode</a> = <a class="el" href="namespaceplcopen_1_1core_1_1st.html#aa2e135e13b1cbca165da9408b2bf20d3a075ae3d2fc31640504f814f60e5ef713">DebugMode::disabled</a></td></tr>
+<tr class="separator:a22a4fb365e62109ec421b18721e3c792"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a945eda13a0e48039d955f67d02a8ebaf" id="r_a945eda13a0e48039d955f67d02a8ebaf"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structplcopen_1_1core_1_1st_1_1SourceMap.html">SourceMap</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1Program.html#a945eda13a0e48039d955f67d02a8ebaf">source_map</a></td></tr>
+<tr class="separator:a945eda13a0e48039d955f67d02a8ebaf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a300a92784859bd9be41da07418a5b347" id="r_a300a92784859bd9be41da07418a5b347"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="structplcopen_1_1core_1_1st_1_1DebugCallSite.html">DebugCallSite</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1Program.html#a300a92784859bd9be41da07418a5b347">debug_call_sites</a></td></tr>
+<tr class="separator:a300a92784859bd9be41da07418a5b347"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac86f2abd974b0ce1c85310e5ccd4fc28" id="r_ac86f2abd974b0ce1c85310e5ccd4fc28"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="structplcopen_1_1core_1_1st_1_1SymbolInfo.html">SymbolInfo</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1Program.html#ac86f2abd974b0ce1c85310e5ccd4fc28">symbols</a></td></tr>
+<tr class="separator:ac86f2abd974b0ce1c85310e5ccd4fc28"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9befd48d5c227d855e6a5edf2321f619" id="r_a9befd48d5c227d855e6a5edf2321f619"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structplcopen_1_1core_1_1st_1_1DebugArtifactReport.html">DebugArtifactReport</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1Program.html#a9befd48d5c227d855e6a5edf2321f619">debug_report</a></td></tr>
+<tr class="separator:a9befd48d5c227d855e6a5edf2321f619"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table>
+<a name="details" id="details"></a><h2 class="groupheader">详细描述</h2>
+<div class="textblock">
+<p class="definition">在文件 <a class="el" href="bytecode_8h_source.html">bytecode.h</a> 第 <a class="el" href="bytecode_8h_source.html#l00402">402</a> 行定义.</p>
+</div><h2 class="groupheader">成员函数说明</h2>
+<a id="a7cb80a54928e5ab9b1056c570472c140" name="a7cb80a54928e5ab9b1056c570472c140"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7cb80a54928e5ab9b1056c570472c140">&#9670;&#160;</a></span>artifact_pou_name()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::string_view plcopen::core::st::Program::artifact_pou_name </td>
+          <td>(</td>
+          <td class="paramtype">std::uint32_t&#160;</td>
+          <td class="paramname"><em>index</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="bytecode_8h_source.html">bytecode.h</a> 第 <a class="el" href="bytecode_8h_source.html#l00517">517</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a61a424107be3b50d053c2660f4f766f3" name="a61a424107be3b50d053c2660f4f766f3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a61a424107be3b50d053c2660f4f766f3">&#9670;&#160;</a></span>artifact_program()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">const <a class="el" href="structplcopen_1_1core_1_1st_1_1Program.html">Program</a> * plcopen::core::st::Program::artifact_program </td>
+          <td>(</td>
+          <td class="paramtype">std::uint32_t&#160;</td>
+          <td class="paramname"><em>pou_index</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="bytecode_8h_source.html">bytecode.h</a> 第 <a class="el" href="bytecode_8h_source.html#l00522">522</a> 行定义.</p>
+
+</div>
+</div>
+<a id="afa4f5195388a9ed4ff4d081719466666" name="afa4f5195388a9ed4ff4d081719466666"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afa4f5195388a9ed4ff4d081719466666">&#9670;&#160;</a></span>artifact_sfc_action_name()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::string_view plcopen::core::st::Program::artifact_sfc_action_name </td>
+          <td>(</td>
+          <td class="paramtype">std::uint32_t&#160;</td>
+          <td class="paramname"><em>pou_index</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::uint32_t&#160;</td>
+          <td class="paramname"><em>sfc_index</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::uint32_t&#160;</td>
+          <td class="paramname"><em>action_index</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="bytecode_8h_source.html">bytecode.h</a> 第 <a class="el" href="bytecode_8h_source.html#l00539">539</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a22a6f7692dddb178015d6e621cd85f48" name="a22a6f7692dddb178015d6e621cd85f48"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a22a6f7692dddb178015d6e621cd85f48">&#9670;&#160;</a></span>artifact_sfc_name()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::string_view plcopen::core::st::Program::artifact_sfc_name </td>
+          <td>(</td>
+          <td class="paramtype">std::uint32_t&#160;</td>
+          <td class="paramname"><em>pou_index</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::uint32_t&#160;</td>
+          <td class="paramname"><em>sfc_index</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="bytecode_8h_source.html">bytecode.h</a> 第 <a class="el" href="bytecode_8h_source.html#l00531">531</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a12353949c4e135ad30b17af968e4499e" name="a12353949c4e135ad30b17af968e4499e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a12353949c4e135ad30b17af968e4499e">&#9670;&#160;</a></span>binding_storage_offset()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::size_t plcopen::core::st::Program::binding_storage_offset </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="bytecode_8h_source.html">bytecode.h</a> 第 <a class="el" href="bytecode_8h_source.html#l00563">563</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a6199c5c718822c6a21b7419d64c0a11f" name="a6199c5c718822c6a21b7419d64c0a11f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6199c5c718822c6a21b7419d64c0a11f">&#9670;&#160;</a></span>canonical_manifest()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::string plcopen::core::st::Program::canonical_manifest </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="bytecode_8h_source.html">bytecode.h</a> 第 <a class="el" href="bytecode_8h_source.html#l00923">923</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a87a5f91ad8d3a22dbcdad0a05c3beeec" name="a87a5f91ad8d3a22dbcdad0a05c3beeec"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a87a5f91ad8d3a22dbcdad0a05c3beeec">&#9670;&#160;</a></span>canonical_sfc_report()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::string plcopen::core::st::Program::canonical_sfc_report </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="bytecode_8h_source.html">bytecode.h</a> 第 <a class="el" href="bytecode_8h_source.html#l00932">932</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a6deefec253a5aa335ac8425432ada6a8" name="a6deefec253a5aa335ac8425432ada6a8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6deefec253a5aa335ac8425432ada6a8">&#9670;&#160;</a></span>contains_opcode()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool plcopen::core::st::Program::contains_opcode </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="namespaceplcopen_1_1core_1_1st.html#a53523e3246445560d0b88f0479b571d1">Op</a>&#160;</td>
+          <td class="paramname"><em>opcode</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="bytecode_8h_source.html">bytecode.h</a> 第 <a class="el" href="bytecode_8h_source.html#l00456">456</a> 行定义.</p>
+
+</div>
+</div>
+<a id="ac3754c5d9874d01deb650d08326e859b" name="ac3754c5d9874d01deb650d08326e859b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac3754c5d9874d01deb650d08326e859b">&#9670;&#160;</a></span>debug_runtime_storage_offset()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::size_t plcopen::core::st::Program::debug_runtime_storage_offset </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="bytecode_8h_source.html">bytecode.h</a> 第 <a class="el" href="bytecode_8h_source.html#l00599">599</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a225ff2f47933a78878797c311706d922" name="a225ff2f47933a78878797c311706d922"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a225ff2f47933a78878797c311706d922">&#9670;&#160;</a></span>find_symbol()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8">rt::ErrorCode</a> plcopen::core::st::Program::find_symbol </td>
+          <td>(</td>
+          <td class="paramtype">const char *&#160;</td>
+          <td class="paramname"><em>name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="structplcopen_1_1core_1_1st_1_1SymbolInfo.html">SymbolInfo</a> &amp;&#160;</td>
+          <td class="paramname"><em>info</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="bytecode_8h_source.html">bytecode.h</a> 第 <a class="el" href="bytecode_8h_source.html#l00438">438</a> 行定义.</p>
+
+</div>
+</div>
+<a id="ad37bdfd3df7d160e3b55f01775ca5c64" name="ad37bdfd3df7d160e3b55f01775ca5c64"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad37bdfd3df7d160e3b55f01775ca5c64">&#9670;&#160;</a></span>needs_debug_runtime_storage()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool plcopen::core::st::Program::needs_debug_runtime_storage </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="bytecode_8h_source.html">bytecode.h</a> 第 <a class="el" href="bytecode_8h_source.html#l00594">594</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a84bf58a151aa300ff023c5cbb8d5f004" name="a84bf58a151aa300ff023c5cbb8d5f004"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a84bf58a151aa300ff023c5cbb8d5f004">&#9670;&#160;</a></span>required_bytes()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::size_t plcopen::core::st::Program::required_bytes </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="bytecode_8h_source.html">bytecode.h</a> 第 <a class="el" href="bytecode_8h_source.html#l00607">607</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a70798aab5b0a5f7e3d9ea498070c1957" name="a70798aab5b0a5f7e3d9ea498070c1957"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a70798aab5b0a5f7e3d9ea498070c1957">&#9670;&#160;</a></span>sfc_committed_shadow_offset()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::uint32_t plcopen::core::st::Program::sfc_committed_shadow_offset </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="bytecode_8h_source.html">bytecode.h</a> 第 <a class="el" href="bytecode_8h_source.html#l00479">479</a> 行定义.</p>
+
+</div>
+</div>
+<a id="aec317af4ffba1f5f979ff427091e5f3a" name="aec317af4ffba1f5f979ff427091e5f3a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aec317af4ffba1f5f979ff427091e5f3a">&#9670;&#160;</a></span>sfc_runner_fixed_cost()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::uint64_t plcopen::core::st::Program::sfc_runner_fixed_cost </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="bytecode_8h_source.html">bytecode.h</a> 第 <a class="el" href="bytecode_8h_source.html#l00483">483</a> 行定义.</p>
+
+</div>
+</div>
+<a id="adac3e526823fb05c0432125ca67a30a5" name="adac3e526823fb05c0432125ca67a30a5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adac3e526823fb05c0432125ca67a30a5">&#9670;&#160;</a></span>sfc_runner_storage_offset()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::size_t plcopen::core::st::Program::sfc_runner_storage_offset </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="bytecode_8h_source.html">bytecode.h</a> 第 <a class="el" href="bytecode_8h_source.html#l00573">573</a> 行定义.</p>
+
+</div>
+</div>
+<a id="adece72f14f40204ef48ab4bc442c9402" name="adece72f14f40204ef48ab4bc442c9402"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adece72f14f40204ef48ab4bc442c9402">&#9670;&#160;</a></span>sfc_storage_offset()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::size_t plcopen::core::st::Program::sfc_storage_offset </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="bytecode_8h_source.html">bytecode.h</a> 第 <a class="el" href="bytecode_8h_source.html#l00588">588</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a52e7d1777837028b81049701c628dd6b" name="a52e7d1777837028b81049701c628dd6b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a52e7d1777837028b81049701c628dd6b">&#9670;&#160;</a></span>tasking_report()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8">rt::ErrorCode</a> plcopen::core::st::Program::tasking_report </td>
+          <td>(</td>
+          <td class="paramtype">const char *&#160;</td>
+          <td class="paramname"><em>configuration</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="structplcopen_1_1core_1_1st_1_1TaskingReport.html">TaskingReport</a> &amp;&#160;</td>
+          <td class="paramname"><em>report</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="bytecode_8h_source.html">bytecode.h</a> 第 <a class="el" href="bytecode_8h_source.html#l00953">953</a> 行定义.</p>
+
+</div>
+</div>
+<a id="ac1d07252ece401488f44979bd40084cf" name="ac1d07252ece401488f44979bd40084cf"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac1d07252ece401488f44979bd40084cf">&#9670;&#160;</a></span>uses_binding_storage()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool plcopen::core::st::Program::uses_binding_storage </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="namespaceplcopen_1_1core_1_1st.html#a6161fdacea118704e2e5ecee17e2abe7">BindingStorageKind</a>&#160;</td>
+          <td class="paramname"><em>kind</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="bytecode_8h_source.html">bytecode.h</a> 第 <a class="el" href="bytecode_8h_source.html#l00553">553</a> 行定义.</p>
+
+</div>
+</div>
+<h2 class="groupheader">类成员变量说明</h2>
+<a id="aedb665fa29aa872286d9852e48264ae3" name="aedb665fa29aa872286d9852e48264ae3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aedb665fa29aa872286d9852e48264ae3">&#9670;&#160;</a></span>code</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt;std::uint8_t&gt; plcopen::core::st::Program::code</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="bytecode_8h_source.html">bytecode.h</a> 第 <a class="el" href="bytecode_8h_source.html#l00405">405</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a17ebd6ade3b6b9e7648e5bca4b99dfa0" name="a17ebd6ade3b6b9e7648e5bca4b99dfa0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a17ebd6ade3b6b9e7648e5bca4b99dfa0">&#9670;&#160;</a></span>configurations</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt;<a class="el" href="structplcopen_1_1core_1_1st_1_1ConfigurationInfo.html">ConfigurationInfo</a>&gt; plcopen::core::st::Program::configurations</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="bytecode_8h_source.html">bytecode.h</a> 第 <a class="el" href="bytecode_8h_source.html#l00429">429</a> 行定义.</p>
+
+</div>
+</div>
+<a id="af3dee8a4430de45d92a6df037e4303d3" name="af3dee8a4430de45d92a6df037e4303d3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af3dee8a4430de45d92a6df037e4303d3">&#9670;&#160;</a></span>constants</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt;std::uint64_t&gt; plcopen::core::st::Program::constants</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="bytecode_8h_source.html">bytecode.h</a> 第 <a class="el" href="bytecode_8h_source.html#l00407">407</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a300a92784859bd9be41da07418a5b347" name="a300a92784859bd9be41da07418a5b347"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a300a92784859bd9be41da07418a5b347">&#9670;&#160;</a></span>debug_call_sites</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt;<a class="el" href="structplcopen_1_1core_1_1st_1_1DebugCallSite.html">DebugCallSite</a>&gt; plcopen::core::st::Program::debug_call_sites</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="bytecode_8h_source.html">bytecode.h</a> 第 <a class="el" href="bytecode_8h_source.html#l00434">434</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a22a4fb365e62109ec421b18721e3c792" name="a22a4fb365e62109ec421b18721e3c792"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a22a4fb365e62109ec421b18721e3c792">&#9670;&#160;</a></span>debug_mode</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="namespaceplcopen_1_1core_1_1st.html#aa2e135e13b1cbca165da9408b2bf20d3">DebugMode</a> plcopen::core::st::Program::debug_mode = <a class="el" href="namespaceplcopen_1_1core_1_1st.html#aa2e135e13b1cbca165da9408b2bf20d3a075ae3d2fc31640504f814f60e5ef713">DebugMode::disabled</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="bytecode_8h_source.html">bytecode.h</a> 第 <a class="el" href="bytecode_8h_source.html#l00432">432</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a9befd48d5c227d855e6a5edf2321f619" name="a9befd48d5c227d855e6a5edf2321f619"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9befd48d5c227d855e6a5edf2321f619">&#9670;&#160;</a></span>debug_report</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="structplcopen_1_1core_1_1st_1_1DebugArtifactReport.html">DebugArtifactReport</a> plcopen::core::st::Program::debug_report</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="bytecode_8h_source.html">bytecode.h</a> 第 <a class="el" href="bytecode_8h_source.html#l00436">436</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a360f8d62e36a4e90524e2e5467355def" name="a360f8d62e36a4e90524e2e5467355def"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a360f8d62e36a4e90524e2e5467355def">&#9670;&#160;</a></span>fb_bytes</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::uint32_t plcopen::core::st::Program::fb_bytes = 0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="bytecode_8h_source.html">bytecode.h</a> 第 <a class="el" href="bytecode_8h_source.html#l00416">416</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a68d084f4a03cfa5264afc1051e3a42c8" name="a68d084f4a03cfa5264afc1051e3a42c8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a68d084f4a03cfa5264afc1051e3a42c8">&#9670;&#160;</a></span>fbs</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt;<a class="el" href="structplcopen_1_1core_1_1st_1_1FbInfo.html">FbInfo</a>&gt; plcopen::core::st::Program::fbs</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="bytecode_8h_source.html">bytecode.h</a> 第 <a class="el" href="bytecode_8h_source.html#l00411">411</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a527bf977a603f932a2fda0bc3f6da15b" name="a527bf977a603f932a2fda0bc3f6da15b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a527bf977a603f932a2fda0bc3f6da15b">&#9670;&#160;</a></span>format_version</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::uint32_t plcopen::core::st::Program::format_version = <a class="el" href="namespaceplcopen_1_1core_1_1st.html#ab2a50c0fd8a16524f68c4c4cb14c125c">kBytecodeFormatVersion</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="bytecode_8h_source.html">bytecode.h</a> 第 <a class="el" href="bytecode_8h_source.html#l00404">404</a> 行定义.</p>
+
+</div>
+</div>
+<a id="ad74a7b85c2c2c9c5b20668c15a658e3b" name="ad74a7b85c2c2c9c5b20668c15a658e3b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad74a7b85c2c2c9c5b20668c15a658e3b">&#9670;&#160;</a></span>initial_data</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt;std::uint8_t&gt; plcopen::core::st::Program::initial_data</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="bytecode_8h_source.html">bytecode.h</a> 第 <a class="el" href="bytecode_8h_source.html#l00413">413</a> 行定义.</p>
+
+</div>
+</div>
+<a id="aac9e840f404691ddfbc4d00040be7585" name="aac9e840f404691ddfbc4d00040be7585"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aac9e840f404691ddfbc4d00040be7585">&#9670;&#160;</a></span>instances</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt;<a class="el" href="structplcopen_1_1core_1_1st_1_1InstanceInfo.html">InstanceInfo</a>&gt; plcopen::core::st::Program::instances</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="bytecode_8h_source.html">bytecode.h</a> 第 <a class="el" href="bytecode_8h_source.html#l00421">421</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a61cdafd63188f8c65fb2435ab331a0a8" name="a61cdafd63188f8c65fb2435ab331a0a8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a61cdafd63188f8c65fb2435ab331a0a8">&#9670;&#160;</a></span>instruction_offsets</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt;std::uint32_t&gt; plcopen::core::st::Program::instruction_offsets</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="bytecode_8h_source.html">bytecode.h</a> 第 <a class="el" href="bytecode_8h_source.html#l00406">406</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a59848f4aa25e99c60804bda0d82c342d" name="a59848f4aa25e99c60804bda0d82c342d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a59848f4aa25e99c60804bda0d82c342d">&#9670;&#160;</a></span>layout_bytes</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::uint32_t plcopen::core::st::Program::layout_bytes = 0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="bytecode_8h_source.html">bytecode.h</a> 第 <a class="el" href="bytecode_8h_source.html#l00427">427</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a4d4d10e63b7bc01a47fdc90e4cb5d185" name="a4d4d10e63b7bc01a47fdc90e4cb5d185"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4d4d10e63b7bc01a47fdc90e4cb5d185">&#9670;&#160;</a></span>max_call_depth</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::uint16_t plcopen::core::st::Program::max_call_depth = 1</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="bytecode_8h_source.html">bytecode.h</a> 第 <a class="el" href="bytecode_8h_source.html#l00422">422</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a8e9936de10c014d9dbb2633012de78b5" name="a8e9936de10c014d9dbb2633012de78b5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8e9936de10c014d9dbb2633012de78b5">&#9670;&#160;</a></span>max_instance_depth</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::uint16_t plcopen::core::st::Program::max_instance_depth = 1</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="bytecode_8h_source.html">bytecode.h</a> 第 <a class="el" href="bytecode_8h_source.html#l00423">423</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a805aec09b48ce6c04f6badb393fa4781" name="a805aec09b48ce6c04f6badb393fa4781"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a805aec09b48ce6c04f6badb393fa4781">&#9670;&#160;</a></span>max_standard_function_cost</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::uint32_t plcopen::core::st::Program::max_standard_function_cost = 0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="bytecode_8h_source.html">bytecode.h</a> 第 <a class="el" href="bytecode_8h_source.html#l00418">418</a> 行定义.</p>
+
+</div>
+</div>
+<a id="ace484aaf9ea1f4cb82c1f22534e49d95" name="ace484aaf9ea1f4cb82c1f22534e49d95"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ace484aaf9ea1f4cb82c1f22534e49d95">&#9670;&#160;</a></span>max_string_operation_cost</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::uint32_t plcopen::core::st::Program::max_string_operation_cost = 0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="bytecode_8h_source.html">bytecode.h</a> 第 <a class="el" href="bytecode_8h_source.html#l00417">417</a> 行定义.</p>
+
+</div>
+</div>
+<a id="aba92118c96328fc8769fc7816365766a" name="aba92118c96328fc8769fc7816365766a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aba92118c96328fc8769fc7816365766a">&#9670;&#160;</a></span>pous</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt;<a class="el" href="structplcopen_1_1core_1_1st_1_1PouInfo.html">PouInfo</a>&gt; plcopen::core::st::Program::pous</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="bytecode_8h_source.html">bytecode.h</a> 第 <a class="el" href="bytecode_8h_source.html#l00420">420</a> 行定义.</p>
+
+</div>
+</div>
+<a id="ad15047e4cb31132f454e454a1de7219b" name="ad15047e4cb31132f454e454a1de7219b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad15047e4cb31132f454e454a1de7219b">&#9670;&#160;</a></span>process_image</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="structplcopen_1_1core_1_1st_1_1ProcessImageInfo.html">ProcessImageInfo</a> plcopen::core::st::Program::process_image</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="bytecode_8h_source.html">bytecode.h</a> 第 <a class="el" href="bytecode_8h_source.html#l00410">410</a> 行定义.</p>
+
+</div>
+</div>
+<a id="af4a7e2d3acc77982d7ece7e11a9ae1fc" name="af4a7e2d3acc77982d7ece7e11a9ae1fc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af4a7e2d3acc77982d7ece7e11a9ae1fc">&#9670;&#160;</a></span>program_name</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::string plcopen::core::st::Program::program_name</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="bytecode_8h_source.html">bytecode.h</a> 第 <a class="el" href="bytecode_8h_source.html#l00419">419</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a98e36f61fcc2315646e94976437a3746" name="a98e36f61fcc2315646e94976437a3746"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a98e36f61fcc2315646e94976437a3746">&#9670;&#160;</a></span>programs</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt;<a class="el" href="structplcopen_1_1core_1_1st_1_1Program.html">Program</a>&gt; plcopen::core::st::Program::programs</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="bytecode_8h_source.html">bytecode.h</a> 第 <a class="el" href="bytecode_8h_source.html#l00428">428</a> 行定义.</p>
+
+</div>
+</div>
+<a id="ae72727b9dcc30af81e96686be4b2eaa1" name="ae72727b9dcc30af81e96686be4b2eaa1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae72727b9dcc30af81e96686be4b2eaa1">&#9670;&#160;</a></span>sfc_networks</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt;<a class="el" href="structplcopen_1_1core_1_1st_1_1SfcNetworkInfo.html">SfcNetworkInfo</a>&gt; plcopen::core::st::Program::sfc_networks</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="bytecode_8h_source.html">bytecode.h</a> 第 <a class="el" href="bytecode_8h_source.html#l00430">430</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a7fe876b47e7fc976712534964b529fe0" name="a7fe876b47e7fc976712534964b529fe0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7fe876b47e7fc976712534964b529fe0">&#9670;&#160;</a></span>sfc_runtime_bytes</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::uint32_t plcopen::core::st::Program::sfc_runtime_bytes = 0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="bytecode_8h_source.html">bytecode.h</a> 第 <a class="el" href="bytecode_8h_source.html#l00431">431</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a945eda13a0e48039d955f67d02a8ebaf" name="a945eda13a0e48039d955f67d02a8ebaf"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a945eda13a0e48039d955f67d02a8ebaf">&#9670;&#160;</a></span>source_map</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="structplcopen_1_1core_1_1st_1_1SourceMap.html">SourceMap</a> plcopen::core::st::Program::source_map</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="bytecode_8h_source.html">bytecode.h</a> 第 <a class="el" href="bytecode_8h_source.html#l00433">433</a> 行定义.</p>
+
+</div>
+</div>
+<a id="ab0099046671aa0f6cf9d20852761c0cc" name="ab0099046671aa0f6cf9d20852761c0cc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab0099046671aa0f6cf9d20852761c0cc">&#9670;&#160;</a></span>stack_slots</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::uint16_t plcopen::core::st::Program::stack_slots = 0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="bytecode_8h_source.html">bytecode.h</a> 第 <a class="el" href="bytecode_8h_source.html#l00414">414</a> 行定义.</p>
+
+</div>
+</div>
+<a id="aec16aae7e251b9c3538f0a7b49d0aecf" name="aec16aae7e251b9c3538f0a7b49d0aecf"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aec16aae7e251b9c3538f0a7b49d0aecf">&#9670;&#160;</a></span>string_constants</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt;std::uint8_t&gt; plcopen::core::st::Program::string_constants</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="bytecode_8h_source.html">bytecode.h</a> 第 <a class="el" href="bytecode_8h_source.html#l00408">408</a> 行定义.</p>
+
+</div>
+</div>
+<a id="ac86f2abd974b0ce1c85310e5ccd4fc28" name="ac86f2abd974b0ce1c85310e5ccd4fc28"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac86f2abd974b0ce1c85310e5ccd4fc28">&#9670;&#160;</a></span>symbols</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt;<a class="el" href="structplcopen_1_1core_1_1st_1_1SymbolInfo.html">SymbolInfo</a>&gt; plcopen::core::st::Program::symbols</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="bytecode_8h_source.html">bytecode.h</a> 第 <a class="el" href="bytecode_8h_source.html#l00435">435</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a794f66c37f969c19c9b31aee120b71d2" name="a794f66c37f969c19c9b31aee120b71d2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a794f66c37f969c19c9b31aee120b71d2">&#9670;&#160;</a></span>types</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classplcopen_1_1core_1_1st_1_1TypeTable.html">TypeTable</a> plcopen::core::st::Program::types</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="bytecode_8h_source.html">bytecode.h</a> 第 <a class="el" href="bytecode_8h_source.html#l00412">412</a> 行定义.</p>
+
+</div>
+</div>
+<a id="ac8648e23f5db7b98d509700fed48abf9" name="ac8648e23f5db7b98d509700fed48abf9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac8648e23f5db7b98d509700fed48abf9">&#9670;&#160;</a></span>vars</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt;<a class="el" href="structplcopen_1_1core_1_1st_1_1VarInfo.html">VarInfo</a>&gt; plcopen::core::st::Program::vars</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="bytecode_8h_source.html">bytecode.h</a> 第 <a class="el" href="bytecode_8h_source.html#l00409">409</a> 行定义.</p>
+
+</div>
+</div>
+<a id="ac8f1a01730b574a7eda374b7b002f975" name="ac8f1a01730b574a7eda374b7b002f975"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac8f1a01730b574a7eda374b7b002f975">&#9670;&#160;</a></span>vars_bytes</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::uint32_t plcopen::core::st::Program::vars_bytes = 0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="bytecode_8h_source.html">bytecode.h</a> 第 <a class="el" href="bytecode_8h_source.html#l00415">415</a> 行定义.</p>
+
+</div>
+</div>
+<a id="ac622a8240a4a3b6fb5cb6f922c544b2b" name="ac622a8240a4a3b6fb5cb6f922c544b2b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac622a8240a4a3b6fb5cb6f922c544b2b">&#9670;&#160;</a></span>worst_case_bounded</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool plcopen::core::st::Program::worst_case_bounded = true</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="bytecode_8h_source.html">bytecode.h</a> 第 <a class="el" href="bytecode_8h_source.html#l00424">424</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a0099a0a807fb36bdbdcfb3085a9afd08" name="a0099a0a807fb36bdbdcfb3085a9afd08"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0099a0a807fb36bdbdcfb3085a9afd08">&#9670;&#160;</a></span>worst_case_instructions</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::uint64_t plcopen::core::st::Program::worst_case_instructions = 0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="bytecode_8h_source.html">bytecode.h</a> 第 <a class="el" href="bytecode_8h_source.html#l00426">426</a> 行定义.</p>
+
+</div>
+</div>
+<hr/>该结构体的文档由以下文件生成:<ul>
+<li>core/st/<a class="el" href="bytecode_8h_source.html">bytecode.h</a></li>
+</ul>
+</div><!-- contents -->
+<!-- start footer part -->
+<hr class="footer"/><address class="footer"><small>
+制作者&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.8
+</small></address>
+</body>
+</html>

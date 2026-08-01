@@ -1,0 +1,17 @@
+<map id="plcopen::core::fb::FbGroupWritePayloadData" name="plcopen::core::fb::FbGroupWritePayloadData">
+<area shape="rect" id="Node000001" title=" " alt="" coords="923,133,1117,173"/>
+<area shape="rect" id="Node000002" href="$classplcopen_1_1core_1_1fb_1_1GroupConfigWriteFb.html" title=" " alt="" coords="628,101,781,141"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="796,128,923,141,922,146,795,133"/>
+<area shape="rect" id="Node000003" href="$classplcopen_1_1core_1_1axis_1_1AxisGroup.html" title=" " alt="" coords="369,37,513,77"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="527,75,629,100,627,105,526,81"/>
+<area shape="rect" id="Node000004" href="$structplcopen_1_1core_1_1axis_1_1GroupPosition.html" title=" " alt="" coords="17,5,161,45"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="175,30,370,48,369,54,174,36"/>
+<area shape="rect" id="Node000005" href="$structplcopen_1_1core_1_1axis_1_1JogCommandOptions.html" title=" " alt="" coords="5,69,172,109"/>
+<area shape="poly" id="edge4_Node000003_Node000005" title=" " alt="" coords="186,79,345,65,369,63,369,68,346,71,186,85"/>
+<area shape="rect" id="Node000006" href="$structplcopen_1_1core_1_1fb_1_1MotionOutputs.html" title=" " alt="" coords="372,101,511,141"/>
+<area shape="poly" id="edge5_Node000002_Node000006" title=" " alt="" coords="524,119,628,119,628,124,524,124"/>
+<area shape="rect" id="Node000007" href="$structplcopen_1_1core_1_1axis_1_1PayloadData.html" title=" " alt="" coords="633,165,777,205"/>
+<area shape="poly" id="edge6_Node000001_Node000007" title=" " alt="" coords="790,174,922,161,923,166,791,179"/>
+<area shape="rect" id="Node000008" href="$structplcopen_1_1core_1_1axis_1_1ToolData.html" title=" " alt="" coords="369,165,513,205"/>
+<area shape="poly" id="edge7_Node000007_Node000008" title=" " alt="" coords="527,183,632,183,632,188,527,188"/>
+</map>

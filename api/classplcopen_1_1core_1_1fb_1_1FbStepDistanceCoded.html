@@ -1,0 +1,369 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh">
+<head>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=11"/>
+<meta name="generator" content="Doxygen 1.9.8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>plcopen: plcopen::core::fb::FbStepDistanceCoded类 参考</title>
+<link href="tabs.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="jquery.js"></script>
+<script type="text/javascript" src="dynsections.js"></script>
+<link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<link href="doxygen.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+<div id="top"><!-- do not remove this div, it is closed by doxygen! -->
+<div id="titlearea">
+<table cellspacing="0" cellpadding="0">
+ <tbody>
+ <tr id="projectrow">
+  <td id="projectalign">
+   <div id="projectname">plcopen<span id="projectnumber">&#160;0.21.0</span>
+   </div>
+  </td>
+ </tr>
+ </tbody>
+</table>
+</div>
+<!-- end header part -->
+<!-- 制作者 Doxygen 1.9.8 -->
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+var searchBox = new SearchBox("searchBox", "search/",'.html');
+/* @license-end */
+</script>
+<script type="text/javascript" src="menudata.js"></script>
+<script type="text/javascript" src="menu.js"></script>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+$(function() {
+  initMenu('',true,false,'search.php','搜索');
+  $(document).ready(function() { init_search(); });
+});
+/* @license-end */
+</script>
+<div id="main-nav"></div>
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<div id="MSearchResults">
+<div class="SRPage">
+<div id="SRIndex">
+<div id="SRResults"></div>
+<div class="SRStatus" id="Loading">载入中...</div>
+<div class="SRStatus" id="Searching">搜索中...</div>
+<div class="SRStatus" id="NoMatches">未找到</div>
+</div>
+</div>
+</div>
+</div>
+
+<div id="nav-path" class="navpath">
+  <ul>
+<li class="navelem"><a class="el" href="namespaceplcopen.html">plcopen</a></li><li class="navelem"><a class="el" href="namespaceplcopen_1_1core.html">core</a></li><li class="navelem"><a class="el" href="namespaceplcopen_1_1core_1_1fb.html">fb</a></li><li class="navelem"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbStepDistanceCoded.html">FbStepDistanceCoded</a></li>  </ul>
+</div>
+</div><!-- top -->
+<div class="header">
+  <div class="summary">
+<a href="#pub-methods">Public 成员函数</a> &#124;
+<a href="#pub-attribs">Public 属性</a> &#124;
+<a href="classplcopen_1_1core_1_1fb_1_1FbStepDistanceCoded-members.html">所有成员列表</a>  </div>
+  <div class="headertitle"><div class="title">plcopen::core::fb::FbStepDistanceCoded类 参考</div></div>
+</div><!--header-->
+<div class="contents">
+
+<p><code>#include &lt;<a class="el" href="homing_8h_source.html">homing.h</a>&gt;</code></p>
+<div class="dynheader">
+plcopen::core::fb::FbStepDistanceCoded 的协作图:</div>
+<div class="dyncontent">
+<div class="center"><img src="classplcopen_1_1core_1_1fb_1_1FbStepDistanceCoded__coll__graph.png" border="0" usemap="#aplcopen_1_1core_1_1fb_1_1FbStepDistanceCoded_coll__map" alt="Collaboration graph"/></div>
+<map name="aplcopen_1_1core_1_1fb_1_1FbStepDistanceCoded_coll__map" id="aplcopen_1_1core_1_1fb_1_1FbStepDistanceCoded_coll__map">
+<area shape="rect" title=" " alt="" coords="77,108,243,148"/>
+<area shape="rect" href="classplcopen_1_1core_1_1axis_1_1AxisModel.html" title=" " alt="" coords="5,5,149,45"/>
+<area shape="poly" title=" " alt="" coords="104,54,147,106,142,110,99,58"/>
+<area shape="rect" href="structplcopen_1_1core_1_1fb_1_1MotionOutputs.html" title=" " alt="" coords="173,5,312,45"/>
+<area shape="poly" title=" " alt="" coords="221,58,178,110,173,106,216,54"/>
+</map>
+<center><span class="legend">[<a href="graph_legend.html">图例</a>]</span></center></div>
+<table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
+Public 成员函数</h2></td></tr>
+<tr class="memitem:ae7c7575e6a47d4802697bf2c81d1a369" id="r_ae7c7575e6a47d4802697bf2c81d1a369"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8">rt::ErrorCode</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbStepDistanceCoded.html#ae7c7575e6a47d4802697bf2c81d1a369">bind_distance_code_map</a> (const <a class="el" href="structplcopen_1_1core_1_1fb_1_1DistanceCodeMap.html">DistanceCodeMap</a> *map)</td></tr>
+<tr class="separator:ae7c7575e6a47d4802697bf2c81d1a369"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab83d78e328ac6023cb1ce44be7f5a78b" id="r_ab83d78e328ac6023cb1ce44be7f5a78b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8">rt::ErrorCode</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbStepDistanceCoded.html#ab83d78e328ac6023cb1ce44be7f5a78b">bind_reference_signal</a> (<a class="el" href="structplcopen_1_1core_1_1axis_1_1ReferenceSignalRef.html">axis::ReferenceSignalRef</a> reference)</td></tr>
+<tr class="separator:ab83d78e328ac6023cb1ce44be7f5a78b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a71c4ec2e5e61c1bfbba13c81c4d1f3a1" id="r_a71c4ec2e5e61c1bfbba13c81c4d1f3a1"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbStepDistanceCoded.html#a71c4ec2e5e61c1bfbba13c81c4d1f3a1">call</a> ()</td></tr>
+<tr class="separator:a71c4ec2e5e61c1bfbba13c81c4d1f3a1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
+Public 属性</h2></td></tr>
+<tr class="memitem:a1b16e7adf24e83f2c0a4ccc178c98ae0" id="r_a1b16e7adf24e83f2c0a4ccc178c98ae0"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classplcopen_1_1core_1_1axis_1_1AxisModel.html">axis::AxisModel</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbStepDistanceCoded.html#a1b16e7adf24e83f2c0a4ccc178c98ae0">axis_ref</a> = nullptr</td></tr>
+<tr class="separator:a1b16e7adf24e83f2c0a4ccc178c98ae0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae408a73bd5845347e2e6b530beae0ae9" id="r_ae408a73bd5845347e2e6b530beae0ae9"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbStepDistanceCoded.html#ae408a73bd5845347e2e6b530beae0ae9">execute</a> = false</td></tr>
+<tr class="separator:ae408a73bd5845347e2e6b530beae0ae9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2eb1bbf4439aca0c893949f0a9c42ded" id="r_a2eb1bbf4439aca0c893949f0a9c42ded"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceplcopen_1_1core_1_1axis.html#a962aac05022b5bdc210266cd4e40b6c2">axis::HomeDirection</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbStepDistanceCoded.html#a2eb1bbf4439aca0c893949f0a9c42ded">direction</a> = <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#a962aac05022b5bdc210266cd4e40b6c2a82082716189f80fd070b89ac716570ba">axis::HomeDirection::positive</a></td></tr>
+<tr class="separator:a2eb1bbf4439aca0c893949f0a9c42ded"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aaed83d0e3a74b8acb9284fca08bab430" id="r_aaed83d0e3a74b8acb9284fca08bab430"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbStepDistanceCoded.html#aaed83d0e3a74b8acb9284fca08bab430">velocity</a> = 1.0</td></tr>
+<tr class="separator:aaed83d0e3a74b8acb9284fca08bab430"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac6e372b6541dd29f4981009d56ba5776" id="r_ac6e372b6541dd29f4981009d56ba5776"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbStepDistanceCoded.html#ac6e372b6541dd29f4981009d56ba5776">torque_limit</a> = 0.0</td></tr>
+<tr class="separator:ac6e372b6541dd29f4981009d56ba5776"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a14e7bc1482aa78bf069c85eb55301103" id="r_a14e7bc1482aa78bf069c85eb55301103"><td class="memItemLeft" align="right" valign="top">std::int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbStepDistanceCoded.html#a14e7bc1482aa78bf069c85eb55301103">time_limit</a> = 0</td></tr>
+<tr class="separator:a14e7bc1482aa78bf069c85eb55301103"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4e62ceee8e76c567c7ae42bb55255672" id="r_a4e62ceee8e76c567c7ae42bb55255672"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbStepDistanceCoded.html#a4e62ceee8e76c567c7ae42bb55255672">distance_limit</a> = 0.0</td></tr>
+<tr class="separator:a4e62ceee8e76c567c7ae42bb55255672"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3de05131e383a65e22204825d95cff31" id="r_a3de05131e383a65e22204825d95cff31"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceplcopen_1_1core_1_1axis.html#ac37c626dcb946b45368197dcafa1eb34">axis::BufferMode</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbStepDistanceCoded.html#a3de05131e383a65e22204825d95cff31">buffer_mode</a> = <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#ac37c626dcb946b45368197dcafa1eb34af3376270ea6836eac66441a6ef3c55c3">axis::BufferMode::aborting</a></td></tr>
+<tr class="separator:a3de05131e383a65e22204825d95cff31"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af269670303cbfd1de9cb2afd80ea6bb8" id="r_af269670303cbfd1de9cb2afd80ea6bb8"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structplcopen_1_1core_1_1fb_1_1MotionOutputs.html">MotionOutputs</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbStepDistanceCoded.html#af269670303cbfd1de9cb2afd80ea6bb8">outputs</a> {}</td></tr>
+<tr class="separator:af269670303cbfd1de9cb2afd80ea6bb8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table>
+<a name="details" id="details"></a><h2 class="groupheader">详细描述</h2>
+<div class="textblock">
+<p class="definition">在文件 <a class="el" href="homing_8h_source.html">homing.h</a> 第 <a class="el" href="homing_8h_source.html#l01108">1108</a> 行定义.</p>
+</div><h2 class="groupheader">成员函数说明</h2>
+<a id="ae7c7575e6a47d4802697bf2c81d1a369" name="ae7c7575e6a47d4802697bf2c81d1a369"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae7c7575e6a47d4802697bf2c81d1a369">&#9670;&#160;</a></span>bind_distance_code_map()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8">rt::ErrorCode</a> plcopen::core::fb::FbStepDistanceCoded::bind_distance_code_map </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="structplcopen_1_1core_1_1fb_1_1DistanceCodeMap.html">DistanceCodeMap</a> *&#160;</td>
+          <td class="paramname"><em>map</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="homing_8h_source.html">homing.h</a> 第 <a class="el" href="homing_8h_source.html#l01121">1121</a> 行定义.</p>
+
+</div>
+</div>
+<a id="ab83d78e328ac6023cb1ce44be7f5a78b" name="ab83d78e328ac6023cb1ce44be7f5a78b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab83d78e328ac6023cb1ce44be7f5a78b">&#9670;&#160;</a></span>bind_reference_signal()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8">rt::ErrorCode</a> plcopen::core::fb::FbStepDistanceCoded::bind_reference_signal </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="structplcopen_1_1core_1_1axis_1_1ReferenceSignalRef.html">axis::ReferenceSignalRef</a>&#160;</td>
+          <td class="paramname"><em>reference</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="homing_8h_source.html">homing.h</a> 第 <a class="el" href="homing_8h_source.html#l01131">1131</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a71c4ec2e5e61c1bfbba13c81c4d1f3a1" name="a71c4ec2e5e61c1bfbba13c81c4d1f3a1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a71c4ec2e5e61c1bfbba13c81c4d1f3a1">&#9670;&#160;</a></span>call()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void plcopen::core::fb::FbStepDistanceCoded::call </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="homing_8h_source.html">homing.h</a> 第 <a class="el" href="homing_8h_source.html#l01143">1143</a> 行定义.</p>
+
+</div>
+</div>
+<h2 class="groupheader">类成员变量说明</h2>
+<a id="a1b16e7adf24e83f2c0a4ccc178c98ae0" name="a1b16e7adf24e83f2c0a4ccc178c98ae0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1b16e7adf24e83f2c0a4ccc178c98ae0">&#9670;&#160;</a></span>axis_ref</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classplcopen_1_1core_1_1axis_1_1AxisModel.html">axis::AxisModel</a>* plcopen::core::fb::FbStepDistanceCoded::axis_ref = nullptr</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="homing_8h_source.html">homing.h</a> 第 <a class="el" href="homing_8h_source.html#l01111">1111</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a3de05131e383a65e22204825d95cff31" name="a3de05131e383a65e22204825d95cff31"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3de05131e383a65e22204825d95cff31">&#9670;&#160;</a></span>buffer_mode</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="namespaceplcopen_1_1core_1_1axis.html#ac37c626dcb946b45368197dcafa1eb34">axis::BufferMode</a> plcopen::core::fb::FbStepDistanceCoded::buffer_mode = <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#ac37c626dcb946b45368197dcafa1eb34af3376270ea6836eac66441a6ef3c55c3">axis::BufferMode::aborting</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="homing_8h_source.html">homing.h</a> 第 <a class="el" href="homing_8h_source.html#l01118">1118</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a2eb1bbf4439aca0c893949f0a9c42ded" name="a2eb1bbf4439aca0c893949f0a9c42ded"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2eb1bbf4439aca0c893949f0a9c42ded">&#9670;&#160;</a></span>direction</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="namespaceplcopen_1_1core_1_1axis.html#a962aac05022b5bdc210266cd4e40b6c2">axis::HomeDirection</a> plcopen::core::fb::FbStepDistanceCoded::direction = <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#a962aac05022b5bdc210266cd4e40b6c2a82082716189f80fd070b89ac716570ba">axis::HomeDirection::positive</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="homing_8h_source.html">homing.h</a> 第 <a class="el" href="homing_8h_source.html#l01113">1113</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a4e62ceee8e76c567c7ae42bb55255672" name="a4e62ceee8e76c567c7ae42bb55255672"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4e62ceee8e76c567c7ae42bb55255672">&#9670;&#160;</a></span>distance_limit</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">double plcopen::core::fb::FbStepDistanceCoded::distance_limit = 0.0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="homing_8h_source.html">homing.h</a> 第 <a class="el" href="homing_8h_source.html#l01117">1117</a> 行定义.</p>
+
+</div>
+</div>
+<a id="ae408a73bd5845347e2e6b530beae0ae9" name="ae408a73bd5845347e2e6b530beae0ae9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae408a73bd5845347e2e6b530beae0ae9">&#9670;&#160;</a></span>execute</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool plcopen::core::fb::FbStepDistanceCoded::execute = false</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="homing_8h_source.html">homing.h</a> 第 <a class="el" href="homing_8h_source.html#l01112">1112</a> 行定义.</p>
+
+</div>
+</div>
+<a id="af269670303cbfd1de9cb2afd80ea6bb8" name="af269670303cbfd1de9cb2afd80ea6bb8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af269670303cbfd1de9cb2afd80ea6bb8">&#9670;&#160;</a></span>outputs</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="structplcopen_1_1core_1_1fb_1_1MotionOutputs.html">MotionOutputs</a> plcopen::core::fb::FbStepDistanceCoded::outputs {}</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="homing_8h_source.html">homing.h</a> 第 <a class="el" href="homing_8h_source.html#l01119">1119</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a14e7bc1482aa78bf069c85eb55301103" name="a14e7bc1482aa78bf069c85eb55301103"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a14e7bc1482aa78bf069c85eb55301103">&#9670;&#160;</a></span>time_limit</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::int64_t plcopen::core::fb::FbStepDistanceCoded::time_limit = 0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="homing_8h_source.html">homing.h</a> 第 <a class="el" href="homing_8h_source.html#l01116">1116</a> 行定义.</p>
+
+</div>
+</div>
+<a id="ac6e372b6541dd29f4981009d56ba5776" name="ac6e372b6541dd29f4981009d56ba5776"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac6e372b6541dd29f4981009d56ba5776">&#9670;&#160;</a></span>torque_limit</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">double plcopen::core::fb::FbStepDistanceCoded::torque_limit = 0.0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="homing_8h_source.html">homing.h</a> 第 <a class="el" href="homing_8h_source.html#l01115">1115</a> 行定义.</p>
+
+</div>
+</div>
+<a id="aaed83d0e3a74b8acb9284fca08bab430" name="aaed83d0e3a74b8acb9284fca08bab430"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aaed83d0e3a74b8acb9284fca08bab430">&#9670;&#160;</a></span>velocity</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">double plcopen::core::fb::FbStepDistanceCoded::velocity = 1.0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="homing_8h_source.html">homing.h</a> 第 <a class="el" href="homing_8h_source.html#l01114">1114</a> 行定义.</p>
+
+</div>
+</div>
+<hr/>该类的文档由以下文件生成:<ul>
+<li>core/fb/<a class="el" href="homing_8h_source.html">homing.h</a></li>
+</ul>
+</div><!-- contents -->
+<!-- start footer part -->
+<hr class="footer"/><address class="footer"><small>
+制作者&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.8
+</small></address>
+</body>
+</html>

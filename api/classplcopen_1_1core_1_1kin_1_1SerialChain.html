@@ -1,0 +1,481 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh">
+<head>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=11"/>
+<meta name="generator" content="Doxygen 1.9.8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>plcopen: plcopen::core::kin::SerialChain类 参考</title>
+<link href="tabs.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="jquery.js"></script>
+<script type="text/javascript" src="dynsections.js"></script>
+<link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<link href="doxygen.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+<div id="top"><!-- do not remove this div, it is closed by doxygen! -->
+<div id="titlearea">
+<table cellspacing="0" cellpadding="0">
+ <tbody>
+ <tr id="projectrow">
+  <td id="projectalign">
+   <div id="projectname">plcopen<span id="projectnumber">&#160;0.21.0</span>
+   </div>
+  </td>
+ </tr>
+ </tbody>
+</table>
+</div>
+<!-- end header part -->
+<!-- 制作者 Doxygen 1.9.8 -->
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+var searchBox = new SearchBox("searchBox", "search/",'.html');
+/* @license-end */
+</script>
+<script type="text/javascript" src="menudata.js"></script>
+<script type="text/javascript" src="menu.js"></script>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+$(function() {
+  initMenu('',true,false,'search.php','搜索');
+  $(document).ready(function() { init_search(); });
+});
+/* @license-end */
+</script>
+<div id="main-nav"></div>
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<div id="MSearchResults">
+<div class="SRPage">
+<div id="SRIndex">
+<div id="SRResults"></div>
+<div class="SRStatus" id="Loading">载入中...</div>
+<div class="SRStatus" id="Searching">搜索中...</div>
+<div class="SRStatus" id="NoMatches">未找到</div>
+</div>
+</div>
+</div>
+</div>
+
+<div id="nav-path" class="navpath">
+  <ul>
+<li class="navelem"><a class="el" href="namespaceplcopen.html">plcopen</a></li><li class="navelem"><a class="el" href="namespaceplcopen_1_1core.html">core</a></li><li class="navelem"><a class="el" href="namespaceplcopen_1_1core_1_1kin.html">kin</a></li><li class="navelem"><a class="el" href="classplcopen_1_1core_1_1kin_1_1SerialChain.html">SerialChain</a></li>  </ul>
+</div>
+</div><!-- top -->
+<div class="header">
+  <div class="summary">
+<a href="#pub-methods">Public 成员函数</a> &#124;
+<a href="#pub-static-attribs">静态 Public 属性</a> &#124;
+<a href="classplcopen_1_1core_1_1kin_1_1SerialChain-members.html">所有成员列表</a>  </div>
+  <div class="headertitle"><div class="title">plcopen::core::kin::SerialChain类 参考<span class="mlabels"><span class="mlabel">final</span></span></div></div>
+</div><!--header-->
+<div class="contents">
+
+<p><code>#include &lt;<a class="el" href="serial__chain_8h_source.html">serial_chain.h</a>&gt;</code></p>
+<div class="dynheader">
+类 plcopen::core::kin::SerialChain 继承关系图:</div>
+<div class="dyncontent">
+<div class="center"><img src="classplcopen_1_1core_1_1kin_1_1SerialChain__inherit__graph.png" border="0" usemap="#aplcopen_1_1core_1_1kin_1_1SerialChain_inherit__map" alt="Inheritance graph"/></div>
+<map name="aplcopen_1_1core_1_1kin_1_1SerialChain_inherit__map" id="aplcopen_1_1core_1_1kin_1_1SerialChain_inherit__map">
+<area shape="rect" title=" " alt="" coords="5,93,143,133"/>
+<area shape="rect" href="classplcopen_1_1core_1_1kin_1_1PoseKinematics.html" title=" " alt="" coords="5,5,143,45"/>
+<area shape="poly" title=" " alt="" coords="77,59,77,93,71,93,71,59"/>
+</map>
+<center><span class="legend">[<a href="graph_legend.html">图例</a>]</span></center></div>
+<div class="dynheader">
+plcopen::core::kin::SerialChain 的协作图:</div>
+<div class="dyncontent">
+<div class="center"><img src="classplcopen_1_1core_1_1kin_1_1SerialChain__coll__graph.png" border="0" usemap="#aplcopen_1_1core_1_1kin_1_1SerialChain_coll__map" alt="Collaboration graph"/></div>
+<map name="aplcopen_1_1core_1_1kin_1_1SerialChain_coll__map" id="aplcopen_1_1core_1_1kin_1_1SerialChain_coll__map">
+<area shape="rect" title=" " alt="" coords="5,93,143,133"/>
+<area shape="rect" href="classplcopen_1_1core_1_1kin_1_1PoseKinematics.html" title=" " alt="" coords="5,5,143,45"/>
+<area shape="poly" title=" " alt="" coords="77,59,77,93,71,93,71,59"/>
+</map>
+<center><span class="legend">[<a href="graph_legend.html">图例</a>]</span></center></div>
+<table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
+Public 成员函数</h2></td></tr>
+<tr class="memitem:adcd22745957fd69c1d34fb95dfe35570" id="r_adcd22745957fd69c1d34fb95dfe35570"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1kin_1_1SerialChain.html#adcd22745957fd69c1d34fb95dfe35570">SerialChain</a> (const <a class="el" href="structplcopen_1_1core_1_1kin_1_1SerialChainSpec.html">SerialChainSpec</a> &amp;spec)</td></tr>
+<tr class="separator:adcd22745957fd69c1d34fb95dfe35570"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a638b7a148b9f2be756a6f376cc1514fd" id="r_a638b7a148b9f2be756a6f376cc1514fd"><td class="memItemLeft" align="right" valign="top">std::size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1kin_1_1SerialChain.html#a638b7a148b9f2be756a6f376cc1514fd">joint_count</a> () const override</td></tr>
+<tr class="separator:a638b7a148b9f2be756a6f376cc1514fd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad71f079e4a8b749bd9dd731319eb220c" id="r_ad71f079e4a8b749bd9dd731319eb220c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1kin_1_1SerialChain.html#ad71f079e4a8b749bd9dd731319eb220c">forward</a> (const double *joints, <a class="el" href="structplcopen_1_1core_1_1kin_1_1Pose6.html">Pose6</a> &amp;pose) const override</td></tr>
+<tr class="separator:ad71f079e4a8b749bd9dd731319eb220c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6e5965935220feb7532dcc116426c252" id="r_a6e5965935220feb7532dcc116426c252"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8">rt::ErrorCode</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1kin_1_1SerialChain.html#a6e5965935220feb7532dcc116426c252">inverse</a> (const <a class="el" href="structplcopen_1_1core_1_1kin_1_1Pose6.html">Pose6</a> &amp;pose, const double *seed, double max_joint_step, double *joints_out) const override</td></tr>
+<tr class="separator:a6e5965935220feb7532dcc116426c252"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a65aadc533622fc1dfc5c0f50ab159ae4" id="r_a65aadc533622fc1dfc5c0f50ab159ae4"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8">rt::ErrorCode</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1kin_1_1SerialChain.html#a65aadc533622fc1dfc5c0f50ab159ae4">solve</a> (const <a class="el" href="structplcopen_1_1core_1_1kin_1_1Pose6.html">Pose6</a> &amp;pose, const double *seed, double max_joint_step, const <a class="el" href="structplcopen_1_1core_1_1kin_1_1SerialChainSolveOptions.html">SerialChainSolveOptions</a> &amp;options, double *joints_out) const</td></tr>
+<tr class="separator:a65aadc533622fc1dfc5c0f50ab159ae4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8105606ec8ebc169d0f478f978c7c304" id="r_a8105606ec8ebc169d0f478f978c7c304"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structplcopen_1_1core_1_1kin_1_1SerialChainSolveResult.html">SerialChainSolveResult</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1kin_1_1SerialChain.html#a8105606ec8ebc169d0f478f978c7c304">solve_best_effort</a> (const <a class="el" href="structplcopen_1_1core_1_1kin_1_1Pose6.html">Pose6</a> &amp;pose, const double *seed, double max_joint_step, const <a class="el" href="structplcopen_1_1core_1_1kin_1_1SerialChainSolveOptions.html">SerialChainSolveOptions</a> &amp;options=<a class="el" href="structplcopen_1_1core_1_1kin_1_1SerialChainSolveOptions.html">SerialChainSolveOptions</a>{}) const</td></tr>
+<tr class="separator:a8105606ec8ebc169d0f478f978c7c304"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a83ece27ebadf4a5d494de7930ca67435" id="r_a83ece27ebadf4a5d494de7930ca67435"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1kin_1_1SerialChain.html#a83ece27ebadf4a5d494de7930ca67435">singularity_margin</a> (const double *) const override</td></tr>
+<tr class="separator:a83ece27ebadf4a5d494de7930ca67435"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="inherit_header pub_methods_classplcopen_1_1core_1_1kin_1_1PoseKinematics"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_classplcopen_1_1core_1_1kin_1_1PoseKinematics')"><img src="closed.png" alt="-"/>&#160;Public 成员函数 继承自 <a class="el" href="classplcopen_1_1core_1_1kin_1_1PoseKinematics.html">plcopen::core::kin::PoseKinematics</a></td></tr>
+<tr class="memitem:aad20c7d8ac4b1b9efb47360eaa5a5b6e inherit pub_methods_classplcopen_1_1core_1_1kin_1_1PoseKinematics" id="r_aad20c7d8ac4b1b9efb47360eaa5a5b6e"><td class="memItemLeft" align="right" valign="top">virtual&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1kin_1_1PoseKinematics.html#aad20c7d8ac4b1b9efb47360eaa5a5b6e">~PoseKinematics</a> ()=default</td></tr>
+<tr class="separator:aad20c7d8ac4b1b9efb47360eaa5a5b6e inherit pub_methods_classplcopen_1_1core_1_1kin_1_1PoseKinematics"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-static-attribs" name="pub-static-attribs"></a>
+静态 Public 属性</h2></td></tr>
+<tr class="memitem:a0b46711e46e7a535bde75002a4cd197d" id="r_a0b46711e46e7a535bde75002a4cd197d"><td class="memItemLeft" align="right" valign="top">static constexpr std::size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1kin_1_1SerialChain.html#a0b46711e46e7a535bde75002a4cd197d">MaxJoints</a> = <a class="el" href="namespaceplcopen_1_1core_1_1kin.html#a718d0b95bf6fb8c9e02a19bb579635b0">SerialChainMaxJoints</a></td></tr>
+<tr class="separator:a0b46711e46e7a535bde75002a4cd197d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2f989966a019a97e13e039620ff1c3a1" id="r_a2f989966a019a97e13e039620ff1c3a1"><td class="memItemLeft" align="right" valign="top">static constexpr std::size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1kin_1_1SerialChain.html#a2f989966a019a97e13e039620ff1c3a1">MaxIterations</a> = 32</td></tr>
+<tr class="separator:a2f989966a019a97e13e039620ff1c3a1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table>
+<a name="details" id="details"></a><h2 class="groupheader">详细描述</h2>
+<div class="textblock">
+<p class="definition">在文件 <a class="el" href="serial__chain_8h_source.html">serial_chain.h</a> 第 <a class="el" href="serial__chain_8h_source.html#l00064">64</a> 行定义.</p>
+</div><h2 class="groupheader">构造及析构函数说明</h2>
+<a id="adcd22745957fd69c1d34fb95dfe35570" name="adcd22745957fd69c1d34fb95dfe35570"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adcd22745957fd69c1d34fb95dfe35570">&#9670;&#160;</a></span>SerialChain()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">plcopen::core::kin::SerialChain::SerialChain </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="structplcopen_1_1core_1_1kin_1_1SerialChainSpec.html">SerialChainSpec</a> &amp;&#160;</td>
+          <td class="paramname"><em>spec</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">explicit</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="serial__chain_8h_source.html">serial_chain.h</a> 第 <a class="el" href="serial__chain_8h_source.html#l00070">70</a> 行定义.</p>
+
+</div>
+</div>
+<h2 class="groupheader">成员函数说明</h2>
+<a id="ad71f079e4a8b749bd9dd731319eb220c" name="ad71f079e4a8b749bd9dd731319eb220c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad71f079e4a8b749bd9dd731319eb220c">&#9670;&#160;</a></span>forward()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void plcopen::core::kin::SerialChain::forward </td>
+          <td>(</td>
+          <td class="paramtype">const double *&#160;</td>
+          <td class="paramname"><em>joints</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="structplcopen_1_1core_1_1kin_1_1Pose6.html">Pose6</a> &amp;&#160;</td>
+          <td class="paramname"><em>pose</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>实现了 <a class="el" href="classplcopen_1_1core_1_1kin_1_1PoseKinematics.html#a4060a6fcc0f154b98db9afe3255e2515">plcopen::core::kin::PoseKinematics</a>.</p>
+
+<p class="definition">在文件 <a class="el" href="serial__chain_8h_source.html">serial_chain.h</a> 第 <a class="el" href="serial__chain_8h_source.html#l00084">84</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a6e5965935220feb7532dcc116426c252" name="a6e5965935220feb7532dcc116426c252"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6e5965935220feb7532dcc116426c252">&#9670;&#160;</a></span>inverse()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8">rt::ErrorCode</a> plcopen::core::kin::SerialChain::inverse </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="structplcopen_1_1core_1_1kin_1_1Pose6.html">Pose6</a> &amp;&#160;</td>
+          <td class="paramname"><em>pose</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const double *&#160;</td>
+          <td class="paramname"><em>seed</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">double&#160;</td>
+          <td class="paramname"><em>max_joint_step</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">double *&#160;</td>
+          <td class="paramname"><em>joints_out</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>实现了 <a class="el" href="classplcopen_1_1core_1_1kin_1_1PoseKinematics.html#aeb7e8e7637b664fe5bbb619c0f6fdcd8">plcopen::core::kin::PoseKinematics</a>.</p>
+
+<p class="definition">在文件 <a class="el" href="serial__chain_8h_source.html">serial_chain.h</a> 第 <a class="el" href="serial__chain_8h_source.html#l00103">103</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a638b7a148b9f2be756a6f376cc1514fd" name="a638b7a148b9f2be756a6f376cc1514fd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a638b7a148b9f2be756a6f376cc1514fd">&#9670;&#160;</a></span>joint_count()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::size_t plcopen::core::kin::SerialChain::joint_count </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>实现了 <a class="el" href="classplcopen_1_1core_1_1kin_1_1PoseKinematics.html#a46a25899c8d0ea84a0476e15d27accd9">plcopen::core::kin::PoseKinematics</a>.</p>
+
+<p class="definition">在文件 <a class="el" href="serial__chain_8h_source.html">serial_chain.h</a> 第 <a class="el" href="serial__chain_8h_source.html#l00082">82</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a83ece27ebadf4a5d494de7930ca67435" name="a83ece27ebadf4a5d494de7930ca67435"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a83ece27ebadf4a5d494de7930ca67435">&#9670;&#160;</a></span>singularity_margin()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">double plcopen::core::kin::SerialChain::singularity_margin </td>
+          <td>(</td>
+          <td class="paramtype">const double *&#160;</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>实现了 <a class="el" href="classplcopen_1_1core_1_1kin_1_1PoseKinematics.html#a25f042f9caf2e4586c3e8beb41648d85">plcopen::core::kin::PoseKinematics</a>.</p>
+
+<p class="definition">在文件 <a class="el" href="serial__chain_8h_source.html">serial_chain.h</a> 第 <a class="el" href="serial__chain_8h_source.html#l00135">135</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a65aadc533622fc1dfc5c0f50ab159ae4" name="a65aadc533622fc1dfc5c0f50ab159ae4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a65aadc533622fc1dfc5c0f50ab159ae4">&#9670;&#160;</a></span>solve()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8">rt::ErrorCode</a> plcopen::core::kin::SerialChain::solve </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="structplcopen_1_1core_1_1kin_1_1Pose6.html">Pose6</a> &amp;&#160;</td>
+          <td class="paramname"><em>pose</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const double *&#160;</td>
+          <td class="paramname"><em>seed</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">double&#160;</td>
+          <td class="paramname"><em>max_joint_step</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="structplcopen_1_1core_1_1kin_1_1SerialChainSolveOptions.html">SerialChainSolveOptions</a> &amp;&#160;</td>
+          <td class="paramname"><em>options</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">double *&#160;</td>
+          <td class="paramname"><em>joints_out</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="serial__chain_8h_source.html">serial_chain.h</a> 第 <a class="el" href="serial__chain_8h_source.html#l00110">110</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a8105606ec8ebc169d0f478f978c7c304" name="a8105606ec8ebc169d0f478f978c7c304"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8105606ec8ebc169d0f478f978c7c304">&#9670;&#160;</a></span>solve_best_effort()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="structplcopen_1_1core_1_1kin_1_1SerialChainSolveResult.html">SerialChainSolveResult</a> plcopen::core::kin::SerialChain::solve_best_effort </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="structplcopen_1_1core_1_1kin_1_1Pose6.html">Pose6</a> &amp;&#160;</td>
+          <td class="paramname"><em>pose</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const double *&#160;</td>
+          <td class="paramname"><em>seed</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">double&#160;</td>
+          <td class="paramname"><em>max_joint_step</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="structplcopen_1_1core_1_1kin_1_1SerialChainSolveOptions.html">SerialChainSolveOptions</a> &amp;&#160;</td>
+          <td class="paramname"><em>options</em> = <code><a class="el" href="structplcopen_1_1core_1_1kin_1_1SerialChainSolveOptions.html">SerialChainSolveOptions</a>{}</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="serial__chain_8h_source.html">serial_chain.h</a> 第 <a class="el" href="serial__chain_8h_source.html#l00129">129</a> 行定义.</p>
+
+</div>
+</div>
+<h2 class="groupheader">类成员变量说明</h2>
+<a id="a2f989966a019a97e13e039620ff1c3a1" name="a2f989966a019a97e13e039620ff1c3a1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2f989966a019a97e13e039620ff1c3a1">&#9670;&#160;</a></span>MaxIterations</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">constexpr std::size_t plcopen::core::kin::SerialChain::MaxIterations = 32</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span><span class="mlabel">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="serial__chain_8h_source.html">serial_chain.h</a> 第 <a class="el" href="serial__chain_8h_source.html#l00068">68</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a0b46711e46e7a535bde75002a4cd197d" name="a0b46711e46e7a535bde75002a4cd197d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0b46711e46e7a535bde75002a4cd197d">&#9670;&#160;</a></span>MaxJoints</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">constexpr std::size_t plcopen::core::kin::SerialChain::MaxJoints = <a class="el" href="namespaceplcopen_1_1core_1_1kin.html#a718d0b95bf6fb8c9e02a19bb579635b0">SerialChainMaxJoints</a></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span><span class="mlabel">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="serial__chain_8h_source.html">serial_chain.h</a> 第 <a class="el" href="serial__chain_8h_source.html#l00067">67</a> 行定义.</p>
+
+</div>
+</div>
+<hr/>该类的文档由以下文件生成:<ul>
+<li>core/kin/<a class="el" href="serial__chain_8h_source.html">serial_chain.h</a></li>
+</ul>
+</div><!-- contents -->
+<!-- start footer part -->
+<hr class="footer"/><address class="footer"><small>
+制作者&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.8
+</small></address>
+</body>
+</html>

@@ -1,0 +1,234 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh">
+<head>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=11"/>
+<meta name="generator" content="Doxygen 1.9.8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>plcopen: plcopen::core::fb::FbWriteDigitalOutput类 参考</title>
+<link href="tabs.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="jquery.js"></script>
+<script type="text/javascript" src="dynsections.js"></script>
+<link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<link href="doxygen.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+<div id="top"><!-- do not remove this div, it is closed by doxygen! -->
+<div id="titlearea">
+<table cellspacing="0" cellpadding="0">
+ <tbody>
+ <tr id="projectrow">
+  <td id="projectalign">
+   <div id="projectname">plcopen<span id="projectnumber">&#160;0.21.0</span>
+   </div>
+  </td>
+ </tr>
+ </tbody>
+</table>
+</div>
+<!-- end header part -->
+<!-- 制作者 Doxygen 1.9.8 -->
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+var searchBox = new SearchBox("searchBox", "search/",'.html');
+/* @license-end */
+</script>
+<script type="text/javascript" src="menudata.js"></script>
+<script type="text/javascript" src="menu.js"></script>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+$(function() {
+  initMenu('',true,false,'search.php','搜索');
+  $(document).ready(function() { init_search(); });
+});
+/* @license-end */
+</script>
+<div id="main-nav"></div>
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<div id="MSearchResults">
+<div class="SRPage">
+<div id="SRIndex">
+<div id="SRResults"></div>
+<div class="SRStatus" id="Loading">载入中...</div>
+<div class="SRStatus" id="Searching">搜索中...</div>
+<div class="SRStatus" id="NoMatches">未找到</div>
+</div>
+</div>
+</div>
+</div>
+
+<div id="nav-path" class="navpath">
+  <ul>
+<li class="navelem"><a class="el" href="namespaceplcopen.html">plcopen</a></li><li class="navelem"><a class="el" href="namespaceplcopen_1_1core.html">core</a></li><li class="navelem"><a class="el" href="namespaceplcopen_1_1core_1_1fb.html">fb</a></li><li class="navelem"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbWriteDigitalOutput.html">FbWriteDigitalOutput</a></li>  </ul>
+</div>
+</div><!-- top -->
+<div class="header">
+  <div class="summary">
+<a href="#pub-methods">Public 成员函数</a> &#124;
+<a href="#pub-attribs">Public 属性</a> &#124;
+<a href="classplcopen_1_1core_1_1fb_1_1FbWriteDigitalOutput-members.html">所有成员列表</a>  </div>
+  <div class="headertitle"><div class="title">plcopen::core::fb::FbWriteDigitalOutput类 参考</div></div>
+</div><!--header-->
+<div class="contents">
+
+<p><code>#include &lt;<a class="el" href="io_8h_source.html">io.h</a>&gt;</code></p>
+<div class="dynheader">
+类 plcopen::core::fb::FbWriteDigitalOutput 继承关系图:</div>
+<div class="dyncontent">
+<div class="center"><img src="classplcopen_1_1core_1_1fb_1_1FbWriteDigitalOutput__inherit__graph.png" border="0" usemap="#aplcopen_1_1core_1_1fb_1_1FbWriteDigitalOutput_inherit__map" alt="Inheritance graph"/></div>
+<map name="aplcopen_1_1core_1_1fb_1_1FbWriteDigitalOutput_inherit__map" id="aplcopen_1_1core_1_1fb_1_1FbWriteDigitalOutput_inherit__map">
+<area shape="rect" title=" " alt="" coords="27,93,187,133"/>
+<area shape="rect" href="classplcopen_1_1core_1_1fb_1_1AxisManagementExecuteFb.html" title=" " alt="" coords="5,5,208,45"/>
+<area shape="poly" title=" " alt="" coords="109,59,109,93,104,93,104,59"/>
+</map>
+<center><span class="legend">[<a href="graph_legend.html">图例</a>]</span></center></div>
+<div class="dynheader">
+plcopen::core::fb::FbWriteDigitalOutput 的协作图:</div>
+<div class="dyncontent">
+<div class="center"><img src="classplcopen_1_1core_1_1fb_1_1FbWriteDigitalOutput__coll__graph.png" border="0" usemap="#aplcopen_1_1core_1_1fb_1_1FbWriteDigitalOutput_coll__map" alt="Collaboration graph"/></div>
+<map name="aplcopen_1_1core_1_1fb_1_1FbWriteDigitalOutput_coll__map" id="aplcopen_1_1core_1_1fb_1_1FbWriteDigitalOutput_coll__map">
+<area shape="rect" title=" " alt="" coords="27,197,187,237"/>
+<area shape="rect" href="classplcopen_1_1core_1_1fb_1_1AxisManagementExecuteFb.html" title=" " alt="" coords="5,108,208,148"/>
+<area shape="poly" title=" " alt="" coords="109,162,109,197,104,197,104,162"/>
+<area shape="rect" href="classplcopen_1_1core_1_1axis_1_1AxisModel.html" title=" " alt="" coords="35,5,179,45"/>
+<area shape="poly" title=" " alt="" coords="109,59,109,108,104,108,104,59"/>
+</map>
+<center><span class="legend">[<a href="graph_legend.html">图例</a>]</span></center></div>
+<table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
+Public 成员函数</h2></td></tr>
+<tr class="memitem:aa8657289d9757d2ed44e78db0583c6be" id="r_aa8657289d9757d2ed44e78db0583c6be"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbWriteDigitalOutput.html#aa8657289d9757d2ed44e78db0583c6be">call</a> ()</td></tr>
+<tr class="separator:aa8657289d9757d2ed44e78db0583c6be"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
+Public 属性</h2></td></tr>
+<tr class="memitem:a3301789671250ecbb92d05b146a43c72" id="r_a3301789671250ecbb92d05b146a43c72"><td class="memItemLeft" align="right" valign="top">std::size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbWriteDigitalOutput.html#a3301789671250ecbb92d05b146a43c72">output_number</a> = 0</td></tr>
+<tr class="separator:a3301789671250ecbb92d05b146a43c72"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6e911af8b0a56d84f5aa194425d49474" id="r_a6e911af8b0a56d84f5aa194425d49474"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbWriteDigitalOutput.html#a6e911af8b0a56d84f5aa194425d49474">value</a> = false</td></tr>
+<tr class="separator:a6e911af8b0a56d84f5aa194425d49474"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1bf6717e15b42f0a2e2907f201f0ba78" id="r_a1bf6717e15b42f0a2e2907f201f0ba78"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceplcopen_1_1core_1_1axis.html#a06cb73c5679d519f004d1bb10b44a0e9">axis::ExecutionMode</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbWriteDigitalOutput.html#a1bf6717e15b42f0a2e2907f201f0ba78">execution_mode</a> = <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#a06cb73c5679d519f004d1bb10b44a0e9affe181130430aff6386df37df36347f8">axis::ExecutionMode::immediately</a></td></tr>
+<tr class="separator:a1bf6717e15b42f0a2e2907f201f0ba78"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="inherit_header pub_attribs_classplcopen_1_1core_1_1fb_1_1AxisManagementExecuteFb"><td colspan="2" onclick="javascript:toggleInherit('pub_attribs_classplcopen_1_1core_1_1fb_1_1AxisManagementExecuteFb')"><img src="closed.png" alt="-"/>&#160;Public 属性 继承自 <a class="el" href="classplcopen_1_1core_1_1fb_1_1AxisManagementExecuteFb.html">plcopen::core::fb::AxisManagementExecuteFb</a></td></tr>
+<tr class="memitem:a980d04ce48f566beadafed7cef05ea54 inherit pub_attribs_classplcopen_1_1core_1_1fb_1_1AxisManagementExecuteFb" id="r_a980d04ce48f566beadafed7cef05ea54"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classplcopen_1_1core_1_1axis_1_1AxisModel.html">axis::AxisModel</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1AxisManagementExecuteFb.html#a980d04ce48f566beadafed7cef05ea54">axis_ref</a> = nullptr</td></tr>
+<tr class="separator:a980d04ce48f566beadafed7cef05ea54 inherit pub_attribs_classplcopen_1_1core_1_1fb_1_1AxisManagementExecuteFb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac4741469d491a0e689476158a836dc47 inherit pub_attribs_classplcopen_1_1core_1_1fb_1_1AxisManagementExecuteFb" id="r_ac4741469d491a0e689476158a836dc47"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1AxisManagementExecuteFb.html#ac4741469d491a0e689476158a836dc47">execute</a> = false</td></tr>
+<tr class="separator:ac4741469d491a0e689476158a836dc47 inherit pub_attribs_classplcopen_1_1core_1_1fb_1_1AxisManagementExecuteFb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a68c3dd9114639b887af0e0df9141e62e inherit pub_attribs_classplcopen_1_1core_1_1fb_1_1AxisManagementExecuteFb" id="r_a68c3dd9114639b887af0e0df9141e62e"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1AxisManagementExecuteFb.html#a68c3dd9114639b887af0e0df9141e62e">done</a> = false</td></tr>
+<tr class="separator:a68c3dd9114639b887af0e0df9141e62e inherit pub_attribs_classplcopen_1_1core_1_1fb_1_1AxisManagementExecuteFb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a67ea1c307510d66cac9b03640137913d inherit pub_attribs_classplcopen_1_1core_1_1fb_1_1AxisManagementExecuteFb" id="r_a67ea1c307510d66cac9b03640137913d"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1AxisManagementExecuteFb.html#a67ea1c307510d66cac9b03640137913d">busy</a> = false</td></tr>
+<tr class="separator:a67ea1c307510d66cac9b03640137913d inherit pub_attribs_classplcopen_1_1core_1_1fb_1_1AxisManagementExecuteFb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2ab94d7371be7ac2965d4ba46aedf308 inherit pub_attribs_classplcopen_1_1core_1_1fb_1_1AxisManagementExecuteFb" id="r_a2ab94d7371be7ac2965d4ba46aedf308"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1AxisManagementExecuteFb.html#a2ab94d7371be7ac2965d4ba46aedf308">error</a> = false</td></tr>
+<tr class="separator:a2ab94d7371be7ac2965d4ba46aedf308 inherit pub_attribs_classplcopen_1_1core_1_1fb_1_1AxisManagementExecuteFb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af9d2d3db1885c2eb9e1e85ed76c45d85 inherit pub_attribs_classplcopen_1_1core_1_1fb_1_1AxisManagementExecuteFb" id="r_af9d2d3db1885c2eb9e1e85ed76c45d85"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8">rt::ErrorCode</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1AxisManagementExecuteFb.html#af9d2d3db1885c2eb9e1e85ed76c45d85">error_id</a> = <a class="el" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8a444bcb3a3fcf8389296c49467f27e1d6">rt::ErrorCode::ok</a></td></tr>
+<tr class="separator:af9d2d3db1885c2eb9e1e85ed76c45d85 inherit pub_attribs_classplcopen_1_1core_1_1fb_1_1AxisManagementExecuteFb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="inherited" name="inherited"></a>
+额外继承的成员函数</h2></td></tr>
+<tr class="inherit_header pro_methods_classplcopen_1_1core_1_1fb_1_1AxisManagementExecuteFb"><td colspan="2" onclick="javascript:toggleInherit('pro_methods_classplcopen_1_1core_1_1fb_1_1AxisManagementExecuteFb')"><img src="closed.png" alt="-"/>&#160;Protected 成员函数 继承自 <a class="el" href="classplcopen_1_1core_1_1fb_1_1AxisManagementExecuteFb.html">plcopen::core::fb::AxisManagementExecuteFb</a></td></tr>
+<tr class="memitem:aaf3e5e37cfb4959855f21259db5b599b inherit pro_methods_classplcopen_1_1core_1_1fb_1_1AxisManagementExecuteFb" id="r_aaf3e5e37cfb4959855f21259db5b599b"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1AxisManagementExecuteFb.html#aaf3e5e37cfb4959855f21259db5b599b">rising_edge</a> ()</td></tr>
+<tr class="separator:aaf3e5e37cfb4959855f21259db5b599b inherit pro_methods_classplcopen_1_1core_1_1fb_1_1AxisManagementExecuteFb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a07a40146eac47824626988b0f560fbbe inherit pro_methods_classplcopen_1_1core_1_1fb_1_1AxisManagementExecuteFb" id="r_a07a40146eac47824626988b0f560fbbe"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1AxisManagementExecuteFb.html#a07a40146eac47824626988b0f560fbbe">accept_management</a> (<a class="el" href="classplcopen_1_1core_1_1rt_1_1Result.html">rt::Result</a>&lt; std::uint32_t &gt; accepted)</td></tr>
+<tr class="separator:a07a40146eac47824626988b0f560fbbe inherit pro_methods_classplcopen_1_1core_1_1fb_1_1AxisManagementExecuteFb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4da8cfed47db2b8a2329656c494fcb65 inherit pro_methods_classplcopen_1_1core_1_1fb_1_1AxisManagementExecuteFb" id="r_a4da8cfed47db2b8a2329656c494fcb65"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1AxisManagementExecuteFb.html#a4da8cfed47db2b8a2329656c494fcb65">observe_management</a> ()</td></tr>
+<tr class="separator:a4da8cfed47db2b8a2329656c494fcb65 inherit pro_methods_classplcopen_1_1core_1_1fb_1_1AxisManagementExecuteFb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table>
+<a name="details" id="details"></a><h2 class="groupheader">详细描述</h2>
+<div class="textblock">
+<p class="definition">在文件 <a class="el" href="io_8h_source.html">io.h</a> 第 <a class="el" href="io_8h_source.html#l00077">77</a> 行定义.</p>
+</div><h2 class="groupheader">成员函数说明</h2>
+<a id="aa8657289d9757d2ed44e78db0583c6be" name="aa8657289d9757d2ed44e78db0583c6be"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa8657289d9757d2ed44e78db0583c6be">&#9670;&#160;</a></span>call()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void plcopen::core::fb::FbWriteDigitalOutput::call </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="io_8h_source.html">io.h</a> 第 <a class="el" href="io_8h_source.html#l00084">84</a> 行定义.</p>
+
+</div>
+</div>
+<h2 class="groupheader">类成员变量说明</h2>
+<a id="a1bf6717e15b42f0a2e2907f201f0ba78" name="a1bf6717e15b42f0a2e2907f201f0ba78"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1bf6717e15b42f0a2e2907f201f0ba78">&#9670;&#160;</a></span>execution_mode</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="namespaceplcopen_1_1core_1_1axis.html#a06cb73c5679d519f004d1bb10b44a0e9">axis::ExecutionMode</a> plcopen::core::fb::FbWriteDigitalOutput::execution_mode = <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#a06cb73c5679d519f004d1bb10b44a0e9affe181130430aff6386df37df36347f8">axis::ExecutionMode::immediately</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="io_8h_source.html">io.h</a> 第 <a class="el" href="io_8h_source.html#l00082">82</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a3301789671250ecbb92d05b146a43c72" name="a3301789671250ecbb92d05b146a43c72"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3301789671250ecbb92d05b146a43c72">&#9670;&#160;</a></span>output_number</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::size_t plcopen::core::fb::FbWriteDigitalOutput::output_number = 0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="io_8h_source.html">io.h</a> 第 <a class="el" href="io_8h_source.html#l00080">80</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a6e911af8b0a56d84f5aa194425d49474" name="a6e911af8b0a56d84f5aa194425d49474"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6e911af8b0a56d84f5aa194425d49474">&#9670;&#160;</a></span>value</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool plcopen::core::fb::FbWriteDigitalOutput::value = false</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="io_8h_source.html">io.h</a> 第 <a class="el" href="io_8h_source.html#l00081">81</a> 行定义.</p>
+
+</div>
+</div>
+<hr/>该类的文档由以下文件生成:<ul>
+<li>core/fb/<a class="el" href="io_8h_source.html">io.h</a></li>
+</ul>
+</div><!-- contents -->
+<!-- start footer part -->
+<hr class="footer"/><address class="footer"><small>
+制作者&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.8
+</small></address>
+</body>
+</html>

@@ -1,0 +1,13 @@
+<map id="plcopen::core::fb::GroupAdminFb" name="plcopen::core::fb::GroupAdminFb">
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,133,144,173"/>
+<area shape="rect" id="Node000002" href="$classplcopen_1_1core_1_1fb_1_1FbAddAxisToGroup.html" title=" " alt="" coords="216,5,360,45"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="104,121,143,87,191,55,217,43,219,48,193,60,147,91,107,125"/>
+<area shape="rect" id="Node000003" href="$classplcopen_1_1core_1_1fb_1_1FbGroupReset.html" title=" " alt="" coords="219,69,357,109"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="155,127,220,107,222,112,156,132"/>
+<area shape="rect" id="Node000004" href="$classplcopen_1_1core_1_1fb_1_1FbGroupSetPosition.html" title=" " alt="" coords="213,133,363,173"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="158,151,212,151,212,156,158,156"/>
+<area shape="rect" id="Node000005" href="$classplcopen_1_1core_1_1fb_1_1FbRemoveAxisFromGroup.html" title=" " alt="" coords="192,197,384,237"/>
+<area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="156,175,222,195,220,200,155,180"/>
+<area shape="rect" id="Node000006" href="$classplcopen_1_1core_1_1fb_1_1FbUngroupAllAxes.html" title=" " alt="" coords="217,261,359,301"/>
+<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="107,181,147,215,193,247,219,259,217,264,191,252,143,219,104,185"/>
+</map>

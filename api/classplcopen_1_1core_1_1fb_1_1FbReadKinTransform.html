@@ -1,0 +1,263 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh">
+<head>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=11"/>
+<meta name="generator" content="Doxygen 1.9.8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>plcopen: plcopen::core::fb::FbReadKinTransform类 参考</title>
+<link href="tabs.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="jquery.js"></script>
+<script type="text/javascript" src="dynsections.js"></script>
+<link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<link href="doxygen.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+<div id="top"><!-- do not remove this div, it is closed by doxygen! -->
+<div id="titlearea">
+<table cellspacing="0" cellpadding="0">
+ <tbody>
+ <tr id="projectrow">
+  <td id="projectalign">
+   <div id="projectname">plcopen<span id="projectnumber">&#160;0.21.0</span>
+   </div>
+  </td>
+ </tr>
+ </tbody>
+</table>
+</div>
+<!-- end header part -->
+<!-- 制作者 Doxygen 1.9.8 -->
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+var searchBox = new SearchBox("searchBox", "search/",'.html');
+/* @license-end */
+</script>
+<script type="text/javascript" src="menudata.js"></script>
+<script type="text/javascript" src="menu.js"></script>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+$(function() {
+  initMenu('',true,false,'search.php','搜索');
+  $(document).ready(function() { init_search(); });
+});
+/* @license-end */
+</script>
+<div id="main-nav"></div>
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<div id="MSearchResults">
+<div class="SRPage">
+<div id="SRIndex">
+<div id="SRResults"></div>
+<div class="SRStatus" id="Loading">载入中...</div>
+<div class="SRStatus" id="Searching">搜索中...</div>
+<div class="SRStatus" id="NoMatches">未找到</div>
+</div>
+</div>
+</div>
+</div>
+
+<div id="nav-path" class="navpath">
+  <ul>
+<li class="navelem"><a class="el" href="namespaceplcopen.html">plcopen</a></li><li class="navelem"><a class="el" href="namespaceplcopen_1_1core.html">core</a></li><li class="navelem"><a class="el" href="namespaceplcopen_1_1core_1_1fb.html">fb</a></li><li class="navelem"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbReadKinTransform.html">FbReadKinTransform</a></li>  </ul>
+</div>
+</div><!-- top -->
+<div class="header">
+  <div class="summary">
+<a href="#pub-methods">Public 成员函数</a> &#124;
+<a href="#pub-attribs">Public 属性</a> &#124;
+<a href="classplcopen_1_1core_1_1fb_1_1FbReadKinTransform-members.html">所有成员列表</a>  </div>
+  <div class="headertitle"><div class="title">plcopen::core::fb::FbReadKinTransform类 参考</div></div>
+</div><!--header-->
+<div class="contents">
+
+<p><code>#include &lt;<a class="el" href="path__table_8h_source.html">path_table.h</a>&gt;</code></p>
+<div class="dynheader">
+plcopen::core::fb::FbReadKinTransform 的协作图:</div>
+<div class="dyncontent">
+<div class="center"><img src="classplcopen_1_1core_1_1fb_1_1FbReadKinTransform__coll__graph.png" border="0" usemap="#aplcopen_1_1core_1_1fb_1_1FbReadKinTransform_coll__map" alt="Collaboration graph"/></div>
+<map name="aplcopen_1_1core_1_1fb_1_1FbReadKinTransform_coll__map" id="aplcopen_1_1core_1_1fb_1_1FbReadKinTransform_coll__map">
+<area shape="rect" title=" " alt="" coords="657,101,815,141"/>
+<area shape="rect" href="classplcopen_1_1core_1_1axis_1_1AxisGroup.html" title=" " alt="" coords="369,69,513,109"/>
+<area shape="poly" title=" " alt="" coords="527,96,657,110,657,115,527,101"/>
+<area shape="rect" href="structplcopen_1_1core_1_1axis_1_1GroupPosition.html" title=" " alt="" coords="17,5,161,45"/>
+<area shape="poly" title=" " alt="" coords="175,36,346,67,370,71,369,77,345,72,174,42"/>
+<area shape="rect" href="structplcopen_1_1core_1_1axis_1_1JogCommandOptions.html" title=" " alt="" coords="5,69,172,109"/>
+<area shape="poly" title=" " alt="" coords="186,87,369,87,369,92,186,92"/>
+<area shape="rect" href="structplcopen_1_1core_1_1axis_1_1KinTransformRef.html" title=" " alt="" coords="369,133,513,173"/>
+<area shape="poly" title=" " alt="" coords="527,141,657,127,657,133,527,147"/>
+<area shape="rect" href="classplcopen_1_1core_1_1kin_1_1Kinematics.html" title=" " alt="" coords="20,133,157,173"/>
+<area shape="poly" title=" " alt="" coords="171,151,369,151,369,156,171,156"/>
+<area shape="rect" href="classplcopen_1_1core_1_1kin_1_1PoseKinematics.html" title=" " alt="" coords="20,197,157,237"/>
+<area shape="poly" title=" " alt="" coords="171,201,345,171,369,166,370,171,346,176,172,207"/>
+</map>
+<center><span class="legend">[<a href="graph_legend.html">图例</a>]</span></center></div>
+<table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
+Public 成员函数</h2></td></tr>
+<tr class="memitem:a817f436514309cf4b386b7630bd13e1b" id="r_a817f436514309cf4b386b7630bd13e1b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbReadKinTransform.html#a817f436514309cf4b386b7630bd13e1b">call</a> ()</td></tr>
+<tr class="separator:a817f436514309cf4b386b7630bd13e1b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
+Public 属性</h2></td></tr>
+<tr class="memitem:ae8ebc21d30ee38902511446dae4471b8" id="r_ae8ebc21d30ee38902511446dae4471b8"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classplcopen_1_1core_1_1axis_1_1AxisGroup.html">axis::AxisGroup</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbReadKinTransform.html#ae8ebc21d30ee38902511446dae4471b8">group_ref</a> = nullptr</td></tr>
+<tr class="separator:ae8ebc21d30ee38902511446dae4471b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a28c3c6fd620d971891ada2c9ea66c50f" id="r_a28c3c6fd620d971891ada2c9ea66c50f"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbReadKinTransform.html#a28c3c6fd620d971891ada2c9ea66c50f">enable</a> = false</td></tr>
+<tr class="separator:a28c3c6fd620d971891ada2c9ea66c50f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af8514d016422297df8ed0a3b6a0cd7eb" id="r_af8514d016422297df8ed0a3b6a0cd7eb"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbReadKinTransform.html#af8514d016422297df8ed0a3b6a0cd7eb">valid</a> = false</td></tr>
+<tr class="separator:af8514d016422297df8ed0a3b6a0cd7eb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a484b15c26b88e0c1b2c4d221e4ba7a57" id="r_a484b15c26b88e0c1b2c4d221e4ba7a57"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbReadKinTransform.html#a484b15c26b88e0c1b2c4d221e4ba7a57">error</a> = false</td></tr>
+<tr class="separator:a484b15c26b88e0c1b2c4d221e4ba7a57"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad5677303aceb3b18958f30b28f68e16c" id="r_ad5677303aceb3b18958f30b28f68e16c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8">rt::ErrorCode</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbReadKinTransform.html#ad5677303aceb3b18958f30b28f68e16c">error_id</a> = <a class="el" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8a444bcb3a3fcf8389296c49467f27e1d6">rt::ErrorCode::ok</a></td></tr>
+<tr class="separator:ad5677303aceb3b18958f30b28f68e16c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abf1fd255d255fe981face65f02f38909" id="r_abf1fd255d255fe981face65f02f38909"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structplcopen_1_1core_1_1axis_1_1KinTransformRef.html">axis::KinTransformRef</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbReadKinTransform.html#abf1fd255d255fe981face65f02f38909">kin_transform</a> {}</td></tr>
+<tr class="separator:abf1fd255d255fe981face65f02f38909"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table>
+<a name="details" id="details"></a><h2 class="groupheader">详细描述</h2>
+<div class="textblock">
+<p class="definition">在文件 <a class="el" href="path__table_8h_source.html">path_table.h</a> 第 <a class="el" href="path__table_8h_source.html#l00596">596</a> 行定义.</p>
+</div><h2 class="groupheader">成员函数说明</h2>
+<a id="a817f436514309cf4b386b7630bd13e1b" name="a817f436514309cf4b386b7630bd13e1b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a817f436514309cf4b386b7630bd13e1b">&#9670;&#160;</a></span>call()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void plcopen::core::fb::FbReadKinTransform::call </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="path__table_8h_source.html">path_table.h</a> 第 <a class="el" href="path__table_8h_source.html#l00606">606</a> 行定义.</p>
+
+</div>
+</div>
+<h2 class="groupheader">类成员变量说明</h2>
+<a id="a28c3c6fd620d971891ada2c9ea66c50f" name="a28c3c6fd620d971891ada2c9ea66c50f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a28c3c6fd620d971891ada2c9ea66c50f">&#9670;&#160;</a></span>enable</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool plcopen::core::fb::FbReadKinTransform::enable = false</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="path__table_8h_source.html">path_table.h</a> 第 <a class="el" href="path__table_8h_source.html#l00600">600</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a484b15c26b88e0c1b2c4d221e4ba7a57" name="a484b15c26b88e0c1b2c4d221e4ba7a57"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a484b15c26b88e0c1b2c4d221e4ba7a57">&#9670;&#160;</a></span>error</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool plcopen::core::fb::FbReadKinTransform::error = false</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="path__table_8h_source.html">path_table.h</a> 第 <a class="el" href="path__table_8h_source.html#l00602">602</a> 行定义.</p>
+
+</div>
+</div>
+<a id="ad5677303aceb3b18958f30b28f68e16c" name="ad5677303aceb3b18958f30b28f68e16c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad5677303aceb3b18958f30b28f68e16c">&#9670;&#160;</a></span>error_id</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8">rt::ErrorCode</a> plcopen::core::fb::FbReadKinTransform::error_id = <a class="el" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8a444bcb3a3fcf8389296c49467f27e1d6">rt::ErrorCode::ok</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="path__table_8h_source.html">path_table.h</a> 第 <a class="el" href="path__table_8h_source.html#l00603">603</a> 行定义.</p>
+
+</div>
+</div>
+<a id="ae8ebc21d30ee38902511446dae4471b8" name="ae8ebc21d30ee38902511446dae4471b8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae8ebc21d30ee38902511446dae4471b8">&#9670;&#160;</a></span>group_ref</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classplcopen_1_1core_1_1axis_1_1AxisGroup.html">axis::AxisGroup</a>* plcopen::core::fb::FbReadKinTransform::group_ref = nullptr</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="path__table_8h_source.html">path_table.h</a> 第 <a class="el" href="path__table_8h_source.html#l00599">599</a> 行定义.</p>
+
+</div>
+</div>
+<a id="abf1fd255d255fe981face65f02f38909" name="abf1fd255d255fe981face65f02f38909"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abf1fd255d255fe981face65f02f38909">&#9670;&#160;</a></span>kin_transform</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="structplcopen_1_1core_1_1axis_1_1KinTransformRef.html">axis::KinTransformRef</a> plcopen::core::fb::FbReadKinTransform::kin_transform {}</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="path__table_8h_source.html">path_table.h</a> 第 <a class="el" href="path__table_8h_source.html#l00604">604</a> 行定义.</p>
+
+</div>
+</div>
+<a id="af8514d016422297df8ed0a3b6a0cd7eb" name="af8514d016422297df8ed0a3b6a0cd7eb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af8514d016422297df8ed0a3b6a0cd7eb">&#9670;&#160;</a></span>valid</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool plcopen::core::fb::FbReadKinTransform::valid = false</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="path__table_8h_source.html">path_table.h</a> 第 <a class="el" href="path__table_8h_source.html#l00601">601</a> 行定义.</p>
+
+</div>
+</div>
+<hr/>该类的文档由以下文件生成:<ul>
+<li>core/fb/<a class="el" href="path__table_8h_source.html">path_table.h</a></li>
+</ul>
+</div><!-- contents -->
+<!-- start footer part -->
+<hr class="footer"/><address class="footer"><small>
+制作者&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.8
+</small></address>
+</body>
+</html>

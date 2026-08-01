@@ -1,0 +1,148 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh">
+<head>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=11"/>
+<meta name="generator" content="Doxygen 1.9.8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>plcopen: core/ — 新核架构总览</title>
+<link href="tabs.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="jquery.js"></script>
+<script type="text/javascript" src="dynsections.js"></script>
+<link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<link href="doxygen.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+<div id="top"><!-- do not remove this div, it is closed by doxygen! -->
+<div id="titlearea">
+<table cellspacing="0" cellpadding="0">
+ <tbody>
+ <tr id="projectrow">
+  <td id="projectalign">
+   <div id="projectname">plcopen<span id="projectnumber">&#160;0.21.0</span>
+   </div>
+  </td>
+ </tr>
+ </tbody>
+</table>
+</div>
+<!-- end header part -->
+<!-- 制作者 Doxygen 1.9.8 -->
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+var searchBox = new SearchBox("searchBox", "search/",'.html');
+/* @license-end */
+</script>
+<script type="text/javascript" src="menudata.js"></script>
+<script type="text/javascript" src="menu.js"></script>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+$(function() {
+  initMenu('',true,false,'search.php','搜索');
+  $(document).ready(function() { init_search(); });
+});
+/* @license-end */
+</script>
+<div id="main-nav"></div>
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<div id="MSearchResults">
+<div class="SRPage">
+<div id="SRIndex">
+<div id="SRResults"></div>
+<div class="SRStatus" id="Loading">载入中...</div>
+<div class="SRStatus" id="Searching">搜索中...</div>
+<div class="SRStatus" id="NoMatches">未找到</div>
+</div>
+</div>
+</div>
+</div>
+
+</div><!-- top -->
+<div><div class="header">
+  <div class="headertitle"><div class="title">core/ — 新核架构总览</div></div>
+</div><!--header-->
+<div class="contents">
+<div class="textblock"><p><a class="anchor" id="autotoc_md29"></a> 新核按 **L0-L7 阶梯**分层，另有三个阶梯旁**支撑库**（kin、stream、dyn）与两个 **外圈消费面**（st 语言层、L7 adapters）。依赖只向内；L0-L4 与 kin/stream/dyn 零 PLCopen 语义（2026-07-12 include 图审计 0 违规、无循环依赖，见 架构综述）。运行时形态 （规划域线程 + 承诺轨迹环 + RT 线程）见 ADR-0007。</p>
+<h1><a class="anchor" id="autotoc_md30"></a>
+静态结构视图（定稿）</h1>
+<div class="fragment"><div class="line">        OUTER RING -- two parallel pure-sink consumer facades</div>
+<div class="line">        (audited: no production layer includes them back)</div>
+<div class="line">+----------------------------------+   +----------------------------------+</div>
+<div class="line">| st  IEC 61131-3 ST layer         |   | L7 adapters                      |</div>
+<div class="line">| compiler front end + bytecode vm |   | Servo narrow iface (ADR-0004),   |</div>
+<div class="line">| L0-L7 + L∀ closed; 134 FB /      |   | CiA402 FSM, CSP/CSV/CST modes;   |</div>
+<div class="line">| 1476 pins; completion gates in CI|   | Feetech STS: S2 protocol shipped |</div>
+<div class="line">+----------------+-----------------+   +----------------+-----------------+</div>
+<div class="line">                 |                                      |</div>
+<div class="line">                 | fb/basic.h + rt/error.h              | axis/state.h</div>
+<div class="line">                 | (exactly these two)                  | + rt/error.h</div>
+<div class="line">                 v                                      | (bypasses L6)</div>
+<div class="line">+------------------------------------+                  |</div>
+<div class="line">| L6 fb    PLCopen-style facades     |                  |</div>
+<div class="line">| Part 1: 43, Part 4: 68, Part 5: 11 |                  |</div>
+<div class="line">+----------------+-------------------+                  |</div>
+<div class="line">                 |             +------------------------+</div>
+<div class="line">                 v             v</div>
+<div class="line">+---------------------------------------------+</div>
+<div class="line">| L5 axis   axis / group state machines       |</div>
+<div class="line">| coordinate, kinematics, stream integration  +--+</div>
+<div class="line">+---------------------------------------------+  |</div>
+<div class="line">| L4 exec    cyclic sampling, gear / cam      |  |  SUPPORT LIBS (pocket):</div>
+<div class="line">+---------------------------------------------+  |  deps point inward only;</div>
+<div class="line">| L3 plan   lookahead scan + blending         |  |  deps point inward only</div>
+<div class="line">+---------------------------------------------+  |</div>
+<div class="line">| L2 geom   line / arc / spline, frames       |  |  +------------------------+</div>
+<div class="line">+---------------------------------------------+  +-&gt;| kin           FK / IK  |</div>
+<div class="line">| L1 otg    jerk-limited OTG solver           |  |  | gantry / SCARA / 6R    |</div>
+<div class="line">+---------------------------------------------+  |  | deps: geom, rt         |</div>
+<div class="line">| L0 rt      cycle time, static vectors,      |  |  +------------------------+</div>
+<div class="line">|                 SPSC rings, error codes     |  +-&gt;| stream   atomic frames |</div>
+<div class="line">+---------------------------------------------+  |  | + OTG filter   (B9/H1) |</div>
+<div class="line">                                               |  | deps: otg, rt          |</div>
+<div class="line">                                               |  +------------------------+</div>
+<div class="line">                                               +-&gt;| dyn   fixed-base RNEA  |</div>
+<div class="line">                                                  | caller-owned (H3)      |</div>
+<div class="line">                                                  | deps: geom, rt         |</div>
+<div class="line">                                                  +------------------------+</div>
+<div class="line"> reading rules: stacking = downward include permission, not per-edge</div>
+<div class="line"> claim (audit 2026-07-12: 0 violations, DAG; L4 does NOT include L3);</div>
+<div class="line"> L0-L4 + kin/stream/dyn carry zero PLCopen semantics -- generic kernel</div>
+</div><!-- fragment --><p>各层职责细节见对应模块 README（<code>core/&lt;模块&gt;/README.md</code>）。权威结构事实以 架构文档的分层职责表为准；本图不嵌入 易漂移的源码行数。</p>
+<h1><a class="anchor" id="autotoc_md31"></a>
+非拥有指针生命周期契约（KB-101）</h1>
+<p>内核不拥有任何大对象（caller-owned 一切，见架构文档 §内存模型）。代价是 一张**非拥有裸指针网**，其生命周期规则集中声明如下（悬垂即 UB，内核不做 运行时代价的存活追踪——这是已登记的设计边界，不是疏漏）：</p>
+<table class="markdownTable">
+<tr class="markdownTableHead">
+<th class="markdownTableHeadNone">指针边   </th><th class="markdownTableHeadNone">规则   </th><th class="markdownTableHeadNone">析构侧防护    </th></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone"><code>AxisGroup</code> → <code>AxisModel*</code>   </td><td class="markdownTableBodyNone">成员必须比组长寿，或在 disabled 态先 <code>remove_axis</code>   </td><td class="markdownTableBodyNone">组析构会摘除仍注册的成员并清 owner 反链    </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone">FB（L6）→ <code>AxisModel*</code>/<code>AxisGroup*</code>   </td><td class="markdownTableBodyNone">轴/组必须比引用它的 FB 长寿；FB 无回调、只按命令 id 轮询快照   </td><td class="markdownTableBodyNone">无（FB 是纯轮询者，悬垂读即 UB）    </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone">gear/cam 命令 → master <code>AxisModel*</code>   </td><td class="markdownTableBodyNone">主轴必须比同步关系长寿；脱开同步后指针不再被读   </td><td class="markdownTableBodyNone">轴析构不通知从轴    </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone"><code>set_kinematics</code>/<code>set_pose_kinematics</code> → 插件指针   </td><td class="markdownTableBodyNone">插件必须比组内注册长寿；仅 standby 空队列可换   </td><td class="markdownTableBodyNone">无    </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone">凸轮表/路径表/轮廓段 caller-owned 存储   </td><td class="markdownTableBodyNone">存储必须覆盖 engage/消费的整个窗口；在线换表经校验式切换   </td><td class="markdownTableBodyNone">拒绝校验（NaN/越界），不做存活校验    </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone">ST registry → 轴/组 handle   </td><td class="markdownTableBodyNone">1-based handle 经 typed registry 解引用；对象须比 ST 程序生命周期长   </td><td class="markdownTableBodyNone">registry 边界校验 handle，非存活校验   </td></tr>
+</table>
+<p>构造/析构顺序口诀：**先造被指者、后造持指者；析构反序**。参考 executor 的线程级生命周期（绑定→启动→停→join→销毁）另见 runtime-thread-ownership-semantics.md。 </p>
+</div></div><!-- contents -->
+</div><!-- PageDoc -->
+<!-- start footer part -->
+<hr class="footer"/><address class="footer"><small>
+制作者&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.8
+</small></address>
+</body>
+</html>

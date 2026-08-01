@@ -1,0 +1,321 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh">
+<head>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=11"/>
+<meta name="generator" content="Doxygen 1.9.8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>plcopen: plcopen::core::fb::FbSyncAxisToGroup类 参考</title>
+<link href="tabs.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="jquery.js"></script>
+<script type="text/javascript" src="dynsections.js"></script>
+<link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<link href="doxygen.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+<div id="top"><!-- do not remove this div, it is closed by doxygen! -->
+<div id="titlearea">
+<table cellspacing="0" cellpadding="0">
+ <tbody>
+ <tr id="projectrow">
+  <td id="projectalign">
+   <div id="projectname">plcopen<span id="projectnumber">&#160;0.21.0</span>
+   </div>
+  </td>
+ </tr>
+ </tbody>
+</table>
+</div>
+<!-- end header part -->
+<!-- 制作者 Doxygen 1.9.8 -->
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+var searchBox = new SearchBox("searchBox", "search/",'.html');
+/* @license-end */
+</script>
+<script type="text/javascript" src="menudata.js"></script>
+<script type="text/javascript" src="menu.js"></script>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+$(function() {
+  initMenu('',true,false,'search.php','搜索');
+  $(document).ready(function() { init_search(); });
+});
+/* @license-end */
+</script>
+<div id="main-nav"></div>
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<div id="MSearchResults">
+<div class="SRPage">
+<div id="SRIndex">
+<div id="SRResults"></div>
+<div class="SRStatus" id="Loading">载入中...</div>
+<div class="SRStatus" id="Searching">搜索中...</div>
+<div class="SRStatus" id="NoMatches">未找到</div>
+</div>
+</div>
+</div>
+</div>
+
+<div id="nav-path" class="navpath">
+  <ul>
+<li class="navelem"><a class="el" href="namespaceplcopen.html">plcopen</a></li><li class="navelem"><a class="el" href="namespaceplcopen_1_1core.html">core</a></li><li class="navelem"><a class="el" href="namespaceplcopen_1_1core_1_1fb.html">fb</a></li><li class="navelem"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbSyncAxisToGroup.html">FbSyncAxisToGroup</a></li>  </ul>
+</div>
+</div><!-- top -->
+<div class="header">
+  <div class="summary">
+<a href="#pub-methods">Public 成员函数</a> &#124;
+<a href="#pub-attribs">Public 属性</a> &#124;
+<a href="classplcopen_1_1core_1_1fb_1_1FbSyncAxisToGroup-members.html">所有成员列表</a>  </div>
+  <div class="headertitle"><div class="title">plcopen::core::fb::FbSyncAxisToGroup类 参考</div></div>
+</div><!--header-->
+<div class="contents">
+
+<p><code>#include &lt;<a class="el" href="fb_2sync_8h_source.html">sync.h</a>&gt;</code></p>
+<div class="dynheader">
+类 plcopen::core::fb::FbSyncAxisToGroup 继承关系图:</div>
+<div class="dyncontent">
+<div class="center"><img src="classplcopen_1_1core_1_1fb_1_1FbSyncAxisToGroup__inherit__graph.png" border="0" usemap="#aplcopen_1_1core_1_1fb_1_1FbSyncAxisToGroup_inherit__map" alt="Inheritance graph"/></div>
+<map name="aplcopen_1_1core_1_1fb_1_1FbSyncAxisToGroup_inherit__map" id="aplcopen_1_1core_1_1fb_1_1FbSyncAxisToGroup_inherit__map">
+<area shape="rect" title=" " alt="" coords="5,93,156,133"/>
+<area shape="rect" href="classplcopen_1_1core_1_1fb_1_1SyncExecuteFb.html" title=" " alt="" coords="11,5,150,45"/>
+<area shape="poly" title=" " alt="" coords="83,59,83,93,78,93,78,59"/>
+</map>
+<center><span class="legend">[<a href="graph_legend.html">图例</a>]</span></center></div>
+<div class="dynheader">
+plcopen::core::fb::FbSyncAxisToGroup 的协作图:</div>
+<div class="dyncontent">
+<div class="center"><img src="classplcopen_1_1core_1_1fb_1_1FbSyncAxisToGroup__coll__graph.png" border="0" usemap="#aplcopen_1_1core_1_1fb_1_1FbSyncAxisToGroup_coll__map" alt="Collaboration graph"/></div>
+<map name="aplcopen_1_1core_1_1fb_1_1FbSyncAxisToGroup_coll__map" id="aplcopen_1_1core_1_1fb_1_1FbSyncAxisToGroup_coll__map">
+<area shape="rect" title=" " alt="" coords="628,101,779,141"/>
+<area shape="rect" href="classplcopen_1_1core_1_1fb_1_1SyncExecuteFb.html" title=" " alt="" coords="372,69,511,109"/>
+<area shape="poly" title=" " alt="" coords="525,97,628,110,628,115,524,102"/>
+<area shape="rect" href="classplcopen_1_1core_1_1axis_1_1AxisModel.html" title=" " alt="" coords="17,5,161,45"/>
+<area shape="poly" title=" " alt="" coords="175,36,346,67,372,72,371,77,345,72,174,42"/>
+<area shape="rect" href="structplcopen_1_1core_1_1fb_1_1MotionOutputs.html" title=" " alt="" coords="19,69,158,109"/>
+<area shape="poly" title=" " alt="" coords="172,87,372,87,372,92,172,92"/>
+<area shape="rect" href="classplcopen_1_1core_1_1axis_1_1AxisGroup.html" title=" " alt="" coords="369,133,513,173"/>
+<area shape="poly" title=" " alt="" coords="527,140,627,128,628,133,527,146"/>
+<area shape="rect" href="structplcopen_1_1core_1_1axis_1_1GroupPosition.html" title=" " alt="" coords="17,133,161,173"/>
+<area shape="poly" title=" " alt="" coords="174,151,369,151,369,156,174,156"/>
+<area shape="rect" href="structplcopen_1_1core_1_1axis_1_1JogCommandOptions.html" title=" " alt="" coords="5,197,172,237"/>
+<area shape="poly" title=" " alt="" coords="185,199,345,171,369,166,370,171,346,176,186,204"/>
+</map>
+<center><span class="legend">[<a href="graph_legend.html">图例</a>]</span></center></div>
+<table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
+Public 成员函数</h2></td></tr>
+<tr class="memitem:a4b283fe98d2fe952cec0027637edf069" id="r_a4b283fe98d2fe952cec0027637edf069"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbSyncAxisToGroup.html#a4b283fe98d2fe952cec0027637edf069">call</a> ()</td></tr>
+<tr class="separator:a4b283fe98d2fe952cec0027637edf069"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
+Public 属性</h2></td></tr>
+<tr class="memitem:aed65cadd864728fbbbb729732f50ee50" id="r_aed65cadd864728fbbbb729732f50ee50"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classplcopen_1_1core_1_1axis_1_1AxisGroup.html">axis::AxisGroup</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbSyncAxisToGroup.html#aed65cadd864728fbbbb729732f50ee50">group_ref</a> = nullptr</td></tr>
+<tr class="separator:aed65cadd864728fbbbb729732f50ee50"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a92dfbd8c68dfa8cacbdbf211628e95d2" id="r_a92dfbd8c68dfa8cacbdbf211628e95d2"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbSyncAxisToGroup.html#a92dfbd8c68dfa8cacbdbf211628e95d2">ratio_numerator</a> = 1.0</td></tr>
+<tr class="separator:a92dfbd8c68dfa8cacbdbf211628e95d2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9b70e5e84d1521ad964fb2787f2c30ea" id="r_a9b70e5e84d1521ad964fb2787f2c30ea"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbSyncAxisToGroup.html#a9b70e5e84d1521ad964fb2787f2c30ea">ratio_denominator</a> = 1.0</td></tr>
+<tr class="separator:a9b70e5e84d1521ad964fb2787f2c30ea"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abfc1ac553a8fe16e009673da2247ffda" id="r_abfc1ac553a8fe16e009673da2247ffda"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbSyncAxisToGroup.html#abfc1ac553a8fe16e009673da2247ffda">acceleration</a> = 0.0</td></tr>
+<tr class="separator:abfc1ac553a8fe16e009673da2247ffda"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae507d8ee1fa85cd81969159f8e2e2a89" id="r_ae507d8ee1fa85cd81969159f8e2e2a89"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbSyncAxisToGroup.html#ae507d8ee1fa85cd81969159f8e2e2a89">deceleration</a> = 0.0</td></tr>
+<tr class="separator:ae507d8ee1fa85cd81969159f8e2e2a89"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab87bc65a8c4fc8d600c54522489280a8" id="r_ab87bc65a8c4fc8d600c54522489280a8"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbSyncAxisToGroup.html#ab87bc65a8c4fc8d600c54522489280a8">jerk</a> = 0.0</td></tr>
+<tr class="separator:ab87bc65a8c4fc8d600c54522489280a8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aaa507723a59fb951a44c3da8053ed551" id="r_aaa507723a59fb951a44c3da8053ed551"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceplcopen_1_1core_1_1axis.html#ac37c626dcb946b45368197dcafa1eb34">axis::BufferMode</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbSyncAxisToGroup.html#aaa507723a59fb951a44c3da8053ed551">buffer_mode</a> = <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#ac37c626dcb946b45368197dcafa1eb34af3376270ea6836eac66441a6ef3c55c3">axis::BufferMode::aborting</a></td></tr>
+<tr class="separator:aaa507723a59fb951a44c3da8053ed551"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="inherit_header pub_attribs_classplcopen_1_1core_1_1fb_1_1SyncExecuteFb"><td colspan="2" onclick="javascript:toggleInherit('pub_attribs_classplcopen_1_1core_1_1fb_1_1SyncExecuteFb')"><img src="closed.png" alt="-"/>&#160;Public 属性 继承自 <a class="el" href="classplcopen_1_1core_1_1fb_1_1SyncExecuteFb.html">plcopen::core::fb::SyncExecuteFb</a></td></tr>
+<tr class="memitem:a3deabb9baf38c94e51739a30edd99556 inherit pub_attribs_classplcopen_1_1core_1_1fb_1_1SyncExecuteFb" id="r_a3deabb9baf38c94e51739a30edd99556"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classplcopen_1_1core_1_1axis_1_1AxisModel.html">axis::AxisModel</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1SyncExecuteFb.html#a3deabb9baf38c94e51739a30edd99556">master_ref</a> = nullptr</td></tr>
+<tr class="separator:a3deabb9baf38c94e51739a30edd99556 inherit pub_attribs_classplcopen_1_1core_1_1fb_1_1SyncExecuteFb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a42369fa98fd6aa40c80873280313c66e inherit pub_attribs_classplcopen_1_1core_1_1fb_1_1SyncExecuteFb" id="r_a42369fa98fd6aa40c80873280313c66e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classplcopen_1_1core_1_1axis_1_1AxisModel.html">axis::AxisModel</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1SyncExecuteFb.html#a42369fa98fd6aa40c80873280313c66e">slave_ref</a> = nullptr</td></tr>
+<tr class="separator:a42369fa98fd6aa40c80873280313c66e inherit pub_attribs_classplcopen_1_1core_1_1fb_1_1SyncExecuteFb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5f52a60ad8738cef231b5548ae2ea2fc inherit pub_attribs_classplcopen_1_1core_1_1fb_1_1SyncExecuteFb" id="r_a5f52a60ad8738cef231b5548ae2ea2fc"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1SyncExecuteFb.html#a5f52a60ad8738cef231b5548ae2ea2fc">execute</a> = false</td></tr>
+<tr class="separator:a5f52a60ad8738cef231b5548ae2ea2fc inherit pub_attribs_classplcopen_1_1core_1_1fb_1_1SyncExecuteFb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab3d11c1716bf715d8ddf767be32006b5 inherit pub_attribs_classplcopen_1_1core_1_1fb_1_1SyncExecuteFb" id="r_ab3d11c1716bf715d8ddf767be32006b5"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1SyncExecuteFb.html#ab3d11c1716bf715d8ddf767be32006b5">continuous_update</a> = false</td></tr>
+<tr class="separator:ab3d11c1716bf715d8ddf767be32006b5 inherit pub_attribs_classplcopen_1_1core_1_1fb_1_1SyncExecuteFb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8d9d360d3a508caf1f4561726fc77fed inherit pub_attribs_classplcopen_1_1core_1_1fb_1_1SyncExecuteFb" id="r_a8d9d360d3a508caf1f4561726fc77fed"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structplcopen_1_1core_1_1fb_1_1MotionOutputs.html">MotionOutputs</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1SyncExecuteFb.html#a8d9d360d3a508caf1f4561726fc77fed">outputs</a> {}</td></tr>
+<tr class="separator:a8d9d360d3a508caf1f4561726fc77fed inherit pub_attribs_classplcopen_1_1core_1_1fb_1_1SyncExecuteFb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acd59be560d38f791835bc93ea27e7ef0 inherit pub_attribs_classplcopen_1_1core_1_1fb_1_1SyncExecuteFb" id="r_acd59be560d38f791835bc93ea27e7ef0"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1SyncExecuteFb.html#acd59be560d38f791835bc93ea27e7ef0">in_sync</a> = false</td></tr>
+<tr class="separator:acd59be560d38f791835bc93ea27e7ef0 inherit pub_attribs_classplcopen_1_1core_1_1fb_1_1SyncExecuteFb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aea2c5e4584ef6c377802a0e63de74ec9 inherit pub_attribs_classplcopen_1_1core_1_1fb_1_1SyncExecuteFb" id="r_aea2c5e4584ef6c377802a0e63de74ec9"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1SyncExecuteFb.html#aea2c5e4584ef6c377802a0e63de74ec9">start_sync</a> = false</td></tr>
+<tr class="separator:aea2c5e4584ef6c377802a0e63de74ec9 inherit pub_attribs_classplcopen_1_1core_1_1fb_1_1SyncExecuteFb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="inherited" name="inherited"></a>
+额外继承的成员函数</h2></td></tr>
+<tr class="inherit_header pro_methods_classplcopen_1_1core_1_1fb_1_1SyncExecuteFb"><td colspan="2" onclick="javascript:toggleInherit('pro_methods_classplcopen_1_1core_1_1fb_1_1SyncExecuteFb')"><img src="closed.png" alt="-"/>&#160;Protected 成员函数 继承自 <a class="el" href="classplcopen_1_1core_1_1fb_1_1SyncExecuteFb.html">plcopen::core::fb::SyncExecuteFb</a></td></tr>
+<tr class="memitem:ab1f65caf2d50028fc3de1c6075ffbbbc inherit pro_methods_classplcopen_1_1core_1_1fb_1_1SyncExecuteFb" id="r_ab1f65caf2d50028fc3de1c6075ffbbbc"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1SyncExecuteFb.html#ab1f65caf2d50028fc3de1c6075ffbbbc">rising_edge</a> ()</td></tr>
+<tr class="separator:ab1f65caf2d50028fc3de1c6075ffbbbc inherit pro_methods_classplcopen_1_1core_1_1fb_1_1SyncExecuteFb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af568f78b46dc765a9b8d0030eff0b4a9 inherit pro_methods_classplcopen_1_1core_1_1fb_1_1SyncExecuteFb" id="r_af568f78b46dc765a9b8d0030eff0b4a9"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1SyncExecuteFb.html#af568f78b46dc765a9b8d0030eff0b4a9">accept</a> (<a class="el" href="classplcopen_1_1core_1_1rt_1_1Result.html">rt::Result</a>&lt; std::uint32_t &gt; accepted)</td></tr>
+<tr class="separator:af568f78b46dc765a9b8d0030eff0b4a9 inherit pro_methods_classplcopen_1_1core_1_1fb_1_1SyncExecuteFb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afdc4b071bc852ffe3f7007c48cab46cd inherit pro_methods_classplcopen_1_1core_1_1fb_1_1SyncExecuteFb" id="r_afdc4b071bc852ffe3f7007c48cab46cd"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1SyncExecuteFb.html#afdc4b071bc852ffe3f7007c48cab46cd">observe_sync</a> (bool pulse_approach=true)</td></tr>
+<tr class="separator:afdc4b071bc852ffe3f7007c48cab46cd inherit pro_methods_classplcopen_1_1core_1_1fb_1_1SyncExecuteFb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad859afa2807220980031f282f46cb51b inherit pro_methods_classplcopen_1_1core_1_1fb_1_1SyncExecuteFb" id="r_ad859afa2807220980031f282f46cb51b"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1SyncExecuteFb.html#ad859afa2807220980031f282f46cb51b">continuous_update_allowed</a> () const</td></tr>
+<tr class="separator:ad859afa2807220980031f282f46cb51b inherit pro_methods_classplcopen_1_1core_1_1fb_1_1SyncExecuteFb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="inherit_header pro_attribs_classplcopen_1_1core_1_1fb_1_1SyncExecuteFb"><td colspan="2" onclick="javascript:toggleInherit('pro_attribs_classplcopen_1_1core_1_1fb_1_1SyncExecuteFb')"><img src="closed.png" alt="-"/>&#160;Protected 属性 继承自 <a class="el" href="classplcopen_1_1core_1_1fb_1_1SyncExecuteFb.html">plcopen::core::fb::SyncExecuteFb</a></td></tr>
+<tr class="memitem:a41f990122ef6601ac7c0b0f836491101 inherit pro_attribs_classplcopen_1_1core_1_1fb_1_1SyncExecuteFb" id="r_a41f990122ef6601ac7c0b0f836491101"><td class="memItemLeft" align="right" valign="top">std::uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1SyncExecuteFb.html#a41f990122ef6601ac7c0b0f836491101">tracked_command_id_</a> = 0</td></tr>
+<tr class="separator:a41f990122ef6601ac7c0b0f836491101 inherit pro_attribs_classplcopen_1_1core_1_1fb_1_1SyncExecuteFb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table>
+<a name="details" id="details"></a><h2 class="groupheader">详细描述</h2>
+<div class="textblock">
+<p class="definition">在文件 <a class="el" href="fb_2sync_8h_source.html">sync.h</a> 第 <a class="el" href="fb_2sync_8h_source.html#l00141">141</a> 行定义.</p>
+</div><h2 class="groupheader">成员函数说明</h2>
+<a id="a4b283fe98d2fe952cec0027637edf069" name="a4b283fe98d2fe952cec0027637edf069"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4b283fe98d2fe952cec0027637edf069">&#9670;&#160;</a></span>call()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void plcopen::core::fb::FbSyncAxisToGroup::call </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="fb_2sync_8h_source.html">sync.h</a> 第 <a class="el" href="fb_2sync_8h_source.html#l00152">152</a> 行定义.</p>
+
+</div>
+</div>
+<h2 class="groupheader">类成员变量说明</h2>
+<a id="abfc1ac553a8fe16e009673da2247ffda" name="abfc1ac553a8fe16e009673da2247ffda"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abfc1ac553a8fe16e009673da2247ffda">&#9670;&#160;</a></span>acceleration</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">double plcopen::core::fb::FbSyncAxisToGroup::acceleration = 0.0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="fb_2sync_8h_source.html">sync.h</a> 第 <a class="el" href="fb_2sync_8h_source.html#l00147">147</a> 行定义.</p>
+
+</div>
+</div>
+<a id="aaa507723a59fb951a44c3da8053ed551" name="aaa507723a59fb951a44c3da8053ed551"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aaa507723a59fb951a44c3da8053ed551">&#9670;&#160;</a></span>buffer_mode</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="namespaceplcopen_1_1core_1_1axis.html#ac37c626dcb946b45368197dcafa1eb34">axis::BufferMode</a> plcopen::core::fb::FbSyncAxisToGroup::buffer_mode = <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#ac37c626dcb946b45368197dcafa1eb34af3376270ea6836eac66441a6ef3c55c3">axis::BufferMode::aborting</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="fb_2sync_8h_source.html">sync.h</a> 第 <a class="el" href="fb_2sync_8h_source.html#l00150">150</a> 行定义.</p>
+
+</div>
+</div>
+<a id="ae507d8ee1fa85cd81969159f8e2e2a89" name="ae507d8ee1fa85cd81969159f8e2e2a89"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae507d8ee1fa85cd81969159f8e2e2a89">&#9670;&#160;</a></span>deceleration</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">double plcopen::core::fb::FbSyncAxisToGroup::deceleration = 0.0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="fb_2sync_8h_source.html">sync.h</a> 第 <a class="el" href="fb_2sync_8h_source.html#l00148">148</a> 行定义.</p>
+
+</div>
+</div>
+<a id="aed65cadd864728fbbbb729732f50ee50" name="aed65cadd864728fbbbb729732f50ee50"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aed65cadd864728fbbbb729732f50ee50">&#9670;&#160;</a></span>group_ref</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classplcopen_1_1core_1_1axis_1_1AxisGroup.html">axis::AxisGroup</a>* plcopen::core::fb::FbSyncAxisToGroup::group_ref = nullptr</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="fb_2sync_8h_source.html">sync.h</a> 第 <a class="el" href="fb_2sync_8h_source.html#l00144">144</a> 行定义.</p>
+
+</div>
+</div>
+<a id="ab87bc65a8c4fc8d600c54522489280a8" name="ab87bc65a8c4fc8d600c54522489280a8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab87bc65a8c4fc8d600c54522489280a8">&#9670;&#160;</a></span>jerk</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">double plcopen::core::fb::FbSyncAxisToGroup::jerk = 0.0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="fb_2sync_8h_source.html">sync.h</a> 第 <a class="el" href="fb_2sync_8h_source.html#l00149">149</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a9b70e5e84d1521ad964fb2787f2c30ea" name="a9b70e5e84d1521ad964fb2787f2c30ea"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9b70e5e84d1521ad964fb2787f2c30ea">&#9670;&#160;</a></span>ratio_denominator</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">double plcopen::core::fb::FbSyncAxisToGroup::ratio_denominator = 1.0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="fb_2sync_8h_source.html">sync.h</a> 第 <a class="el" href="fb_2sync_8h_source.html#l00146">146</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a92dfbd8c68dfa8cacbdbf211628e95d2" name="a92dfbd8c68dfa8cacbdbf211628e95d2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a92dfbd8c68dfa8cacbdbf211628e95d2">&#9670;&#160;</a></span>ratio_numerator</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">double plcopen::core::fb::FbSyncAxisToGroup::ratio_numerator = 1.0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="fb_2sync_8h_source.html">sync.h</a> 第 <a class="el" href="fb_2sync_8h_source.html#l00145">145</a> 行定义.</p>
+
+</div>
+</div>
+<hr/>该类的文档由以下文件生成:<ul>
+<li>core/fb/<a class="el" href="fb_2sync_8h_source.html">sync.h</a></li>
+</ul>
+</div><!-- contents -->
+<!-- start footer part -->
+<hr class="footer"/><address class="footer"><small>
+制作者&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.8
+</small></address>
+</body>
+</html>

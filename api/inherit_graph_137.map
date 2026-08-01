@@ -1,0 +1,13 @@
+<map id="类继承关系图" name="类继承关系图">
+<area shape="rect" id="Node000000" href="$classplcopen_1_1core_1_1fb_1_1SyncExecuteFb.html" title=" " alt="" coords="5,101,144,141"/>
+<area shape="rect" id="Node000001" href="$classplcopen_1_1core_1_1fb_1_1FbCamIn.html" title=" " alt="" coords="198,5,337,45"/>
+<area shape="poly" id="edge94_Node000000_Node000001" title=" " alt="" coords="121,92,191,55,216,43,219,48,193,60,124,97"/>
+<area shape="rect" id="Node000002" href="$classplcopen_1_1core_1_1fb_1_1FbCombineAxes.html" title=" " alt="" coords="198,69,337,109"/>
+<area shape="poly" id="edge95_Node000000_Node000002" title=" " alt="" coords="157,105,197,98,198,103,158,110"/>
+<area shape="rect" id="Node000003" href="$classplcopen_1_1core_1_1fb_1_1FbGearIn.html" title=" " alt="" coords="198,133,337,173"/>
+<area shape="poly" id="edge96_Node000000_Node000003" title=" " alt="" coords="158,132,198,139,197,144,157,138"/>
+<area shape="rect" id="Node000005" href="$classplcopen_1_1core_1_1fb_1_1FbSyncAxisToGroup.html" title=" " alt="" coords="192,197,343,237"/>
+<area shape="poly" id="edge98_Node000000_Node000005" title=" " alt="" coords="124,146,193,183,219,195,216,200,191,188,121,151"/>
+<area shape="rect" id="Node000004" href="$classplcopen_1_1core_1_1fb_1_1FbGearInPos.html" title=" " alt="" coords="391,133,529,173"/>
+<area shape="poly" id="edge97_Node000003_Node000004" title=" " alt="" coords="350,151,390,151,390,156,350,156"/>
+</map>

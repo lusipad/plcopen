@@ -1,0 +1,11 @@
+<map id="plcopen::core::fb::ProfileFbBase" name="plcopen::core::fb::ProfileFbBase">
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,69,144,109"/>
+<area shape="rect" id="Node000002" href="$classplcopen_1_1core_1_1fb_1_1FbAccelerationProfile.html" title=" " alt="" coords="193,5,353,45"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="150,63,210,43,212,48,151,68"/>
+<area shape="rect" id="Node000003" href="$classplcopen_1_1core_1_1fb_1_1FbPositionProfile.html" title=" " alt="" coords="204,69,343,109"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="158,87,203,87,203,92,158,92"/>
+<area shape="rect" id="Node000004" href="$classplcopen_1_1core_1_1fb_1_1VelocityProfileFbBase.html" title=" " alt="" coords="192,133,355,173"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="151,111,212,131,210,136,150,116"/>
+<area shape="rect" id="Node000005" href="$classplcopen_1_1core_1_1fb_1_1FbVelocityProfile.html" title=" " alt="" coords="403,133,541,173"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="369,151,402,151,402,156,369,156"/>
+</map>

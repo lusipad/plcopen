@@ -1,0 +1,9 @@
+<map id="plcopen::core::fb::FbReadJointInfo" name="plcopen::core::fb::FbReadJointInfo">
+<area shape="rect" id="Node000001" title=" " alt="" coords="97,211,236,251"/>
+<area shape="rect" id="Node000002" href="$classplcopen_1_1core_1_1axis_1_1AxisGroup.html" title=" " alt="" coords="95,108,239,148"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="169,162,169,211,164,211,164,162"/>
+<area shape="rect" id="Node000003" href="$structplcopen_1_1core_1_1axis_1_1GroupPosition.html" title=" " alt="" coords="5,5,149,45"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="75,59,81,83,92,96,107,106,104,110,89,100,76,85,70,60"/>
+<area shape="rect" id="Node000004" href="$structplcopen_1_1core_1_1axis_1_1JogCommandOptions.html" title=" " alt="" coords="174,5,341,45"/>
+<area shape="poly" id="edge3_Node000002_Node000004" title=" " alt="" coords="247,60,230,86,202,110,199,106,226,82,242,57"/>
+</map>

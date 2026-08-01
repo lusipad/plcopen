@@ -1,0 +1,103 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh">
+<head>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=11"/>
+<meta name="generator" content="Doxygen 1.9.8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>plcopen: dyn/ — 固定基座刚体动力学</title>
+<link href="tabs.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="jquery.js"></script>
+<script type="text/javascript" src="dynsections.js"></script>
+<link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<link href="doxygen.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+<div id="top"><!-- do not remove this div, it is closed by doxygen! -->
+<div id="titlearea">
+<table cellspacing="0" cellpadding="0">
+ <tbody>
+ <tr id="projectrow">
+  <td id="projectalign">
+   <div id="projectname">plcopen<span id="projectnumber">&#160;0.21.0</span>
+   </div>
+  </td>
+ </tr>
+ </tbody>
+</table>
+</div>
+<!-- end header part -->
+<!-- 制作者 Doxygen 1.9.8 -->
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+var searchBox = new SearchBox("searchBox", "search/",'.html');
+/* @license-end */
+</script>
+<script type="text/javascript" src="menudata.js"></script>
+<script type="text/javascript" src="menu.js"></script>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+$(function() {
+  initMenu('',true,false,'search.php','搜索');
+  $(document).ready(function() { init_search(); });
+});
+/* @license-end */
+</script>
+<div id="main-nav"></div>
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<div id="MSearchResults">
+<div class="SRPage">
+<div id="SRIndex">
+<div id="SRResults"></div>
+<div class="SRStatus" id="Loading">载入中...</div>
+<div class="SRStatus" id="Searching">搜索中...</div>
+<div class="SRStatus" id="NoMatches">未找到</div>
+</div>
+</div>
+</div>
+</div>
+
+</div><!-- top -->
+<div><div class="header">
+  <div class="headertitle"><div class="title">dyn/ — 固定基座刚体动力学</div></div>
+</div><!--header-->
+<div class="contents">
+<div class="textblock"><p><a class="anchor" id="autotoc_md18"></a> <code>dyn</code> 是 L2 级纯数学支撑库，只依赖 geom/rt，不包含 PLCopen 语义，也不 依赖 axis、fb、stream 或操作系统服务。H3 v1 只提供固定基座、每关节一个刚体的 1～8 关节转动串联链逆动力学。</p>
+<h1><a class="anchor" id="autotoc_md19"></a>
+公共接口</h1>
+<ul>
+<li><code>RevoluteBody</code>：关节轴、零位时子/关节局部坐标到父坐标的刚体变换， 以及质量、局部质心和质心惯量。</li>
+<li><code>FixedBaseChainSpec</code>：调用方持有的 1～8 关节模型描述。</li>
+<li><code>FixedBaseChain</code>：构造时验证并预计算空间惯量；<code>inverse_dynamics()</code> 以 O(n) RNEA 计算 <code>tau = M(q)ddq + C(q,dq)dq + g(q)</code>。</li>
+</ul>
+<p>所有量使用 SI：<code>q/dq/ddq</code> 为 rad、rad/s、rad/s²，长度 m，质量 kg， 惯量 kg·m²，重力 m/s²，输出 N·m。<code>parent_from_joint_zero</code> 把子/关节 局部坐标表达的点变换到父坐标；关节正方向遵循右手定则。</p>
+<h1><a class="anchor" id="autotoc_md20"></a>
+错误与实时合同</h1>
+<p>构造拒绝关节数越界、非有限数据、非右手正交旋转、非单位关节轴、 非正质量，以及不对称、非正定或不满足主惯量三角关系的惯量。运行调用 拒绝空指针、非有限状态或不可表示的输出，并返回 <code>rt::ErrorCode::invalid_argument</code>；任何失败都不会部分写入 <code>tau_out</code>。</p>
+<p>成功路径只使用固定容量栈/对象内数组：无堆分配、锁、异常、系统调用或 墙钟读取。多条臂、腿或腰链必须由调用方分别持有实例并逐链求值。</p>
+<h1><a class="anchor" id="autotoc_md21"></a>
+验证与边界</h1>
+<ul>
+<li><code>plcopen_core_dynamics_tests</code>：解析单摆/2R、参数拒绝与输出原子性。</li>
+<li><code>plcopen_core_dynamics_oracle</code>：独立 ABA 往返与势能梯度交叉检查。</li>
+<li><code>plcopen_core_dynamics_benchmark</code>：Release 下六条独立 8 关节链合计 48 关节必须不超过 10 µs/周期。</li>
+</ul>
+<p>本模块只返回纯前馈数值。它不把 <code>tau_ff</code> 写入 H1，不实现 T18 扭矩执行/ 安全监督，也不覆盖浮动基座、接触动力学、树/闭链、模型导入、辨识或真机 安全声明。权威合同见 `dynamics-feedforward-semantics.md`。 </p>
+</div></div><!-- contents -->
+</div><!-- PageDoc -->
+<!-- start footer part -->
+<hr class="footer"/><address class="footer"><small>
+制作者&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.8
+</small></address>
+</body>
+</html>

@@ -1,0 +1,9 @@
+<map id="plcopen::core::fb::GroupPathDynamicsWriteFb" name="plcopen::core::fb::GroupPathDynamicsWriteFb">
+<area shape="rect" id="Node000001" title=" " alt="" coords="207,37,412,77"/>
+<area shape="rect" id="Node000003" href="$classplcopen_1_1core_1_1fb_1_1FbGroupWriteDefaultDynamics.html" title=" " alt="" coords="469,5,694,45"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="425,41,468,36,469,41,426,46"/>
+<area shape="rect" id="Node000004" href="$classplcopen_1_1core_1_1fb_1_1FbGroupWriteReferenceDynamics.html" title=" " alt="" coords="460,69,703,109"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="426,68,460,72,459,78,425,74"/>
+<area shape="rect" id="Node000002" href="$classplcopen_1_1core_1_1fb_1_1GroupConfigWriteFb.html" title=" " alt="" coords="5,37,159,77"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="172,55,206,55,206,60,172,60"/>
+</map>

@@ -1,0 +1,9 @@
+<map id="plcopen::core::fb::HomingSearchFb" name="plcopen::core::fb::HomingSearchFb">
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,69,144,109"/>
+<area shape="rect" id="Node000002" href="$classplcopen_1_1core_1_1fb_1_1FbStepAbsoluteSwitch.html" title=" " alt="" coords="193,5,359,45"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="151,63,212,43,213,48,152,68"/>
+<area shape="rect" id="Node000003" href="$classplcopen_1_1core_1_1fb_1_1FbStepLimitSwitch.html" title=" " alt="" coords="205,69,347,109"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="158,87,204,87,204,92,158,92"/>
+<area shape="rect" id="Node000004" href="$classplcopen_1_1core_1_1fb_1_1FbStepReferencePulse.html" title=" " alt="" coords="192,133,360,173"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="152,111,213,131,212,136,151,116"/>
+</map>

@@ -1,0 +1,19 @@
+<map id="core/geom/geometry.h" name="core/geom/geometry.h">
+<area shape="rect" id="Node000001" title=" " alt="" coords="132,5,300,31"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="5,79,91,104"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="190,33,89,76,87,71,188,28"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="115,79,178,104"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="206,33,169,71,165,67,203,29"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="162,152,233,177"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="217,31,203,139,198,138,212,31"/>
+<area shape="rect" id="Node000005" href="$error_8h.html" title=" " alt="" coords="257,152,335,177"/>
+<area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="225,30,285,139,281,141,220,32"/>
+<area shape="rect" id="Node000006" href="$static__vector_8h.html" title=" " alt="" coords="304,79,435,104"/>
+<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="242,28,333,70,331,75,240,33"/>
+<area shape="poly" id="edge7_Node000006_Node000004" title=" " alt="" coords="343,106,239,149,237,144,341,102"/>
+<area shape="poly" id="edge9_Node000006_Node000005" title=" " alt="" coords="359,106,320,144,316,140,355,102"/>
+<area shape="rect" id="Node000007" title=" " alt="" coords="360,152,416,177"/>
+<area shape="poly" id="edge6_Node000006_Node000007" title=" " alt="" coords="375,104,384,138,379,140,370,105"/>
+<area shape="rect" id="Node000008" title=" " alt="" coords="441,152,533,177"/>
+<area shape="poly" id="edge8_Node000006_Node000008" title=" " alt="" coords="390,102,457,142,454,147,387,106"/>
+</map>

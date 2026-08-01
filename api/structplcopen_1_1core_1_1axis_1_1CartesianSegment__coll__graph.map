@@ -1,0 +1,11 @@
+<map id="plcopen::core::axis::CartesianSegment" name="plcopen::core::axis::CartesianSegment">
+<area shape="rect" id="Node000001" title=" " alt="" coords="517,131,668,171"/>
+<area shape="rect" id="Node000002" href="$structplcopen_1_1core_1_1geom_1_1ArcSegment.html" title=" " alt="" coords="261,131,416,171"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="430,148,517,148,517,153,430,153"/>
+<area shape="rect" id="Node000003" href="$structplcopen_1_1core_1_1geom_1_1Vec3.html" title=" " alt="" coords="5,131,160,171"/>
+<area shape="poly" id="edge3_Node000001_Node000003" title=" " alt="" coords="119,120,149,102,183,88,232,78,282,75,333,78,382,84,472,105,543,128,541,133,471,110,381,89,332,83,282,81,233,84,185,93,151,107,121,125"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="173,148,261,148,261,153,173,153"/>
+<area shape="rect" id="Node000004" href="$structplcopen_1_1core_1_1geom_1_1QuinticBlendSegment.html" title=" " alt="" coords="253,221,424,261"/>
+<area shape="poly" id="edge5_Node000004_Node000003" title=" " alt="" coords="109,180,142,215,163,230,185,242,218,250,253,252,253,257,218,255,183,246,160,234,139,219,105,184"/>
+<area shape="poly" id="edge4_Node000001_Node000004" title=" " alt="" coords="407,214,535,168,537,173,409,219"/>
+</map>

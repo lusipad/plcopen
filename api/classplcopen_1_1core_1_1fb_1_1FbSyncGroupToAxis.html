@@ -1,0 +1,440 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh">
+<head>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=11"/>
+<meta name="generator" content="Doxygen 1.9.8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>plcopen: plcopen::core::fb::FbSyncGroupToAxis类 参考</title>
+<link href="tabs.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="jquery.js"></script>
+<script type="text/javascript" src="dynsections.js"></script>
+<link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<link href="doxygen.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+<div id="top"><!-- do not remove this div, it is closed by doxygen! -->
+<div id="titlearea">
+<table cellspacing="0" cellpadding="0">
+ <tbody>
+ <tr id="projectrow">
+  <td id="projectalign">
+   <div id="projectname">plcopen<span id="projectnumber">&#160;0.21.0</span>
+   </div>
+  </td>
+ </tr>
+ </tbody>
+</table>
+</div>
+<!-- end header part -->
+<!-- 制作者 Doxygen 1.9.8 -->
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+var searchBox = new SearchBox("searchBox", "search/",'.html');
+/* @license-end */
+</script>
+<script type="text/javascript" src="menudata.js"></script>
+<script type="text/javascript" src="menu.js"></script>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+$(function() {
+  initMenu('',true,false,'search.php','搜索');
+  $(document).ready(function() { init_search(); });
+});
+/* @license-end */
+</script>
+<div id="main-nav"></div>
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<div id="MSearchResults">
+<div class="SRPage">
+<div id="SRIndex">
+<div id="SRResults"></div>
+<div class="SRStatus" id="Loading">载入中...</div>
+<div class="SRStatus" id="Searching">搜索中...</div>
+<div class="SRStatus" id="NoMatches">未找到</div>
+</div>
+</div>
+</div>
+</div>
+
+<div id="nav-path" class="navpath">
+  <ul>
+<li class="navelem"><a class="el" href="namespaceplcopen.html">plcopen</a></li><li class="navelem"><a class="el" href="namespaceplcopen_1_1core.html">core</a></li><li class="navelem"><a class="el" href="namespaceplcopen_1_1core_1_1fb.html">fb</a></li><li class="navelem"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbSyncGroupToAxis.html">FbSyncGroupToAxis</a></li>  </ul>
+</div>
+</div><!-- top -->
+<div class="header">
+  <div class="summary">
+<a href="#pub-methods">Public 成员函数</a> &#124;
+<a href="#pub-attribs">Public 属性</a> &#124;
+<a href="classplcopen_1_1core_1_1fb_1_1FbSyncGroupToAxis-members.html">所有成员列表</a>  </div>
+  <div class="headertitle"><div class="title">plcopen::core::fb::FbSyncGroupToAxis类 参考</div></div>
+</div><!--header-->
+<div class="contents">
+
+<p><code>#include &lt;<a class="el" href="path__table_8h_source.html">path_table.h</a>&gt;</code></p>
+<div class="dynheader">
+plcopen::core::fb::FbSyncGroupToAxis 的协作图:</div>
+<div class="dyncontent">
+<div class="center"><img src="classplcopen_1_1core_1_1fb_1_1FbSyncGroupToAxis__coll__graph.png" border="0" usemap="#aplcopen_1_1core_1_1fb_1_1FbSyncGroupToAxis_coll__map" alt="Collaboration graph"/></div>
+<map name="aplcopen_1_1core_1_1fb_1_1FbSyncGroupToAxis_coll__map" id="aplcopen_1_1core_1_1fb_1_1FbSyncGroupToAxis_coll__map">
+<area shape="rect" title=" " alt="" coords="901,99,1052,139"/>
+<area shape="rect" href="classplcopen_1_1core_1_1axis_1_1AxisModel.html" title=" " alt="" coords="633,5,777,45"/>
+<area shape="poly" title=" " alt="" coords="784,47,878,79,925,96,923,101,876,84,782,52"/>
+<area shape="rect" href="classplcopen_1_1core_1_1axis_1_1AxisGroup.html" title=" " alt="" coords="369,131,513,171"/>
+<area shape="poly" title=" " alt="" coords="527,145,777,133,901,123,901,129,778,139,528,151"/>
+<area shape="rect" href="structplcopen_1_1core_1_1axis_1_1GroupPosition.html" title=" " alt="" coords="17,80,161,120"/>
+<area shape="poly" title=" " alt="" coords="174,110,196,113,369,138,369,143,196,119,174,115"/>
+<area shape="rect" href="structplcopen_1_1core_1_1fb_1_1PathWaypoint.html" title=" " alt="" coords="372,67,511,107"/>
+<area shape="poly" title=" " alt="" coords="174,94,372,87,372,92,174,99"/>
+<area shape="rect" href="structplcopen_1_1core_1_1axis_1_1JogCommandOptions.html" title=" " alt="" coords="5,157,172,197"/>
+<area shape="poly" title=" " alt="" coords="186,180,264,180,345,173,373,168,374,173,346,179,264,185,186,185"/>
+<area shape="rect" href="structplcopen_1_1core_1_1fb_1_1PathTable.html" title=" " alt="" coords="636,69,775,109"/>
+<area shape="poly" title=" " alt="" coords="789,96,901,108,901,113,788,101"/>
+<area shape="poly" title=" " alt="" coords="524,85,636,86,636,91,524,90"/>
+<area shape="rect" href="structplcopen_1_1core_1_1fb_1_1MotionOutputs.html" title=" " alt="" coords="636,196,775,236"/>
+<area shape="poly" title=" " alt="" coords="788,203,832,193,876,179,915,159,948,137,951,141,918,164,878,184,834,198,789,208"/>
+</map>
+<center><span class="legend">[<a href="graph_legend.html">图例</a>]</span></center></div>
+<table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
+Public 成员函数</h2></td></tr>
+<tr class="memitem:af2460a7f47652a4c0d8baeb49143eab1" id="r_af2460a7f47652a4c0d8baeb49143eab1"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbSyncGroupToAxis.html#af2460a7f47652a4c0d8baeb49143eab1">FbSyncGroupToAxis</a> ()</td></tr>
+<tr class="separator:af2460a7f47652a4c0d8baeb49143eab1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5ddbb822889df0ae314c741648ce93ba" id="r_a5ddbb822889df0ae314c741648ce93ba"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbSyncGroupToAxis.html#a5ddbb822889df0ae314c741648ce93ba">call</a> ()</td></tr>
+<tr class="separator:a5ddbb822889df0ae314c741648ce93ba"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
+Public 属性</h2></td></tr>
+<tr class="memitem:a44cc57fdd441a7b8cd7233140be270e9" id="r_a44cc57fdd441a7b8cd7233140be270e9"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classplcopen_1_1core_1_1axis_1_1AxisModel.html">axis::AxisModel</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbSyncGroupToAxis.html#a44cc57fdd441a7b8cd7233140be270e9">master_ref</a> = nullptr</td></tr>
+<tr class="separator:a44cc57fdd441a7b8cd7233140be270e9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a467af69305fb437733058d47a0630f77" id="r_a467af69305fb437733058d47a0630f77"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classplcopen_1_1core_1_1axis_1_1AxisGroup.html">axis::AxisGroup</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbSyncGroupToAxis.html#a467af69305fb437733058d47a0630f77">group_ref</a> = nullptr</td></tr>
+<tr class="separator:a467af69305fb437733058d47a0630f77"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acbd3a339a90f71fb5491fcc5c81f834e" id="r_acbd3a339a90f71fb5491fcc5c81f834e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structplcopen_1_1core_1_1fb_1_1PathTable.html">PathTable</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbSyncGroupToAxis.html#acbd3a339a90f71fb5491fcc5c81f834e">path_data</a> = nullptr</td></tr>
+<tr class="separator:acbd3a339a90f71fb5491fcc5c81f834e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0ae8ee5cddb3430316994f00b587d647" id="r_a0ae8ee5cddb3430316994f00b587d647"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbSyncGroupToAxis.html#a0ae8ee5cddb3430316994f00b587d647">execute</a> = false</td></tr>
+<tr class="separator:a0ae8ee5cddb3430316994f00b587d647"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abbfc02736cbe63842b52185754f60dca" id="r_abbfc02736cbe63842b52185754f60dca"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceplcopen_1_1core_1_1axis.html#a47f7cb93cc32bf82f5ff19c47699aa67">axis::PathMode</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbSyncGroupToAxis.html#abbfc02736cbe63842b52185754f60dca">mode</a> = <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#a47f7cb93cc32bf82f5ff19c47699aa67aa688e8ffe09270eeb4eaf5ca79db24cd">axis::PathMode::non_periodic</a></td></tr>
+<tr class="separator:abbfc02736cbe63842b52185754f60dca"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a55aee08d51e1dbf716e8e487224cf0aa" id="r_a55aee08d51e1dbf716e8e487224cf0aa"><td class="memItemLeft" align="right" valign="top">std::array&lt; int, <a class="el" href="classplcopen_1_1core_1_1axis_1_1AxisGroup.html#a386194839756bbd0e267f3441a18616c">axis::AxisGroup::MaxAxes</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbSyncGroupToAxis.html#a55aee08d51e1dbf716e8e487224cf0aa">tuc_numerator</a> {}</td></tr>
+<tr class="separator:a55aee08d51e1dbf716e8e487224cf0aa"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a39e4e4a5cd433be669fda6c81acd57d7" id="r_a39e4e4a5cd433be669fda6c81acd57d7"><td class="memItemLeft" align="right" valign="top">std::array&lt; int, <a class="el" href="classplcopen_1_1core_1_1axis_1_1AxisGroup.html#a386194839756bbd0e267f3441a18616c">axis::AxisGroup::MaxAxes</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbSyncGroupToAxis.html#a39e4e4a5cd433be669fda6c81acd57d7">tuc_denominator</a> {}</td></tr>
+<tr class="separator:a39e4e4a5cd433be669fda6c81acd57d7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5e22ec835bf1538463c4174bb8a7fbb3" id="r_a5e22ec835bf1538463c4174bb8a7fbb3"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbSyncGroupToAxis.html#a5e22ec835bf1538463c4174bb8a7fbb3">acceleration</a> = 0.0</td></tr>
+<tr class="separator:a5e22ec835bf1538463c4174bb8a7fbb3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a796a1263275ec641f40704109f1d20e3" id="r_a796a1263275ec641f40704109f1d20e3"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbSyncGroupToAxis.html#a796a1263275ec641f40704109f1d20e3">deceleration</a> = 0.0</td></tr>
+<tr class="separator:a796a1263275ec641f40704109f1d20e3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a868ff01ac8701b572d558e9a3e129c8e" id="r_a868ff01ac8701b572d558e9a3e129c8e"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbSyncGroupToAxis.html#a868ff01ac8701b572d558e9a3e129c8e">jerk</a> = 0.0</td></tr>
+<tr class="separator:a868ff01ac8701b572d558e9a3e129c8e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab87e3ec0f6b948c8e761ccb659dbf140" id="r_ab87e3ec0f6b948c8e761ccb659dbf140"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceplcopen_1_1core_1_1axis.html#a3fadbf0321cf6feb8b2cf0707df6fccf">axis::CoordSystem</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbSyncGroupToAxis.html#ab87e3ec0f6b948c8e761ccb659dbf140">coord_system</a> = <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#a3fadbf0321cf6feb8b2cf0707df6fccfa77c1fdd80c91593ff851e71ae3865fcb">axis::CoordSystem::acs</a></td></tr>
+<tr class="separator:ab87e3ec0f6b948c8e761ccb659dbf140"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2219ae324a63cac3b10509a4009d200f" id="r_a2219ae324a63cac3b10509a4009d200f"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceplcopen_1_1core_1_1axis.html#ac37c626dcb946b45368197dcafa1eb34">axis::BufferMode</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbSyncGroupToAxis.html#a2219ae324a63cac3b10509a4009d200f">buffer_mode</a> = <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#ac37c626dcb946b45368197dcafa1eb34af3376270ea6836eac66441a6ef3c55c3">axis::BufferMode::aborting</a></td></tr>
+<tr class="separator:a2219ae324a63cac3b10509a4009d200f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6f714dd9e73ee45b174bd2e20a069120" id="r_a6f714dd9e73ee45b174bd2e20a069120"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structplcopen_1_1core_1_1fb_1_1MotionOutputs.html">MotionOutputs</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbSyncGroupToAxis.html#a6f714dd9e73ee45b174bd2e20a069120">outputs</a> {}</td></tr>
+<tr class="separator:a6f714dd9e73ee45b174bd2e20a069120"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a53ea8a83916e44ff5f4d3beff954a811" id="r_a53ea8a83916e44ff5f4d3beff954a811"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbSyncGroupToAxis.html#a53ea8a83916e44ff5f4d3beff954a811">in_sync</a> = false</td></tr>
+<tr class="separator:a53ea8a83916e44ff5f4d3beff954a811"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table>
+<a name="details" id="details"></a><h2 class="groupheader">详细描述</h2>
+<div class="textblock">
+<p class="definition">在文件 <a class="el" href="path__table_8h_source.html">path_table.h</a> 第 <a class="el" href="path__table_8h_source.html#l00278">278</a> 行定义.</p>
+</div><h2 class="groupheader">构造及析构函数说明</h2>
+<a id="af2460a7f47652a4c0d8baeb49143eab1" name="af2460a7f47652a4c0d8baeb49143eab1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af2460a7f47652a4c0d8baeb49143eab1">&#9670;&#160;</a></span>FbSyncGroupToAxis()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">plcopen::core::fb::FbSyncGroupToAxis::FbSyncGroupToAxis </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="path__table_8h_source.html">path_table.h</a> 第 <a class="el" href="path__table_8h_source.html#l00281">281</a> 行定义.</p>
+
+</div>
+</div>
+<h2 class="groupheader">成员函数说明</h2>
+<a id="a5ddbb822889df0ae314c741648ce93ba" name="a5ddbb822889df0ae314c741648ce93ba"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5ddbb822889df0ae314c741648ce93ba">&#9670;&#160;</a></span>call()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void plcopen::core::fb::FbSyncGroupToAxis::call </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="path__table_8h_source.html">path_table.h</a> 第 <a class="el" href="path__table_8h_source.html#l00302">302</a> 行定义.</p>
+
+</div>
+</div>
+<h2 class="groupheader">类成员变量说明</h2>
+<a id="a5e22ec835bf1538463c4174bb8a7fbb3" name="a5e22ec835bf1538463c4174bb8a7fbb3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5e22ec835bf1538463c4174bb8a7fbb3">&#9670;&#160;</a></span>acceleration</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">double plcopen::core::fb::FbSyncGroupToAxis::acceleration = 0.0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="path__table_8h_source.html">path_table.h</a> 第 <a class="el" href="path__table_8h_source.html#l00294">294</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a2219ae324a63cac3b10509a4009d200f" name="a2219ae324a63cac3b10509a4009d200f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2219ae324a63cac3b10509a4009d200f">&#9670;&#160;</a></span>buffer_mode</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="namespaceplcopen_1_1core_1_1axis.html#ac37c626dcb946b45368197dcafa1eb34">axis::BufferMode</a> plcopen::core::fb::FbSyncGroupToAxis::buffer_mode = <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#ac37c626dcb946b45368197dcafa1eb34af3376270ea6836eac66441a6ef3c55c3">axis::BufferMode::aborting</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="path__table_8h_source.html">path_table.h</a> 第 <a class="el" href="path__table_8h_source.html#l00298">298</a> 行定义.</p>
+
+</div>
+</div>
+<a id="ab87e3ec0f6b948c8e761ccb659dbf140" name="ab87e3ec0f6b948c8e761ccb659dbf140"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab87e3ec0f6b948c8e761ccb659dbf140">&#9670;&#160;</a></span>coord_system</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="namespaceplcopen_1_1core_1_1axis.html#a3fadbf0321cf6feb8b2cf0707df6fccf">axis::CoordSystem</a> plcopen::core::fb::FbSyncGroupToAxis::coord_system = <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#a3fadbf0321cf6feb8b2cf0707df6fccfa77c1fdd80c91593ff851e71ae3865fcb">axis::CoordSystem::acs</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="path__table_8h_source.html">path_table.h</a> 第 <a class="el" href="path__table_8h_source.html#l00297">297</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a796a1263275ec641f40704109f1d20e3" name="a796a1263275ec641f40704109f1d20e3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a796a1263275ec641f40704109f1d20e3">&#9670;&#160;</a></span>deceleration</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">double plcopen::core::fb::FbSyncGroupToAxis::deceleration = 0.0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="path__table_8h_source.html">path_table.h</a> 第 <a class="el" href="path__table_8h_source.html#l00295">295</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a0ae8ee5cddb3430316994f00b587d647" name="a0ae8ee5cddb3430316994f00b587d647"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0ae8ee5cddb3430316994f00b587d647">&#9670;&#160;</a></span>execute</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool plcopen::core::fb::FbSyncGroupToAxis::execute = false</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="path__table_8h_source.html">path_table.h</a> 第 <a class="el" href="path__table_8h_source.html#l00290">290</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a467af69305fb437733058d47a0630f77" name="a467af69305fb437733058d47a0630f77"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a467af69305fb437733058d47a0630f77">&#9670;&#160;</a></span>group_ref</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classplcopen_1_1core_1_1axis_1_1AxisGroup.html">axis::AxisGroup</a>* plcopen::core::fb::FbSyncGroupToAxis::group_ref = nullptr</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="path__table_8h_source.html">path_table.h</a> 第 <a class="el" href="path__table_8h_source.html#l00288">288</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a53ea8a83916e44ff5f4d3beff954a811" name="a53ea8a83916e44ff5f4d3beff954a811"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a53ea8a83916e44ff5f4d3beff954a811">&#9670;&#160;</a></span>in_sync</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool plcopen::core::fb::FbSyncGroupToAxis::in_sync = false</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="path__table_8h_source.html">path_table.h</a> 第 <a class="el" href="path__table_8h_source.html#l00300">300</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a868ff01ac8701b572d558e9a3e129c8e" name="a868ff01ac8701b572d558e9a3e129c8e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a868ff01ac8701b572d558e9a3e129c8e">&#9670;&#160;</a></span>jerk</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">double plcopen::core::fb::FbSyncGroupToAxis::jerk = 0.0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="path__table_8h_source.html">path_table.h</a> 第 <a class="el" href="path__table_8h_source.html#l00296">296</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a44cc57fdd441a7b8cd7233140be270e9" name="a44cc57fdd441a7b8cd7233140be270e9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a44cc57fdd441a7b8cd7233140be270e9">&#9670;&#160;</a></span>master_ref</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classplcopen_1_1core_1_1axis_1_1AxisModel.html">axis::AxisModel</a>* plcopen::core::fb::FbSyncGroupToAxis::master_ref = nullptr</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="path__table_8h_source.html">path_table.h</a> 第 <a class="el" href="path__table_8h_source.html#l00287">287</a> 行定义.</p>
+
+</div>
+</div>
+<a id="abbfc02736cbe63842b52185754f60dca" name="abbfc02736cbe63842b52185754f60dca"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abbfc02736cbe63842b52185754f60dca">&#9670;&#160;</a></span>mode</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="namespaceplcopen_1_1core_1_1axis.html#a47f7cb93cc32bf82f5ff19c47699aa67">axis::PathMode</a> plcopen::core::fb::FbSyncGroupToAxis::mode = <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#a47f7cb93cc32bf82f5ff19c47699aa67aa688e8ffe09270eeb4eaf5ca79db24cd">axis::PathMode::non_periodic</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="path__table_8h_source.html">path_table.h</a> 第 <a class="el" href="path__table_8h_source.html#l00291">291</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a6f714dd9e73ee45b174bd2e20a069120" name="a6f714dd9e73ee45b174bd2e20a069120"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6f714dd9e73ee45b174bd2e20a069120">&#9670;&#160;</a></span>outputs</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="structplcopen_1_1core_1_1fb_1_1MotionOutputs.html">MotionOutputs</a> plcopen::core::fb::FbSyncGroupToAxis::outputs {}</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="path__table_8h_source.html">path_table.h</a> 第 <a class="el" href="path__table_8h_source.html#l00299">299</a> 行定义.</p>
+
+</div>
+</div>
+<a id="acbd3a339a90f71fb5491fcc5c81f834e" name="acbd3a339a90f71fb5491fcc5c81f834e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acbd3a339a90f71fb5491fcc5c81f834e">&#9670;&#160;</a></span>path_data</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="structplcopen_1_1core_1_1fb_1_1PathTable.html">PathTable</a>* plcopen::core::fb::FbSyncGroupToAxis::path_data = nullptr</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="path__table_8h_source.html">path_table.h</a> 第 <a class="el" href="path__table_8h_source.html#l00289">289</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a39e4e4a5cd433be669fda6c81acd57d7" name="a39e4e4a5cd433be669fda6c81acd57d7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a39e4e4a5cd433be669fda6c81acd57d7">&#9670;&#160;</a></span>tuc_denominator</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::array&lt;int, <a class="el" href="classplcopen_1_1core_1_1axis_1_1AxisGroup.html#a386194839756bbd0e267f3441a18616c">axis::AxisGroup::MaxAxes</a>&gt; plcopen::core::fb::FbSyncGroupToAxis::tuc_denominator {}</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="path__table_8h_source.html">path_table.h</a> 第 <a class="el" href="path__table_8h_source.html#l00293">293</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a55aee08d51e1dbf716e8e487224cf0aa" name="a55aee08d51e1dbf716e8e487224cf0aa"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a55aee08d51e1dbf716e8e487224cf0aa">&#9670;&#160;</a></span>tuc_numerator</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::array&lt;int, <a class="el" href="classplcopen_1_1core_1_1axis_1_1AxisGroup.html#a386194839756bbd0e267f3441a18616c">axis::AxisGroup::MaxAxes</a>&gt; plcopen::core::fb::FbSyncGroupToAxis::tuc_numerator {}</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="path__table_8h_source.html">path_table.h</a> 第 <a class="el" href="path__table_8h_source.html#l00292">292</a> 行定义.</p>
+
+</div>
+</div>
+<hr/>该类的文档由以下文件生成:<ul>
+<li>core/fb/<a class="el" href="path__table_8h_source.html">path_table.h</a></li>
+</ul>
+</div><!-- contents -->
+<!-- start footer part -->
+<hr class="footer"/><address class="footer"><small>
+制作者&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.8
+</small></address>
+</body>
+</html>

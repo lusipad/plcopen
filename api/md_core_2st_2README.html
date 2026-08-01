@@ -1,0 +1,125 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh">
+<head>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=11"/>
+<meta name="generator" content="Doxygen 1.9.8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>plcopen: core/st — IEC 61131-3 ST 语言层（ST L0-L7、L∀）</title>
+<link href="tabs.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="jquery.js"></script>
+<script type="text/javascript" src="dynsections.js"></script>
+<link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<link href="doxygen.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+<div id="top"><!-- do not remove this div, it is closed by doxygen! -->
+<div id="titlearea">
+<table cellspacing="0" cellpadding="0">
+ <tbody>
+ <tr id="projectrow">
+  <td id="projectalign">
+   <div id="projectname">plcopen<span id="projectnumber">&#160;0.21.0</span>
+   </div>
+  </td>
+ </tr>
+ </tbody>
+</table>
+</div>
+<!-- end header part -->
+<!-- 制作者 Doxygen 1.9.8 -->
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+var searchBox = new SearchBox("searchBox", "search/",'.html');
+/* @license-end */
+</script>
+<script type="text/javascript" src="menudata.js"></script>
+<script type="text/javascript" src="menu.js"></script>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+$(function() {
+  initMenu('',true,false,'search.php','搜索');
+  $(document).ready(function() { init_search(); });
+});
+/* @license-end */
+</script>
+<div id="main-nav"></div>
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<div id="MSearchResults">
+<div class="SRPage">
+<div id="SRIndex">
+<div id="SRResults"></div>
+<div class="SRStatus" id="Loading">载入中...</div>
+<div class="SRStatus" id="Searching">搜索中...</div>
+<div class="SRStatus" id="NoMatches">未找到</div>
+</div>
+</div>
+</div>
+</div>
+
+</div><!-- top -->
+<div><div class="header">
+  <div class="headertitle"><div class="title">core/st — IEC 61131-3 ST 语言层（ST L0-L7、L∀）</div></div>
+</div><!--header-->
+<div class="contents">
+<div class="textblock"><p><a class="anchor" id="autotoc_md33"></a> st 语言层是外圈消费面，与 adapters 平行（L6 之上）：消费 <code><a class="el" href="basic_8h.html">fb/basic.h</a></code>、<code><a class="el" href="motion_8h.html">fb/motion.h</a></code> 与 <code><a class="el" href="error_8h.html">rt/error.h</a></code>，不被生产层反向引用（阶梯全貌见 <a class="el" href="md_core_2README.html">core/README.md</a>）。</p>
+<p>L 系列以 ST-L0 的逻辑子集、确定性字节码 VM 和容错前端为地基，并已完成 L1-L7 与 L∀ 的闭合集。基础 normative 规格见 st-l0-semantics.md，行为边界登记 KB-069；当前完整能力以特性总账和 <a href="../../doc/compliance/st-l0-conformance.yaml">st-l0-conformance.yaml</a> 为准（<code>cmake -P cmake/verify_st_conformance.cmake</code> 校验锚点）。</p>
+<h1><a class="anchor" id="autotoc_md34"></a>
+分层与域</h1>
+<div class="fragment"><div class="line">源码 ──compile()──► Program（字节码 + 静态布局）──Instance::load()──► scan()</div>
+<div class="line">      加载域（可分配、禁崩溃）                       周期域（RT 五禁）</div>
+</div><!-- fragment --><ul>
+<li>**加载域**（<code>diag/token/lexer/ast/parser/sema/codegen/compile.h</code>）： 自研递归下降，语句级错误恢复、稳定诊断码（<code>DiagCode</code>，含 <code>unsupported_l1..l7</code> 归属码）、常量折叠与运行时共用 <code><a class="el" href="types_8h.html">types.h</a></code> 的 wrap/f32 语义助手。对任意字节输入 crash-free（fuzz 门禁）。</li>
+<li>**周期域**（<code><a class="el" href="vm_8h.html">vm.h</a></code>/<code><a class="el" href="bind_8h.html">bind.h</a></code>，<code>RT-SAFE</code> 标记纳入 RT 扫描）：栈机 解释器，<code>scan(budget)</code> 工作单位看门狗；全部内存在 <code>load()</code> 时布局进 调用方提供的定长缓冲（<code>Program::required_bytes()</code>，8 字节对齐）； fault 锁存至 <code>reset()</code>（变量值保留）。</li>
+<li>**依赖只向内**：st 只消费 <code><a class="el" href="basic_8h.html">fb/basic.h</a></code> 与 <code><a class="el" href="error_8h.html">rt/error.h</a></code>，不被既有层 引用；与 adapters 平行。</li>
+</ul>
+<h1><a class="anchor" id="autotoc_md35"></a>
+用法</h1>
+<div class="fragment"><div class="line"><span class="preprocessor">#include &quot;<a class="code" href="st_8h.html">st/st.h</a>&quot;</span></div>
+<div class="line"><span class="keyword">using namespace </span><a class="code hl_namespace" href="namespaceplcopen_1_1core.html">plcopen::core</a>;</div>
+<div class="line"> </div>
+<div class="line"><span class="keyword">const</span> <a class="code hl_struct" href="structplcopen_1_1core_1_1st_1_1CompileResult.html">st::CompileResult</a> r = st::compile(source); <span class="comment">// 诊断在 r.diagnostics</span></div>
+<div class="line"><span class="keyword">alignas</span>(8) <span class="keyword">static</span> <span class="keywordtype">unsigned</span> <span class="keywordtype">char</span> buffer[65536];   <span class="comment">// 静态放置，调用方所有；load() 强制 8 字节对齐</span></div>
+<div class="line"><a class="code hl_class" href="classplcopen_1_1core_1_1st_1_1Instance.html">st::Instance</a> vm;</div>
+<div class="line">vm.<a class="code hl_function" href="classplcopen_1_1core_1_1st_1_1Instance.html#a05244c28e092f996ef1ca4efb4881465">load</a>(r.program, buffer, <span class="keyword">sizeof</span>(buffer), task_period_ns); <span class="comment">// Program 须存活</span></div>
+<div class="line"><span class="keywordflow">while</span>(running) {</div>
+<div class="line">    <span class="keyword">const</span> <a class="code hl_enumeration" href="namespaceplcopen_1_1core_1_1st.html#a7628a05cb699b9319e9112ab37ad04ca">st::ScanError</a> e = vm.<a class="code hl_function" href="classplcopen_1_1core_1_1st_1_1Instance.html#a5b510cc9b44fb3035612015352978806">scan</a>(budget_work_units);</div>
+<div class="line">    <span class="comment">// fault 锁存：division_by_zero / for_step_zero / range_violation / budget_exceeded</span></div>
+<div class="line">}</div>
+<div class="line"><span class="comment">// 只读符号表：vm.find(&quot;counter&quot;) → value_i64/value_f64/value_bool</span></div>
+<div class="ttc" id="aclassplcopen_1_1core_1_1st_1_1Instance_html"><div class="ttname"><a href="classplcopen_1_1core_1_1st_1_1Instance.html">plcopen::core::st::Instance</a></div><div class="ttdef"><b>Definition</b> <a href="vm_8h_source.html#l00080">vm.h:81</a></div></div>
+<div class="ttc" id="aclassplcopen_1_1core_1_1st_1_1Instance_html_a05244c28e092f996ef1ca4efb4881465"><div class="ttname"><a href="classplcopen_1_1core_1_1st_1_1Instance.html#a05244c28e092f996ef1ca4efb4881465">plcopen::core::st::Instance::load</a></div><div class="ttdeci">rt::ErrorCode load(const Program &amp;program, unsigned char *buffer, std::size_t buffer_bytes, std::int64_t task_period_ns)</div><div class="ttdef"><b>Definition</b> <a href="vm_8h_source.html#l00141">vm.h:141</a></div></div>
+<div class="ttc" id="aclassplcopen_1_1core_1_1st_1_1Instance_html_a5b510cc9b44fb3035612015352978806"><div class="ttname"><a href="classplcopen_1_1core_1_1st_1_1Instance.html#a5b510cc9b44fb3035612015352978806">plcopen::core::st::Instance::scan</a></div><div class="ttdeci">ScanError scan(std::int64_t budget)</div><div class="ttdef"><b>Definition</b> <a href="vm_8h_source.html#l00813">vm.h:813</a></div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1st_html_a7628a05cb699b9319e9112ab37ad04ca"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1st.html#a7628a05cb699b9319e9112ab37ad04ca">plcopen::core::st::ScanError</a></div><div class="ttdeci">ScanError</div><div class="ttdef"><b>Definition</b> <a href="vm_8h_source.html#l00035">vm.h:36</a></div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_html"><div class="ttname"><a href="namespaceplcopen_1_1core.html">plcopen::core</a></div><div class="ttdef"><b>Definition</b> <a href="cia402_8h_source.html#l00014">cia402.h:15</a></div></div>
+<div class="ttc" id="ast_8h_html"><div class="ttname"><a href="st_8h.html">st.h</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1st_1_1CompileResult_html"><div class="ttname"><a href="structplcopen_1_1core_1_1st_1_1CompileResult.html">plcopen::core::st::CompileResult</a></div><div class="ttdef"><b>Definition</b> <a href="compile_8h_source.html#l00068">compile.h:69</a></div></div>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md36"></a>
+范围备忘（ST L0-L7、L∀）</h1>
+<p>多命名 PROGRAM（由 <code>Instance::load(..., program_name, ...)</code> 显式选择，任务映射 归 L5）；用户 FUNCTION/FUNCTION_BLOCK、静态实例树、VAR_INPUT/OUTPUT/IN_OUT/ TEMP/EXTERNAL、EN/ENO；16 标量类型（6 L0 型 + 全宽度有符号/无符号 + 位串四型， KB-070）；IF/CASE/FOR/WHILE/REPEAT/EXIT/CONTINUE/RETURN；<code><a class="el" href="basic_8h.html">basic.h</a></code> 十 IEC FB（命名/非正式两种调用形态，RTC 排除）；无损加宽白名单 + 210 格 <code>&lt;SRC&gt;_TO_&lt;DST&gt;</code> 转换矩阵（<a href="../../doc/compliance/st-l1a-conversions.yaml">st-l1a-conversions.yaml</a> 三方比对入 CTest）；TIME 乘除、<code>**</code> 幂（永不折叠）、VAR CONSTANT、 <code>TYPE#</code> 字面量；名义枚举、八种整数基础的子范围与动态范围 fault；1-3 维 ARRAY、自然布局 STRUCT、嵌套聚合初始化/复制；CHAR/WCHAR、定长 STRING/WSTRING 与 DATE/TOD/DT。</p>
+<p>L2c-L7 已交付 GROUP_REF 与 134 个 basic/PLCopen 原生 FB 完整绑定、 I/Q/M 进程映像、RETAIN/PERSISTENT/force、标准函数闭合集、 CONFIGURATION/RESOURCE/周期与事件任务、文本 SFC 九限定符，以及 seqlock 监控、断点、单步和 trace。完整 implemented/excluded 边界见 <a href="../../doc/compliance/st-feature-set.yml">st-feature-set.yml</a>；IL、LD/FBD 图形面、 IDE、动态 POU/数组、系统 IO 和认证仍不属于已完成软件范围。</p>
+<h1><a class="anchor" id="autotoc_md37"></a>
+A2 静态工作量与平台校准</h1>
+<p><code>make_wcet_report(program)</code> 在加载/诊断域生成无分配机读报告：包括无环最坏 工作单位、每 POU 既有上界、最大调用/实例深度、原生 FB 实例数，以及 <code>fixed</code> / <code>linear_bytes</code> / <code>standard_function</code> / <code>native_fb</code> 指令类别。 <code>wcet_opcode_cost(op)</code> 是字节码版本锚定的 87-opcode 成本表。</p>
+<p>这些字段描述 <code>scan(budget)</code> 的 deterministic watchdog，不是纳秒承诺。 <code>plcopen_core_benchmark</code> 的 <code>ST_WCET_METRICS</code> 仅给出 Release 构建在所列 platform/compiler 上的 <code>observed_*</code> 校准值，并固定输出 <code>certified_wcet=0</code>。详细边界见 A2 WCET 软件度量合同。</p>
+<h1><a class="anchor" id="autotoc_md38"></a>
+测试</h1>
+<p><code>plcopen_core_st_l0_compiler_tests</code>（词法/恢复/类型/容量）、 <code>..._runtime_tests</code>（执行/fault/预算/定时器）、<code>..._golden_tests</code> （50 黄金程序）、<code>..._quality_tests</code>（确定性锚点哈希/零分配/吞吐）、 <code>..._type_desc_tests</code>、<code>..._l1b1_tests</code>、<code>..._l1b2_tests</code>（ABI-v2 类型描述、 各 22 黄金程序）、<code>..._l1b3_tests</code>（Unicode/定长字符串/整数公历）、 <code>..._l2b_tests</code>（多 POU、调用/实例布局、别名、WCI、确定性 artifact 与零分配）、 <code>..._wcet_tests</code>（opcode 成本表、机读报告、时间类别与无界控制流）、 <code>..._l2c_tests</code> 至 <code>..._l7_tests</code>（完整绑定、进程映像、标准函数、任务、SFC、 监控与调试）， <code>plcopen_core_st_fuzz</code>（单 PROGRAM、L2b、L5、L6、L7 的 <code>fuzz</code> 标签 CTest 冒烟各 3k，仅由 Nightly CI 执行；Nightly 另以 ASan/UBSan 各跑 10 万）。 </p>
+</div></div><!-- contents -->
+</div><!-- PageDoc -->
+<!-- start footer part -->
+<hr class="footer"/><address class="footer"><small>
+制作者&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.8
+</small></address>
+</body>
+</html>

@@ -1,0 +1,434 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh">
+<head>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=11"/>
+<meta name="generator" content="Doxygen 1.9.8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>plcopen: plcopen::core::fb::PassiveHomingFb类 参考</title>
+<link href="tabs.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="jquery.js"></script>
+<script type="text/javascript" src="dynsections.js"></script>
+<link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<link href="doxygen.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+<div id="top"><!-- do not remove this div, it is closed by doxygen! -->
+<div id="titlearea">
+<table cellspacing="0" cellpadding="0">
+ <tbody>
+ <tr id="projectrow">
+  <td id="projectalign">
+   <div id="projectname">plcopen<span id="projectnumber">&#160;0.21.0</span>
+   </div>
+  </td>
+ </tr>
+ </tbody>
+</table>
+</div>
+<!-- end header part -->
+<!-- 制作者 Doxygen 1.9.8 -->
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+var searchBox = new SearchBox("searchBox", "search/",'.html');
+/* @license-end */
+</script>
+<script type="text/javascript" src="menudata.js"></script>
+<script type="text/javascript" src="menu.js"></script>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+$(function() {
+  initMenu('',true,false,'search.php','搜索');
+  $(document).ready(function() { init_search(); });
+});
+/* @license-end */
+</script>
+<div id="main-nav"></div>
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<div id="MSearchResults">
+<div class="SRPage">
+<div id="SRIndex">
+<div id="SRResults"></div>
+<div class="SRStatus" id="Loading">载入中...</div>
+<div class="SRStatus" id="Searching">搜索中...</div>
+<div class="SRStatus" id="NoMatches">未找到</div>
+</div>
+</div>
+</div>
+</div>
+
+<div id="nav-path" class="navpath">
+  <ul>
+<li class="navelem"><a class="el" href="namespaceplcopen.html">plcopen</a></li><li class="navelem"><a class="el" href="namespaceplcopen_1_1core.html">core</a></li><li class="navelem"><a class="el" href="namespaceplcopen_1_1core_1_1fb.html">fb</a></li><li class="navelem"><a class="el" href="classplcopen_1_1core_1_1fb_1_1PassiveHomingFb.html">PassiveHomingFb</a></li>  </ul>
+</div>
+</div><!-- top -->
+<div class="header">
+  <div class="summary">
+<a href="#pub-attribs">Public 属性</a> &#124;
+<a href="#pro-methods">Protected 成员函数</a> &#124;
+<a href="#pro-attribs">Protected 属性</a> &#124;
+<a href="classplcopen_1_1core_1_1fb_1_1PassiveHomingFb-members.html">所有成员列表</a>  </div>
+  <div class="headertitle"><div class="title">plcopen::core::fb::PassiveHomingFb类 参考</div></div>
+</div><!--header-->
+<div class="contents">
+
+<p><code>#include &lt;<a class="el" href="homing_8h_source.html">homing.h</a>&gt;</code></p>
+<div class="dynheader">
+类 plcopen::core::fb::PassiveHomingFb 继承关系图:</div>
+<div class="dyncontent">
+<div class="center"><img src="classplcopen_1_1core_1_1fb_1_1PassiveHomingFb__inherit__graph.png" border="0" usemap="#aplcopen_1_1core_1_1fb_1_1PassiveHomingFb_inherit__map" alt="Inheritance graph"/></div>
+<map name="aplcopen_1_1core_1_1fb_1_1PassiveHomingFb_inherit__map" id="aplcopen_1_1core_1_1fb_1_1PassiveHomingFb_inherit__map">
+<area shape="rect" title=" " alt="" coords="5,37,144,77"/>
+<area shape="rect" href="classplcopen_1_1core_1_1fb_1_1FbStepReferenceFlyingRefPulse.html" title=" " alt="" coords="192,5,423,45"/>
+<area shape="poly" title=" " alt="" coords="157,43,191,39,192,44,158,49"/>
+<area shape="rect" href="classplcopen_1_1core_1_1fb_1_1FbStepReferenceFlyingSwitch.html" title=" " alt="" coords="199,69,415,109"/>
+<area shape="poly" title=" " alt="" coords="158,66,199,72,199,77,158,71"/>
+</map>
+<center><span class="legend">[<a href="graph_legend.html">图例</a>]</span></center></div>
+<div class="dynheader">
+plcopen::core::fb::PassiveHomingFb 的协作图:</div>
+<div class="dyncontent">
+<div class="center"><img src="classplcopen_1_1core_1_1fb_1_1PassiveHomingFb__coll__graph.png" border="0" usemap="#aplcopen_1_1core_1_1fb_1_1PassiveHomingFb_coll__map" alt="Collaboration graph"/></div>
+<map name="aplcopen_1_1core_1_1fb_1_1PassiveHomingFb_coll__map" id="aplcopen_1_1core_1_1fb_1_1PassiveHomingFb_coll__map">
+<area shape="rect" title=" " alt="" coords="325,69,464,109"/>
+<area shape="rect" href="classplcopen_1_1core_1_1axis_1_1AxisModel.html" title=" " alt="" coords="13,5,157,45"/>
+<area shape="poly" title=" " alt="" coords="171,40,302,67,326,72,324,77,301,72,169,45"/>
+<area shape="rect" href="structplcopen_1_1core_1_1axis_1_1ReferenceSignalRef.html" title=" " alt="" coords="5,69,164,109"/>
+<area shape="poly" title=" " alt="" coords="178,87,325,87,325,92,178,92"/>
+<area shape="rect" href="structplcopen_1_1core_1_1fb_1_1MotionOutputs.html" title=" " alt="" coords="15,133,154,173"/>
+<area shape="poly" title=" " alt="" coords="167,134,301,107,324,102,326,107,302,112,168,140"/>
+</map>
+<center><span class="legend">[<a href="graph_legend.html">图例</a>]</span></center></div>
+<table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
+Public 属性</h2></td></tr>
+<tr class="memitem:a76e6bac13669dda143ee48259a0905e3" id="r_a76e6bac13669dda143ee48259a0905e3"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classplcopen_1_1core_1_1axis_1_1AxisModel.html">axis::AxisModel</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1PassiveHomingFb.html#a76e6bac13669dda143ee48259a0905e3">axis_ref</a> = nullptr</td></tr>
+<tr class="separator:a76e6bac13669dda143ee48259a0905e3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6b2b1c32d756d38f81e72e7a87f5f996" id="r_a6b2b1c32d756d38f81e72e7a87f5f996"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1PassiveHomingFb.html#a6b2b1c32d756d38f81e72e7a87f5f996">execute</a> = false</td></tr>
+<tr class="separator:a6b2b1c32d756d38f81e72e7a87f5f996"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abe0c7c4e78f83521f6d9f9b1b8d1b6a4" id="r_abe0c7c4e78f83521f6d9f9b1b8d1b6a4"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structplcopen_1_1core_1_1axis_1_1ReferenceSignalRef.html">axis::ReferenceSignalRef</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1PassiveHomingFb.html#abe0c7c4e78f83521f6d9f9b1b8d1b6a4">reference_signal</a> {}</td></tr>
+<tr class="separator:abe0c7c4e78f83521f6d9f9b1b8d1b6a4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a85c3a183eadc8b51059d01a12a67c2fd" id="r_a85c3a183eadc8b51059d01a12a67c2fd"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceplcopen_1_1core_1_1axis.html#ac37c626dcb946b45368197dcafa1eb34">axis::BufferMode</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1PassiveHomingFb.html#a85c3a183eadc8b51059d01a12a67c2fd">buffer_mode</a> = <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#ac37c626dcb946b45368197dcafa1eb34af3376270ea6836eac66441a6ef3c55c3">axis::BufferMode::aborting</a></td></tr>
+<tr class="separator:a85c3a183eadc8b51059d01a12a67c2fd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac0994a74ce4802d3d66b48ffaf0e42e9" id="r_ac0994a74ce4802d3d66b48ffaf0e42e9"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1PassiveHomingFb.html#ac0994a74ce4802d3d66b48ffaf0e42e9">set_position</a> = 0.0</td></tr>
+<tr class="separator:ac0994a74ce4802d3d66b48ffaf0e42e9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6e106e5cd5644ea8b60444a08d9e2f77" id="r_a6e106e5cd5644ea8b60444a08d9e2f77"><td class="memItemLeft" align="right" valign="top">std::int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1PassiveHomingFb.html#a6e106e5cd5644ea8b60444a08d9e2f77">time_limit</a> = 0</td></tr>
+<tr class="separator:a6e106e5cd5644ea8b60444a08d9e2f77"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afabea7148b75869749969f81e9ba0d04" id="r_afabea7148b75869749969f81e9ba0d04"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1PassiveHomingFb.html#afabea7148b75869749969f81e9ba0d04">distance_limit</a> = 0.0</td></tr>
+<tr class="separator:afabea7148b75869749969f81e9ba0d04"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9d08c294ed4a8efad17cfd40c052811d" id="r_a9d08c294ed4a8efad17cfd40c052811d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structplcopen_1_1core_1_1fb_1_1MotionOutputs.html">MotionOutputs</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1PassiveHomingFb.html#a9d08c294ed4a8efad17cfd40c052811d">outputs</a> {}</td></tr>
+<tr class="separator:a9d08c294ed4a8efad17cfd40c052811d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-methods" name="pro-methods"></a>
+Protected 成员函数</h2></td></tr>
+<tr class="memitem:aa5d5b29300aa710423cf25cbaf136be0" id="r_aa5d5b29300aa710423cf25cbaf136be0"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1PassiveHomingFb.html#aa5d5b29300aa710423cf25cbaf136be0">rising_edge</a> ()</td></tr>
+<tr class="separator:aa5d5b29300aa710423cf25cbaf136be0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a185cfe2228858c195e503cd4a9b74258" id="r_a185cfe2228858c195e503cd4a9b74258"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1PassiveHomingFb.html#a185cfe2228858c195e503cd4a9b74258">start</a> ()</td></tr>
+<tr class="separator:a185cfe2228858c195e503cd4a9b74258"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a673b9573b296adfdd7d4d8af5b69bc5e" id="r_a673b9573b296adfdd7d4d8af5b69bc5e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1PassiveHomingFb.html#a673b9573b296adfdd7d4d8af5b69bc5e">observe</a> (bool condition, bool use_current_position=false)</td></tr>
+<tr class="separator:a673b9573b296adfdd7d4d8af5b69bc5e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a336bab490d0519760798be144a8f3350" id="r_a336bab490d0519760798be144a8f3350"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1PassiveHomingFb.html#a336bab490d0519760798be144a8f3350">fail</a> (<a class="el" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8">rt::ErrorCode</a> <a class="el" href="namespaceplcopen_1_1core_1_1fb.html#a9987504ab741614c7f341e5827889070acb5e100e5a9a3e7f6d1fd97512215282">error</a>)</td></tr>
+<tr class="separator:a336bab490d0519760798be144a8f3350"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-attribs" name="pro-attribs"></a>
+Protected 属性</h2></td></tr>
+<tr class="memitem:a6c6a25705e89868a256791ea0ffb7a4b" id="r_a6c6a25705e89868a256791ea0ffb7a4b"><td class="memItemLeft" align="right" valign="top">std::uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1PassiveHomingFb.html#a6c6a25705e89868a256791ea0ffb7a4b">owner_id_</a> = 0</td></tr>
+<tr class="separator:a6c6a25705e89868a256791ea0ffb7a4b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table>
+<a name="details" id="details"></a><h2 class="groupheader">详细描述</h2>
+<div class="textblock">
+<p class="definition">在文件 <a class="el" href="homing_8h_source.html">homing.h</a> 第 <a class="el" href="homing_8h_source.html#l01472">1472</a> 行定义.</p>
+</div><h2 class="groupheader">成员函数说明</h2>
+<a id="a336bab490d0519760798be144a8f3350" name="a336bab490d0519760798be144a8f3350"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a336bab490d0519760798be144a8f3350">&#9670;&#160;</a></span>fail()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void plcopen::core::fb::PassiveHomingFb::fail </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8">rt::ErrorCode</a>&#160;</td>
+          <td class="paramname"><em>error</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="homing_8h_source.html">homing.h</a> 第 <a class="el" href="homing_8h_source.html#l01582">1582</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a673b9573b296adfdd7d4d8af5b69bc5e" name="a673b9573b296adfdd7d4d8af5b69bc5e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a673b9573b296adfdd7d4d8af5b69bc5e">&#9670;&#160;</a></span>observe()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void plcopen::core::fb::PassiveHomingFb::observe </td>
+          <td>(</td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>condition</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>use_current_position</em> = <code>false</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="homing_8h_source.html">homing.h</a> 第 <a class="el" href="homing_8h_source.html#l01535">1535</a> 行定义.</p>
+
+</div>
+</div>
+<a id="aa5d5b29300aa710423cf25cbaf136be0" name="aa5d5b29300aa710423cf25cbaf136be0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa5d5b29300aa710423cf25cbaf136be0">&#9670;&#160;</a></span>rising_edge()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool plcopen::core::fb::PassiveHomingFb::rising_edge </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="homing_8h_source.html">homing.h</a> 第 <a class="el" href="homing_8h_source.html#l01486">1486</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a185cfe2228858c195e503cd4a9b74258" name="a185cfe2228858c195e503cd4a9b74258"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a185cfe2228858c195e503cd4a9b74258">&#9670;&#160;</a></span>start()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void plcopen::core::fb::PassiveHomingFb::start </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="homing_8h_source.html">homing.h</a> 第 <a class="el" href="homing_8h_source.html#l01508">1508</a> 行定义.</p>
+
+</div>
+</div>
+<h2 class="groupheader">类成员变量说明</h2>
+<a id="a76e6bac13669dda143ee48259a0905e3" name="a76e6bac13669dda143ee48259a0905e3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a76e6bac13669dda143ee48259a0905e3">&#9670;&#160;</a></span>axis_ref</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classplcopen_1_1core_1_1axis_1_1AxisModel.html">axis::AxisModel</a>* plcopen::core::fb::PassiveHomingFb::axis_ref = nullptr</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="homing_8h_source.html">homing.h</a> 第 <a class="el" href="homing_8h_source.html#l01476">1476</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a85c3a183eadc8b51059d01a12a67c2fd" name="a85c3a183eadc8b51059d01a12a67c2fd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a85c3a183eadc8b51059d01a12a67c2fd">&#9670;&#160;</a></span>buffer_mode</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="namespaceplcopen_1_1core_1_1axis.html#ac37c626dcb946b45368197dcafa1eb34">axis::BufferMode</a> plcopen::core::fb::PassiveHomingFb::buffer_mode = <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#ac37c626dcb946b45368197dcafa1eb34af3376270ea6836eac66441a6ef3c55c3">axis::BufferMode::aborting</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="homing_8h_source.html">homing.h</a> 第 <a class="el" href="homing_8h_source.html#l01479">1479</a> 行定义.</p>
+
+</div>
+</div>
+<a id="afabea7148b75869749969f81e9ba0d04" name="afabea7148b75869749969f81e9ba0d04"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afabea7148b75869749969f81e9ba0d04">&#9670;&#160;</a></span>distance_limit</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">double plcopen::core::fb::PassiveHomingFb::distance_limit = 0.0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="homing_8h_source.html">homing.h</a> 第 <a class="el" href="homing_8h_source.html#l01482">1482</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a6b2b1c32d756d38f81e72e7a87f5f996" name="a6b2b1c32d756d38f81e72e7a87f5f996"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6b2b1c32d756d38f81e72e7a87f5f996">&#9670;&#160;</a></span>execute</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool plcopen::core::fb::PassiveHomingFb::execute = false</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="homing_8h_source.html">homing.h</a> 第 <a class="el" href="homing_8h_source.html#l01477">1477</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a9d08c294ed4a8efad17cfd40c052811d" name="a9d08c294ed4a8efad17cfd40c052811d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9d08c294ed4a8efad17cfd40c052811d">&#9670;&#160;</a></span>outputs</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="structplcopen_1_1core_1_1fb_1_1MotionOutputs.html">MotionOutputs</a> plcopen::core::fb::PassiveHomingFb::outputs {}</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="homing_8h_source.html">homing.h</a> 第 <a class="el" href="homing_8h_source.html#l01483">1483</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a6c6a25705e89868a256791ea0ffb7a4b" name="a6c6a25705e89868a256791ea0ffb7a4b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6c6a25705e89868a256791ea0ffb7a4b">&#9670;&#160;</a></span>owner_id_</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::uint32_t plcopen::core::fb::PassiveHomingFb::owner_id_ = 0</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="homing_8h_source.html">homing.h</a> 第 <a class="el" href="homing_8h_source.html#l01590">1590</a> 行定义.</p>
+
+</div>
+</div>
+<a id="abe0c7c4e78f83521f6d9f9b1b8d1b6a4" name="abe0c7c4e78f83521f6d9f9b1b8d1b6a4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abe0c7c4e78f83521f6d9f9b1b8d1b6a4">&#9670;&#160;</a></span>reference_signal</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="structplcopen_1_1core_1_1axis_1_1ReferenceSignalRef.html">axis::ReferenceSignalRef</a> plcopen::core::fb::PassiveHomingFb::reference_signal {}</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="homing_8h_source.html">homing.h</a> 第 <a class="el" href="homing_8h_source.html#l01478">1478</a> 行定义.</p>
+
+</div>
+</div>
+<a id="ac0994a74ce4802d3d66b48ffaf0e42e9" name="ac0994a74ce4802d3d66b48ffaf0e42e9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac0994a74ce4802d3d66b48ffaf0e42e9">&#9670;&#160;</a></span>set_position</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">double plcopen::core::fb::PassiveHomingFb::set_position = 0.0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="homing_8h_source.html">homing.h</a> 第 <a class="el" href="homing_8h_source.html#l01480">1480</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a6e106e5cd5644ea8b60444a08d9e2f77" name="a6e106e5cd5644ea8b60444a08d9e2f77"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6e106e5cd5644ea8b60444a08d9e2f77">&#9670;&#160;</a></span>time_limit</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::int64_t plcopen::core::fb::PassiveHomingFb::time_limit = 0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="homing_8h_source.html">homing.h</a> 第 <a class="el" href="homing_8h_source.html#l01481">1481</a> 行定义.</p>
+
+</div>
+</div>
+<hr/>该类的文档由以下文件生成:<ul>
+<li>core/fb/<a class="el" href="homing_8h_source.html">homing.h</a></li>
+</ul>
+</div><!-- contents -->
+<!-- start footer part -->
+<hr class="footer"/><address class="footer"><small>
+制作者&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.8
+</small></address>
+</body>
+</html>

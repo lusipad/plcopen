@@ -1,0 +1,9 @@
+<map id="plcopen::core::st::SfcRunnerStorage" name="plcopen::core::st::SfcRunnerStorage">
+<area shape="rect" id="Node000001" title=" " alt="" coords="103,211,242,251"/>
+<area shape="rect" id="Node000002" href="$structplcopen_1_1core_1_1st_1_1SfcRegionInfo.html" title=" " alt="" coords="5,108,143,148"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="87,159,103,185,133,208,130,213,99,188,82,162"/>
+<area shape="rect" id="Node000003" href="$structplcopen_1_1core_1_1st_1_1SourceMap.html" title=" " alt="" coords="5,5,143,45"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="77,59,77,108,71,108,71,59"/>
+<area shape="rect" id="Node000004" href="$structplcopen_1_1core_1_1st_1_1SfcTraceRecord.html" title=" " alt="" coords="167,108,304,148"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="219,161,187,212,182,209,214,158"/>
+</map>

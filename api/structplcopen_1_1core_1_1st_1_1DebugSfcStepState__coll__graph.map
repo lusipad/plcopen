@@ -1,0 +1,5 @@
+<map id="plcopen::core::st::DebugSfcStepState" name="plcopen::core::st::DebugSfcStepState">
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,123,152,163"/>
+<area shape="rect" id="Node000002" href="$structplcopen_1_1core_1_1st_1_1SymbolId.html" title=" " alt="" coords="10,5,147,45"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="81,59,81,122,76,122,76,59"/>
+</map>

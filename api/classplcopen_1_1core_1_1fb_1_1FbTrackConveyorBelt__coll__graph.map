@@ -1,0 +1,17 @@
+<map id="plcopen::core::fb::FbTrackConveyorBelt" name="plcopen::core::fb::FbTrackConveyorBelt">
+<area shape="rect" id="Node000001" title=" " alt="" coords="964,137,1124,177"/>
+<area shape="rect" id="Node000002" href="$classplcopen_1_1core_1_1fb_1_1TrackingExecuteFb.html" title=" " alt="" coords="629,73,771,113"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="785,106,940,135,964,139,963,144,940,140,784,111"/>
+<area shape="rect" id="Node000003" href="$classplcopen_1_1core_1_1axis_1_1AxisGroup.html" title=" " alt="" coords="369,37,513,77"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="527,67,629,81,628,86,527,72"/>
+<area shape="rect" id="Node000004" href="$structplcopen_1_1core_1_1axis_1_1GroupPosition.html" title=" " alt="" coords="17,5,161,45"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="175,30,370,48,369,54,174,36"/>
+<area shape="rect" id="Node000005" href="$structplcopen_1_1core_1_1axis_1_1JogCommandOptions.html" title=" " alt="" coords="5,69,172,109"/>
+<area shape="poly" id="edge4_Node000003_Node000005" title=" " alt="" coords="186,79,345,65,369,63,369,68,346,71,186,85"/>
+<area shape="rect" id="Node000006" href="$structplcopen_1_1core_1_1fb_1_1MotionOutputs.html" title=" " alt="" coords="372,101,511,141"/>
+<area shape="poly" id="edge5_Node000002_Node000006" title=" " alt="" coords="524,115,604,108,628,104,629,110,604,113,524,120"/>
+<area shape="rect" id="Node000007" href="$classplcopen_1_1core_1_1axis_1_1AxisModel.html" title=" " alt="" coords="628,137,772,177"/>
+<area shape="poly" id="edge6_Node000001_Node000007" title=" " alt="" coords="786,155,964,155,964,160,786,160"/>
+<area shape="rect" id="Node000008" href="$structplcopen_1_1core_1_1axis_1_1ToolData.html" title=" " alt="" coords="628,201,772,241"/>
+<area shape="poly" id="edge7_Node000001_Node000008" title=" " alt="" coords="786,212,861,204,939,189,989,175,991,180,941,195,862,209,787,218"/>
+</map>

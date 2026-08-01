@@ -1,0 +1,18 @@
+<map id="plcopen::core::fb::FbMovePath" name="plcopen::core::fb::FbMovePath">
+<area shape="rect" id="Node000001" title=" " alt="" coords="889,39,1028,79"/>
+<area shape="rect" id="Node000002" href="$classplcopen_1_1core_1_1fb_1_1GroupExecuteFb.html" title=" " alt="" coords="633,69,772,109"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="785,77,889,64,889,70,786,82"/>
+<area shape="rect" id="Node000003" href="$classplcopen_1_1core_1_1axis_1_1AxisGroup.html" title=" " alt="" coords="369,69,513,109"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="527,87,633,87,633,92,527,92"/>
+<area shape="rect" id="Node000004" href="$structplcopen_1_1core_1_1axis_1_1GroupPosition.html" title=" " alt="" coords="17,19,161,59"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="174,49,196,52,369,77,369,82,196,57,174,54"/>
+<area shape="rect" id="Node000008" href="$structplcopen_1_1core_1_1fb_1_1PathWaypoint.html" title=" " alt="" coords="372,5,511,45"/>
+<area shape="poly" id="edge8_Node000008_Node000004" title=" " alt="" coords="174,33,372,25,372,31,174,38"/>
+<area shape="rect" id="Node000005" href="$structplcopen_1_1core_1_1axis_1_1JogCommandOptions.html" title=" " alt="" coords="5,96,172,136"/>
+<area shape="poly" id="edge4_Node000003_Node000005" title=" " alt="" coords="186,119,264,118,345,112,373,107,374,112,346,117,264,124,186,124"/>
+<area shape="rect" id="Node000006" href="$structplcopen_1_1core_1_1fb_1_1MotionOutputs.html" title=" " alt="" coords="372,133,511,173"/>
+<area shape="poly" id="edge5_Node000002_Node000006" title=" " alt="" coords="523,131,632,104,634,109,525,136"/>
+<area shape="rect" id="Node000007" href="$structplcopen_1_1core_1_1fb_1_1PathTable.html" title=" " alt="" coords="633,5,772,45"/>
+<area shape="poly" id="edge6_Node000001_Node000007" title=" " alt="" coords="786,33,889,47,889,52,785,39"/>
+<area shape="poly" id="edge7_Node000007_Node000008" title=" " alt="" coords="525,23,633,23,633,28,525,28"/>
+</map>

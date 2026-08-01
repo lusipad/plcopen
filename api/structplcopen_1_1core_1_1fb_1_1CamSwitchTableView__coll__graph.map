@@ -1,0 +1,5 @@
+<map id="plcopen::core::fb::CamSwitchTableView" name="plcopen::core::fb::CamSwitchTableView">
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,108,167,148"/>
+<area shape="rect" id="Node000002" href="$structplcopen_1_1core_1_1fb_1_1CamSwitchAction.html" title=" " alt="" coords="17,5,155,45"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="89,59,89,108,83,108,83,59"/>
+</map>

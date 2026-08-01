@@ -1,0 +1,9 @@
+<map id="plcopen::core::fb::GroupPathDynamicsReadFb" name="plcopen::core::fb::GroupPathDynamicsReadFb">
+<area shape="rect" id="Node000001" title=" " alt="" coords="204,37,407,77"/>
+<area shape="rect" id="Node000003" href="$classplcopen_1_1core_1_1fb_1_1FbGroupReadDefaultDynamics.html" title=" " alt="" coords="464,5,687,45"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="420,41,463,36,464,41,421,46"/>
+<area shape="rect" id="Node000004" href="$classplcopen_1_1core_1_1fb_1_1FbGroupReadReferenceDynamics.html" title=" " alt="" coords="455,69,696,109"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="421,68,455,72,454,78,420,74"/>
+<area shape="rect" id="Node000002" href="$classplcopen_1_1core_1_1fb_1_1GroupConfigReadFb.html" title=" " alt="" coords="5,37,156,77"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="170,55,204,55,204,60,170,60"/>
+</map>

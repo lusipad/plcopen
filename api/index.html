@@ -1,0 +1,256 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh">
+<head>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=11"/>
+<meta name="generator" content="Doxygen 1.9.8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>plcopen: plcopen</title>
+<link href="tabs.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="jquery.js"></script>
+<script type="text/javascript" src="dynsections.js"></script>
+<link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<link href="doxygen.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+<div id="top"><!-- do not remove this div, it is closed by doxygen! -->
+<div id="titlearea">
+<table cellspacing="0" cellpadding="0">
+ <tbody>
+ <tr id="projectrow">
+  <td id="projectalign">
+   <div id="projectname">plcopen<span id="projectnumber">&#160;0.21.0</span>
+   </div>
+  </td>
+ </tr>
+ </tbody>
+</table>
+</div>
+<!-- end header part -->
+<!-- 制作者 Doxygen 1.9.8 -->
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+var searchBox = new SearchBox("searchBox", "search/",'.html');
+/* @license-end */
+</script>
+<script type="text/javascript" src="menudata.js"></script>
+<script type="text/javascript" src="menu.js"></script>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+$(function() {
+  initMenu('',true,false,'search.php','搜索');
+  $(document).ready(function() { init_search(); });
+});
+/* @license-end */
+</script>
+<div id="main-nav"></div>
+</div><!-- top -->
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<div id="MSearchResults">
+<div class="SRPage">
+<div id="SRIndex">
+<div id="SRResults"></div>
+<div class="SRStatus" id="Loading">载入中...</div>
+<div class="SRStatus" id="Searching">搜索中...</div>
+<div class="SRStatus" id="NoMatches">未找到</div>
+</div>
+</div>
+</div>
+</div>
+
+<div><div class="header">
+  <div class="headertitle"><div class="title">plcopen </div></div>
+</div><!--header-->
+<div class="contents">
+<div class="textblock"><p><a class="anchor" id="md_README"></a> </p><blockquote class="doxtable">
+<p>&zwj;<b>现代 C++ 的 PLCopen 运动控制内核 + IEC 61131-3 ST 运行时——嵌入你的控制器，或垫在你的学习栈下面。</b></p>
+<p><em>A modern C++ motion-control core with PLCopen-style function blocks and a deterministic IEC 61131-3 ST runtime. Embed it in your controller — or put it under your learning stack.</em> </p>
+</blockquote>
+<p>[<img src="https://img.shields.io/badge/license-Apache%202.0-blue.svg" alt="License" style="pointer-events: none;" class="inline"/>](LICENSE) <a href="https://github.com/lusipad/plcopen/actions/workflows/windows-ci.yml"><img src="https://github.com/lusipad/plcopen/actions/workflows/windows-ci.yml/badge.svg" alt="Windows CI" style="pointer-events: none;" class="inline"/></a> <a href="https://github.com/lusipad/plcopen/actions/workflows/linux-ci.yml"><img src="https://github.com/lusipad/plcopen/actions/workflows/linux-ci.yml/badge.svg" alt="Linux CI" style="pointer-events: none;" class="inline"/></a> <a href="https://en.cppreference.com/w/cpp/17"><img src="https://img.shields.io/badge/C%2B%2B-17-blue.svg" alt="C++17" style="pointer-events: none;" class="inline"/></a></p>
+<p><b>项目现状看一页就够：STATUS.md</b> · 术语表：CONTEXT.md · 行为边界：已知边界注册表 · 商用八项：证据总账</p>
+<blockquote class="doxtable">
+<p>&zwj;<b>最新正式版本：<a href="https://github.com/lusipad/plcopen/releases/tag/v0.21.0">v0.21.0</a>。</b> 2026-07-30 已正式发布；annotated tag <code>v0.21.0</code> 已推送（object <code>9985312fd8c862ae435bec28adcd5f2943966288</code> → target <code>08d62b1b16e841a88509284b4c8c75d778592efc</code>）。C++ source/header-only 包由 GitHub Release 交付，Python 3.10～3.13 的 Windows、Linux、macOS 共 20 个 wheels 与 1 个 sdist 已发布到 <a href="https://pypi.org/project/pyplcopen/0.21.0/">PyPI</a>。版本内容见 v0.21.0 发布记录。 </p>
+</blockquote>
+<h1><a class="anchor" id="autotoc_md1"></a>
+&lt;/blockquote&gt;</h1>
+<h1><a class="anchor" id="autotoc_md2"></a>
+这是什么</h1>
+<p>plcopen 是一个 **C++17 header-only 运动控制内核**：实时基础设施、 时间最优 OTG 与前瞻规划、轴与组状态机、PLCopen 风格功能块，以及 **IEC 61131-3 ST 编译器 + 确定性字节码 VM**，分层放在 <code>core/</code> （依赖只向内；周期路径零分配/零锁/无异常）。它是**可嵌入的库**， 不是完整 PLC 运行时；同一套应用代码从仿真（<code>ServoSim</code>/pyplcopen） 到真机零修改，**同一段轨迹逐位可回放**——确定性不是形容词，是门禁。</p>
+<p><b>两类人适合它：</b></p>
+<ul>
+<li>**工业设备/机器人控制器的 C++ 开发者**——需要标准运动语义 （PTP/直线/圆弧/blending/前瞻/齿轮凸轮/坐标系/kinematics/回零/ 轨迹流）而不想绑死一个平台；</li>
+<li>**具身智能与机器人生态的建造者**（LeRobot/VLA 一系）——学习策略 输出意图，谁把它变成平滑、受限、可复现的关节轨迹？plcopen 的定位 是**学习栈下面的工业级确定性执行底座**（串行总线舵机 adapter 纯软件协议层已交付；当前源码提供默认关闭的 SO-ARM101 只读发现与离线 A/B 工具，真机通信与 运动验证仍待接线；方向见 具身智能战略）。</li>
+</ul>
+<p>**不适合你**，如果你要：PLC 编程 IDE 与图形语言编辑器（看 Beremiz）、 IEC 61131-3 全语言成熟编译器（看 MatIEC——我们的 ST 层是**运动导向 声明集**，L0-L7 与 L∀ 已闭合，但不宣称覆盖完整 IEC 平台）、入门教学 PLC（看 OpenPLC）、 商业整机平台（CODESYS / TwinCAT）。定位对比见 VISION.md。</p>
+<hr  />
+<h1><a class="anchor" id="autotoc_md4"></a>
+全景进度</h1>
+<blockquote class="doxtable">
+<p>&zwj;以下是当前能力快照，不等同于“商用级”完成度。详细现状以 STATUS.md 为准，当前承诺与顺序以 ROADMAP.md 为准，完整剩余依赖见主计划。 </p>
+</blockquote>
+<table class="markdownTable">
+<tr class="markdownTableHead">
+<th class="markdownTableHeadNone">领域   </th><th class="markdownTableHeadNone">状态   </th><th class="markdownTableHeadNone">当前结论    </th></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone">v0.21.0   </td><td class="markdownTableBodyNone">✅ 已发布   </td><td class="markdownTableBodyNone">annotated tag <code>v0.21.0</code> 已推送；GitHub Release 为 Latest，PyPI 已上线 20 个 wheels 与 1 个 sdist    </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone">v0.20.0   </td><td class="markdownTableBodyNone">✅ 历史前一版   </td><td class="markdownTableBodyNone">2026-07-20 已发布；<code>ports/plcopen</code> 与 <code>packaging/conan-center</code> 中央 registry 提交资产当前仍固定在这一版    </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone">新核重写 R0-R4   </td><td class="markdownTableBodyNone">✅ 完成   </td><td class="markdownTableBodyNone"><code>core/</code> 已成为默认消费面，旧线进入 P0-only 冻结期    </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone">Phase B 纯软件   </td><td class="markdownTableBodyNone">✅ 完成   </td><td class="markdownTableBodyNone">坐标系、运动学、轨迹流、cam、前瞻、适配器骨架全部落地    </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone">核心算法   </td><td class="markdownTableBodyNone">🟢 主体完成   </td><td class="markdownTableBodyNone">jerk-limited OTG、固定时长求解、TOPP、oracle、周期执行均已实现    </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone">PLCopen Part 1   </td><td class="markdownTableBodyNone">🟡 软件合同闭合   </td><td class="markdownTableBodyNone">43/43 有门面，C4 已关闭 D-01～D-20；正式 B/E/V 声明与认证未完成    </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone">PLCopen Part 4   </td><td class="markdownTableBodyNone">🟡 门面齐全   </td><td class="markdownTableBodyNone">68/68 有同名门面；C3/C6 已完成，接口与 E/O 级边界仍逐项登记，不宣称合规    </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone">PLCopen Part 5   </td><td class="markdownTableBodyNone">🟡 软件合同闭合   </td><td class="markdownTableBodyNone">C5 已关闭 11/11 标准 FB 与 45 B + 102 E 软件声明；真机与认证证据仍独立    </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone">PLCopen Part 6   </td><td class="markdownTableBodyNone">⛔ 未解锁   </td><td class="markdownTableBodyNone">等流体动力行业真实需求    </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone">ST 语言层   </td><td class="markdownTableBodyNone">✅ 声明集闭合   </td><td class="markdownTableBodyNone">L0-L7、L∀ 已完成；134 个 FB、1476 个 pin，feature-set <code>pending=0</code>    </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone">Python/文档/包   </td><td class="markdownTableBodyNone">✅ 已发布   </td><td class="markdownTableBodyNone">文档站已上线；<code>pyplcopen==0.21.0</code> 已在 PyPI 提供三平台 wheels 与 sdist    </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone">EtherCAT   </td><td class="markdownTableBodyNone">🔴 未开工   </td><td class="markdownTableBodyNone">最大剩余软件块，也是实时台架和实际部署的前置    </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone">真机/人形/孪生   </td><td class="markdownTableBodyNone">🟠 软件孪生已落地   </td><td class="markdownTableBodyNone">T2a 双关节与 T2b 七关节 MuJoCo/Rerun 闭环已在当前源码完成；真机、完整 H/F/T 轨仍未闭环    </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone">用户采纳   </td><td class="markdownTableBodyNone">🔴 尚未形成   </td><td class="markdownTableBodyNone">灯塔用户、现场案例、外部贡献者和有效下载信号仍不足    </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone">商用认证   </td><td class="markdownTableBodyNone">🔴 未启动   </td><td class="markdownTableBodyNone">PLCopen membership、提交、审核均未开始   </td></tr>
+</table>
+<hr  />
+<h1><a class="anchor" id="autotoc_md6"></a>
+快速开始</h1>
+<div class="fragment"><div class="line">git clone https://github.com/lusipad/plcopen.git</div>
+<div class="line">cd plcopen</div>
+<div class="line"> </div>
+<div class="line"># Windows（详见 BUILD_README.md）</div>
+<div class="line">.\build.ps1 -Test</div>
+<div class="line"> </div>
+<div class="line"># 跨平台（默认只构建新核 core/）</div>
+<div class="line">cmake -S . -B build -DPLCOPEN_BUILD_TESTS=ON</div>
+<div class="line">cmake --build build --config Release</div>
+<div class="line">ctest --test-dir build --build-config Release --output-on-failure</div>
+</div><!-- fragment --><p>最简单轴示例与组/圆弧/blending 示例见 <code>core/demo/</code>；下游 CMake 消费 （<code>find_package</code> / <code>FetchContent</code>）见 BUILD_README.md。</p>
+<h2><a class="anchor" id="autotoc_md7"></a>
+十分钟上手：Python 驱动一条关节目标流（B9）</h2>
+<p>机器人模式最小闭环——上层 100Hz 发目标，库内在线滤波升频到周期级， 断流自动受控停：</p>
+<div class="fragment"><div class="line"><span class="keyword">import</span> math, pyplcopen</div>
+<div class="line"> </div>
+<div class="line">axis = pyplcopen.AxisSim()</div>
+<div class="line">axis.power_on()</div>
+<div class="line">axis.stream_engage(0.5, 0.05, 0.01, timeout_cycles=30, extrapolation_cycles=40)</div>
+<div class="line"> </div>
+<div class="line"><span class="keywordflow">for</span> k <span class="keywordflow">in</span> range(200):                                  <span class="comment"># 100Hz 生产者 × 1kHz 周期</span></div>
+<div class="line">    axis.stream_push(0.3 * math.sin(0.02 * k), axis.stream_now() + 1)</div>
+<div class="line">    axis.cycle(10)</div>
+<div class="line"> </div>
+<div class="line">axis.cycle(400)                                       <span class="comment"># 断流 → 看门狗受控停</span></div>
+<div class="line"><span class="keyword">assert</span> axis.stream_mode() == <span class="stringliteral">&quot;stopped&quot;</span></div>
+<div class="line">axis.stream_disengage()</div>
+</div><!-- fragment --><p>安装 Python 绑定：</p>
+<div class="fragment"><div class="line">python -m pip install pyplcopen==0.21.0</div>
+<div class="line"># 或在需要源码构建时：python -m pip install .（需要 C++17 编译器 + CMake ≥ 3.21）</div>
+</div><!-- fragment --><p>无编译器的安装请使用 CPython 3.10～3.13；这些版本有 Windows、Linux、 macOS 预编译 wheel。对当前 <code>v0.21.0</code>，Python 3.14 及更新版本会从 sdist 本地构建，因此需要 C++17 编译器与 CMake ≥ 3.21。</p>
+<p>从零开始的三条主旅程见 Python 数字孪生、 C++ 嵌入 与 ST 直驱 MC；最快体验可直接打开 <a href="docs/notebooks/five-minute-digital-twin.ipynb">5 分钟 notebook</a>。包管理器入口、 SI 配置与公开/当前源码版本边界均在对应旅程中说明。错误排查与 trace 图表见 诊断指南；运行中阈值触发与窗口冻结见 在线调试示波器。</p>
+<p>当前源码还可运行七关节 H1→MuJoCo→Rerun 闭环：</p>
+<div class="fragment"><div class="line">python -m pip install &quot;.[twin]&quot;</div>
+<div class="line">python tools/twin/mujoco_joint_stream_demo.py --output seven-joint.rrd</div>
+</div><!-- fragment --><p>该入口已进入已发布的 <code>pyplcopen==0.21.0</code> 包；旧版 <code>pyplcopen==0.20.0</code> 不包含这一七关节入口； 边界和本地模型映射见 Python 数字孪生指南。</p>
+<hr  />
+<h1><a class="anchor" id="autotoc_md9"></a>
+架构一图</h1>
+<div class="fragment"><div class="line">  your C++ app / IEC 61131-3 ST program        VLA / LeRobot / teleop</div>
+<div class="line">              | MC_* function blocks                | trajectory stream</div>
+<div class="line">              v                                     v</div>
+<div class="line">+------------------------------- plcopen --------------------------------+</div>
+<div class="line">| planning domain  ==&gt;  committed trajectory ring  ==&gt;  RT domain        |</div>
+<div class="line">| lookahead, blending,   (depth H: slow planning        pop ONE frame    |</div>
+<div class="line">| kinematics; may alloc, only shrinks lookahead         per tick; O(1),  |</div>
+<div class="line">| own planning thread    depth, never RT timing)        0-alloc @ 1 kHz  |</div>
+<div class="line">+-----------------------------------+------------------------------------+</div>
+<div class="line">                                    v  Servo narrow interface (ADR-0004)</div>
+<div class="line">  EtherCAT / CiA402 (fieldbus repo)  |  Feetech STS protocol (S2 done) |  ServoSim twin</div>
+</div><!-- fragment --><p>规划慢只会缩短前瞻深度，永远不碰 RT 周期——运动平滑**由构造保证**， 不靠预算自觉（ADR-0007 双域模型）。内核按 L0 rt → L1 otg → L2 geom → L3 plan → L4 exec → L5 axis → L6 fb → L7 adapters 分层，依赖只向内，L0-L4 不含任何 PLCopen 语义； st 语言层与 adapters 平行位于外圈。结构/运行时/生态三张全图见 doc/design/core/architecture.md， 分层纪律见 2026-07 架构体检 （零违规）；旧 <code>src/</code> v0.x 线已冻结为回放/迁移基线 （<code>-DPLCOPEN_BUILD_LEGACY=ON</code>）。</p>
+<hr  />
+<h1><a class="anchor" id="autotoc_md11"></a>
+合规：我们把审计挂在明面上</h1>
+<p>"支持 PLCopen"谁都能写，我们选择公开逐条对照：Part 1 的 43/43 门面 已落地，C4 已关闭 D-01～D-20 生命周期缺口；Part 4 有 68/68 同名门面， Part 5 已关闭 11/11 标准 FB 与 45 B + 102 E 机读声明。正式 B/E/V 供应商 声明、部分 Part 4 E/O 字段、真机证据与 PLCopen 认证仍未完成，逐项状态 登记在条款矩阵、 能力对等矩阵与 全量审计。 **不宣称尚未验证的合规**——这比一枚"兼容"徽章更值得信。</p>
+<hr  />
+<h1><a class="anchor" id="autotoc_md13"></a>
+文档地图</h1>
+<table class="markdownTable">
+<tr class="markdownTableHead">
+<th class="markdownTableHeadNone">想知道…   </th><th class="markdownTableHeadNone">看    </th></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone">现在能干什么、进行到哪   </td><td class="markdownTableBodyNone">STATUS.md    </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone">术语什么意思   </td><td class="markdownTableBodyNone">CONTEXT.md    </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone">"做到"的定义（normative 规格）   </td><td class="markdownTableBodyNone"><a href="doc/compliance/">doc/compliance/</a>（矩阵 + 已知边界）    </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone">为什么这样设计   </td><td class="markdownTableBodyNone"><a href="doc/design/">doc/design/</a>（架构 + ADR）    </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone">接下来做什么   </td><td class="markdownTableBodyNone">ROADMAP.md · <a href="doc/planning/">doc/planning/</a>    </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone">长期方向与战略   </td><td class="markdownTableBodyNone">VISION.md · 具身智能战略    </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone">怎么构建   </td><td class="markdownTableBodyNone">BUILD_README.md · BUILD_LINUX.md    </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone">怎么贡献   </td><td class="markdownTableBodyNone">CONTRIBUTING.md    </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone">谁做决策、如何继任   </td><td class="markdownTableBodyNone">GOVERNANCE.md    </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone">如何报告漏洞、ST 信任边界   </td><td class="markdownTableBodyNone">SECURITY.md    </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone">从 v0.x 迁移   </td><td class="markdownTableBodyNone">doc/migration-v0-to-v1.md    </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone">生产集成与运维   </td><td class="markdownTableBodyNone">文档站生产指南 · 运维手册    </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone">三条入门旅程与 notebook   </td><td class="markdownTableBodyNone">Python · C++ · ST · <a href="docs/notebooks/five-minute-digital-twin.ipynb">5 分钟 notebook</a>    </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone">ErrorCode 排障与 trace 图表   </td><td class="markdownTableBodyNone">诊断指南 · 在线调试示波器    </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone">版本变化   </td><td class="markdownTableBodyNone">CHANGELOG.md    </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone">v0.21.0 对使用者意味着什么   </td><td class="markdownTableBodyNone">中文发布记录 · 英文 Release body    </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone">v0.21.0 如何发布与验收   </td><td class="markdownTableBodyNone">发布执行记录    </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone">v0.20.0 对使用者意味着什么   </td><td class="markdownTableBodyNone">正式发布记录    </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone">v0.20.0 如何发布   </td><td class="markdownTableBodyNone">发布执行记录    </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone">AI/人协作规范与工程技能   </td><td class="markdownTableBodyNone">CLAUDE.md · AGENTS.md · <code>.claude/skills/</code>   </td></tr>
+</table>
+<hr  />
+<h1><a class="anchor" id="autotoc_md15"></a>
+贡献 · 历史 · 许可</h1>
+<ul>
+<li>贡献：完整流程、门禁和提交格式见 CONTRIBUTING.md； 问题走 <a href="https://github.com/lusipad/plcopen/issues">Issues</a>，讨论走 <a href="https://github.com/lusipad/plcopen/discussions">Discussions</a>。</li>
+<li>治理与安全：决策/继任边界见 GOVERNANCE.md；敏感漏洞 不得公开披露，按 SECURITY.md 请求私密协调。</li>
+<li>历史：fork 自 <a href="https://github.com/i5cnc">i5cnc</a>（已停维护），保留运动 控制核心并按 PLCopen 标准重写；出处纪律见 PROVENANCE.md。</li>
+<li>许可：[Apache License 2.0](LICENSE)。致谢：IEC 61131-3、PLCopen 组织、 i5cnc 原始项目与工业自动化开源社区。 </li>
+</ul>
+</div></div><!-- PageDoc -->
+</div><!-- contents -->
+<!-- start footer part -->
+<hr class="footer"/><address class="footer"><small>
+制作者&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.8
+</small></address>
+</body>
+</html>

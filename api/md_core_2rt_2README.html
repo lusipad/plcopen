@@ -1,0 +1,100 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh">
+<head>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=11"/>
+<meta name="generator" content="Doxygen 1.9.8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>plcopen: L0 rt</title>
+<link href="tabs.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="jquery.js"></script>
+<script type="text/javascript" src="dynsections.js"></script>
+<link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<link href="doxygen.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+<div id="top"><!-- do not remove this div, it is closed by doxygen! -->
+<div id="titlearea">
+<table cellspacing="0" cellpadding="0">
+ <tbody>
+ <tr id="projectrow">
+  <td id="projectalign">
+   <div id="projectname">plcopen<span id="projectnumber">&#160;0.21.0</span>
+   </div>
+  </td>
+ </tr>
+ </tbody>
+</table>
+</div>
+<!-- end header part -->
+<!-- 制作者 Doxygen 1.9.8 -->
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+var searchBox = new SearchBox("searchBox", "search/",'.html');
+/* @license-end */
+</script>
+<script type="text/javascript" src="menudata.js"></script>
+<script type="text/javascript" src="menu.js"></script>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+$(function() {
+  initMenu('',true,false,'search.php','搜索');
+  $(document).ready(function() { init_search(); });
+});
+/* @license-end */
+</script>
+<div id="main-nav"></div>
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<div id="MSearchResults">
+<div class="SRPage">
+<div id="SRIndex">
+<div id="SRResults"></div>
+<div class="SRStatus" id="Loading">载入中...</div>
+<div class="SRStatus" id="Searching">搜索中...</div>
+<div class="SRStatus" id="NoMatches">未找到</div>
+</div>
+</div>
+</div>
+</div>
+
+</div><!-- top -->
+<div><div class="header">
+  <div class="headertitle"><div class="title">L0 rt</div></div>
+</div><!--header-->
+<div class="contents">
+<div class="textblock"><p><a class="anchor" id="autotoc_md32"></a> <code>core/rt</code> 是 L0-L7 阶梯的首层：全核实时基础设施（阶梯全貌与正典架构图见 <a class="el" href="md_core_2README.html">core/README.md</a>，审计事实见 架构综述）。</p>
+<p>Responsibilities:</p>
+<ul>
+<li>integer cycle ticks and durations;</li>
+<li>全核 RT 基础设施所需的定长容器（fixed-capacity containers）；<code>StaticVector</code> 急构造存储、<code>pop_back()/clear()</code> 只动 size 不析构元素，元素类型必须 trivially destructible + trivially copyable（编译期 <code>static_assert</code> 强制）;</li>
+<li>single-producer / single-consumer queues;</li>
+<li>small error-code based <code>Result</code> values;</li>
+<li>辅助头：<code><a class="el" href="error__text_8h.html">error_text.h</a></code>（错误码到文本，仅供非周期路径/加载域的诊断与日志 使用）与 <code><a class="el" href="units_8h.html">units.h</a></code>（<code>CycleConfig</code> 周期配置与单位换算，纯 constexpr 值计算， 周期域可用）。</li>
+</ul>
+<p>RT constraints:</p>
+<ul>
+<li>no heap allocation after construction;</li>
+<li>no blocking locks;</li>
+<li>no exceptions or RTTI;</li>
+<li>no OS calls or wall-clock reads;</li>
+<li>no floating-point time accumulation.</li>
+</ul>
+<p>依赖与消费者：L0 只依赖对所提供类型不分配的 C++17 标准库设施；L0 不得依赖 PLCopen FB 语义、旧 <code>src/</code> 或 adapters。作为阶梯首层（L0-L7 阶梯 + 支撑库 形态见架构综述），全核所有 上层均可向内依赖本层；直接消费者包括阶梯各层、支撑库 kin（依赖 geom/rt）与 stream（依赖 otg/rt），以及外圈的 st 语言层（消费 <code><a class="el" href="error_8h.html">rt/error.h</a></code>）与 L7 adapters。 </p>
+</div></div><!-- contents -->
+</div><!-- PageDoc -->
+<!-- start footer part -->
+<hr class="footer"/><address class="footer"><small>
+制作者&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.8
+</small></address>
+</body>
+</html>

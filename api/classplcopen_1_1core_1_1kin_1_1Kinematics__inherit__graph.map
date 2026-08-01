@@ -1,0 +1,7 @@
+<map id="plcopen::core::kin::Kinematics" name="plcopen::core::kin::Kinematics">
+<area shape="rect" id="Node000001" title=" " alt="" coords="85,5,223,45"/>
+<area shape="rect" id="Node000002" href="$classplcopen_1_1core_1_1kin_1_1CartesianGantry.html" title=" " alt="" coords="5,93,143,133"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="129,57,94,95,90,91,125,54"/>
+<area shape="rect" id="Node000003" href="$classplcopen_1_1core_1_1kin_1_1Scara.html" title=" " alt="" coords="167,93,304,133"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="183,54,219,91,215,95,180,57"/>
+</map>

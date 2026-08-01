@@ -1,0 +1,15 @@
+<map id="plcopen::core::st::TypeDesc" name="plcopen::core::st::TypeDesc">
+<area shape="rect" id="Node000001" title=" " alt="" coords="484,143,621,183"/>
+<area shape="rect" id="Node000002" href="$structplcopen_1_1core_1_1st_1_1SubrangeDesc.html" title=" " alt="" coords="232,15,369,55"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="369,57,461,100,525,140,522,145,459,105,366,62"/>
+<area shape="rect" id="Node000003" href="$structplcopen_1_1core_1_1st_1_1IntegerValue.html" title=" " alt="" coords="5,15,143,55"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="157,32,232,32,232,37,157,37"/>
+<area shape="rect" id="Node000004" href="$structplcopen_1_1core_1_1st_1_1ArrayDesc.html" title=" " alt="" coords="232,79,369,119"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="383,117,484,143,483,148,382,122"/>
+<area shape="rect" id="Node000005" href="$structplcopen_1_1core_1_1st_1_1StructDesc.html" title=" " alt="" coords="232,143,369,183"/>
+<area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="383,160,484,160,484,165,383,165"/>
+<area shape="rect" id="Node000006" href="$structplcopen_1_1core_1_1st_1_1StringDesc.html" title=" " alt="" coords="232,207,369,247"/>
+<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="382,203,483,177,484,183,383,209"/>
+<area shape="rect" id="Node000007" href="$structplcopen_1_1core_1_1st_1_1RefDesc.html" title=" " alt="" coords="232,271,369,311"/>
+<area shape="poly" id="edge6_Node000001_Node000007" title=" " alt="" coords="365,263,459,219,521,181,524,185,461,224,367,268"/>
+</map>

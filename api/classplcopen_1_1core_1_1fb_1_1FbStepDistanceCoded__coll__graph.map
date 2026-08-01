@@ -1,0 +1,7 @@
+<map id="plcopen::core::fb::FbStepDistanceCoded" name="plcopen::core::fb::FbStepDistanceCoded">
+<area shape="rect" id="Node000001" title=" " alt="" coords="77,108,243,148"/>
+<area shape="rect" id="Node000002" href="$classplcopen_1_1core_1_1axis_1_1AxisModel.html" title=" " alt="" coords="5,5,149,45"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="104,54,147,106,142,110,99,58"/>
+<area shape="rect" id="Node000003" href="$structplcopen_1_1core_1_1fb_1_1MotionOutputs.html" title=" " alt="" coords="173,5,312,45"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="221,58,178,110,173,106,216,54"/>
+</map>

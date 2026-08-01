@@ -1,0 +1,388 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh">
+<head>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=11"/>
+<meta name="generator" content="Doxygen 1.9.8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>plcopen: plcopen::core::rt::IpcDoubleBuffer&lt; T &gt; 模板类 参考</title>
+<link href="tabs.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="jquery.js"></script>
+<script type="text/javascript" src="dynsections.js"></script>
+<link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<link href="doxygen.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+<div id="top"><!-- do not remove this div, it is closed by doxygen! -->
+<div id="titlearea">
+<table cellspacing="0" cellpadding="0">
+ <tbody>
+ <tr id="projectrow">
+  <td id="projectalign">
+   <div id="projectname">plcopen<span id="projectnumber">&#160;0.21.0</span>
+   </div>
+  </td>
+ </tr>
+ </tbody>
+</table>
+</div>
+<!-- end header part -->
+<!-- 制作者 Doxygen 1.9.8 -->
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+var searchBox = new SearchBox("searchBox", "search/",'.html');
+/* @license-end */
+</script>
+<script type="text/javascript" src="menudata.js"></script>
+<script type="text/javascript" src="menu.js"></script>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+$(function() {
+  initMenu('',true,false,'search.php','搜索');
+  $(document).ready(function() { init_search(); });
+});
+/* @license-end */
+</script>
+<div id="main-nav"></div>
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<div id="MSearchResults">
+<div class="SRPage">
+<div id="SRIndex">
+<div id="SRResults"></div>
+<div class="SRStatus" id="Loading">载入中...</div>
+<div class="SRStatus" id="Searching">搜索中...</div>
+<div class="SRStatus" id="NoMatches">未找到</div>
+</div>
+</div>
+</div>
+</div>
+
+<div id="nav-path" class="navpath">
+  <ul>
+<li class="navelem"><a class="el" href="namespaceplcopen.html">plcopen</a></li><li class="navelem"><a class="el" href="namespaceplcopen_1_1core.html">core</a></li><li class="navelem"><a class="el" href="namespaceplcopen_1_1core_1_1rt.html">rt</a></li><li class="navelem"><a class="el" href="classplcopen_1_1core_1_1rt_1_1IpcDoubleBuffer.html">IpcDoubleBuffer</a></li>  </ul>
+</div>
+</div><!-- top -->
+<div class="header">
+  <div class="summary">
+<a href="#nested-classes">类</a> &#124;
+<a href="#pub-methods">Public 成员函数</a> &#124;
+<a href="classplcopen_1_1core_1_1rt_1_1IpcDoubleBuffer-members.html">所有成员列表</a>  </div>
+  <div class="headertitle"><div class="title">plcopen::core::rt::IpcDoubleBuffer&lt; T &gt; 模板类 参考</div></div>
+</div><!--header-->
+<div class="contents">
+
+<p><code>#include &lt;<a class="el" href="ipc__channel_8h_source.html">ipc_channel.h</a>&gt;</code></p>
+<table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
+Public 成员函数</h2></td></tr>
+<tr class="memitem:a95093a133a440f74d83c204e9cf6d211" id="r_a95093a133a440f74d83c204e9cf6d211"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1rt_1_1IpcDoubleBuffer.html#a95093a133a440f74d83c204e9cf6d211">initialize</a> ()</td></tr>
+<tr class="separator:a95093a133a440f74d83c204e9cf6d211"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9e558015b1d83d07aa70a16ff8d4d884" id="r_a9e558015b1d83d07aa70a16ff8d4d884"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1rt_1_1IpcDoubleBuffer.html#a9e558015b1d83d07aa70a16ff8d4d884">claim_writer</a> (std::uint64_t owner)</td></tr>
+<tr class="separator:a9e558015b1d83d07aa70a16ff8d4d884"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5ec0d54b6a6b44397c1b2fadaad1ae22" id="r_a5ec0d54b6a6b44397c1b2fadaad1ae22"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceplcopen_1_1core_1_1rt.html#a9679d9d63300435577a8e42419e932ee">IpcStatus</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1rt_1_1IpcDoubleBuffer.html#a5ec0d54b6a6b44397c1b2fadaad1ae22">publish</a> (std::uint64_t owner, const T &amp;value)</td></tr>
+<tr class="separator:a5ec0d54b6a6b44397c1b2fadaad1ae22"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a23f905cccb174da3942a20ce8880ab3a" id="r_a23f905cccb174da3942a20ce8880ab3a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceplcopen_1_1core_1_1rt.html#a9679d9d63300435577a8e42419e932ee">IpcStatus</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1rt_1_1IpcDoubleBuffer.html#a23f905cccb174da3942a20ce8880ab3a">begin_publish</a> (std::uint64_t owner, <a class="el" href="structplcopen_1_1core_1_1rt_1_1IpcWriteReservation.html">IpcWriteReservation</a> &amp;reservation)</td></tr>
+<tr class="separator:a23f905cccb174da3942a20ce8880ab3a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a34f011cd70de6b17f9eb12b90ca712c5" id="r_a34f011cd70de6b17f9eb12b90ca712c5"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceplcopen_1_1core_1_1rt.html#a9679d9d63300435577a8e42419e932ee">IpcStatus</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1rt_1_1IpcDoubleBuffer.html#a34f011cd70de6b17f9eb12b90ca712c5">write_pending</a> (std::uint64_t owner, const <a class="el" href="structplcopen_1_1core_1_1rt_1_1IpcWriteReservation.html">IpcWriteReservation</a> &amp;reservation, const T &amp;value)</td></tr>
+<tr class="separator:a34f011cd70de6b17f9eb12b90ca712c5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac37ebd80d39b5494faa9b400a9286548" id="r_ac37ebd80d39b5494faa9b400a9286548"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceplcopen_1_1core_1_1rt.html#a9679d9d63300435577a8e42419e932ee">IpcStatus</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1rt_1_1IpcDoubleBuffer.html#ac37ebd80d39b5494faa9b400a9286548">commit_publish</a> (std::uint64_t owner, <a class="el" href="structplcopen_1_1core_1_1rt_1_1IpcWriteReservation.html">IpcWriteReservation</a> &amp;reservation)</td></tr>
+<tr class="separator:ac37ebd80d39b5494faa9b400a9286548"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac89ccee4eff3c612bdd39086211dc280" id="r_ac89ccee4eff3c612bdd39086211dc280"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceplcopen_1_1core_1_1rt.html#a9679d9d63300435577a8e42419e932ee">IpcStatus</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1rt_1_1IpcDoubleBuffer.html#ac89ccee4eff3c612bdd39086211dc280">read</a> (T &amp;value, std::uint64_t &amp;sequence, std::size_t max_retries) const</td></tr>
+<tr class="separator:ac89ccee4eff3c612bdd39086211dc280"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table>
+<a name="details" id="details"></a><h2 class="groupheader">详细描述</h2>
+<div class="textblock"><div class="compoundTemplParams">template&lt;typename T&gt;<br />
+class plcopen::core::rt::IpcDoubleBuffer&lt; T &gt;</div>
+<p class="definition">在文件 <a class="el" href="ipc__channel_8h_source.html">ipc_channel.h</a> 第 <a class="el" href="ipc__channel_8h_source.html#l00167">167</a> 行定义.</p>
+</div><h2 class="groupheader">成员函数说明</h2>
+<a id="a23f905cccb174da3942a20ce8880ab3a" name="a23f905cccb174da3942a20ce8880ab3a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a23f905cccb174da3942a20ce8880ab3a">&#9670;&#160;</a></span>begin_publish()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="namespaceplcopen_1_1core_1_1rt.html#a9679d9d63300435577a8e42419e932ee">IpcStatus</a> <a class="el" href="classplcopen_1_1core_1_1rt_1_1IpcDoubleBuffer.html">plcopen::core::rt::IpcDoubleBuffer</a>&lt; T &gt;::begin_publish </td>
+          <td>(</td>
+          <td class="paramtype">std::uint64_t&#160;</td>
+          <td class="paramname"><em>owner</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="structplcopen_1_1core_1_1rt_1_1IpcWriteReservation.html">IpcWriteReservation</a> &amp;&#160;</td>
+          <td class="paramname"><em>reservation</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="ipc__channel_8h_source.html">ipc_channel.h</a> 第 <a class="el" href="ipc__channel_8h_source.html#l00204">204</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a9e558015b1d83d07aa70a16ff8d4d884" name="a9e558015b1d83d07aa70a16ff8d4d884"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9e558015b1d83d07aa70a16ff8d4d884">&#9670;&#160;</a></span>claim_writer()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool <a class="el" href="classplcopen_1_1core_1_1rt_1_1IpcDoubleBuffer.html">plcopen::core::rt::IpcDoubleBuffer</a>&lt; T &gt;::claim_writer </td>
+          <td>(</td>
+          <td class="paramtype">std::uint64_t&#160;</td>
+          <td class="paramname"><em>owner</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="ipc__channel_8h_source.html">ipc_channel.h</a> 第 <a class="el" href="ipc__channel_8h_source.html#l00183">183</a> 行定义.</p>
+
+</div>
+</div>
+<a id="ac37ebd80d39b5494faa9b400a9286548" name="ac37ebd80d39b5494faa9b400a9286548"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac37ebd80d39b5494faa9b400a9286548">&#9670;&#160;</a></span>commit_publish()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="namespaceplcopen_1_1core_1_1rt.html#a9679d9d63300435577a8e42419e932ee">IpcStatus</a> <a class="el" href="classplcopen_1_1core_1_1rt_1_1IpcDoubleBuffer.html">plcopen::core::rt::IpcDoubleBuffer</a>&lt; T &gt;::commit_publish </td>
+          <td>(</td>
+          <td class="paramtype">std::uint64_t&#160;</td>
+          <td class="paramname"><em>owner</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="structplcopen_1_1core_1_1rt_1_1IpcWriteReservation.html">IpcWriteReservation</a> &amp;&#160;</td>
+          <td class="paramname"><em>reservation</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="ipc__channel_8h_source.html">ipc_channel.h</a> 第 <a class="el" href="ipc__channel_8h_source.html#l00249">249</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a95093a133a440f74d83c204e9cf6d211" name="a95093a133a440f74d83c204e9cf6d211"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a95093a133a440f74d83c204e9cf6d211">&#9670;&#160;</a></span>initialize()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classplcopen_1_1core_1_1rt_1_1IpcDoubleBuffer.html">plcopen::core::rt::IpcDoubleBuffer</a>&lt; T &gt;::initialize </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="ipc__channel_8h_source.html">ipc_channel.h</a> 第 <a class="el" href="ipc__channel_8h_source.html#l00170">170</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a5ec0d54b6a6b44397c1b2fadaad1ae22" name="a5ec0d54b6a6b44397c1b2fadaad1ae22"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5ec0d54b6a6b44397c1b2fadaad1ae22">&#9670;&#160;</a></span>publish()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="namespaceplcopen_1_1core_1_1rt.html#a9679d9d63300435577a8e42419e932ee">IpcStatus</a> <a class="el" href="classplcopen_1_1core_1_1rt_1_1IpcDoubleBuffer.html">plcopen::core::rt::IpcDoubleBuffer</a>&lt; T &gt;::publish </td>
+          <td>(</td>
+          <td class="paramtype">std::uint64_t&#160;</td>
+          <td class="paramname"><em>owner</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const T &amp;&#160;</td>
+          <td class="paramname"><em>value</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="ipc__channel_8h_source.html">ipc_channel.h</a> 第 <a class="el" href="ipc__channel_8h_source.html#l00188">188</a> 行定义.</p>
+
+</div>
+</div>
+<a id="ac89ccee4eff3c612bdd39086211dc280" name="ac89ccee4eff3c612bdd39086211dc280"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac89ccee4eff3c612bdd39086211dc280">&#9670;&#160;</a></span>read()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="namespaceplcopen_1_1core_1_1rt.html#a9679d9d63300435577a8e42419e932ee">IpcStatus</a> <a class="el" href="classplcopen_1_1core_1_1rt_1_1IpcDoubleBuffer.html">plcopen::core::rt::IpcDoubleBuffer</a>&lt; T &gt;::read </td>
+          <td>(</td>
+          <td class="paramtype">T &amp;&#160;</td>
+          <td class="paramname"><em>value</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::uint64_t &amp;&#160;</td>
+          <td class="paramname"><em>sequence</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::size_t&#160;</td>
+          <td class="paramname"><em>max_retries</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="ipc__channel_8h_source.html">ipc_channel.h</a> 第 <a class="el" href="ipc__channel_8h_source.html#l00273">273</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a34f011cd70de6b17f9eb12b90ca712c5" name="a34f011cd70de6b17f9eb12b90ca712c5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a34f011cd70de6b17f9eb12b90ca712c5">&#9670;&#160;</a></span>write_pending()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="namespaceplcopen_1_1core_1_1rt.html#a9679d9d63300435577a8e42419e932ee">IpcStatus</a> <a class="el" href="classplcopen_1_1core_1_1rt_1_1IpcDoubleBuffer.html">plcopen::core::rt::IpcDoubleBuffer</a>&lt; T &gt;::write_pending </td>
+          <td>(</td>
+          <td class="paramtype">std::uint64_t&#160;</td>
+          <td class="paramname"><em>owner</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="structplcopen_1_1core_1_1rt_1_1IpcWriteReservation.html">IpcWriteReservation</a> &amp;&#160;</td>
+          <td class="paramname"><em>reservation</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const T &amp;&#160;</td>
+          <td class="paramname"><em>value</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="ipc__channel_8h_source.html">ipc_channel.h</a> 第 <a class="el" href="ipc__channel_8h_source.html#l00230">230</a> 行定义.</p>
+
+</div>
+</div>
+<hr/>该类的文档由以下文件生成:<ul>
+<li>core/rt/<a class="el" href="ipc__channel_8h_source.html">ipc_channel.h</a></li>
+</ul>
+</div><!-- contents -->
+<!-- start footer part -->
+<hr class="footer"/><address class="footer"><small>
+制作者&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.8
+</small></address>
+</body>
+</html>

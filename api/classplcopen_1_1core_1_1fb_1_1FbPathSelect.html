@@ -1,0 +1,249 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh">
+<head>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=11"/>
+<meta name="generator" content="Doxygen 1.9.8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>plcopen: plcopen::core::fb::FbPathSelect类 参考</title>
+<link href="tabs.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="jquery.js"></script>
+<script type="text/javascript" src="dynsections.js"></script>
+<link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<link href="doxygen.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+<div id="top"><!-- do not remove this div, it is closed by doxygen! -->
+<div id="titlearea">
+<table cellspacing="0" cellpadding="0">
+ <tbody>
+ <tr id="projectrow">
+  <td id="projectalign">
+   <div id="projectname">plcopen<span id="projectnumber">&#160;0.21.0</span>
+   </div>
+  </td>
+ </tr>
+ </tbody>
+</table>
+</div>
+<!-- end header part -->
+<!-- 制作者 Doxygen 1.9.8 -->
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+var searchBox = new SearchBox("searchBox", "search/",'.html');
+/* @license-end */
+</script>
+<script type="text/javascript" src="menudata.js"></script>
+<script type="text/javascript" src="menu.js"></script>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+$(function() {
+  initMenu('',true,false,'search.php','搜索');
+  $(document).ready(function() { init_search(); });
+});
+/* @license-end */
+</script>
+<div id="main-nav"></div>
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<div id="MSearchResults">
+<div class="SRPage">
+<div id="SRIndex">
+<div id="SRResults"></div>
+<div class="SRStatus" id="Loading">载入中...</div>
+<div class="SRStatus" id="Searching">搜索中...</div>
+<div class="SRStatus" id="NoMatches">未找到</div>
+</div>
+</div>
+</div>
+</div>
+
+<div id="nav-path" class="navpath">
+  <ul>
+<li class="navelem"><a class="el" href="namespaceplcopen.html">plcopen</a></li><li class="navelem"><a class="el" href="namespaceplcopen_1_1core.html">core</a></li><li class="navelem"><a class="el" href="namespaceplcopen_1_1core_1_1fb.html">fb</a></li><li class="navelem"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbPathSelect.html">FbPathSelect</a></li>  </ul>
+</div>
+</div><!-- top -->
+<div class="header">
+  <div class="summary">
+<a href="#pub-methods">Public 成员函数</a> &#124;
+<a href="#pub-attribs">Public 属性</a> &#124;
+<a href="classplcopen_1_1core_1_1fb_1_1FbPathSelect-members.html">所有成员列表</a>  </div>
+  <div class="headertitle"><div class="title">plcopen::core::fb::FbPathSelect类 参考</div></div>
+</div><!--header-->
+<div class="contents">
+
+<p><code>#include &lt;<a class="el" href="path__table_8h_source.html">path_table.h</a>&gt;</code></p>
+<div class="dynheader">
+plcopen::core::fb::FbPathSelect 的协作图:</div>
+<div class="dyncontent">
+<div class="center"><img src="classplcopen_1_1core_1_1fb_1_1FbPathSelect__coll__graph.png" border="0" usemap="#aplcopen_1_1core_1_1fb_1_1FbPathSelect_coll__map" alt="Collaboration graph"/></div>
+<map name="aplcopen_1_1core_1_1fb_1_1FbPathSelect_coll__map" id="aplcopen_1_1core_1_1fb_1_1FbPathSelect_coll__map">
+<area shape="rect" title=" " alt="" coords="933,107,1072,147"/>
+<area shape="rect" href="classplcopen_1_1core_1_1axis_1_1AxisGroup.html" title=" " alt="" coords="369,128,513,168"/>
+<area shape="poly" title=" " alt="" coords="527,142,772,133,933,127,933,132,772,139,527,148"/>
+<area shape="rect" href="structplcopen_1_1core_1_1axis_1_1GroupPosition.html" title=" " alt="" coords="17,64,161,104"/>
+<area shape="poly" title=" " alt="" coords="174,97,370,132,369,138,174,102"/>
+<area shape="rect" href="structplcopen_1_1core_1_1fb_1_1PathWaypoint.html" title=" " alt="" coords="372,51,511,91"/>
+<area shape="poly" title=" " alt="" coords="174,78,372,71,372,76,174,83"/>
+<area shape="rect" href="structplcopen_1_1core_1_1axis_1_1JogCommandOptions.html" title=" " alt="" coords="5,141,172,181"/>
+<area shape="poly" title=" " alt="" coords="186,161,345,157,369,155,370,161,345,163,186,166"/>
+<area shape="rect" href="structplcopen_1_1core_1_1fb_1_1PathTable.html" title=" " alt="" coords="633,69,772,109"/>
+<area shape="poly" title=" " alt="" coords="786,97,933,115,933,121,785,102"/>
+<area shape="poly" title=" " alt="" coords="525,74,633,82,633,87,524,79"/>
+<area shape="rect" href="structplcopen_1_1core_1_1fb_1_1PathDescription.html" title=" " alt="" coords="633,5,772,45"/>
+<area shape="poly" title=" " alt="" coords="524,54,633,35,634,40,525,59"/>
+<area shape="poly" title=" " alt="" coords="786,42,910,80,964,104,962,109,908,85,785,47"/>
+<area shape="rect" href="structplcopen_1_1core_1_1fb_1_1MotionOutputs.html" title=" " alt="" coords="633,196,772,236"/>
+<area shape="poly" title=" " alt="" coords="785,207,846,196,908,179,942,163,972,145,975,149,945,168,910,184,848,201,786,212"/>
+</map>
+<center><span class="legend">[<a href="graph_legend.html">图例</a>]</span></center></div>
+<table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
+Public 成员函数</h2></td></tr>
+<tr class="memitem:a395df56bd5fa2f7408f0c66b5c6dee52" id="r_a395df56bd5fa2f7408f0c66b5c6dee52"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbPathSelect.html#a395df56bd5fa2f7408f0c66b5c6dee52">call</a> ()</td></tr>
+<tr class="separator:a395df56bd5fa2f7408f0c66b5c6dee52"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
+Public 属性</h2></td></tr>
+<tr class="memitem:a136cca8d6e2b2d601b9992490b849abe" id="r_a136cca8d6e2b2d601b9992490b849abe"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classplcopen_1_1core_1_1axis_1_1AxisGroup.html">axis::AxisGroup</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbPathSelect.html#a136cca8d6e2b2d601b9992490b849abe">group_ref</a> = nullptr</td></tr>
+<tr class="separator:a136cca8d6e2b2d601b9992490b849abe"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acb507bd2f6566e0d0aa2475c2475a558" id="r_acb507bd2f6566e0d0aa2475c2475a558"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structplcopen_1_1core_1_1fb_1_1PathTable.html">PathTable</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbPathSelect.html#acb507bd2f6566e0d0aa2475c2475a558">path_data</a> = nullptr</td></tr>
+<tr class="separator:acb507bd2f6566e0d0aa2475c2475a558"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a66683cc41add6f898218be6a5c487cad" id="r_a66683cc41add6f898218be6a5c487cad"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="structplcopen_1_1core_1_1fb_1_1PathDescription.html">PathDescription</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbPathSelect.html#a66683cc41add6f898218be6a5c487cad">path_description</a> = nullptr</td></tr>
+<tr class="separator:a66683cc41add6f898218be6a5c487cad"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acd232dfd2369ff5283050d74d873d388" id="r_acd232dfd2369ff5283050d74d873d388"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbPathSelect.html#acd232dfd2369ff5283050d74d873d388">execute</a> = false</td></tr>
+<tr class="separator:acd232dfd2369ff5283050d74d873d388"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aeb0c5d54358005f416a8d9dde05c2744" id="r_aeb0c5d54358005f416a8d9dde05c2744"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structplcopen_1_1core_1_1fb_1_1MotionOutputs.html">MotionOutputs</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbPathSelect.html#aeb0c5d54358005f416a8d9dde05c2744">outputs</a> {}</td></tr>
+<tr class="separator:aeb0c5d54358005f416a8d9dde05c2744"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table>
+<a name="details" id="details"></a><h2 class="groupheader">详细描述</h2>
+<div class="textblock">
+<p class="definition">在文件 <a class="el" href="path__table_8h_source.html">path_table.h</a> 第 <a class="el" href="path__table_8h_source.html#l00087">87</a> 行定义.</p>
+</div><h2 class="groupheader">成员函数说明</h2>
+<a id="a395df56bd5fa2f7408f0c66b5c6dee52" name="a395df56bd5fa2f7408f0c66b5c6dee52"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a395df56bd5fa2f7408f0c66b5c6dee52">&#9670;&#160;</a></span>call()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void plcopen::core::fb::FbPathSelect::call </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="path__table_8h_source.html">path_table.h</a> 第 <a class="el" href="path__table_8h_source.html#l00096">96</a> 行定义.</p>
+
+</div>
+</div>
+<h2 class="groupheader">类成员变量说明</h2>
+<a id="acd232dfd2369ff5283050d74d873d388" name="acd232dfd2369ff5283050d74d873d388"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acd232dfd2369ff5283050d74d873d388">&#9670;&#160;</a></span>execute</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool plcopen::core::fb::FbPathSelect::execute = false</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="path__table_8h_source.html">path_table.h</a> 第 <a class="el" href="path__table_8h_source.html#l00093">93</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a136cca8d6e2b2d601b9992490b849abe" name="a136cca8d6e2b2d601b9992490b849abe"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a136cca8d6e2b2d601b9992490b849abe">&#9670;&#160;</a></span>group_ref</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classplcopen_1_1core_1_1axis_1_1AxisGroup.html">axis::AxisGroup</a>* plcopen::core::fb::FbPathSelect::group_ref = nullptr</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="path__table_8h_source.html">path_table.h</a> 第 <a class="el" href="path__table_8h_source.html#l00090">90</a> 行定义.</p>
+
+</div>
+</div>
+<a id="aeb0c5d54358005f416a8d9dde05c2744" name="aeb0c5d54358005f416a8d9dde05c2744"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aeb0c5d54358005f416a8d9dde05c2744">&#9670;&#160;</a></span>outputs</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="structplcopen_1_1core_1_1fb_1_1MotionOutputs.html">MotionOutputs</a> plcopen::core::fb::FbPathSelect::outputs {}</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="path__table_8h_source.html">path_table.h</a> 第 <a class="el" href="path__table_8h_source.html#l00094">94</a> 行定义.</p>
+
+</div>
+</div>
+<a id="acb507bd2f6566e0d0aa2475c2475a558" name="acb507bd2f6566e0d0aa2475c2475a558"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acb507bd2f6566e0d0aa2475c2475a558">&#9670;&#160;</a></span>path_data</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="structplcopen_1_1core_1_1fb_1_1PathTable.html">PathTable</a>* plcopen::core::fb::FbPathSelect::path_data = nullptr</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="path__table_8h_source.html">path_table.h</a> 第 <a class="el" href="path__table_8h_source.html#l00091">91</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a66683cc41add6f898218be6a5c487cad" name="a66683cc41add6f898218be6a5c487cad"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a66683cc41add6f898218be6a5c487cad">&#9670;&#160;</a></span>path_description</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">const <a class="el" href="structplcopen_1_1core_1_1fb_1_1PathDescription.html">PathDescription</a>* plcopen::core::fb::FbPathSelect::path_description = nullptr</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="path__table_8h_source.html">path_table.h</a> 第 <a class="el" href="path__table_8h_source.html#l00092">92</a> 行定义.</p>
+
+</div>
+</div>
+<hr/>该类的文档由以下文件生成:<ul>
+<li>core/fb/<a class="el" href="path__table_8h_source.html">path_table.h</a></li>
+</ul>
+</div><!-- contents -->
+<!-- start footer part -->
+<hr class="footer"/><address class="footer"><small>
+制作者&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.8
+</small></address>
+</body>
+</html>

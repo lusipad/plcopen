@@ -1,0 +1,267 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh">
+<head>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=11"/>
+<meta name="generator" content="Doxygen 1.9.8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>plcopen: core/st/bind.h 源文件</title>
+<link href="tabs.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="jquery.js"></script>
+<script type="text/javascript" src="dynsections.js"></script>
+<link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<link href="doxygen.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+<div id="top"><!-- do not remove this div, it is closed by doxygen! -->
+<div id="titlearea">
+<table cellspacing="0" cellpadding="0">
+ <tbody>
+ <tr id="projectrow">
+  <td id="projectalign">
+   <div id="projectname">plcopen<span id="projectnumber">&#160;0.21.0</span>
+   </div>
+  </td>
+ </tr>
+ </tbody>
+</table>
+</div>
+<!-- end header part -->
+<!-- 制作者 Doxygen 1.9.8 -->
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+var searchBox = new SearchBox("searchBox", "search/",'.html');
+/* @license-end */
+</script>
+<script type="text/javascript" src="menudata.js"></script>
+<script type="text/javascript" src="menu.js"></script>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+$(function() {
+  initMenu('',true,false,'search.php','搜索');
+  $(document).ready(function() { init_search(); });
+});
+/* @license-end */
+</script>
+<div id="main-nav"></div>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+$(document).ready(function() { init_codefold(0); });
+/* @license-end */
+</script>
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<div id="MSearchResults">
+<div class="SRPage">
+<div id="SRIndex">
+<div id="SRResults"></div>
+<div class="SRStatus" id="Loading">载入中...</div>
+<div class="SRStatus" id="Searching">搜索中...</div>
+<div class="SRStatus" id="NoMatches">未找到</div>
+</div>
+</div>
+</div>
+</div>
+
+<div id="nav-path" class="navpath">
+  <ul>
+<li class="navelem"><a class="el" href="dir_4270bfced15e0e73154b13468c7c9ad9.html">core</a></li><li class="navelem"><a class="el" href="dir_58fdb30801db36767d5a9420a346ac9a.html">st</a></li>  </ul>
+</div>
+</div><!-- top -->
+<div class="header">
+  <div class="headertitle"><div class="title">bind.h</div></div>
+</div><!--header-->
+<div class="contents">
+<a href="bind_8h.html">浏览该文件的文档.</a><div class="fragment"><div class="line"><a id="l00001" name="l00001"></a><span class="lineno">    1</span><span class="preprocessor">#pragma once</span></div>
+<div class="line"><a id="l00002" name="l00002"></a><span class="lineno">    2</span> </div>
+<div class="line"><a id="l00003" name="l00003"></a><span class="lineno">    3</span><span class="comment">// RT-SAFE: generated cycle-path FB dispatch for the ST VM. Native instances</span></div>
+<div class="line"><a id="l00004" name="l00004"></a><span class="lineno">    4</span><span class="comment">// are placement-constructed in caller-owned storage; every scalar/object</span></div>
+<div class="line"><a id="l00005" name="l00005"></a><span class="lineno">    5</span><span class="comment">// transfer is validated by the generated capability and type authorities.</span></div>
+<div class="line"><a id="l00006" name="l00006"></a><span class="lineno">    6</span> </div>
+<div class="line"><a id="l00007" name="l00007"></a><span class="lineno">    7</span><span class="preprocessor">#include &lt;cstdint&gt;</span></div>
+<div class="line"><a id="l00008" name="l00008"></a><span class="lineno">    8</span> </div>
+<div class="line"><a id="l00009" name="l00009"></a><span class="lineno">    9</span><span class="preprocessor">#include &quot;<a class="code" href="basic_8h.html">fb/basic.h</a>&quot;</span></div>
+<div class="line"><a id="l00010" name="l00010"></a><span class="lineno">   10</span><span class="preprocessor">#include &quot;<a class="code" href="pins_8h.html">st/pins.h</a>&quot;</span></div>
+<div class="line"><a id="l00011" name="l00011"></a><span class="lineno">   11</span> </div>
+<div class="line"><a id="l00012" name="l00012"></a><span class="lineno">   12</span><span class="keyword">namespace </span><a class="code hl_namespace" href="namespaceplcopen_1_1core_1_1st.html">plcopen::core::st</a></div>
+<div class="line"><a id="l00013" name="l00013"></a><span class="lineno">   13</span>{</div>
+<div class="line"><a id="l00014" name="l00014"></a><span class="lineno">   14</span> </div>
+<div class="foldopen" id="foldopen00015" data-start="{" data-end="}">
+<div class="line"><a id="l00015" name="l00015"></a><span class="lineno"><a class="line" href="namespaceplcopen_1_1core_1_1st.html#aa63ebdfc0a19a2753d1cabe64c399385">   15</a></span><span class="keyword">inline</span> <span class="keywordtype">void</span> <a class="code hl_function" href="namespaceplcopen_1_1core_1_1st.html#aa63ebdfc0a19a2753d1cabe64c399385">fb_init</a>(<a class="code hl_enumeration" href="namespaceplcopen_1_1core_1_1st_1_1generated.html#aa85345c11809e761c4cc7ac5a5b47d07">FbType</a> <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1st.html#a28fead38fbf9a5e744a017ec25734023a599dcce2998a6b40b1e38e8c6006cb0a">type</a>, <span class="keywordtype">unsigned</span> <span class="keywordtype">char</span> *storage,</div>
+<div class="line"><a id="l00016" name="l00016"></a><span class="lineno">   16</span>                    std::int64_t task_period_ns)</div>
+<div class="line"><a id="l00017" name="l00017"></a><span class="lineno">   17</span>{</div>
+<div class="line"><a id="l00018" name="l00018"></a><span class="lineno">   18</span>    <span class="keywordflow">if</span>(!<a class="code hl_function" href="namespaceplcopen_1_1core_1_1st_1_1generated.html#ad98567e5d9abba2b386e386173ca48d6">generated::st_binding_default_construct</a>(<a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1st.html#a28fead38fbf9a5e744a017ec25734023a599dcce2998a6b40b1e38e8c6006cb0a">type</a>, storage)) <span class="keywordflow">return</span>;</div>
+<div class="line"><a id="l00019" name="l00019"></a><span class="lineno">   19</span>    <span class="keywordflow">switch</span>(<a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1st.html#a28fead38fbf9a5e744a017ec25734023a599dcce2998a6b40b1e38e8c6006cb0a">type</a>) {</div>
+<div class="line"><a id="l00020" name="l00020"></a><span class="lineno">   20</span>    <span class="keywordflow">case</span> FbType::ton:</div>
+<div class="line"><a id="l00021" name="l00021"></a><span class="lineno">   21</span>        <span class="keyword">reinterpret_cast&lt;</span><a class="code hl_struct" href="structplcopen_1_1core_1_1fb_1_1TON.html">fb::TON</a> *<span class="keyword">&gt;</span>(storage)</div>
+<div class="line"><a id="l00022" name="l00022"></a><span class="lineno">   22</span>            -&gt;set_cycle_time(task_period_ns);</div>
+<div class="line"><a id="l00023" name="l00023"></a><span class="lineno">   23</span>        <span class="keywordflow">break</span>;</div>
+<div class="line"><a id="l00024" name="l00024"></a><span class="lineno">   24</span>    <span class="keywordflow">case</span> FbType::tof:</div>
+<div class="line"><a id="l00025" name="l00025"></a><span class="lineno">   25</span>        <span class="keyword">reinterpret_cast&lt;</span><a class="code hl_struct" href="structplcopen_1_1core_1_1fb_1_1TOF.html">fb::TOF</a> *<span class="keyword">&gt;</span>(storage)</div>
+<div class="line"><a id="l00026" name="l00026"></a><span class="lineno">   26</span>            -&gt;set_cycle_time(task_period_ns);</div>
+<div class="line"><a id="l00027" name="l00027"></a><span class="lineno">   27</span>        <span class="keywordflow">break</span>;</div>
+<div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span>    <span class="keywordflow">case</span> FbType::tp:</div>
+<div class="line"><a id="l00029" name="l00029"></a><span class="lineno">   29</span>        <span class="keyword">reinterpret_cast&lt;</span><a class="code hl_struct" href="structplcopen_1_1core_1_1fb_1_1TP.html">fb::TP</a> *<span class="keyword">&gt;</span>(storage)</div>
+<div class="line"><a id="l00030" name="l00030"></a><span class="lineno">   30</span>            -&gt;set_cycle_time(task_period_ns);</div>
+<div class="line"><a id="l00031" name="l00031"></a><span class="lineno">   31</span>        <span class="keywordflow">break</span>;</div>
+<div class="line"><a id="l00032" name="l00032"></a><span class="lineno">   32</span>    <span class="keywordflow">default</span>: <span class="keywordflow">break</span>;</div>
+<div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span>    }</div>
+<div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span>}</div>
+</div>
+<div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span> </div>
+<div class="foldopen" id="foldopen00036" data-start="{" data-end="}">
+<div class="line"><a id="l00036" name="l00036"></a><span class="lineno"><a class="line" href="namespaceplcopen_1_1core_1_1st.html#ad808ab31fd76b86cc5e064e9aa3e9dd2">   36</a></span><span class="keyword">inline</span> <span class="keywordtype">void</span> <a class="code hl_function" href="namespaceplcopen_1_1core_1_1st.html#ad808ab31fd76b86cc5e064e9aa3e9dd2">fb_destroy</a>(<a class="code hl_enumeration" href="namespaceplcopen_1_1core_1_1st_1_1generated.html#aa85345c11809e761c4cc7ac5a5b47d07">FbType</a> <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1st.html#a28fead38fbf9a5e744a017ec25734023a599dcce2998a6b40b1e38e8c6006cb0a">type</a>, <span class="keywordtype">unsigned</span> <span class="keywordtype">char</span> *storage) <span class="keyword">noexcept</span></div>
+<div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span>{</div>
+<div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span>    (void)<a class="code hl_function" href="namespaceplcopen_1_1core_1_1st_1_1generated.html#a3d0f0ac965dc4ed6f08c3796e69af7dd">generated::st_binding_destruct</a>(<a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1st.html#a28fead38fbf9a5e744a017ec25734023a599dcce2998a6b40b1e38e8c6006cb0a">type</a>, storage);</div>
+<div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span>}</div>
+</div>
+<div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span> </div>
+<div class="foldopen" id="foldopen00041" data-start="{" data-end="}">
+<div class="line"><a id="l00041" name="l00041"></a><span class="lineno"><a class="line" href="namespaceplcopen_1_1core_1_1st.html#a4ff52fed1f514de7af4841f1e10eb92f">   41</a></span><span class="keyword">inline</span> <span class="keywordtype">bool</span> <a class="code hl_function" href="namespaceplcopen_1_1core_1_1st.html#a4ff52fed1f514de7af4841f1e10eb92f">fb_store_scalar</a>(<a class="code hl_enumeration" href="namespaceplcopen_1_1core_1_1st_1_1generated.html#aa85345c11809e761c4cc7ac5a5b47d07">FbType</a> <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1st.html#a28fead38fbf9a5e744a017ec25734023a599dcce2998a6b40b1e38e8c6006cb0a">type</a>, <span class="keywordtype">unsigned</span> <span class="keywordtype">char</span> *storage,</div>
+<div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span>                            std::uint16_t pin, std::uint64_t bits) <span class="keyword">noexcept</span></div>
+<div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span>{</div>
+<div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span>    <span class="keywordflow">return</span> <a class="code hl_function" href="namespaceplcopen_1_1core_1_1st_1_1generated.html#a79779ec08dfd4cbfeda709cb4698e76e">generated::st_binding_store_scalar</a>(<a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1st.html#a28fead38fbf9a5e744a017ec25734023a599dcce2998a6b40b1e38e8c6006cb0a">type</a>, pin, storage, bits);</div>
+<div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span>}</div>
+</div>
+<div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span> </div>
+<div class="foldopen" id="foldopen00047" data-start="{" data-end="}">
+<div class="line"><a id="l00047" name="l00047"></a><span class="lineno"><a class="line" href="namespaceplcopen_1_1core_1_1st.html#af28812e31e361c9ba4e37db56902baee">   47</a></span><span class="keyword">inline</span> <span class="keywordtype">bool</span> <a class="code hl_function" href="namespaceplcopen_1_1core_1_1st.html#af28812e31e361c9ba4e37db56902baee">fb_load_scalar</a>(<a class="code hl_enumeration" href="namespaceplcopen_1_1core_1_1st_1_1generated.html#aa85345c11809e761c4cc7ac5a5b47d07">FbType</a> <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1st.html#a28fead38fbf9a5e744a017ec25734023a599dcce2998a6b40b1e38e8c6006cb0a">type</a>, <span class="keyword">const</span> <span class="keywordtype">unsigned</span> <span class="keywordtype">char</span> *storage,</div>
+<div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span>                           std::uint16_t pin, std::uint64_t &amp;bits) <span class="keyword">noexcept</span></div>
+<div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span>{</div>
+<div class="line"><a id="l00050" name="l00050"></a><span class="lineno">   50</span>    <span class="keywordflow">return</span> <a class="code hl_function" href="namespaceplcopen_1_1core_1_1st_1_1generated.html#a9313c50dcf325f599d15eb5d6e36bd58">generated::st_binding_load_scalar</a>(<a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1st.html#a28fead38fbf9a5e744a017ec25734023a599dcce2998a6b40b1e38e8c6006cb0a">type</a>, pin, storage, bits);</div>
+<div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span>}</div>
+</div>
+<div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span> </div>
+<div class="foldopen" id="foldopen00053" data-start="{" data-end="}">
+<div class="line"><a id="l00053" name="l00053"></a><span class="lineno"><a class="line" href="namespaceplcopen_1_1core_1_1st.html#a7aaa648e271c7fdf73a94260955e1a58">   53</a></span><span class="keyword">inline</span> <span class="keywordtype">bool</span> <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1st.html#a53523e3246445560d0b88f0479b571d1a92d0223feb42d87b808a520c459e40d0">fb_store_object</a>(<a class="code hl_enumeration" href="namespaceplcopen_1_1core_1_1st_1_1generated.html#aa85345c11809e761c4cc7ac5a5b47d07">FbType</a> <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1st.html#a28fead38fbf9a5e744a017ec25734023a599dcce2998a6b40b1e38e8c6006cb0a">type</a>, <span class="keywordtype">unsigned</span> <span class="keywordtype">char</span> *storage,</div>
+<div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span>                            std::uint8_t pin, <span class="keyword">const</span> <span class="keywordtype">unsigned</span> <span class="keywordtype">char</span> *bytes,</div>
+<div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span>                            <a class="code hl_typedef" href="namespaceplcopen_1_1core_1_1st.html#af07c71ef14c07e2c4c0110e091a36299">TypeId</a> <a class="code hl_function" href="namespaceplcopen_1_1core_1_1st.html#ae32c3c25b1dcc566e27fcb22dc2db4d9">type_id</a>, std::uint32_t size) <span class="keyword">noexcept</span></div>
+<div class="line"><a id="l00056" name="l00056"></a><span class="lineno">   56</span>{</div>
+<div class="line"><a id="l00057" name="l00057"></a><span class="lineno">   57</span>    <span class="keywordflow">return</span> <a class="code hl_function" href="namespaceplcopen_1_1core_1_1st_1_1generated.html#a9ab8d7fdcd562dcd61b839eddcbf1695">generated::st_binding_store_object</a>(<a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1st.html#a28fead38fbf9a5e744a017ec25734023a599dcce2998a6b40b1e38e8c6006cb0a">type</a>, pin, storage, bytes,</div>
+<div class="line"><a id="l00058" name="l00058"></a><span class="lineno">   58</span>                                               <a class="code hl_function" href="namespaceplcopen_1_1core_1_1st.html#ae32c3c25b1dcc566e27fcb22dc2db4d9">type_id</a>, size);</div>
+<div class="line"><a id="l00059" name="l00059"></a><span class="lineno">   59</span>}</div>
+</div>
+<div class="line"><a id="l00060" name="l00060"></a><span class="lineno">   60</span> </div>
+<div class="foldopen" id="foldopen00061" data-start="{" data-end="}">
+<div class="line"><a id="l00061" name="l00061"></a><span class="lineno"><a class="line" href="namespaceplcopen_1_1core_1_1st.html#a36fb8071e1623a20ace3836703e6e60d">   61</a></span><span class="keyword">inline</span> <span class="keywordtype">bool</span> <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1st.html#a53523e3246445560d0b88f0479b571d1ad6cac8962a7365a8d79dff1f1766e482">fb_load_object</a>(<a class="code hl_enumeration" href="namespaceplcopen_1_1core_1_1st_1_1generated.html#aa85345c11809e761c4cc7ac5a5b47d07">FbType</a> <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1st.html#a28fead38fbf9a5e744a017ec25734023a599dcce2998a6b40b1e38e8c6006cb0a">type</a>, <span class="keyword">const</span> <span class="keywordtype">unsigned</span> <span class="keywordtype">char</span> *storage,</div>
+<div class="line"><a id="l00062" name="l00062"></a><span class="lineno">   62</span>                           std::uint8_t pin, <span class="keywordtype">unsigned</span> <span class="keywordtype">char</span> *bytes,</div>
+<div class="line"><a id="l00063" name="l00063"></a><span class="lineno">   63</span>                           <a class="code hl_typedef" href="namespaceplcopen_1_1core_1_1st.html#af07c71ef14c07e2c4c0110e091a36299">TypeId</a> <a class="code hl_function" href="namespaceplcopen_1_1core_1_1st.html#ae32c3c25b1dcc566e27fcb22dc2db4d9">type_id</a>, std::uint32_t size) <span class="keyword">noexcept</span></div>
+<div class="line"><a id="l00064" name="l00064"></a><span class="lineno">   64</span>{</div>
+<div class="line"><a id="l00065" name="l00065"></a><span class="lineno">   65</span>    <span class="keywordflow">return</span> <a class="code hl_function" href="namespaceplcopen_1_1core_1_1st_1_1generated.html#af3b12134a0ef73161b4687133a91ccb5">generated::st_binding_load_object</a>(<a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1st.html#a28fead38fbf9a5e744a017ec25734023a599dcce2998a6b40b1e38e8c6006cb0a">type</a>, pin, storage, bytes,</div>
+<div class="line"><a id="l00066" name="l00066"></a><span class="lineno">   66</span>                                              <a class="code hl_function" href="namespaceplcopen_1_1core_1_1st.html#ae32c3c25b1dcc566e27fcb22dc2db4d9">type_id</a>, size);</div>
+<div class="line"><a id="l00067" name="l00067"></a><span class="lineno">   67</span>}</div>
+</div>
+<div class="line"><a id="l00068" name="l00068"></a><span class="lineno">   68</span> </div>
+<div class="foldopen" id="foldopen00069" data-start="{" data-end="}">
+<div class="line"><a id="l00069" name="l00069"></a><span class="lineno"><a class="line" href="namespaceplcopen_1_1core_1_1st.html#aa7249da8c730a8894b49937e00472def">   69</a></span><span class="keyword">inline</span> <span class="keywordtype">bool</span> <a class="code hl_function" href="namespaceplcopen_1_1core_1_1st.html#aa7249da8c730a8894b49937e00472def">fb_store_sequence</a>(</div>
+<div class="line"><a id="l00070" name="l00070"></a><span class="lineno">   70</span>    <a class="code hl_enumeration" href="namespaceplcopen_1_1core_1_1st_1_1generated.html#aa85345c11809e761c4cc7ac5a5b47d07">FbType</a> <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1st.html#a28fead38fbf9a5e744a017ec25734023a599dcce2998a6b40b1e38e8c6006cb0a">type</a>, <span class="keywordtype">unsigned</span> <span class="keywordtype">char</span> *storage, std::uint16_t pin,</div>
+<div class="line"><a id="l00071" name="l00071"></a><span class="lineno">   71</span>    <a class="code hl_struct" href="structplcopen_1_1core_1_1st_1_1generated_1_1StBindingNativeSequenceValue.html">generated::StBindingNativeSequenceValue</a> value) <span class="keyword">noexcept</span></div>
+<div class="line"><a id="l00072" name="l00072"></a><span class="lineno">   72</span>{</div>
+<div class="line"><a id="l00073" name="l00073"></a><span class="lineno">   73</span>    <span class="keywordflow">return</span> <a class="code hl_function" href="namespaceplcopen_1_1core_1_1st_1_1generated.html#a8ff9b72688ad8f702dd3dbd49f57295c">generated::st_binding_store_sequence</a>(<a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1st.html#a28fead38fbf9a5e744a017ec25734023a599dcce2998a6b40b1e38e8c6006cb0a">type</a>, pin, storage, value);</div>
+<div class="line"><a id="l00074" name="l00074"></a><span class="lineno">   74</span>}</div>
+</div>
+<div class="line"><a id="l00075" name="l00075"></a><span class="lineno">   75</span> </div>
+<div class="foldopen" id="foldopen00076" data-start="{" data-end="}">
+<div class="line"><a id="l00076" name="l00076"></a><span class="lineno"><a class="line" href="namespaceplcopen_1_1core_1_1st.html#af4d97dcf954dbdb4af8bd09ab60ba029">   76</a></span><span class="keyword">inline</span> <span class="keywordtype">bool</span> <a class="code hl_function" href="namespaceplcopen_1_1core_1_1st.html#af4d97dcf954dbdb4af8bd09ab60ba029">fb_load_sequence</a>(</div>
+<div class="line"><a id="l00077" name="l00077"></a><span class="lineno">   77</span>    <a class="code hl_enumeration" href="namespaceplcopen_1_1core_1_1st_1_1generated.html#aa85345c11809e761c4cc7ac5a5b47d07">FbType</a> <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1st.html#a28fead38fbf9a5e744a017ec25734023a599dcce2998a6b40b1e38e8c6006cb0a">type</a>, <span class="keyword">const</span> <span class="keywordtype">unsigned</span> <span class="keywordtype">char</span> *storage, std::uint16_t pin,</div>
+<div class="line"><a id="l00078" name="l00078"></a><span class="lineno">   78</span>    <a class="code hl_struct" href="structplcopen_1_1core_1_1st_1_1generated_1_1StBindingNativeSequenceValue.html">generated::StBindingNativeSequenceValue</a> &amp;value) <span class="keyword">noexcept</span></div>
+<div class="line"><a id="l00079" name="l00079"></a><span class="lineno">   79</span>{</div>
+<div class="line"><a id="l00080" name="l00080"></a><span class="lineno">   80</span>    <span class="keywordflow">return</span> <a class="code hl_function" href="namespaceplcopen_1_1core_1_1st_1_1generated.html#a13bf17fa2abe6c9923ef89965de27d45">generated::st_binding_load_sequence</a>(<a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1st.html#a28fead38fbf9a5e744a017ec25734023a599dcce2998a6b40b1e38e8c6006cb0a">type</a>, pin, storage, value);</div>
+<div class="line"><a id="l00081" name="l00081"></a><span class="lineno">   81</span>}</div>
+</div>
+<div class="line"><a id="l00082" name="l00082"></a><span class="lineno">   82</span> </div>
+<div class="foldopen" id="foldopen00083" data-start="{" data-end="}">
+<div class="line"><a id="l00083" name="l00083"></a><span class="lineno"><a class="line" href="namespaceplcopen_1_1core_1_1st.html#a382a3694deaec9ad944221fdae09ad4d">   83</a></span><span class="keyword">inline</span> <span class="keywordtype">bool</span> <a class="code hl_function" href="namespaceplcopen_1_1core_1_1st.html#a382a3694deaec9ad944221fdae09ad4d">fb_store_tagged_reference</a>(</div>
+<div class="line"><a id="l00084" name="l00084"></a><span class="lineno">   84</span>    <a class="code hl_enumeration" href="namespaceplcopen_1_1core_1_1st_1_1generated.html#aa85345c11809e761c4cc7ac5a5b47d07">FbType</a> <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1st.html#a28fead38fbf9a5e744a017ec25734023a599dcce2998a6b40b1e38e8c6006cb0a">type</a>, <span class="keywordtype">unsigned</span> <span class="keywordtype">char</span> *storage, std::uint16_t pin, <a class="code hl_typedef" href="namespaceplcopen_1_1core_1_1st.html#af07c71ef14c07e2c4c0110e091a36299">TypeId</a> <a class="code hl_function" href="namespaceplcopen_1_1core_1_1st.html#ae32c3c25b1dcc566e27fcb22dc2db4d9">type_id</a>,</div>
+<div class="line"><a id="l00085" name="l00085"></a><span class="lineno">   85</span>    <a class="code hl_struct" href="structplcopen_1_1core_1_1st_1_1generated_1_1StBindingNativeTaggedReferenceValue.html">generated::StBindingNativeTaggedReferenceValue</a> value) <span class="keyword">noexcept</span></div>
+<div class="line"><a id="l00086" name="l00086"></a><span class="lineno">   86</span>{</div>
+<div class="line"><a id="l00087" name="l00087"></a><span class="lineno">   87</span>    <span class="keywordflow">return</span> <a class="code hl_function" href="namespaceplcopen_1_1core_1_1st_1_1generated.html#a30c521ca8e0bee55a6587440618760a7">generated::st_binding_store_tagged_reference</a>(</div>
+<div class="line"><a id="l00088" name="l00088"></a><span class="lineno">   88</span>        <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1st.html#a28fead38fbf9a5e744a017ec25734023a599dcce2998a6b40b1e38e8c6006cb0a">type</a>, pin, storage, <a class="code hl_function" href="namespaceplcopen_1_1core_1_1st.html#ae32c3c25b1dcc566e27fcb22dc2db4d9">type_id</a>, value);</div>
+<div class="line"><a id="l00089" name="l00089"></a><span class="lineno">   89</span>}</div>
+</div>
+<div class="line"><a id="l00090" name="l00090"></a><span class="lineno">   90</span> </div>
+<div class="foldopen" id="foldopen00091" data-start="{" data-end="}">
+<div class="line"><a id="l00091" name="l00091"></a><span class="lineno"><a class="line" href="namespaceplcopen_1_1core_1_1st.html#acc7c18a2357eebd840be556003fde87f">   91</a></span><span class="keyword">inline</span> <span class="keywordtype">bool</span> <a class="code hl_function" href="namespaceplcopen_1_1core_1_1st.html#acc7c18a2357eebd840be556003fde87f">fb_load_tagged_reference</a>(</div>
+<div class="line"><a id="l00092" name="l00092"></a><span class="lineno">   92</span>    <a class="code hl_enumeration" href="namespaceplcopen_1_1core_1_1st_1_1generated.html#aa85345c11809e761c4cc7ac5a5b47d07">FbType</a> <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1st.html#a28fead38fbf9a5e744a017ec25734023a599dcce2998a6b40b1e38e8c6006cb0a">type</a>, <span class="keyword">const</span> <span class="keywordtype">unsigned</span> <span class="keywordtype">char</span> *storage, std::uint16_t pin,</div>
+<div class="line"><a id="l00093" name="l00093"></a><span class="lineno">   93</span>    <a class="code hl_typedef" href="namespaceplcopen_1_1core_1_1st.html#af07c71ef14c07e2c4c0110e091a36299">TypeId</a> <a class="code hl_function" href="namespaceplcopen_1_1core_1_1st.html#ae32c3c25b1dcc566e27fcb22dc2db4d9">type_id</a>,</div>
+<div class="line"><a id="l00094" name="l00094"></a><span class="lineno">   94</span>    <a class="code hl_struct" href="structplcopen_1_1core_1_1st_1_1generated_1_1StBindingNativeTaggedReferenceValue.html">generated::StBindingNativeTaggedReferenceValue</a> &amp;value) <span class="keyword">noexcept</span></div>
+<div class="line"><a id="l00095" name="l00095"></a><span class="lineno">   95</span>{</div>
+<div class="line"><a id="l00096" name="l00096"></a><span class="lineno">   96</span>    <span class="keywordflow">return</span> <a class="code hl_function" href="namespaceplcopen_1_1core_1_1st_1_1generated.html#af1f26b7c071d29b5a8a0d25b2dbe7217">generated::st_binding_load_tagged_reference</a>(</div>
+<div class="line"><a id="l00097" name="l00097"></a><span class="lineno">   97</span>        <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1st.html#a28fead38fbf9a5e744a017ec25734023a599dcce2998a6b40b1e38e8c6006cb0a">type</a>, pin, storage, <a class="code hl_function" href="namespaceplcopen_1_1core_1_1st.html#ae32c3c25b1dcc566e27fcb22dc2db4d9">type_id</a>, value);</div>
+<div class="line"><a id="l00098" name="l00098"></a><span class="lineno">   98</span>}</div>
+</div>
+<div class="line"><a id="l00099" name="l00099"></a><span class="lineno">   99</span> </div>
+<div class="foldopen" id="foldopen00100" data-start="{" data-end="}">
+<div class="line"><a id="l00100" name="l00100"></a><span class="lineno"><a class="line" href="namespaceplcopen_1_1core_1_1st.html#a44cf603aa5786ac5419ea1cb8bf40830">  100</a></span><span class="keyword">inline</span> <span class="keywordtype">void</span> <a class="code hl_function" href="namespaceplcopen_1_1core_1_1st.html#a44cf603aa5786ac5419ea1cb8bf40830">fb_cycle</a>(<a class="code hl_enumeration" href="namespaceplcopen_1_1core_1_1st_1_1generated.html#aa85345c11809e761c4cc7ac5a5b47d07">FbType</a> <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1st.html#a28fead38fbf9a5e744a017ec25734023a599dcce2998a6b40b1e38e8c6006cb0a">type</a>, <span class="keywordtype">unsigned</span> <span class="keywordtype">char</span> *storage,</div>
+<div class="line"><a id="l00101" name="l00101"></a><span class="lineno">  101</span>                     std::int64_t task_period_ns = 0)</div>
+<div class="line"><a id="l00102" name="l00102"></a><span class="lineno">  102</span>{</div>
+<div class="line"><a id="l00103" name="l00103"></a><span class="lineno">  103</span>    <span class="comment">// Timer periods are installed once in the load domain. The generated</span></div>
+<div class="line"><a id="l00104" name="l00104"></a><span class="lineno">  104</span>    <span class="comment">// standalone invoke helper accepts an explicit period, so VM scans keep</span></div>
+<div class="line"><a id="l00105" name="l00105"></a><span class="lineno">  105</span>    <span class="comment">// the timer&#39;s installed value through its direct cycle entry.</span></div>
+<div class="line"><a id="l00106" name="l00106"></a><span class="lineno">  106</span>    <span class="keywordflow">switch</span>(<a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1st.html#a28fead38fbf9a5e744a017ec25734023a599dcce2998a6b40b1e38e8c6006cb0a">type</a>) {</div>
+<div class="line"><a id="l00107" name="l00107"></a><span class="lineno">  107</span>    <span class="keywordflow">case</span> FbType::ton:</div>
+<div class="line"><a id="l00108" name="l00108"></a><span class="lineno">  108</span>        <span class="keyword">reinterpret_cast&lt;</span><a class="code hl_struct" href="structplcopen_1_1core_1_1fb_1_1TON.html">fb::TON</a> *<span class="keyword">&gt;</span>(storage)-&gt;cycle();</div>
+<div class="line"><a id="l00109" name="l00109"></a><span class="lineno">  109</span>        <span class="keywordflow">return</span>;</div>
+<div class="line"><a id="l00110" name="l00110"></a><span class="lineno">  110</span>    <span class="keywordflow">case</span> FbType::tof:</div>
+<div class="line"><a id="l00111" name="l00111"></a><span class="lineno">  111</span>        <span class="keyword">reinterpret_cast&lt;</span><a class="code hl_struct" href="structplcopen_1_1core_1_1fb_1_1TOF.html">fb::TOF</a> *<span class="keyword">&gt;</span>(storage)-&gt;cycle();</div>
+<div class="line"><a id="l00112" name="l00112"></a><span class="lineno">  112</span>        <span class="keywordflow">return</span>;</div>
+<div class="line"><a id="l00113" name="l00113"></a><span class="lineno">  113</span>    <span class="keywordflow">case</span> FbType::tp:</div>
+<div class="line"><a id="l00114" name="l00114"></a><span class="lineno">  114</span>        <span class="keyword">reinterpret_cast&lt;</span><a class="code hl_struct" href="structplcopen_1_1core_1_1fb_1_1TP.html">fb::TP</a> *<span class="keyword">&gt;</span>(storage)-&gt;cycle();</div>
+<div class="line"><a id="l00115" name="l00115"></a><span class="lineno">  115</span>        <span class="keywordflow">return</span>;</div>
+<div class="line"><a id="l00116" name="l00116"></a><span class="lineno">  116</span>    <span class="keywordflow">default</span>: <span class="keywordflow">break</span>;</div>
+<div class="line"><a id="l00117" name="l00117"></a><span class="lineno">  117</span>    }</div>
+<div class="line"><a id="l00118" name="l00118"></a><span class="lineno">  118</span>    (void)<a class="code hl_function" href="namespaceplcopen_1_1core_1_1st_1_1generated.html#a71dca87912425bf55796a534d2ac8ecd">generated::st_binding_invoke</a>(<a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1st.html#a28fead38fbf9a5e744a017ec25734023a599dcce2998a6b40b1e38e8c6006cb0a">type</a>, storage, task_period_ns);</div>
+<div class="line"><a id="l00119" name="l00119"></a><span class="lineno">  119</span>}</div>
+</div>
+<div class="line"><a id="l00120" name="l00120"></a><span class="lineno">  120</span> </div>
+<div class="line"><a id="l00121" name="l00121"></a><span class="lineno">  121</span>} <span class="comment">// namespace plcopen::core::st</span></div>
+<div class="ttc" id="abasic_8h_html"><div class="ttname"><a href="basic_8h.html">basic.h</a></div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1st_1_1generated_html_a13bf17fa2abe6c9923ef89965de27d45"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1st_1_1generated.html#a13bf17fa2abe6c9923ef89965de27d45">plcopen::core::st::generated::st_binding_load_sequence</a></div><div class="ttdeci">bool st_binding_load_sequence(StBindingFbType type, std::uint16_t pin, const void *storage, StBindingNativeSequenceValue &amp;value) noexcept</div><div class="ttdef"><b>Definition</b> <a href="st__binding__native_8h_source.html#l36504">st_binding_native.h:36504</a></div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1st_1_1generated_html_a30c521ca8e0bee55a6587440618760a7"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1st_1_1generated.html#a30c521ca8e0bee55a6587440618760a7">plcopen::core::st::generated::st_binding_store_tagged_reference</a></div><div class="ttdeci">bool st_binding_store_tagged_reference(StBindingFbType type, std::uint16_t pin, void *storage, TypeId type_id, StBindingNativeTaggedReferenceValue value) noexcept</div><div class="ttdef"><b>Definition</b> <a href="st__binding__native_8h_source.html#l36680">st_binding_native.h:36680</a></div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1st_1_1generated_html_a3d0f0ac965dc4ed6f08c3796e69af7dd"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1st_1_1generated.html#a3d0f0ac965dc4ed6f08c3796e69af7dd">plcopen::core::st::generated::st_binding_destruct</a></div><div class="ttdeci">bool st_binding_destruct(StBindingFbType type, void *storage) noexcept</div><div class="ttdef"><b>Definition</b> <a href="st__binding__native_8h_source.html#l01002">st_binding_native.h:1002</a></div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1st_1_1generated_html_a71dca87912425bf55796a534d2ac8ecd"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1st_1_1generated.html#a71dca87912425bf55796a534d2ac8ecd">plcopen::core::st::generated::st_binding_invoke</a></div><div class="ttdeci">bool st_binding_invoke(StBindingFbType type, void *storage, std::int64_t task_period=0)</div><div class="ttdef"><b>Definition</b> <a href="st__binding__native_8h_source.html#l01682">st_binding_native.h:1682</a></div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1st_1_1generated_html_a79779ec08dfd4cbfeda709cb4698e76e"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1st_1_1generated.html#a79779ec08dfd4cbfeda709cb4698e76e">plcopen::core::st::generated::st_binding_store_scalar</a></div><div class="ttdeci">bool st_binding_store_scalar(StBindingFbType type, std::uint16_t pin, void *storage, std::uint64_t bits) noexcept</div><div class="ttdef"><b>Definition</b> <a href="st__binding__native_8h_source.html#l21510">st_binding_native.h:21510</a></div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1st_1_1generated_html_a8ff9b72688ad8f702dd3dbd49f57295c"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1st_1_1generated.html#a8ff9b72688ad8f702dd3dbd49f57295c">plcopen::core::st::generated::st_binding_store_sequence</a></div><div class="ttdeci">bool st_binding_store_sequence(StBindingFbType type, std::uint16_t pin, void *storage, StBindingNativeSequenceValue value) noexcept</div><div class="ttdef"><b>Definition</b> <a href="st__binding__native_8h_source.html#l36319">st_binding_native.h:36319</a></div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1st_1_1generated_html_a9313c50dcf325f599d15eb5d6e36bd58"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1st_1_1generated.html#a9313c50dcf325f599d15eb5d6e36bd58">plcopen::core::st::generated::st_binding_load_scalar</a></div><div class="ttdeci">bool st_binding_load_scalar(StBindingFbType type, std::uint16_t pin, const void *storage, std::uint64_t &amp;bits) noexcept</div><div class="ttdef"><b>Definition</b> <a href="st__binding__native_8h_source.html#l27819">st_binding_native.h:27819</a></div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1st_1_1generated_html_a9ab8d7fdcd562dcd61b839eddcbf1695"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1st_1_1generated.html#a9ab8d7fdcd562dcd61b839eddcbf1695">plcopen::core::st::generated::st_binding_store_object</a></div><div class="ttdeci">bool st_binding_store_object(StBindingFbType type, std::uint16_t pin, void *storage, const unsigned char *bytes, TypeId type_id, std::uint32_t size) noexcept</div><div class="ttdef"><b>Definition</b> <a href="st__binding__native_8h_source.html#l35651">st_binding_native.h:35651</a></div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1st_1_1generated_html_aa85345c11809e761c4cc7ac5a5b47d07"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1st_1_1generated.html#aa85345c11809e761c4cc7ac5a5b47d07">plcopen::core::st::generated::StBindingFbType</a></div><div class="ttdeci">StBindingFbType</div><div class="ttdef"><b>Definition</b> <a href="st__binding__catalog_8h_source.html#l00055">st_binding_catalog.h:56</a></div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1st_1_1generated_html_ad98567e5d9abba2b386e386173ca48d6"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1st_1_1generated.html#ad98567e5d9abba2b386e386173ca48d6">plcopen::core::st::generated::st_binding_default_construct</a></div><div class="ttdeci">bool st_binding_default_construct(StBindingFbType type, void *storage)</div><div class="ttdef"><b>Definition</b> <a href="st__binding__native_8h_source.html#l00322">st_binding_native.h:322</a></div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1st_1_1generated_html_af1f26b7c071d29b5a8a0d25b2dbe7217"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1st_1_1generated.html#af1f26b7c071d29b5a8a0d25b2dbe7217">plcopen::core::st::generated::st_binding_load_tagged_reference</a></div><div class="ttdeci">bool st_binding_load_tagged_reference(StBindingFbType type, std::uint16_t pin, const void *storage, TypeId type_id, StBindingNativeTaggedReferenceValue &amp;value) noexcept</div><div class="ttdef"><b>Definition</b> <a href="st__binding__native_8h_source.html#l36721">st_binding_native.h:36721</a></div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1st_1_1generated_html_af3b12134a0ef73161b4687133a91ccb5"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1st_1_1generated.html#af3b12134a0ef73161b4687133a91ccb5">plcopen::core::st::generated::st_binding_load_object</a></div><div class="ttdeci">bool st_binding_load_object(StBindingFbType type, std::uint16_t pin, const void *storage, unsigned char *bytes, TypeId type_id, std::uint32_t size) noexcept</div><div class="ttdef"><b>Definition</b> <a href="st__binding__native_8h_source.html#l36109">st_binding_native.h:36109</a></div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1st_html"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1st.html">plcopen::core::st</a></div><div class="ttdef"><b>Definition</b> <a href="ast_8h_source.html#l00014">ast.h:15</a></div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1st_html_a28fead38fbf9a5e744a017ec25734023a599dcce2998a6b40b1e38e8c6006cb0a"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1st.html#a28fead38fbf9a5e744a017ec25734023a599dcce2998a6b40b1e38e8c6006cb0a">plcopen::core::st::LanguageSymbolKind::type</a></div><div class="ttdeci">@ type</div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1st_html_a382a3694deaec9ad944221fdae09ad4d"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1st.html#a382a3694deaec9ad944221fdae09ad4d">plcopen::core::st::fb_store_tagged_reference</a></div><div class="ttdeci">bool fb_store_tagged_reference(FbType type, unsigned char *storage, std::uint16_t pin, TypeId type_id, generated::StBindingNativeTaggedReferenceValue value) noexcept</div><div class="ttdef"><b>Definition</b> <a href="bind_8h_source.html#l00083">bind.h:83</a></div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1st_html_a44cf603aa5786ac5419ea1cb8bf40830"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1st.html#a44cf603aa5786ac5419ea1cb8bf40830">plcopen::core::st::fb_cycle</a></div><div class="ttdeci">void fb_cycle(FbType type, unsigned char *storage, std::int64_t task_period_ns=0)</div><div class="ttdef"><b>Definition</b> <a href="bind_8h_source.html#l00100">bind.h:100</a></div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1st_html_a4ff52fed1f514de7af4841f1e10eb92f"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1st.html#a4ff52fed1f514de7af4841f1e10eb92f">plcopen::core::st::fb_store_scalar</a></div><div class="ttdeci">bool fb_store_scalar(FbType type, unsigned char *storage, std::uint16_t pin, std::uint64_t bits) noexcept</div><div class="ttdef"><b>Definition</b> <a href="bind_8h_source.html#l00041">bind.h:41</a></div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1st_html_a53523e3246445560d0b88f0479b571d1a92d0223feb42d87b808a520c459e40d0"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1st.html#a53523e3246445560d0b88f0479b571d1a92d0223feb42d87b808a520c459e40d0">plcopen::core::st::Op::fb_store_object</a></div><div class="ttdeci">@ fb_store_object</div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1st_html_a53523e3246445560d0b88f0479b571d1ad6cac8962a7365a8d79dff1f1766e482"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1st.html#a53523e3246445560d0b88f0479b571d1ad6cac8962a7365a8d79dff1f1766e482">plcopen::core::st::Op::fb_load_object</a></div><div class="ttdeci">@ fb_load_object</div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1st_html_aa63ebdfc0a19a2753d1cabe64c399385"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1st.html#aa63ebdfc0a19a2753d1cabe64c399385">plcopen::core::st::fb_init</a></div><div class="ttdeci">void fb_init(FbType type, unsigned char *storage, std::int64_t task_period_ns)</div><div class="ttdef"><b>Definition</b> <a href="bind_8h_source.html#l00015">bind.h:15</a></div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1st_html_aa7249da8c730a8894b49937e00472def"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1st.html#aa7249da8c730a8894b49937e00472def">plcopen::core::st::fb_store_sequence</a></div><div class="ttdeci">bool fb_store_sequence(FbType type, unsigned char *storage, std::uint16_t pin, generated::StBindingNativeSequenceValue value) noexcept</div><div class="ttdef"><b>Definition</b> <a href="bind_8h_source.html#l00069">bind.h:69</a></div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1st_html_acc7c18a2357eebd840be556003fde87f"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1st.html#acc7c18a2357eebd840be556003fde87f">plcopen::core::st::fb_load_tagged_reference</a></div><div class="ttdeci">bool fb_load_tagged_reference(FbType type, const unsigned char *storage, std::uint16_t pin, TypeId type_id, generated::StBindingNativeTaggedReferenceValue &amp;value) noexcept</div><div class="ttdef"><b>Definition</b> <a href="bind_8h_source.html#l00091">bind.h:91</a></div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1st_html_ad808ab31fd76b86cc5e064e9aa3e9dd2"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1st.html#ad808ab31fd76b86cc5e064e9aa3e9dd2">plcopen::core::st::fb_destroy</a></div><div class="ttdeci">void fb_destroy(FbType type, unsigned char *storage) noexcept</div><div class="ttdef"><b>Definition</b> <a href="bind_8h_source.html#l00036">bind.h:36</a></div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1st_html_ae32c3c25b1dcc566e27fcb22dc2db4d9"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1st.html#ae32c3c25b1dcc566e27fcb22dc2db4d9">plcopen::core::st::type_id</a></div><div class="ttdeci">constexpr TypeId type_id(Type type)</div><div class="ttdef"><b>Definition</b> <a href="types_8h_source.html#l00052">types.h:52</a></div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1st_html_af07c71ef14c07e2c4c0110e091a36299"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1st.html#af07c71ef14c07e2c4c0110e091a36299">plcopen::core::st::TypeId</a></div><div class="ttdeci">std::uint32_t TypeId</div><div class="ttdef"><b>Definition</b> <a href="type__desc_8h_source.html#l00017">type_desc.h:17</a></div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1st_html_af28812e31e361c9ba4e37db56902baee"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1st.html#af28812e31e361c9ba4e37db56902baee">plcopen::core::st::fb_load_scalar</a></div><div class="ttdeci">bool fb_load_scalar(FbType type, const unsigned char *storage, std::uint16_t pin, std::uint64_t &amp;bits) noexcept</div><div class="ttdef"><b>Definition</b> <a href="bind_8h_source.html#l00047">bind.h:47</a></div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1st_html_af4d97dcf954dbdb4af8bd09ab60ba029"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1st.html#af4d97dcf954dbdb4af8bd09ab60ba029">plcopen::core::st::fb_load_sequence</a></div><div class="ttdeci">bool fb_load_sequence(FbType type, const unsigned char *storage, std::uint16_t pin, generated::StBindingNativeSequenceValue &amp;value) noexcept</div><div class="ttdef"><b>Definition</b> <a href="bind_8h_source.html#l00076">bind.h:76</a></div></div>
+<div class="ttc" id="apins_8h_html"><div class="ttname"><a href="pins_8h.html">pins.h</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1fb_1_1TOF_html"><div class="ttname"><a href="structplcopen_1_1core_1_1fb_1_1TOF.html">plcopen::core::fb::TOF</a></div><div class="ttdef"><b>Definition</b> <a href="basic_8h_source.html#l00101">basic.h:102</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1fb_1_1TON_html"><div class="ttname"><a href="structplcopen_1_1core_1_1fb_1_1TON.html">plcopen::core::fb::TON</a></div><div class="ttdef"><b>Definition</b> <a href="basic_8h_source.html#l00075">basic.h:76</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1fb_1_1TP_html"><div class="ttname"><a href="structplcopen_1_1core_1_1fb_1_1TP.html">plcopen::core::fb::TP</a></div><div class="ttdef"><b>Definition</b> <a href="basic_8h_source.html#l00127">basic.h:128</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1st_1_1generated_1_1StBindingNativeSequenceValue_html"><div class="ttname"><a href="structplcopen_1_1core_1_1st_1_1generated_1_1StBindingNativeSequenceValue.html">plcopen::core::st::generated::StBindingNativeSequenceValue</a></div><div class="ttdef"><b>Definition</b> <a href="st__binding__native_8h_source.html#l02604">st_binding_native.h:2605</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1st_1_1generated_1_1StBindingNativeTaggedReferenceValue_html"><div class="ttname"><a href="structplcopen_1_1core_1_1st_1_1generated_1_1StBindingNativeTaggedReferenceValue.html">plcopen::core::st::generated::StBindingNativeTaggedReferenceValue</a></div><div class="ttdef"><b>Definition</b> <a href="st__binding__native_8h_source.html#l02618">st_binding_native.h:2619</a></div></div>
+</div><!-- fragment --></div><!-- contents -->
+<!-- start footer part -->
+<hr class="footer"/><address class="footer"><small>
+制作者&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.8
+</small></address>
+</body>
+</html>

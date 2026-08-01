@@ -1,0 +1,337 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh">
+<head>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=11"/>
+<meta name="generator" content="Doxygen 1.9.8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>plcopen: plcopen::core::kin::Kinematics类 参考</title>
+<link href="tabs.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="jquery.js"></script>
+<script type="text/javascript" src="dynsections.js"></script>
+<link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<link href="doxygen.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+<div id="top"><!-- do not remove this div, it is closed by doxygen! -->
+<div id="titlearea">
+<table cellspacing="0" cellpadding="0">
+ <tbody>
+ <tr id="projectrow">
+  <td id="projectalign">
+   <div id="projectname">plcopen<span id="projectnumber">&#160;0.21.0</span>
+   </div>
+  </td>
+ </tr>
+ </tbody>
+</table>
+</div>
+<!-- end header part -->
+<!-- 制作者 Doxygen 1.9.8 -->
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+var searchBox = new SearchBox("searchBox", "search/",'.html');
+/* @license-end */
+</script>
+<script type="text/javascript" src="menudata.js"></script>
+<script type="text/javascript" src="menu.js"></script>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+$(function() {
+  initMenu('',true,false,'search.php','搜索');
+  $(document).ready(function() { init_search(); });
+});
+/* @license-end */
+</script>
+<div id="main-nav"></div>
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<div id="MSearchResults">
+<div class="SRPage">
+<div id="SRIndex">
+<div id="SRResults"></div>
+<div class="SRStatus" id="Loading">载入中...</div>
+<div class="SRStatus" id="Searching">搜索中...</div>
+<div class="SRStatus" id="NoMatches">未找到</div>
+</div>
+</div>
+</div>
+</div>
+
+<div id="nav-path" class="navpath">
+  <ul>
+<li class="navelem"><a class="el" href="namespaceplcopen.html">plcopen</a></li><li class="navelem"><a class="el" href="namespaceplcopen_1_1core.html">core</a></li><li class="navelem"><a class="el" href="namespaceplcopen_1_1core_1_1kin.html">kin</a></li><li class="navelem"><a class="el" href="classplcopen_1_1core_1_1kin_1_1Kinematics.html">Kinematics</a></li>  </ul>
+</div>
+</div><!-- top -->
+<div class="header">
+  <div class="summary">
+<a href="#pub-methods">Public 成员函数</a> &#124;
+<a href="classplcopen_1_1core_1_1kin_1_1Kinematics-members.html">所有成员列表</a>  </div>
+  <div class="headertitle"><div class="title">plcopen::core::kin::Kinematics类 参考<span class="mlabels"><span class="mlabel">abstract</span></span></div></div>
+</div><!--header-->
+<div class="contents">
+
+<p><code>#include &lt;<a class="el" href="kinematics_8h_source.html">kinematics.h</a>&gt;</code></p>
+<div class="dynheader">
+类 plcopen::core::kin::Kinematics 继承关系图:</div>
+<div class="dyncontent">
+<div class="center"><img src="classplcopen_1_1core_1_1kin_1_1Kinematics__inherit__graph.png" border="0" usemap="#aplcopen_1_1core_1_1kin_1_1Kinematics_inherit__map" alt="Inheritance graph"/></div>
+<map name="aplcopen_1_1core_1_1kin_1_1Kinematics_inherit__map" id="aplcopen_1_1core_1_1kin_1_1Kinematics_inherit__map">
+<area shape="rect" title=" " alt="" coords="85,5,223,45"/>
+<area shape="rect" href="classplcopen_1_1core_1_1kin_1_1CartesianGantry.html" title=" " alt="" coords="5,93,143,133"/>
+<area shape="poly" title=" " alt="" coords="129,57,94,95,90,91,125,54"/>
+<area shape="rect" href="classplcopen_1_1core_1_1kin_1_1Scara.html" title=" " alt="" coords="167,93,304,133"/>
+<area shape="poly" title=" " alt="" coords="183,54,219,91,215,95,180,57"/>
+</map>
+<center><span class="legend">[<a href="graph_legend.html">图例</a>]</span></center></div>
+<table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
+Public 成员函数</h2></td></tr>
+<tr class="memitem:a717e7203d3fb9d4db71c59f11b272a06" id="r_a717e7203d3fb9d4db71c59f11b272a06"><td class="memItemLeft" align="right" valign="top">virtual&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1kin_1_1Kinematics.html#a717e7203d3fb9d4db71c59f11b272a06">~Kinematics</a> ()=default</td></tr>
+<tr class="separator:a717e7203d3fb9d4db71c59f11b272a06"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af05aa7fa9bf10e9fb6ae791892ec7972" id="r_af05aa7fa9bf10e9fb6ae791892ec7972"><td class="memItemLeft" align="right" valign="top">virtual std::size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1kin_1_1Kinematics.html#af05aa7fa9bf10e9fb6ae791892ec7972">joint_count</a> () const =0</td></tr>
+<tr class="separator:af05aa7fa9bf10e9fb6ae791892ec7972"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a222f47333a3dc820ce36c26727b9c151" id="r_a222f47333a3dc820ce36c26727b9c151"><td class="memItemLeft" align="right" valign="top">virtual std::size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1kin_1_1Kinematics.html#a222f47333a3dc820ce36c26727b9c151">cartesian_count</a> () const =0</td></tr>
+<tr class="separator:a222f47333a3dc820ce36c26727b9c151"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af8ce83959d5b6e8fc7cadfeaaa9836ff" id="r_af8ce83959d5b6e8fc7cadfeaaa9836ff"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8">rt::ErrorCode</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1kin_1_1Kinematics.html#af8ce83959d5b6e8fc7cadfeaaa9836ff">forward</a> (const double *joints, std::size_t <a class="el" href="classplcopen_1_1core_1_1kin_1_1Kinematics.html#af05aa7fa9bf10e9fb6ae791892ec7972">joint_count</a>, <a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">geom::Vec3</a> &amp;cartesian) const =0</td></tr>
+<tr class="separator:af8ce83959d5b6e8fc7cadfeaaa9836ff"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1437f9b7912d2338e93f0b2afa741c11" id="r_a1437f9b7912d2338e93f0b2afa741c11"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8">rt::ErrorCode</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1kin_1_1Kinematics.html#a1437f9b7912d2338e93f0b2afa741c11">inverse</a> (<a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">geom::Vec3</a> cartesian, const double *seed_joints, std::size_t <a class="el" href="classplcopen_1_1core_1_1kin_1_1Kinematics.html#af05aa7fa9bf10e9fb6ae791892ec7972">joint_count</a>, double *joints_out) const =0</td></tr>
+<tr class="separator:a1437f9b7912d2338e93f0b2afa741c11"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a69d0e02d7958e7697ac683ea262cd713" id="r_a69d0e02d7958e7697ac683ea262cd713"><td class="memItemLeft" align="right" valign="top">virtual double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1kin_1_1Kinematics.html#a69d0e02d7958e7697ac683ea262cd713">singularity_margin</a> (const double *joints, std::size_t <a class="el" href="classplcopen_1_1core_1_1kin_1_1Kinematics.html#af05aa7fa9bf10e9fb6ae791892ec7972">joint_count</a>) const =0</td></tr>
+<tr class="separator:a69d0e02d7958e7697ac683ea262cd713"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table>
+<a name="details" id="details"></a><h2 class="groupheader">详细描述</h2>
+<div class="textblock">
+<p class="definition">在文件 <a class="el" href="kinematics_8h_source.html">kinematics.h</a> 第 <a class="el" href="kinematics_8h_source.html#l00024">24</a> 行定义.</p>
+</div><h2 class="groupheader">构造及析构函数说明</h2>
+<a id="a717e7203d3fb9d4db71c59f11b272a06" name="a717e7203d3fb9d4db71c59f11b272a06"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a717e7203d3fb9d4db71c59f11b272a06">&#9670;&#160;</a></span>~Kinematics()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual plcopen::core::kin::Kinematics::~Kinematics </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">virtual</span><span class="mlabel">default</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<h2 class="groupheader">成员函数说明</h2>
+<a id="a222f47333a3dc820ce36c26727b9c151" name="a222f47333a3dc820ce36c26727b9c151"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a222f47333a3dc820ce36c26727b9c151">&#9670;&#160;</a></span>cartesian_count()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual std::size_t plcopen::core::kin::Kinematics::cartesian_count </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>在 <a class="el" href="classplcopen_1_1core_1_1kin_1_1CartesianGantry.html#a2e608acfc8bd57d0a9d0d29aadd7bb57">plcopen::core::kin::CartesianGantry</a> , 以及 <a class="el" href="classplcopen_1_1core_1_1kin_1_1Scara.html#a9ead762dc759b2b2fe25dc96eee54701">plcopen::core::kin::Scara</a> 内被实现.</p>
+
+</div>
+</div>
+<a id="af8ce83959d5b6e8fc7cadfeaaa9836ff" name="af8ce83959d5b6e8fc7cadfeaaa9836ff"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af8ce83959d5b6e8fc7cadfeaaa9836ff">&#9670;&#160;</a></span>forward()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual <a class="el" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8">rt::ErrorCode</a> plcopen::core::kin::Kinematics::forward </td>
+          <td>(</td>
+          <td class="paramtype">const double *&#160;</td>
+          <td class="paramname"><em>joints</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::size_t&#160;</td>
+          <td class="paramname"><em>joint_count</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">geom::Vec3</a> &amp;&#160;</td>
+          <td class="paramname"><em>cartesian</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>在 <a class="el" href="classplcopen_1_1core_1_1kin_1_1CartesianGantry.html#a196ed221e03be043d7304c3ca4ab936c">plcopen::core::kin::CartesianGantry</a> , 以及 <a class="el" href="classplcopen_1_1core_1_1kin_1_1Scara.html#a1af6f70598e0a67425e864e4a55f9240">plcopen::core::kin::Scara</a> 内被实现.</p>
+
+</div>
+</div>
+<a id="a1437f9b7912d2338e93f0b2afa741c11" name="a1437f9b7912d2338e93f0b2afa741c11"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1437f9b7912d2338e93f0b2afa741c11">&#9670;&#160;</a></span>inverse()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual <a class="el" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8">rt::ErrorCode</a> plcopen::core::kin::Kinematics::inverse </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">geom::Vec3</a>&#160;</td>
+          <td class="paramname"><em>cartesian</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const double *&#160;</td>
+          <td class="paramname"><em>seed_joints</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::size_t&#160;</td>
+          <td class="paramname"><em>joint_count</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">double *&#160;</td>
+          <td class="paramname"><em>joints_out</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>在 <a class="el" href="classplcopen_1_1core_1_1kin_1_1CartesianGantry.html#a0e3c6ced7b47cc73855a22a9cd2cbfab">plcopen::core::kin::CartesianGantry</a> , 以及 <a class="el" href="classplcopen_1_1core_1_1kin_1_1Scara.html#a1154f13edccc8633a93aaaf9abc6c68d">plcopen::core::kin::Scara</a> 内被实现.</p>
+
+</div>
+</div>
+<a id="af05aa7fa9bf10e9fb6ae791892ec7972" name="af05aa7fa9bf10e9fb6ae791892ec7972"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af05aa7fa9bf10e9fb6ae791892ec7972">&#9670;&#160;</a></span>joint_count()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual std::size_t plcopen::core::kin::Kinematics::joint_count </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>在 <a class="el" href="classplcopen_1_1core_1_1kin_1_1CartesianGantry.html#ac1a36155b0614307236d25cdf5f1b171">plcopen::core::kin::CartesianGantry</a> , 以及 <a class="el" href="classplcopen_1_1core_1_1kin_1_1Scara.html#a768d8321305af77c5993fccfe1d04402">plcopen::core::kin::Scara</a> 内被实现.</p>
+
+</div>
+</div>
+<a id="a69d0e02d7958e7697ac683ea262cd713" name="a69d0e02d7958e7697ac683ea262cd713"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a69d0e02d7958e7697ac683ea262cd713">&#9670;&#160;</a></span>singularity_margin()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual double plcopen::core::kin::Kinematics::singularity_margin </td>
+          <td>(</td>
+          <td class="paramtype">const double *&#160;</td>
+          <td class="paramname"><em>joints</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::size_t&#160;</td>
+          <td class="paramname"><em>joint_count</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>在 <a class="el" href="classplcopen_1_1core_1_1kin_1_1CartesianGantry.html#ade3b23504eeba9da8c2f5a08c3a2ed46">plcopen::core::kin::CartesianGantry</a> , 以及 <a class="el" href="classplcopen_1_1core_1_1kin_1_1Scara.html#a3260f9f2dfdff74fbcab88e1af306723">plcopen::core::kin::Scara</a> 内被实现.</p>
+
+</div>
+</div>
+<hr/>该类的文档由以下文件生成:<ul>
+<li>core/kin/<a class="el" href="kinematics_8h_source.html">kinematics.h</a></li>
+</ul>
+</div><!-- contents -->
+<!-- start footer part -->
+<hr class="footer"/><address class="footer"><small>
+制作者&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.8
+</small></address>
+</body>
+</html>

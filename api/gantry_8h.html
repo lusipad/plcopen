@@ -1,0 +1,140 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh">
+<head>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=11"/>
+<meta name="generator" content="Doxygen 1.9.8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>plcopen: core/kin/gantry.h 文件参考</title>
+<link href="tabs.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="jquery.js"></script>
+<script type="text/javascript" src="dynsections.js"></script>
+<link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<link href="doxygen.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+<div id="top"><!-- do not remove this div, it is closed by doxygen! -->
+<div id="titlearea">
+<table cellspacing="0" cellpadding="0">
+ <tbody>
+ <tr id="projectrow">
+  <td id="projectalign">
+   <div id="projectname">plcopen<span id="projectnumber">&#160;0.21.0</span>
+   </div>
+  </td>
+ </tr>
+ </tbody>
+</table>
+</div>
+<!-- end header part -->
+<!-- 制作者 Doxygen 1.9.8 -->
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+var searchBox = new SearchBox("searchBox", "search/",'.html');
+/* @license-end */
+</script>
+<script type="text/javascript" src="menudata.js"></script>
+<script type="text/javascript" src="menu.js"></script>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+$(function() {
+  initMenu('',true,false,'search.php','搜索');
+  $(document).ready(function() { init_search(); });
+});
+/* @license-end */
+</script>
+<div id="main-nav"></div>
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<div id="MSearchResults">
+<div class="SRPage">
+<div id="SRIndex">
+<div id="SRResults"></div>
+<div class="SRStatus" id="Loading">载入中...</div>
+<div class="SRStatus" id="Searching">搜索中...</div>
+<div class="SRStatus" id="NoMatches">未找到</div>
+</div>
+</div>
+</div>
+</div>
+
+<div id="nav-path" class="navpath">
+  <ul>
+<li class="navelem"><a class="el" href="dir_4270bfced15e0e73154b13468c7c9ad9.html">core</a></li><li class="navelem"><a class="el" href="dir_b4427dcb03b3017093e6d5e0336f7606.html">kin</a></li>  </ul>
+</div>
+</div><!-- top -->
+<div class="header">
+  <div class="summary">
+<a href="#nested-classes">类</a> &#124;
+<a href="#namespaces">命名空间</a>  </div>
+  <div class="headertitle"><div class="title">gantry.h 文件参考</div></div>
+</div><!--header-->
+<div class="contents">
+<div class="textblock"><code>#include &lt;cmath&gt;</code><br />
+<code>#include &lt;cstddef&gt;</code><br />
+<code>#include &quot;<a class="el" href="kinematics_8h_source.html">kin/kinematics.h</a>&quot;</code><br />
+</div><div class="textblock"><div class="dynheader">
+gantry.h 的引用(Include)关系图:</div>
+<div class="dyncontent">
+<div class="center"><img src="gantry_8h__incl.png" border="0" usemap="#acore_2kin_2gantry_8h" alt=""/></div>
+<map name="acore_2kin_2gantry_8h" id="acore_2kin_2gantry_8h">
+<area shape="rect" title=" " alt="" coords="5,5,136,31"/>
+<area shape="rect" title=" " alt="" coords="39,225,102,251"/>
+<area shape="poly" title=" " alt="" coords="73,31,73,211,68,211,68,31"/>
+<area shape="rect" title=" " alt="" coords="105,299,175,324"/>
+<area shape="poly" title=" " alt="" coords="66,32,44,71,22,127,15,158,13,190,17,221,29,249,41,265,57,277,93,295,90,300,54,282,38,269,24,252,12,222,8,190,10,158,17,126,40,69,61,30"/>
+<area shape="rect" href="kinematics_8h.html" title=" " alt="" coords="168,79,299,104"/>
+<area shape="poly" title=" " alt="" coords="98,28,195,71,193,75,96,33"/>
+<area shape="poly" title=" " alt="" coords="225,106,208,127,192,153,164,224,148,286,142,285,159,222,187,151,204,124,221,102"/>
+<area shape="rect" href="geometry_8h.html" title=" " alt="" coords="201,152,337,177"/>
+<area shape="poly" title=" " alt="" coords="242,103,260,138,255,141,237,106"/>
+<area shape="rect" href="error_8h.html" title=" " alt="" coords="397,299,475,324"/>
+<area shape="poly" title=" " alt="" coords="299,99,359,112,423,136,455,153,485,172,511,196,533,224,538,235,538,246,526,266,505,282,481,296,478,291,502,278,522,262,532,245,532,236,528,227,507,200,481,177,452,157,421,141,357,118,298,104"/>
+<area shape="poly" title=" " alt="" coords="238,180,116,223,115,218,237,175"/>
+<area shape="poly" title=" " alt="" coords="261,179,218,227,161,290,157,287,214,224,257,176"/>
+<area shape="rect" title=" " alt="" coords="433,225,519,251"/>
+<area shape="poly" title=" " alt="" coords="303,175,430,218,429,223,302,180"/>
+<area shape="poly" title=" " alt="" coords="296,175,334,195,372,223,402,255,424,286,420,289,397,258,369,227,331,200,294,180"/>
+<area shape="rect" href="static__vector_8h.html" title=" " alt="" coords="228,225,359,251"/>
+<area shape="poly" title=" " alt="" coords="276,177,288,211,283,213,271,179"/>
+<area shape="poly" title=" " alt="" coords="270,253,178,295,176,290,268,248"/>
+<area shape="poly" title=" " alt="" coords="317,248,402,290,399,295,315,253"/>
+<area shape="rect" title=" " alt="" coords="316,299,372,324"/>
+<area shape="poly" title=" " alt="" coords="304,249,330,286,326,289,300,253"/>
+<area shape="rect" title=" " alt="" coords="199,299,291,324"/>
+<area shape="poly" title=" " alt="" coords="288,253,263,289,258,286,283,250"/>
+</map>
+</div>
+</div>
+<p><a href="gantry_8h_source.html">浏览源代码.</a></p>
+<table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="nested-classes" name="nested-classes"></a>
+类</h2></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1kin_1_1CartesianGantry.html">plcopen::core::kin::CartesianGantry</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="namespaces" name="namespaces"></a>
+命名空间</h2></td></tr>
+<tr class="memitem:namespaceplcopen" id="r_namespaceplcopen"><td class="memItemLeft" align="right" valign="top">namespace &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen.html">plcopen</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:namespaceplcopen_1_1core" id="r_namespaceplcopen_1_1core"><td class="memItemLeft" align="right" valign="top">namespace &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core.html">plcopen::core</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:namespaceplcopen_1_1core_1_1kin" id="r_namespaceplcopen_1_1core_1_1kin"><td class="memItemLeft" align="right" valign="top">namespace &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1kin.html">plcopen::core::kin</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table>
+</div><!-- contents -->
+<!-- start footer part -->
+<hr class="footer"/><address class="footer"><small>
+制作者&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.8
+</small></address>
+</body>
+</html>

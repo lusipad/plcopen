@@ -1,0 +1,156 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh">
+<head>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=11"/>
+<meta name="generator" content="Doxygen 1.9.8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>plcopen: core/exec/sampler.h 文件参考</title>
+<link href="tabs.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="jquery.js"></script>
+<script type="text/javascript" src="dynsections.js"></script>
+<link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<link href="doxygen.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+<div id="top"><!-- do not remove this div, it is closed by doxygen! -->
+<div id="titlearea">
+<table cellspacing="0" cellpadding="0">
+ <tbody>
+ <tr id="projectrow">
+  <td id="projectalign">
+   <div id="projectname">plcopen<span id="projectnumber">&#160;0.21.0</span>
+   </div>
+  </td>
+ </tr>
+ </tbody>
+</table>
+</div>
+<!-- end header part -->
+<!-- 制作者 Doxygen 1.9.8 -->
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+var searchBox = new SearchBox("searchBox", "search/",'.html');
+/* @license-end */
+</script>
+<script type="text/javascript" src="menudata.js"></script>
+<script type="text/javascript" src="menu.js"></script>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+$(function() {
+  initMenu('',true,false,'search.php','搜索');
+  $(document).ready(function() { init_search(); });
+});
+/* @license-end */
+</script>
+<div id="main-nav"></div>
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<div id="MSearchResults">
+<div class="SRPage">
+<div id="SRIndex">
+<div id="SRResults"></div>
+<div class="SRStatus" id="Loading">载入中...</div>
+<div class="SRStatus" id="Searching">搜索中...</div>
+<div class="SRStatus" id="NoMatches">未找到</div>
+</div>
+</div>
+</div>
+</div>
+
+<div id="nav-path" class="navpath">
+  <ul>
+<li class="navelem"><a class="el" href="dir_4270bfced15e0e73154b13468c7c9ad9.html">core</a></li><li class="navelem"><a class="el" href="dir_461b7bcf38a1fe08b26982c5e7d586f1.html">exec</a></li>  </ul>
+</div>
+</div><!-- top -->
+<div class="header">
+  <div class="summary">
+<a href="#nested-classes">类</a> &#124;
+<a href="#namespaces">命名空间</a> &#124;
+<a href="#func-members">函数</a>  </div>
+  <div class="headertitle"><div class="title">sampler.h 文件参考</div></div>
+</div><!--header-->
+<div class="contents">
+<div class="textblock"><code>#include &lt;cstddef&gt;</code><br />
+<code>#include &quot;<a class="el" href="geometry_8h_source.html">geom/geometry.h</a>&quot;</code><br />
+<code>#include &quot;<a class="el" href="profile1d_8h_source.html">otg/profile1d.h</a>&quot;</code><br />
+<code>#include &quot;<a class="el" href="error_8h_source.html">rt/error.h</a>&quot;</code><br />
+<code>#include &quot;<a class="el" href="static__vector_8h_source.html">rt/static_vector.h</a>&quot;</code><br />
+</div><div class="textblock"><div class="dynheader">
+sampler.h 的引用(Include)关系图:</div>
+<div class="dyncontent">
+<div class="center"><img src="sampler_8h__incl.png" border="0" usemap="#acore_2exec_2sampler_8h" alt=""/></div>
+<map name="acore_2exec_2sampler_8h" id="acore_2exec_2sampler_8h">
+<area shape="rect" title=" " alt="" coords="220,5,372,31"/>
+<area shape="rect" title=" " alt="" coords="70,225,140,251"/>
+<area shape="poly" title=" " alt="" coords="223,33,168,48,110,72,55,107,32,128,13,153,9,163,9,172,19,189,38,204,62,217,60,222,35,209,15,192,4,173,3,162,8,151,28,125,52,102,107,67,166,43,222,28"/>
+<area shape="rect" href="geometry_8h.html" title=" " alt="" coords="228,79,364,104"/>
+<area shape="poly" title=" " alt="" coords="298,31,298,65,293,65,293,31"/>
+<area shape="rect" href="error_8h.html" title=" " alt="" coords="362,225,440,251"/>
+<area shape="poly" title=" " alt="" coords="321,29,351,48,378,77,393,111,401,148,405,211,400,212,396,149,388,113,373,80,348,52,319,33"/>
+<area shape="rect" href="static__vector_8h.html" title=" " alt="" coords="182,152,313,177"/>
+<area shape="poly" title=" " alt="" coords="271,33,241,52,228,65,218,80,214,95,216,110,231,140,227,142,211,112,209,94,213,78,224,61,238,48,268,28"/>
+<area shape="rect" href="profile1d_8h.html" title=" " alt="" coords="460,79,576,104"/>
+<area shape="poly" title=" " alt="" coords="332,28,470,72,469,77,331,33"/>
+<area shape="poly" title=" " alt="" coords="262,107,217,126,172,154,143,184,121,215,116,212,139,180,169,150,214,121,260,102"/>
+<area shape="rect" title=" " alt="" coords="22,152,108,177"/>
+<area shape="poly" title=" " alt="" coords="259,107,116,151,114,145,258,101"/>
+<area shape="rect" title=" " alt="" coords="439,152,502,177"/>
+<area shape="poly" title=" " alt="" coords="325,102,430,144,428,149,323,106"/>
+<area shape="poly" title=" " alt="" coords="306,103,387,213,382,216,302,106"/>
+<area shape="poly" title=" " alt="" coords="290,106,265,142,261,139,285,103"/>
+<area shape="poly" title=" " alt="" coords="226,180,142,221,139,217,224,175"/>
+<area shape="poly" title=" " alt="" coords="273,175,365,217,362,222,271,180"/>
+<area shape="rect" title=" " alt="" coords="281,225,337,251"/>
+<area shape="poly" title=" " alt="" coords="260,176,292,213,288,217,256,179"/>
+<area shape="rect" title=" " alt="" coords="164,225,256,251"/>
+<area shape="poly" title=" " alt="" coords="244,179,225,215,220,212,239,176"/>
+<area shape="poly" title=" " alt="" coords="513,106,488,142,483,139,508,103"/>
+<area shape="poly" title=" " alt="" coords="524,104,526,139,523,160,515,179,488,206,454,224,452,219,485,202,511,176,518,158,521,139,518,104"/>
+<area shape="poly" title=" " alt="" coords="475,107,305,151,304,146,474,101"/>
+<area shape="rect" title=" " alt="" coords="596,225,662,251"/>
+<area shape="poly" title=" " alt="" coords="529,103,614,213,610,216,525,106"/>
+<area shape="rect" href="cycle_8h.html" title=" " alt="" coords="628,152,710,177"/>
+<area shape="poly" title=" " alt="" coords="544,102,633,144,631,148,541,106"/>
+<area shape="poly" title=" " alt="" coords="665,179,644,215,640,212,660,176"/>
+</map>
+</div>
+</div>
+<p><a href="sampler_8h_source.html">浏览源代码.</a></p>
+<table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="nested-classes" name="nested-classes"></a>
+类</h2></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1exec_1_1CommittedPath.html">plcopen::core::exec::CommittedPath&lt; Capacity &gt;</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="namespaces" name="namespaces"></a>
+命名空间</h2></td></tr>
+<tr class="memitem:namespaceplcopen" id="r_namespaceplcopen"><td class="memItemLeft" align="right" valign="top">namespace &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen.html">plcopen</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:namespaceplcopen_1_1core" id="r_namespaceplcopen_1_1core"><td class="memItemLeft" align="right" valign="top">namespace &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core.html">plcopen::core</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:namespaceplcopen_1_1core_1_1exec" id="r_namespaceplcopen_1_1core_1_1exec"><td class="memItemLeft" align="right" valign="top">namespace &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1exec.html">plcopen::core::exec</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
+函数</h2></td></tr>
+<tr class="memitem:a0472cbb65c82aba95f5980f46dd8a0fe" id="r_a0472cbb65c82aba95f5980f46dd8a0fe"><td class="memTemplParams" colspan="2">template&lt;std::size_t Capacity&gt; </td></tr>
+<tr class="memitem:a0472cbb65c82aba95f5980f46dd8a0fe"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">geom::Vec3</a>&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1exec.html#a0472cbb65c82aba95f5980f46dd8a0fe">plcopen::core::exec::sample_profiled_path</a> (const <a class="el" href="classplcopen_1_1core_1_1exec_1_1CommittedPath.html">CommittedPath</a>&lt; Capacity &gt; &amp;path, const <a class="el" href="classplcopen_1_1core_1_1otg_1_1Profile1D.html">otg::Profile1D</a> &amp;profile, <a class="el" href="classplcopen_1_1core_1_1rt_1_1CycleTick.html">rt::CycleTick</a> tick)</td></tr>
+<tr class="separator:a0472cbb65c82aba95f5980f46dd8a0fe"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table>
+</div><!-- contents -->
+<!-- start footer part -->
+<hr class="footer"/><address class="footer"><small>
+制作者&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.8
+</small></address>
+</body>
+</html>

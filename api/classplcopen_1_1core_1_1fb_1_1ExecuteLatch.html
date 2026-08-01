@@ -1,0 +1,260 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh">
+<head>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=11"/>
+<meta name="generator" content="Doxygen 1.9.8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>plcopen: plcopen::core::fb::ExecuteLatch类 参考</title>
+<link href="tabs.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="jquery.js"></script>
+<script type="text/javascript" src="dynsections.js"></script>
+<link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<link href="doxygen.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+<div id="top"><!-- do not remove this div, it is closed by doxygen! -->
+<div id="titlearea">
+<table cellspacing="0" cellpadding="0">
+ <tbody>
+ <tr id="projectrow">
+  <td id="projectalign">
+   <div id="projectname">plcopen<span id="projectnumber">&#160;0.21.0</span>
+   </div>
+  </td>
+ </tr>
+ </tbody>
+</table>
+</div>
+<!-- end header part -->
+<!-- 制作者 Doxygen 1.9.8 -->
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+var searchBox = new SearchBox("searchBox", "search/",'.html');
+/* @license-end */
+</script>
+<script type="text/javascript" src="menudata.js"></script>
+<script type="text/javascript" src="menu.js"></script>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+$(function() {
+  initMenu('',true,false,'search.php','搜索');
+  $(document).ready(function() { init_search(); });
+});
+/* @license-end */
+</script>
+<div id="main-nav"></div>
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<div id="MSearchResults">
+<div class="SRPage">
+<div id="SRIndex">
+<div id="SRResults"></div>
+<div class="SRStatus" id="Loading">载入中...</div>
+<div class="SRStatus" id="Searching">搜索中...</div>
+<div class="SRStatus" id="NoMatches">未找到</div>
+</div>
+</div>
+</div>
+</div>
+
+<div id="nav-path" class="navpath">
+  <ul>
+<li class="navelem"><a class="el" href="namespaceplcopen.html">plcopen</a></li><li class="navelem"><a class="el" href="namespaceplcopen_1_1core.html">core</a></li><li class="navelem"><a class="el" href="namespaceplcopen_1_1core_1_1fb.html">fb</a></li><li class="navelem"><a class="el" href="classplcopen_1_1core_1_1fb_1_1ExecuteLatch.html">ExecuteLatch</a></li>  </ul>
+</div>
+</div><!-- top -->
+<div class="header">
+  <div class="summary">
+<a href="#pub-methods">Public 成员函数</a> &#124;
+<a href="#pub-attribs">Public 属性</a> &#124;
+<a href="classplcopen_1_1core_1_1fb_1_1ExecuteLatch-members.html">所有成员列表</a>  </div>
+  <div class="headertitle"><div class="title">plcopen::core::fb::ExecuteLatch类 参考</div></div>
+</div><!--header-->
+<div class="contents">
+
+<p><code>#include &lt;<a class="el" href="base_8h_source.html">base.h</a>&gt;</code></p>
+<table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
+Public 成员函数</h2></td></tr>
+<tr class="memitem:a5c106d4ce4f96d9a95b1f10266e55c77" id="r_a5c106d4ce4f96d9a95b1f10266e55c77"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1ExecuteLatch.html#a5c106d4ce4f96d9a95b1f10266e55c77">cycle</a> (bool execute, <a class="el" href="namespaceplcopen_1_1core_1_1fb.html#a9987504ab741614c7f341e5827889070">ExecuteStep</a> step, <a class="el" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8">rt::ErrorCode</a> step_error=<a class="el" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8a444bcb3a3fcf8389296c49467f27e1d6">rt::ErrorCode::ok</a>)</td></tr>
+<tr class="separator:a5c106d4ce4f96d9a95b1f10266e55c77"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
+Public 属性</h2></td></tr>
+<tr class="memitem:a901c96e08e433b7775f3cc056651527f" id="r_a901c96e08e433b7775f3cc056651527f"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1ExecuteLatch.html#a901c96e08e433b7775f3cc056651527f">done</a> = false</td></tr>
+<tr class="separator:a901c96e08e433b7775f3cc056651527f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac2ebe3251f8ba19478dee2dedd879f3b" id="r_ac2ebe3251f8ba19478dee2dedd879f3b"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1ExecuteLatch.html#ac2ebe3251f8ba19478dee2dedd879f3b">busy</a> = false</td></tr>
+<tr class="separator:ac2ebe3251f8ba19478dee2dedd879f3b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a05f7d35b5343a53dc1c7e7cd9eac3321" id="r_a05f7d35b5343a53dc1c7e7cd9eac3321"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1ExecuteLatch.html#a05f7d35b5343a53dc1c7e7cd9eac3321">active</a> = false</td></tr>
+<tr class="separator:a05f7d35b5343a53dc1c7e7cd9eac3321"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a305c5e7d42f076a871bb0c66ea4a8f63" id="r_a305c5e7d42f076a871bb0c66ea4a8f63"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1ExecuteLatch.html#a305c5e7d42f076a871bb0c66ea4a8f63">command_aborted</a> = false</td></tr>
+<tr class="separator:a305c5e7d42f076a871bb0c66ea4a8f63"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a774439641bd7ded233a6c47079cfa577" id="r_a774439641bd7ded233a6c47079cfa577"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1ExecuteLatch.html#a774439641bd7ded233a6c47079cfa577">error</a> = false</td></tr>
+<tr class="separator:a774439641bd7ded233a6c47079cfa577"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a18696fa6038d5481f51ada7fe0a55f38" id="r_a18696fa6038d5481f51ada7fe0a55f38"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8">rt::ErrorCode</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1ExecuteLatch.html#a18696fa6038d5481f51ada7fe0a55f38">error_id</a> = <a class="el" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8a444bcb3a3fcf8389296c49467f27e1d6">rt::ErrorCode::ok</a></td></tr>
+<tr class="separator:a18696fa6038d5481f51ada7fe0a55f38"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table>
+<a name="details" id="details"></a><h2 class="groupheader">详细描述</h2>
+<div class="textblock">
+<p class="definition">在文件 <a class="el" href="base_8h_source.html">base.h</a> 第 <a class="el" href="base_8h_source.html#l00016">16</a> 行定义.</p>
+</div><h2 class="groupheader">成员函数说明</h2>
+<a id="a5c106d4ce4f96d9a95b1f10266e55c77" name="a5c106d4ce4f96d9a95b1f10266e55c77"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5c106d4ce4f96d9a95b1f10266e55c77">&#9670;&#160;</a></span>cycle()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void plcopen::core::fb::ExecuteLatch::cycle </td>
+          <td>(</td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>execute</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceplcopen_1_1core_1_1fb.html#a9987504ab741614c7f341e5827889070">ExecuteStep</a>&#160;</td>
+          <td class="paramname"><em>step</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8">rt::ErrorCode</a>&#160;</td>
+          <td class="paramname"><em>step_error</em> = <code><a class="el" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8a444bcb3a3fcf8389296c49467f27e1d6">rt::ErrorCode::ok</a></code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="base_8h_source.html">base.h</a> 第 <a class="el" href="base_8h_source.html#l00026">26</a> 行定义.</p>
+
+</div>
+</div>
+<h2 class="groupheader">类成员变量说明</h2>
+<a id="a05f7d35b5343a53dc1c7e7cd9eac3321" name="a05f7d35b5343a53dc1c7e7cd9eac3321"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a05f7d35b5343a53dc1c7e7cd9eac3321">&#9670;&#160;</a></span>active</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool plcopen::core::fb::ExecuteLatch::active = false</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="base_8h_source.html">base.h</a> 第 <a class="el" href="base_8h_source.html#l00021">21</a> 行定义.</p>
+
+</div>
+</div>
+<a id="ac2ebe3251f8ba19478dee2dedd879f3b" name="ac2ebe3251f8ba19478dee2dedd879f3b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac2ebe3251f8ba19478dee2dedd879f3b">&#9670;&#160;</a></span>busy</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool plcopen::core::fb::ExecuteLatch::busy = false</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="base_8h_source.html">base.h</a> 第 <a class="el" href="base_8h_source.html#l00020">20</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a305c5e7d42f076a871bb0c66ea4a8f63" name="a305c5e7d42f076a871bb0c66ea4a8f63"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a305c5e7d42f076a871bb0c66ea4a8f63">&#9670;&#160;</a></span>command_aborted</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool plcopen::core::fb::ExecuteLatch::command_aborted = false</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="base_8h_source.html">base.h</a> 第 <a class="el" href="base_8h_source.html#l00022">22</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a901c96e08e433b7775f3cc056651527f" name="a901c96e08e433b7775f3cc056651527f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a901c96e08e433b7775f3cc056651527f">&#9670;&#160;</a></span>done</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool plcopen::core::fb::ExecuteLatch::done = false</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="base_8h_source.html">base.h</a> 第 <a class="el" href="base_8h_source.html#l00019">19</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a774439641bd7ded233a6c47079cfa577" name="a774439641bd7ded233a6c47079cfa577"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a774439641bd7ded233a6c47079cfa577">&#9670;&#160;</a></span>error</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool plcopen::core::fb::ExecuteLatch::error = false</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="base_8h_source.html">base.h</a> 第 <a class="el" href="base_8h_source.html#l00023">23</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a18696fa6038d5481f51ada7fe0a55f38" name="a18696fa6038d5481f51ada7fe0a55f38"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a18696fa6038d5481f51ada7fe0a55f38">&#9670;&#160;</a></span>error_id</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8">rt::ErrorCode</a> plcopen::core::fb::ExecuteLatch::error_id = <a class="el" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8a444bcb3a3fcf8389296c49467f27e1d6">rt::ErrorCode::ok</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="base_8h_source.html">base.h</a> 第 <a class="el" href="base_8h_source.html#l00024">24</a> 行定义.</p>
+
+</div>
+</div>
+<hr/>该类的文档由以下文件生成:<ul>
+<li>core/fb/<a class="el" href="base_8h_source.html">base.h</a></li>
+</ul>
+</div><!-- contents -->
+<!-- start footer part -->
+<hr class="footer"/><address class="footer"><small>
+制作者&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.8
+</small></address>
+</body>
+</html>

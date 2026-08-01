@@ -1,0 +1,7 @@
+<map id="plcopen::core::fb::FbMoveContinuousAbsolute" name="plcopen::core::fb::FbMoveContinuousAbsolute">
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,93,209,133"/>
+<area shape="rect" id="Node000003" href="$classplcopen_1_1core_1_1fb_1_1FbMoveContinuousRelative.html" title=" " alt="" coords="7,181,208,221"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="110,147,110,181,105,181,105,147"/>
+<area shape="rect" id="Node000002" href="$classplcopen_1_1core_1_1fb_1_1AxisExecuteFb.html" title=" " alt="" coords="38,5,177,45"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="110,59,110,93,105,93,105,59"/>
+</map>

@@ -1,0 +1,919 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh">
+<head>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=11"/>
+<meta name="generator" content="Doxygen 1.9.8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>plcopen: plcopen::core::st::BindingDispatcher结构体 参考</title>
+<link href="tabs.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="jquery.js"></script>
+<script type="text/javascript" src="dynsections.js"></script>
+<link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<link href="doxygen.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+<div id="top"><!-- do not remove this div, it is closed by doxygen! -->
+<div id="titlearea">
+<table cellspacing="0" cellpadding="0">
+ <tbody>
+ <tr id="projectrow">
+  <td id="projectalign">
+   <div id="projectname">plcopen<span id="projectnumber">&#160;0.21.0</span>
+   </div>
+  </td>
+ </tr>
+ </tbody>
+</table>
+</div>
+<!-- end header part -->
+<!-- 制作者 Doxygen 1.9.8 -->
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+var searchBox = new SearchBox("searchBox", "search/",'.html');
+/* @license-end */
+</script>
+<script type="text/javascript" src="menudata.js"></script>
+<script type="text/javascript" src="menu.js"></script>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+$(function() {
+  initMenu('',true,false,'search.php','搜索');
+  $(document).ready(function() { init_search(); });
+});
+/* @license-end */
+</script>
+<div id="main-nav"></div>
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<div id="MSearchResults">
+<div class="SRPage">
+<div id="SRIndex">
+<div id="SRResults"></div>
+<div class="SRStatus" id="Loading">载入中...</div>
+<div class="SRStatus" id="Searching">搜索中...</div>
+<div class="SRStatus" id="NoMatches">未找到</div>
+</div>
+</div>
+</div>
+</div>
+
+<div id="nav-path" class="navpath">
+  <ul>
+<li class="navelem"><a class="el" href="namespaceplcopen.html">plcopen</a></li><li class="navelem"><a class="el" href="namespaceplcopen_1_1core.html">core</a></li><li class="navelem"><a class="el" href="namespaceplcopen_1_1core_1_1st.html">st</a></li><li class="navelem"><a class="el" href="structplcopen_1_1core_1_1st_1_1BindingDispatcher.html">BindingDispatcher</a></li>  </ul>
+</div>
+</div><!-- top -->
+<div class="header">
+  <div class="summary">
+<a href="#pub-methods">Public 成员函数</a> &#124;
+<a href="#pub-attribs">Public 属性</a> &#124;
+<a href="structplcopen_1_1core_1_1st_1_1BindingDispatcher-members.html">所有成员列表</a>  </div>
+  <div class="headertitle"><div class="title">plcopen::core::st::BindingDispatcher结构体 参考</div></div>
+</div><!--header-->
+<div class="contents">
+
+<p><code>#include &lt;<a class="el" href="binding__registry_8h_source.html">binding_registry.h</a>&gt;</code></p>
+<div class="dynheader">
+plcopen::core::st::BindingDispatcher 的协作图:</div>
+<div class="dyncontent">
+<div class="center"><img src="structplcopen_1_1core_1_1st_1_1BindingDispatcher__coll__graph.png" border="0" usemap="#aplcopen_1_1core_1_1st_1_1BindingDispatcher_coll__map" alt="Collaboration graph"/></div>
+<map name="aplcopen_1_1core_1_1st_1_1BindingDispatcher_coll__map" id="aplcopen_1_1core_1_1st_1_1BindingDispatcher_coll__map">
+<area shape="rect" title=" " alt="" coords="432,53,573,93"/>
+<area shape="rect" href="structplcopen_1_1core_1_1st_1_1generated_1_1StBindingNativeSequenceValue.html" title=" " alt="" coords="5,5,207,60"/>
+<area shape="poly" title=" " alt="" coords="220,41,408,59,432,62,431,67,408,65,220,46"/>
+<area shape="rect" href="structplcopen_1_1core_1_1st_1_1generated_1_1StBindingNativeTaggedReferenceValue.html" title=" " alt="" coords="5,84,207,139"/>
+<area shape="poly" title=" " alt="" coords="220,115,312,114,407,103,454,90,455,95,409,109,313,119,220,121"/>
+</map>
+<center><span class="legend">[<a href="graph_legend.html">图例</a>]</span></center></div>
+<table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
+Public 成员函数</h2></td></tr>
+<tr class="memitem:a8261f317cfdcad99de231fbad1a3d033" id="r_a8261f317cfdcad99de231fbad1a3d033"><td class="memItemLeft" align="right" valign="top">std::size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1BindingDispatcher.html#a8261f317cfdcad99de231fbad1a3d033">storage_size</a> () const</td></tr>
+<tr class="separator:a8261f317cfdcad99de231fbad1a3d033"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a69c56d23931122e0073453cb0a80e383" id="r_a69c56d23931122e0073453cb0a80e383"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1BindingDispatcher.html#a69c56d23931122e0073453cb0a80e383">stores</a> (<a class="el" href="namespaceplcopen_1_1core_1_1st.html#a58e4acde20ad5e39011ed59e4fd88a90">BindingPinId</a> pin) const</td></tr>
+<tr class="separator:a69c56d23931122e0073453cb0a80e383"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6f101ac33fa35ea6b4c632bc8a4f2f83" id="r_a6f101ac33fa35ea6b4c632bc8a4f2f83"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1BindingDispatcher.html#a6f101ac33fa35ea6b4c632bc8a4f2f83">loads</a> (<a class="el" href="namespaceplcopen_1_1core_1_1st.html#a58e4acde20ad5e39011ed59e4fd88a90">BindingPinId</a> pin) const</td></tr>
+<tr class="separator:a6f101ac33fa35ea6b4c632bc8a4f2f83"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab98216672a50c7c1c6bb9ae8736c182f" id="r_ab98216672a50c7c1c6bb9ae8736c182f"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1BindingDispatcher.html#ab98216672a50c7c1c6bb9ae8736c182f">stores_object</a> (<a class="el" href="namespaceplcopen_1_1core_1_1st.html#a58e4acde20ad5e39011ed59e4fd88a90">BindingPinId</a> pin) const</td></tr>
+<tr class="separator:ab98216672a50c7c1c6bb9ae8736c182f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af7befe4302b558df9212008a6df7fef2" id="r_af7befe4302b558df9212008a6df7fef2"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1BindingDispatcher.html#af7befe4302b558df9212008a6df7fef2">loads_object</a> (<a class="el" href="namespaceplcopen_1_1core_1_1st.html#a58e4acde20ad5e39011ed59e4fd88a90">BindingPinId</a> pin) const</td></tr>
+<tr class="separator:af7befe4302b558df9212008a6df7fef2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7191d1272294b706c0e9bf7ce742ec45" id="r_a7191d1272294b706c0e9bf7ce742ec45"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1BindingDispatcher.html#a7191d1272294b706c0e9bf7ce742ec45">stores_sequence</a> (<a class="el" href="namespaceplcopen_1_1core_1_1st.html#a58e4acde20ad5e39011ed59e4fd88a90">BindingPinId</a> pin) const</td></tr>
+<tr class="separator:a7191d1272294b706c0e9bf7ce742ec45"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a35b70565c4bf9196c818152d5cfd363b" id="r_a35b70565c4bf9196c818152d5cfd363b"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1BindingDispatcher.html#a35b70565c4bf9196c818152d5cfd363b">loads_sequence</a> (<a class="el" href="namespaceplcopen_1_1core_1_1st.html#a58e4acde20ad5e39011ed59e4fd88a90">BindingPinId</a> pin) const</td></tr>
+<tr class="separator:a35b70565c4bf9196c818152d5cfd363b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac4531dc9f9dd9881d9cddfef4537e811" id="r_ac4531dc9f9dd9881d9cddfef4537e811"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1BindingDispatcher.html#ac4531dc9f9dd9881d9cddfef4537e811">stores_tagged_reference</a> (<a class="el" href="namespaceplcopen_1_1core_1_1st.html#a58e4acde20ad5e39011ed59e4fd88a90">BindingPinId</a> pin) const</td></tr>
+<tr class="separator:ac4531dc9f9dd9881d9cddfef4537e811"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad8c1250c06f5b389eb853bdeb9f51e39" id="r_ad8c1250c06f5b389eb853bdeb9f51e39"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1BindingDispatcher.html#ad8c1250c06f5b389eb853bdeb9f51e39">loads_tagged_reference</a> (<a class="el" href="namespaceplcopen_1_1core_1_1st.html#a58e4acde20ad5e39011ed59e4fd88a90">BindingPinId</a> pin) const</td></tr>
+<tr class="separator:ad8c1250c06f5b389eb853bdeb9f51e39"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a375579a60cb03ff85923bf5b850f4792" id="r_a375579a60cb03ff85923bf5b850f4792"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1BindingDispatcher.html#a375579a60cb03ff85923bf5b850f4792">init</a> (unsigned char *storage, std::int64_t task_period_ns) const</td></tr>
+<tr class="separator:a375579a60cb03ff85923bf5b850f4792"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acaa36542360d98f2988c10d87e9215f1" id="r_acaa36542360d98f2988c10d87e9215f1"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1BindingDispatcher.html#acaa36542360d98f2988c10d87e9215f1">store</a> (unsigned char *storage, <a class="el" href="namespaceplcopen_1_1core_1_1st.html#a58e4acde20ad5e39011ed59e4fd88a90">BindingPinId</a> pin, std::uint64_t value) const</td></tr>
+<tr class="separator:acaa36542360d98f2988c10d87e9215f1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acd03d70fbeeb7af25485ec98d099506f" id="r_acd03d70fbeeb7af25485ec98d099506f"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1BindingDispatcher.html#acd03d70fbeeb7af25485ec98d099506f">load</a> (const unsigned char *storage, <a class="el" href="namespaceplcopen_1_1core_1_1st.html#a58e4acde20ad5e39011ed59e4fd88a90">BindingPinId</a> pin, std::uint64_t &amp;value) const</td></tr>
+<tr class="separator:acd03d70fbeeb7af25485ec98d099506f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a34874b8985520e7aedc0e549c45bd176" id="r_a34874b8985520e7aedc0e549c45bd176"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1BindingDispatcher.html#a34874b8985520e7aedc0e549c45bd176">cycle</a> (unsigned char *storage, std::int64_t task_period_ns) const</td></tr>
+<tr class="separator:a34874b8985520e7aedc0e549c45bd176"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
+Public 属性</h2></td></tr>
+<tr class="memitem:ad1d77ccec6756cd9cef612a7f164f553" id="r_ad1d77ccec6756cd9cef612a7f164f553"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceplcopen_1_1core_1_1st.html#ae34dafb2b3227303ab9d723339e4b357">BindingFbId</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1BindingDispatcher.html#ad1d77ccec6756cd9cef612a7f164f553">id</a> = <a class="el" href="namespaceplcopen_1_1core_1_1st.html#ae34dafb2b3227303ab9d723339e4b357afedb2d84cafe20862cb4399751a8a7e3">BindingFbId::invalid</a></td></tr>
+<tr class="separator:ad1d77ccec6756cd9cef612a7f164f553"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3926cda040d62555945c135c5e0e65bf" id="r_a3926cda040d62555945c135c5e0e65bf"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceplcopen_1_1core_1_1st_1_1generated.html#aa85345c11809e761c4cc7ac5a5b47d07">FbType</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1BindingDispatcher.html#a3926cda040d62555945c135c5e0e65bf">type</a> = FbType::r_trig</td></tr>
+<tr class="separator:a3926cda040d62555945c135c5e0e65bf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4bd9cd2cf318ae9300b2d8d21bf0e962" id="r_a4bd9cd2cf318ae9300b2d8d21bf0e962"><td class="memItemLeft" align="right" valign="top">std::uint64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1BindingDispatcher.html#a4bd9cd2cf318ae9300b2d8d21bf0e962">store_mask</a> = 0</td></tr>
+<tr class="separator:a4bd9cd2cf318ae9300b2d8d21bf0e962"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aaecec43ceacc4dbfd5597efd8cf2172e" id="r_aaecec43ceacc4dbfd5597efd8cf2172e"><td class="memItemLeft" align="right" valign="top">std::uint64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1BindingDispatcher.html#aaecec43ceacc4dbfd5597efd8cf2172e">load_mask</a> = 0</td></tr>
+<tr class="separator:aaecec43ceacc4dbfd5597efd8cf2172e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1ae7e32b27347fe585206bdb6f2e8462" id="r_a1ae7e32b27347fe585206bdb6f2e8462"><td class="memItemLeft" align="right" valign="top">std::uint64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1BindingDispatcher.html#a1ae7e32b27347fe585206bdb6f2e8462">object_store_mask</a> = 0</td></tr>
+<tr class="separator:a1ae7e32b27347fe585206bdb6f2e8462"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab95d94ea8947f06044074e7837045a6e" id="r_ab95d94ea8947f06044074e7837045a6e"><td class="memItemLeft" align="right" valign="top">std::uint64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1BindingDispatcher.html#ab95d94ea8947f06044074e7837045a6e">object_load_mask</a> = 0</td></tr>
+<tr class="separator:ab95d94ea8947f06044074e7837045a6e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a65c62aeab3f0fe0a7384a10fb7972ae0" id="r_a65c62aeab3f0fe0a7384a10fb7972ae0"><td class="memItemLeft" align="right" valign="top">std::uint64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1BindingDispatcher.html#a65c62aeab3f0fe0a7384a10fb7972ae0">sequence_store_mask</a> = 0</td></tr>
+<tr class="separator:a65c62aeab3f0fe0a7384a10fb7972ae0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac830a6764d893380e72fc120503a7753" id="r_ac830a6764d893380e72fc120503a7753"><td class="memItemLeft" align="right" valign="top">std::uint64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1BindingDispatcher.html#ac830a6764d893380e72fc120503a7753">sequence_load_mask</a> = 0</td></tr>
+<tr class="separator:ac830a6764d893380e72fc120503a7753"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3de52c519af3eb6a288768836915b68c" id="r_a3de52c519af3eb6a288768836915b68c"><td class="memItemLeft" align="right" valign="top">std::uint64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1BindingDispatcher.html#a3de52c519af3eb6a288768836915b68c">tagged_reference_store_mask</a> = 0</td></tr>
+<tr class="separator:a3de52c519af3eb6a288768836915b68c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5a843435929085226462deec86a5bc6b" id="r_a5a843435929085226462deec86a5bc6b"><td class="memItemLeft" align="right" valign="top">std::uint64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1BindingDispatcher.html#a5a843435929085226462deec86a5bc6b">tagged_reference_load_mask</a> = 0</td></tr>
+<tr class="separator:a5a843435929085226462deec86a5bc6b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad0d15e714afed3e563d1684d37dbfc56" id="r_ad0d15e714afed3e563d1684d37dbfc56"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceplcopen_1_1core_1_1st.html#ab3597eb44c14d510ca2def461fa069e8">BindingInitOp</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1BindingDispatcher.html#ad0d15e714afed3e563d1684d37dbfc56">init_op</a> = nullptr</td></tr>
+<tr class="separator:ad0d15e714afed3e563d1684d37dbfc56"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acde453a2c7f9f0dfddfe9f0a18a482ab" id="r_acde453a2c7f9f0dfddfe9f0a18a482ab"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceplcopen_1_1core_1_1st.html#a994da331faf49684749b9b0112b728ae">BindingStoreOp</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1BindingDispatcher.html#acde453a2c7f9f0dfddfe9f0a18a482ab">store_op</a> = nullptr</td></tr>
+<tr class="separator:acde453a2c7f9f0dfddfe9f0a18a482ab"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a269851ef5b8db04e4aba01e0e10e2f5c" id="r_a269851ef5b8db04e4aba01e0e10e2f5c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceplcopen_1_1core_1_1st.html#a0534f85acd1670f050d7535d2b619b85">BindingStoreObjectOp</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1BindingDispatcher.html#a269851ef5b8db04e4aba01e0e10e2f5c">store_object_op</a> = nullptr</td></tr>
+<tr class="separator:a269851ef5b8db04e4aba01e0e10e2f5c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a277757bd78d28b7ad5ce5969625b9ed2" id="r_a277757bd78d28b7ad5ce5969625b9ed2"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceplcopen_1_1core_1_1st.html#aced56bfbb6670c6865850b5ee8c8476b">BindingLoadOp</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1BindingDispatcher.html#a277757bd78d28b7ad5ce5969625b9ed2">load_op</a> = nullptr</td></tr>
+<tr class="separator:a277757bd78d28b7ad5ce5969625b9ed2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad161b2de4814d53cebdebb524c26fe11" id="r_ad161b2de4814d53cebdebb524c26fe11"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceplcopen_1_1core_1_1st.html#afbf7d08577d9627f5d4d50414cf4efd5">BindingLoadObjectOp</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1BindingDispatcher.html#ad161b2de4814d53cebdebb524c26fe11">load_object_op</a> = nullptr</td></tr>
+<tr class="separator:ad161b2de4814d53cebdebb524c26fe11"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:affc703870cad3dab4c554c40dbc1c903" id="r_affc703870cad3dab4c554c40dbc1c903"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceplcopen_1_1core_1_1st.html#acb4f674bc5363cba71ecc06a385eaf1c">BindingStoreSequenceOp</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1BindingDispatcher.html#affc703870cad3dab4c554c40dbc1c903">store_sequence_op</a> = nullptr</td></tr>
+<tr class="separator:affc703870cad3dab4c554c40dbc1c903"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab94fff67b45886b65e2e9fb1db5794f3" id="r_ab94fff67b45886b65e2e9fb1db5794f3"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceplcopen_1_1core_1_1st.html#aa10bd000b33c28fc113bb82282edb7d5">BindingLoadSequenceOp</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1BindingDispatcher.html#ab94fff67b45886b65e2e9fb1db5794f3">load_sequence_op</a> = nullptr</td></tr>
+<tr class="separator:ab94fff67b45886b65e2e9fb1db5794f3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a039c420e52b0c36ca407d95f6a1f3b10" id="r_a039c420e52b0c36ca407d95f6a1f3b10"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceplcopen_1_1core_1_1st.html#ac40e7577363811c74b140d5b66796f2c">BindingStoreTaggedReferenceOp</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1BindingDispatcher.html#a039c420e52b0c36ca407d95f6a1f3b10">store_tagged_reference_op</a> = nullptr</td></tr>
+<tr class="separator:a039c420e52b0c36ca407d95f6a1f3b10"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af3e1a44125eb8c37894a77173b269df0" id="r_af3e1a44125eb8c37894a77173b269df0"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceplcopen_1_1core_1_1st.html#a2c6889c00fb7c0d52f4d7c261ae73695">BindingLoadTaggedReferenceOp</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1BindingDispatcher.html#af3e1a44125eb8c37894a77173b269df0">load_tagged_reference_op</a> = nullptr</td></tr>
+<tr class="separator:af3e1a44125eb8c37894a77173b269df0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2298264b3b8b36d0a1a1bb9dbaf43eb7" id="r_a2298264b3b8b36d0a1a1bb9dbaf43eb7"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceplcopen_1_1core_1_1st.html#a2d92855f9ee3ef329762d4af225a74f0">BindingCycleOp</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1BindingDispatcher.html#a2298264b3b8b36d0a1a1bb9dbaf43eb7">cycle_op</a> = nullptr</td></tr>
+<tr class="separator:a2298264b3b8b36d0a1a1bb9dbaf43eb7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table>
+<a name="details" id="details"></a><h2 class="groupheader">详细描述</h2>
+<div class="textblock">
+<p class="definition">在文件 <a class="el" href="binding__registry_8h_source.html">binding_registry.h</a> 第 <a class="el" href="binding__registry_8h_source.html#l00038">38</a> 行定义.</p>
+</div><h2 class="groupheader">成员函数说明</h2>
+<a id="a34874b8985520e7aedc0e549c45bd176" name="a34874b8985520e7aedc0e549c45bd176"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a34874b8985520e7aedc0e549c45bd176">&#9670;&#160;</a></span>cycle()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void plcopen::core::st::BindingDispatcher::cycle </td>
+          <td>(</td>
+          <td class="paramtype">unsigned char *&#160;</td>
+          <td class="paramname"><em>storage</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::int64_t&#160;</td>
+          <td class="paramname"><em>task_period_ns</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="binding__registry_8h_source.html">binding_registry.h</a> 第 <a class="el" href="binding__registry_8h_source.html#l00128">128</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a375579a60cb03ff85923bf5b850f4792" name="a375579a60cb03ff85923bf5b850f4792"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a375579a60cb03ff85923bf5b850f4792">&#9670;&#160;</a></span>init()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void plcopen::core::st::BindingDispatcher::init </td>
+          <td>(</td>
+          <td class="paramtype">unsigned char *&#160;</td>
+          <td class="paramname"><em>storage</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::int64_t&#160;</td>
+          <td class="paramname"><em>task_period_ns</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="binding__registry_8h_source.html">binding_registry.h</a> 第 <a class="el" href="binding__registry_8h_source.html#l00111">111</a> 行定义.</p>
+
+</div>
+</div>
+<a id="acd03d70fbeeb7af25485ec98d099506f" name="acd03d70fbeeb7af25485ec98d099506f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acd03d70fbeeb7af25485ec98d099506f">&#9670;&#160;</a></span>load()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool plcopen::core::st::BindingDispatcher::load </td>
+          <td>(</td>
+          <td class="paramtype">const unsigned char *&#160;</td>
+          <td class="paramname"><em>storage</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceplcopen_1_1core_1_1st.html#a58e4acde20ad5e39011ed59e4fd88a90">BindingPinId</a>&#160;</td>
+          <td class="paramname"><em>pin</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::uint64_t &amp;&#160;</td>
+          <td class="paramname"><em>value</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="binding__registry_8h_source.html">binding_registry.h</a> 第 <a class="el" href="binding__registry_8h_source.html#l00122">122</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a6f101ac33fa35ea6b4c632bc8a4f2f83" name="a6f101ac33fa35ea6b4c632bc8a4f2f83"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6f101ac33fa35ea6b4c632bc8a4f2f83">&#9670;&#160;</a></span>loads()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool plcopen::core::st::BindingDispatcher::loads </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="namespaceplcopen_1_1core_1_1st.html#a58e4acde20ad5e39011ed59e4fd88a90">BindingPinId</a>&#160;</td>
+          <td class="paramname"><em>pin</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="binding__registry_8h_source.html">binding_registry.h</a> 第 <a class="el" href="binding__registry_8h_source.html#l00068">68</a> 行定义.</p>
+
+</div>
+</div>
+<a id="af7befe4302b558df9212008a6df7fef2" name="af7befe4302b558df9212008a6df7fef2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af7befe4302b558df9212008a6df7fef2">&#9670;&#160;</a></span>loads_object()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool plcopen::core::st::BindingDispatcher::loads_object </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="namespaceplcopen_1_1core_1_1st.html#a58e4acde20ad5e39011ed59e4fd88a90">BindingPinId</a>&#160;</td>
+          <td class="paramname"><em>pin</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="binding__registry_8h_source.html">binding_registry.h</a> 第 <a class="el" href="binding__registry_8h_source.html#l00079">79</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a35b70565c4bf9196c818152d5cfd363b" name="a35b70565c4bf9196c818152d5cfd363b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a35b70565c4bf9196c818152d5cfd363b">&#9670;&#160;</a></span>loads_sequence()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool plcopen::core::st::BindingDispatcher::loads_sequence </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="namespaceplcopen_1_1core_1_1st.html#a58e4acde20ad5e39011ed59e4fd88a90">BindingPinId</a>&#160;</td>
+          <td class="paramname"><em>pin</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="binding__registry_8h_source.html">binding_registry.h</a> 第 <a class="el" href="binding__registry_8h_source.html#l00091">91</a> 行定义.</p>
+
+</div>
+</div>
+<a id="ad8c1250c06f5b389eb853bdeb9f51e39" name="ad8c1250c06f5b389eb853bdeb9f51e39"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad8c1250c06f5b389eb853bdeb9f51e39">&#9670;&#160;</a></span>loads_tagged_reference()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool plcopen::core::st::BindingDispatcher::loads_tagged_reference </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="namespaceplcopen_1_1core_1_1st.html#a58e4acde20ad5e39011ed59e4fd88a90">BindingPinId</a>&#160;</td>
+          <td class="paramname"><em>pin</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="binding__registry_8h_source.html">binding_registry.h</a> 第 <a class="el" href="binding__registry_8h_source.html#l00104">104</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a8261f317cfdcad99de231fbad1a3d033" name="a8261f317cfdcad99de231fbad1a3d033"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8261f317cfdcad99de231fbad1a3d033">&#9670;&#160;</a></span>storage_size()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::size_t plcopen::core::st::BindingDispatcher::storage_size </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="binding__registry_8h_source.html">binding_registry.h</a> 第 <a class="el" href="binding__registry_8h_source.html#l00061">61</a> 行定义.</p>
+
+</div>
+</div>
+<a id="acaa36542360d98f2988c10d87e9215f1" name="acaa36542360d98f2988c10d87e9215f1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acaa36542360d98f2988c10d87e9215f1">&#9670;&#160;</a></span>store()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool plcopen::core::st::BindingDispatcher::store </td>
+          <td>(</td>
+          <td class="paramtype">unsigned char *&#160;</td>
+          <td class="paramname"><em>storage</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceplcopen_1_1core_1_1st.html#a58e4acde20ad5e39011ed59e4fd88a90">BindingPinId</a>&#160;</td>
+          <td class="paramname"><em>pin</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::uint64_t&#160;</td>
+          <td class="paramname"><em>value</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="binding__registry_8h_source.html">binding_registry.h</a> 第 <a class="el" href="binding__registry_8h_source.html#l00116">116</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a69c56d23931122e0073453cb0a80e383" name="a69c56d23931122e0073453cb0a80e383"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a69c56d23931122e0073453cb0a80e383">&#9670;&#160;</a></span>stores()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool plcopen::core::st::BindingDispatcher::stores </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="namespaceplcopen_1_1core_1_1st.html#a58e4acde20ad5e39011ed59e4fd88a90">BindingPinId</a>&#160;</td>
+          <td class="paramname"><em>pin</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="binding__registry_8h_source.html">binding_registry.h</a> 第 <a class="el" href="binding__registry_8h_source.html#l00063">63</a> 行定义.</p>
+
+</div>
+</div>
+<a id="ab98216672a50c7c1c6bb9ae8736c182f" name="ab98216672a50c7c1c6bb9ae8736c182f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab98216672a50c7c1c6bb9ae8736c182f">&#9670;&#160;</a></span>stores_object()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool plcopen::core::st::BindingDispatcher::stores_object </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="namespaceplcopen_1_1core_1_1st.html#a58e4acde20ad5e39011ed59e4fd88a90">BindingPinId</a>&#160;</td>
+          <td class="paramname"><em>pin</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="binding__registry_8h_source.html">binding_registry.h</a> 第 <a class="el" href="binding__registry_8h_source.html#l00073">73</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a7191d1272294b706c0e9bf7ce742ec45" name="a7191d1272294b706c0e9bf7ce742ec45"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7191d1272294b706c0e9bf7ce742ec45">&#9670;&#160;</a></span>stores_sequence()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool plcopen::core::st::BindingDispatcher::stores_sequence </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="namespaceplcopen_1_1core_1_1st.html#a58e4acde20ad5e39011ed59e4fd88a90">BindingPinId</a>&#160;</td>
+          <td class="paramname"><em>pin</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="binding__registry_8h_source.html">binding_registry.h</a> 第 <a class="el" href="binding__registry_8h_source.html#l00085">85</a> 行定义.</p>
+
+</div>
+</div>
+<a id="ac4531dc9f9dd9881d9cddfef4537e811" name="ac4531dc9f9dd9881d9cddfef4537e811"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac4531dc9f9dd9881d9cddfef4537e811">&#9670;&#160;</a></span>stores_tagged_reference()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool plcopen::core::st::BindingDispatcher::stores_tagged_reference </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="namespaceplcopen_1_1core_1_1st.html#a58e4acde20ad5e39011ed59e4fd88a90">BindingPinId</a>&#160;</td>
+          <td class="paramname"><em>pin</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="binding__registry_8h_source.html">binding_registry.h</a> 第 <a class="el" href="binding__registry_8h_source.html#l00097">97</a> 行定义.</p>
+
+</div>
+</div>
+<h2 class="groupheader">类成员变量说明</h2>
+<a id="a2298264b3b8b36d0a1a1bb9dbaf43eb7" name="a2298264b3b8b36d0a1a1bb9dbaf43eb7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2298264b3b8b36d0a1a1bb9dbaf43eb7">&#9670;&#160;</a></span>cycle_op</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="namespaceplcopen_1_1core_1_1st.html#a2d92855f9ee3ef329762d4af225a74f0">BindingCycleOp</a> plcopen::core::st::BindingDispatcher::cycle_op = nullptr</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="binding__registry_8h_source.html">binding_registry.h</a> 第 <a class="el" href="binding__registry_8h_source.html#l00059">59</a> 行定义.</p>
+
+</div>
+</div>
+<a id="ad1d77ccec6756cd9cef612a7f164f553" name="ad1d77ccec6756cd9cef612a7f164f553"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad1d77ccec6756cd9cef612a7f164f553">&#9670;&#160;</a></span>id</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="namespaceplcopen_1_1core_1_1st.html#ae34dafb2b3227303ab9d723339e4b357">BindingFbId</a> plcopen::core::st::BindingDispatcher::id = <a class="el" href="namespaceplcopen_1_1core_1_1st.html#ae34dafb2b3227303ab9d723339e4b357afedb2d84cafe20862cb4399751a8a7e3">BindingFbId::invalid</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="binding__registry_8h_source.html">binding_registry.h</a> 第 <a class="el" href="binding__registry_8h_source.html#l00040">40</a> 行定义.</p>
+
+</div>
+</div>
+<a id="ad0d15e714afed3e563d1684d37dbfc56" name="ad0d15e714afed3e563d1684d37dbfc56"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad0d15e714afed3e563d1684d37dbfc56">&#9670;&#160;</a></span>init_op</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="namespaceplcopen_1_1core_1_1st.html#ab3597eb44c14d510ca2def461fa069e8">BindingInitOp</a> plcopen::core::st::BindingDispatcher::init_op = nullptr</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="binding__registry_8h_source.html">binding_registry.h</a> 第 <a class="el" href="binding__registry_8h_source.html#l00050">50</a> 行定义.</p>
+
+</div>
+</div>
+<a id="aaecec43ceacc4dbfd5597efd8cf2172e" name="aaecec43ceacc4dbfd5597efd8cf2172e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aaecec43ceacc4dbfd5597efd8cf2172e">&#9670;&#160;</a></span>load_mask</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::uint64_t plcopen::core::st::BindingDispatcher::load_mask = 0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="binding__registry_8h_source.html">binding_registry.h</a> 第 <a class="el" href="binding__registry_8h_source.html#l00043">43</a> 行定义.</p>
+
+</div>
+</div>
+<a id="ad161b2de4814d53cebdebb524c26fe11" name="ad161b2de4814d53cebdebb524c26fe11"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad161b2de4814d53cebdebb524c26fe11">&#9670;&#160;</a></span>load_object_op</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="namespaceplcopen_1_1core_1_1st.html#afbf7d08577d9627f5d4d50414cf4efd5">BindingLoadObjectOp</a> plcopen::core::st::BindingDispatcher::load_object_op = nullptr</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="binding__registry_8h_source.html">binding_registry.h</a> 第 <a class="el" href="binding__registry_8h_source.html#l00054">54</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a277757bd78d28b7ad5ce5969625b9ed2" name="a277757bd78d28b7ad5ce5969625b9ed2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a277757bd78d28b7ad5ce5969625b9ed2">&#9670;&#160;</a></span>load_op</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="namespaceplcopen_1_1core_1_1st.html#aced56bfbb6670c6865850b5ee8c8476b">BindingLoadOp</a> plcopen::core::st::BindingDispatcher::load_op = nullptr</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="binding__registry_8h_source.html">binding_registry.h</a> 第 <a class="el" href="binding__registry_8h_source.html#l00053">53</a> 行定义.</p>
+
+</div>
+</div>
+<a id="ab94fff67b45886b65e2e9fb1db5794f3" name="ab94fff67b45886b65e2e9fb1db5794f3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab94fff67b45886b65e2e9fb1db5794f3">&#9670;&#160;</a></span>load_sequence_op</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="namespaceplcopen_1_1core_1_1st.html#aa10bd000b33c28fc113bb82282edb7d5">BindingLoadSequenceOp</a> plcopen::core::st::BindingDispatcher::load_sequence_op = nullptr</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="binding__registry_8h_source.html">binding_registry.h</a> 第 <a class="el" href="binding__registry_8h_source.html#l00056">56</a> 行定义.</p>
+
+</div>
+</div>
+<a id="af3e1a44125eb8c37894a77173b269df0" name="af3e1a44125eb8c37894a77173b269df0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af3e1a44125eb8c37894a77173b269df0">&#9670;&#160;</a></span>load_tagged_reference_op</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="namespaceplcopen_1_1core_1_1st.html#a2c6889c00fb7c0d52f4d7c261ae73695">BindingLoadTaggedReferenceOp</a> plcopen::core::st::BindingDispatcher::load_tagged_reference_op = nullptr</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="binding__registry_8h_source.html">binding_registry.h</a> 第 <a class="el" href="binding__registry_8h_source.html#l00058">58</a> 行定义.</p>
+
+</div>
+</div>
+<a id="ab95d94ea8947f06044074e7837045a6e" name="ab95d94ea8947f06044074e7837045a6e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab95d94ea8947f06044074e7837045a6e">&#9670;&#160;</a></span>object_load_mask</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::uint64_t plcopen::core::st::BindingDispatcher::object_load_mask = 0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="binding__registry_8h_source.html">binding_registry.h</a> 第 <a class="el" href="binding__registry_8h_source.html#l00045">45</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a1ae7e32b27347fe585206bdb6f2e8462" name="a1ae7e32b27347fe585206bdb6f2e8462"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1ae7e32b27347fe585206bdb6f2e8462">&#9670;&#160;</a></span>object_store_mask</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::uint64_t plcopen::core::st::BindingDispatcher::object_store_mask = 0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="binding__registry_8h_source.html">binding_registry.h</a> 第 <a class="el" href="binding__registry_8h_source.html#l00044">44</a> 行定义.</p>
+
+</div>
+</div>
+<a id="ac830a6764d893380e72fc120503a7753" name="ac830a6764d893380e72fc120503a7753"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac830a6764d893380e72fc120503a7753">&#9670;&#160;</a></span>sequence_load_mask</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::uint64_t plcopen::core::st::BindingDispatcher::sequence_load_mask = 0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="binding__registry_8h_source.html">binding_registry.h</a> 第 <a class="el" href="binding__registry_8h_source.html#l00047">47</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a65c62aeab3f0fe0a7384a10fb7972ae0" name="a65c62aeab3f0fe0a7384a10fb7972ae0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a65c62aeab3f0fe0a7384a10fb7972ae0">&#9670;&#160;</a></span>sequence_store_mask</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::uint64_t plcopen::core::st::BindingDispatcher::sequence_store_mask = 0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="binding__registry_8h_source.html">binding_registry.h</a> 第 <a class="el" href="binding__registry_8h_source.html#l00046">46</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a4bd9cd2cf318ae9300b2d8d21bf0e962" name="a4bd9cd2cf318ae9300b2d8d21bf0e962"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4bd9cd2cf318ae9300b2d8d21bf0e962">&#9670;&#160;</a></span>store_mask</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::uint64_t plcopen::core::st::BindingDispatcher::store_mask = 0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="binding__registry_8h_source.html">binding_registry.h</a> 第 <a class="el" href="binding__registry_8h_source.html#l00042">42</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a269851ef5b8db04e4aba01e0e10e2f5c" name="a269851ef5b8db04e4aba01e0e10e2f5c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a269851ef5b8db04e4aba01e0e10e2f5c">&#9670;&#160;</a></span>store_object_op</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="namespaceplcopen_1_1core_1_1st.html#a0534f85acd1670f050d7535d2b619b85">BindingStoreObjectOp</a> plcopen::core::st::BindingDispatcher::store_object_op = nullptr</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="binding__registry_8h_source.html">binding_registry.h</a> 第 <a class="el" href="binding__registry_8h_source.html#l00052">52</a> 行定义.</p>
+
+</div>
+</div>
+<a id="acde453a2c7f9f0dfddfe9f0a18a482ab" name="acde453a2c7f9f0dfddfe9f0a18a482ab"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acde453a2c7f9f0dfddfe9f0a18a482ab">&#9670;&#160;</a></span>store_op</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="namespaceplcopen_1_1core_1_1st.html#a994da331faf49684749b9b0112b728ae">BindingStoreOp</a> plcopen::core::st::BindingDispatcher::store_op = nullptr</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="binding__registry_8h_source.html">binding_registry.h</a> 第 <a class="el" href="binding__registry_8h_source.html#l00051">51</a> 行定义.</p>
+
+</div>
+</div>
+<a id="affc703870cad3dab4c554c40dbc1c903" name="affc703870cad3dab4c554c40dbc1c903"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#affc703870cad3dab4c554c40dbc1c903">&#9670;&#160;</a></span>store_sequence_op</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="namespaceplcopen_1_1core_1_1st.html#acb4f674bc5363cba71ecc06a385eaf1c">BindingStoreSequenceOp</a> plcopen::core::st::BindingDispatcher::store_sequence_op = nullptr</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="binding__registry_8h_source.html">binding_registry.h</a> 第 <a class="el" href="binding__registry_8h_source.html#l00055">55</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a039c420e52b0c36ca407d95f6a1f3b10" name="a039c420e52b0c36ca407d95f6a1f3b10"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a039c420e52b0c36ca407d95f6a1f3b10">&#9670;&#160;</a></span>store_tagged_reference_op</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="namespaceplcopen_1_1core_1_1st.html#ac40e7577363811c74b140d5b66796f2c">BindingStoreTaggedReferenceOp</a> plcopen::core::st::BindingDispatcher::store_tagged_reference_op = nullptr</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="binding__registry_8h_source.html">binding_registry.h</a> 第 <a class="el" href="binding__registry_8h_source.html#l00057">57</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a5a843435929085226462deec86a5bc6b" name="a5a843435929085226462deec86a5bc6b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5a843435929085226462deec86a5bc6b">&#9670;&#160;</a></span>tagged_reference_load_mask</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::uint64_t plcopen::core::st::BindingDispatcher::tagged_reference_load_mask = 0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="binding__registry_8h_source.html">binding_registry.h</a> 第 <a class="el" href="binding__registry_8h_source.html#l00049">49</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a3de52c519af3eb6a288768836915b68c" name="a3de52c519af3eb6a288768836915b68c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3de52c519af3eb6a288768836915b68c">&#9670;&#160;</a></span>tagged_reference_store_mask</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::uint64_t plcopen::core::st::BindingDispatcher::tagged_reference_store_mask = 0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="binding__registry_8h_source.html">binding_registry.h</a> 第 <a class="el" href="binding__registry_8h_source.html#l00048">48</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a3926cda040d62555945c135c5e0e65bf" name="a3926cda040d62555945c135c5e0e65bf"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3926cda040d62555945c135c5e0e65bf">&#9670;&#160;</a></span>type</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="namespaceplcopen_1_1core_1_1st_1_1generated.html#aa85345c11809e761c4cc7ac5a5b47d07">FbType</a> plcopen::core::st::BindingDispatcher::type = FbType::r_trig</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="binding__registry_8h_source.html">binding_registry.h</a> 第 <a class="el" href="binding__registry_8h_source.html#l00041">41</a> 行定义.</p>
+
+</div>
+</div>
+<hr/>该结构体的文档由以下文件生成:<ul>
+<li>core/st/<a class="el" href="binding__registry_8h_source.html">binding_registry.h</a></li>
+</ul>
+</div><!-- contents -->
+<!-- start footer part -->
+<hr class="footer"/><address class="footer"><small>
+制作者&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.8
+</small></address>
+</body>
+</html>

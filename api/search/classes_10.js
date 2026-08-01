@@ -1,0 +1,20 @@
+var searchData=
+[
+  ['ramptiming_0',['RampTiming',['../structplcopen_1_1core_1_1otg_1_1detail_1_1RampTiming.html',1,'plcopen::core::otg::detail']]],
+  ['readinfolatch_1',['ReadInfoLatch',['../classplcopen_1_1core_1_1fb_1_1ReadInfoLatch.html',1,'plcopen::core::fb']]],
+  ['refdesc_2',['RefDesc',['../structplcopen_1_1core_1_1st_1_1RefDesc.html',1,'plcopen::core::st']]],
+  ['referencesignalref_3',['ReferenceSignalRef',['../structplcopen_1_1core_1_1axis_1_1ReferenceSignalRef.html',1,'plcopen::core::axis']]],
+  ['resourceinfo_4',['ResourceInfo',['../structplcopen_1_1core_1_1st_1_1ResourceInfo.html',1,'plcopen::core::st']]],
+  ['resourceruntimestorage_5',['ResourceRuntimeStorage',['../structplcopen_1_1core_1_1st_1_1ResourceRuntimeStorage.html',1,'plcopen::core::st']]],
+  ['resourcestatus_6',['ResourceStatus',['../structplcopen_1_1core_1_1st_1_1ResourceStatus.html',1,'plcopen::core::st']]],
+  ['result_7',['Result',['../classplcopen_1_1core_1_1rt_1_1Result.html',1,'plcopen::core::rt']]],
+  ['revolutebody_8',['RevoluteBody',['../structplcopen_1_1core_1_1dyn_1_1RevoluteBody.html',1,'plcopen::core::dyn']]],
+  ['rigidbodydynamic_9',['RigidBodyDynamic',['../structplcopen_1_1core_1_1axis_1_1RigidBodyDynamic.html',1,'plcopen::core::axis']]],
+  ['rigidbodydynamics_10',['RigidBodyDynamics',['../structplcopen_1_1core_1_1axis_1_1RigidBodyDynamics.html',1,'plcopen::core::axis']]],
+  ['rigidframe_11',['RigidFrame',['../structplcopen_1_1core_1_1geom_1_1RigidFrame.html',1,'plcopen::core::geom']]],
+  ['rigidtransform_12',['RigidTransform',['../structplcopen_1_1core_1_1geom_1_1RigidTransform.html',1,'plcopen::core::geom']]],
+  ['rs_13',['RS',['../structplcopen_1_1core_1_1fb_1_1RS.html',1,'plcopen::core::fb']]],
+  ['rtc_14',['RTC',['../structplcopen_1_1core_1_1fb_1_1RTC.html',1,'plcopen::core::fb']]],
+  ['rtrig_15',['RTrig',['../structplcopen_1_1core_1_1fb_1_1RTrig.html',1,'plcopen::core::fb']]],
+  ['runtimedebughooks_16',['RuntimeDebugHooks',['../classplcopen_1_1core_1_1st_1_1RuntimeDebugHooks.html',1,'plcopen::core::st']]]
+];

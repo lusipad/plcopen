@@ -1,0 +1,129 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh">
+<head>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=11"/>
+<meta name="generator" content="Doxygen 1.9.8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>plcopen: core/test_support/serial_chain_fixture.h 源文件</title>
+<link href="tabs.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="jquery.js"></script>
+<script type="text/javascript" src="dynsections.js"></script>
+<link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<link href="doxygen.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+<div id="top"><!-- do not remove this div, it is closed by doxygen! -->
+<div id="titlearea">
+<table cellspacing="0" cellpadding="0">
+ <tbody>
+ <tr id="projectrow">
+  <td id="projectalign">
+   <div id="projectname">plcopen<span id="projectnumber">&#160;0.21.0</span>
+   </div>
+  </td>
+ </tr>
+ </tbody>
+</table>
+</div>
+<!-- end header part -->
+<!-- 制作者 Doxygen 1.9.8 -->
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+var searchBox = new SearchBox("searchBox", "search/",'.html');
+/* @license-end */
+</script>
+<script type="text/javascript" src="menudata.js"></script>
+<script type="text/javascript" src="menu.js"></script>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+$(function() {
+  initMenu('',true,false,'search.php','搜索');
+  $(document).ready(function() { init_search(); });
+});
+/* @license-end */
+</script>
+<div id="main-nav"></div>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+$(document).ready(function() { init_codefold(0); });
+/* @license-end */
+</script>
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<div id="MSearchResults">
+<div class="SRPage">
+<div id="SRIndex">
+<div id="SRResults"></div>
+<div class="SRStatus" id="Loading">载入中...</div>
+<div class="SRStatus" id="Searching">搜索中...</div>
+<div class="SRStatus" id="NoMatches">未找到</div>
+</div>
+</div>
+</div>
+</div>
+
+<div id="nav-path" class="navpath">
+  <ul>
+<li class="navelem"><a class="el" href="dir_4270bfced15e0e73154b13468c7c9ad9.html">core</a></li><li class="navelem"><a class="el" href="dir_08a0f29149433f4b9a2fc93a01d9fa3e.html">test_support</a></li>  </ul>
+</div>
+</div><!-- top -->
+<div class="header">
+  <div class="headertitle"><div class="title">serial_chain_fixture.h</div></div>
+</div><!--header-->
+<div class="contents">
+<a href="serial__chain__fixture_8h.html">浏览该文件的文档.</a><div class="fragment"><div class="line"><a id="l00001" name="l00001"></a><span class="lineno">    1</span><span class="preprocessor">#pragma once</span></div>
+<div class="line"><a id="l00002" name="l00002"></a><span class="lineno">    2</span> </div>
+<div class="line"><a id="l00003" name="l00003"></a><span class="lineno">    3</span><span class="comment">// Shared non-degenerate H2 acceptance/benchmark fixture. The alternating</span></div>
+<div class="line"><a id="l00004" name="l00004"></a><span class="lineno">    4</span><span class="comment">// twists distribute the redundant degree of freedom across the seven-link</span></div>
+<div class="line"><a id="l00005" name="l00005"></a><span class="lineno">    5</span><span class="comment">// arm instead of adding a zero-length axis coaxial with the wrist.</span></div>
+<div class="line"><a id="l00006" name="l00006"></a><span class="lineno">    6</span> </div>
+<div class="line"><a id="l00007" name="l00007"></a><span class="lineno">    7</span><span class="preprocessor">#include &quot;<a class="code" href="serial__chain_8h.html">kin/serial_chain.h</a>&quot;</span></div>
+<div class="line"><a id="l00008" name="l00008"></a><span class="lineno">    8</span> </div>
+<div class="line"><a id="l00009" name="l00009"></a><span class="lineno">    9</span><span class="keyword">namespace </span><a class="code hl_namespace" href="namespaceplcopen_1_1core_1_1test__support.html">plcopen::core::test_support</a></div>
+<div class="line"><a id="l00010" name="l00010"></a><span class="lineno">   10</span>{</div>
+<div class="line"><a id="l00011" name="l00011"></a><span class="lineno">   11</span> </div>
+<div class="foldopen" id="foldopen00012" data-start="{" data-end="}">
+<div class="line"><a id="l00012" name="l00012"></a><span class="lineno"><a class="line" href="namespaceplcopen_1_1core_1_1test__support.html#adefa305d0484350ab66d1625f3901bb1">   12</a></span><span class="keyword">inline</span> <a class="code hl_struct" href="structplcopen_1_1core_1_1kin_1_1SerialChainSpec.html">kin::SerialChainSpec</a> <a class="code hl_function" href="namespaceplcopen_1_1core_1_1test__support.html#adefa305d0484350ab66d1625f3901bb1">seven_dof_arm_spec</a>()</div>
+<div class="line"><a id="l00013" name="l00013"></a><span class="lineno">   13</span>{</div>
+<div class="line"><a id="l00014" name="l00014"></a><span class="lineno">   14</span>    <span class="keyword">constexpr</span> <span class="keywordtype">double</span> Pi = 3.14159265358979323846;</div>
+<div class="line"><a id="l00015" name="l00015"></a><span class="lineno">   15</span>    <span class="keyword">constexpr</span> <span class="keywordtype">double</span> Lower = -2.8;</div>
+<div class="line"><a id="l00016" name="l00016"></a><span class="lineno">   16</span>    <span class="keyword">constexpr</span> <span class="keywordtype">double</span> Upper = 2.8;</div>
+<div class="line"><a id="l00017" name="l00017"></a><span class="lineno">   17</span> </div>
+<div class="line"><a id="l00018" name="l00018"></a><span class="lineno">   18</span>    <a class="code hl_struct" href="structplcopen_1_1core_1_1kin_1_1SerialChainSpec.html">kin::SerialChainSpec</a> spec{};</div>
+<div class="line"><a id="l00019" name="l00019"></a><span class="lineno">   19</span>    spec.<a class="code hl_variable" href="structplcopen_1_1core_1_1kin_1_1SerialChainSpec.html#a27cda762db700a9d4e09da6bc61e2f83">joint_count</a> = 7;</div>
+<div class="line"><a id="l00020" name="l00020"></a><span class="lineno">   20</span>    spec.convention = <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1kin.html#a489039edcc989e632b7aa748abe36515ac00f0c4675b91fb8b918e4079a0b1bac">kin::DhConvention::standard</a>;</div>
+<div class="line"><a id="l00021" name="l00021"></a><span class="lineno">   21</span>    spec.links[0] = {0.0, -Pi * 0.5, 0.34, 0.0, Lower, Upper};</div>
+<div class="line"><a id="l00022" name="l00022"></a><span class="lineno">   22</span>    spec.links[1] = {0.0, Pi * 0.5, 0.0, 0.0, Lower, Upper};</div>
+<div class="line"><a id="l00023" name="l00023"></a><span class="lineno">   23</span>    spec.links[2] = {0.0, Pi * 0.5, 0.4, 0.0, Lower, Upper};</div>
+<div class="line"><a id="l00024" name="l00024"></a><span class="lineno">   24</span>    spec.links[3] = {0.0, -Pi * 0.5, 0.0, 0.0, Lower, Upper};</div>
+<div class="line"><a id="l00025" name="l00025"></a><span class="lineno">   25</span>    spec.links[4] = {0.0, -Pi * 0.5, 0.4, 0.0, Lower, Upper};</div>
+<div class="line"><a id="l00026" name="l00026"></a><span class="lineno">   26</span>    spec.links[5] = {0.0, Pi * 0.5, 0.0, 0.0, Lower, Upper};</div>
+<div class="line"><a id="l00027" name="l00027"></a><span class="lineno">   27</span>    spec.links[6] = {0.0, 0.0, 0.126, 0.0, Lower, Upper};</div>
+<div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span>    <span class="keywordflow">return</span> spec;</div>
+<div class="line"><a id="l00029" name="l00029"></a><span class="lineno">   29</span>}</div>
+</div>
+<div class="line"><a id="l00030" name="l00030"></a><span class="lineno">   30</span> </div>
+<div class="line"><a id="l00031" name="l00031"></a><span class="lineno">   31</span>} <span class="comment">// namespace plcopen::core::test_support</span></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1kin_html_a489039edcc989e632b7aa748abe36515ac00f0c4675b91fb8b918e4079a0b1bac"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1kin.html#a489039edcc989e632b7aa748abe36515ac00f0c4675b91fb8b918e4079a0b1bac">plcopen::core::kin::DhConvention::standard</a></div><div class="ttdeci">@ standard</div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1test__support_html"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1test__support.html">plcopen::core::test_support</a></div><div class="ttdef"><b>Definition</b> <a href="dynamics__fixture_8h_source.html#l00008">dynamics_fixture.h:9</a></div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1test__support_html_adefa305d0484350ab66d1625f3901bb1"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1test__support.html#adefa305d0484350ab66d1625f3901bb1">plcopen::core::test_support::seven_dof_arm_spec</a></div><div class="ttdeci">kin::SerialChainSpec seven_dof_arm_spec()</div><div class="ttdef"><b>Definition</b> <a href="serial__chain__fixture_8h_source.html#l00012">serial_chain_fixture.h:12</a></div></div>
+<div class="ttc" id="aserial__chain_8h_html"><div class="ttname"><a href="serial__chain_8h.html">serial_chain.h</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1kin_1_1SerialChainSpec_html"><div class="ttname"><a href="structplcopen_1_1core_1_1kin_1_1SerialChainSpec.html">plcopen::core::kin::SerialChainSpec</a></div><div class="ttdef"><b>Definition</b> <a href="serial__chain_8h_source.html#l00040">serial_chain.h:41</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1kin_1_1SerialChainSpec_html_a27cda762db700a9d4e09da6bc61e2f83"><div class="ttname"><a href="structplcopen_1_1core_1_1kin_1_1SerialChainSpec.html#a27cda762db700a9d4e09da6bc61e2f83">plcopen::core::kin::SerialChainSpec::joint_count</a></div><div class="ttdeci">std::size_t joint_count</div><div class="ttdef"><b>Definition</b> <a href="serial__chain_8h_source.html#l00042">serial_chain.h:42</a></div></div>
+</div><!-- fragment --></div><!-- contents -->
+<!-- start footer part -->
+<hr class="footer"/><address class="footer"><small>
+制作者&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.8
+</small></address>
+</body>
+</html>

@@ -1,0 +1,11 @@
+<map id="core/st/binding_manifest.h" name="core/st/binding_manifest.h">
+<area shape="rect" id="Node000001" title=" " alt="" coords="131,5,326,31"/>
+<area shape="rect" id="Node000002" href="$binding__registry_8h.html" title=" " alt="" coords="5,79,191,104"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="197,40,121,81,118,76,194,35"/>
+<area shape="rect" id="Node000003" href="$st_8h.html" title=" " alt="" coords="181,152,276,177"/>
+<area shape="poly" id="edge5_Node000001_Node000003" title=" " alt="" coords="231,45,231,152,226,152,226,45"/>
+<area shape="rect" id="Node000004" href="$language_8h.html" title=" " alt="" coords="267,79,409,104"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="259,36,322,76,319,81,256,40"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="133,108,209,149,206,154,130,113"/>
+<area shape="poly" id="edge4_Node000004_Node000003" title=" " alt="" coords="310,114,248,154,245,150,308,109"/>
+</map>

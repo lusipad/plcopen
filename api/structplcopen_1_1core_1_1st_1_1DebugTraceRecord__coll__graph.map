@@ -1,0 +1,5 @@
+<map id="plcopen::core::st::DebugTraceRecord" name="plcopen::core::st::DebugTraceRecord">
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,108,148,148"/>
+<area shape="rect" id="Node000002" href="$structplcopen_1_1core_1_1st_1_1InstructionId.html" title=" " alt="" coords="8,5,145,45"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="79,59,79,108,74,108,74,59"/>
+</map>

@@ -1,0 +1,15 @@
+<map id="plcopen::core::fb::FbGroupWriteSWLimits" name="plcopen::core::fb::FbGroupWriteSWLimits">
+<area shape="rect" id="Node000001" title=" " alt="" coords="988,120,1161,160"/>
+<area shape="rect" id="Node000002" href="$classplcopen_1_1core_1_1fb_1_1GroupConfigWriteFb.html" title=" " alt="" coords="665,73,818,113"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="832,103,988,125,987,131,831,109"/>
+<area shape="rect" id="Node000003" href="$classplcopen_1_1core_1_1axis_1_1AxisGroup.html" title=" " alt="" coords="369,37,513,77"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="528,65,665,82,664,87,527,70"/>
+<area shape="rect" id="Node000004" href="$structplcopen_1_1core_1_1axis_1_1GroupPosition.html" title=" " alt="" coords="17,5,161,45"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="175,30,370,48,369,54,174,36"/>
+<area shape="rect" id="Node000005" href="$structplcopen_1_1core_1_1axis_1_1JogCommandOptions.html" title=" " alt="" coords="5,69,172,109"/>
+<area shape="poly" id="edge4_Node000003_Node000005" title=" " alt="" coords="186,79,345,65,369,63,369,68,346,71,186,85"/>
+<area shape="rect" id="Node000006" href="$structplcopen_1_1core_1_1fb_1_1MotionOutputs.html" title=" " alt="" coords="372,101,511,141"/>
+<area shape="poly" id="edge5_Node000002_Node000006" title=" " alt="" coords="524,114,604,108,664,101,665,106,604,113,525,120"/>
+<area shape="rect" id="Node000007" href="$structplcopen_1_1core_1_1axis_1_1GroupArray.html" title=" " alt="" coords="628,137,855,177"/>
+<area shape="poly" id="edge6_Node000001_Node000007" title=" " alt="" coords="868,148,988,142,988,147,869,153"/>
+</map>

@@ -1,0 +1,15 @@
+<map id="plcopen::core::fb::SnapshotValueReadFb" name="plcopen::core::fb::SnapshotValueReadFb">
+<area shape="rect" id="Node000001" title=" " alt="" coords="192,133,359,173"/>
+<area shape="rect" id="Node000003" href="$classplcopen_1_1core_1_1fb_1_1FbReadActualPosition.html" title=" " alt="" coords="420,5,584,45"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="308,122,353,88,405,55,432,43,434,48,408,60,356,92,311,127"/>
+<area shape="rect" id="Node000004" href="$classplcopen_1_1core_1_1fb_1_1FbReadActualTorque.html" title=" " alt="" coords="425,69,579,109"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="360,127,430,107,431,112,361,132"/>
+<area shape="rect" id="Node000005" href="$classplcopen_1_1core_1_1fb_1_1FbReadActualVelocity.html" title=" " alt="" coords="420,133,584,173"/>
+<area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="372,151,420,151,420,156,372,156"/>
+<area shape="rect" id="Node000006" href="$classplcopen_1_1core_1_1fb_1_1FbReadCommandPosition.html" title=" " alt="" coords="407,197,597,237"/>
+<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="361,175,431,195,430,200,360,180"/>
+<area shape="rect" id="Node000007" href="$classplcopen_1_1core_1_1fb_1_1FbReadCommandVelocity.html" title=" " alt="" coords="407,261,597,301"/>
+<area shape="poly" id="edge6_Node000001_Node000007" title=" " alt="" coords="311,180,356,214,408,247,434,259,432,264,405,252,353,219,308,184"/>
+<area shape="rect" id="Node000002" href="$classplcopen_1_1core_1_1fb_1_1EnableReadFb.html" title=" " alt="" coords="5,133,144,173"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="158,151,192,151,192,156,158,156"/>
+</map>

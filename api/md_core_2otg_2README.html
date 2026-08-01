@@ -1,0 +1,104 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh">
+<head>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=11"/>
+<meta name="generator" content="Doxygen 1.9.8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>plcopen: L1 otg</title>
+<link href="tabs.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="jquery.js"></script>
+<script type="text/javascript" src="dynsections.js"></script>
+<link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<link href="doxygen.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+<div id="top"><!-- do not remove this div, it is closed by doxygen! -->
+<div id="titlearea">
+<table cellspacing="0" cellpadding="0">
+ <tbody>
+ <tr id="projectrow">
+  <td id="projectalign">
+   <div id="projectname">plcopen<span id="projectnumber">&#160;0.21.0</span>
+   </div>
+  </td>
+ </tr>
+ </tbody>
+</table>
+</div>
+<!-- end header part -->
+<!-- 制作者 Doxygen 1.9.8 -->
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+var searchBox = new SearchBox("searchBox", "search/",'.html');
+/* @license-end */
+</script>
+<script type="text/javascript" src="menudata.js"></script>
+<script type="text/javascript" src="menu.js"></script>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+$(function() {
+  initMenu('',true,false,'search.php','搜索');
+  $(document).ready(function() { init_search(); });
+});
+/* @license-end */
+</script>
+<div id="main-nav"></div>
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<div id="MSearchResults">
+<div class="SRPage">
+<div id="SRIndex">
+<div id="SRResults"></div>
+<div class="SRStatus" id="Loading">载入中...</div>
+<div class="SRStatus" id="Searching">搜索中...</div>
+<div class="SRStatus" id="NoMatches">未找到</div>
+</div>
+</div>
+</div>
+</div>
+
+</div><!-- top -->
+<div><div class="header">
+  <div class="headertitle"><div class="title">L1 otg</div></div>
+</div><!--header-->
+<div class="contents">
+<div class="textblock"><p><a class="anchor" id="autotoc_md26"></a> <code>core/otg</code> 是 L1 阶梯层：一维在线轨迹生成（OTG）契约，被 stream 支撑库与 L4 exec、L5 axis 直接消费（阶梯全貌见 <a class="el" href="md_core_2README.html">core/README.md</a>）。</p>
+<p>Inputs:</p>
+<ul>
+<li><code>State1D</code>: current position, velocity, acceleration;</li>
+<li><code>Target1D</code>: target position, velocity, acceleration;</li>
+<li><code>Limits1D</code>: positive velocity, acceleration, deceleration, and jerk limits.</li>
+</ul>
+<p>Outputs:</p>
+<ul>
+<li><code>Profile1D</code>: fixed-capacity piecewise-polynomial profile representation;</li>
+<li><code>sample(profile, tick)</code>: O(1) sampling in integer cycle units.</li>
+</ul>
+<p>Implementation boundary:</p>
+<ul>
+<li>unit semantics are caller-owned cycle units, not seconds;</li>
+<li>invalid or already out-of-limit start/target states return <code>ErrorCode</code>;</li>
+<li><code>plan()</code> is the baseline feasible solver for zero boundary accelerations: a conservative single quintic segment whose duration grows until sampled velocity, acceleration, and jerk checks pass. Within-limit nonzero boundary accelerations can have no feasible single-quintic duration; use <code>plan_time_optimal()</code> for arbitrary state-to-state input;</li>
+<li><code>plan_time_optimal()</code> (<code><a class="el" href="time__optimal_8h.html">time_optimal.h</a></code>, A9 v2) is the near time-optimal jerk-limited solver for arbitrary state-to-state transitions. Nonzero entry acceleration is reduced by an exact zeroing ramp; nonzero target acceleration uses a symmetric targeting ramp or a direct quintic correction when its effective velocity would exceed the envelope (KB-026/055). Closed-form ramp phases, bounded cruise-velocity search, integer-cycle quantization, and exact correction compete with the baseline candidate; the selected profile is never slower than a feasible <code>plan()</code> result (fuzz-asserted).</li>
+<li>nonzero target velocities in the cruise regime are served by the refined-cruise candidate (2026-07-05, fixing the A4 finding): an integer cruise duration whose cruise velocity is fixed-point refined until the quantized ramps plus cruise land on the target within ~1e-9 dust — no residue-burning correction segment (the A4 case improved 317 -&gt; 101 cycles, transient reverse motion eliminated). The quality tier in <code>otg_time_optimal_tests</code> asserts near-optimal duration and forward-only motion for cruise-regime cases including targets at/near the velocity limit.</li>
+<li>the bump zone (2026-07-05, B9 finding, KB-034): the chain distance D(vc) is NOT monotone between the boundary velocities (splitting the direct ramp adds jerk phases and extra distance), so the cruise-velocity bisection selects the monotone branch by comparing the distance against the direct-ramp distance first — the old global bisection could land on a spurious crossing (a negative cruise velocity for a short forward move) and every fast candidate degenerated. In the same zone the quantized multiphase chains leave a position residue whose correction burns dozens of cycles at the boundary velocity; an estimate-anchored single quintic (probing a bounded window upward from the continuous-time chain duration; supports nonzero entry accelerations; forward-only shape-guarded) lands exactly with no correction — the B9 tracking case improved 68 -&gt; 19 cycles. <code>otg_time_optimal_tests</code> carries fixed bump-zone quality cases and a randomized bump-zone tier (duration-sanity asserted; the solver's own contract still allows overshoot-and-return, which the trackers exclude on their side).</li>
+</ul>
+<p>层边界：路径缓冲与 blending 属 L3 plan，圆弧等路径几何属 L2 geom，PLCopen FB 语义属 L6 fb——这些能力本层不承载，也不引入外部 OTG 依赖。消费者：stream 支撑库构建于本层之上（依赖 otg/rt），L4 exec 与 L5 axis 亦直接消费本层。 </p>
+</div></div><!-- contents -->
+</div><!-- PageDoc -->
+<!-- start footer part -->
+<hr class="footer"/><address class="footer"><small>
+制作者&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.8
+</small></address>
+</body>
+</html>

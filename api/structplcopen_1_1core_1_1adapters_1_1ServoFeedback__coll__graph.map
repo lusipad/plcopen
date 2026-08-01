@@ -1,0 +1,5 @@
+<map id="plcopen::core::adapters::ServoFeedback" name="plcopen::core::adapters::ServoFeedback">
+<area shape="rect" id="Node000001" title=" " alt="" coords="17,108,192,148"/>
+<area shape="rect" id="Node000002" href="$structplcopen_1_1core_1_1axis_1_1AxisModel_1_1AxisInfoInputs.html" title=" " alt="" coords="5,5,204,45"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="107,59,107,108,102,108,102,59"/>
+</map>

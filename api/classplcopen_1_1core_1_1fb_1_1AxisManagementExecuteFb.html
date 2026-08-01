@@ -1,0 +1,326 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh">
+<head>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=11"/>
+<meta name="generator" content="Doxygen 1.9.8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>plcopen: plcopen::core::fb::AxisManagementExecuteFb类 参考</title>
+<link href="tabs.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="jquery.js"></script>
+<script type="text/javascript" src="dynsections.js"></script>
+<link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<link href="doxygen.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+<div id="top"><!-- do not remove this div, it is closed by doxygen! -->
+<div id="titlearea">
+<table cellspacing="0" cellpadding="0">
+ <tbody>
+ <tr id="projectrow">
+  <td id="projectalign">
+   <div id="projectname">plcopen<span id="projectnumber">&#160;0.21.0</span>
+   </div>
+  </td>
+ </tr>
+ </tbody>
+</table>
+</div>
+<!-- end header part -->
+<!-- 制作者 Doxygen 1.9.8 -->
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+var searchBox = new SearchBox("searchBox", "search/",'.html');
+/* @license-end */
+</script>
+<script type="text/javascript" src="menudata.js"></script>
+<script type="text/javascript" src="menu.js"></script>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+$(function() {
+  initMenu('',true,false,'search.php','搜索');
+  $(document).ready(function() { init_search(); });
+});
+/* @license-end */
+</script>
+<div id="main-nav"></div>
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<div id="MSearchResults">
+<div class="SRPage">
+<div id="SRIndex">
+<div id="SRResults"></div>
+<div class="SRStatus" id="Loading">载入中...</div>
+<div class="SRStatus" id="Searching">搜索中...</div>
+<div class="SRStatus" id="NoMatches">未找到</div>
+</div>
+</div>
+</div>
+</div>
+
+<div id="nav-path" class="navpath">
+  <ul>
+<li class="navelem"><a class="el" href="namespaceplcopen.html">plcopen</a></li><li class="navelem"><a class="el" href="namespaceplcopen_1_1core.html">core</a></li><li class="navelem"><a class="el" href="namespaceplcopen_1_1core_1_1fb.html">fb</a></li><li class="navelem"><a class="el" href="classplcopen_1_1core_1_1fb_1_1AxisManagementExecuteFb.html">AxisManagementExecuteFb</a></li>  </ul>
+</div>
+</div><!-- top -->
+<div class="header">
+  <div class="summary">
+<a href="#pub-attribs">Public 属性</a> &#124;
+<a href="#pro-methods">Protected 成员函数</a> &#124;
+<a href="classplcopen_1_1core_1_1fb_1_1AxisManagementExecuteFb-members.html">所有成员列表</a>  </div>
+  <div class="headertitle"><div class="title">plcopen::core::fb::AxisManagementExecuteFb类 参考</div></div>
+</div><!--header-->
+<div class="contents">
+
+<p><code>#include &lt;<a class="el" href="motion_8h_source.html">motion.h</a>&gt;</code></p>
+<div class="dynheader">
+类 plcopen::core::fb::AxisManagementExecuteFb 继承关系图:</div>
+<div class="dyncontent">
+<div class="center"><img src="classplcopen_1_1core_1_1fb_1_1AxisManagementExecuteFb__inherit__graph.png" border="0" usemap="#aplcopen_1_1core_1_1fb_1_1AxisManagementExecuteFb_inherit__map" alt="Inheritance graph"/></div>
+<map name="aplcopen_1_1core_1_1fb_1_1AxisManagementExecuteFb_inherit__map" id="aplcopen_1_1core_1_1fb_1_1AxisManagementExecuteFb_inherit__map">
+<area shape="rect" title=" " alt="" coords="5,69,208,109"/>
+<area shape="rect" href="classplcopen_1_1core_1_1fb_1_1FbWriteBoolParameter.html" title=" " alt="" coords="256,5,425,45"/>
+<area shape="poly" title=" " alt="" coords="193,63,266,43,268,48,194,68"/>
+<area shape="rect" href="classplcopen_1_1core_1_1fb_1_1FbWriteDigitalOutput.html" title=" " alt="" coords="261,69,421,109"/>
+<area shape="poly" title=" " alt="" coords="222,87,260,87,260,92,222,92"/>
+<area shape="rect" href="classplcopen_1_1core_1_1fb_1_1FbWriteParameter.html" title=" " alt="" coords="271,133,411,173"/>
+<area shape="poly" title=" " alt="" coords="194,110,271,132,270,137,193,116"/>
+</map>
+<center><span class="legend">[<a href="graph_legend.html">图例</a>]</span></center></div>
+<div class="dynheader">
+plcopen::core::fb::AxisManagementExecuteFb 的协作图:</div>
+<div class="dyncontent">
+<div class="center"><img src="classplcopen_1_1core_1_1fb_1_1AxisManagementExecuteFb__coll__graph.png" border="0" usemap="#aplcopen_1_1core_1_1fb_1_1AxisManagementExecuteFb_coll__map" alt="Collaboration graph"/></div>
+<map name="aplcopen_1_1core_1_1fb_1_1AxisManagementExecuteFb_coll__map" id="aplcopen_1_1core_1_1fb_1_1AxisManagementExecuteFb_coll__map">
+<area shape="rect" title=" " alt="" coords="5,108,208,148"/>
+<area shape="rect" href="classplcopen_1_1core_1_1axis_1_1AxisModel.html" title=" " alt="" coords="35,5,179,45"/>
+<area shape="poly" title=" " alt="" coords="109,59,109,108,104,108,104,59"/>
+</map>
+<center><span class="legend">[<a href="graph_legend.html">图例</a>]</span></center></div>
+<table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
+Public 属性</h2></td></tr>
+<tr class="memitem:a980d04ce48f566beadafed7cef05ea54" id="r_a980d04ce48f566beadafed7cef05ea54"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classplcopen_1_1core_1_1axis_1_1AxisModel.html">axis::AxisModel</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1AxisManagementExecuteFb.html#a980d04ce48f566beadafed7cef05ea54">axis_ref</a> = nullptr</td></tr>
+<tr class="separator:a980d04ce48f566beadafed7cef05ea54"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac4741469d491a0e689476158a836dc47" id="r_ac4741469d491a0e689476158a836dc47"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1AxisManagementExecuteFb.html#ac4741469d491a0e689476158a836dc47">execute</a> = false</td></tr>
+<tr class="separator:ac4741469d491a0e689476158a836dc47"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a68c3dd9114639b887af0e0df9141e62e" id="r_a68c3dd9114639b887af0e0df9141e62e"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1AxisManagementExecuteFb.html#a68c3dd9114639b887af0e0df9141e62e">done</a> = false</td></tr>
+<tr class="separator:a68c3dd9114639b887af0e0df9141e62e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a67ea1c307510d66cac9b03640137913d" id="r_a67ea1c307510d66cac9b03640137913d"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1AxisManagementExecuteFb.html#a67ea1c307510d66cac9b03640137913d">busy</a> = false</td></tr>
+<tr class="separator:a67ea1c307510d66cac9b03640137913d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2ab94d7371be7ac2965d4ba46aedf308" id="r_a2ab94d7371be7ac2965d4ba46aedf308"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1AxisManagementExecuteFb.html#a2ab94d7371be7ac2965d4ba46aedf308">error</a> = false</td></tr>
+<tr class="separator:a2ab94d7371be7ac2965d4ba46aedf308"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af9d2d3db1885c2eb9e1e85ed76c45d85" id="r_af9d2d3db1885c2eb9e1e85ed76c45d85"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8">rt::ErrorCode</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1AxisManagementExecuteFb.html#af9d2d3db1885c2eb9e1e85ed76c45d85">error_id</a> = <a class="el" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8a444bcb3a3fcf8389296c49467f27e1d6">rt::ErrorCode::ok</a></td></tr>
+<tr class="separator:af9d2d3db1885c2eb9e1e85ed76c45d85"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-methods" name="pro-methods"></a>
+Protected 成员函数</h2></td></tr>
+<tr class="memitem:aaf3e5e37cfb4959855f21259db5b599b" id="r_aaf3e5e37cfb4959855f21259db5b599b"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1AxisManagementExecuteFb.html#aaf3e5e37cfb4959855f21259db5b599b">rising_edge</a> ()</td></tr>
+<tr class="separator:aaf3e5e37cfb4959855f21259db5b599b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a07a40146eac47824626988b0f560fbbe" id="r_a07a40146eac47824626988b0f560fbbe"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1AxisManagementExecuteFb.html#a07a40146eac47824626988b0f560fbbe">accept_management</a> (<a class="el" href="classplcopen_1_1core_1_1rt_1_1Result.html">rt::Result</a>&lt; std::uint32_t &gt; accepted)</td></tr>
+<tr class="separator:a07a40146eac47824626988b0f560fbbe"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4da8cfed47db2b8a2329656c494fcb65" id="r_a4da8cfed47db2b8a2329656c494fcb65"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1AxisManagementExecuteFb.html#a4da8cfed47db2b8a2329656c494fcb65">observe_management</a> ()</td></tr>
+<tr class="separator:a4da8cfed47db2b8a2329656c494fcb65"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table>
+<a name="details" id="details"></a><h2 class="groupheader">详细描述</h2>
+<div class="textblock">
+<p class="definition">在文件 <a class="el" href="motion_8h_source.html">motion.h</a> 第 <a class="el" href="motion_8h_source.html#l00176">176</a> 行定义.</p>
+</div><h2 class="groupheader">成员函数说明</h2>
+<a id="a07a40146eac47824626988b0f560fbbe" name="a07a40146eac47824626988b0f560fbbe"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a07a40146eac47824626988b0f560fbbe">&#9670;&#160;</a></span>accept_management()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void plcopen::core::fb::AxisManagementExecuteFb::accept_management </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classplcopen_1_1core_1_1rt_1_1Result.html">rt::Result</a>&lt; std::uint32_t &gt;&#160;</td>
+          <td class="paramname"><em>accepted</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="motion_8h_source.html">motion.h</a> 第 <a class="el" href="motion_8h_source.html#l00201">201</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a4da8cfed47db2b8a2329656c494fcb65" name="a4da8cfed47db2b8a2329656c494fcb65"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4da8cfed47db2b8a2329656c494fcb65">&#9670;&#160;</a></span>observe_management()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void plcopen::core::fb::AxisManagementExecuteFb::observe_management </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="motion_8h_source.html">motion.h</a> 第 <a class="el" href="motion_8h_source.html#l00213">213</a> 行定义.</p>
+
+</div>
+</div>
+<a id="aaf3e5e37cfb4959855f21259db5b599b" name="aaf3e5e37cfb4959855f21259db5b599b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aaf3e5e37cfb4959855f21259db5b599b">&#9670;&#160;</a></span>rising_edge()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool plcopen::core::fb::AxisManagementExecuteFb::rising_edge </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="motion_8h_source.html">motion.h</a> 第 <a class="el" href="motion_8h_source.html#l00187">187</a> 行定义.</p>
+
+</div>
+</div>
+<h2 class="groupheader">类成员变量说明</h2>
+<a id="a980d04ce48f566beadafed7cef05ea54" name="a980d04ce48f566beadafed7cef05ea54"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a980d04ce48f566beadafed7cef05ea54">&#9670;&#160;</a></span>axis_ref</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classplcopen_1_1core_1_1axis_1_1AxisModel.html">axis::AxisModel</a>* plcopen::core::fb::AxisManagementExecuteFb::axis_ref = nullptr</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="motion_8h_source.html">motion.h</a> 第 <a class="el" href="motion_8h_source.html#l00179">179</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a67ea1c307510d66cac9b03640137913d" name="a67ea1c307510d66cac9b03640137913d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a67ea1c307510d66cac9b03640137913d">&#9670;&#160;</a></span>busy</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool plcopen::core::fb::AxisManagementExecuteFb::busy = false</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="motion_8h_source.html">motion.h</a> 第 <a class="el" href="motion_8h_source.html#l00182">182</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a68c3dd9114639b887af0e0df9141e62e" name="a68c3dd9114639b887af0e0df9141e62e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a68c3dd9114639b887af0e0df9141e62e">&#9670;&#160;</a></span>done</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool plcopen::core::fb::AxisManagementExecuteFb::done = false</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="motion_8h_source.html">motion.h</a> 第 <a class="el" href="motion_8h_source.html#l00181">181</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a2ab94d7371be7ac2965d4ba46aedf308" name="a2ab94d7371be7ac2965d4ba46aedf308"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2ab94d7371be7ac2965d4ba46aedf308">&#9670;&#160;</a></span>error</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool plcopen::core::fb::AxisManagementExecuteFb::error = false</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="motion_8h_source.html">motion.h</a> 第 <a class="el" href="motion_8h_source.html#l00183">183</a> 行定义.</p>
+
+</div>
+</div>
+<a id="af9d2d3db1885c2eb9e1e85ed76c45d85" name="af9d2d3db1885c2eb9e1e85ed76c45d85"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af9d2d3db1885c2eb9e1e85ed76c45d85">&#9670;&#160;</a></span>error_id</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8">rt::ErrorCode</a> plcopen::core::fb::AxisManagementExecuteFb::error_id = <a class="el" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8a444bcb3a3fcf8389296c49467f27e1d6">rt::ErrorCode::ok</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="motion_8h_source.html">motion.h</a> 第 <a class="el" href="motion_8h_source.html#l00184">184</a> 行定义.</p>
+
+</div>
+</div>
+<a id="ac4741469d491a0e689476158a836dc47" name="ac4741469d491a0e689476158a836dc47"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac4741469d491a0e689476158a836dc47">&#9670;&#160;</a></span>execute</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool plcopen::core::fb::AxisManagementExecuteFb::execute = false</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="motion_8h_source.html">motion.h</a> 第 <a class="el" href="motion_8h_source.html#l00180">180</a> 行定义.</p>
+
+</div>
+</div>
+<hr/>该类的文档由以下文件生成:<ul>
+<li>core/fb/<a class="el" href="motion_8h_source.html">motion.h</a></li>
+</ul>
+</div><!-- contents -->
+<!-- start footer part -->
+<hr class="footer"/><address class="footer"><small>
+制作者&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.8
+</small></address>
+</body>
+</html>

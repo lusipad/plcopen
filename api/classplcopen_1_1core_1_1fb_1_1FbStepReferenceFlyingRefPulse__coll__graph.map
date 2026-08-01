@@ -1,0 +1,11 @@
+<map id="plcopen::core::fb::FbStepReferenceFlyingRefPulse" name="plcopen::core::fb::FbStepReferenceFlyingRefPulse">
+<area shape="rect" id="Node000001" title=" " alt="" coords="513,69,744,109"/>
+<area shape="rect" id="Node000002" href="$classplcopen_1_1core_1_1fb_1_1PassiveHomingFb.html" title=" " alt="" coords="325,69,464,109"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="477,87,513,87,513,92,477,92"/>
+<area shape="rect" id="Node000003" href="$classplcopen_1_1core_1_1axis_1_1AxisModel.html" title=" " alt="" coords="13,5,157,45"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="171,40,302,67,326,72,324,77,301,72,169,45"/>
+<area shape="rect" id="Node000004" href="$structplcopen_1_1core_1_1axis_1_1ReferenceSignalRef.html" title=" " alt="" coords="5,69,164,109"/>
+<area shape="poly" id="edge3_Node000002_Node000004" title=" " alt="" coords="178,87,325,87,325,92,178,92"/>
+<area shape="rect" id="Node000005" href="$structplcopen_1_1core_1_1fb_1_1MotionOutputs.html" title=" " alt="" coords="15,133,154,173"/>
+<area shape="poly" id="edge4_Node000002_Node000005" title=" " alt="" coords="167,134,301,107,324,102,326,107,302,112,168,140"/>
+</map>

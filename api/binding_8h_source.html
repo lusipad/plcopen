@@ -1,0 +1,262 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh">
+<head>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=11"/>
+<meta name="generator" content="Doxygen 1.9.8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>plcopen: core/st/binding.h 源文件</title>
+<link href="tabs.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="jquery.js"></script>
+<script type="text/javascript" src="dynsections.js"></script>
+<link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<link href="doxygen.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+<div id="top"><!-- do not remove this div, it is closed by doxygen! -->
+<div id="titlearea">
+<table cellspacing="0" cellpadding="0">
+ <tbody>
+ <tr id="projectrow">
+  <td id="projectalign">
+   <div id="projectname">plcopen<span id="projectnumber">&#160;0.21.0</span>
+   </div>
+  </td>
+ </tr>
+ </tbody>
+</table>
+</div>
+<!-- end header part -->
+<!-- 制作者 Doxygen 1.9.8 -->
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+var searchBox = new SearchBox("searchBox", "search/",'.html');
+/* @license-end */
+</script>
+<script type="text/javascript" src="menudata.js"></script>
+<script type="text/javascript" src="menu.js"></script>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+$(function() {
+  initMenu('',true,false,'search.php','搜索');
+  $(document).ready(function() { init_search(); });
+});
+/* @license-end */
+</script>
+<div id="main-nav"></div>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+$(document).ready(function() { init_codefold(0); });
+/* @license-end */
+</script>
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<div id="MSearchResults">
+<div class="SRPage">
+<div id="SRIndex">
+<div id="SRResults"></div>
+<div class="SRStatus" id="Loading">载入中...</div>
+<div class="SRStatus" id="Searching">搜索中...</div>
+<div class="SRStatus" id="NoMatches">未找到</div>
+</div>
+</div>
+</div>
+</div>
+
+<div id="nav-path" class="navpath">
+  <ul>
+<li class="navelem"><a class="el" href="dir_4270bfced15e0e73154b13468c7c9ad9.html">core</a></li><li class="navelem"><a class="el" href="dir_58fdb30801db36767d5a9420a346ac9a.html">st</a></li>  </ul>
+</div>
+</div><!-- top -->
+<div class="header">
+  <div class="headertitle"><div class="title">binding.h</div></div>
+</div><!--header-->
+<div class="contents">
+<a href="binding_8h.html">浏览该文件的文档.</a><div class="fragment"><div class="line"><a id="l00001" name="l00001"></a><span class="lineno">    1</span><span class="preprocessor">#pragma once</span></div>
+<div class="line"><a id="l00002" name="l00002"></a><span class="lineno">    2</span> </div>
+<div class="line"><a id="l00003" name="l00003"></a><span class="lineno">    3</span><span class="preprocessor">#include &lt;cstddef&gt;</span></div>
+<div class="line"><a id="l00004" name="l00004"></a><span class="lineno">    4</span><span class="preprocessor">#include &lt;cstdint&gt;</span></div>
+<div class="line"><a id="l00005" name="l00005"></a><span class="lineno">    5</span> </div>
+<div class="line"><a id="l00006" name="l00006"></a><span class="lineno">    6</span><span class="keyword">namespace </span><a class="code hl_namespace" href="namespaceplcopen_1_1core_1_1axis.html">plcopen::core::axis</a></div>
+<div class="line"><a id="l00007" name="l00007"></a><span class="lineno">    7</span>{</div>
+<div class="line"><a id="l00008" name="l00008"></a><span class="lineno">    8</span><span class="keyword">class </span>AxisModel;</div>
+<div class="line"><a id="l00009" name="l00009"></a><span class="lineno">    9</span><span class="keyword">class </span>AxisGroup;</div>
+<div class="line"><a id="l00010" name="l00010"></a><span class="lineno">   10</span>}</div>
+<div class="line"><a id="l00011" name="l00011"></a><span class="lineno">   11</span> </div>
+<div class="line"><a id="l00012" name="l00012"></a><span class="lineno">   12</span><span class="keyword">namespace </span><a class="code hl_namespace" href="namespaceplcopen_1_1core_1_1fb.html">plcopen::core::fb</a></div>
+<div class="line"><a id="l00013" name="l00013"></a><span class="lineno">   13</span>{</div>
+<div class="line"><a id="l00014" name="l00014"></a><span class="lineno">   14</span><span class="keyword">struct </span>PathTable;</div>
+<div class="line"><a id="l00015" name="l00015"></a><span class="lineno">   15</span><span class="keyword">struct </span>CamSwitchAction;</div>
+<div class="line"><a id="l00016" name="l00016"></a><span class="lineno">   16</span>}</div>
+<div class="line"><a id="l00017" name="l00017"></a><span class="lineno">   17</span> </div>
+<div class="line"><a id="l00018" name="l00018"></a><span class="lineno">   18</span><span class="keyword">namespace </span><a class="code hl_namespace" href="namespaceplcopen_1_1core_1_1exec.html">plcopen::core::exec</a></div>
+<div class="line"><a id="l00019" name="l00019"></a><span class="lineno">   19</span>{</div>
+<div class="line"><a id="l00020" name="l00020"></a><span class="lineno">   20</span><span class="keyword">struct </span>CamPoint;</div>
+<div class="line"><a id="l00021" name="l00021"></a><span class="lineno">   21</span>}</div>
+<div class="line"><a id="l00022" name="l00022"></a><span class="lineno">   22</span> </div>
+<div class="line"><a id="l00023" name="l00023"></a><span class="lineno">   23</span><span class="keyword">namespace </span><a class="code hl_namespace" href="namespaceplcopen_1_1core_1_1st.html">plcopen::core::st</a></div>
+<div class="line"><a id="l00024" name="l00024"></a><span class="lineno">   24</span>{</div>
+<div class="line"><a id="l00025" name="l00025"></a><span class="lineno">   25</span> </div>
+<div class="line"><a id="l00026" name="l00026"></a><span class="lineno"><a class="line" href="namespaceplcopen_1_1core_1_1st.html#a6832ce90d5ab90cf9c308ec8cfb0ae76">   26</a></span><span class="keyword">inline</span> <span class="keyword">constexpr</span> std::uint16_t <a class="code hl_variable" href="namespaceplcopen_1_1core_1_1st.html#a6832ce90d5ab90cf9c308ec8cfb0ae76">kMaxAxisBindings</a> = 64;</div>
+<div class="line"><a id="l00027" name="l00027"></a><span class="lineno"><a class="line" href="namespaceplcopen_1_1core_1_1st.html#aa41408fdcd7c4a069a9b564fb5d130b3">   27</a></span><span class="keyword">inline</span> <span class="keyword">constexpr</span> std::uint16_t <a class="code hl_variable" href="namespaceplcopen_1_1core_1_1st.html#aa41408fdcd7c4a069a9b564fb5d130b3">kMaxGroupBindings</a> = 16;</div>
+<div class="line"><a id="l00028" name="l00028"></a><span class="lineno"><a class="line" href="namespaceplcopen_1_1core_1_1st.html#aa13164cc73fd30fa79e01c7c6663efc0">   28</a></span><span class="keyword">inline</span> <span class="keyword">constexpr</span> std::uint16_t <a class="code hl_variable" href="namespaceplcopen_1_1core_1_1st.html#aa13164cc73fd30fa79e01c7c6663efc0">kMaxFbInstances</a> = 1024;</div>
+<div class="line"><a id="l00029" name="l00029"></a><span class="lineno">   29</span> </div>
+<div class="foldopen" id="foldopen00030" data-start="{" data-end="};">
+<div class="line"><a id="l00030" name="l00030"></a><span class="lineno"><a class="line" href="namespaceplcopen_1_1core_1_1st.html#aeba228a6c8d2bdb240d242b437bb8d1f">   30</a></span><span class="keyword">enum class</span> <a class="code hl_enumeration" href="namespaceplcopen_1_1core_1_1st.html#aeba228a6c8d2bdb240d242b437bb8d1f">BindingTargetKind</a> : std::uint8_t</div>
+<div class="line"><a id="l00031" name="l00031"></a><span class="lineno">   31</span>{</div>
+<div class="line"><a id="l00032" name="l00032"></a><span class="lineno">   32</span>    <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1st.html#aeba228a6c8d2bdb240d242b437bb8d1fafedb2d84cafe20862cb4399751a8a7e3">invalid</a> = 0,</div>
+<div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span>    <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1st.html#aeba228a6c8d2bdb240d242b437bb8d1fa433169d5d9bcbb6d43f0d288e68f0cad">axis</a>,</div>
+<div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span>    <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1st.html#aeba228a6c8d2bdb240d242b437bb8d1fadb0f6f37ebeb6ea09489124345af2a45">group</a>,</div>
+<div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span>};</div>
+</div>
+<div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span> </div>
+<div class="foldopen" id="foldopen00037" data-start="{" data-end="};">
+<div class="line"><a id="l00037" name="l00037"></a><span class="lineno"><a class="line" href="namespaceplcopen_1_1core_1_1st.html#a62a8a9e89597730db4bd920eff1ccb41">   37</a></span><span class="keyword">enum class</span> <a class="code hl_enumeration" href="namespaceplcopen_1_1core_1_1st.html#a62a8a9e89597730db4bd920eff1ccb41">BindingError</a> : std::uint8_t</div>
+<div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span>{</div>
+<div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span>    <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1st.html#a62a8a9e89597730db4bd920eff1ccb41a444bcb3a3fcf8389296c49467f27e1d6">ok</a> = 0,</div>
+<div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span>    <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1st.html#a62a8a9e89597730db4bd920eff1ccb41aad921d60486366258809553a3db49a4a">unknown</a>,</div>
+<div class="line"><a id="l00041" name="l00041"></a><span class="lineno">   41</span>    <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1st.html#a62a8a9e89597730db4bd920eff1ccb41ac16bdb0edeb0bdfdbbf22dcf2aadcfdf">null_target</a>,</div>
+<div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span>    <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1st.html#a62a8a9e89597730db4bd920eff1ccb41a24f1b0a79473250c195c7fb84e393392">duplicate</a>,</div>
+<div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span>    <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1st.html#a62a8a9e89597730db4bd920eff1ccb41a4cef2f30ac7d33419d00c1d93a090095">locked</a>,</div>
+<div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span>    <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1st.html#a62a8a9e89597730db4bd920eff1ccb41a075b148c498c6ab9bacdf6d8466e987d">wrong_kind</a>,</div>
+<div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span>    <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1st.html#a62a8a9e89597730db4bd920eff1ccb41ab7d48952407b207a3ac43119390ca8d2">capacity_exceeded</a>,</div>
+<div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span>    <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1st.html#a62a8a9e89597730db4bd920eff1ccb41a24fe18195f0e29f8d3ef5ad3110cfc24">invalid_value</a>,</div>
+<div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span>};</div>
+</div>
+<div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span> </div>
+<div class="line"><a id="l00049" name="l00049"></a><span class="lineno"><a class="line" href="namespaceplcopen_1_1core_1_1st.html#a6513296bbc0a14e5bd01ffa089235747">   49</a></span><span class="keyword">inline</span> <span class="keyword">constexpr</span> std::size_t <a class="code hl_variable" href="namespaceplcopen_1_1core_1_1st.html#a6513296bbc0a14e5bd01ffa089235747">kMaxTableBindings</a> = 32;</div>
+<div class="line"><a id="l00050" name="l00050"></a><span class="lineno"><a class="line" href="namespaceplcopen_1_1core_1_1st.html#af8564e2e8afed5b90446997d21325e9c">   50</a></span><span class="keyword">inline</span> <span class="keyword">constexpr</span> std::size_t <a class="code hl_variable" href="namespaceplcopen_1_1core_1_1st.html#af8564e2e8afed5b90446997d21325e9c">kMaxProfileSegments</a> = 8;</div>
+<div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span> </div>
+<div class="foldopen" id="foldopen00052" data-start="{" data-end="};">
+<div class="line"><a id="l00052" name="l00052"></a><span class="lineno"><a class="line" href="structplcopen_1_1core_1_1st_1_1BindingPositionProfileEntry.html">   52</a></span><span class="keyword">struct </span><a class="code hl_struct" href="structplcopen_1_1core_1_1st_1_1BindingPositionProfileEntry.html">BindingPositionProfileEntry</a></div>
+<div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span>{</div>
+<div class="line"><a id="l00054" name="l00054"></a><span class="lineno"><a class="line" href="structplcopen_1_1core_1_1st_1_1BindingPositionProfileEntry.html#abb494f1311760933fca50e2bb6b59807">   54</a></span>    std::int64_t <a class="code hl_variable" href="structplcopen_1_1core_1_1st_1_1BindingPositionProfileEntry.html#abb494f1311760933fca50e2bb6b59807">time_ns</a> = 0;</div>
+<div class="line"><a id="l00055" name="l00055"></a><span class="lineno"><a class="line" href="structplcopen_1_1core_1_1st_1_1BindingPositionProfileEntry.html#a883f69fb7558373ca734fc0c8f217a97">   55</a></span>    <span class="keywordtype">double</span> <a class="code hl_variable" href="structplcopen_1_1core_1_1st_1_1BindingPositionProfileEntry.html#a883f69fb7558373ca734fc0c8f217a97">position</a> = 0.0;</div>
+<div class="line"><a id="l00056" name="l00056"></a><span class="lineno"><a class="line" href="structplcopen_1_1core_1_1st_1_1BindingPositionProfileEntry.html#aa0590982bce2b9b0d45dbfe018ea5c50">   56</a></span>    <span class="keywordtype">double</span> <a class="code hl_variable" href="structplcopen_1_1core_1_1st_1_1BindingPositionProfileEntry.html#aa0590982bce2b9b0d45dbfe018ea5c50">velocity</a> = 1.0;</div>
+<div class="line"><a id="l00057" name="l00057"></a><span class="lineno"><a class="line" href="structplcopen_1_1core_1_1st_1_1BindingPositionProfileEntry.html#a7abc526da32f478641bffbedfbb22693">   57</a></span>    <span class="keywordtype">double</span> <a class="code hl_variable" href="structplcopen_1_1core_1_1st_1_1BindingPositionProfileEntry.html#a7abc526da32f478641bffbedfbb22693">acceleration</a> = 1.0;</div>
+<div class="line"><a id="l00058" name="l00058"></a><span class="lineno"><a class="line" href="structplcopen_1_1core_1_1st_1_1BindingPositionProfileEntry.html#a7a831dd0dadc20d97af45520bb5aac81">   58</a></span>    <span class="keywordtype">double</span> <a class="code hl_variable" href="structplcopen_1_1core_1_1st_1_1BindingPositionProfileEntry.html#a7a831dd0dadc20d97af45520bb5aac81">deceleration</a> = 1.0;</div>
+<div class="line"><a id="l00059" name="l00059"></a><span class="lineno"><a class="line" href="structplcopen_1_1core_1_1st_1_1BindingPositionProfileEntry.html#aba3eea3963bcc7af1005e084e9bd1c15">   59</a></span>    <span class="keywordtype">double</span> <a class="code hl_variable" href="structplcopen_1_1core_1_1st_1_1BindingPositionProfileEntry.html#aba3eea3963bcc7af1005e084e9bd1c15">jerk</a> = 1.0;</div>
+<div class="line"><a id="l00060" name="l00060"></a><span class="lineno"><a class="line" href="structplcopen_1_1core_1_1st_1_1BindingPositionProfileEntry.html#aab1035c824ffe0eced92e6f61179c9e9">   60</a></span>    <span class="keywordtype">bool</span> <a class="code hl_variable" href="structplcopen_1_1core_1_1st_1_1BindingPositionProfileEntry.html#aab1035c824ffe0eced92e6f61179c9e9">relative</a> = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00061" name="l00061"></a><span class="lineno">   61</span>};</div>
+</div>
+<div class="line"><a id="l00062" name="l00062"></a><span class="lineno">   62</span> </div>
+<div class="foldopen" id="foldopen00063" data-start="{" data-end="};">
+<div class="line"><a id="l00063" name="l00063"></a><span class="lineno"><a class="line" href="structplcopen_1_1core_1_1st_1_1BindingVelocityProfileEntry.html">   63</a></span><span class="keyword">struct </span><a class="code hl_struct" href="structplcopen_1_1core_1_1st_1_1BindingVelocityProfileEntry.html">BindingVelocityProfileEntry</a></div>
+<div class="line"><a id="l00064" name="l00064"></a><span class="lineno">   64</span>{</div>
+<div class="line"><a id="l00065" name="l00065"></a><span class="lineno"><a class="line" href="structplcopen_1_1core_1_1st_1_1BindingVelocityProfileEntry.html#a9f0bf7f5dc4de341c1a737147a9157dc">   65</a></span>    std::int64_t <a class="code hl_variable" href="structplcopen_1_1core_1_1st_1_1BindingVelocityProfileEntry.html#a9f0bf7f5dc4de341c1a737147a9157dc">time_ns</a> = 0;</div>
+<div class="line"><a id="l00066" name="l00066"></a><span class="lineno"><a class="line" href="structplcopen_1_1core_1_1st_1_1BindingVelocityProfileEntry.html#a3b8e204f676cd1cb539f4b4c03503f13">   66</a></span>    <span class="keywordtype">double</span> <a class="code hl_variable" href="structplcopen_1_1core_1_1st_1_1BindingVelocityProfileEntry.html#a3b8e204f676cd1cb539f4b4c03503f13">velocity</a> = 0.0;</div>
+<div class="line"><a id="l00067" name="l00067"></a><span class="lineno"><a class="line" href="structplcopen_1_1core_1_1st_1_1BindingVelocityProfileEntry.html#a82fd9a7efef3f1abd4c913031f75e0b8">   67</a></span>    <span class="keywordtype">double</span> <a class="code hl_variable" href="structplcopen_1_1core_1_1st_1_1BindingVelocityProfileEntry.html#a82fd9a7efef3f1abd4c913031f75e0b8">acceleration</a> = 1.0;</div>
+<div class="line"><a id="l00068" name="l00068"></a><span class="lineno"><a class="line" href="structplcopen_1_1core_1_1st_1_1BindingVelocityProfileEntry.html#a00a6da5a52b23112917d02b20dd5fece">   68</a></span>    <span class="keywordtype">double</span> <a class="code hl_variable" href="structplcopen_1_1core_1_1st_1_1BindingVelocityProfileEntry.html#a00a6da5a52b23112917d02b20dd5fece">deceleration</a> = 1.0;</div>
+<div class="line"><a id="l00069" name="l00069"></a><span class="lineno"><a class="line" href="structplcopen_1_1core_1_1st_1_1BindingVelocityProfileEntry.html#aee9e2b83285c3704d1928f10c26023cc">   69</a></span>    <span class="keywordtype">double</span> <a class="code hl_variable" href="structplcopen_1_1core_1_1st_1_1BindingVelocityProfileEntry.html#aee9e2b83285c3704d1928f10c26023cc">jerk</a> = 1.0;</div>
+<div class="line"><a id="l00070" name="l00070"></a><span class="lineno">   70</span>};</div>
+</div>
+<div class="line"><a id="l00071" name="l00071"></a><span class="lineno">   71</span> </div>
+<div class="foldopen" id="foldopen00072" data-start="{" data-end="};">
+<div class="line"><a id="l00072" name="l00072"></a><span class="lineno"><a class="line" href="structplcopen_1_1core_1_1st_1_1BindingAccelerationProfileEntry.html">   72</a></span><span class="keyword">struct </span><a class="code hl_struct" href="structplcopen_1_1core_1_1st_1_1BindingAccelerationProfileEntry.html">BindingAccelerationProfileEntry</a></div>
+<div class="line"><a id="l00073" name="l00073"></a><span class="lineno">   73</span>{</div>
+<div class="line"><a id="l00074" name="l00074"></a><span class="lineno"><a class="line" href="structplcopen_1_1core_1_1st_1_1BindingAccelerationProfileEntry.html#af6aef24f8f705a94813e12c59811ef24">   74</a></span>    std::int64_t <a class="code hl_variable" href="structplcopen_1_1core_1_1st_1_1BindingAccelerationProfileEntry.html#af6aef24f8f705a94813e12c59811ef24">time_ns</a> = 0;</div>
+<div class="line"><a id="l00075" name="l00075"></a><span class="lineno"><a class="line" href="structplcopen_1_1core_1_1st_1_1BindingAccelerationProfileEntry.html#a96428ac1f12f22b054ec50aca4c0fc1d">   75</a></span>    <span class="keywordtype">double</span> <a class="code hl_variable" href="structplcopen_1_1core_1_1st_1_1BindingAccelerationProfileEntry.html#a96428ac1f12f22b054ec50aca4c0fc1d">acceleration</a> = 0.0;</div>
+<div class="line"><a id="l00076" name="l00076"></a><span class="lineno">   76</span>};</div>
+</div>
+<div class="line"><a id="l00077" name="l00077"></a><span class="lineno">   77</span> </div>
+<div class="line"><a id="l00078" name="l00078"></a><span class="lineno">   78</span><span class="comment">// Non-owning host target. Instances retain only this pointer in their fixed</span></div>
+<div class="line"><a id="l00079" name="l00079"></a><span class="lineno">   79</span><span class="comment">// target registry; ST variables contain declaration-order handles, never</span></div>
+<div class="line"><a id="l00080" name="l00080"></a><span class="lineno">   80</span><span class="comment">// pointer bit patterns.</span></div>
+<div class="foldopen" id="foldopen00081" data-start="{" data-end="};">
+<div class="line"><a id="l00081" name="l00081"></a><span class="lineno"><a class="line" href="classplcopen_1_1core_1_1st_1_1BindingTarget.html">   81</a></span><span class="keyword">class </span><a class="code hl_class" href="classplcopen_1_1core_1_1st_1_1BindingTarget.html">BindingTarget</a></div>
+<div class="line"><a id="l00082" name="l00082"></a><span class="lineno">   82</span>{</div>
+<div class="line"><a id="l00083" name="l00083"></a><span class="lineno">   83</span><span class="keyword">public</span>:</div>
+<div class="line"><a id="l00084" name="l00084"></a><span class="lineno"><a class="line" href="classplcopen_1_1core_1_1st_1_1BindingTarget.html#aa9c2d23c9fb394fa7699fd69e879cba6">   84</a></span>    <span class="keyword">constexpr</span> <a class="code hl_function" href="classplcopen_1_1core_1_1st_1_1BindingTarget.html#aa9c2d23c9fb394fa7699fd69e879cba6">BindingTarget</a>() = <span class="keywordflow">default</span>;</div>
+<div class="line"><a id="l00085" name="l00085"></a><span class="lineno">   85</span> </div>
+<div class="foldopen" id="foldopen00086" data-start="{" data-end="}">
+<div class="line"><a id="l00086" name="l00086"></a><span class="lineno"><a class="line" href="classplcopen_1_1core_1_1st_1_1BindingTarget.html#adee7bcf40c524ffad38d76d815253e15">   86</a></span>    <span class="keyword">static</span> <span class="keyword">constexpr</span> <a class="code hl_class" href="classplcopen_1_1core_1_1st_1_1BindingTarget.html">BindingTarget</a> <a class="code hl_function" href="classplcopen_1_1core_1_1st_1_1BindingTarget.html#adee7bcf40c524ffad38d76d815253e15">axis</a>(<a class="code hl_class" href="classplcopen_1_1core_1_1axis_1_1AxisModel.html">axis::AxisModel</a> *value)</div>
+<div class="line"><a id="l00087" name="l00087"></a><span class="lineno">   87</span>    {</div>
+<div class="line"><a id="l00088" name="l00088"></a><span class="lineno">   88</span>        <span class="keywordflow">return</span> <a class="code hl_function" href="classplcopen_1_1core_1_1st_1_1BindingTarget.html#aa9c2d23c9fb394fa7699fd69e879cba6">BindingTarget</a>(<a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1st.html#aeba228a6c8d2bdb240d242b437bb8d1fa433169d5d9bcbb6d43f0d288e68f0cad">BindingTargetKind::axis</a>, value);</div>
+<div class="line"><a id="l00089" name="l00089"></a><span class="lineno">   89</span>    }</div>
+</div>
+<div class="line"><a id="l00090" name="l00090"></a><span class="lineno">   90</span> </div>
+<div class="foldopen" id="foldopen00091" data-start="{" data-end="}">
+<div class="line"><a id="l00091" name="l00091"></a><span class="lineno"><a class="line" href="classplcopen_1_1core_1_1st_1_1BindingTarget.html#a55d2cae5617b793001127536dd0d6a2e">   91</a></span>    <span class="keyword">static</span> <span class="keyword">constexpr</span> <a class="code hl_class" href="classplcopen_1_1core_1_1st_1_1BindingTarget.html">BindingTarget</a> <a class="code hl_function" href="classplcopen_1_1core_1_1st_1_1BindingTarget.html#a55d2cae5617b793001127536dd0d6a2e">group</a>(<a class="code hl_class" href="classplcopen_1_1core_1_1axis_1_1AxisGroup.html">axis::AxisGroup</a> *value)</div>
+<div class="line"><a id="l00092" name="l00092"></a><span class="lineno">   92</span>    {</div>
+<div class="line"><a id="l00093" name="l00093"></a><span class="lineno">   93</span>        <span class="keywordflow">return</span> <a class="code hl_function" href="classplcopen_1_1core_1_1st_1_1BindingTarget.html#aa9c2d23c9fb394fa7699fd69e879cba6">BindingTarget</a>(<a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1st.html#aeba228a6c8d2bdb240d242b437bb8d1fadb0f6f37ebeb6ea09489124345af2a45">BindingTargetKind::group</a>, value);</div>
+<div class="line"><a id="l00094" name="l00094"></a><span class="lineno">   94</span>    }</div>
+</div>
+<div class="line"><a id="l00095" name="l00095"></a><span class="lineno">   95</span> </div>
+<div class="line"><a id="l00096" name="l00096"></a><span class="lineno"><a class="line" href="classplcopen_1_1core_1_1st_1_1BindingTarget.html#a0c0cd5d72f0479291cde509fa0b55634">   96</a></span>    <span class="keyword">constexpr</span> <a class="code hl_enumeration" href="namespaceplcopen_1_1core_1_1st.html#aeba228a6c8d2bdb240d242b437bb8d1f">BindingTargetKind</a> <a class="code hl_function" href="classplcopen_1_1core_1_1st_1_1BindingTarget.html#a0c0cd5d72f0479291cde509fa0b55634">kind</a>()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> kind_; }</div>
+<div class="line"><a id="l00097" name="l00097"></a><span class="lineno"><a class="line" href="classplcopen_1_1core_1_1st_1_1BindingTarget.html#a4b1ce3e4cf386654e1887433d6992b5f">   97</a></span>    <span class="keyword">constexpr</span> <span class="keywordtype">void</span> *<a class="code hl_function" href="classplcopen_1_1core_1_1st_1_1BindingTarget.html#a4b1ce3e4cf386654e1887433d6992b5f">pointer</a>()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> pointer_; }</div>
+<div class="line"><a id="l00098" name="l00098"></a><span class="lineno">   98</span> </div>
+<div class="line"><a id="l00099" name="l00099"></a><span class="lineno">   99</span><span class="keyword">private</span>:</div>
+<div class="line"><a id="l00100" name="l00100"></a><span class="lineno">  100</span>    <span class="keyword">constexpr</span> <a class="code hl_function" href="classplcopen_1_1core_1_1st_1_1BindingTarget.html#aa9c2d23c9fb394fa7699fd69e879cba6">BindingTarget</a>(<a class="code hl_enumeration" href="namespaceplcopen_1_1core_1_1st.html#aeba228a6c8d2bdb240d242b437bb8d1f">BindingTargetKind</a> <a class="code hl_function" href="classplcopen_1_1core_1_1st_1_1BindingTarget.html#a0c0cd5d72f0479291cde509fa0b55634">kind</a>, <span class="keywordtype">void</span> *<a class="code hl_function" href="classplcopen_1_1core_1_1st_1_1BindingTarget.html#a4b1ce3e4cf386654e1887433d6992b5f">pointer</a>)</div>
+<div class="line"><a id="l00101" name="l00101"></a><span class="lineno">  101</span>        : kind_(<a class="code hl_function" href="classplcopen_1_1core_1_1st_1_1BindingTarget.html#a0c0cd5d72f0479291cde509fa0b55634">kind</a>), pointer_(<a class="code hl_function" href="classplcopen_1_1core_1_1st_1_1BindingTarget.html#a4b1ce3e4cf386654e1887433d6992b5f">pointer</a>)</div>
+<div class="line"><a id="l00102" name="l00102"></a><span class="lineno">  102</span>    {</div>
+<div class="line"><a id="l00103" name="l00103"></a><span class="lineno">  103</span>    }</div>
+<div class="line"><a id="l00104" name="l00104"></a><span class="lineno">  104</span> </div>
+<div class="line"><a id="l00105" name="l00105"></a><span class="lineno">  105</span>    <a class="code hl_enumeration" href="namespaceplcopen_1_1core_1_1st.html#aeba228a6c8d2bdb240d242b437bb8d1f">BindingTargetKind</a> kind_ = <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1st.html#aeba228a6c8d2bdb240d242b437bb8d1fafedb2d84cafe20862cb4399751a8a7e3">BindingTargetKind::invalid</a>;</div>
+<div class="line"><a id="l00106" name="l00106"></a><span class="lineno">  106</span>    <span class="keywordtype">void</span> *pointer_ = <span class="keyword">nullptr</span>;</div>
+<div class="line"><a id="l00107" name="l00107"></a><span class="lineno">  107</span>};</div>
+</div>
+<div class="line"><a id="l00108" name="l00108"></a><span class="lineno">  108</span> </div>
+<div class="line"><a id="l00109" name="l00109"></a><span class="lineno">  109</span>} <span class="comment">// namespace plcopen::core::st</span></div>
+<div class="ttc" id="aclassplcopen_1_1core_1_1axis_1_1AxisGroup_html"><div class="ttname"><a href="classplcopen_1_1core_1_1axis_1_1AxisGroup.html">plcopen::core::axis::AxisGroup</a></div><div class="ttdef"><b>Definition</b> <a href="axis_2group_8h_source.html#l00408">group.h:409</a></div></div>
+<div class="ttc" id="aclassplcopen_1_1core_1_1axis_1_1AxisModel_html"><div class="ttname"><a href="classplcopen_1_1core_1_1axis_1_1AxisModel.html">plcopen::core::axis::AxisModel</a></div><div class="ttdef"><b>Definition</b> <a href="state_8h_source.html#l00409">state.h:410</a></div></div>
+<div class="ttc" id="aclassplcopen_1_1core_1_1st_1_1BindingTarget_html"><div class="ttname"><a href="classplcopen_1_1core_1_1st_1_1BindingTarget.html">plcopen::core::st::BindingTarget</a></div><div class="ttdef"><b>Definition</b> <a href="binding_8h_source.html#l00081">binding.h:82</a></div></div>
+<div class="ttc" id="aclassplcopen_1_1core_1_1st_1_1BindingTarget_html_a0c0cd5d72f0479291cde509fa0b55634"><div class="ttname"><a href="classplcopen_1_1core_1_1st_1_1BindingTarget.html#a0c0cd5d72f0479291cde509fa0b55634">plcopen::core::st::BindingTarget::kind</a></div><div class="ttdeci">constexpr BindingTargetKind kind() const</div><div class="ttdef"><b>Definition</b> <a href="binding_8h_source.html#l00096">binding.h:96</a></div></div>
+<div class="ttc" id="aclassplcopen_1_1core_1_1st_1_1BindingTarget_html_a4b1ce3e4cf386654e1887433d6992b5f"><div class="ttname"><a href="classplcopen_1_1core_1_1st_1_1BindingTarget.html#a4b1ce3e4cf386654e1887433d6992b5f">plcopen::core::st::BindingTarget::pointer</a></div><div class="ttdeci">constexpr void * pointer() const</div><div class="ttdef"><b>Definition</b> <a href="binding_8h_source.html#l00097">binding.h:97</a></div></div>
+<div class="ttc" id="aclassplcopen_1_1core_1_1st_1_1BindingTarget_html_a55d2cae5617b793001127536dd0d6a2e"><div class="ttname"><a href="classplcopen_1_1core_1_1st_1_1BindingTarget.html#a55d2cae5617b793001127536dd0d6a2e">plcopen::core::st::BindingTarget::group</a></div><div class="ttdeci">static constexpr BindingTarget group(axis::AxisGroup *value)</div><div class="ttdef"><b>Definition</b> <a href="binding_8h_source.html#l00091">binding.h:91</a></div></div>
+<div class="ttc" id="aclassplcopen_1_1core_1_1st_1_1BindingTarget_html_aa9c2d23c9fb394fa7699fd69e879cba6"><div class="ttname"><a href="classplcopen_1_1core_1_1st_1_1BindingTarget.html#aa9c2d23c9fb394fa7699fd69e879cba6">plcopen::core::st::BindingTarget::BindingTarget</a></div><div class="ttdeci">constexpr BindingTarget()=default</div></div>
+<div class="ttc" id="aclassplcopen_1_1core_1_1st_1_1BindingTarget_html_adee7bcf40c524ffad38d76d815253e15"><div class="ttname"><a href="classplcopen_1_1core_1_1st_1_1BindingTarget.html#adee7bcf40c524ffad38d76d815253e15">plcopen::core::st::BindingTarget::axis</a></div><div class="ttdeci">static constexpr BindingTarget axis(axis::AxisModel *value)</div><div class="ttdef"><b>Definition</b> <a href="binding_8h_source.html#l00086">binding.h:86</a></div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1axis_html"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1axis.html">plcopen::core::axis</a></div><div class="ttdef"><b>Definition</b> <a href="axis_2group_8h_source.html#l00024">group.h:25</a></div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1exec_html"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1exec.html">plcopen::core::exec</a></div><div class="ttdef"><b>Definition</b> <a href="sampler_8h_source.html#l00010">sampler.h:11</a></div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1fb_html"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1fb.html">plcopen::core::fb</a></div><div class="ttdef"><b>Definition</b> <a href="base_8h_source.html#l00005">base.h:6</a></div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1st_html"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1st.html">plcopen::core::st</a></div><div class="ttdef"><b>Definition</b> <a href="ast_8h_source.html#l00014">ast.h:15</a></div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1st_html_a62a8a9e89597730db4bd920eff1ccb41"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1st.html#a62a8a9e89597730db4bd920eff1ccb41">plcopen::core::st::BindingError</a></div><div class="ttdeci">BindingError</div><div class="ttdef"><b>Definition</b> <a href="binding_8h_source.html#l00037">binding.h:38</a></div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1st_html_a62a8a9e89597730db4bd920eff1ccb41a075b148c498c6ab9bacdf6d8466e987d"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1st.html#a62a8a9e89597730db4bd920eff1ccb41a075b148c498c6ab9bacdf6d8466e987d">plcopen::core::st::BindingError::wrong_kind</a></div><div class="ttdeci">@ wrong_kind</div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1st_html_a62a8a9e89597730db4bd920eff1ccb41a24f1b0a79473250c195c7fb84e393392"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1st.html#a62a8a9e89597730db4bd920eff1ccb41a24f1b0a79473250c195c7fb84e393392">plcopen::core::st::BindingError::duplicate</a></div><div class="ttdeci">@ duplicate</div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1st_html_a62a8a9e89597730db4bd920eff1ccb41a24fe18195f0e29f8d3ef5ad3110cfc24"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1st.html#a62a8a9e89597730db4bd920eff1ccb41a24fe18195f0e29f8d3ef5ad3110cfc24">plcopen::core::st::BindingError::invalid_value</a></div><div class="ttdeci">@ invalid_value</div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1st_html_a62a8a9e89597730db4bd920eff1ccb41a444bcb3a3fcf8389296c49467f27e1d6"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1st.html#a62a8a9e89597730db4bd920eff1ccb41a444bcb3a3fcf8389296c49467f27e1d6">plcopen::core::st::BindingError::ok</a></div><div class="ttdeci">@ ok</div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1st_html_a62a8a9e89597730db4bd920eff1ccb41a4cef2f30ac7d33419d00c1d93a090095"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1st.html#a62a8a9e89597730db4bd920eff1ccb41a4cef2f30ac7d33419d00c1d93a090095">plcopen::core::st::BindingError::locked</a></div><div class="ttdeci">@ locked</div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1st_html_a62a8a9e89597730db4bd920eff1ccb41aad921d60486366258809553a3db49a4a"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1st.html#a62a8a9e89597730db4bd920eff1ccb41aad921d60486366258809553a3db49a4a">plcopen::core::st::BindingError::unknown</a></div><div class="ttdeci">@ unknown</div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1st_html_a62a8a9e89597730db4bd920eff1ccb41ab7d48952407b207a3ac43119390ca8d2"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1st.html#a62a8a9e89597730db4bd920eff1ccb41ab7d48952407b207a3ac43119390ca8d2">plcopen::core::st::BindingError::capacity_exceeded</a></div><div class="ttdeci">@ capacity_exceeded</div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1st_html_a62a8a9e89597730db4bd920eff1ccb41ac16bdb0edeb0bdfdbbf22dcf2aadcfdf"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1st.html#a62a8a9e89597730db4bd920eff1ccb41ac16bdb0edeb0bdfdbbf22dcf2aadcfdf">plcopen::core::st::BindingError::null_target</a></div><div class="ttdeci">@ null_target</div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1st_html_a6513296bbc0a14e5bd01ffa089235747"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1st.html#a6513296bbc0a14e5bd01ffa089235747">plcopen::core::st::kMaxTableBindings</a></div><div class="ttdeci">constexpr std::size_t kMaxTableBindings</div><div class="ttdef"><b>Definition</b> <a href="binding_8h_source.html#l00049">binding.h:49</a></div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1st_html_a6832ce90d5ab90cf9c308ec8cfb0ae76"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1st.html#a6832ce90d5ab90cf9c308ec8cfb0ae76">plcopen::core::st::kMaxAxisBindings</a></div><div class="ttdeci">constexpr std::uint16_t kMaxAxisBindings</div><div class="ttdef"><b>Definition</b> <a href="binding_8h_source.html#l00026">binding.h:26</a></div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1st_html_aa13164cc73fd30fa79e01c7c6663efc0"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1st.html#aa13164cc73fd30fa79e01c7c6663efc0">plcopen::core::st::kMaxFbInstances</a></div><div class="ttdeci">constexpr std::uint16_t kMaxFbInstances</div><div class="ttdef"><b>Definition</b> <a href="binding_8h_source.html#l00028">binding.h:28</a></div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1st_html_aa41408fdcd7c4a069a9b564fb5d130b3"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1st.html#aa41408fdcd7c4a069a9b564fb5d130b3">plcopen::core::st::kMaxGroupBindings</a></div><div class="ttdeci">constexpr std::uint16_t kMaxGroupBindings</div><div class="ttdef"><b>Definition</b> <a href="binding_8h_source.html#l00027">binding.h:27</a></div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1st_html_aeba228a6c8d2bdb240d242b437bb8d1f"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1st.html#aeba228a6c8d2bdb240d242b437bb8d1f">plcopen::core::st::BindingTargetKind</a></div><div class="ttdeci">BindingTargetKind</div><div class="ttdef"><b>Definition</b> <a href="binding_8h_source.html#l00030">binding.h:31</a></div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1st_html_aeba228a6c8d2bdb240d242b437bb8d1fa433169d5d9bcbb6d43f0d288e68f0cad"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1st.html#aeba228a6c8d2bdb240d242b437bb8d1fa433169d5d9bcbb6d43f0d288e68f0cad">plcopen::core::st::BindingTargetKind::axis</a></div><div class="ttdeci">@ axis</div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1st_html_aeba228a6c8d2bdb240d242b437bb8d1fadb0f6f37ebeb6ea09489124345af2a45"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1st.html#aeba228a6c8d2bdb240d242b437bb8d1fadb0f6f37ebeb6ea09489124345af2a45">plcopen::core::st::BindingTargetKind::group</a></div><div class="ttdeci">@ group</div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1st_html_aeba228a6c8d2bdb240d242b437bb8d1fafedb2d84cafe20862cb4399751a8a7e3"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1st.html#aeba228a6c8d2bdb240d242b437bb8d1fafedb2d84cafe20862cb4399751a8a7e3">plcopen::core::st::BindingTargetKind::invalid</a></div><div class="ttdeci">@ invalid</div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1st_html_af8564e2e8afed5b90446997d21325e9c"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1st.html#af8564e2e8afed5b90446997d21325e9c">plcopen::core::st::kMaxProfileSegments</a></div><div class="ttdeci">constexpr std::size_t kMaxProfileSegments</div><div class="ttdef"><b>Definition</b> <a href="binding_8h_source.html#l00050">binding.h:50</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1st_1_1BindingAccelerationProfileEntry_html"><div class="ttname"><a href="structplcopen_1_1core_1_1st_1_1BindingAccelerationProfileEntry.html">plcopen::core::st::BindingAccelerationProfileEntry</a></div><div class="ttdef"><b>Definition</b> <a href="binding_8h_source.html#l00072">binding.h:73</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1st_1_1BindingAccelerationProfileEntry_html_a96428ac1f12f22b054ec50aca4c0fc1d"><div class="ttname"><a href="structplcopen_1_1core_1_1st_1_1BindingAccelerationProfileEntry.html#a96428ac1f12f22b054ec50aca4c0fc1d">plcopen::core::st::BindingAccelerationProfileEntry::acceleration</a></div><div class="ttdeci">double acceleration</div><div class="ttdef"><b>Definition</b> <a href="binding_8h_source.html#l00075">binding.h:75</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1st_1_1BindingAccelerationProfileEntry_html_af6aef24f8f705a94813e12c59811ef24"><div class="ttname"><a href="structplcopen_1_1core_1_1st_1_1BindingAccelerationProfileEntry.html#af6aef24f8f705a94813e12c59811ef24">plcopen::core::st::BindingAccelerationProfileEntry::time_ns</a></div><div class="ttdeci">std::int64_t time_ns</div><div class="ttdef"><b>Definition</b> <a href="binding_8h_source.html#l00074">binding.h:74</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1st_1_1BindingPositionProfileEntry_html"><div class="ttname"><a href="structplcopen_1_1core_1_1st_1_1BindingPositionProfileEntry.html">plcopen::core::st::BindingPositionProfileEntry</a></div><div class="ttdef"><b>Definition</b> <a href="binding_8h_source.html#l00052">binding.h:53</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1st_1_1BindingPositionProfileEntry_html_a7a831dd0dadc20d97af45520bb5aac81"><div class="ttname"><a href="structplcopen_1_1core_1_1st_1_1BindingPositionProfileEntry.html#a7a831dd0dadc20d97af45520bb5aac81">plcopen::core::st::BindingPositionProfileEntry::deceleration</a></div><div class="ttdeci">double deceleration</div><div class="ttdef"><b>Definition</b> <a href="binding_8h_source.html#l00058">binding.h:58</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1st_1_1BindingPositionProfileEntry_html_a7abc526da32f478641bffbedfbb22693"><div class="ttname"><a href="structplcopen_1_1core_1_1st_1_1BindingPositionProfileEntry.html#a7abc526da32f478641bffbedfbb22693">plcopen::core::st::BindingPositionProfileEntry::acceleration</a></div><div class="ttdeci">double acceleration</div><div class="ttdef"><b>Definition</b> <a href="binding_8h_source.html#l00057">binding.h:57</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1st_1_1BindingPositionProfileEntry_html_a883f69fb7558373ca734fc0c8f217a97"><div class="ttname"><a href="structplcopen_1_1core_1_1st_1_1BindingPositionProfileEntry.html#a883f69fb7558373ca734fc0c8f217a97">plcopen::core::st::BindingPositionProfileEntry::position</a></div><div class="ttdeci">double position</div><div class="ttdef"><b>Definition</b> <a href="binding_8h_source.html#l00055">binding.h:55</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1st_1_1BindingPositionProfileEntry_html_aa0590982bce2b9b0d45dbfe018ea5c50"><div class="ttname"><a href="structplcopen_1_1core_1_1st_1_1BindingPositionProfileEntry.html#aa0590982bce2b9b0d45dbfe018ea5c50">plcopen::core::st::BindingPositionProfileEntry::velocity</a></div><div class="ttdeci">double velocity</div><div class="ttdef"><b>Definition</b> <a href="binding_8h_source.html#l00056">binding.h:56</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1st_1_1BindingPositionProfileEntry_html_aab1035c824ffe0eced92e6f61179c9e9"><div class="ttname"><a href="structplcopen_1_1core_1_1st_1_1BindingPositionProfileEntry.html#aab1035c824ffe0eced92e6f61179c9e9">plcopen::core::st::BindingPositionProfileEntry::relative</a></div><div class="ttdeci">bool relative</div><div class="ttdef"><b>Definition</b> <a href="binding_8h_source.html#l00060">binding.h:60</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1st_1_1BindingPositionProfileEntry_html_aba3eea3963bcc7af1005e084e9bd1c15"><div class="ttname"><a href="structplcopen_1_1core_1_1st_1_1BindingPositionProfileEntry.html#aba3eea3963bcc7af1005e084e9bd1c15">plcopen::core::st::BindingPositionProfileEntry::jerk</a></div><div class="ttdeci">double jerk</div><div class="ttdef"><b>Definition</b> <a href="binding_8h_source.html#l00059">binding.h:59</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1st_1_1BindingPositionProfileEntry_html_abb494f1311760933fca50e2bb6b59807"><div class="ttname"><a href="structplcopen_1_1core_1_1st_1_1BindingPositionProfileEntry.html#abb494f1311760933fca50e2bb6b59807">plcopen::core::st::BindingPositionProfileEntry::time_ns</a></div><div class="ttdeci">std::int64_t time_ns</div><div class="ttdef"><b>Definition</b> <a href="binding_8h_source.html#l00054">binding.h:54</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1st_1_1BindingVelocityProfileEntry_html"><div class="ttname"><a href="structplcopen_1_1core_1_1st_1_1BindingVelocityProfileEntry.html">plcopen::core::st::BindingVelocityProfileEntry</a></div><div class="ttdef"><b>Definition</b> <a href="binding_8h_source.html#l00063">binding.h:64</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1st_1_1BindingVelocityProfileEntry_html_a00a6da5a52b23112917d02b20dd5fece"><div class="ttname"><a href="structplcopen_1_1core_1_1st_1_1BindingVelocityProfileEntry.html#a00a6da5a52b23112917d02b20dd5fece">plcopen::core::st::BindingVelocityProfileEntry::deceleration</a></div><div class="ttdeci">double deceleration</div><div class="ttdef"><b>Definition</b> <a href="binding_8h_source.html#l00068">binding.h:68</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1st_1_1BindingVelocityProfileEntry_html_a3b8e204f676cd1cb539f4b4c03503f13"><div class="ttname"><a href="structplcopen_1_1core_1_1st_1_1BindingVelocityProfileEntry.html#a3b8e204f676cd1cb539f4b4c03503f13">plcopen::core::st::BindingVelocityProfileEntry::velocity</a></div><div class="ttdeci">double velocity</div><div class="ttdef"><b>Definition</b> <a href="binding_8h_source.html#l00066">binding.h:66</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1st_1_1BindingVelocityProfileEntry_html_a82fd9a7efef3f1abd4c913031f75e0b8"><div class="ttname"><a href="structplcopen_1_1core_1_1st_1_1BindingVelocityProfileEntry.html#a82fd9a7efef3f1abd4c913031f75e0b8">plcopen::core::st::BindingVelocityProfileEntry::acceleration</a></div><div class="ttdeci">double acceleration</div><div class="ttdef"><b>Definition</b> <a href="binding_8h_source.html#l00067">binding.h:67</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1st_1_1BindingVelocityProfileEntry_html_a9f0bf7f5dc4de341c1a737147a9157dc"><div class="ttname"><a href="structplcopen_1_1core_1_1st_1_1BindingVelocityProfileEntry.html#a9f0bf7f5dc4de341c1a737147a9157dc">plcopen::core::st::BindingVelocityProfileEntry::time_ns</a></div><div class="ttdeci">std::int64_t time_ns</div><div class="ttdef"><b>Definition</b> <a href="binding_8h_source.html#l00065">binding.h:65</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1st_1_1BindingVelocityProfileEntry_html_aee9e2b83285c3704d1928f10c26023cc"><div class="ttname"><a href="structplcopen_1_1core_1_1st_1_1BindingVelocityProfileEntry.html#aee9e2b83285c3704d1928f10c26023cc">plcopen::core::st::BindingVelocityProfileEntry::jerk</a></div><div class="ttdeci">double jerk</div><div class="ttdef"><b>Definition</b> <a href="binding_8h_source.html#l00069">binding.h:69</a></div></div>
+</div><!-- fragment --></div><!-- contents -->
+<!-- start footer part -->
+<hr class="footer"/><address class="footer"><small>
+制作者&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.8
+</small></address>
+</body>
+</html>

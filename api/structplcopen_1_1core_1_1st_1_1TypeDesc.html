@@ -1,0 +1,373 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh">
+<head>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=11"/>
+<meta name="generator" content="Doxygen 1.9.8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>plcopen: plcopen::core::st::TypeDesc结构体 参考</title>
+<link href="tabs.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="jquery.js"></script>
+<script type="text/javascript" src="dynsections.js"></script>
+<link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<link href="doxygen.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+<div id="top"><!-- do not remove this div, it is closed by doxygen! -->
+<div id="titlearea">
+<table cellspacing="0" cellpadding="0">
+ <tbody>
+ <tr id="projectrow">
+  <td id="projectalign">
+   <div id="projectname">plcopen<span id="projectnumber">&#160;0.21.0</span>
+   </div>
+  </td>
+ </tr>
+ </tbody>
+</table>
+</div>
+<!-- end header part -->
+<!-- 制作者 Doxygen 1.9.8 -->
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+var searchBox = new SearchBox("searchBox", "search/",'.html');
+/* @license-end */
+</script>
+<script type="text/javascript" src="menudata.js"></script>
+<script type="text/javascript" src="menu.js"></script>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+$(function() {
+  initMenu('',true,false,'search.php','搜索');
+  $(document).ready(function() { init_search(); });
+});
+/* @license-end */
+</script>
+<div id="main-nav"></div>
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<div id="MSearchResults">
+<div class="SRPage">
+<div id="SRIndex">
+<div id="SRResults"></div>
+<div class="SRStatus" id="Loading">载入中...</div>
+<div class="SRStatus" id="Searching">搜索中...</div>
+<div class="SRStatus" id="NoMatches">未找到</div>
+</div>
+</div>
+</div>
+</div>
+
+<div id="nav-path" class="navpath">
+  <ul>
+<li class="navelem"><a class="el" href="namespaceplcopen.html">plcopen</a></li><li class="navelem"><a class="el" href="namespaceplcopen_1_1core.html">core</a></li><li class="navelem"><a class="el" href="namespaceplcopen_1_1core_1_1st.html">st</a></li><li class="navelem"><a class="el" href="structplcopen_1_1core_1_1st_1_1TypeDesc.html">TypeDesc</a></li>  </ul>
+</div>
+</div><!-- top -->
+<div class="header">
+  <div class="summary">
+<a href="#pub-attribs">Public 属性</a> &#124;
+<a href="structplcopen_1_1core_1_1st_1_1TypeDesc-members.html">所有成员列表</a>  </div>
+  <div class="headertitle"><div class="title">plcopen::core::st::TypeDesc结构体 参考</div></div>
+</div><!--header-->
+<div class="contents">
+
+<p><code>#include &lt;<a class="el" href="type__desc_8h_source.html">type_desc.h</a>&gt;</code></p>
+<div class="dynheader">
+plcopen::core::st::TypeDesc 的协作图:</div>
+<div class="dyncontent">
+<div class="center"><img src="structplcopen_1_1core_1_1st_1_1TypeDesc__coll__graph.png" border="0" usemap="#aplcopen_1_1core_1_1st_1_1TypeDesc_coll__map" alt="Collaboration graph"/></div>
+<map name="aplcopen_1_1core_1_1st_1_1TypeDesc_coll__map" id="aplcopen_1_1core_1_1st_1_1TypeDesc_coll__map">
+<area shape="rect" title=" " alt="" coords="484,143,621,183"/>
+<area shape="rect" href="structplcopen_1_1core_1_1st_1_1SubrangeDesc.html" title=" " alt="" coords="232,15,369,55"/>
+<area shape="poly" title=" " alt="" coords="369,57,461,100,525,140,522,145,459,105,366,62"/>
+<area shape="rect" href="structplcopen_1_1core_1_1st_1_1IntegerValue.html" title=" " alt="" coords="5,15,143,55"/>
+<area shape="poly" title=" " alt="" coords="157,32,232,32,232,37,157,37"/>
+<area shape="rect" href="structplcopen_1_1core_1_1st_1_1ArrayDesc.html" title=" " alt="" coords="232,79,369,119"/>
+<area shape="poly" title=" " alt="" coords="383,117,484,143,483,148,382,122"/>
+<area shape="rect" href="structplcopen_1_1core_1_1st_1_1StructDesc.html" title=" " alt="" coords="232,143,369,183"/>
+<area shape="poly" title=" " alt="" coords="383,160,484,160,484,165,383,165"/>
+<area shape="rect" href="structplcopen_1_1core_1_1st_1_1StringDesc.html" title=" " alt="" coords="232,207,369,247"/>
+<area shape="poly" title=" " alt="" coords="382,203,483,177,484,183,383,209"/>
+<area shape="rect" href="structplcopen_1_1core_1_1st_1_1RefDesc.html" title=" " alt="" coords="232,271,369,311"/>
+<area shape="poly" title=" " alt="" coords="365,263,459,219,521,181,524,185,461,224,367,268"/>
+</map>
+<center><span class="legend">[<a href="graph_legend.html">图例</a>]</span></center></div>
+<table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
+Public 属性</h2></td></tr>
+<tr class="memitem:a9ace37d43c53d8b5e400d27a6518ddfe" id="r_a9ace37d43c53d8b5e400d27a6518ddfe"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceplcopen_1_1core_1_1st.html#af07c71ef14c07e2c4c0110e091a36299">TypeId</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1TypeDesc.html#a9ace37d43c53d8b5e400d27a6518ddfe">id</a> = <a class="el" href="namespaceplcopen_1_1core_1_1st.html#af7c4a6f0f210607488df143aa128fabe">invalid_type_id</a></td></tr>
+<tr class="separator:a9ace37d43c53d8b5e400d27a6518ddfe"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a52cf94b70094ff713cb377b22f12ff40" id="r_a52cf94b70094ff713cb377b22f12ff40"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceplcopen_1_1core_1_1st.html#ab0352fe5442019f940e6a33e6b53c9d3">TypeKind</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1TypeDesc.html#a52cf94b70094ff713cb377b22f12ff40">kind</a> = <a class="el" href="namespaceplcopen_1_1core_1_1st.html#ab0352fe5442019f940e6a33e6b53c9d3a908943bb4cd5fabee886b11b6f1e7098">TypeKind::elementary</a></td></tr>
+<tr class="separator:a52cf94b70094ff713cb377b22f12ff40"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa64ad007c341a433074133e57e314f4a" id="r_aa64ad007c341a433074133e57e314f4a"><td class="memItemLeft" align="right" valign="top">std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1TypeDesc.html#aa64ad007c341a433074133e57e314f4a">name</a></td></tr>
+<tr class="separator:aa64ad007c341a433074133e57e314f4a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af462f62de45e30075608e436be155f15" id="r_af462f62de45e30075608e436be155f15"><td class="memItemLeft" align="right" valign="top">std::uint64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1TypeDesc.html#af462f62de45e30075608e436be155f15">size</a> = 0</td></tr>
+<tr class="separator:af462f62de45e30075608e436be155f15"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8f4dc3ea02b3e73acbb06c370d35b15f" id="r_a8f4dc3ea02b3e73acbb06c370d35b15f"><td class="memItemLeft" align="right" valign="top">std::uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1TypeDesc.html#a8f4dc3ea02b3e73acbb06c370d35b15f">alignment</a> = 1</td></tr>
+<tr class="separator:a8f4dc3ea02b3e73acbb06c370d35b15f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac2d38dac9a77755922f05d865c1594be" id="r_ac2d38dac9a77755922f05d865c1594be"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceplcopen_1_1core_1_1st.html#ac92296b0dbb299b4e7b9a73491759bb1">IntegerSign</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1TypeDesc.html#ac2d38dac9a77755922f05d865c1594be">integer_sign</a> = <a class="el" href="namespaceplcopen_1_1core_1_1st.html#ac92296b0dbb299b4e7b9a73491759bb1a334c4a4c42fdb79d7ebc3e73b517e6f8">IntegerSign::none</a></td></tr>
+<tr class="separator:ac2d38dac9a77755922f05d865c1594be"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af1f09c687daeef0594d9dd12e2afd6ec" id="r_af1f09c687daeef0594d9dd12e2afd6ec"><td class="memItemLeft" align="right" valign="top">std::uint8_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1TypeDesc.html#af1f09c687daeef0594d9dd12e2afd6ec">integer_width</a> = 0</td></tr>
+<tr class="separator:af1f09c687daeef0594d9dd12e2afd6ec"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1377fd2a4a1f4fc3d3125e1b6bb9b5d2" id="r_a1377fd2a4a1f4fc3d3125e1b6bb9b5d2"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceplcopen_1_1core_1_1st.html#af07c71ef14c07e2c4c0110e091a36299">TypeId</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1TypeDesc.html#a1377fd2a4a1f4fc3d3125e1b6bb9b5d2">enum_base</a> = <a class="el" href="namespaceplcopen_1_1core_1_1st.html#af7c4a6f0f210607488df143aa128fabe">invalid_type_id</a></td></tr>
+<tr class="separator:a1377fd2a4a1f4fc3d3125e1b6bb9b5d2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a051ada458e78f61ecb2e9ae35afaaed0" id="r_a051ada458e78f61ecb2e9ae35afaaed0"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="structplcopen_1_1core_1_1st_1_1EnumItem.html">EnumItem</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1TypeDesc.html#a051ada458e78f61ecb2e9ae35afaaed0">enum_items</a></td></tr>
+<tr class="separator:a051ada458e78f61ecb2e9ae35afaaed0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a674fd2037b4306dc8e05fea028170b98" id="r_a674fd2037b4306dc8e05fea028170b98"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structplcopen_1_1core_1_1st_1_1SubrangeDesc.html">SubrangeDesc</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1TypeDesc.html#a674fd2037b4306dc8e05fea028170b98">subrange</a></td></tr>
+<tr class="separator:a674fd2037b4306dc8e05fea028170b98"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a35b624c9b47b493a1ebccf703f5da200" id="r_a35b624c9b47b493a1ebccf703f5da200"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structplcopen_1_1core_1_1st_1_1ArrayDesc.html">ArrayDesc</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1TypeDesc.html#a35b624c9b47b493a1ebccf703f5da200">array</a></td></tr>
+<tr class="separator:a35b624c9b47b493a1ebccf703f5da200"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af00ddb77d5a5c2218b214b741c16c841" id="r_af00ddb77d5a5c2218b214b741c16c841"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structplcopen_1_1core_1_1st_1_1StructDesc.html">StructDesc</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1TypeDesc.html#af00ddb77d5a5c2218b214b741c16c841">structure</a></td></tr>
+<tr class="separator:af00ddb77d5a5c2218b214b741c16c841"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3ed65a13580bdaee0cd4c6d03170b43a" id="r_a3ed65a13580bdaee0cd4c6d03170b43a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structplcopen_1_1core_1_1st_1_1StringDesc.html">StringDesc</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1TypeDesc.html#a3ed65a13580bdaee0cd4c6d03170b43a">string</a></td></tr>
+<tr class="separator:a3ed65a13580bdaee0cd4c6d03170b43a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a88521609c322d700067f2a3ac9e42efb" id="r_a88521609c322d700067f2a3ac9e42efb"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structplcopen_1_1core_1_1st_1_1RefDesc.html">RefDesc</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1TypeDesc.html#a88521609c322d700067f2a3ac9e42efb">reference</a></td></tr>
+<tr class="separator:a88521609c322d700067f2a3ac9e42efb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table>
+<a name="details" id="details"></a><h2 class="groupheader">详细描述</h2>
+<div class="textblock">
+<p class="definition">在文件 <a class="el" href="type__desc_8h_source.html">type_desc.h</a> 第 <a class="el" href="type__desc_8h_source.html#l00179">179</a> 行定义.</p>
+</div><h2 class="groupheader">类成员变量说明</h2>
+<a id="a8f4dc3ea02b3e73acbb06c370d35b15f" name="a8f4dc3ea02b3e73acbb06c370d35b15f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8f4dc3ea02b3e73acbb06c370d35b15f">&#9670;&#160;</a></span>alignment</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::uint32_t plcopen::core::st::TypeDesc::alignment = 1</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="type__desc_8h_source.html">type_desc.h</a> 第 <a class="el" href="type__desc_8h_source.html#l00185">185</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a35b624c9b47b493a1ebccf703f5da200" name="a35b624c9b47b493a1ebccf703f5da200"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a35b624c9b47b493a1ebccf703f5da200">&#9670;&#160;</a></span>array</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="structplcopen_1_1core_1_1st_1_1ArrayDesc.html">ArrayDesc</a> plcopen::core::st::TypeDesc::array</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="type__desc_8h_source.html">type_desc.h</a> 第 <a class="el" href="type__desc_8h_source.html#l00191">191</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a1377fd2a4a1f4fc3d3125e1b6bb9b5d2" name="a1377fd2a4a1f4fc3d3125e1b6bb9b5d2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1377fd2a4a1f4fc3d3125e1b6bb9b5d2">&#9670;&#160;</a></span>enum_base</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="namespaceplcopen_1_1core_1_1st.html#af07c71ef14c07e2c4c0110e091a36299">TypeId</a> plcopen::core::st::TypeDesc::enum_base = <a class="el" href="namespaceplcopen_1_1core_1_1st.html#af7c4a6f0f210607488df143aa128fabe">invalid_type_id</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="type__desc_8h_source.html">type_desc.h</a> 第 <a class="el" href="type__desc_8h_source.html#l00188">188</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a051ada458e78f61ecb2e9ae35afaaed0" name="a051ada458e78f61ecb2e9ae35afaaed0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a051ada458e78f61ecb2e9ae35afaaed0">&#9670;&#160;</a></span>enum_items</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt;<a class="el" href="structplcopen_1_1core_1_1st_1_1EnumItem.html">EnumItem</a>&gt; plcopen::core::st::TypeDesc::enum_items</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="type__desc_8h_source.html">type_desc.h</a> 第 <a class="el" href="type__desc_8h_source.html#l00189">189</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a9ace37d43c53d8b5e400d27a6518ddfe" name="a9ace37d43c53d8b5e400d27a6518ddfe"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9ace37d43c53d8b5e400d27a6518ddfe">&#9670;&#160;</a></span>id</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="namespaceplcopen_1_1core_1_1st.html#af07c71ef14c07e2c4c0110e091a36299">TypeId</a> plcopen::core::st::TypeDesc::id = <a class="el" href="namespaceplcopen_1_1core_1_1st.html#af7c4a6f0f210607488df143aa128fabe">invalid_type_id</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="type__desc_8h_source.html">type_desc.h</a> 第 <a class="el" href="type__desc_8h_source.html#l00181">181</a> 行定义.</p>
+
+</div>
+</div>
+<a id="ac2d38dac9a77755922f05d865c1594be" name="ac2d38dac9a77755922f05d865c1594be"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac2d38dac9a77755922f05d865c1594be">&#9670;&#160;</a></span>integer_sign</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="namespaceplcopen_1_1core_1_1st.html#ac92296b0dbb299b4e7b9a73491759bb1">IntegerSign</a> plcopen::core::st::TypeDesc::integer_sign = <a class="el" href="namespaceplcopen_1_1core_1_1st.html#ac92296b0dbb299b4e7b9a73491759bb1a334c4a4c42fdb79d7ebc3e73b517e6f8">IntegerSign::none</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="type__desc_8h_source.html">type_desc.h</a> 第 <a class="el" href="type__desc_8h_source.html#l00186">186</a> 行定义.</p>
+
+</div>
+</div>
+<a id="af1f09c687daeef0594d9dd12e2afd6ec" name="af1f09c687daeef0594d9dd12e2afd6ec"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af1f09c687daeef0594d9dd12e2afd6ec">&#9670;&#160;</a></span>integer_width</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::uint8_t plcopen::core::st::TypeDesc::integer_width = 0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="type__desc_8h_source.html">type_desc.h</a> 第 <a class="el" href="type__desc_8h_source.html#l00187">187</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a52cf94b70094ff713cb377b22f12ff40" name="a52cf94b70094ff713cb377b22f12ff40"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a52cf94b70094ff713cb377b22f12ff40">&#9670;&#160;</a></span>kind</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="namespaceplcopen_1_1core_1_1st.html#ab0352fe5442019f940e6a33e6b53c9d3">TypeKind</a> plcopen::core::st::TypeDesc::kind = <a class="el" href="namespaceplcopen_1_1core_1_1st.html#ab0352fe5442019f940e6a33e6b53c9d3a908943bb4cd5fabee886b11b6f1e7098">TypeKind::elementary</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="type__desc_8h_source.html">type_desc.h</a> 第 <a class="el" href="type__desc_8h_source.html#l00182">182</a> 行定义.</p>
+
+</div>
+</div>
+<a id="aa64ad007c341a433074133e57e314f4a" name="aa64ad007c341a433074133e57e314f4a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa64ad007c341a433074133e57e314f4a">&#9670;&#160;</a></span>name</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::string plcopen::core::st::TypeDesc::name</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="type__desc_8h_source.html">type_desc.h</a> 第 <a class="el" href="type__desc_8h_source.html#l00183">183</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a88521609c322d700067f2a3ac9e42efb" name="a88521609c322d700067f2a3ac9e42efb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a88521609c322d700067f2a3ac9e42efb">&#9670;&#160;</a></span>reference</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="structplcopen_1_1core_1_1st_1_1RefDesc.html">RefDesc</a> plcopen::core::st::TypeDesc::reference</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="type__desc_8h_source.html">type_desc.h</a> 第 <a class="el" href="type__desc_8h_source.html#l00194">194</a> 行定义.</p>
+
+</div>
+</div>
+<a id="af462f62de45e30075608e436be155f15" name="af462f62de45e30075608e436be155f15"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af462f62de45e30075608e436be155f15">&#9670;&#160;</a></span>size</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::uint64_t plcopen::core::st::TypeDesc::size = 0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="type__desc_8h_source.html">type_desc.h</a> 第 <a class="el" href="type__desc_8h_source.html#l00184">184</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a3ed65a13580bdaee0cd4c6d03170b43a" name="a3ed65a13580bdaee0cd4c6d03170b43a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3ed65a13580bdaee0cd4c6d03170b43a">&#9670;&#160;</a></span>string</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="structplcopen_1_1core_1_1st_1_1StringDesc.html">StringDesc</a> plcopen::core::st::TypeDesc::string</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="type__desc_8h_source.html">type_desc.h</a> 第 <a class="el" href="type__desc_8h_source.html#l00193">193</a> 行定义.</p>
+
+</div>
+</div>
+<a id="af00ddb77d5a5c2218b214b741c16c841" name="af00ddb77d5a5c2218b214b741c16c841"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af00ddb77d5a5c2218b214b741c16c841">&#9670;&#160;</a></span>structure</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="structplcopen_1_1core_1_1st_1_1StructDesc.html">StructDesc</a> plcopen::core::st::TypeDesc::structure</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="type__desc_8h_source.html">type_desc.h</a> 第 <a class="el" href="type__desc_8h_source.html#l00192">192</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a674fd2037b4306dc8e05fea028170b98" name="a674fd2037b4306dc8e05fea028170b98"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a674fd2037b4306dc8e05fea028170b98">&#9670;&#160;</a></span>subrange</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="structplcopen_1_1core_1_1st_1_1SubrangeDesc.html">SubrangeDesc</a> plcopen::core::st::TypeDesc::subrange</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="type__desc_8h_source.html">type_desc.h</a> 第 <a class="el" href="type__desc_8h_source.html#l00190">190</a> 行定义.</p>
+
+</div>
+</div>
+<hr/>该结构体的文档由以下文件生成:<ul>
+<li>core/st/<a class="el" href="type__desc_8h_source.html">type_desc.h</a></li>
+</ul>
+</div><!-- contents -->
+<!-- start footer part -->
+<hr class="footer"/><address class="footer"><small>
+制作者&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.8
+</small></address>
+</body>
+</html>

@@ -1,0 +1,475 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh">
+<head>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=11"/>
+<meta name="generator" content="Doxygen 1.9.8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>plcopen: plcopen::core::geom::PathSegment结构体 参考</title>
+<link href="tabs.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="jquery.js"></script>
+<script type="text/javascript" src="dynsections.js"></script>
+<link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<link href="doxygen.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+<div id="top"><!-- do not remove this div, it is closed by doxygen! -->
+<div id="titlearea">
+<table cellspacing="0" cellpadding="0">
+ <tbody>
+ <tr id="projectrow">
+  <td id="projectalign">
+   <div id="projectname">plcopen<span id="projectnumber">&#160;0.21.0</span>
+   </div>
+  </td>
+ </tr>
+ </tbody>
+</table>
+</div>
+<!-- end header part -->
+<!-- 制作者 Doxygen 1.9.8 -->
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+var searchBox = new SearchBox("searchBox", "search/",'.html');
+/* @license-end */
+</script>
+<script type="text/javascript" src="menudata.js"></script>
+<script type="text/javascript" src="menu.js"></script>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+$(function() {
+  initMenu('',true,false,'search.php','搜索');
+  $(document).ready(function() { init_search(); });
+});
+/* @license-end */
+</script>
+<div id="main-nav"></div>
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<div id="MSearchResults">
+<div class="SRPage">
+<div id="SRIndex">
+<div id="SRResults"></div>
+<div class="SRStatus" id="Loading">载入中...</div>
+<div class="SRStatus" id="Searching">搜索中...</div>
+<div class="SRStatus" id="NoMatches">未找到</div>
+</div>
+</div>
+</div>
+</div>
+
+<div id="nav-path" class="navpath">
+  <ul>
+<li class="navelem"><a class="el" href="namespaceplcopen.html">plcopen</a></li><li class="navelem"><a class="el" href="namespaceplcopen_1_1core.html">core</a></li><li class="navelem"><a class="el" href="namespaceplcopen_1_1core_1_1geom.html">geom</a></li><li class="navelem"><a class="el" href="structplcopen_1_1core_1_1geom_1_1PathSegment.html">PathSegment</a></li>  </ul>
+</div>
+</div><!-- top -->
+<div class="header">
+  <div class="summary">
+<a href="#pub-methods">Public 成员函数</a> &#124;
+<a href="#pub-attribs">Public 属性</a> &#124;
+<a href="structplcopen_1_1core_1_1geom_1_1PathSegment-members.html">所有成员列表</a>  </div>
+  <div class="headertitle"><div class="title">plcopen::core::geom::PathSegment结构体 参考</div></div>
+</div><!--header-->
+<div class="contents">
+
+<p><code>#include &lt;<a class="el" href="geometry_8h_source.html">geometry.h</a>&gt;</code></p>
+<div class="dynheader">
+plcopen::core::geom::PathSegment 的协作图:</div>
+<div class="dyncontent">
+<div class="center"><img src="structplcopen_1_1core_1_1geom_1_1PathSegment__coll__graph.png" border="0" usemap="#aplcopen_1_1core_1_1geom_1_1PathSegment_coll__map" alt="Collaboration graph"/></div>
+<map name="aplcopen_1_1core_1_1geom_1_1PathSegment_coll__map" id="aplcopen_1_1core_1_1geom_1_1PathSegment_coll__map">
+<area shape="rect" title=" " alt="" coords="543,167,697,207"/>
+<area shape="rect" href="structplcopen_1_1core_1_1geom_1_1LineSegment.html" title=" " alt="" coords="274,8,429,48"/>
+<area shape="poly" title=" " alt="" coords="404,52,447,76,589,164,586,169,444,81,401,57"/>
+<area shape="rect" href="structplcopen_1_1core_1_1geom_1_1Vec3.html" title=" " alt="" coords="5,167,160,207"/>
+<area shape="poly" title=" " alt="" coords="97,153,130,99,154,72,183,50,227,32,274,24,274,29,229,37,185,54,158,76,135,102,101,156"/>
+<area shape="rect" href="structplcopen_1_1core_1_1geom_1_1ArcSegment.html" title=" " alt="" coords="274,91,429,131"/>
+<area shape="poly" title=" " alt="" coords="120,157,150,139,183,124,228,113,273,108,274,114,229,119,185,129,152,143,123,161"/>
+<area shape="rect" href="structplcopen_1_1core_1_1geom_1_1CubicBezierSegment.html" title=" " alt="" coords="269,167,434,207"/>
+<area shape="poly" title=" " alt="" coords="174,184,269,184,269,189,174,189"/>
+<area shape="rect" href="structplcopen_1_1core_1_1geom_1_1QuadraticBlendSegment.html" title=" " alt="" coords="257,236,445,276"/>
+<area shape="poly" title=" " alt="" coords="131,211,185,233,258,248,257,253,183,239,129,216"/>
+<area shape="rect" href="structplcopen_1_1core_1_1geom_1_1QuinticBlendSegment.html" title=" " alt="" coords="266,332,437,372"/>
+<area shape="poly" title=" " alt="" coords="98,219,111,250,130,283,155,314,185,339,224,354,266,359,266,364,223,359,183,344,151,318,126,286,106,252,93,221"/>
+<area shape="poly" title=" " alt="" coords="437,132,549,164,548,169,435,137"/>
+<area shape="poly" title=" " alt="" coords="448,184,543,184,543,189,448,189"/>
+<area shape="poly" title=" " alt="" coords="442,230,542,204,543,209,443,235"/>
+<area shape="poly" title=" " alt="" coords="395,322,585,205,588,209,398,327"/>
+</map>
+<center><span class="legend">[<a href="graph_legend.html">图例</a>]</span></center></div>
+<table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
+Public 成员函数</h2></td></tr>
+<tr class="memitem:a1f0b7c34aeb983415188a65a3b552087" id="r_a1f0b7c34aeb983415188a65a3b552087"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1geom_1_1PathSegment.html#a1f0b7c34aeb983415188a65a3b552087">length</a> () const</td></tr>
+<tr class="separator:a1f0b7c34aeb983415188a65a3b552087"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0c03e85088393178303354241e044542" id="r_a0c03e85088393178303354241e044542"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">Vec3</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1geom_1_1PathSegment.html#a0c03e85088393178303354241e044542">sample</a> (double arclength) const</td></tr>
+<tr class="separator:a0c03e85088393178303354241e044542"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac7f287103f5d155252778020022d0d55" id="r_ac7f287103f5d155252778020022d0d55"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">Vec3</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1geom_1_1PathSegment.html#ac7f287103f5d155252778020022d0d55">tangent</a> (double arclength) const</td></tr>
+<tr class="separator:ac7f287103f5d155252778020022d0d55"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2de2afc78741ce979a028585d0083593" id="r_a2de2afc78741ce979a028585d0083593"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">Vec3</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1geom_1_1PathSegment.html#a2de2afc78741ce979a028585d0083593">path_derivative</a> (double arclength) const</td></tr>
+<tr class="separator:a2de2afc78741ce979a028585d0083593"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae354b18f0cb777b1d8cc63671af34506" id="r_ae354b18f0cb777b1d8cc63671af34506"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">Vec3</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1geom_1_1PathSegment.html#ae354b18f0cb777b1d8cc63671af34506">path_second_derivative</a> (double arclength) const</td></tr>
+<tr class="separator:ae354b18f0cb777b1d8cc63671af34506"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a881bd32127c1bed09c295398a4c14592" id="r_a881bd32127c1bed09c295398a4c14592"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">Vec3</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1geom_1_1PathSegment.html#a881bd32127c1bed09c295398a4c14592">path_third_derivative</a> (double arclength) const</td></tr>
+<tr class="separator:a881bd32127c1bed09c295398a4c14592"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a90c56879ba3dac60b8ed192b8be9f4cd" id="r_a90c56879ba3dac60b8ed192b8be9f4cd"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">Vec3</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1geom_1_1PathSegment.html#a90c56879ba3dac60b8ed192b8be9f4cd">start</a> () const</td></tr>
+<tr class="separator:a90c56879ba3dac60b8ed192b8be9f4cd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afb7651e9946f2d217bec0bf640b4d462" id="r_afb7651e9946f2d217bec0bf640b4d462"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">Vec3</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1geom_1_1PathSegment.html#afb7651e9946f2d217bec0bf640b4d462">finish</a> () const</td></tr>
+<tr class="separator:afb7651e9946f2d217bec0bf640b4d462"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
+Public 属性</h2></td></tr>
+<tr class="memitem:aa8e34a02285ae90dc12eedf929511cb3" id="r_aa8e34a02285ae90dc12eedf929511cb3"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceplcopen_1_1core_1_1geom.html#a202eeab8253e4d5d80b4e2e6b4c7b707">SegmentKind</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1geom_1_1PathSegment.html#aa8e34a02285ae90dc12eedf929511cb3">kind</a> = <a class="el" href="namespaceplcopen_1_1core_1_1geom.html#a202eeab8253e4d5d80b4e2e6b4c7b707a6438c669e0d0de98e6929c2cc0fac474">SegmentKind::line</a></td></tr>
+<tr class="separator:aa8e34a02285ae90dc12eedf929511cb3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac6fdaeeee26dc49185e47dc5ed2bf78e" id="r_ac6fdaeeee26dc49185e47dc5ed2bf78e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structplcopen_1_1core_1_1geom_1_1LineSegment.html">LineSegment</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1geom_1_1PathSegment.html#ac6fdaeeee26dc49185e47dc5ed2bf78e">line</a> {}</td></tr>
+<tr class="separator:ac6fdaeeee26dc49185e47dc5ed2bf78e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae0dc67d364f2cca8b35c803d6de14bc9" id="r_ae0dc67d364f2cca8b35c803d6de14bc9"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structplcopen_1_1core_1_1geom_1_1ArcSegment.html">ArcSegment</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1geom_1_1PathSegment.html#ae0dc67d364f2cca8b35c803d6de14bc9">arc</a> {}</td></tr>
+<tr class="separator:ae0dc67d364f2cca8b35c803d6de14bc9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa927e8c01905a7466c0b2a981b114ab0" id="r_aa927e8c01905a7466c0b2a981b114ab0"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structplcopen_1_1core_1_1geom_1_1CubicBezierSegment.html">CubicBezierSegment</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1geom_1_1PathSegment.html#aa927e8c01905a7466c0b2a981b114ab0">cubic</a> {}</td></tr>
+<tr class="separator:aa927e8c01905a7466c0b2a981b114ab0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a54f2a0ac324e3f45d4f530b4a1bde4cf" id="r_a54f2a0ac324e3f45d4f530b4a1bde4cf"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structplcopen_1_1core_1_1geom_1_1QuadraticBlendSegment.html">QuadraticBlendSegment</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1geom_1_1PathSegment.html#a54f2a0ac324e3f45d4f530b4a1bde4cf">blend</a> {}</td></tr>
+<tr class="separator:a54f2a0ac324e3f45d4f530b4a1bde4cf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae64253a85f550314b8f8e1ef36bc5beb" id="r_ae64253a85f550314b8f8e1ef36bc5beb"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structplcopen_1_1core_1_1geom_1_1QuinticBlendSegment.html">QuinticBlendSegment</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1geom_1_1PathSegment.html#ae64253a85f550314b8f8e1ef36bc5beb">quintic</a> {}</td></tr>
+<tr class="separator:ae64253a85f550314b8f8e1ef36bc5beb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table>
+<a name="details" id="details"></a><h2 class="groupheader">详细描述</h2>
+<div class="textblock">
+<p class="definition">在文件 <a class="el" href="geometry_8h_source.html">geometry.h</a> 第 <a class="el" href="geometry_8h_source.html#l00616">616</a> 行定义.</p>
+</div><h2 class="groupheader">成员函数说明</h2>
+<a id="afb7651e9946f2d217bec0bf640b4d462" name="afb7651e9946f2d217bec0bf640b4d462"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afb7651e9946f2d217bec0bf640b4d462">&#9670;&#160;</a></span>finish()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">Vec3</a> plcopen::core::geom::PathSegment::finish </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="geometry_8h_source.html">geometry.h</a> 第 <a class="el" href="geometry_8h_source.html#l00721">721</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a1f0b7c34aeb983415188a65a3b552087" name="a1f0b7c34aeb983415188a65a3b552087"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1f0b7c34aeb983415188a65a3b552087">&#9670;&#160;</a></span>length()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">double plcopen::core::geom::PathSegment::length </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="geometry_8h_source.html">geometry.h</a> 第 <a class="el" href="geometry_8h_source.html#l00625">625</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a2de2afc78741ce979a028585d0083593" name="a2de2afc78741ce979a028585d0083593"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2de2afc78741ce979a028585d0083593">&#9670;&#160;</a></span>path_derivative()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">Vec3</a> plcopen::core::geom::PathSegment::path_derivative </td>
+          <td>(</td>
+          <td class="paramtype">double&#160;</td>
+          <td class="paramname"><em>arclength</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="geometry_8h_source.html">geometry.h</a> 第 <a class="el" href="geometry_8h_source.html#l00669">669</a> 行定义.</p>
+
+</div>
+</div>
+<a id="ae354b18f0cb777b1d8cc63671af34506" name="ae354b18f0cb777b1d8cc63671af34506"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae354b18f0cb777b1d8cc63671af34506">&#9670;&#160;</a></span>path_second_derivative()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">Vec3</a> plcopen::core::geom::PathSegment::path_second_derivative </td>
+          <td>(</td>
+          <td class="paramtype">double&#160;</td>
+          <td class="paramname"><em>arclength</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="geometry_8h_source.html">geometry.h</a> 第 <a class="el" href="geometry_8h_source.html#l00684">684</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a881bd32127c1bed09c295398a4c14592" name="a881bd32127c1bed09c295398a4c14592"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a881bd32127c1bed09c295398a4c14592">&#9670;&#160;</a></span>path_third_derivative()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">Vec3</a> plcopen::core::geom::PathSegment::path_third_derivative </td>
+          <td>(</td>
+          <td class="paramtype">double&#160;</td>
+          <td class="paramname"><em>arclength</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="geometry_8h_source.html">geometry.h</a> 第 <a class="el" href="geometry_8h_source.html#l00700">700</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a0c03e85088393178303354241e044542" name="a0c03e85088393178303354241e044542"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0c03e85088393178303354241e044542">&#9670;&#160;</a></span>sample()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">Vec3</a> plcopen::core::geom::PathSegment::sample </td>
+          <td>(</td>
+          <td class="paramtype">double&#160;</td>
+          <td class="paramname"><em>arclength</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="geometry_8h_source.html">geometry.h</a> 第 <a class="el" href="geometry_8h_source.html#l00639">639</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a90c56879ba3dac60b8ed192b8be9f4cd" name="a90c56879ba3dac60b8ed192b8be9f4cd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a90c56879ba3dac60b8ed192b8be9f4cd">&#9670;&#160;</a></span>start()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">Vec3</a> plcopen::core::geom::PathSegment::start </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="geometry_8h_source.html">geometry.h</a> 第 <a class="el" href="geometry_8h_source.html#l00716">716</a> 行定义.</p>
+
+</div>
+</div>
+<a id="ac7f287103f5d155252778020022d0d55" name="ac7f287103f5d155252778020022d0d55"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac7f287103f5d155252778020022d0d55">&#9670;&#160;</a></span>tangent()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">Vec3</a> plcopen::core::geom::PathSegment::tangent </td>
+          <td>(</td>
+          <td class="paramtype">double&#160;</td>
+          <td class="paramname"><em>arclength</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="geometry_8h_source.html">geometry.h</a> 第 <a class="el" href="geometry_8h_source.html#l00654">654</a> 行定义.</p>
+
+</div>
+</div>
+<h2 class="groupheader">类成员变量说明</h2>
+<a id="ae0dc67d364f2cca8b35c803d6de14bc9" name="ae0dc67d364f2cca8b35c803d6de14bc9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae0dc67d364f2cca8b35c803d6de14bc9">&#9670;&#160;</a></span>arc</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="structplcopen_1_1core_1_1geom_1_1ArcSegment.html">ArcSegment</a> plcopen::core::geom::PathSegment::arc {}</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="geometry_8h_source.html">geometry.h</a> 第 <a class="el" href="geometry_8h_source.html#l00620">620</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a54f2a0ac324e3f45d4f530b4a1bde4cf" name="a54f2a0ac324e3f45d4f530b4a1bde4cf"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a54f2a0ac324e3f45d4f530b4a1bde4cf">&#9670;&#160;</a></span>blend</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="structplcopen_1_1core_1_1geom_1_1QuadraticBlendSegment.html">QuadraticBlendSegment</a> plcopen::core::geom::PathSegment::blend {}</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="geometry_8h_source.html">geometry.h</a> 第 <a class="el" href="geometry_8h_source.html#l00622">622</a> 行定义.</p>
+
+</div>
+</div>
+<a id="aa927e8c01905a7466c0b2a981b114ab0" name="aa927e8c01905a7466c0b2a981b114ab0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa927e8c01905a7466c0b2a981b114ab0">&#9670;&#160;</a></span>cubic</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="structplcopen_1_1core_1_1geom_1_1CubicBezierSegment.html">CubicBezierSegment</a> plcopen::core::geom::PathSegment::cubic {}</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="geometry_8h_source.html">geometry.h</a> 第 <a class="el" href="geometry_8h_source.html#l00621">621</a> 行定义.</p>
+
+</div>
+</div>
+<a id="aa8e34a02285ae90dc12eedf929511cb3" name="aa8e34a02285ae90dc12eedf929511cb3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa8e34a02285ae90dc12eedf929511cb3">&#9670;&#160;</a></span>kind</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="namespaceplcopen_1_1core_1_1geom.html#a202eeab8253e4d5d80b4e2e6b4c7b707">SegmentKind</a> plcopen::core::geom::PathSegment::kind = <a class="el" href="namespaceplcopen_1_1core_1_1geom.html#a202eeab8253e4d5d80b4e2e6b4c7b707a6438c669e0d0de98e6929c2cc0fac474">SegmentKind::line</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="geometry_8h_source.html">geometry.h</a> 第 <a class="el" href="geometry_8h_source.html#l00618">618</a> 行定义.</p>
+
+</div>
+</div>
+<a id="ac6fdaeeee26dc49185e47dc5ed2bf78e" name="ac6fdaeeee26dc49185e47dc5ed2bf78e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac6fdaeeee26dc49185e47dc5ed2bf78e">&#9670;&#160;</a></span>line</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="structplcopen_1_1core_1_1geom_1_1LineSegment.html">LineSegment</a> plcopen::core::geom::PathSegment::line {}</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="geometry_8h_source.html">geometry.h</a> 第 <a class="el" href="geometry_8h_source.html#l00619">619</a> 行定义.</p>
+
+</div>
+</div>
+<a id="ae64253a85f550314b8f8e1ef36bc5beb" name="ae64253a85f550314b8f8e1ef36bc5beb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae64253a85f550314b8f8e1ef36bc5beb">&#9670;&#160;</a></span>quintic</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="structplcopen_1_1core_1_1geom_1_1QuinticBlendSegment.html">QuinticBlendSegment</a> plcopen::core::geom::PathSegment::quintic {}</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="geometry_8h_source.html">geometry.h</a> 第 <a class="el" href="geometry_8h_source.html#l00623">623</a> 行定义.</p>
+
+</div>
+</div>
+<hr/>该结构体的文档由以下文件生成:<ul>
+<li>core/geom/<a class="el" href="geometry_8h_source.html">geometry.h</a></li>
+</ul>
+</div><!-- contents -->
+<!-- start footer part -->
+<hr class="footer"/><address class="footer"><small>
+制作者&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.8
+</small></address>
+</body>
+</html>

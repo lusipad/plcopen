@@ -1,0 +1,9 @@
+<map id="plcopen::core::fb::FbCamTableSelect" name="plcopen::core::fb::FbCamTableSelect">
+<area shape="rect" id="Node000001" title=" " alt="" coords="74,225,217,265"/>
+<area shape="rect" id="Node000002" href="$classplcopen_1_1core_1_1axis_1_1AxisModel.html" title=" " alt="" coords="5,108,149,148"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="92,160,112,200,129,223,125,227,107,203,87,162"/>
+<area shape="rect" id="Node000003" href="$structplcopen_1_1core_1_1exec_1_1CamTableView.html" title=" " alt="" coords="173,108,320,148"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="224,161,187,203,165,227,161,223,183,200,220,157"/>
+<area shape="rect" id="Node000004" href="$structplcopen_1_1core_1_1exec_1_1CamPoint.html" title=" " alt="" coords="173,5,320,45"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="249,59,249,108,244,108,244,59"/>
+</map>

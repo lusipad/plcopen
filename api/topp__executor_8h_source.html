@@ -1,0 +1,582 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh">
+<head>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=11"/>
+<meta name="generator" content="Doxygen 1.9.8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>plcopen: core/plan/topp_executor.h 源文件</title>
+<link href="tabs.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="jquery.js"></script>
+<script type="text/javascript" src="dynsections.js"></script>
+<link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<link href="doxygen.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+<div id="top"><!-- do not remove this div, it is closed by doxygen! -->
+<div id="titlearea">
+<table cellspacing="0" cellpadding="0">
+ <tbody>
+ <tr id="projectrow">
+  <td id="projectalign">
+   <div id="projectname">plcopen<span id="projectnumber">&#160;0.21.0</span>
+   </div>
+  </td>
+ </tr>
+ </tbody>
+</table>
+</div>
+<!-- end header part -->
+<!-- 制作者 Doxygen 1.9.8 -->
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+var searchBox = new SearchBox("searchBox", "search/",'.html');
+/* @license-end */
+</script>
+<script type="text/javascript" src="menudata.js"></script>
+<script type="text/javascript" src="menu.js"></script>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+$(function() {
+  initMenu('',true,false,'search.php','搜索');
+  $(document).ready(function() { init_search(); });
+});
+/* @license-end */
+</script>
+<div id="main-nav"></div>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+$(document).ready(function() { init_codefold(0); });
+/* @license-end */
+</script>
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<div id="MSearchResults">
+<div class="SRPage">
+<div id="SRIndex">
+<div id="SRResults"></div>
+<div class="SRStatus" id="Loading">载入中...</div>
+<div class="SRStatus" id="Searching">搜索中...</div>
+<div class="SRStatus" id="NoMatches">未找到</div>
+</div>
+</div>
+</div>
+</div>
+
+<div id="nav-path" class="navpath">
+  <ul>
+<li class="navelem"><a class="el" href="dir_4270bfced15e0e73154b13468c7c9ad9.html">core</a></li><li class="navelem"><a class="el" href="dir_bfb3738b0bd9198ff839e79843aee70d.html">plan</a></li>  </ul>
+</div>
+</div><!-- top -->
+<div class="header">
+  <div class="headertitle"><div class="title">topp_executor.h</div></div>
+</div><!--header-->
+<div class="contents">
+<a href="topp__executor_8h.html">浏览该文件的文档.</a><div class="fragment"><div class="line"><a id="l00001" name="l00001"></a><span class="lineno">    1</span><span class="preprocessor">#pragma once</span></div>
+<div class="line"><a id="l00002" name="l00002"></a><span class="lineno">    2</span> </div>
+<div class="line"><a id="l00003" name="l00003"></a><span class="lineno">    3</span><span class="comment">// Y3 TOPP-RA executor integration (algorithm contract §3).</span></div>
+<div class="line"><a id="l00004" name="l00004"></a><span class="lineno">    4</span><span class="comment">//</span></div>
+<div class="line"><a id="l00005" name="l00005"></a><span class="lineno">    5</span><span class="comment">// Bridge between TOPP planning-domain solvers (return optimal_time) and</span></div>
+<div class="line"><a id="l00006" name="l00006"></a><span class="lineno">    6</span><span class="comment">// the RT-domain executor (needs Profile1D with integer-tick segments).</span></div>
+<div class="line"><a id="l00007" name="l00007"></a><span class="lineno">    7</span><span class="comment">//</span></div>
+<div class="line"><a id="l00008" name="l00008"></a><span class="lineno">    8</span><span class="comment">// Pipeline:</span></div>
+<div class="line"><a id="l00009" name="l00009"></a><span class="lineno">    9</span><span class="comment">//   1. TOPP solver → ToppTimedResult (optimal_time, velocity profile)</span></div>
+<div class="line"><a id="l00010" name="l00010"></a><span class="lineno">   10</span><span class="comment">//   2. build_topp_timed_profile() → Profile1D via solve_fixed_time</span></div>
+<div class="line"><a id="l00011" name="l00011"></a><span class="lineno">   11</span><span class="comment">//   3. verify_joint_limits() → check per-axis limits along the path</span></div>
+<div class="line"><a id="l00012" name="l00012"></a><span class="lineno">   12</span><span class="comment">//   4. sample_profiled_path() → RT sampling (existing infrastructure)</span></div>
+<div class="line"><a id="l00013" name="l00013"></a><span class="lineno">   13</span><span class="comment">//</span></div>
+<div class="line"><a id="l00014" name="l00014"></a><span class="lineno">   14</span><span class="comment">// The scalar Profile1D distributes time uniformly (curvature-unaware).</span></div>
+<div class="line"><a id="l00015" name="l00015"></a><span class="lineno">   15</span><span class="comment">// TOPP&#39;s value is the globally optimal duration — joint-limit safety</span></div>
+<div class="line"><a id="l00016" name="l00016"></a><span class="lineno">   16</span><span class="comment">// is verified post-hoc at grid points, with fallback to scalar OTG.</span></div>
+<div class="line"><a id="l00017" name="l00017"></a><span class="lineno">   17</span> </div>
+<div class="line"><a id="l00018" name="l00018"></a><span class="lineno">   18</span><span class="preprocessor">#include &lt;algorithm&gt;</span></div>
+<div class="line"><a id="l00019" name="l00019"></a><span class="lineno">   19</span><span class="preprocessor">#include &lt;cmath&gt;</span></div>
+<div class="line"><a id="l00020" name="l00020"></a><span class="lineno">   20</span><span class="preprocessor">#include &lt;cstdint&gt;</span></div>
+<div class="line"><a id="l00021" name="l00021"></a><span class="lineno">   21</span> </div>
+<div class="line"><a id="l00022" name="l00022"></a><span class="lineno">   22</span><span class="preprocessor">#include &quot;<a class="code" href="geometry_8h.html">geom/geometry.h</a>&quot;</span></div>
+<div class="line"><a id="l00023" name="l00023"></a><span class="lineno">   23</span><span class="preprocessor">#include &quot;<a class="code" href="profile1d_8h.html">otg/profile1d.h</a>&quot;</span></div>
+<div class="line"><a id="l00024" name="l00024"></a><span class="lineno">   24</span><span class="preprocessor">#include &quot;<a class="code" href="time__optimal_8h.html">otg/time_optimal.h</a>&quot;</span></div>
+<div class="line"><a id="l00025" name="l00025"></a><span class="lineno">   25</span><span class="preprocessor">#include &quot;<a class="code" href="topp_8h.html">plan/topp.h</a>&quot;</span></div>
+<div class="line"><a id="l00026" name="l00026"></a><span class="lineno">   26</span><span class="preprocessor">#include &quot;<a class="code" href="topp__jerk_8h.html">plan/topp_jerk.h</a>&quot;</span></div>
+<div class="line"><a id="l00027" name="l00027"></a><span class="lineno">   27</span><span class="preprocessor">#include &quot;<a class="code" href="error_8h.html">rt/error.h</a>&quot;</span></div>
+<div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span> </div>
+<div class="line"><a id="l00029" name="l00029"></a><span class="lineno">   29</span><span class="keyword">namespace </span><a class="code hl_namespace" href="namespaceplcopen_1_1core_1_1plan.html">plcopen::core::plan</a></div>
+<div class="line"><a id="l00030" name="l00030"></a><span class="lineno">   30</span>{</div>
+<div class="line"><a id="l00031" name="l00031"></a><span class="lineno">   31</span> </div>
+<div class="foldopen" id="foldopen00032" data-start="{" data-end="};">
+<div class="line"><a id="l00032" name="l00032"></a><span class="lineno"><a class="line" href="structplcopen_1_1core_1_1plan_1_1ToppVelocityProfile.html">   32</a></span><span class="keyword">struct </span><a class="code hl_struct" href="structplcopen_1_1core_1_1plan_1_1ToppVelocityProfile.html">ToppVelocityProfile</a></div>
+<div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span>{</div>
+<div class="line"><a id="l00034" name="l00034"></a><span class="lineno"><a class="line" href="structplcopen_1_1core_1_1plan_1_1ToppVelocityProfile.html#a4800b12062d38a49c3c679433616f23d">   34</a></span>    <span class="keyword">static</span> <span class="keyword">constexpr</span> <span class="keywordtype">int</span> <a class="code hl_variable" href="structplcopen_1_1core_1_1plan_1_1ToppVelocityProfile.html#a4800b12062d38a49c3c679433616f23d">MaxGrid</a> = 1024;</div>
+<div class="line"><a id="l00035" name="l00035"></a><span class="lineno"><a class="line" href="structplcopen_1_1core_1_1plan_1_1ToppVelocityProfile.html#a7927597b2223552af567b3b7ed8178e5">   35</a></span>    <span class="keywordtype">double</span> <a class="code hl_variable" href="structplcopen_1_1core_1_1plan_1_1ToppVelocityProfile.html#a7927597b2223552af567b3b7ed8178e5">sdot_sq</a>[<a class="code hl_variable" href="structplcopen_1_1core_1_1plan_1_1ToppVelocityProfile.html#a4800b12062d38a49c3c679433616f23d">MaxGrid</a>] = {};</div>
+<div class="line"><a id="l00036" name="l00036"></a><span class="lineno"><a class="line" href="structplcopen_1_1core_1_1plan_1_1ToppVelocityProfile.html#a2e5eb6c0ed1edeb6d60fd1db89fdeb8f">   36</a></span>    <span class="keywordtype">int</span> <a class="code hl_variable" href="structplcopen_1_1core_1_1plan_1_1ToppVelocityProfile.html#a2e5eb6c0ed1edeb6d60fd1db89fdeb8f">grid_points</a> = 0;</div>
+<div class="line"><a id="l00037" name="l00037"></a><span class="lineno"><a class="line" href="structplcopen_1_1core_1_1plan_1_1ToppVelocityProfile.html#a81f93b9b1160e876e250a56d8c405145">   37</a></span>    <span class="keywordtype">double</span> <a class="code hl_variable" href="structplcopen_1_1core_1_1plan_1_1ToppVelocityProfile.html#a81f93b9b1160e876e250a56d8c405145">ds</a> = 0.0;</div>
+<div class="line"><a id="l00038" name="l00038"></a><span class="lineno"><a class="line" href="structplcopen_1_1core_1_1plan_1_1ToppVelocityProfile.html#ab8c06e2f337ad53d1aa4c2a2f32b24f6">   38</a></span>    <span class="keywordtype">double</span> <a class="code hl_variable" href="structplcopen_1_1core_1_1plan_1_1ToppVelocityProfile.html#ab8c06e2f337ad53d1aa4c2a2f32b24f6">path_length</a> = 0.0;</div>
+<div class="line"><a id="l00039" name="l00039"></a><span class="lineno"><a class="line" href="structplcopen_1_1core_1_1plan_1_1ToppVelocityProfile.html#a20a1c4aabab3e64a874979bd8656b8ff">   39</a></span>    <span class="keywordtype">double</span> <a class="code hl_variable" href="structplcopen_1_1core_1_1plan_1_1ToppVelocityProfile.html#a20a1c4aabab3e64a874979bd8656b8ff">optimal_time</a> = 0.0;</div>
+<div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span> </div>
+<div class="foldopen" id="foldopen00041" data-start="{" data-end="}">
+<div class="line"><a id="l00041" name="l00041"></a><span class="lineno"><a class="line" href="structplcopen_1_1core_1_1plan_1_1ToppVelocityProfile.html#a1d654aa3e81fffd145f2ede991054e6a">   41</a></span>    <span class="keywordtype">double</span> <a class="code hl_function" href="structplcopen_1_1core_1_1plan_1_1ToppVelocityProfile.html#a1d654aa3e81fffd145f2ede991054e6a">sdot_at</a>(<span class="keywordtype">int</span> k)<span class="keyword"> const</span></div>
+<div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span><span class="keyword">    </span>{</div>
+<div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span>        <span class="keywordflow">if</span>(k &lt; 0 || k &gt;= <a class="code hl_variable" href="structplcopen_1_1core_1_1plan_1_1ToppVelocityProfile.html#a2e5eb6c0ed1edeb6d60fd1db89fdeb8f">grid_points</a>) {</div>
+<div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span>            <span class="keywordflow">return</span> 0.0;</div>
+<div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span>        }</div>
+<div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span>        <span class="keywordflow">return</span> std::sqrt(std::max(<a class="code hl_variable" href="structplcopen_1_1core_1_1plan_1_1ToppVelocityProfile.html#a7927597b2223552af567b3b7ed8178e5">sdot_sq</a>[k], 0.0));</div>
+<div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span>    }</div>
+</div>
+<div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span> </div>
+<div class="foldopen" id="foldopen00049" data-start="{" data-end="}">
+<div class="line"><a id="l00049" name="l00049"></a><span class="lineno"><a class="line" href="structplcopen_1_1core_1_1plan_1_1ToppVelocityProfile.html#a1f200ab6e105e2c0d655c67134ab1824">   49</a></span>    <span class="keywordtype">double</span> <a class="code hl_function" href="structplcopen_1_1core_1_1plan_1_1ToppVelocityProfile.html#a1f200ab6e105e2c0d655c67134ab1824">interpolate_sdot</a>(<span class="keywordtype">double</span> s)<span class="keyword"> const</span></div>
+<div class="line"><a id="l00050" name="l00050"></a><span class="lineno">   50</span><span class="keyword">    </span>{</div>
+<div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span>        <span class="keywordflow">if</span>(<a class="code hl_variable" href="structplcopen_1_1core_1_1plan_1_1ToppVelocityProfile.html#a81f93b9b1160e876e250a56d8c405145">ds</a> &lt;= 0.0 || <a class="code hl_variable" href="structplcopen_1_1core_1_1plan_1_1ToppVelocityProfile.html#a2e5eb6c0ed1edeb6d60fd1db89fdeb8f">grid_points</a> &lt; 2) {</div>
+<div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span>            <span class="keywordflow">return</span> 0.0;</div>
+<div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span>        }</div>
+<div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span>        <span class="keyword">const</span> <span class="keywordtype">double</span> fk = s / <a class="code hl_variable" href="structplcopen_1_1core_1_1plan_1_1ToppVelocityProfile.html#a81f93b9b1160e876e250a56d8c405145">ds</a>;</div>
+<div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span>        <span class="keyword">const</span> <span class="keywordtype">int</span> k = <span class="keyword">static_cast&lt;</span><span class="keywordtype">int</span><span class="keyword">&gt;</span>(fk);</div>
+<div class="line"><a id="l00056" name="l00056"></a><span class="lineno">   56</span>        <span class="keywordflow">if</span>(k &lt; 0) {</div>
+<div class="line"><a id="l00057" name="l00057"></a><span class="lineno">   57</span>            <span class="keywordflow">return</span> <a class="code hl_function" href="structplcopen_1_1core_1_1plan_1_1ToppVelocityProfile.html#a1d654aa3e81fffd145f2ede991054e6a">sdot_at</a>(0);</div>
+<div class="line"><a id="l00058" name="l00058"></a><span class="lineno">   58</span>        }</div>
+<div class="line"><a id="l00059" name="l00059"></a><span class="lineno">   59</span>        <span class="keywordflow">if</span>(k &gt;= <a class="code hl_variable" href="structplcopen_1_1core_1_1plan_1_1ToppVelocityProfile.html#a2e5eb6c0ed1edeb6d60fd1db89fdeb8f">grid_points</a> - 1) {</div>
+<div class="line"><a id="l00060" name="l00060"></a><span class="lineno">   60</span>            <span class="keywordflow">return</span> <a class="code hl_function" href="structplcopen_1_1core_1_1plan_1_1ToppVelocityProfile.html#a1d654aa3e81fffd145f2ede991054e6a">sdot_at</a>(<a class="code hl_variable" href="structplcopen_1_1core_1_1plan_1_1ToppVelocityProfile.html#a2e5eb6c0ed1edeb6d60fd1db89fdeb8f">grid_points</a> - 1);</div>
+<div class="line"><a id="l00061" name="l00061"></a><span class="lineno">   61</span>        }</div>
+<div class="line"><a id="l00062" name="l00062"></a><span class="lineno">   62</span>        <span class="keyword">const</span> <span class="keywordtype">double</span> t = fk - <span class="keyword">static_cast&lt;</span><span class="keywordtype">double</span><span class="keyword">&gt;</span>(k);</div>
+<div class="line"><a id="l00063" name="l00063"></a><span class="lineno">   63</span>        <span class="keywordflow">return</span> (1.0 - t) * <a class="code hl_function" href="structplcopen_1_1core_1_1plan_1_1ToppVelocityProfile.html#a1d654aa3e81fffd145f2ede991054e6a">sdot_at</a>(k) + t * <a class="code hl_function" href="structplcopen_1_1core_1_1plan_1_1ToppVelocityProfile.html#a1d654aa3e81fffd145f2ede991054e6a">sdot_at</a>(k + 1);</div>
+<div class="line"><a id="l00064" name="l00064"></a><span class="lineno">   64</span>    }</div>
+</div>
+<div class="line"><a id="l00065" name="l00065"></a><span class="lineno">   65</span>};</div>
+</div>
+<div class="line"><a id="l00066" name="l00066"></a><span class="lineno">   66</span> </div>
+<div class="foldopen" id="foldopen00067" data-start="{" data-end="}">
+<div class="line"><a id="l00067" name="l00067"></a><span class="lineno"><a class="line" href="namespaceplcopen_1_1core_1_1plan_1_1topp__executor__detail.html">   67</a></span><span class="keyword">namespace </span>topp_executor_detail</div>
+<div class="line"><a id="l00068" name="l00068"></a><span class="lineno">   68</span>{</div>
+<div class="line"><a id="l00069" name="l00069"></a><span class="lineno">   69</span> </div>
+<div class="foldopen" id="foldopen00070" data-start="{" data-end="}">
+<div class="line"><a id="l00070" name="l00070"></a><span class="lineno"><a class="line" href="namespaceplcopen_1_1core_1_1plan_1_1topp__executor__detail.html#a06b9dbecade6bf8c196970b82a6f7cb6">   70</a></span><span class="keyword">inline</span> <a class="code hl_class" href="classplcopen_1_1core_1_1rt_1_1Result.html">rt::Result&lt;ToppVelocityProfile&gt;</a> <a class="code hl_function" href="namespaceplcopen_1_1core_1_1plan_1_1topp__executor__detail.html#a06b9dbecade6bf8c196970b82a6f7cb6">solve_topp_profile_l1</a>(</div>
+<div class="line"><a id="l00071" name="l00071"></a><span class="lineno">   71</span>    <span class="keyword">const</span> <a class="code hl_struct" href="structplcopen_1_1core_1_1geom_1_1PathSegment.html">geom::PathSegment</a> &amp;path,</div>
+<div class="line"><a id="l00072" name="l00072"></a><span class="lineno">   72</span>    <span class="keyword">const</span> <a class="code hl_struct" href="structplcopen_1_1core_1_1plan_1_1ToppAxisLimits.html">ToppAxisLimits</a> limits[3],</div>
+<div class="line"><a id="l00073" name="l00073"></a><span class="lineno">   73</span>    <span class="keywordtype">int</span> grid_size)</div>
+<div class="line"><a id="l00074" name="l00074"></a><span class="lineno">   74</span>{</div>
+<div class="line"><a id="l00075" name="l00075"></a><span class="lineno">   75</span>    <span class="keywordflow">if</span>(grid_size &lt; 2) {</div>
+<div class="line"><a id="l00076" name="l00076"></a><span class="lineno">   76</span>        <span class="keywordflow">return</span> <a class="code hl_function" href="classplcopen_1_1core_1_1rt_1_1Result.html#adabbee61b3f30cf0c2ac27f685ea5b92">rt::Result&lt;ToppVelocityProfile&gt;::failure</a>(</div>
+<div class="line"><a id="l00077" name="l00077"></a><span class="lineno">   77</span>            <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8ae55d43eabeefe5a8271b4a3c898bd18f">rt::ErrorCode::invalid_argument</a>);</div>
+<div class="line"><a id="l00078" name="l00078"></a><span class="lineno">   78</span>    }</div>
+<div class="line"><a id="l00079" name="l00079"></a><span class="lineno">   79</span>    <span class="keyword">const</span> <span class="keywordtype">double</span> L = path.<a class="code hl_function" href="structplcopen_1_1core_1_1geom_1_1PathSegment.html#a1f0b7c34aeb983415188a65a3b552087">length</a>();</div>
+<div class="line"><a id="l00080" name="l00080"></a><span class="lineno">   80</span>    <span class="keywordflow">if</span>(L &lt;= 0.0) {</div>
+<div class="line"><a id="l00081" name="l00081"></a><span class="lineno">   81</span>        <a class="code hl_struct" href="structplcopen_1_1core_1_1plan_1_1ToppVelocityProfile.html">ToppVelocityProfile</a> vp{};</div>
+<div class="line"><a id="l00082" name="l00082"></a><span class="lineno">   82</span>        vp.<a class="code hl_variable" href="structplcopen_1_1core_1_1plan_1_1ToppVelocityProfile.html#a2e5eb6c0ed1edeb6d60fd1db89fdeb8f">grid_points</a> = 1;</div>
+<div class="line"><a id="l00083" name="l00083"></a><span class="lineno">   83</span>        <span class="keywordflow">return</span> <a class="code hl_function" href="classplcopen_1_1core_1_1rt_1_1Result.html#ac818eef35186a51dc08606fe43449855">rt::Result&lt;ToppVelocityProfile&gt;::success</a>(vp);</div>
+<div class="line"><a id="l00084" name="l00084"></a><span class="lineno">   84</span>    }</div>
+<div class="line"><a id="l00085" name="l00085"></a><span class="lineno">   85</span> </div>
+<div class="line"><a id="l00086" name="l00086"></a><span class="lineno">   86</span>    <span class="keyword">constexpr</span> <span class="keywordtype">int</span> MaxGrid = <a class="code hl_variable" href="structplcopen_1_1core_1_1plan_1_1ToppVelocityProfile.html#a4800b12062d38a49c3c679433616f23d">ToppVelocityProfile::MaxGrid</a>;</div>
+<div class="line"><a id="l00087" name="l00087"></a><span class="lineno">   87</span>    <span class="keywordflow">if</span>(grid_size + 1 &gt; MaxGrid) {</div>
+<div class="line"><a id="l00088" name="l00088"></a><span class="lineno">   88</span>        <span class="keywordflow">return</span> <a class="code hl_function" href="classplcopen_1_1core_1_1rt_1_1Result.html#adabbee61b3f30cf0c2ac27f685ea5b92">rt::Result&lt;ToppVelocityProfile&gt;::failure</a>(</div>
+<div class="line"><a id="l00089" name="l00089"></a><span class="lineno">   89</span>            <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8ae55d43eabeefe5a8271b4a3c898bd18f">rt::ErrorCode::invalid_argument</a>);</div>
+<div class="line"><a id="l00090" name="l00090"></a><span class="lineno">   90</span>    }</div>
+<div class="line"><a id="l00091" name="l00091"></a><span class="lineno">   91</span> </div>
+<div class="line"><a id="l00092" name="l00092"></a><span class="lineno">   92</span>    <span class="keyword">const</span> <span class="keywordtype">int</span> N = grid_size;</div>
+<div class="line"><a id="l00093" name="l00093"></a><span class="lineno">   93</span>    <span class="keyword">const</span> <span class="keywordtype">double</span> ds = L / <span class="keyword">static_cast&lt;</span><span class="keywordtype">double</span><span class="keyword">&gt;</span>(N);</div>
+<div class="line"><a id="l00094" name="l00094"></a><span class="lineno">   94</span> </div>
+<div class="line"><a id="l00095" name="l00095"></a><span class="lineno">   95</span>    <span class="keywordtype">double</span> x_mvc[MaxGrid];</div>
+<div class="line"><a id="l00096" name="l00096"></a><span class="lineno">   96</span>    <a class="code hl_struct" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">geom::Vec3</a> qs[MaxGrid];</div>
+<div class="line"><a id="l00097" name="l00097"></a><span class="lineno">   97</span>    <a class="code hl_struct" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">geom::Vec3</a> qss[MaxGrid];</div>
+<div class="line"><a id="l00098" name="l00098"></a><span class="lineno">   98</span> </div>
+<div class="line"><a id="l00099" name="l00099"></a><span class="lineno">   99</span>    <span class="keywordflow">for</span>(<span class="keywordtype">int</span> k = 0; k &lt;= N; ++k) {</div>
+<div class="line"><a id="l00100" name="l00100"></a><span class="lineno">  100</span>        <span class="keyword">const</span> <span class="keywordtype">double</span> s = ds * <span class="keyword">static_cast&lt;</span><span class="keywordtype">double</span><span class="keyword">&gt;</span>(k);</div>
+<div class="line"><a id="l00101" name="l00101"></a><span class="lineno">  101</span>        qs[k] = path.<a class="code hl_function" href="structplcopen_1_1core_1_1geom_1_1PathSegment.html#a2de2afc78741ce979a028585d0083593">path_derivative</a>(s);</div>
+<div class="line"><a id="l00102" name="l00102"></a><span class="lineno">  102</span>        qss[k] = path.<a class="code hl_function" href="structplcopen_1_1core_1_1geom_1_1PathSegment.html#ae354b18f0cb777b1d8cc63671af34506">path_second_derivative</a>(s);</div>
+<div class="line"><a id="l00103" name="l00103"></a><span class="lineno">  103</span> </div>
+<div class="line"><a id="l00104" name="l00104"></a><span class="lineno">  104</span>        <span class="keywordtype">double</span> mvc = <a class="code hl_function" href="namespaceplcopen_1_1core_1_1plan_1_1topp__detail.html#ad580c7f23d96fb99a410a4c5d37e65bd">topp_detail::velocity_limit_squared</a>(qs[k], limits);</div>
+<div class="line"><a id="l00105" name="l00105"></a><span class="lineno">  105</span>        <span class="keyword">const</span> <span class="keywordtype">double</span> cs[3] = {qs[k].x, qs[k].y, qs[k].z};</div>
+<div class="line"><a id="l00106" name="l00106"></a><span class="lineno">  106</span>        <span class="keyword">const</span> <span class="keywordtype">double</span> css[3] = {qss[k].<a class="code hl_variable" href="structplcopen_1_1core_1_1geom_1_1Vec3.html#ae98a0f57eba110740e66c96dd8da388b">x</a>, qss[k].<a class="code hl_variable" href="structplcopen_1_1core_1_1geom_1_1Vec3.html#ad617347336964c8e2765902356853e61">y</a>, qss[k].<a class="code hl_variable" href="structplcopen_1_1core_1_1geom_1_1Vec3.html#adb52befd46bcf12d3b1d9bdc97306d2f">z</a>};</div>
+<div class="line"><a id="l00107" name="l00107"></a><span class="lineno">  107</span>        <span class="keywordflow">for</span>(<span class="keywordtype">int</span> i = 0; i &lt; 3; ++i) {</div>
+<div class="line"><a id="l00108" name="l00108"></a><span class="lineno">  108</span>            mvc = std::min(mvc,</div>
+<div class="line"><a id="l00109" name="l00109"></a><span class="lineno">  109</span>                           <a class="code hl_function" href="namespaceplcopen_1_1core_1_1plan_1_1topp__detail.html#a2a70bfb2297e9780ab5bfc44531457b9">topp_detail::acceleration_velocity_limit</a>(</div>
+<div class="line"><a id="l00110" name="l00110"></a><span class="lineno">  110</span>                               cs[i], css[i], limits[i].max_acceleration));</div>
+<div class="line"><a id="l00111" name="l00111"></a><span class="lineno">  111</span>        }</div>
+<div class="line"><a id="l00112" name="l00112"></a><span class="lineno">  112</span>        mvc = std::min(mvc,</div>
+<div class="line"><a id="l00113" name="l00113"></a><span class="lineno">  113</span>                       <a class="code hl_function" href="namespaceplcopen_1_1core_1_1plan_1_1topp__detail.html#afef5ee5966e9465eb851dc0f768f7e6a">topp_detail::cross_axis_velocity_limit</a>(cs, css, limits));</div>
+<div class="line"><a id="l00114" name="l00114"></a><span class="lineno">  114</span>        x_mvc[k] = mvc;</div>
+<div class="line"><a id="l00115" name="l00115"></a><span class="lineno">  115</span>    }</div>
+<div class="line"><a id="l00116" name="l00116"></a><span class="lineno">  116</span> </div>
+<div class="line"><a id="l00117" name="l00117"></a><span class="lineno">  117</span>    <span class="keywordtype">double</span> x_back[MaxGrid];</div>
+<div class="line"><a id="l00118" name="l00118"></a><span class="lineno">  118</span>    x_back[N] = 0.0;</div>
+<div class="line"><a id="l00119" name="l00119"></a><span class="lineno">  119</span>    <span class="keywordflow">for</span>(<span class="keywordtype">int</span> k = N - 1; k &gt;= 0; --k) {</div>
+<div class="line"><a id="l00120" name="l00120"></a><span class="lineno">  120</span>        <span class="keyword">const</span> <span class="keywordtype">double</span> cs[3] = {qs[k].<a class="code hl_variable" href="structplcopen_1_1core_1_1geom_1_1Vec3.html#ae98a0f57eba110740e66c96dd8da388b">x</a>, qs[k].<a class="code hl_variable" href="structplcopen_1_1core_1_1geom_1_1Vec3.html#ad617347336964c8e2765902356853e61">y</a>, qs[k].<a class="code hl_variable" href="structplcopen_1_1core_1_1geom_1_1Vec3.html#adb52befd46bcf12d3b1d9bdc97306d2f">z</a>};</div>
+<div class="line"><a id="l00121" name="l00121"></a><span class="lineno">  121</span>        <span class="keyword">const</span> <span class="keywordtype">double</span> css[3] = {qss[k].<a class="code hl_variable" href="structplcopen_1_1core_1_1geom_1_1Vec3.html#ae98a0f57eba110740e66c96dd8da388b">x</a>, qss[k].<a class="code hl_variable" href="structplcopen_1_1core_1_1geom_1_1Vec3.html#ad617347336964c8e2765902356853e61">y</a>, qss[k].<a class="code hl_variable" href="structplcopen_1_1core_1_1geom_1_1Vec3.html#adb52befd46bcf12d3b1d9bdc97306d2f">z</a>};</div>
+<div class="line"><a id="l00122" name="l00122"></a><span class="lineno">  122</span>        <span class="keywordtype">double</span> x_max = 1e30;</div>
+<div class="line"><a id="l00123" name="l00123"></a><span class="lineno">  123</span>        <span class="keywordflow">for</span>(<span class="keywordtype">int</span> i = 0; i &lt; 3; ++i) {</div>
+<div class="line"><a id="l00124" name="l00124"></a><span class="lineno">  124</span>            x_max = std::min(x_max,</div>
+<div class="line"><a id="l00125" name="l00125"></a><span class="lineno">  125</span>                             <a class="code hl_function" href="namespaceplcopen_1_1core_1_1plan_1_1topp__detail.html#a1556a41e6c1c98fff0497620aeff1aed">topp_detail::axis_backward_reach</a>(</div>
+<div class="line"><a id="l00126" name="l00126"></a><span class="lineno">  126</span>                                 cs[i], css[i], limits[i].max_acceleration,</div>
+<div class="line"><a id="l00127" name="l00127"></a><span class="lineno">  127</span>                                 x_back[k + 1], ds));</div>
+<div class="line"><a id="l00128" name="l00128"></a><span class="lineno">  128</span>        }</div>
+<div class="line"><a id="l00129" name="l00129"></a><span class="lineno">  129</span>        x_max = std::min(x_max, x_mvc[k]);</div>
+<div class="line"><a id="l00130" name="l00130"></a><span class="lineno">  130</span>        x_back[k] = std::max(x_max, 0.0);</div>
+<div class="line"><a id="l00131" name="l00131"></a><span class="lineno">  131</span>    }</div>
+<div class="line"><a id="l00132" name="l00132"></a><span class="lineno">  132</span> </div>
+<div class="line"><a id="l00133" name="l00133"></a><span class="lineno">  133</span>    <span class="keywordtype">double</span> x_fwd[MaxGrid];</div>
+<div class="line"><a id="l00134" name="l00134"></a><span class="lineno">  134</span>    x_fwd[0] = 0.0;</div>
+<div class="line"><a id="l00135" name="l00135"></a><span class="lineno">  135</span>    <span class="keywordflow">for</span>(<span class="keywordtype">int</span> k = 0; k &lt; N; ++k) {</div>
+<div class="line"><a id="l00136" name="l00136"></a><span class="lineno">  136</span>        <span class="keyword">const</span> <span class="keywordtype">double</span> cs[3] = {qs[k].<a class="code hl_variable" href="structplcopen_1_1core_1_1geom_1_1Vec3.html#ae98a0f57eba110740e66c96dd8da388b">x</a>, qs[k].<a class="code hl_variable" href="structplcopen_1_1core_1_1geom_1_1Vec3.html#ad617347336964c8e2765902356853e61">y</a>, qs[k].<a class="code hl_variable" href="structplcopen_1_1core_1_1geom_1_1Vec3.html#adb52befd46bcf12d3b1d9bdc97306d2f">z</a>};</div>
+<div class="line"><a id="l00137" name="l00137"></a><span class="lineno">  137</span>        <span class="keyword">const</span> <span class="keywordtype">double</span> css[3] = {qss[k].<a class="code hl_variable" href="structplcopen_1_1core_1_1geom_1_1Vec3.html#ae98a0f57eba110740e66c96dd8da388b">x</a>, qss[k].<a class="code hl_variable" href="structplcopen_1_1core_1_1geom_1_1Vec3.html#ad617347336964c8e2765902356853e61">y</a>, qss[k].<a class="code hl_variable" href="structplcopen_1_1core_1_1geom_1_1Vec3.html#adb52befd46bcf12d3b1d9bdc97306d2f">z</a>};</div>
+<div class="line"><a id="l00138" name="l00138"></a><span class="lineno">  138</span>        <span class="keywordtype">double</span> x_next = 1e30;</div>
+<div class="line"><a id="l00139" name="l00139"></a><span class="lineno">  139</span>        <span class="keywordflow">for</span>(<span class="keywordtype">int</span> i = 0; i &lt; 3; ++i) {</div>
+<div class="line"><a id="l00140" name="l00140"></a><span class="lineno">  140</span>            x_next = std::min(x_next,</div>
+<div class="line"><a id="l00141" name="l00141"></a><span class="lineno">  141</span>                              <a class="code hl_function" href="namespaceplcopen_1_1core_1_1plan_1_1topp__detail.html#a4ddc567d2606fce52a6375146e963131">topp_detail::axis_forward_reach</a>(</div>
+<div class="line"><a id="l00142" name="l00142"></a><span class="lineno">  142</span>                                  cs[i], css[i], limits[i].max_acceleration,</div>
+<div class="line"><a id="l00143" name="l00143"></a><span class="lineno">  143</span>                                  x_fwd[k], ds));</div>
+<div class="line"><a id="l00144" name="l00144"></a><span class="lineno">  144</span>        }</div>
+<div class="line"><a id="l00145" name="l00145"></a><span class="lineno">  145</span>        x_next = std::min(x_next, x_back[k + 1]);</div>
+<div class="line"><a id="l00146" name="l00146"></a><span class="lineno">  146</span>        x_next = std::min(x_next, x_mvc[k + 1]);</div>
+<div class="line"><a id="l00147" name="l00147"></a><span class="lineno">  147</span>        x_fwd[k + 1] = std::max(x_next, 0.0);</div>
+<div class="line"><a id="l00148" name="l00148"></a><span class="lineno">  148</span>    }</div>
+<div class="line"><a id="l00149" name="l00149"></a><span class="lineno">  149</span> </div>
+<div class="line"><a id="l00150" name="l00150"></a><span class="lineno">  150</span>    <span class="keywordtype">double</span> total_time = 0.0;</div>
+<div class="line"><a id="l00151" name="l00151"></a><span class="lineno">  151</span>    <span class="keywordflow">for</span>(<span class="keywordtype">int</span> k = 0; k &lt; N; ++k) {</div>
+<div class="line"><a id="l00152" name="l00152"></a><span class="lineno">  152</span>        <span class="keyword">const</span> <span class="keywordtype">double</span> sd_k = std::sqrt(std::max(x_fwd[k], 0.0));</div>
+<div class="line"><a id="l00153" name="l00153"></a><span class="lineno">  153</span>        <span class="keyword">const</span> <span class="keywordtype">double</span> sd_k1 = std::sqrt(std::max(x_fwd[k + 1], 0.0));</div>
+<div class="line"><a id="l00154" name="l00154"></a><span class="lineno">  154</span>        <span class="keyword">const</span> <span class="keywordtype">double</span> sum = sd_k + sd_k1;</div>
+<div class="line"><a id="l00155" name="l00155"></a><span class="lineno">  155</span>        <span class="keywordflow">if</span>(sum &lt; 1e-30) {</div>
+<div class="line"><a id="l00156" name="l00156"></a><span class="lineno">  156</span>            <span class="keywordflow">return</span> <a class="code hl_function" href="classplcopen_1_1core_1_1rt_1_1Result.html#adabbee61b3f30cf0c2ac27f685ea5b92">rt::Result&lt;ToppVelocityProfile&gt;::failure</a>(</div>
+<div class="line"><a id="l00157" name="l00157"></a><span class="lineno">  157</span>                <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8afc988471d247479f88a57e29916bbf82">rt::ErrorCode::infeasible</a>);</div>
+<div class="line"><a id="l00158" name="l00158"></a><span class="lineno">  158</span>        }</div>
+<div class="line"><a id="l00159" name="l00159"></a><span class="lineno">  159</span>        total_time += 2.0 * ds / sum;</div>
+<div class="line"><a id="l00160" name="l00160"></a><span class="lineno">  160</span>    }</div>
+<div class="line"><a id="l00161" name="l00161"></a><span class="lineno">  161</span> </div>
+<div class="line"><a id="l00162" name="l00162"></a><span class="lineno">  162</span>    <a class="code hl_struct" href="structplcopen_1_1core_1_1plan_1_1ToppVelocityProfile.html">ToppVelocityProfile</a> vp{};</div>
+<div class="line"><a id="l00163" name="l00163"></a><span class="lineno">  163</span>    <span class="keywordflow">for</span>(<span class="keywordtype">int</span> k = 0; k &lt;= N; ++k) {</div>
+<div class="line"><a id="l00164" name="l00164"></a><span class="lineno">  164</span>        vp.<a class="code hl_variable" href="structplcopen_1_1core_1_1plan_1_1ToppVelocityProfile.html#a7927597b2223552af567b3b7ed8178e5">sdot_sq</a>[k] = x_fwd[k];</div>
+<div class="line"><a id="l00165" name="l00165"></a><span class="lineno">  165</span>    }</div>
+<div class="line"><a id="l00166" name="l00166"></a><span class="lineno">  166</span>    vp.grid_points = N + 1;</div>
+<div class="line"><a id="l00167" name="l00167"></a><span class="lineno">  167</span>    vp.ds = ds;</div>
+<div class="line"><a id="l00168" name="l00168"></a><span class="lineno">  168</span>    vp.path_length = L;</div>
+<div class="line"><a id="l00169" name="l00169"></a><span class="lineno">  169</span>    vp.optimal_time = total_time;</div>
+<div class="line"><a id="l00170" name="l00170"></a><span class="lineno">  170</span> </div>
+<div class="line"><a id="l00171" name="l00171"></a><span class="lineno">  171</span>    <span class="keywordflow">return</span> <a class="code hl_function" href="classplcopen_1_1core_1_1rt_1_1Result.html#ac818eef35186a51dc08606fe43449855">rt::Result&lt;ToppVelocityProfile&gt;::success</a>(vp);</div>
+<div class="line"><a id="l00172" name="l00172"></a><span class="lineno">  172</span>}</div>
+</div>
+<div class="line"><a id="l00173" name="l00173"></a><span class="lineno">  173</span> </div>
+<div class="line"><a id="l00174" name="l00174"></a><span class="lineno">  174</span>} <span class="comment">// namespace topp_executor_detail</span></div>
+</div>
+<div class="line"><a id="l00175" name="l00175"></a><span class="lineno">  175</span> </div>
+<div class="line"><a id="l00176" name="l00176"></a><span class="lineno">  176</span><span class="comment">// Compute effective scalar limits from per-axis limits and path geometry.</span></div>
+<div class="line"><a id="l00177" name="l00177"></a><span class="lineno">  177</span><span class="comment">// Uses the midpoint tangent (same method as the shadow oracle baseline).</span></div>
+<div class="foldopen" id="foldopen00178" data-start="{" data-end="}">
+<div class="line"><a id="l00178" name="l00178"></a><span class="lineno"><a class="line" href="namespaceplcopen_1_1core_1_1plan.html#ad0e9210f2df37061a468c8e71936d028">  178</a></span><span class="keyword">inline</span> <a class="code hl_struct" href="structplcopen_1_1core_1_1otg_1_1Limits1D.html">otg::Limits1D</a> <a class="code hl_function" href="namespaceplcopen_1_1core_1_1plan.html#ad0e9210f2df37061a468c8e71936d028">effective_scalar_limits</a>(</div>
+<div class="line"><a id="l00179" name="l00179"></a><span class="lineno">  179</span>    <span class="keyword">const</span> <a class="code hl_struct" href="structplcopen_1_1core_1_1geom_1_1PathSegment.html">geom::PathSegment</a> &amp;path,</div>
+<div class="line"><a id="l00180" name="l00180"></a><span class="lineno">  180</span>    <span class="keyword">const</span> <a class="code hl_struct" href="structplcopen_1_1core_1_1plan_1_1ToppAxisLimits.html">ToppAxisLimits</a> limits[3])</div>
+<div class="line"><a id="l00181" name="l00181"></a><span class="lineno">  181</span>{</div>
+<div class="line"><a id="l00182" name="l00182"></a><span class="lineno">  182</span>    <span class="keyword">const</span> <a class="code hl_struct" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">geom::Vec3</a> q_s = path.<a class="code hl_function" href="structplcopen_1_1core_1_1geom_1_1PathSegment.html#a2de2afc78741ce979a028585d0083593">path_derivative</a>(path.<a class="code hl_function" href="structplcopen_1_1core_1_1geom_1_1PathSegment.html#a1f0b7c34aeb983415188a65a3b552087">length</a>() * 0.5);</div>
+<div class="line"><a id="l00183" name="l00183"></a><span class="lineno">  183</span>    <span class="keyword">const</span> <span class="keywordtype">double</span> qs[3] = {q_s.<a class="code hl_variable" href="structplcopen_1_1core_1_1geom_1_1Vec3.html#ae98a0f57eba110740e66c96dd8da388b">x</a>, q_s.<a class="code hl_variable" href="structplcopen_1_1core_1_1geom_1_1Vec3.html#ad617347336964c8e2765902356853e61">y</a>, q_s.<a class="code hl_variable" href="structplcopen_1_1core_1_1geom_1_1Vec3.html#adb52befd46bcf12d3b1d9bdc97306d2f">z</a>};</div>
+<div class="line"><a id="l00184" name="l00184"></a><span class="lineno">  184</span> </div>
+<div class="line"><a id="l00185" name="l00185"></a><span class="lineno">  185</span>    <span class="keywordtype">double</span> v_eff = 1e30;</div>
+<div class="line"><a id="l00186" name="l00186"></a><span class="lineno">  186</span>    <span class="keywordtype">double</span> a_eff = 1e30;</div>
+<div class="line"><a id="l00187" name="l00187"></a><span class="lineno">  187</span>    <span class="keywordflow">for</span>(<span class="keywordtype">int</span> i = 0; i &lt; 3; ++i) {</div>
+<div class="line"><a id="l00188" name="l00188"></a><span class="lineno">  188</span>        <span class="keyword">const</span> <span class="keywordtype">double</span> a = std::fabs(qs[i]);</div>
+<div class="line"><a id="l00189" name="l00189"></a><span class="lineno">  189</span>        <span class="keywordflow">if</span>(a &gt; 1e-15) {</div>
+<div class="line"><a id="l00190" name="l00190"></a><span class="lineno">  190</span>            <span class="keywordflow">if</span>(limits[i].max_velocity &gt; 0.0) {</div>
+<div class="line"><a id="l00191" name="l00191"></a><span class="lineno">  191</span>                v_eff = std::min(v_eff, limits[i].max_velocity / a);</div>
+<div class="line"><a id="l00192" name="l00192"></a><span class="lineno">  192</span>            }</div>
+<div class="line"><a id="l00193" name="l00193"></a><span class="lineno">  193</span>            a_eff = std::min(a_eff, limits[i].max_acceleration / a);</div>
+<div class="line"><a id="l00194" name="l00194"></a><span class="lineno">  194</span>        }</div>
+<div class="line"><a id="l00195" name="l00195"></a><span class="lineno">  195</span>    }</div>
+<div class="line"><a id="l00196" name="l00196"></a><span class="lineno">  196</span>    <span class="keywordflow">if</span>(v_eff &gt; 1e29) {</div>
+<div class="line"><a id="l00197" name="l00197"></a><span class="lineno">  197</span>        v_eff = 1.0;</div>
+<div class="line"><a id="l00198" name="l00198"></a><span class="lineno">  198</span>    }</div>
+<div class="line"><a id="l00199" name="l00199"></a><span class="lineno">  199</span>    <span class="keywordflow">if</span>(a_eff &gt; 1e29) {</div>
+<div class="line"><a id="l00200" name="l00200"></a><span class="lineno">  200</span>        a_eff = 1.0;</div>
+<div class="line"><a id="l00201" name="l00201"></a><span class="lineno">  201</span>    }</div>
+<div class="line"><a id="l00202" name="l00202"></a><span class="lineno">  202</span> </div>
+<div class="line"><a id="l00203" name="l00203"></a><span class="lineno">  203</span>    <span class="keywordflow">return</span> {v_eff, a_eff, a_eff, a_eff * a_eff / std::max(v_eff * 0.01, 1e-15)};</div>
+<div class="line"><a id="l00204" name="l00204"></a><span class="lineno">  204</span>}</div>
+</div>
+<div class="line"><a id="l00205" name="l00205"></a><span class="lineno">  205</span> </div>
+<div class="foldopen" id="foldopen00206" data-start="{" data-end="}">
+<div class="line"><a id="l00206" name="l00206"></a><span class="lineno"><a class="line" href="namespaceplcopen_1_1core_1_1plan.html#a7173689cb9ce5b1023495ebcfb28d4db">  206</a></span><span class="keyword">inline</span> <a class="code hl_struct" href="structplcopen_1_1core_1_1otg_1_1Limits1D.html">otg::Limits1D</a> <a class="code hl_function" href="namespaceplcopen_1_1core_1_1plan.html#ad0e9210f2df37061a468c8e71936d028">effective_scalar_limits</a>(</div>
+<div class="line"><a id="l00207" name="l00207"></a><span class="lineno">  207</span>    <span class="keyword">const</span> <a class="code hl_struct" href="structplcopen_1_1core_1_1geom_1_1PathSegment.html">geom::PathSegment</a> &amp;path,</div>
+<div class="line"><a id="l00208" name="l00208"></a><span class="lineno">  208</span>    <span class="keyword">const</span> <a class="code hl_struct" href="structplcopen_1_1core_1_1plan_1_1ToppJerkAxisLimits.html">ToppJerkAxisLimits</a> limits[3])</div>
+<div class="line"><a id="l00209" name="l00209"></a><span class="lineno">  209</span>{</div>
+<div class="line"><a id="l00210" name="l00210"></a><span class="lineno">  210</span>    <span class="keyword">const</span> <a class="code hl_struct" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">geom::Vec3</a> q_s = path.<a class="code hl_function" href="structplcopen_1_1core_1_1geom_1_1PathSegment.html#a2de2afc78741ce979a028585d0083593">path_derivative</a>(path.<a class="code hl_function" href="structplcopen_1_1core_1_1geom_1_1PathSegment.html#a1f0b7c34aeb983415188a65a3b552087">length</a>() * 0.5);</div>
+<div class="line"><a id="l00211" name="l00211"></a><span class="lineno">  211</span>    <span class="keyword">const</span> <span class="keywordtype">double</span> qs[3] = {q_s.<a class="code hl_variable" href="structplcopen_1_1core_1_1geom_1_1Vec3.html#ae98a0f57eba110740e66c96dd8da388b">x</a>, q_s.<a class="code hl_variable" href="structplcopen_1_1core_1_1geom_1_1Vec3.html#ad617347336964c8e2765902356853e61">y</a>, q_s.<a class="code hl_variable" href="structplcopen_1_1core_1_1geom_1_1Vec3.html#adb52befd46bcf12d3b1d9bdc97306d2f">z</a>};</div>
+<div class="line"><a id="l00212" name="l00212"></a><span class="lineno">  212</span> </div>
+<div class="line"><a id="l00213" name="l00213"></a><span class="lineno">  213</span>    <span class="keywordtype">double</span> v_eff = 1e30;</div>
+<div class="line"><a id="l00214" name="l00214"></a><span class="lineno">  214</span>    <span class="keywordtype">double</span> a_eff = 1e30;</div>
+<div class="line"><a id="l00215" name="l00215"></a><span class="lineno">  215</span>    <span class="keywordtype">double</span> j_eff = 1e30;</div>
+<div class="line"><a id="l00216" name="l00216"></a><span class="lineno">  216</span>    <span class="keywordflow">for</span>(<span class="keywordtype">int</span> i = 0; i &lt; 3; ++i) {</div>
+<div class="line"><a id="l00217" name="l00217"></a><span class="lineno">  217</span>        <span class="keyword">const</span> <span class="keywordtype">double</span> a = std::fabs(qs[i]);</div>
+<div class="line"><a id="l00218" name="l00218"></a><span class="lineno">  218</span>        <span class="keywordflow">if</span>(a &gt; 1e-15) {</div>
+<div class="line"><a id="l00219" name="l00219"></a><span class="lineno">  219</span>            <span class="keywordflow">if</span>(limits[i].max_velocity &gt; 0.0) {</div>
+<div class="line"><a id="l00220" name="l00220"></a><span class="lineno">  220</span>                v_eff = std::min(v_eff, limits[i].max_velocity / a);</div>
+<div class="line"><a id="l00221" name="l00221"></a><span class="lineno">  221</span>            }</div>
+<div class="line"><a id="l00222" name="l00222"></a><span class="lineno">  222</span>            a_eff = std::min(a_eff, limits[i].max_acceleration / a);</div>
+<div class="line"><a id="l00223" name="l00223"></a><span class="lineno">  223</span>            j_eff = std::min(j_eff, limits[i].max_jerk / a);</div>
+<div class="line"><a id="l00224" name="l00224"></a><span class="lineno">  224</span>        }</div>
+<div class="line"><a id="l00225" name="l00225"></a><span class="lineno">  225</span>    }</div>
+<div class="line"><a id="l00226" name="l00226"></a><span class="lineno">  226</span>    <span class="keywordflow">if</span>(v_eff &gt; 1e29) {</div>
+<div class="line"><a id="l00227" name="l00227"></a><span class="lineno">  227</span>        v_eff = 1.0;</div>
+<div class="line"><a id="l00228" name="l00228"></a><span class="lineno">  228</span>    }</div>
+<div class="line"><a id="l00229" name="l00229"></a><span class="lineno">  229</span>    <span class="keywordflow">if</span>(a_eff &gt; 1e29) {</div>
+<div class="line"><a id="l00230" name="l00230"></a><span class="lineno">  230</span>        a_eff = 1.0;</div>
+<div class="line"><a id="l00231" name="l00231"></a><span class="lineno">  231</span>    }</div>
+<div class="line"><a id="l00232" name="l00232"></a><span class="lineno">  232</span>    <span class="keywordflow">if</span>(j_eff &gt; 1e29) {</div>
+<div class="line"><a id="l00233" name="l00233"></a><span class="lineno">  233</span>        j_eff = a_eff * 10.0;</div>
+<div class="line"><a id="l00234" name="l00234"></a><span class="lineno">  234</span>    }</div>
+<div class="line"><a id="l00235" name="l00235"></a><span class="lineno">  235</span> </div>
+<div class="line"><a id="l00236" name="l00236"></a><span class="lineno">  236</span>    <span class="keywordflow">return</span> {v_eff, a_eff, a_eff, j_eff};</div>
+<div class="line"><a id="l00237" name="l00237"></a><span class="lineno">  237</span>}</div>
+</div>
+<div class="line"><a id="l00238" name="l00238"></a><span class="lineno">  238</span> </div>
+<div class="line"><a id="l00239" name="l00239"></a><span class="lineno">  239</span><span class="comment">// Verify that the Profile1D trajectory respects per-axis joint limits</span></div>
+<div class="line"><a id="l00240" name="l00240"></a><span class="lineno">  240</span><span class="comment">// when mapped through the given path geometry.</span></div>
+<div class="line"><a id="l00241" name="l00241"></a><span class="lineno">  241</span><span class="comment">// Returns true if all sampled points are within tolerance.</span></div>
+<div class="foldopen" id="foldopen00242" data-start="{" data-end="}">
+<div class="line"><a id="l00242" name="l00242"></a><span class="lineno"><a class="line" href="namespaceplcopen_1_1core_1_1plan.html#a9a6264eba4e3065c85d9c0af38ba777a">  242</a></span><span class="keyword">inline</span> <span class="keywordtype">bool</span> <a class="code hl_function" href="namespaceplcopen_1_1core_1_1plan.html#a9a6264eba4e3065c85d9c0af38ba777a">verify_joint_limits</a>(</div>
+<div class="line"><a id="l00243" name="l00243"></a><span class="lineno">  243</span>    <span class="keyword">const</span> <a class="code hl_class" href="classplcopen_1_1core_1_1otg_1_1Profile1D.html">otg::Profile1D</a> &amp;profile,</div>
+<div class="line"><a id="l00244" name="l00244"></a><span class="lineno">  244</span>    <span class="keyword">const</span> <a class="code hl_struct" href="structplcopen_1_1core_1_1geom_1_1PathSegment.html">geom::PathSegment</a> &amp;path,</div>
+<div class="line"><a id="l00245" name="l00245"></a><span class="lineno">  245</span>    <span class="keyword">const</span> <a class="code hl_struct" href="structplcopen_1_1core_1_1plan_1_1ToppAxisLimits.html">ToppAxisLimits</a> limits[3],</div>
+<div class="line"><a id="l00246" name="l00246"></a><span class="lineno">  246</span>    <span class="keywordtype">int</span> num_samples = 64,</div>
+<div class="line"><a id="l00247" name="l00247"></a><span class="lineno">  247</span>    <span class="keywordtype">double</span> tolerance = 1.01)</div>
+<div class="line"><a id="l00248" name="l00248"></a><span class="lineno">  248</span>{</div>
+<div class="line"><a id="l00249" name="l00249"></a><span class="lineno">  249</span>    <span class="keyword">const</span> std::int64_t total = profile.<a class="code hl_function" href="classplcopen_1_1core_1_1otg_1_1Profile1D.html#a4705173755f3cf2515b4b1b3d100a539">duration_cycles</a>();</div>
+<div class="line"><a id="l00250" name="l00250"></a><span class="lineno">  250</span>    <span class="keywordflow">if</span>(total &lt;= 0) {</div>
+<div class="line"><a id="l00251" name="l00251"></a><span class="lineno">  251</span>        <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
+<div class="line"><a id="l00252" name="l00252"></a><span class="lineno">  252</span>    }</div>
+<div class="line"><a id="l00253" name="l00253"></a><span class="lineno">  253</span> </div>
+<div class="line"><a id="l00254" name="l00254"></a><span class="lineno">  254</span>    <span class="keyword">const</span> <span class="keywordtype">int</span> step = std::max(</div>
+<div class="line"><a id="l00255" name="l00255"></a><span class="lineno">  255</span>        <span class="keyword">static_cast&lt;</span><span class="keywordtype">int</span><span class="keyword">&gt;</span>(total / <span class="keyword">static_cast&lt;</span>std::int64_t<span class="keyword">&gt;</span>(num_samples)), 1);</div>
+<div class="line"><a id="l00256" name="l00256"></a><span class="lineno">  256</span> </div>
+<div class="line"><a id="l00257" name="l00257"></a><span class="lineno">  257</span>    <span class="keywordflow">for</span>(std::int64_t t = 0; t &lt;= total; t += step) {</div>
+<div class="line"><a id="l00258" name="l00258"></a><span class="lineno">  258</span>        <span class="keyword">const</span> <a class="code hl_struct" href="structplcopen_1_1core_1_1otg_1_1State1D.html">otg::State1D</a> st =</div>
+<div class="line"><a id="l00259" name="l00259"></a><span class="lineno">  259</span>            <a class="code hl_function" href="namespaceplcopen_1_1core_1_1otg.html#ab39acf484b3f4cf4df5e0e5589e1a93e">otg::sample</a>(profile, <a class="code hl_function" href="classplcopen_1_1core_1_1rt_1_1CycleTick.html#aa0c8495b4f730a7694d4dc88be2569bd">rt::CycleTick::from_cycles</a>(t));</div>
+<div class="line"><a id="l00260" name="l00260"></a><span class="lineno">  260</span>        <span class="keyword">const</span> <span class="keywordtype">double</span> s = st.<a class="code hl_variable" href="structplcopen_1_1core_1_1otg_1_1State1D.html#a2b02bc2a891f0519b9500ddea93e47b3">position</a>;</div>
+<div class="line"><a id="l00261" name="l00261"></a><span class="lineno">  261</span>        <span class="keyword">const</span> <span class="keywordtype">double</span> sdot = st.<a class="code hl_variable" href="structplcopen_1_1core_1_1otg_1_1State1D.html#a57af6b86ab8ebbc7eef32b6775ba8060">velocity</a>;</div>
+<div class="line"><a id="l00262" name="l00262"></a><span class="lineno">  262</span> </div>
+<div class="line"><a id="l00263" name="l00263"></a><span class="lineno">  263</span>        <span class="keywordflow">if</span>(s &lt; 0.0 || s &gt; path.<a class="code hl_function" href="structplcopen_1_1core_1_1geom_1_1PathSegment.html#a1f0b7c34aeb983415188a65a3b552087">length</a>() * 1.001) {</div>
+<div class="line"><a id="l00264" name="l00264"></a><span class="lineno">  264</span>            <span class="keywordflow">continue</span>;</div>
+<div class="line"><a id="l00265" name="l00265"></a><span class="lineno">  265</span>        }</div>
+<div class="line"><a id="l00266" name="l00266"></a><span class="lineno">  266</span> </div>
+<div class="line"><a id="l00267" name="l00267"></a><span class="lineno">  267</span>        <span class="keyword">const</span> <a class="code hl_struct" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">geom::Vec3</a> q_s = path.<a class="code hl_function" href="structplcopen_1_1core_1_1geom_1_1PathSegment.html#a2de2afc78741ce979a028585d0083593">path_derivative</a>(</div>
+<div class="line"><a id="l00268" name="l00268"></a><span class="lineno">  268</span>            std::min(s, path.<a class="code hl_function" href="structplcopen_1_1core_1_1geom_1_1PathSegment.html#a1f0b7c34aeb983415188a65a3b552087">length</a>()));</div>
+<div class="line"><a id="l00269" name="l00269"></a><span class="lineno">  269</span>        <span class="keyword">const</span> <span class="keywordtype">double</span> qs[3] = {q_s.<a class="code hl_variable" href="structplcopen_1_1core_1_1geom_1_1Vec3.html#ae98a0f57eba110740e66c96dd8da388b">x</a>, q_s.<a class="code hl_variable" href="structplcopen_1_1core_1_1geom_1_1Vec3.html#ad617347336964c8e2765902356853e61">y</a>, q_s.<a class="code hl_variable" href="structplcopen_1_1core_1_1geom_1_1Vec3.html#adb52befd46bcf12d3b1d9bdc97306d2f">z</a>};</div>
+<div class="line"><a id="l00270" name="l00270"></a><span class="lineno">  270</span> </div>
+<div class="line"><a id="l00271" name="l00271"></a><span class="lineno">  271</span>        <span class="keywordflow">for</span>(<span class="keywordtype">int</span> i = 0; i &lt; 3; ++i) {</div>
+<div class="line"><a id="l00272" name="l00272"></a><span class="lineno">  272</span>            <span class="keyword">const</span> <span class="keywordtype">double</span> vi = std::fabs(qs[i] * sdot);</div>
+<div class="line"><a id="l00273" name="l00273"></a><span class="lineno">  273</span>            <span class="keywordflow">if</span>(limits[i].max_velocity &gt; 0.0 &amp;&amp;</div>
+<div class="line"><a id="l00274" name="l00274"></a><span class="lineno">  274</span>               vi &gt; limits[i].max_velocity * tolerance) {</div>
+<div class="line"><a id="l00275" name="l00275"></a><span class="lineno">  275</span>                <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00276" name="l00276"></a><span class="lineno">  276</span>            }</div>
+<div class="line"><a id="l00277" name="l00277"></a><span class="lineno">  277</span>        }</div>
+<div class="line"><a id="l00278" name="l00278"></a><span class="lineno">  278</span>    }</div>
+<div class="line"><a id="l00279" name="l00279"></a><span class="lineno">  279</span>    <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
+<div class="line"><a id="l00280" name="l00280"></a><span class="lineno">  280</span>}</div>
+</div>
+<div class="line"><a id="l00281" name="l00281"></a><span class="lineno">  281</span> </div>
+<div class="foldopen" id="foldopen00282" data-start="{" data-end="};">
+<div class="line"><a id="l00282" name="l00282"></a><span class="lineno"><a class="line" href="structplcopen_1_1core_1_1plan_1_1ToppProfileResult.html">  282</a></span><span class="keyword">struct </span><a class="code hl_struct" href="structplcopen_1_1core_1_1plan_1_1ToppProfileResult.html">ToppProfileResult</a></div>
+<div class="line"><a id="l00283" name="l00283"></a><span class="lineno">  283</span>{</div>
+<div class="line"><a id="l00284" name="l00284"></a><span class="lineno"><a class="line" href="structplcopen_1_1core_1_1plan_1_1ToppProfileResult.html#a2d2c08c4534a6f8dbf1666bcfe731d7a">  284</a></span>    <a class="code hl_class" href="classplcopen_1_1core_1_1otg_1_1Profile1D.html">otg::Profile1D</a> <a class="code hl_variable" href="structplcopen_1_1core_1_1plan_1_1ToppProfileResult.html#a2d2c08c4534a6f8dbf1666bcfe731d7a">profile</a>{};</div>
+<div class="line"><a id="l00285" name="l00285"></a><span class="lineno"><a class="line" href="structplcopen_1_1core_1_1plan_1_1ToppProfileResult.html#a925f7e767bf4be200735dd3ef0f27855">  285</a></span>    <span class="keywordtype">double</span> <a class="code hl_variable" href="structplcopen_1_1core_1_1plan_1_1ToppProfileResult.html#a925f7e767bf4be200735dd3ef0f27855">topp_time</a> = 0.0;</div>
+<div class="line"><a id="l00286" name="l00286"></a><span class="lineno"><a class="line" href="structplcopen_1_1core_1_1plan_1_1ToppProfileResult.html#a6f4dac5458c7987bb8118199a91e5e66">  286</a></span>    std::int64_t <a class="code hl_variable" href="structplcopen_1_1core_1_1plan_1_1ToppProfileResult.html#a6f4dac5458c7987bb8118199a91e5e66">quantized_cycles</a> = 0;</div>
+<div class="line"><a id="l00287" name="l00287"></a><span class="lineno"><a class="line" href="structplcopen_1_1core_1_1plan_1_1ToppProfileResult.html#ad87947596a989cd7ba149210b731cf8a">  287</a></span>    <span class="keywordtype">bool</span> <a class="code hl_variable" href="structplcopen_1_1core_1_1plan_1_1ToppProfileResult.html#ad87947596a989cd7ba149210b731cf8a">curvature_verified</a> = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00288" name="l00288"></a><span class="lineno">  288</span>};</div>
+</div>
+<div class="line"><a id="l00289" name="l00289"></a><span class="lineno">  289</span> </div>
+<div class="line"><a id="l00290" name="l00290"></a><span class="lineno">  290</span><span class="comment">// Full TOPP executor pipeline: solve TOPP → quantize → build Profile1D.</span></div>
+<div class="line"><a id="l00291" name="l00291"></a><span class="lineno">  291</span><span class="comment">//</span></div>
+<div class="line"><a id="l00292" name="l00292"></a><span class="lineno">  292</span><span class="comment">// For acceleration-limited TOPP (Layer 1). Uses solve_fixed_time with</span></div>
+<div class="line"><a id="l00293" name="l00293"></a><span class="lineno">  293</span><span class="comment">// ceil(T_topp) cycles as the prescribed duration. The resulting Profile1D</span></div>
+<div class="line"><a id="l00294" name="l00294"></a><span class="lineno">  294</span><span class="comment">// traverses path_length in exactly that many cycles.</span></div>
+<div class="line"><a id="l00295" name="l00295"></a><span class="lineno">  295</span><span class="comment">//</span></div>
+<div class="line"><a id="l00296" name="l00296"></a><span class="lineno">  296</span><span class="comment">// If the TOPP time is shorter than the scalar OTG minimum (rare — happens</span></div>
+<div class="line"><a id="l00297" name="l00297"></a><span class="lineno">  297</span><span class="comment">// when effective scalar limits are more conservative than the per-axis</span></div>
+<div class="line"><a id="l00298" name="l00298"></a><span class="lineno">  298</span><span class="comment">// TOPP limits at non-midpoint sections), the scalar OTG minimum wins.</span></div>
+<div class="foldopen" id="foldopen00299" data-start="{" data-end="}">
+<div class="line"><a id="l00299" name="l00299"></a><span class="lineno"><a class="line" href="namespaceplcopen_1_1core_1_1plan.html#ab4862f9270328db7bf67bc7a08b7121d">  299</a></span><span class="keyword">inline</span> <a class="code hl_class" href="classplcopen_1_1core_1_1rt_1_1Result.html">rt::Result&lt;ToppProfileResult&gt;</a> <a class="code hl_function" href="namespaceplcopen_1_1core_1_1plan.html#ab4862f9270328db7bf67bc7a08b7121d">plan_topp_profiled</a>(</div>
+<div class="line"><a id="l00300" name="l00300"></a><span class="lineno">  300</span>    <span class="keyword">const</span> <a class="code hl_struct" href="structplcopen_1_1core_1_1geom_1_1PathSegment.html">geom::PathSegment</a> &amp;path,</div>
+<div class="line"><a id="l00301" name="l00301"></a><span class="lineno">  301</span>    <span class="keyword">const</span> <a class="code hl_struct" href="structplcopen_1_1core_1_1plan_1_1ToppAxisLimits.html">ToppAxisLimits</a> limits[3],</div>
+<div class="line"><a id="l00302" name="l00302"></a><span class="lineno">  302</span>    <span class="keywordtype">int</span> grid_size = 128)</div>
+<div class="line"><a id="l00303" name="l00303"></a><span class="lineno">  303</span>{</div>
+<div class="line"><a id="l00304" name="l00304"></a><span class="lineno">  304</span>    <span class="keyword">const</span> <span class="keyword">auto</span> topp = <a class="code hl_function" href="namespaceplcopen_1_1core_1_1plan_1_1topp__executor__detail.html#a06b9dbecade6bf8c196970b82a6f7cb6">topp_executor_detail::solve_topp_profile_l1</a>(</div>
+<div class="line"><a id="l00305" name="l00305"></a><span class="lineno">  305</span>        path, limits, grid_size);</div>
+<div class="line"><a id="l00306" name="l00306"></a><span class="lineno">  306</span>    <span class="keywordflow">if</span>(!topp) {</div>
+<div class="line"><a id="l00307" name="l00307"></a><span class="lineno">  307</span>        <span class="keywordflow">return</span> <a class="code hl_function" href="classplcopen_1_1core_1_1rt_1_1Result.html#adabbee61b3f30cf0c2ac27f685ea5b92">rt::Result&lt;ToppProfileResult&gt;::failure</a>(topp.error());</div>
+<div class="line"><a id="l00308" name="l00308"></a><span class="lineno">  308</span>    }</div>
+<div class="line"><a id="l00309" name="l00309"></a><span class="lineno">  309</span> </div>
+<div class="line"><a id="l00310" name="l00310"></a><span class="lineno">  310</span>    <span class="keyword">const</span> <a class="code hl_struct" href="structplcopen_1_1core_1_1plan_1_1ToppVelocityProfile.html">ToppVelocityProfile</a> &amp;vp = topp.value();</div>
+<div class="line"><a id="l00311" name="l00311"></a><span class="lineno">  311</span>    <span class="keywordflow">if</span>(vp.<a class="code hl_variable" href="structplcopen_1_1core_1_1plan_1_1ToppVelocityProfile.html#ab8c06e2f337ad53d1aa4c2a2f32b24f6">path_length</a> &lt;= 0.0) {</div>
+<div class="line"><a id="l00312" name="l00312"></a><span class="lineno">  312</span>        <a class="code hl_struct" href="structplcopen_1_1core_1_1plan_1_1ToppProfileResult.html">ToppProfileResult</a> r{};</div>
+<div class="line"><a id="l00313" name="l00313"></a><span class="lineno">  313</span>        r.curvature_verified = <span class="keyword">true</span>;</div>
+<div class="line"><a id="l00314" name="l00314"></a><span class="lineno">  314</span>        <span class="keywordflow">return</span> <a class="code hl_function" href="classplcopen_1_1core_1_1rt_1_1Result.html#ac818eef35186a51dc08606fe43449855">rt::Result&lt;ToppProfileResult&gt;::success</a>(r);</div>
+<div class="line"><a id="l00315" name="l00315"></a><span class="lineno">  315</span>    }</div>
+<div class="line"><a id="l00316" name="l00316"></a><span class="lineno">  316</span> </div>
+<div class="line"><a id="l00317" name="l00317"></a><span class="lineno">  317</span>    <span class="keyword">const</span> <a class="code hl_struct" href="structplcopen_1_1core_1_1otg_1_1Limits1D.html">otg::Limits1D</a> scalar = <a class="code hl_function" href="namespaceplcopen_1_1core_1_1plan.html#ad0e9210f2df37061a468c8e71936d028">effective_scalar_limits</a>(path, limits);</div>
+<div class="line"><a id="l00318" name="l00318"></a><span class="lineno">  318</span> </div>
+<div class="line"><a id="l00319" name="l00319"></a><span class="lineno">  319</span>    <span class="keyword">const</span> <span class="keyword">auto</span> scalar_min = <a class="code hl_function" href="namespaceplcopen_1_1core_1_1otg.html#a3ac2cd8c29455971e3a248645fd21b16">otg::plan_time_optimal</a>(</div>
+<div class="line"><a id="l00320" name="l00320"></a><span class="lineno">  320</span>        {0.0, 0.0, 0.0}, {vp.<a class="code hl_variable" href="structplcopen_1_1core_1_1plan_1_1ToppVelocityProfile.html#ab8c06e2f337ad53d1aa4c2a2f32b24f6">path_length</a>, 0.0, 0.0}, scalar);</div>
+<div class="line"><a id="l00321" name="l00321"></a><span class="lineno">  321</span>    <span class="keyword">const</span> std::int64_t t_scalar_min =</div>
+<div class="line"><a id="l00322" name="l00322"></a><span class="lineno">  322</span>        scalar_min ? scalar_min.value().duration_cycles() : 1;</div>
+<div class="line"><a id="l00323" name="l00323"></a><span class="lineno">  323</span> </div>
+<div class="line"><a id="l00324" name="l00324"></a><span class="lineno">  324</span>    std::int64_t total_cycles =</div>
+<div class="line"><a id="l00325" name="l00325"></a><span class="lineno">  325</span>        <span class="keyword">static_cast&lt;</span>std::int64_t<span class="keyword">&gt;</span>(std::ceil(vp.<a class="code hl_variable" href="structplcopen_1_1core_1_1plan_1_1ToppVelocityProfile.html#a20a1c4aabab3e64a874979bd8656b8ff">optimal_time</a>));</div>
+<div class="line"><a id="l00326" name="l00326"></a><span class="lineno">  326</span>    <span class="keywordflow">if</span>(total_cycles &lt; t_scalar_min) {</div>
+<div class="line"><a id="l00327" name="l00327"></a><span class="lineno">  327</span>        total_cycles = t_scalar_min;</div>
+<div class="line"><a id="l00328" name="l00328"></a><span class="lineno">  328</span>    }</div>
+<div class="line"><a id="l00329" name="l00329"></a><span class="lineno">  329</span>    <span class="keywordflow">if</span>(total_cycles &lt; 1) {</div>
+<div class="line"><a id="l00330" name="l00330"></a><span class="lineno">  330</span>        total_cycles = 1;</div>
+<div class="line"><a id="l00331" name="l00331"></a><span class="lineno">  331</span>    }</div>
+<div class="line"><a id="l00332" name="l00332"></a><span class="lineno">  332</span> </div>
+<div class="line"><a id="l00333" name="l00333"></a><span class="lineno">  333</span>    <span class="keyword">const</span> <span class="keyword">auto</span> profile = <a class="code hl_function" href="namespaceplcopen_1_1core_1_1otg.html#a55994e43b4ba12e272ce1f48d73a11f9">otg::solve_fixed_time</a>(</div>
+<div class="line"><a id="l00334" name="l00334"></a><span class="lineno">  334</span>        {0.0, 0.0, 0.0},</div>
+<div class="line"><a id="l00335" name="l00335"></a><span class="lineno">  335</span>        {vp.<a class="code hl_variable" href="structplcopen_1_1core_1_1plan_1_1ToppVelocityProfile.html#ab8c06e2f337ad53d1aa4c2a2f32b24f6">path_length</a>, 0.0, 0.0},</div>
+<div class="line"><a id="l00336" name="l00336"></a><span class="lineno">  336</span>        scalar,</div>
+<div class="line"><a id="l00337" name="l00337"></a><span class="lineno">  337</span>        total_cycles);</div>
+<div class="line"><a id="l00338" name="l00338"></a><span class="lineno">  338</span>    <span class="keywordflow">if</span>(!profile) {</div>
+<div class="line"><a id="l00339" name="l00339"></a><span class="lineno">  339</span>        <span class="keywordflow">return</span> <a class="code hl_function" href="classplcopen_1_1core_1_1rt_1_1Result.html#adabbee61b3f30cf0c2ac27f685ea5b92">rt::Result&lt;ToppProfileResult&gt;::failure</a>(profile.error());</div>
+<div class="line"><a id="l00340" name="l00340"></a><span class="lineno">  340</span>    }</div>
+<div class="line"><a id="l00341" name="l00341"></a><span class="lineno">  341</span> </div>
+<div class="line"><a id="l00342" name="l00342"></a><span class="lineno">  342</span>    <a class="code hl_struct" href="structplcopen_1_1core_1_1plan_1_1ToppProfileResult.html">ToppProfileResult</a> r{};</div>
+<div class="line"><a id="l00343" name="l00343"></a><span class="lineno">  343</span>    r.profile = profile.value();</div>
+<div class="line"><a id="l00344" name="l00344"></a><span class="lineno">  344</span>    r.topp_time = vp.<a class="code hl_variable" href="structplcopen_1_1core_1_1plan_1_1ToppVelocityProfile.html#a20a1c4aabab3e64a874979bd8656b8ff">optimal_time</a>;</div>
+<div class="line"><a id="l00345" name="l00345"></a><span class="lineno">  345</span>    r.quantized_cycles = total_cycles;</div>
+<div class="line"><a id="l00346" name="l00346"></a><span class="lineno">  346</span>    r.curvature_verified = <a class="code hl_function" href="namespaceplcopen_1_1core_1_1plan.html#a9a6264eba4e3065c85d9c0af38ba777a">verify_joint_limits</a>(</div>
+<div class="line"><a id="l00347" name="l00347"></a><span class="lineno">  347</span>        r.profile, path, limits);</div>
+<div class="line"><a id="l00348" name="l00348"></a><span class="lineno">  348</span> </div>
+<div class="line"><a id="l00349" name="l00349"></a><span class="lineno">  349</span>    <span class="keywordflow">return</span> <a class="code hl_function" href="classplcopen_1_1core_1_1rt_1_1Result.html#ac818eef35186a51dc08606fe43449855">rt::Result&lt;ToppProfileResult&gt;::success</a>(r);</div>
+<div class="line"><a id="l00350" name="l00350"></a><span class="lineno">  350</span>}</div>
+</div>
+<div class="line"><a id="l00351" name="l00351"></a><span class="lineno">  351</span> </div>
+<div class="line"><a id="l00352" name="l00352"></a><span class="lineno">  352</span><span class="comment">// Full TOPP executor pipeline with jerk-aware solver (Layer 2).</span></div>
+<div class="foldopen" id="foldopen00353" data-start="{" data-end="}">
+<div class="line"><a id="l00353" name="l00353"></a><span class="lineno"><a class="line" href="namespaceplcopen_1_1core_1_1plan.html#a5b41a42b3568fc6818c40f88b9e11aba">  353</a></span><span class="keyword">inline</span> <a class="code hl_class" href="classplcopen_1_1core_1_1rt_1_1Result.html">rt::Result&lt;ToppProfileResult&gt;</a> <a class="code hl_function" href="namespaceplcopen_1_1core_1_1plan.html#a5b41a42b3568fc6818c40f88b9e11aba">plan_topp_profiled_jerk</a>(</div>
+<div class="line"><a id="l00354" name="l00354"></a><span class="lineno">  354</span>    <span class="keyword">const</span> <a class="code hl_struct" href="structplcopen_1_1core_1_1geom_1_1PathSegment.html">geom::PathSegment</a> &amp;path,</div>
+<div class="line"><a id="l00355" name="l00355"></a><span class="lineno">  355</span>    <span class="keyword">const</span> <a class="code hl_struct" href="structplcopen_1_1core_1_1plan_1_1ToppJerkAxisLimits.html">ToppJerkAxisLimits</a> limits[3],</div>
+<div class="line"><a id="l00356" name="l00356"></a><span class="lineno">  356</span>    <span class="keywordtype">int</span> grid_size = 128)</div>
+<div class="line"><a id="l00357" name="l00357"></a><span class="lineno">  357</span>{</div>
+<div class="line"><a id="l00358" name="l00358"></a><span class="lineno">  358</span>    <span class="keyword">const</span> <span class="keyword">auto</span> topp = <a class="code hl_function" href="namespaceplcopen_1_1core_1_1plan.html#a236aa594ebf725b2bd04b36001546902">solve_topp_ra_jerk</a>(path, limits, grid_size);</div>
+<div class="line"><a id="l00359" name="l00359"></a><span class="lineno">  359</span>    <span class="keywordflow">if</span>(!topp) {</div>
+<div class="line"><a id="l00360" name="l00360"></a><span class="lineno">  360</span>        <span class="keywordflow">return</span> <a class="code hl_function" href="classplcopen_1_1core_1_1rt_1_1Result.html#adabbee61b3f30cf0c2ac27f685ea5b92">rt::Result&lt;ToppProfileResult&gt;::failure</a>(topp.error());</div>
+<div class="line"><a id="l00361" name="l00361"></a><span class="lineno">  361</span>    }</div>
+<div class="line"><a id="l00362" name="l00362"></a><span class="lineno">  362</span> </div>
+<div class="line"><a id="l00363" name="l00363"></a><span class="lineno">  363</span>    <span class="keyword">const</span> <span class="keywordtype">double</span> T = topp.value().optimal_time;</div>
+<div class="line"><a id="l00364" name="l00364"></a><span class="lineno">  364</span>    <span class="keyword">const</span> <span class="keywordtype">double</span> L = path.<a class="code hl_function" href="structplcopen_1_1core_1_1geom_1_1PathSegment.html#a1f0b7c34aeb983415188a65a3b552087">length</a>();</div>
+<div class="line"><a id="l00365" name="l00365"></a><span class="lineno">  365</span>    <span class="keywordflow">if</span>(L &lt;= 0.0) {</div>
+<div class="line"><a id="l00366" name="l00366"></a><span class="lineno">  366</span>        <a class="code hl_struct" href="structplcopen_1_1core_1_1plan_1_1ToppProfileResult.html">ToppProfileResult</a> r{};</div>
+<div class="line"><a id="l00367" name="l00367"></a><span class="lineno">  367</span>        r.curvature_verified = <span class="keyword">true</span>;</div>
+<div class="line"><a id="l00368" name="l00368"></a><span class="lineno">  368</span>        <span class="keywordflow">return</span> <a class="code hl_function" href="classplcopen_1_1core_1_1rt_1_1Result.html#ac818eef35186a51dc08606fe43449855">rt::Result&lt;ToppProfileResult&gt;::success</a>(r);</div>
+<div class="line"><a id="l00369" name="l00369"></a><span class="lineno">  369</span>    }</div>
+<div class="line"><a id="l00370" name="l00370"></a><span class="lineno">  370</span> </div>
+<div class="line"><a id="l00371" name="l00371"></a><span class="lineno">  371</span>    <span class="keyword">const</span> <a class="code hl_struct" href="structplcopen_1_1core_1_1otg_1_1Limits1D.html">otg::Limits1D</a> scalar = <a class="code hl_function" href="namespaceplcopen_1_1core_1_1plan.html#ad0e9210f2df37061a468c8e71936d028">effective_scalar_limits</a>(path, limits);</div>
+<div class="line"><a id="l00372" name="l00372"></a><span class="lineno">  372</span> </div>
+<div class="line"><a id="l00373" name="l00373"></a><span class="lineno">  373</span>    <span class="keyword">const</span> <span class="keyword">auto</span> scalar_min = <a class="code hl_function" href="namespaceplcopen_1_1core_1_1otg.html#a3ac2cd8c29455971e3a248645fd21b16">otg::plan_time_optimal</a>(</div>
+<div class="line"><a id="l00374" name="l00374"></a><span class="lineno">  374</span>        {0.0, 0.0, 0.0}, {L, 0.0, 0.0}, scalar);</div>
+<div class="line"><a id="l00375" name="l00375"></a><span class="lineno">  375</span>    <span class="keyword">const</span> std::int64_t t_scalar_min =</div>
+<div class="line"><a id="l00376" name="l00376"></a><span class="lineno">  376</span>        scalar_min ? scalar_min.value().duration_cycles() : 1;</div>
+<div class="line"><a id="l00377" name="l00377"></a><span class="lineno">  377</span> </div>
+<div class="line"><a id="l00378" name="l00378"></a><span class="lineno">  378</span>    std::int64_t total_cycles =</div>
+<div class="line"><a id="l00379" name="l00379"></a><span class="lineno">  379</span>        <span class="keyword">static_cast&lt;</span>std::int64_t<span class="keyword">&gt;</span>(std::ceil(T));</div>
+<div class="line"><a id="l00380" name="l00380"></a><span class="lineno">  380</span>    <span class="keywordflow">if</span>(total_cycles &lt; t_scalar_min) {</div>
+<div class="line"><a id="l00381" name="l00381"></a><span class="lineno">  381</span>        total_cycles = t_scalar_min;</div>
+<div class="line"><a id="l00382" name="l00382"></a><span class="lineno">  382</span>    }</div>
+<div class="line"><a id="l00383" name="l00383"></a><span class="lineno">  383</span>    <span class="keywordflow">if</span>(total_cycles &lt; 1) {</div>
+<div class="line"><a id="l00384" name="l00384"></a><span class="lineno">  384</span>        total_cycles = 1;</div>
+<div class="line"><a id="l00385" name="l00385"></a><span class="lineno">  385</span>    }</div>
+<div class="line"><a id="l00386" name="l00386"></a><span class="lineno">  386</span> </div>
+<div class="line"><a id="l00387" name="l00387"></a><span class="lineno">  387</span>    <span class="keyword">const</span> <span class="keyword">auto</span> profile = <a class="code hl_function" href="namespaceplcopen_1_1core_1_1otg.html#a55994e43b4ba12e272ce1f48d73a11f9">otg::solve_fixed_time</a>(</div>
+<div class="line"><a id="l00388" name="l00388"></a><span class="lineno">  388</span>        {0.0, 0.0, 0.0},</div>
+<div class="line"><a id="l00389" name="l00389"></a><span class="lineno">  389</span>        {L, 0.0, 0.0},</div>
+<div class="line"><a id="l00390" name="l00390"></a><span class="lineno">  390</span>        scalar,</div>
+<div class="line"><a id="l00391" name="l00391"></a><span class="lineno">  391</span>        total_cycles);</div>
+<div class="line"><a id="l00392" name="l00392"></a><span class="lineno">  392</span>    <span class="keywordflow">if</span>(!profile) {</div>
+<div class="line"><a id="l00393" name="l00393"></a><span class="lineno">  393</span>        <span class="keywordflow">return</span> <a class="code hl_function" href="classplcopen_1_1core_1_1rt_1_1Result.html#adabbee61b3f30cf0c2ac27f685ea5b92">rt::Result&lt;ToppProfileResult&gt;::failure</a>(profile.error());</div>
+<div class="line"><a id="l00394" name="l00394"></a><span class="lineno">  394</span>    }</div>
+<div class="line"><a id="l00395" name="l00395"></a><span class="lineno">  395</span> </div>
+<div class="line"><a id="l00396" name="l00396"></a><span class="lineno">  396</span>    <a class="code hl_struct" href="structplcopen_1_1core_1_1plan_1_1ToppAxisLimits.html">ToppAxisLimits</a> verify_limits[3];</div>
+<div class="line"><a id="l00397" name="l00397"></a><span class="lineno">  397</span>    <span class="keywordflow">for</span>(<span class="keywordtype">int</span> i = 0; i &lt; 3; ++i) {</div>
+<div class="line"><a id="l00398" name="l00398"></a><span class="lineno">  398</span>        verify_limits[i] = {limits[i].<a class="code hl_variable" href="structplcopen_1_1core_1_1plan_1_1ToppJerkAxisLimits.html#aeae2148ef12242dd85240ae13517a722">max_velocity</a>, limits[i].<a class="code hl_variable" href="structplcopen_1_1core_1_1plan_1_1ToppJerkAxisLimits.html#a2e80f143f575026ed2b297968268919e">max_acceleration</a>};</div>
+<div class="line"><a id="l00399" name="l00399"></a><span class="lineno">  399</span>    }</div>
+<div class="line"><a id="l00400" name="l00400"></a><span class="lineno">  400</span> </div>
+<div class="line"><a id="l00401" name="l00401"></a><span class="lineno">  401</span>    <a class="code hl_struct" href="structplcopen_1_1core_1_1plan_1_1ToppProfileResult.html">ToppProfileResult</a> r{};</div>
+<div class="line"><a id="l00402" name="l00402"></a><span class="lineno">  402</span>    r.profile = profile.value();</div>
+<div class="line"><a id="l00403" name="l00403"></a><span class="lineno">  403</span>    r.topp_time = T;</div>
+<div class="line"><a id="l00404" name="l00404"></a><span class="lineno">  404</span>    r.quantized_cycles = total_cycles;</div>
+<div class="line"><a id="l00405" name="l00405"></a><span class="lineno">  405</span>    r.curvature_verified = <a class="code hl_function" href="namespaceplcopen_1_1core_1_1plan.html#a9a6264eba4e3065c85d9c0af38ba777a">verify_joint_limits</a>(</div>
+<div class="line"><a id="l00406" name="l00406"></a><span class="lineno">  406</span>        r.profile, path, verify_limits);</div>
+<div class="line"><a id="l00407" name="l00407"></a><span class="lineno">  407</span> </div>
+<div class="line"><a id="l00408" name="l00408"></a><span class="lineno">  408</span>    <span class="keywordflow">return</span> <a class="code hl_function" href="classplcopen_1_1core_1_1rt_1_1Result.html#ac818eef35186a51dc08606fe43449855">rt::Result&lt;ToppProfileResult&gt;::success</a>(r);</div>
+<div class="line"><a id="l00409" name="l00409"></a><span class="lineno">  409</span>}</div>
+</div>
+<div class="line"><a id="l00410" name="l00410"></a><span class="lineno">  410</span> </div>
+<div class="line"><a id="l00411" name="l00411"></a><span class="lineno">  411</span>} <span class="comment">// namespace plcopen::core::plan</span></div>
+<div class="ttc" id="aclassplcopen_1_1core_1_1otg_1_1Profile1D_html"><div class="ttname"><a href="classplcopen_1_1core_1_1otg_1_1Profile1D.html">plcopen::core::otg::Profile1D</a></div><div class="ttdef"><b>Definition</b> <a href="profile1d_8h_source.html#l00048">profile1d.h:49</a></div></div>
+<div class="ttc" id="aclassplcopen_1_1core_1_1otg_1_1Profile1D_html_a4705173755f3cf2515b4b1b3d100a539"><div class="ttname"><a href="classplcopen_1_1core_1_1otg_1_1Profile1D.html#a4705173755f3cf2515b4b1b3d100a539">plcopen::core::otg::Profile1D::duration_cycles</a></div><div class="ttdeci">std::int64_t duration_cycles() const</div><div class="ttdef"><b>Definition</b> <a href="profile1d_8h_source.html#l00070">profile1d.h:70</a></div></div>
+<div class="ttc" id="aclassplcopen_1_1core_1_1rt_1_1CycleTick_html_aa0c8495b4f730a7694d4dc88be2569bd"><div class="ttname"><a href="classplcopen_1_1core_1_1rt_1_1CycleTick.html#aa0c8495b4f730a7694d4dc88be2569bd">plcopen::core::rt::CycleTick::from_cycles</a></div><div class="ttdeci">static constexpr CycleTick from_cycles(std::int64_t cycles)</div><div class="ttdef"><b>Definition</b> <a href="cycle_8h_source.html#l00042">cycle.h:42</a></div></div>
+<div class="ttc" id="aclassplcopen_1_1core_1_1rt_1_1Result_html"><div class="ttname"><a href="classplcopen_1_1core_1_1rt_1_1Result.html">plcopen::core::rt::Result</a></div><div class="ttdef"><b>Definition</b> <a href="error_8h_source.html#l00021">error.h:22</a></div></div>
+<div class="ttc" id="aclassplcopen_1_1core_1_1rt_1_1Result_html_ac818eef35186a51dc08606fe43449855"><div class="ttname"><a href="classplcopen_1_1core_1_1rt_1_1Result.html#ac818eef35186a51dc08606fe43449855">plcopen::core::rt::Result::success</a></div><div class="ttdeci">static constexpr Result success(const T &amp;value)</div><div class="ttdef"><b>Definition</b> <a href="error_8h_source.html#l00024">error.h:24</a></div></div>
+<div class="ttc" id="aclassplcopen_1_1core_1_1rt_1_1Result_html_adabbee61b3f30cf0c2ac27f685ea5b92"><div class="ttname"><a href="classplcopen_1_1core_1_1rt_1_1Result.html#adabbee61b3f30cf0c2ac27f685ea5b92">plcopen::core::rt::Result::failure</a></div><div class="ttdeci">static constexpr Result failure(ErrorCode error)</div><div class="ttdef"><b>Definition</b> <a href="error_8h_source.html#l00029">error.h:29</a></div></div>
+<div class="ttc" id="aerror_8h_html"><div class="ttname"><a href="error_8h.html">error.h</a></div></div>
+<div class="ttc" id="ageometry_8h_html"><div class="ttname"><a href="geometry_8h.html">geometry.h</a></div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1otg_html_a3ac2cd8c29455971e3a248645fd21b16"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1otg.html#a3ac2cd8c29455971e3a248645fd21b16">plcopen::core::otg::plan_time_optimal</a></div><div class="ttdeci">rt::Result&lt; Profile1D &gt; plan_time_optimal(State1D from, Target1D to, Limits1D limits)</div><div class="ttdef"><b>Definition</b> <a href="time__optimal_8h_source.html#l00606">time_optimal.h:606</a></div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1otg_html_a55994e43b4ba12e272ce1f48d73a11f9"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1otg.html#a55994e43b4ba12e272ce1f48d73a11f9">plcopen::core::otg::solve_fixed_time</a></div><div class="ttdeci">rt::Result&lt; Profile1D &gt; solve_fixed_time(State1D from, Target1D to, Limits1D limits, std::int64_t total_cycles)</div><div class="ttdef"><b>Definition</b> <a href="time__optimal_8h_source.html#l00822">time_optimal.h:822</a></div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1otg_html_ab39acf484b3f4cf4df5e0e5589e1a93e"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1otg.html#ab39acf484b3f4cf4df5e0e5589e1a93e">plcopen::core::otg::sample</a></div><div class="ttdeci">State1D sample(const Profile1D &amp;profile, rt::CycleTick tick)</div><div class="ttdef"><b>Definition</b> <a href="profile1d_8h_source.html#l00142">profile1d.h:142</a></div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1plan_1_1topp__detail_html_a1556a41e6c1c98fff0497620aeff1aed"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1plan_1_1topp__detail.html#a1556a41e6c1c98fff0497620aeff1aed">plcopen::core::plan::topp_detail::axis_backward_reach</a></div><div class="ttdeci">double axis_backward_reach(double q_s_i, double q_ss_i, double a_max_i, double x_next, double ds)</div><div class="ttdef"><b>Definition</b> <a href="topp_8h_source.html#l00103">topp.h:103</a></div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1plan_1_1topp__detail_html_a2a70bfb2297e9780ab5bfc44531457b9"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1plan_1_1topp__detail.html#a2a70bfb2297e9780ab5bfc44531457b9">plcopen::core::plan::topp_detail::acceleration_velocity_limit</a></div><div class="ttdeci">double acceleration_velocity_limit(double q_s_i, double q_ss_i, double a_max_i)</div><div class="ttdef"><b>Definition</b> <a href="topp_8h_source.html#l00054">topp.h:54</a></div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1plan_1_1topp__detail_html_a4ddc567d2606fce52a6375146e963131"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1plan_1_1topp__detail.html#a4ddc567d2606fce52a6375146e963131">plcopen::core::plan::topp_detail::axis_forward_reach</a></div><div class="ttdeci">double axis_forward_reach(double q_s_i, double q_ss_i, double a_max_i, double x_k, double ds)</div><div class="ttdef"><b>Definition</b> <a href="topp_8h_source.html#l00124">topp.h:124</a></div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1plan_1_1topp__detail_html_ad580c7f23d96fb99a410a4c5d37e65bd"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1plan_1_1topp__detail.html#ad580c7f23d96fb99a410a4c5d37e65bd">plcopen::core::plan::topp_detail::velocity_limit_squared</a></div><div class="ttdeci">double velocity_limit_squared(geom::Vec3 q_s, const ToppAxisLimits limits[3])</div><div class="ttdef"><b>Definition</b> <a href="topp_8h_source.html#l00040">topp.h:40</a></div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1plan_1_1topp__detail_html_afef5ee5966e9465eb851dc0f768f7e6a"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1plan_1_1topp__detail.html#afef5ee5966e9465eb851dc0f768f7e6a">plcopen::core::plan::topp_detail::cross_axis_velocity_limit</a></div><div class="ttdeci">double cross_axis_velocity_limit(const double q_s[3], const double q_ss[3], const ToppAxisLimits limits[3])</div><div class="ttdef"><b>Definition</b> <a href="topp_8h_source.html#l00069">topp.h:69</a></div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1plan_1_1topp__executor__detail_html_a06b9dbecade6bf8c196970b82a6f7cb6"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1plan_1_1topp__executor__detail.html#a06b9dbecade6bf8c196970b82a6f7cb6">plcopen::core::plan::topp_executor_detail::solve_topp_profile_l1</a></div><div class="ttdeci">rt::Result&lt; ToppVelocityProfile &gt; solve_topp_profile_l1(const geom::PathSegment &amp;path, const ToppAxisLimits limits[3], int grid_size)</div><div class="ttdef"><b>Definition</b> <a href="topp__executor_8h_source.html#l00070">topp_executor.h:70</a></div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1plan_html"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1plan.html">plcopen::core::plan</a></div><div class="ttdef"><b>Definition</b> <a href="path_8h_source.html#l00011">path.h:12</a></div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1plan_html_a236aa594ebf725b2bd04b36001546902"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1plan.html#a236aa594ebf725b2bd04b36001546902">plcopen::core::plan::solve_topp_ra_jerk</a></div><div class="ttdeci">rt::Result&lt; ToppResult &gt; solve_topp_ra_jerk(const geom::PathSegment &amp;path, const ToppJerkAxisLimits limits[3], int grid_size)</div><div class="ttdef"><b>Definition</b> <a href="topp__jerk_8h_source.html#l00147">topp_jerk.h:147</a></div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1plan_html_a5b41a42b3568fc6818c40f88b9e11aba"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1plan.html#a5b41a42b3568fc6818c40f88b9e11aba">plcopen::core::plan::plan_topp_profiled_jerk</a></div><div class="ttdeci">rt::Result&lt; ToppProfileResult &gt; plan_topp_profiled_jerk(const geom::PathSegment &amp;path, const ToppJerkAxisLimits limits[3], int grid_size=128)</div><div class="ttdef"><b>Definition</b> <a href="topp__executor_8h_source.html#l00353">topp_executor.h:353</a></div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1plan_html_a9a6264eba4e3065c85d9c0af38ba777a"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1plan.html#a9a6264eba4e3065c85d9c0af38ba777a">plcopen::core::plan::verify_joint_limits</a></div><div class="ttdeci">bool verify_joint_limits(const otg::Profile1D &amp;profile, const geom::PathSegment &amp;path, const ToppAxisLimits limits[3], int num_samples=64, double tolerance=1.01)</div><div class="ttdef"><b>Definition</b> <a href="topp__executor_8h_source.html#l00242">topp_executor.h:242</a></div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1plan_html_ab4862f9270328db7bf67bc7a08b7121d"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1plan.html#ab4862f9270328db7bf67bc7a08b7121d">plcopen::core::plan::plan_topp_profiled</a></div><div class="ttdeci">rt::Result&lt; ToppProfileResult &gt; plan_topp_profiled(const geom::PathSegment &amp;path, const ToppAxisLimits limits[3], int grid_size=128)</div><div class="ttdef"><b>Definition</b> <a href="topp__executor_8h_source.html#l00299">topp_executor.h:299</a></div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1plan_html_ad0e9210f2df37061a468c8e71936d028"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1plan.html#ad0e9210f2df37061a468c8e71936d028">plcopen::core::plan::effective_scalar_limits</a></div><div class="ttdeci">otg::Limits1D effective_scalar_limits(const geom::PathSegment &amp;path, const ToppAxisLimits limits[3])</div><div class="ttdef"><b>Definition</b> <a href="topp__executor_8h_source.html#l00178">topp_executor.h:178</a></div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1rt_html_acb478bbb9e8dc7611816f04327d9fce8ae55d43eabeefe5a8271b4a3c898bd18f"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8ae55d43eabeefe5a8271b4a3c898bd18f">plcopen::core::rt::ErrorCode::invalid_argument</a></div><div class="ttdeci">@ invalid_argument</div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1rt_html_acb478bbb9e8dc7611816f04327d9fce8afc988471d247479f88a57e29916bbf82"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8afc988471d247479f88a57e29916bbf82">plcopen::core::rt::ErrorCode::infeasible</a></div><div class="ttdeci">@ infeasible</div></div>
+<div class="ttc" id="aprofile1d_8h_html"><div class="ttname"><a href="profile1d_8h.html">profile1d.h</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1geom_1_1PathSegment_html"><div class="ttname"><a href="structplcopen_1_1core_1_1geom_1_1PathSegment.html">plcopen::core::geom::PathSegment</a></div><div class="ttdef"><b>Definition</b> <a href="geometry_8h_source.html#l00616">geometry.h:617</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1geom_1_1PathSegment_html_a1f0b7c34aeb983415188a65a3b552087"><div class="ttname"><a href="structplcopen_1_1core_1_1geom_1_1PathSegment.html#a1f0b7c34aeb983415188a65a3b552087">plcopen::core::geom::PathSegment::length</a></div><div class="ttdeci">double length() const</div><div class="ttdef"><b>Definition</b> <a href="geometry_8h_source.html#l00625">geometry.h:625</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1geom_1_1PathSegment_html_a2de2afc78741ce979a028585d0083593"><div class="ttname"><a href="structplcopen_1_1core_1_1geom_1_1PathSegment.html#a2de2afc78741ce979a028585d0083593">plcopen::core::geom::PathSegment::path_derivative</a></div><div class="ttdeci">Vec3 path_derivative(double arclength) const</div><div class="ttdef"><b>Definition</b> <a href="geometry_8h_source.html#l00669">geometry.h:669</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1geom_1_1PathSegment_html_ae354b18f0cb777b1d8cc63671af34506"><div class="ttname"><a href="structplcopen_1_1core_1_1geom_1_1PathSegment.html#ae354b18f0cb777b1d8cc63671af34506">plcopen::core::geom::PathSegment::path_second_derivative</a></div><div class="ttdeci">Vec3 path_second_derivative(double arclength) const</div><div class="ttdef"><b>Definition</b> <a href="geometry_8h_source.html#l00684">geometry.h:684</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1geom_1_1Vec3_html"><div class="ttname"><a href="structplcopen_1_1core_1_1geom_1_1Vec3.html">plcopen::core::geom::Vec3</a></div><div class="ttdef"><b>Definition</b> <a href="geometry_8h_source.html#l00013">geometry.h:14</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1geom_1_1Vec3_html_ad617347336964c8e2765902356853e61"><div class="ttname"><a href="structplcopen_1_1core_1_1geom_1_1Vec3.html#ad617347336964c8e2765902356853e61">plcopen::core::geom::Vec3::y</a></div><div class="ttdeci">double y</div><div class="ttdef"><b>Definition</b> <a href="geometry_8h_source.html#l00016">geometry.h:16</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1geom_1_1Vec3_html_adb52befd46bcf12d3b1d9bdc97306d2f"><div class="ttname"><a href="structplcopen_1_1core_1_1geom_1_1Vec3.html#adb52befd46bcf12d3b1d9bdc97306d2f">plcopen::core::geom::Vec3::z</a></div><div class="ttdeci">double z</div><div class="ttdef"><b>Definition</b> <a href="geometry_8h_source.html#l00017">geometry.h:17</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1geom_1_1Vec3_html_ae98a0f57eba110740e66c96dd8da388b"><div class="ttname"><a href="structplcopen_1_1core_1_1geom_1_1Vec3.html#ae98a0f57eba110740e66c96dd8da388b">plcopen::core::geom::Vec3::x</a></div><div class="ttdeci">double x</div><div class="ttdef"><b>Definition</b> <a href="geometry_8h_source.html#l00015">geometry.h:15</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1otg_1_1Limits1D_html"><div class="ttname"><a href="structplcopen_1_1core_1_1otg_1_1Limits1D.html">plcopen::core::otg::Limits1D</a></div><div class="ttdef"><b>Definition</b> <a href="profile1d_8h_source.html#l00027">profile1d.h:28</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1otg_1_1State1D_html"><div class="ttname"><a href="structplcopen_1_1core_1_1otg_1_1State1D.html">plcopen::core::otg::State1D</a></div><div class="ttdef"><b>Definition</b> <a href="profile1d_8h_source.html#l00013">profile1d.h:14</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1otg_1_1State1D_html_a2b02bc2a891f0519b9500ddea93e47b3"><div class="ttname"><a href="structplcopen_1_1core_1_1otg_1_1State1D.html#a2b02bc2a891f0519b9500ddea93e47b3">plcopen::core::otg::State1D::position</a></div><div class="ttdeci">double position</div><div class="ttdef"><b>Definition</b> <a href="profile1d_8h_source.html#l00015">profile1d.h:15</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1otg_1_1State1D_html_a57af6b86ab8ebbc7eef32b6775ba8060"><div class="ttname"><a href="structplcopen_1_1core_1_1otg_1_1State1D.html#a57af6b86ab8ebbc7eef32b6775ba8060">plcopen::core::otg::State1D::velocity</a></div><div class="ttdeci">double velocity</div><div class="ttdef"><b>Definition</b> <a href="profile1d_8h_source.html#l00016">profile1d.h:16</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1plan_1_1ToppAxisLimits_html"><div class="ttname"><a href="structplcopen_1_1core_1_1plan_1_1ToppAxisLimits.html">plcopen::core::plan::ToppAxisLimits</a></div><div class="ttdef"><b>Definition</b> <a href="topp_8h_source.html#l00026">topp.h:27</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1plan_1_1ToppJerkAxisLimits_html"><div class="ttname"><a href="structplcopen_1_1core_1_1plan_1_1ToppJerkAxisLimits.html">plcopen::core::plan::ToppJerkAxisLimits</a></div><div class="ttdef"><b>Definition</b> <a href="topp__jerk_8h_source.html#l00025">topp_jerk.h:26</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1plan_1_1ToppJerkAxisLimits_html_a2e80f143f575026ed2b297968268919e"><div class="ttname"><a href="structplcopen_1_1core_1_1plan_1_1ToppJerkAxisLimits.html#a2e80f143f575026ed2b297968268919e">plcopen::core::plan::ToppJerkAxisLimits::max_acceleration</a></div><div class="ttdeci">double max_acceleration</div><div class="ttdef"><b>Definition</b> <a href="topp__jerk_8h_source.html#l00028">topp_jerk.h:28</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1plan_1_1ToppJerkAxisLimits_html_aeae2148ef12242dd85240ae13517a722"><div class="ttname"><a href="structplcopen_1_1core_1_1plan_1_1ToppJerkAxisLimits.html#aeae2148ef12242dd85240ae13517a722">plcopen::core::plan::ToppJerkAxisLimits::max_velocity</a></div><div class="ttdeci">double max_velocity</div><div class="ttdef"><b>Definition</b> <a href="topp__jerk_8h_source.html#l00027">topp_jerk.h:27</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1plan_1_1ToppProfileResult_html"><div class="ttname"><a href="structplcopen_1_1core_1_1plan_1_1ToppProfileResult.html">plcopen::core::plan::ToppProfileResult</a></div><div class="ttdef"><b>Definition</b> <a href="topp__executor_8h_source.html#l00282">topp_executor.h:283</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1plan_1_1ToppProfileResult_html_a2d2c08c4534a6f8dbf1666bcfe731d7a"><div class="ttname"><a href="structplcopen_1_1core_1_1plan_1_1ToppProfileResult.html#a2d2c08c4534a6f8dbf1666bcfe731d7a">plcopen::core::plan::ToppProfileResult::profile</a></div><div class="ttdeci">otg::Profile1D profile</div><div class="ttdef"><b>Definition</b> <a href="topp__executor_8h_source.html#l00284">topp_executor.h:284</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1plan_1_1ToppProfileResult_html_a6f4dac5458c7987bb8118199a91e5e66"><div class="ttname"><a href="structplcopen_1_1core_1_1plan_1_1ToppProfileResult.html#a6f4dac5458c7987bb8118199a91e5e66">plcopen::core::plan::ToppProfileResult::quantized_cycles</a></div><div class="ttdeci">std::int64_t quantized_cycles</div><div class="ttdef"><b>Definition</b> <a href="topp__executor_8h_source.html#l00286">topp_executor.h:286</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1plan_1_1ToppProfileResult_html_a925f7e767bf4be200735dd3ef0f27855"><div class="ttname"><a href="structplcopen_1_1core_1_1plan_1_1ToppProfileResult.html#a925f7e767bf4be200735dd3ef0f27855">plcopen::core::plan::ToppProfileResult::topp_time</a></div><div class="ttdeci">double topp_time</div><div class="ttdef"><b>Definition</b> <a href="topp__executor_8h_source.html#l00285">topp_executor.h:285</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1plan_1_1ToppProfileResult_html_ad87947596a989cd7ba149210b731cf8a"><div class="ttname"><a href="structplcopen_1_1core_1_1plan_1_1ToppProfileResult.html#ad87947596a989cd7ba149210b731cf8a">plcopen::core::plan::ToppProfileResult::curvature_verified</a></div><div class="ttdeci">bool curvature_verified</div><div class="ttdef"><b>Definition</b> <a href="topp__executor_8h_source.html#l00287">topp_executor.h:287</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1plan_1_1ToppVelocityProfile_html"><div class="ttname"><a href="structplcopen_1_1core_1_1plan_1_1ToppVelocityProfile.html">plcopen::core::plan::ToppVelocityProfile</a></div><div class="ttdef"><b>Definition</b> <a href="topp__executor_8h_source.html#l00032">topp_executor.h:33</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1plan_1_1ToppVelocityProfile_html_a1d654aa3e81fffd145f2ede991054e6a"><div class="ttname"><a href="structplcopen_1_1core_1_1plan_1_1ToppVelocityProfile.html#a1d654aa3e81fffd145f2ede991054e6a">plcopen::core::plan::ToppVelocityProfile::sdot_at</a></div><div class="ttdeci">double sdot_at(int k) const</div><div class="ttdef"><b>Definition</b> <a href="topp__executor_8h_source.html#l00041">topp_executor.h:41</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1plan_1_1ToppVelocityProfile_html_a1f200ab6e105e2c0d655c67134ab1824"><div class="ttname"><a href="structplcopen_1_1core_1_1plan_1_1ToppVelocityProfile.html#a1f200ab6e105e2c0d655c67134ab1824">plcopen::core::plan::ToppVelocityProfile::interpolate_sdot</a></div><div class="ttdeci">double interpolate_sdot(double s) const</div><div class="ttdef"><b>Definition</b> <a href="topp__executor_8h_source.html#l00049">topp_executor.h:49</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1plan_1_1ToppVelocityProfile_html_a20a1c4aabab3e64a874979bd8656b8ff"><div class="ttname"><a href="structplcopen_1_1core_1_1plan_1_1ToppVelocityProfile.html#a20a1c4aabab3e64a874979bd8656b8ff">plcopen::core::plan::ToppVelocityProfile::optimal_time</a></div><div class="ttdeci">double optimal_time</div><div class="ttdef"><b>Definition</b> <a href="topp__executor_8h_source.html#l00039">topp_executor.h:39</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1plan_1_1ToppVelocityProfile_html_a2e5eb6c0ed1edeb6d60fd1db89fdeb8f"><div class="ttname"><a href="structplcopen_1_1core_1_1plan_1_1ToppVelocityProfile.html#a2e5eb6c0ed1edeb6d60fd1db89fdeb8f">plcopen::core::plan::ToppVelocityProfile::grid_points</a></div><div class="ttdeci">int grid_points</div><div class="ttdef"><b>Definition</b> <a href="topp__executor_8h_source.html#l00036">topp_executor.h:36</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1plan_1_1ToppVelocityProfile_html_a4800b12062d38a49c3c679433616f23d"><div class="ttname"><a href="structplcopen_1_1core_1_1plan_1_1ToppVelocityProfile.html#a4800b12062d38a49c3c679433616f23d">plcopen::core::plan::ToppVelocityProfile::MaxGrid</a></div><div class="ttdeci">static constexpr int MaxGrid</div><div class="ttdef"><b>Definition</b> <a href="topp__executor_8h_source.html#l00034">topp_executor.h:34</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1plan_1_1ToppVelocityProfile_html_a7927597b2223552af567b3b7ed8178e5"><div class="ttname"><a href="structplcopen_1_1core_1_1plan_1_1ToppVelocityProfile.html#a7927597b2223552af567b3b7ed8178e5">plcopen::core::plan::ToppVelocityProfile::sdot_sq</a></div><div class="ttdeci">double sdot_sq[MaxGrid]</div><div class="ttdef"><b>Definition</b> <a href="topp__executor_8h_source.html#l00035">topp_executor.h:35</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1plan_1_1ToppVelocityProfile_html_a81f93b9b1160e876e250a56d8c405145"><div class="ttname"><a href="structplcopen_1_1core_1_1plan_1_1ToppVelocityProfile.html#a81f93b9b1160e876e250a56d8c405145">plcopen::core::plan::ToppVelocityProfile::ds</a></div><div class="ttdeci">double ds</div><div class="ttdef"><b>Definition</b> <a href="topp__executor_8h_source.html#l00037">topp_executor.h:37</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1plan_1_1ToppVelocityProfile_html_ab8c06e2f337ad53d1aa4c2a2f32b24f6"><div class="ttname"><a href="structplcopen_1_1core_1_1plan_1_1ToppVelocityProfile.html#ab8c06e2f337ad53d1aa4c2a2f32b24f6">plcopen::core::plan::ToppVelocityProfile::path_length</a></div><div class="ttdeci">double path_length</div><div class="ttdef"><b>Definition</b> <a href="topp__executor_8h_source.html#l00038">topp_executor.h:38</a></div></div>
+<div class="ttc" id="atime__optimal_8h_html"><div class="ttname"><a href="time__optimal_8h.html">time_optimal.h</a></div></div>
+<div class="ttc" id="atopp_8h_html"><div class="ttname"><a href="topp_8h.html">topp.h</a></div></div>
+<div class="ttc" id="atopp__jerk_8h_html"><div class="ttname"><a href="topp__jerk_8h.html">topp_jerk.h</a></div></div>
+</div><!-- fragment --></div><!-- contents -->
+<!-- start footer part -->
+<hr class="footer"/><address class="footer"><small>
+制作者&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.8
+</small></address>
+</body>
+</html>

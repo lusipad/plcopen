@@ -1,0 +1,642 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh">
+<head>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=11"/>
+<meta name="generator" content="Doxygen 1.9.8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>plcopen: plcopen::core::fb::ProfileFbBase类 参考</title>
+<link href="tabs.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="jquery.js"></script>
+<script type="text/javascript" src="dynsections.js"></script>
+<link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<link href="doxygen.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+<div id="top"><!-- do not remove this div, it is closed by doxygen! -->
+<div id="titlearea">
+<table cellspacing="0" cellpadding="0">
+ <tbody>
+ <tr id="projectrow">
+  <td id="projectalign">
+   <div id="projectname">plcopen<span id="projectnumber">&#160;0.21.0</span>
+   </div>
+  </td>
+ </tr>
+ </tbody>
+</table>
+</div>
+<!-- end header part -->
+<!-- 制作者 Doxygen 1.9.8 -->
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+var searchBox = new SearchBox("searchBox", "search/",'.html');
+/* @license-end */
+</script>
+<script type="text/javascript" src="menudata.js"></script>
+<script type="text/javascript" src="menu.js"></script>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+$(function() {
+  initMenu('',true,false,'search.php','搜索');
+  $(document).ready(function() { init_search(); });
+});
+/* @license-end */
+</script>
+<div id="main-nav"></div>
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<div id="MSearchResults">
+<div class="SRPage">
+<div id="SRIndex">
+<div id="SRResults"></div>
+<div class="SRStatus" id="Loading">载入中...</div>
+<div class="SRStatus" id="Searching">搜索中...</div>
+<div class="SRStatus" id="NoMatches">未找到</div>
+</div>
+</div>
+</div>
+</div>
+
+<div id="nav-path" class="navpath">
+  <ul>
+<li class="navelem"><a class="el" href="namespaceplcopen.html">plcopen</a></li><li class="navelem"><a class="el" href="namespaceplcopen_1_1core.html">core</a></li><li class="navelem"><a class="el" href="namespaceplcopen_1_1core_1_1fb.html">fb</a></li><li class="navelem"><a class="el" href="classplcopen_1_1core_1_1fb_1_1ProfileFbBase.html">ProfileFbBase</a></li>  </ul>
+</div>
+</div><!-- top -->
+<div class="header">
+  <div class="summary">
+<a href="#pub-attribs">Public 属性</a> &#124;
+<a href="#pro-methods">Protected 成员函数</a> &#124;
+<a href="#pro-attribs">Protected 属性</a> &#124;
+<a href="classplcopen_1_1core_1_1fb_1_1ProfileFbBase-members.html">所有成员列表</a>  </div>
+  <div class="headertitle"><div class="title">plcopen::core::fb::ProfileFbBase类 参考</div></div>
+</div><!--header-->
+<div class="contents">
+
+<p><code>#include &lt;<a class="el" href="profile_8h_source.html">profile.h</a>&gt;</code></p>
+<div class="dynheader">
+类 plcopen::core::fb::ProfileFbBase 继承关系图:</div>
+<div class="dyncontent">
+<div class="center"><img src="classplcopen_1_1core_1_1fb_1_1ProfileFbBase__inherit__graph.png" border="0" usemap="#aplcopen_1_1core_1_1fb_1_1ProfileFbBase_inherit__map" alt="Inheritance graph"/></div>
+<map name="aplcopen_1_1core_1_1fb_1_1ProfileFbBase_inherit__map" id="aplcopen_1_1core_1_1fb_1_1ProfileFbBase_inherit__map">
+<area shape="rect" title=" " alt="" coords="5,69,144,109"/>
+<area shape="rect" href="classplcopen_1_1core_1_1fb_1_1FbAccelerationProfile.html" title=" " alt="" coords="193,5,353,45"/>
+<area shape="poly" title=" " alt="" coords="150,63,210,43,212,48,151,68"/>
+<area shape="rect" href="classplcopen_1_1core_1_1fb_1_1FbPositionProfile.html" title=" " alt="" coords="204,69,343,109"/>
+<area shape="poly" title=" " alt="" coords="158,87,203,87,203,92,158,92"/>
+<area shape="rect" href="classplcopen_1_1core_1_1fb_1_1VelocityProfileFbBase.html" title=" " alt="" coords="192,133,355,173"/>
+<area shape="poly" title=" " alt="" coords="151,111,212,131,210,136,150,116"/>
+<area shape="rect" href="classplcopen_1_1core_1_1fb_1_1FbVelocityProfile.html" title=" " alt="" coords="403,133,541,173"/>
+<area shape="poly" title=" " alt="" coords="369,151,402,151,402,156,369,156"/>
+</map>
+<center><span class="legend">[<a href="graph_legend.html">图例</a>]</span></center></div>
+<div class="dynheader">
+plcopen::core::fb::ProfileFbBase 的协作图:</div>
+<div class="dyncontent">
+<div class="center"><img src="classplcopen_1_1core_1_1fb_1_1ProfileFbBase__coll__graph.png" border="0" usemap="#aplcopen_1_1core_1_1fb_1_1ProfileFbBase_coll__map" alt="Collaboration graph"/></div>
+<map name="aplcopen_1_1core_1_1fb_1_1ProfileFbBase_coll__map" id="aplcopen_1_1core_1_1fb_1_1ProfileFbBase_coll__map">
+<area shape="rect" title=" " alt="" coords="267,69,405,109"/>
+<area shape="rect" href="classplcopen_1_1core_1_1axis_1_1AxisModel.html" title=" " alt="" coords="5,5,149,45"/>
+<area shape="poly" title=" " alt="" coords="163,44,267,70,266,75,162,49"/>
+<area shape="rect" href="structplcopen_1_1core_1_1axis_1_1ProfileSegment.html" title=" " alt="" coords="5,69,149,109"/>
+<area shape="poly" title=" " alt="" coords="163,87,267,87,267,92,163,92"/>
+<area shape="rect" href="structplcopen_1_1core_1_1fb_1_1MotionOutputs.html" title=" " alt="" coords="8,133,147,173"/>
+<area shape="poly" title=" " alt="" coords="160,130,266,104,267,109,161,136"/>
+</map>
+<center><span class="legend">[<a href="graph_legend.html">图例</a>]</span></center></div>
+<table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
+Public 属性</h2></td></tr>
+<tr class="memitem:a1be25845e4449e7a09cfa8a462076095" id="r_a1be25845e4449e7a09cfa8a462076095"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classplcopen_1_1core_1_1axis_1_1AxisModel.html">axis::AxisModel</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1ProfileFbBase.html#a1be25845e4449e7a09cfa8a462076095">axis_ref</a> = nullptr</td></tr>
+<tr class="separator:a1be25845e4449e7a09cfa8a462076095"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a136dc1f536a16c0d78978bcda718fdf7" id="r_a136dc1f536a16c0d78978bcda718fdf7"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="structplcopen_1_1core_1_1axis_1_1ProfileSegment.html">axis::ProfileSegment</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1ProfileFbBase.html#a136dc1f536a16c0d78978bcda718fdf7">segments</a> = nullptr</td></tr>
+<tr class="separator:a136dc1f536a16c0d78978bcda718fdf7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9749745d44a80553e28f688e376d8c24" id="r_a9749745d44a80553e28f688e376d8c24"><td class="memItemLeft" align="right" valign="top">std::size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1ProfileFbBase.html#a9749745d44a80553e28f688e376d8c24">segment_count</a> = 0</td></tr>
+<tr class="separator:a9749745d44a80553e28f688e376d8c24"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2575a2ca27e45de57087821e806282d0" id="r_a2575a2ca27e45de57087821e806282d0"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1ProfileFbBase.html#a2575a2ca27e45de57087821e806282d0">time_scale</a> = 1.0</td></tr>
+<tr class="separator:a2575a2ca27e45de57087821e806282d0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9b4e1cd9fbcdc71f6a4edc0047e8023c" id="r_a9b4e1cd9fbcdc71f6a4edc0047e8023c"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1ProfileFbBase.html#a9b4e1cd9fbcdc71f6a4edc0047e8023c">continuous_update</a> = false</td></tr>
+<tr class="separator:a9b4e1cd9fbcdc71f6a4edc0047e8023c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3c235b887c71532571598fb3a81fb7bb" id="r_a3c235b887c71532571598fb3a81fb7bb"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceplcopen_1_1core_1_1axis.html#ac37c626dcb946b45368197dcafa1eb34">axis::BufferMode</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1ProfileFbBase.html#a3c235b887c71532571598fb3a81fb7bb">buffer_mode</a> = <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#ac37c626dcb946b45368197dcafa1eb34af3376270ea6836eac66441a6ef3c55c3">axis::BufferMode::aborting</a></td></tr>
+<tr class="separator:a3c235b887c71532571598fb3a81fb7bb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4417922e6b23c6162ff96c60645bdf08" id="r_a4417922e6b23c6162ff96c60645bdf08"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1ProfileFbBase.html#a4417922e6b23c6162ff96c60645bdf08">execute</a> = false</td></tr>
+<tr class="separator:a4417922e6b23c6162ff96c60645bdf08"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0429cbadd3144871adf61cb1bbbc68ff" id="r_a0429cbadd3144871adf61cb1bbbc68ff"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structplcopen_1_1core_1_1fb_1_1MotionOutputs.html">MotionOutputs</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1ProfileFbBase.html#a0429cbadd3144871adf61cb1bbbc68ff">outputs</a> {}</td></tr>
+<tr class="separator:a0429cbadd3144871adf61cb1bbbc68ff"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-methods" name="pro-methods"></a>
+Protected 成员函数</h2></td></tr>
+<tr class="memitem:a873d62e27bde9487db0e93a4516169c2" id="r_a873d62e27bde9487db0e93a4516169c2"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1ProfileFbBase.html#a873d62e27bde9487db0e93a4516169c2">rising_edge</a> ()</td></tr>
+<tr class="separator:a873d62e27bde9487db0e93a4516169c2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a09d067654f70a89b6cd346b5fceb8e67" id="r_a09d067654f70a89b6cd346b5fceb8e67"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1ProfileFbBase.html#a09d067654f70a89b6cd346b5fceb8e67">inputs_valid</a> () const</td></tr>
+<tr class="separator:a09d067654f70a89b6cd346b5fceb8e67"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acc4fada9e158e2efdb96fd0a16772e12" id="r_acc4fada9e158e2efdb96fd0a16772e12"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1ProfileFbBase.html#acc4fada9e158e2efdb96fd0a16772e12">fail</a> (<a class="el" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8">rt::ErrorCode</a> code)</td></tr>
+<tr class="separator:acc4fada9e158e2efdb96fd0a16772e12"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adf64a10c3505ea553acc36cfbcc39eba" id="r_adf64a10c3505ea553acc36cfbcc39eba"><td class="memItemLeft" align="right" valign="top">std::int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1ProfileFbBase.html#adf64a10c3505ea553acc36cfbcc39eba">scaled_duration</a> (std::int64_t duration_cycles) const</td></tr>
+<tr class="separator:adf64a10c3505ea553acc36cfbcc39eba"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa265d80af504e8f76232fb744ebde249" id="r_aa265d80af504e8f76232fb744ebde249"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1ProfileFbBase.html#aa265d80af504e8f76232fb744ebde249">track</a> (std::uint32_t first_id, std::uint32_t last_id)</td></tr>
+<tr class="separator:aa265d80af504e8f76232fb744ebde249"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a270ac579834d5bf927a3f1ea3b95eb01" id="r_a270ac579834d5bf927a3f1ea3b95eb01"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1ProfileFbBase.html#a270ac579834d5bf927a3f1ea3b95eb01">tracked_active</a> (std::uint32_t active_id) const</td></tr>
+<tr class="separator:a270ac579834d5bf927a3f1ea3b95eb01"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a18dde6442726d14d01edf95dfb5f0b96" id="r_a18dde6442726d14d01edf95dfb5f0b96"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1ProfileFbBase.html#a18dde6442726d14d01edf95dfb5f0b96">tracked_pending</a> (const <a class="el" href="classplcopen_1_1core_1_1axis_1_1AxisModel.html">axis::AxisModel</a> &amp;axis) const</td></tr>
+<tr class="separator:a18dde6442726d14d01edf95dfb5f0b96"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a647fc81fbd783237dc4dd0767c425cdb" id="r_a647fc81fbd783237dc4dd0767c425cdb"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1ProfileFbBase.html#a647fc81fbd783237dc4dd0767c425cdb">scaled_duration_valid</a> (std::int64_t duration_cycles) const</td></tr>
+<tr class="separator:a647fc81fbd783237dc4dd0767c425cdb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3fe14706d3a1ee45638049bdacc7add4" id="r_a3fe14706d3a1ee45638049bdacc7add4"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1ProfileFbBase.html#a3fe14706d3a1ee45638049bdacc7add4">continuous_update_allowed</a> () const</td></tr>
+<tr class="separator:a3fe14706d3a1ee45638049bdacc7add4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a13d0a96f2f588e532a240c4ec5bdbfd2" id="r_a13d0a96f2f588e532a240c4ec5bdbfd2"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1ProfileFbBase.html#a13d0a96f2f588e532a240c4ec5bdbfd2">terminal_observed</a> ()</td></tr>
+<tr class="separator:a13d0a96f2f588e532a240c4ec5bdbfd2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-attribs" name="pro-attribs"></a>
+Protected 属性</h2></td></tr>
+<tr class="memitem:a0bd54cb27dc93d6f8b2fe9641531debb" id="r_a0bd54cb27dc93d6f8b2fe9641531debb"><td class="memItemLeft" align="right" valign="top">std::uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1ProfileFbBase.html#a0bd54cb27dc93d6f8b2fe9641531debb">first_id_</a> = 0</td></tr>
+<tr class="separator:a0bd54cb27dc93d6f8b2fe9641531debb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9899624ef82630e68d9ba91a6d7ed35a" id="r_a9899624ef82630e68d9ba91a6d7ed35a"><td class="memItemLeft" align="right" valign="top">std::uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1ProfileFbBase.html#a9899624ef82630e68d9ba91a6d7ed35a">last_id_</a> = 0</td></tr>
+<tr class="separator:a9899624ef82630e68d9ba91a6d7ed35a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table>
+<a name="details" id="details"></a><h2 class="groupheader">详细描述</h2>
+<div class="textblock">
+<p class="definition">在文件 <a class="el" href="profile_8h_source.html">profile.h</a> 第 <a class="el" href="profile_8h_source.html#l00018">18</a> 行定义.</p>
+</div><h2 class="groupheader">成员函数说明</h2>
+<a id="a3fe14706d3a1ee45638049bdacc7add4" name="a3fe14706d3a1ee45638049bdacc7add4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3fe14706d3a1ee45638049bdacc7add4">&#9670;&#160;</a></span>continuous_update_allowed()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool plcopen::core::fb::ProfileFbBase::continuous_update_allowed </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="profile_8h_source.html">profile.h</a> 第 <a class="el" href="profile_8h_source.html#l00123">123</a> 行定义.</p>
+
+</div>
+</div>
+<a id="acc4fada9e158e2efdb96fd0a16772e12" name="acc4fada9e158e2efdb96fd0a16772e12"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acc4fada9e158e2efdb96fd0a16772e12">&#9670;&#160;</a></span>fail()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void plcopen::core::fb::ProfileFbBase::fail </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8">rt::ErrorCode</a>&#160;</td>
+          <td class="paramname"><em>code</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="profile_8h_source.html">profile.h</a> 第 <a class="el" href="profile_8h_source.html#l00063">63</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a09d067654f70a89b6cd346b5fceb8e67" name="a09d067654f70a89b6cd346b5fceb8e67"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a09d067654f70a89b6cd346b5fceb8e67">&#9670;&#160;</a></span>inputs_valid()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool plcopen::core::fb::ProfileFbBase::inputs_valid </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="profile_8h_source.html">profile.h</a> 第 <a class="el" href="profile_8h_source.html#l00056">56</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a873d62e27bde9487db0e93a4516169c2" name="a873d62e27bde9487db0e93a4516169c2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a873d62e27bde9487db0e93a4516169c2">&#9670;&#160;</a></span>rising_edge()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool plcopen::core::fb::ProfileFbBase::rising_edge </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="profile_8h_source.html">profile.h</a> 第 <a class="el" href="profile_8h_source.html#l00031">31</a> 行定义.</p>
+
+</div>
+</div>
+<a id="adf64a10c3505ea553acc36cfbcc39eba" name="adf64a10c3505ea553acc36cfbcc39eba"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adf64a10c3505ea553acc36cfbcc39eba">&#9670;&#160;</a></span>scaled_duration()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::int64_t plcopen::core::fb::ProfileFbBase::scaled_duration </td>
+          <td>(</td>
+          <td class="paramtype">std::int64_t&#160;</td>
+          <td class="paramname"><em>duration_cycles</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="profile_8h_source.html">profile.h</a> 第 <a class="el" href="profile_8h_source.html#l00072">72</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a647fc81fbd783237dc4dd0767c425cdb" name="a647fc81fbd783237dc4dd0767c425cdb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a647fc81fbd783237dc4dd0767c425cdb">&#9670;&#160;</a></span>scaled_duration_valid()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool plcopen::core::fb::ProfileFbBase::scaled_duration_valid </td>
+          <td>(</td>
+          <td class="paramtype">std::int64_t&#160;</td>
+          <td class="paramname"><em>duration_cycles</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="profile_8h_source.html">profile.h</a> 第 <a class="el" href="profile_8h_source.html#l00107">107</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a13d0a96f2f588e532a240c4ec5bdbfd2" name="a13d0a96f2f588e532a240c4ec5bdbfd2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a13d0a96f2f588e532a240c4ec5bdbfd2">&#9670;&#160;</a></span>terminal_observed()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void plcopen::core::fb::ProfileFbBase::terminal_observed </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="profile_8h_source.html">profile.h</a> 第 <a class="el" href="profile_8h_source.html#l00128">128</a> 行定义.</p>
+
+</div>
+</div>
+<a id="aa265d80af504e8f76232fb744ebde249" name="aa265d80af504e8f76232fb744ebde249"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa265d80af504e8f76232fb744ebde249">&#9670;&#160;</a></span>track()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void plcopen::core::fb::ProfileFbBase::track </td>
+          <td>(</td>
+          <td class="paramtype">std::uint32_t&#160;</td>
+          <td class="paramname"><em>first_id</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::uint32_t&#160;</td>
+          <td class="paramname"><em>last_id</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="profile_8h_source.html">profile.h</a> 第 <a class="el" href="profile_8h_source.html#l00081">81</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a270ac579834d5bf927a3f1ea3b95eb01" name="a270ac579834d5bf927a3f1ea3b95eb01"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a270ac579834d5bf927a3f1ea3b95eb01">&#9670;&#160;</a></span>tracked_active()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool plcopen::core::fb::ProfileFbBase::tracked_active </td>
+          <td>(</td>
+          <td class="paramtype">std::uint32_t&#160;</td>
+          <td class="paramname"><em>active_id</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="profile_8h_source.html">profile.h</a> 第 <a class="el" href="profile_8h_source.html#l00092">92</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a18dde6442726d14d01edf95dfb5f0b96" name="a18dde6442726d14d01edf95dfb5f0b96"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a18dde6442726d14d01edf95dfb5f0b96">&#9670;&#160;</a></span>tracked_pending()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool plcopen::core::fb::ProfileFbBase::tracked_pending </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classplcopen_1_1core_1_1axis_1_1AxisModel.html">axis::AxisModel</a> &amp;&#160;</td>
+          <td class="paramname"><em>axis</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="profile_8h_source.html">profile.h</a> 第 <a class="el" href="profile_8h_source.html#l00097">97</a> 行定义.</p>
+
+</div>
+</div>
+<h2 class="groupheader">类成员变量说明</h2>
+<a id="a1be25845e4449e7a09cfa8a462076095" name="a1be25845e4449e7a09cfa8a462076095"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1be25845e4449e7a09cfa8a462076095">&#9670;&#160;</a></span>axis_ref</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classplcopen_1_1core_1_1axis_1_1AxisModel.html">axis::AxisModel</a>* plcopen::core::fb::ProfileFbBase::axis_ref = nullptr</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="profile_8h_source.html">profile.h</a> 第 <a class="el" href="profile_8h_source.html#l00021">21</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a3c235b887c71532571598fb3a81fb7bb" name="a3c235b887c71532571598fb3a81fb7bb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3c235b887c71532571598fb3a81fb7bb">&#9670;&#160;</a></span>buffer_mode</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="namespaceplcopen_1_1core_1_1axis.html#ac37c626dcb946b45368197dcafa1eb34">axis::BufferMode</a> plcopen::core::fb::ProfileFbBase::buffer_mode = <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#ac37c626dcb946b45368197dcafa1eb34af3376270ea6836eac66441a6ef3c55c3">axis::BufferMode::aborting</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="profile_8h_source.html">profile.h</a> 第 <a class="el" href="profile_8h_source.html#l00026">26</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a9b4e1cd9fbcdc71f6a4edc0047e8023c" name="a9b4e1cd9fbcdc71f6a4edc0047e8023c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9b4e1cd9fbcdc71f6a4edc0047e8023c">&#9670;&#160;</a></span>continuous_update</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool plcopen::core::fb::ProfileFbBase::continuous_update = false</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="profile_8h_source.html">profile.h</a> 第 <a class="el" href="profile_8h_source.html#l00025">25</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a4417922e6b23c6162ff96c60645bdf08" name="a4417922e6b23c6162ff96c60645bdf08"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4417922e6b23c6162ff96c60645bdf08">&#9670;&#160;</a></span>execute</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool plcopen::core::fb::ProfileFbBase::execute = false</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="profile_8h_source.html">profile.h</a> 第 <a class="el" href="profile_8h_source.html#l00027">27</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a0bd54cb27dc93d6f8b2fe9641531debb" name="a0bd54cb27dc93d6f8b2fe9641531debb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0bd54cb27dc93d6f8b2fe9641531debb">&#9670;&#160;</a></span>first_id_</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::uint32_t plcopen::core::fb::ProfileFbBase::first_id_ = 0</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="profile_8h_source.html">profile.h</a> 第 <a class="el" href="profile_8h_source.html#l00120">120</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a9899624ef82630e68d9ba91a6d7ed35a" name="a9899624ef82630e68d9ba91a6d7ed35a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9899624ef82630e68d9ba91a6d7ed35a">&#9670;&#160;</a></span>last_id_</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::uint32_t plcopen::core::fb::ProfileFbBase::last_id_ = 0</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="profile_8h_source.html">profile.h</a> 第 <a class="el" href="profile_8h_source.html#l00121">121</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a0429cbadd3144871adf61cb1bbbc68ff" name="a0429cbadd3144871adf61cb1bbbc68ff"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0429cbadd3144871adf61cb1bbbc68ff">&#9670;&#160;</a></span>outputs</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="structplcopen_1_1core_1_1fb_1_1MotionOutputs.html">MotionOutputs</a> plcopen::core::fb::ProfileFbBase::outputs {}</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="profile_8h_source.html">profile.h</a> 第 <a class="el" href="profile_8h_source.html#l00028">28</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a9749745d44a80553e28f688e376d8c24" name="a9749745d44a80553e28f688e376d8c24"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9749745d44a80553e28f688e376d8c24">&#9670;&#160;</a></span>segment_count</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::size_t plcopen::core::fb::ProfileFbBase::segment_count = 0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="profile_8h_source.html">profile.h</a> 第 <a class="el" href="profile_8h_source.html#l00023">23</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a136dc1f536a16c0d78978bcda718fdf7" name="a136dc1f536a16c0d78978bcda718fdf7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a136dc1f536a16c0d78978bcda718fdf7">&#9670;&#160;</a></span>segments</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">const <a class="el" href="structplcopen_1_1core_1_1axis_1_1ProfileSegment.html">axis::ProfileSegment</a>* plcopen::core::fb::ProfileFbBase::segments = nullptr</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="profile_8h_source.html">profile.h</a> 第 <a class="el" href="profile_8h_source.html#l00022">22</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a2575a2ca27e45de57087821e806282d0" name="a2575a2ca27e45de57087821e806282d0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2575a2ca27e45de57087821e806282d0">&#9670;&#160;</a></span>time_scale</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">double plcopen::core::fb::ProfileFbBase::time_scale = 1.0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="profile_8h_source.html">profile.h</a> 第 <a class="el" href="profile_8h_source.html#l00024">24</a> 行定义.</p>
+
+</div>
+</div>
+<hr/>该类的文档由以下文件生成:<ul>
+<li>core/fb/<a class="el" href="profile_8h_source.html">profile.h</a></li>
+</ul>
+</div><!-- contents -->
+<!-- start footer part -->
+<hr class="footer"/><address class="footer"><small>
+制作者&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.8
+</small></address>
+</body>
+</html>

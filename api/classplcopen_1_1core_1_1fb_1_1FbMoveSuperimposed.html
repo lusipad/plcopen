@@ -1,0 +1,327 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh">
+<head>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=11"/>
+<meta name="generator" content="Doxygen 1.9.8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>plcopen: plcopen::core::fb::FbMoveSuperimposed类 参考</title>
+<link href="tabs.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="jquery.js"></script>
+<script type="text/javascript" src="dynsections.js"></script>
+<link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<link href="doxygen.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+<div id="top"><!-- do not remove this div, it is closed by doxygen! -->
+<div id="titlearea">
+<table cellspacing="0" cellpadding="0">
+ <tbody>
+ <tr id="projectrow">
+  <td id="projectalign">
+   <div id="projectname">plcopen<span id="projectnumber">&#160;0.21.0</span>
+   </div>
+  </td>
+ </tr>
+ </tbody>
+</table>
+</div>
+<!-- end header part -->
+<!-- 制作者 Doxygen 1.9.8 -->
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+var searchBox = new SearchBox("searchBox", "search/",'.html');
+/* @license-end */
+</script>
+<script type="text/javascript" src="menudata.js"></script>
+<script type="text/javascript" src="menu.js"></script>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+$(function() {
+  initMenu('',true,false,'search.php','搜索');
+  $(document).ready(function() { init_search(); });
+});
+/* @license-end */
+</script>
+<div id="main-nav"></div>
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<div id="MSearchResults">
+<div class="SRPage">
+<div id="SRIndex">
+<div id="SRResults"></div>
+<div class="SRStatus" id="Loading">载入中...</div>
+<div class="SRStatus" id="Searching">搜索中...</div>
+<div class="SRStatus" id="NoMatches">未找到</div>
+</div>
+</div>
+</div>
+</div>
+
+<div id="nav-path" class="navpath">
+  <ul>
+<li class="navelem"><a class="el" href="namespaceplcopen.html">plcopen</a></li><li class="navelem"><a class="el" href="namespaceplcopen_1_1core.html">core</a></li><li class="navelem"><a class="el" href="namespaceplcopen_1_1core_1_1fb.html">fb</a></li><li class="navelem"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbMoveSuperimposed.html">FbMoveSuperimposed</a></li>  </ul>
+</div>
+</div><!-- top -->
+<div class="header">
+  <div class="summary">
+<a href="#pub-methods">Public 成员函数</a> &#124;
+<a href="#pub-attribs">Public 属性</a> &#124;
+<a href="classplcopen_1_1core_1_1fb_1_1FbMoveSuperimposed-members.html">所有成员列表</a>  </div>
+  <div class="headertitle"><div class="title">plcopen::core::fb::FbMoveSuperimposed类 参考</div></div>
+</div><!--header-->
+<div class="contents">
+
+<p><code>#include &lt;<a class="el" href="motion_8h_source.html">motion.h</a>&gt;</code></p>
+<div class="dynheader">
+plcopen::core::fb::FbMoveSuperimposed 的协作图:</div>
+<div class="dyncontent">
+<div class="center"><img src="classplcopen_1_1core_1_1fb_1_1FbMoveSuperimposed__coll__graph.png" border="0" usemap="#aplcopen_1_1core_1_1fb_1_1FbMoveSuperimposed_coll__map" alt="Collaboration graph"/></div>
+<map name="aplcopen_1_1core_1_1fb_1_1FbMoveSuperimposed_coll__map" id="aplcopen_1_1core_1_1fb_1_1FbMoveSuperimposed_coll__map">
+<area shape="rect" title=" " alt="" coords="77,108,243,148"/>
+<area shape="rect" href="classplcopen_1_1core_1_1axis_1_1AxisModel.html" title=" " alt="" coords="5,5,149,45"/>
+<area shape="poly" title=" " alt="" coords="104,54,147,106,142,110,99,58"/>
+<area shape="rect" href="structplcopen_1_1core_1_1fb_1_1MotionOutputs.html" title=" " alt="" coords="173,5,312,45"/>
+<area shape="poly" title=" " alt="" coords="221,58,178,110,173,106,216,54"/>
+</map>
+<center><span class="legend">[<a href="graph_legend.html">图例</a>]</span></center></div>
+<table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
+Public 成员函数</h2></td></tr>
+<tr class="memitem:ae37e615db6cd7d5daf81c4b8adf9951f" id="r_ae37e615db6cd7d5daf81c4b8adf9951f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbMoveSuperimposed.html#ae37e615db6cd7d5daf81c4b8adf9951f">call</a> ()</td></tr>
+<tr class="separator:ae37e615db6cd7d5daf81c4b8adf9951f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
+Public 属性</h2></td></tr>
+<tr class="memitem:a0a09ac95426d138f5431747a0a5808c5" id="r_a0a09ac95426d138f5431747a0a5808c5"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classplcopen_1_1core_1_1axis_1_1AxisModel.html">axis::AxisModel</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbMoveSuperimposed.html#a0a09ac95426d138f5431747a0a5808c5">axis_ref</a> = nullptr</td></tr>
+<tr class="separator:a0a09ac95426d138f5431747a0a5808c5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acf44380c967f518aca879d1725e9da3b" id="r_acf44380c967f518aca879d1725e9da3b"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbMoveSuperimposed.html#acf44380c967f518aca879d1725e9da3b">distance</a> = 0.0</td></tr>
+<tr class="separator:acf44380c967f518aca879d1725e9da3b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab3ad65a277de4db134bd05f06a82ad23" id="r_ab3ad65a277de4db134bd05f06a82ad23"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbMoveSuperimposed.html#ab3ad65a277de4db134bd05f06a82ad23">velocity</a> = 1.0</td></tr>
+<tr class="separator:ab3ad65a277de4db134bd05f06a82ad23"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3e9861bceff408b675a9e41e4b78d151" id="r_a3e9861bceff408b675a9e41e4b78d151"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbMoveSuperimposed.html#a3e9861bceff408b675a9e41e4b78d151">acceleration</a> = 1.0</td></tr>
+<tr class="separator:a3e9861bceff408b675a9e41e4b78d151"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3d76aecfdfc81cf70dda5ee4d38a1126" id="r_a3d76aecfdfc81cf70dda5ee4d38a1126"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbMoveSuperimposed.html#a3d76aecfdfc81cf70dda5ee4d38a1126">deceleration</a> = 1.0</td></tr>
+<tr class="separator:a3d76aecfdfc81cf70dda5ee4d38a1126"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afdc459c22543c48e90f0a93607edd158" id="r_afdc459c22543c48e90f0a93607edd158"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbMoveSuperimposed.html#afdc459c22543c48e90f0a93607edd158">jerk</a> = 1.0</td></tr>
+<tr class="separator:afdc459c22543c48e90f0a93607edd158"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a99c55a07a705ace8d69e463f92b658bb" id="r_a99c55a07a705ace8d69e463f92b658bb"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbMoveSuperimposed.html#a99c55a07a705ace8d69e463f92b658bb">continuous_update</a> = false</td></tr>
+<tr class="separator:a99c55a07a705ace8d69e463f92b658bb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0928d993cf6fe11dd7b44f4fd97b7776" id="r_a0928d993cf6fe11dd7b44f4fd97b7776"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbMoveSuperimposed.html#a0928d993cf6fe11dd7b44f4fd97b7776">execute</a> = false</td></tr>
+<tr class="separator:a0928d993cf6fe11dd7b44f4fd97b7776"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afce9871dd28c1c44a5aeb1c3e86aeded" id="r_afce9871dd28c1c44a5aeb1c3e86aeded"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbMoveSuperimposed.html#afce9871dd28c1c44a5aeb1c3e86aeded">covered_distance</a> = 0.0</td></tr>
+<tr class="separator:afce9871dd28c1c44a5aeb1c3e86aeded"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a52b324eb3d538bbac25d6093aee7a1ea" id="r_a52b324eb3d538bbac25d6093aee7a1ea"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structplcopen_1_1core_1_1fb_1_1MotionOutputs.html">MotionOutputs</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbMoveSuperimposed.html#a52b324eb3d538bbac25d6093aee7a1ea">outputs</a> {}</td></tr>
+<tr class="separator:a52b324eb3d538bbac25d6093aee7a1ea"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table>
+<a name="details" id="details"></a><h2 class="groupheader">详细描述</h2>
+<div class="textblock">
+<p class="definition">在文件 <a class="el" href="motion_8h_source.html">motion.h</a> 第 <a class="el" href="motion_8h_source.html#l00700">700</a> 行定义.</p>
+</div><h2 class="groupheader">成员函数说明</h2>
+<a id="ae37e615db6cd7d5daf81c4b8adf9951f" name="ae37e615db6cd7d5daf81c4b8adf9951f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae37e615db6cd7d5daf81c4b8adf9951f">&#9670;&#160;</a></span>call()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void plcopen::core::fb::FbMoveSuperimposed::call </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="motion_8h_source.html">motion.h</a> 第 <a class="el" href="motion_8h_source.html#l00714">714</a> 行定义.</p>
+
+</div>
+</div>
+<h2 class="groupheader">类成员变量说明</h2>
+<a id="a3e9861bceff408b675a9e41e4b78d151" name="a3e9861bceff408b675a9e41e4b78d151"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3e9861bceff408b675a9e41e4b78d151">&#9670;&#160;</a></span>acceleration</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">double plcopen::core::fb::FbMoveSuperimposed::acceleration = 1.0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="motion_8h_source.html">motion.h</a> 第 <a class="el" href="motion_8h_source.html#l00706">706</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a0a09ac95426d138f5431747a0a5808c5" name="a0a09ac95426d138f5431747a0a5808c5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0a09ac95426d138f5431747a0a5808c5">&#9670;&#160;</a></span>axis_ref</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classplcopen_1_1core_1_1axis_1_1AxisModel.html">axis::AxisModel</a>* plcopen::core::fb::FbMoveSuperimposed::axis_ref = nullptr</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="motion_8h_source.html">motion.h</a> 第 <a class="el" href="motion_8h_source.html#l00703">703</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a99c55a07a705ace8d69e463f92b658bb" name="a99c55a07a705ace8d69e463f92b658bb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a99c55a07a705ace8d69e463f92b658bb">&#9670;&#160;</a></span>continuous_update</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool plcopen::core::fb::FbMoveSuperimposed::continuous_update = false</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="motion_8h_source.html">motion.h</a> 第 <a class="el" href="motion_8h_source.html#l00709">709</a> 行定义.</p>
+
+</div>
+</div>
+<a id="afce9871dd28c1c44a5aeb1c3e86aeded" name="afce9871dd28c1c44a5aeb1c3e86aeded"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afce9871dd28c1c44a5aeb1c3e86aeded">&#9670;&#160;</a></span>covered_distance</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">double plcopen::core::fb::FbMoveSuperimposed::covered_distance = 0.0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="motion_8h_source.html">motion.h</a> 第 <a class="el" href="motion_8h_source.html#l00711">711</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a3d76aecfdfc81cf70dda5ee4d38a1126" name="a3d76aecfdfc81cf70dda5ee4d38a1126"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3d76aecfdfc81cf70dda5ee4d38a1126">&#9670;&#160;</a></span>deceleration</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">double plcopen::core::fb::FbMoveSuperimposed::deceleration = 1.0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="motion_8h_source.html">motion.h</a> 第 <a class="el" href="motion_8h_source.html#l00707">707</a> 行定义.</p>
+
+</div>
+</div>
+<a id="acf44380c967f518aca879d1725e9da3b" name="acf44380c967f518aca879d1725e9da3b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acf44380c967f518aca879d1725e9da3b">&#9670;&#160;</a></span>distance</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">double plcopen::core::fb::FbMoveSuperimposed::distance = 0.0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="motion_8h_source.html">motion.h</a> 第 <a class="el" href="motion_8h_source.html#l00704">704</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a0928d993cf6fe11dd7b44f4fd97b7776" name="a0928d993cf6fe11dd7b44f4fd97b7776"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0928d993cf6fe11dd7b44f4fd97b7776">&#9670;&#160;</a></span>execute</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool plcopen::core::fb::FbMoveSuperimposed::execute = false</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="motion_8h_source.html">motion.h</a> 第 <a class="el" href="motion_8h_source.html#l00710">710</a> 行定义.</p>
+
+</div>
+</div>
+<a id="afdc459c22543c48e90f0a93607edd158" name="afdc459c22543c48e90f0a93607edd158"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afdc459c22543c48e90f0a93607edd158">&#9670;&#160;</a></span>jerk</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">double plcopen::core::fb::FbMoveSuperimposed::jerk = 1.0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="motion_8h_source.html">motion.h</a> 第 <a class="el" href="motion_8h_source.html#l00708">708</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a52b324eb3d538bbac25d6093aee7a1ea" name="a52b324eb3d538bbac25d6093aee7a1ea"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a52b324eb3d538bbac25d6093aee7a1ea">&#9670;&#160;</a></span>outputs</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="structplcopen_1_1core_1_1fb_1_1MotionOutputs.html">MotionOutputs</a> plcopen::core::fb::FbMoveSuperimposed::outputs {}</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="motion_8h_source.html">motion.h</a> 第 <a class="el" href="motion_8h_source.html#l00712">712</a> 行定义.</p>
+
+</div>
+</div>
+<a id="ab3ad65a277de4db134bd05f06a82ad23" name="ab3ad65a277de4db134bd05f06a82ad23"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab3ad65a277de4db134bd05f06a82ad23">&#9670;&#160;</a></span>velocity</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">double plcopen::core::fb::FbMoveSuperimposed::velocity = 1.0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="motion_8h_source.html">motion.h</a> 第 <a class="el" href="motion_8h_source.html#l00705">705</a> 行定义.</p>
+
+</div>
+</div>
+<hr/>该类的文档由以下文件生成:<ul>
+<li>core/fb/<a class="el" href="motion_8h_source.html">motion.h</a></li>
+</ul>
+</div><!-- contents -->
+<!-- start footer part -->
+<hr class="footer"/><address class="footer"><small>
+制作者&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.8
+</small></address>
+</body>
+</html>

@@ -1,0 +1,285 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh">
+<head>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=11"/>
+<meta name="generator" content="Doxygen 1.9.8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>plcopen: core/adapters/servo.h 源文件</title>
+<link href="tabs.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="jquery.js"></script>
+<script type="text/javascript" src="dynsections.js"></script>
+<link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<link href="doxygen.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+<div id="top"><!-- do not remove this div, it is closed by doxygen! -->
+<div id="titlearea">
+<table cellspacing="0" cellpadding="0">
+ <tbody>
+ <tr id="projectrow">
+  <td id="projectalign">
+   <div id="projectname">plcopen<span id="projectnumber">&#160;0.21.0</span>
+   </div>
+  </td>
+ </tr>
+ </tbody>
+</table>
+</div>
+<!-- end header part -->
+<!-- 制作者 Doxygen 1.9.8 -->
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+var searchBox = new SearchBox("searchBox", "search/",'.html');
+/* @license-end */
+</script>
+<script type="text/javascript" src="menudata.js"></script>
+<script type="text/javascript" src="menu.js"></script>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+$(function() {
+  initMenu('',true,false,'search.php','搜索');
+  $(document).ready(function() { init_search(); });
+});
+/* @license-end */
+</script>
+<div id="main-nav"></div>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+$(document).ready(function() { init_codefold(0); });
+/* @license-end */
+</script>
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<div id="MSearchResults">
+<div class="SRPage">
+<div id="SRIndex">
+<div id="SRResults"></div>
+<div class="SRStatus" id="Loading">载入中...</div>
+<div class="SRStatus" id="Searching">搜索中...</div>
+<div class="SRStatus" id="NoMatches">未找到</div>
+</div>
+</div>
+</div>
+</div>
+
+<div id="nav-path" class="navpath">
+  <ul>
+<li class="navelem"><a class="el" href="dir_4270bfced15e0e73154b13468c7c9ad9.html">core</a></li><li class="navelem"><a class="el" href="dir_2de2c6b291aafe16d0a7cd4acdaee2ee.html">adapters</a></li>  </ul>
+</div>
+</div><!-- top -->
+<div class="header">
+  <div class="headertitle"><div class="title">servo.h</div></div>
+</div><!--header-->
+<div class="contents">
+<a href="servo_8h.html">浏览该文件的文档.</a><div class="fragment"><div class="line"><a id="l00001" name="l00001"></a><span class="lineno">    1</span><span class="preprocessor">#pragma once</span></div>
+<div class="line"><a id="l00002" name="l00002"></a><span class="lineno">    2</span> </div>
+<div class="line"><a id="l00003" name="l00003"></a><span class="lineno">    3</span><span class="comment">// ADR-0004 (Accepted 2026-07-05): the stable narrow hardware interface for</span></div>
+<div class="line"><a id="l00004" name="l00004"></a><span class="lineno">    4</span><span class="comment">// Phase B5 (plcopen-fieldbus) and B7 (RT reference executor). The core L5</span></div>
+<div class="line"><a id="l00005" name="l00005"></a><span class="lineno">    5</span><span class="comment">// never holds a Servo pointer — an outer executor calls the interface at the</span></div>
+<div class="line"><a id="l00006" name="l00006"></a><span class="lineno">    6</span><span class="comment">// cycle boundary and bridges feedback into the existing AxisModel hooks and</span></div>
+<div class="line"><a id="l00007" name="l00007"></a><span class="lineno">    7</span><span class="comment">// snapshots into write_setpoints. Adapters are outer-ring composition, not a</span></div>
+<div class="line"><a id="l00008" name="l00008"></a><span class="lineno">    8</span><span class="comment">// kernel dependency: the core keeps value semantics, deterministic replay,</span></div>
+<div class="line"><a id="l00009" name="l00009"></a><span class="lineno">    9</span><span class="comment">// and zero OS contact.</span></div>
+<div class="line"><a id="l00010" name="l00010"></a><span class="lineno">   10</span><span class="comment">//</span></div>
+<div class="line"><a id="l00011" name="l00011"></a><span class="lineno">   11</span><span class="comment">// Interface contract: no allocation, no exceptions, bounded time. The</span></div>
+<div class="line"><a id="l00012" name="l00012"></a><span class="lineno">   12</span><span class="comment">// executor owns threads and clocks. CSP/CSV/CST drive-side mode semantics</span></div>
+<div class="line"><a id="l00013" name="l00013"></a><span class="lineno">   13</span><span class="comment">// extend this interface with B5 (real-drive context); the mode manager</span></div>
+<div class="line"><a id="l00014" name="l00014"></a><span class="lineno">   14</span><span class="comment">// skeleton lives in mode_manager.h.</span></div>
+<div class="line"><a id="l00015" name="l00015"></a><span class="lineno">   15</span> </div>
+<div class="line"><a id="l00016" name="l00016"></a><span class="lineno">   16</span><span class="preprocessor">#include &lt;cstddef&gt;</span></div>
+<div class="line"><a id="l00017" name="l00017"></a><span class="lineno">   17</span> </div>
+<div class="line"><a id="l00018" name="l00018"></a><span class="lineno">   18</span><span class="preprocessor">#include &quot;<a class="code" href="state_8h.html">axis/state.h</a>&quot;</span></div>
+<div class="line"><a id="l00019" name="l00019"></a><span class="lineno">   19</span> </div>
+<div class="line"><a id="l00020" name="l00020"></a><span class="lineno">   20</span><span class="keyword">namespace </span><a class="code hl_namespace" href="namespaceplcopen_1_1core_1_1adapters.html">plcopen::core::adapters</a></div>
+<div class="line"><a id="l00021" name="l00021"></a><span class="lineno">   21</span>{</div>
+<div class="line"><a id="l00022" name="l00022"></a><span class="lineno">   22</span> </div>
+<div class="line"><a id="l00023" name="l00023"></a><span class="lineno">   23</span><span class="comment">// Full-order feedforward per 6.3-#9: the library generates every order</span></div>
+<div class="line"><a id="l00024" name="l00024"></a><span class="lineno">   24</span><span class="comment">// unconditionally; the drive wires what it needs.</span></div>
+<div class="foldopen" id="foldopen00025" data-start="{" data-end="};">
+<div class="line"><a id="l00025" name="l00025"></a><span class="lineno"><a class="line" href="structplcopen_1_1core_1_1adapters_1_1ServoSetpoints.html">   25</a></span><span class="keyword">struct </span><a class="code hl_struct" href="structplcopen_1_1core_1_1adapters_1_1ServoSetpoints.html">ServoSetpoints</a></div>
+<div class="line"><a id="l00026" name="l00026"></a><span class="lineno">   26</span>{</div>
+<div class="line"><a id="l00027" name="l00027"></a><span class="lineno"><a class="line" href="structplcopen_1_1core_1_1adapters_1_1ServoSetpoints.html#a2041cdf182d9abb3feaa09208d565845">   27</a></span>    <span class="keywordtype">double</span> <a class="code hl_variable" href="structplcopen_1_1core_1_1adapters_1_1ServoSetpoints.html#a2041cdf182d9abb3feaa09208d565845">position</a> = 0.0;</div>
+<div class="line"><a id="l00028" name="l00028"></a><span class="lineno"><a class="line" href="structplcopen_1_1core_1_1adapters_1_1ServoSetpoints.html#a7581d802ef0233805a8ca4ac74b978f9">   28</a></span>    <span class="keywordtype">double</span> <a class="code hl_variable" href="structplcopen_1_1core_1_1adapters_1_1ServoSetpoints.html#a7581d802ef0233805a8ca4ac74b978f9">velocity</a> = 0.0;</div>
+<div class="line"><a id="l00029" name="l00029"></a><span class="lineno"><a class="line" href="structplcopen_1_1core_1_1adapters_1_1ServoSetpoints.html#a8abf1095d9e2851d0a184771901ead3c">   29</a></span>    <span class="keywordtype">double</span> <a class="code hl_variable" href="structplcopen_1_1core_1_1adapters_1_1ServoSetpoints.html#a8abf1095d9e2851d0a184771901ead3c">acceleration</a> = 0.0;</div>
+<div class="line"><a id="l00030" name="l00030"></a><span class="lineno"><a class="line" href="structplcopen_1_1core_1_1adapters_1_1ServoSetpoints.html#ac3b5ba59fee8ad0cd5cae1f162241001">   30</a></span>    <span class="keywordtype">double</span> <a class="code hl_variable" href="structplcopen_1_1core_1_1adapters_1_1ServoSetpoints.html#ac3b5ba59fee8ad0cd5cae1f162241001">torque</a> = 0.0;</div>
+<div class="line"><a id="l00031" name="l00031"></a><span class="lineno"><a class="line" href="structplcopen_1_1core_1_1adapters_1_1ServoSetpoints.html#ab33a15a2a1d80b4fa3eb5085bf882941">   31</a></span>    <span class="keywordtype">double</span> <a class="code hl_variable" href="structplcopen_1_1core_1_1adapters_1_1ServoSetpoints.html#ab33a15a2a1d80b4fa3eb5085bf882941">torque_limit</a> = 0.0;</div>
+<div class="line"><a id="l00032" name="l00032"></a><span class="lineno"><a class="line" href="structplcopen_1_1core_1_1adapters_1_1ServoSetpoints.html#a9ded806548dd643e07e7119fbab61eed">   32</a></span>    <span class="keywordtype">double</span> <a class="code hl_variable" href="structplcopen_1_1core_1_1adapters_1_1ServoSetpoints.html#a9ded806548dd643e07e7119fbab61eed">torque_velocity_limit</a> = 0.0;</div>
+<div class="line"><a id="l00033" name="l00033"></a><span class="lineno"><a class="line" href="structplcopen_1_1core_1_1adapters_1_1ServoSetpoints.html#ad1c124a57b71c71b2fa17684ef62e670">   33</a></span>    <span class="keywordtype">double</span> <a class="code hl_variable" href="structplcopen_1_1core_1_1adapters_1_1ServoSetpoints.html#ad1c124a57b71c71b2fa17684ef62e670">torque_acceleration_limit</a> = 0.0;</div>
+<div class="line"><a id="l00034" name="l00034"></a><span class="lineno"><a class="line" href="structplcopen_1_1core_1_1adapters_1_1ServoSetpoints.html#abcbcd5f739e54aa369dffabbd23a8c3f">   34</a></span>    <span class="keywordtype">double</span> <a class="code hl_variable" href="structplcopen_1_1core_1_1adapters_1_1ServoSetpoints.html#abcbcd5f739e54aa369dffabbd23a8c3f">torque_deceleration_limit</a> = 0.0;</div>
+<div class="line"><a id="l00035" name="l00035"></a><span class="lineno"><a class="line" href="structplcopen_1_1core_1_1adapters_1_1ServoSetpoints.html#a734043469361b75d0b809a3348760462">   35</a></span>    <span class="keywordtype">double</span> <a class="code hl_variable" href="structplcopen_1_1core_1_1adapters_1_1ServoSetpoints.html#a734043469361b75d0b809a3348760462">torque_jerk_limit</a> = 0.0;</div>
+<div class="line"><a id="l00036" name="l00036"></a><span class="lineno"><a class="line" href="structplcopen_1_1core_1_1adapters_1_1ServoSetpoints.html#a5450311d5b161a81df5767ee89f7519b">   36</a></span>    <a class="code hl_enumeration" href="namespaceplcopen_1_1core_1_1axis.html#a6ee6be14ad50e9555ccbb523438084c5">axis::Direction</a> <a class="code hl_variable" href="structplcopen_1_1core_1_1adapters_1_1ServoSetpoints.html#a5450311d5b161a81df5767ee89f7519b">torque_direction</a> = <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1axis.html#a6ee6be14ad50e9555ccbb523438084c5a43b5c9175984c071f30b873fdce0a000">axis::Direction::current</a>;</div>
+<div class="line"><a id="l00037" name="l00037"></a><span class="lineno"><a class="line" href="structplcopen_1_1core_1_1adapters_1_1ServoSetpoints.html#ae4aca0060ab104d26b5a0e57ad12964a">   37</a></span>    <span class="keywordtype">bool</span> <a class="code hl_variable" href="structplcopen_1_1core_1_1adapters_1_1ServoSetpoints.html#ae4aca0060ab104d26b5a0e57ad12964a">torque_mode</a> = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span>};</div>
+</div>
+<div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span> </div>
+<div class="foldopen" id="foldopen00040" data-start="{" data-end="};">
+<div class="line"><a id="l00040" name="l00040"></a><span class="lineno"><a class="line" href="structplcopen_1_1core_1_1adapters_1_1ServoFeedback.html">   40</a></span><span class="keyword">struct </span><a class="code hl_struct" href="structplcopen_1_1core_1_1adapters_1_1ServoFeedback.html">ServoFeedback</a></div>
+<div class="line"><a id="l00041" name="l00041"></a><span class="lineno">   41</span>{</div>
+<div class="line"><a id="l00042" name="l00042"></a><span class="lineno"><a class="line" href="structplcopen_1_1core_1_1adapters_1_1ServoFeedback.html#a9e0e00559b9ba000b94a3ac6f7388377">   42</a></span>    <span class="keyword">static</span> <span class="keyword">constexpr</span> std::size_t <a class="code hl_variable" href="structplcopen_1_1core_1_1adapters_1_1ServoFeedback.html#a9e0e00559b9ba000b94a3ac6f7388377">DigitalInputCount</a> = 4;</div>
+<div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span> </div>
+<div class="line"><a id="l00044" name="l00044"></a><span class="lineno"><a class="line" href="structplcopen_1_1core_1_1adapters_1_1ServoFeedback.html#a4ae3046afe09de693e1cef2e10e6b6f7">   44</a></span>    <span class="keywordtype">double</span> <a class="code hl_variable" href="structplcopen_1_1core_1_1adapters_1_1ServoFeedback.html#a4ae3046afe09de693e1cef2e10e6b6f7">position</a> = 0.0;</div>
+<div class="line"><a id="l00045" name="l00045"></a><span class="lineno"><a class="line" href="structplcopen_1_1core_1_1adapters_1_1ServoFeedback.html#a8237f3ed460683449aa14812910f9d27">   45</a></span>    <span class="keywordtype">double</span> <a class="code hl_variable" href="structplcopen_1_1core_1_1adapters_1_1ServoFeedback.html#a8237f3ed460683449aa14812910f9d27">velocity</a> = 0.0;</div>
+<div class="line"><a id="l00046" name="l00046"></a><span class="lineno"><a class="line" href="structplcopen_1_1core_1_1adapters_1_1ServoFeedback.html#aa28e85836ce0ff20d1cf55c9e90b7a82">   46</a></span>    <span class="keywordtype">double</span> <a class="code hl_variable" href="structplcopen_1_1core_1_1adapters_1_1ServoFeedback.html#aa28e85836ce0ff20d1cf55c9e90b7a82">acceleration</a> = 0.0;</div>
+<div class="line"><a id="l00047" name="l00047"></a><span class="lineno"><a class="line" href="structplcopen_1_1core_1_1adapters_1_1ServoFeedback.html#a168cac86e1a3d017693ac29ca4af9f07">   47</a></span>    <span class="keywordtype">double</span> <a class="code hl_variable" href="structplcopen_1_1core_1_1adapters_1_1ServoFeedback.html#a168cac86e1a3d017693ac29ca4af9f07">torque</a> = 0.0;</div>
+<div class="line"><a id="l00048" name="l00048"></a><span class="lineno"><a class="line" href="structplcopen_1_1core_1_1adapters_1_1ServoFeedback.html#a574b60c3493bfb7ae0f814871973eb94">   48</a></span>    <span class="keywordtype">bool</span> <a class="code hl_variable" href="structplcopen_1_1core_1_1adapters_1_1ServoFeedback.html#a574b60c3493bfb7ae0f814871973eb94">digital_inputs</a>[<a class="code hl_variable" href="structplcopen_1_1core_1_1adapters_1_1ServoFeedback.html#a9e0e00559b9ba000b94a3ac6f7388377">DigitalInputCount</a>] = {};</div>
+<div class="line"><a id="l00049" name="l00049"></a><span class="lineno"><a class="line" href="structplcopen_1_1core_1_1adapters_1_1ServoFeedback.html#aa3240f3fa38641438d1d7ddb0ff7f264">   49</a></span>    <a class="code hl_struct" href="structplcopen_1_1core_1_1axis_1_1AxisModel_1_1AxisInfoInputs.html">axis::AxisModel::AxisInfoInputs</a> <a class="code hl_variable" href="structplcopen_1_1core_1_1adapters_1_1ServoFeedback.html#aa3240f3fa38641438d1d7ddb0ff7f264">info</a>{};</div>
+<div class="line"><a id="l00050" name="l00050"></a><span class="lineno">   50</span>};</div>
+</div>
+<div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span> </div>
+<div class="foldopen" id="foldopen00052" data-start="{" data-end="};">
+<div class="line"><a id="l00052" name="l00052"></a><span class="lineno"><a class="line" href="classplcopen_1_1core_1_1adapters_1_1Servo.html">   52</a></span><span class="keyword">class </span><a class="code hl_class" href="classplcopen_1_1core_1_1adapters_1_1Servo.html">Servo</a></div>
+<div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span>{</div>
+<div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span>  <span class="keyword">public</span>:</div>
+<div class="line"><a id="l00055" name="l00055"></a><span class="lineno"><a class="line" href="classplcopen_1_1core_1_1adapters_1_1Servo.html#a138fe6a934681e7b1573ff7af61b7dbb">   55</a></span>    <span class="keyword">virtual</span> <a class="code hl_function" href="classplcopen_1_1core_1_1adapters_1_1Servo.html#a138fe6a934681e7b1573ff7af61b7dbb">~Servo</a>() = <span class="keywordflow">default</span>;</div>
+<div class="line"><a id="l00056" name="l00056"></a><span class="lineno"><a class="line" href="classplcopen_1_1core_1_1adapters_1_1Servo.html#a75b1c53d2ed2297d86fd096284370c27">   56</a></span>    <span class="keyword">virtual</span> <span class="keywordtype">void</span> <a class="code hl_function" href="classplcopen_1_1core_1_1adapters_1_1Servo.html#a75b1c53d2ed2297d86fd096284370c27">write_setpoints</a>(<span class="keyword">const</span> <a class="code hl_struct" href="structplcopen_1_1core_1_1adapters_1_1ServoSetpoints.html">ServoSetpoints</a> &amp;setpoints) = 0;</div>
+<div class="line"><a id="l00057" name="l00057"></a><span class="lineno"><a class="line" href="classplcopen_1_1core_1_1adapters_1_1Servo.html#a96dbb788b734a9d8d617a91bb727f7bf">   57</a></span>    <span class="keyword">virtual</span> <span class="keywordtype">void</span> <a class="code hl_function" href="classplcopen_1_1core_1_1adapters_1_1Servo.html#a96dbb788b734a9d8d617a91bb727f7bf">read_feedback</a>(<a class="code hl_struct" href="structplcopen_1_1core_1_1adapters_1_1ServoFeedback.html">ServoFeedback</a> &amp;feedback) = 0;</div>
+<div class="line"><a id="l00058" name="l00058"></a><span class="lineno">   58</span>};</div>
+</div>
+<div class="line"><a id="l00059" name="l00059"></a><span class="lineno">   59</span> </div>
+<div class="line"><a id="l00060" name="l00060"></a><span class="lineno">   60</span><span class="comment">// Bridge helpers (ADR-0004 decision #2): the executor composes these at the</span></div>
+<div class="line"><a id="l00061" name="l00061"></a><span class="lineno">   61</span><span class="comment">// cycle boundary; they must not alter semantics — the golden replays run</span></div>
+<div class="line"><a id="l00062" name="l00062"></a><span class="lineno">   62</span><span class="comment">// bit-identical through the bridge (verified in the adapters suite).</span></div>
+<div class="foldopen" id="foldopen00063" data-start="{" data-end="}">
+<div class="line"><a id="l00063" name="l00063"></a><span class="lineno"><a class="line" href="namespaceplcopen_1_1core_1_1adapters.html#a1c1d584249f478130a04c4f1a6870d9f">   63</a></span><span class="keyword">inline</span> <a class="code hl_struct" href="structplcopen_1_1core_1_1adapters_1_1ServoSetpoints.html">ServoSetpoints</a> <a class="code hl_function" href="namespaceplcopen_1_1core_1_1adapters.html#a1c1d584249f478130a04c4f1a6870d9f">make_setpoints</a>(<span class="keyword">const</span> <a class="code hl_struct" href="structplcopen_1_1core_1_1axis_1_1AxisSnapshot.html">axis::AxisSnapshot</a> &amp;snapshot)</div>
+<div class="line"><a id="l00064" name="l00064"></a><span class="lineno">   64</span>{</div>
+<div class="line"><a id="l00065" name="l00065"></a><span class="lineno">   65</span>    <a class="code hl_struct" href="structplcopen_1_1core_1_1adapters_1_1ServoSetpoints.html">ServoSetpoints</a> setpoints{};</div>
+<div class="line"><a id="l00066" name="l00066"></a><span class="lineno">   66</span>    setpoints.<a class="code hl_variable" href="structplcopen_1_1core_1_1adapters_1_1ServoSetpoints.html#a2041cdf182d9abb3feaa09208d565845">position</a> = snapshot.<a class="code hl_variable" href="structplcopen_1_1core_1_1axis_1_1AxisSnapshot.html#a9620d9401f24313f50215daa49291f37">command_position</a>;</div>
+<div class="line"><a id="l00067" name="l00067"></a><span class="lineno">   67</span>    setpoints.velocity = snapshot.<a class="code hl_variable" href="structplcopen_1_1core_1_1axis_1_1AxisSnapshot.html#a3af6e64c6adb418e5c5b89ec716aa3cb">command_velocity</a>;</div>
+<div class="line"><a id="l00068" name="l00068"></a><span class="lineno">   68</span>    setpoints.acceleration = snapshot.<a class="code hl_variable" href="structplcopen_1_1core_1_1axis_1_1AxisSnapshot.html#a6759afa7b6d019981a019e4d0e4a96c9">command_acceleration</a>;</div>
+<div class="line"><a id="l00069" name="l00069"></a><span class="lineno">   69</span>    setpoints.torque = snapshot.<a class="code hl_variable" href="structplcopen_1_1core_1_1axis_1_1AxisSnapshot.html#a9405bc3d8fc8a5581847b743e3138481">command_torque</a>;</div>
+<div class="line"><a id="l00070" name="l00070"></a><span class="lineno">   70</span>    setpoints.torque_limit = snapshot.<a class="code hl_variable" href="structplcopen_1_1core_1_1axis_1_1AxisSnapshot.html#aac5c47bdebcb8b4e490993371da8b444">command_torque_limit</a>;</div>
+<div class="line"><a id="l00071" name="l00071"></a><span class="lineno">   71</span>    setpoints.torque_velocity_limit = snapshot.<a class="code hl_variable" href="structplcopen_1_1core_1_1axis_1_1AxisSnapshot.html#ad70c7f3c994a009f74021f5676385075">torque_velocity_limit</a>;</div>
+<div class="line"><a id="l00072" name="l00072"></a><span class="lineno">   72</span>    setpoints.torque_acceleration_limit = snapshot.<a class="code hl_variable" href="structplcopen_1_1core_1_1axis_1_1AxisSnapshot.html#a6f5960bd5652cac510871a27f589b792">torque_acceleration_limit</a>;</div>
+<div class="line"><a id="l00073" name="l00073"></a><span class="lineno">   73</span>    setpoints.torque_deceleration_limit = snapshot.<a class="code hl_variable" href="structplcopen_1_1core_1_1axis_1_1AxisSnapshot.html#a597df12fd17d13c98213e99b98bee14d">torque_deceleration_limit</a>;</div>
+<div class="line"><a id="l00074" name="l00074"></a><span class="lineno">   74</span>    setpoints.torque_jerk_limit = snapshot.<a class="code hl_variable" href="structplcopen_1_1core_1_1axis_1_1AxisSnapshot.html#a23442cc79eadf46bb5d6c0b2e206f2de">torque_jerk_limit</a>;</div>
+<div class="line"><a id="l00075" name="l00075"></a><span class="lineno">   75</span>    setpoints.torque_direction = snapshot.<a class="code hl_variable" href="structplcopen_1_1core_1_1axis_1_1AxisSnapshot.html#ab4fc87b529a6ad9f5de9b2b56cb4b50c">torque_direction</a>;</div>
+<div class="line"><a id="l00076" name="l00076"></a><span class="lineno">   76</span>    setpoints.torque_mode = snapshot.<a class="code hl_variable" href="structplcopen_1_1core_1_1axis_1_1AxisSnapshot.html#a5188cc3a8889ebc18ab1848fdad83a2b">torque_mode</a>;</div>
+<div class="line"><a id="l00077" name="l00077"></a><span class="lineno">   77</span>    <span class="keywordflow">return</span> setpoints;</div>
+<div class="line"><a id="l00078" name="l00078"></a><span class="lineno">   78</span>}</div>
+</div>
+<div class="line"><a id="l00079" name="l00079"></a><span class="lineno">   79</span> </div>
+<div class="foldopen" id="foldopen00080" data-start="{" data-end="}">
+<div class="line"><a id="l00080" name="l00080"></a><span class="lineno"><a class="line" href="namespaceplcopen_1_1core_1_1adapters.html#a39d63421c546d53b5ebe33ddf72f8937">   80</a></span><span class="keyword">inline</span> <span class="keywordtype">void</span> <a class="code hl_function" href="namespaceplcopen_1_1core_1_1adapters.html#a39d63421c546d53b5ebe33ddf72f8937">bridge_feedback</a>(<a class="code hl_class" href="classplcopen_1_1core_1_1axis_1_1AxisModel.html">axis::AxisModel</a> &amp;axis, <span class="keyword">const</span> <a class="code hl_struct" href="structplcopen_1_1core_1_1adapters_1_1ServoFeedback.html">ServoFeedback</a> &amp;feedback)</div>
+<div class="line"><a id="l00081" name="l00081"></a><span class="lineno">   81</span>{</div>
+<div class="line"><a id="l00082" name="l00082"></a><span class="lineno">   82</span>    axis.set_actual_feedback(feedback.<a class="code hl_variable" href="structplcopen_1_1core_1_1adapters_1_1ServoFeedback.html#a4ae3046afe09de693e1cef2e10e6b6f7">position</a>, feedback.<a class="code hl_variable" href="structplcopen_1_1core_1_1adapters_1_1ServoFeedback.html#a8237f3ed460683449aa14812910f9d27">velocity</a>, feedback.<a class="code hl_variable" href="structplcopen_1_1core_1_1adapters_1_1ServoFeedback.html#aa28e85836ce0ff20d1cf55c9e90b7a82">acceleration</a>,</div>
+<div class="line"><a id="l00083" name="l00083"></a><span class="lineno">   83</span>                             feedback.<a class="code hl_variable" href="structplcopen_1_1core_1_1adapters_1_1ServoFeedback.html#a168cac86e1a3d017693ac29ca4af9f07">torque</a>);</div>
+<div class="line"><a id="l00084" name="l00084"></a><span class="lineno">   84</span>    <span class="keywordflow">for</span> (std::size_t i = 0; i &lt; <a class="code hl_variable" href="structplcopen_1_1core_1_1adapters_1_1ServoFeedback.html#a9e0e00559b9ba000b94a3ac6f7388377">ServoFeedback::DigitalInputCount</a>; ++i)</div>
+<div class="line"><a id="l00085" name="l00085"></a><span class="lineno">   85</span>    {</div>
+<div class="line"><a id="l00086" name="l00086"></a><span class="lineno">   86</span>        axis.set_digital_input(i, feedback.<a class="code hl_variable" href="structplcopen_1_1core_1_1adapters_1_1ServoFeedback.html#a574b60c3493bfb7ae0f814871973eb94">digital_inputs</a>[i]);</div>
+<div class="line"><a id="l00087" name="l00087"></a><span class="lineno">   87</span>    }</div>
+<div class="line"><a id="l00088" name="l00088"></a><span class="lineno">   88</span>    axis.set_axis_info_inputs(feedback.<a class="code hl_variable" href="structplcopen_1_1core_1_1adapters_1_1ServoFeedback.html#aa3240f3fa38641438d1d7ddb0ff7f264">info</a>);</div>
+<div class="line"><a id="l00089" name="l00089"></a><span class="lineno">   89</span>}</div>
+</div>
+<div class="line"><a id="l00090" name="l00090"></a><span class="lineno">   90</span> </div>
+<div class="line"><a id="l00091" name="l00091"></a><span class="lineno">   91</span><span class="comment">// Simulation reference implementation (the interface&#39;s acceptance vehicle):</span></div>
+<div class="line"><a id="l00092" name="l00092"></a><span class="lineno">   92</span><span class="comment">// an ideal drive that tracks setpoints exactly and echoes them as actuals.</span></div>
+<div class="line"><a id="l00093" name="l00093"></a><span class="lineno">   93</span><span class="comment">// The same application code runs against real hardware by swapping this</span></div>
+<div class="line"><a id="l00094" name="l00094"></a><span class="lineno">   94</span><span class="comment">// object — the zero-modification promise of the adoption funnel.</span></div>
+<div class="foldopen" id="foldopen00095" data-start="{" data-end="};">
+<div class="line"><a id="l00095" name="l00095"></a><span class="lineno"><a class="line" href="classplcopen_1_1core_1_1adapters_1_1ServoSim.html">   95</a></span><span class="keyword">class </span><a class="code hl_class" href="classplcopen_1_1core_1_1adapters_1_1ServoSim.html">ServoSim</a> final : <span class="keyword">public</span> <a class="code hl_class" href="classplcopen_1_1core_1_1adapters_1_1Servo.html">Servo</a></div>
+<div class="line"><a id="l00096" name="l00096"></a><span class="lineno">   96</span>{</div>
+<div class="line"><a id="l00097" name="l00097"></a><span class="lineno">   97</span>  <span class="keyword">public</span>:</div>
+<div class="line"><a id="l00098" name="l00098"></a><span class="lineno"><a class="line" href="classplcopen_1_1core_1_1adapters_1_1ServoSim.html#a9d82dc7a130df1fdcf870a700a4f3db8">   98</a></span>    <span class="keywordtype">void</span> <a class="code hl_function" href="classplcopen_1_1core_1_1adapters_1_1ServoSim.html#a9d82dc7a130df1fdcf870a700a4f3db8">write_setpoints</a>(<span class="keyword">const</span> <a class="code hl_struct" href="structplcopen_1_1core_1_1adapters_1_1ServoSetpoints.html">ServoSetpoints</a> &amp;setpoints)<span class="keyword"> override </span>{ state_ = setpoints; }</div>
+<div class="line"><a id="l00099" name="l00099"></a><span class="lineno">   99</span> </div>
+<div class="foldopen" id="foldopen00100" data-start="{" data-end="}">
+<div class="line"><a id="l00100" name="l00100"></a><span class="lineno"><a class="line" href="classplcopen_1_1core_1_1adapters_1_1ServoSim.html#a1695b82a1b2485f80711922cd58ec115">  100</a></span>    <span class="keywordtype">void</span> <a class="code hl_function" href="classplcopen_1_1core_1_1adapters_1_1ServoSim.html#a1695b82a1b2485f80711922cd58ec115">read_feedback</a>(<a class="code hl_struct" href="structplcopen_1_1core_1_1adapters_1_1ServoFeedback.html">ServoFeedback</a> &amp;feedback)<span class="keyword"> override</span></div>
+<div class="line"><a id="l00101" name="l00101"></a><span class="lineno">  101</span><span class="keyword">    </span>{</div>
+<div class="line"><a id="l00102" name="l00102"></a><span class="lineno">  102</span>        feedback.<a class="code hl_variable" href="structplcopen_1_1core_1_1adapters_1_1ServoFeedback.html#a4ae3046afe09de693e1cef2e10e6b6f7">position</a> = state_.<a class="code hl_variable" href="structplcopen_1_1core_1_1adapters_1_1ServoSetpoints.html#a2041cdf182d9abb3feaa09208d565845">position</a>;</div>
+<div class="line"><a id="l00103" name="l00103"></a><span class="lineno">  103</span>        feedback.<a class="code hl_variable" href="structplcopen_1_1core_1_1adapters_1_1ServoFeedback.html#a8237f3ed460683449aa14812910f9d27">velocity</a> = state_.<a class="code hl_variable" href="structplcopen_1_1core_1_1adapters_1_1ServoSetpoints.html#a7581d802ef0233805a8ca4ac74b978f9">velocity</a>;</div>
+<div class="line"><a id="l00104" name="l00104"></a><span class="lineno">  104</span>        feedback.<a class="code hl_variable" href="structplcopen_1_1core_1_1adapters_1_1ServoFeedback.html#aa28e85836ce0ff20d1cf55c9e90b7a82">acceleration</a> = state_.<a class="code hl_variable" href="structplcopen_1_1core_1_1adapters_1_1ServoSetpoints.html#a8abf1095d9e2851d0a184771901ead3c">acceleration</a>;</div>
+<div class="line"><a id="l00105" name="l00105"></a><span class="lineno">  105</span>        feedback.<a class="code hl_variable" href="structplcopen_1_1core_1_1adapters_1_1ServoFeedback.html#a168cac86e1a3d017693ac29ca4af9f07">torque</a> = state_.<a class="code hl_variable" href="structplcopen_1_1core_1_1adapters_1_1ServoSetpoints.html#ac3b5ba59fee8ad0cd5cae1f162241001">torque</a>;</div>
+<div class="line"><a id="l00106" name="l00106"></a><span class="lineno">  106</span>        <span class="keywordflow">for</span> (std::size_t i = 0; i &lt; <a class="code hl_variable" href="structplcopen_1_1core_1_1adapters_1_1ServoFeedback.html#a9e0e00559b9ba000b94a3ac6f7388377">ServoFeedback::DigitalInputCount</a>; ++i)</div>
+<div class="line"><a id="l00107" name="l00107"></a><span class="lineno">  107</span>        {</div>
+<div class="line"><a id="l00108" name="l00108"></a><span class="lineno">  108</span>            feedback.<a class="code hl_variable" href="structplcopen_1_1core_1_1adapters_1_1ServoFeedback.html#a574b60c3493bfb7ae0f814871973eb94">digital_inputs</a>[i] = digital_inputs_[i];</div>
+<div class="line"><a id="l00109" name="l00109"></a><span class="lineno">  109</span>        }</div>
+<div class="line"><a id="l00110" name="l00110"></a><span class="lineno">  110</span>        feedback.<a class="code hl_variable" href="structplcopen_1_1core_1_1adapters_1_1ServoFeedback.html#aa3240f3fa38641438d1d7ddb0ff7f264">info</a> = info_;</div>
+<div class="line"><a id="l00111" name="l00111"></a><span class="lineno">  111</span>    }</div>
+</div>
+<div class="line"><a id="l00112" name="l00112"></a><span class="lineno">  112</span> </div>
+<div class="line"><a id="l00113" name="l00113"></a><span class="lineno">  113</span>    <span class="comment">// Test-side controls.</span></div>
+<div class="foldopen" id="foldopen00114" data-start="{" data-end="}">
+<div class="line"><a id="l00114" name="l00114"></a><span class="lineno"><a class="line" href="classplcopen_1_1core_1_1adapters_1_1ServoSim.html#a60aa7a3e81bc6587e8463e6154106477">  114</a></span>    <span class="keywordtype">void</span> <a class="code hl_function" href="classplcopen_1_1core_1_1adapters_1_1ServoSim.html#a60aa7a3e81bc6587e8463e6154106477">set_digital_input</a>(std::size_t input, <span class="keywordtype">bool</span> level)</div>
+<div class="line"><a id="l00115" name="l00115"></a><span class="lineno">  115</span>    {</div>
+<div class="line"><a id="l00116" name="l00116"></a><span class="lineno">  116</span>        <span class="keywordflow">if</span> (input &lt; <a class="code hl_variable" href="structplcopen_1_1core_1_1adapters_1_1ServoFeedback.html#a9e0e00559b9ba000b94a3ac6f7388377">ServoFeedback::DigitalInputCount</a>)</div>
+<div class="line"><a id="l00117" name="l00117"></a><span class="lineno">  117</span>        {</div>
+<div class="line"><a id="l00118" name="l00118"></a><span class="lineno">  118</span>            digital_inputs_[input] = level;</div>
+<div class="line"><a id="l00119" name="l00119"></a><span class="lineno">  119</span>        }</div>
+<div class="line"><a id="l00120" name="l00120"></a><span class="lineno">  120</span>    }</div>
+</div>
+<div class="line"><a id="l00121" name="l00121"></a><span class="lineno">  121</span> </div>
+<div class="line"><a id="l00122" name="l00122"></a><span class="lineno"><a class="line" href="classplcopen_1_1core_1_1adapters_1_1ServoSim.html#aa6b841e5bd026e9e12bb936a06cd968a">  122</a></span>    <span class="keywordtype">void</span> <a class="code hl_function" href="classplcopen_1_1core_1_1adapters_1_1ServoSim.html#aa6b841e5bd026e9e12bb936a06cd968a">set_info</a>(<span class="keyword">const</span> <a class="code hl_struct" href="structplcopen_1_1core_1_1axis_1_1AxisModel_1_1AxisInfoInputs.html">axis::AxisModel::AxisInfoInputs</a> &amp;info) { info_ = info; }</div>
+<div class="line"><a id="l00123" name="l00123"></a><span class="lineno">  123</span> </div>
+<div class="line"><a id="l00124" name="l00124"></a><span class="lineno">  124</span>  <span class="keyword">private</span>:</div>
+<div class="line"><a id="l00125" name="l00125"></a><span class="lineno">  125</span>    <a class="code hl_struct" href="structplcopen_1_1core_1_1adapters_1_1ServoSetpoints.html">ServoSetpoints</a> state_{};</div>
+<div class="line"><a id="l00126" name="l00126"></a><span class="lineno">  126</span>    <span class="keywordtype">bool</span> digital_inputs_[<a class="code hl_variable" href="structplcopen_1_1core_1_1adapters_1_1ServoFeedback.html#a9e0e00559b9ba000b94a3ac6f7388377">ServoFeedback::DigitalInputCount</a>] = {};</div>
+<div class="line"><a id="l00127" name="l00127"></a><span class="lineno">  127</span>    axis::AxisModel::AxisInfoInputs info_{};</div>
+<div class="line"><a id="l00128" name="l00128"></a><span class="lineno">  128</span>};</div>
+</div>
+<div class="line"><a id="l00129" name="l00129"></a><span class="lineno">  129</span> </div>
+<div class="line"><a id="l00130" name="l00130"></a><span class="lineno">  130</span>} <span class="comment">// namespace plcopen::core::adapters</span></div>
+<div class="ttc" id="aclassplcopen_1_1core_1_1adapters_1_1ServoSim_html"><div class="ttname"><a href="classplcopen_1_1core_1_1adapters_1_1ServoSim.html">plcopen::core::adapters::ServoSim</a></div><div class="ttdef"><b>Definition</b> <a href="servo_8h_source.html#l00095">servo.h:96</a></div></div>
+<div class="ttc" id="aclassplcopen_1_1core_1_1adapters_1_1ServoSim_html_a1695b82a1b2485f80711922cd58ec115"><div class="ttname"><a href="classplcopen_1_1core_1_1adapters_1_1ServoSim.html#a1695b82a1b2485f80711922cd58ec115">plcopen::core::adapters::ServoSim::read_feedback</a></div><div class="ttdeci">void read_feedback(ServoFeedback &amp;feedback) override</div><div class="ttdef"><b>Definition</b> <a href="servo_8h_source.html#l00100">servo.h:100</a></div></div>
+<div class="ttc" id="aclassplcopen_1_1core_1_1adapters_1_1ServoSim_html_a60aa7a3e81bc6587e8463e6154106477"><div class="ttname"><a href="classplcopen_1_1core_1_1adapters_1_1ServoSim.html#a60aa7a3e81bc6587e8463e6154106477">plcopen::core::adapters::ServoSim::set_digital_input</a></div><div class="ttdeci">void set_digital_input(std::size_t input, bool level)</div><div class="ttdef"><b>Definition</b> <a href="servo_8h_source.html#l00114">servo.h:114</a></div></div>
+<div class="ttc" id="aclassplcopen_1_1core_1_1adapters_1_1ServoSim_html_a9d82dc7a130df1fdcf870a700a4f3db8"><div class="ttname"><a href="classplcopen_1_1core_1_1adapters_1_1ServoSim.html#a9d82dc7a130df1fdcf870a700a4f3db8">plcopen::core::adapters::ServoSim::write_setpoints</a></div><div class="ttdeci">void write_setpoints(const ServoSetpoints &amp;setpoints) override</div><div class="ttdef"><b>Definition</b> <a href="servo_8h_source.html#l00098">servo.h:98</a></div></div>
+<div class="ttc" id="aclassplcopen_1_1core_1_1adapters_1_1ServoSim_html_aa6b841e5bd026e9e12bb936a06cd968a"><div class="ttname"><a href="classplcopen_1_1core_1_1adapters_1_1ServoSim.html#aa6b841e5bd026e9e12bb936a06cd968a">plcopen::core::adapters::ServoSim::set_info</a></div><div class="ttdeci">void set_info(const axis::AxisModel::AxisInfoInputs &amp;info)</div><div class="ttdef"><b>Definition</b> <a href="servo_8h_source.html#l00122">servo.h:122</a></div></div>
+<div class="ttc" id="aclassplcopen_1_1core_1_1adapters_1_1Servo_html"><div class="ttname"><a href="classplcopen_1_1core_1_1adapters_1_1Servo.html">plcopen::core::adapters::Servo</a></div><div class="ttdef"><b>Definition</b> <a href="servo_8h_source.html#l00052">servo.h:53</a></div></div>
+<div class="ttc" id="aclassplcopen_1_1core_1_1adapters_1_1Servo_html_a138fe6a934681e7b1573ff7af61b7dbb"><div class="ttname"><a href="classplcopen_1_1core_1_1adapters_1_1Servo.html#a138fe6a934681e7b1573ff7af61b7dbb">plcopen::core::adapters::Servo::~Servo</a></div><div class="ttdeci">virtual ~Servo()=default</div></div>
+<div class="ttc" id="aclassplcopen_1_1core_1_1adapters_1_1Servo_html_a75b1c53d2ed2297d86fd096284370c27"><div class="ttname"><a href="classplcopen_1_1core_1_1adapters_1_1Servo.html#a75b1c53d2ed2297d86fd096284370c27">plcopen::core::adapters::Servo::write_setpoints</a></div><div class="ttdeci">virtual void write_setpoints(const ServoSetpoints &amp;setpoints)=0</div></div>
+<div class="ttc" id="aclassplcopen_1_1core_1_1adapters_1_1Servo_html_a96dbb788b734a9d8d617a91bb727f7bf"><div class="ttname"><a href="classplcopen_1_1core_1_1adapters_1_1Servo.html#a96dbb788b734a9d8d617a91bb727f7bf">plcopen::core::adapters::Servo::read_feedback</a></div><div class="ttdeci">virtual void read_feedback(ServoFeedback &amp;feedback)=0</div></div>
+<div class="ttc" id="aclassplcopen_1_1core_1_1axis_1_1AxisModel_html"><div class="ttname"><a href="classplcopen_1_1core_1_1axis_1_1AxisModel.html">plcopen::core::axis::AxisModel</a></div><div class="ttdef"><b>Definition</b> <a href="state_8h_source.html#l00409">state.h:410</a></div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1adapters_html"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1adapters.html">plcopen::core::adapters</a></div><div class="ttdef"><b>Definition</b> <a href="cia402_8h_source.html#l00014">cia402.h:15</a></div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1adapters_html_a1c1d584249f478130a04c4f1a6870d9f"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1adapters.html#a1c1d584249f478130a04c4f1a6870d9f">plcopen::core::adapters::make_setpoints</a></div><div class="ttdeci">ServoSetpoints make_setpoints(const axis::AxisSnapshot &amp;snapshot)</div><div class="ttdef"><b>Definition</b> <a href="servo_8h_source.html#l00063">servo.h:63</a></div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1adapters_html_a39d63421c546d53b5ebe33ddf72f8937"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1adapters.html#a39d63421c546d53b5ebe33ddf72f8937">plcopen::core::adapters::bridge_feedback</a></div><div class="ttdeci">void bridge_feedback(axis::AxisModel &amp;axis, const ServoFeedback &amp;feedback)</div><div class="ttdef"><b>Definition</b> <a href="servo_8h_source.html#l00080">servo.h:80</a></div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1axis_html_a6ee6be14ad50e9555ccbb523438084c5"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1axis.html#a6ee6be14ad50e9555ccbb523438084c5">plcopen::core::axis::Direction</a></div><div class="ttdeci">Direction</div><div class="ttdef"><b>Definition</b> <a href="state_8h_source.html#l00068">state.h:69</a></div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1axis_html_a6ee6be14ad50e9555ccbb523438084c5a43b5c9175984c071f30b873fdce0a000"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1axis.html#a6ee6be14ad50e9555ccbb523438084c5a43b5c9175984c071f30b873fdce0a000">plcopen::core::axis::Direction::current</a></div><div class="ttdeci">@ current</div></div>
+<div class="ttc" id="astate_8h_html"><div class="ttname"><a href="state_8h.html">state.h</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1adapters_1_1ServoFeedback_html"><div class="ttname"><a href="structplcopen_1_1core_1_1adapters_1_1ServoFeedback.html">plcopen::core::adapters::ServoFeedback</a></div><div class="ttdef"><b>Definition</b> <a href="servo_8h_source.html#l00040">servo.h:41</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1adapters_1_1ServoFeedback_html_a168cac86e1a3d017693ac29ca4af9f07"><div class="ttname"><a href="structplcopen_1_1core_1_1adapters_1_1ServoFeedback.html#a168cac86e1a3d017693ac29ca4af9f07">plcopen::core::adapters::ServoFeedback::torque</a></div><div class="ttdeci">double torque</div><div class="ttdef"><b>Definition</b> <a href="servo_8h_source.html#l00047">servo.h:47</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1adapters_1_1ServoFeedback_html_a4ae3046afe09de693e1cef2e10e6b6f7"><div class="ttname"><a href="structplcopen_1_1core_1_1adapters_1_1ServoFeedback.html#a4ae3046afe09de693e1cef2e10e6b6f7">plcopen::core::adapters::ServoFeedback::position</a></div><div class="ttdeci">double position</div><div class="ttdef"><b>Definition</b> <a href="servo_8h_source.html#l00044">servo.h:44</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1adapters_1_1ServoFeedback_html_a574b60c3493bfb7ae0f814871973eb94"><div class="ttname"><a href="structplcopen_1_1core_1_1adapters_1_1ServoFeedback.html#a574b60c3493bfb7ae0f814871973eb94">plcopen::core::adapters::ServoFeedback::digital_inputs</a></div><div class="ttdeci">bool digital_inputs[DigitalInputCount]</div><div class="ttdef"><b>Definition</b> <a href="servo_8h_source.html#l00048">servo.h:48</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1adapters_1_1ServoFeedback_html_a8237f3ed460683449aa14812910f9d27"><div class="ttname"><a href="structplcopen_1_1core_1_1adapters_1_1ServoFeedback.html#a8237f3ed460683449aa14812910f9d27">plcopen::core::adapters::ServoFeedback::velocity</a></div><div class="ttdeci">double velocity</div><div class="ttdef"><b>Definition</b> <a href="servo_8h_source.html#l00045">servo.h:45</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1adapters_1_1ServoFeedback_html_a9e0e00559b9ba000b94a3ac6f7388377"><div class="ttname"><a href="structplcopen_1_1core_1_1adapters_1_1ServoFeedback.html#a9e0e00559b9ba000b94a3ac6f7388377">plcopen::core::adapters::ServoFeedback::DigitalInputCount</a></div><div class="ttdeci">static constexpr std::size_t DigitalInputCount</div><div class="ttdef"><b>Definition</b> <a href="servo_8h_source.html#l00042">servo.h:42</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1adapters_1_1ServoFeedback_html_aa28e85836ce0ff20d1cf55c9e90b7a82"><div class="ttname"><a href="structplcopen_1_1core_1_1adapters_1_1ServoFeedback.html#aa28e85836ce0ff20d1cf55c9e90b7a82">plcopen::core::adapters::ServoFeedback::acceleration</a></div><div class="ttdeci">double acceleration</div><div class="ttdef"><b>Definition</b> <a href="servo_8h_source.html#l00046">servo.h:46</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1adapters_1_1ServoFeedback_html_aa3240f3fa38641438d1d7ddb0ff7f264"><div class="ttname"><a href="structplcopen_1_1core_1_1adapters_1_1ServoFeedback.html#aa3240f3fa38641438d1d7ddb0ff7f264">plcopen::core::adapters::ServoFeedback::info</a></div><div class="ttdeci">axis::AxisModel::AxisInfoInputs info</div><div class="ttdef"><b>Definition</b> <a href="servo_8h_source.html#l00049">servo.h:49</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1adapters_1_1ServoSetpoints_html"><div class="ttname"><a href="structplcopen_1_1core_1_1adapters_1_1ServoSetpoints.html">plcopen::core::adapters::ServoSetpoints</a></div><div class="ttdef"><b>Definition</b> <a href="servo_8h_source.html#l00025">servo.h:26</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1adapters_1_1ServoSetpoints_html_a2041cdf182d9abb3feaa09208d565845"><div class="ttname"><a href="structplcopen_1_1core_1_1adapters_1_1ServoSetpoints.html#a2041cdf182d9abb3feaa09208d565845">plcopen::core::adapters::ServoSetpoints::position</a></div><div class="ttdeci">double position</div><div class="ttdef"><b>Definition</b> <a href="servo_8h_source.html#l00027">servo.h:27</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1adapters_1_1ServoSetpoints_html_a5450311d5b161a81df5767ee89f7519b"><div class="ttname"><a href="structplcopen_1_1core_1_1adapters_1_1ServoSetpoints.html#a5450311d5b161a81df5767ee89f7519b">plcopen::core::adapters::ServoSetpoints::torque_direction</a></div><div class="ttdeci">axis::Direction torque_direction</div><div class="ttdef"><b>Definition</b> <a href="servo_8h_source.html#l00036">servo.h:36</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1adapters_1_1ServoSetpoints_html_a734043469361b75d0b809a3348760462"><div class="ttname"><a href="structplcopen_1_1core_1_1adapters_1_1ServoSetpoints.html#a734043469361b75d0b809a3348760462">plcopen::core::adapters::ServoSetpoints::torque_jerk_limit</a></div><div class="ttdeci">double torque_jerk_limit</div><div class="ttdef"><b>Definition</b> <a href="servo_8h_source.html#l00035">servo.h:35</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1adapters_1_1ServoSetpoints_html_a7581d802ef0233805a8ca4ac74b978f9"><div class="ttname"><a href="structplcopen_1_1core_1_1adapters_1_1ServoSetpoints.html#a7581d802ef0233805a8ca4ac74b978f9">plcopen::core::adapters::ServoSetpoints::velocity</a></div><div class="ttdeci">double velocity</div><div class="ttdef"><b>Definition</b> <a href="servo_8h_source.html#l00028">servo.h:28</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1adapters_1_1ServoSetpoints_html_a8abf1095d9e2851d0a184771901ead3c"><div class="ttname"><a href="structplcopen_1_1core_1_1adapters_1_1ServoSetpoints.html#a8abf1095d9e2851d0a184771901ead3c">plcopen::core::adapters::ServoSetpoints::acceleration</a></div><div class="ttdeci">double acceleration</div><div class="ttdef"><b>Definition</b> <a href="servo_8h_source.html#l00029">servo.h:29</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1adapters_1_1ServoSetpoints_html_a9ded806548dd643e07e7119fbab61eed"><div class="ttname"><a href="structplcopen_1_1core_1_1adapters_1_1ServoSetpoints.html#a9ded806548dd643e07e7119fbab61eed">plcopen::core::adapters::ServoSetpoints::torque_velocity_limit</a></div><div class="ttdeci">double torque_velocity_limit</div><div class="ttdef"><b>Definition</b> <a href="servo_8h_source.html#l00032">servo.h:32</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1adapters_1_1ServoSetpoints_html_ab33a15a2a1d80b4fa3eb5085bf882941"><div class="ttname"><a href="structplcopen_1_1core_1_1adapters_1_1ServoSetpoints.html#ab33a15a2a1d80b4fa3eb5085bf882941">plcopen::core::adapters::ServoSetpoints::torque_limit</a></div><div class="ttdeci">double torque_limit</div><div class="ttdef"><b>Definition</b> <a href="servo_8h_source.html#l00031">servo.h:31</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1adapters_1_1ServoSetpoints_html_abcbcd5f739e54aa369dffabbd23a8c3f"><div class="ttname"><a href="structplcopen_1_1core_1_1adapters_1_1ServoSetpoints.html#abcbcd5f739e54aa369dffabbd23a8c3f">plcopen::core::adapters::ServoSetpoints::torque_deceleration_limit</a></div><div class="ttdeci">double torque_deceleration_limit</div><div class="ttdef"><b>Definition</b> <a href="servo_8h_source.html#l00034">servo.h:34</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1adapters_1_1ServoSetpoints_html_ac3b5ba59fee8ad0cd5cae1f162241001"><div class="ttname"><a href="structplcopen_1_1core_1_1adapters_1_1ServoSetpoints.html#ac3b5ba59fee8ad0cd5cae1f162241001">plcopen::core::adapters::ServoSetpoints::torque</a></div><div class="ttdeci">double torque</div><div class="ttdef"><b>Definition</b> <a href="servo_8h_source.html#l00030">servo.h:30</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1adapters_1_1ServoSetpoints_html_ad1c124a57b71c71b2fa17684ef62e670"><div class="ttname"><a href="structplcopen_1_1core_1_1adapters_1_1ServoSetpoints.html#ad1c124a57b71c71b2fa17684ef62e670">plcopen::core::adapters::ServoSetpoints::torque_acceleration_limit</a></div><div class="ttdeci">double torque_acceleration_limit</div><div class="ttdef"><b>Definition</b> <a href="servo_8h_source.html#l00033">servo.h:33</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1adapters_1_1ServoSetpoints_html_ae4aca0060ab104d26b5a0e57ad12964a"><div class="ttname"><a href="structplcopen_1_1core_1_1adapters_1_1ServoSetpoints.html#ae4aca0060ab104d26b5a0e57ad12964a">plcopen::core::adapters::ServoSetpoints::torque_mode</a></div><div class="ttdeci">bool torque_mode</div><div class="ttdef"><b>Definition</b> <a href="servo_8h_source.html#l00037">servo.h:37</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1axis_1_1AxisModel_1_1AxisInfoInputs_html"><div class="ttname"><a href="structplcopen_1_1core_1_1axis_1_1AxisModel_1_1AxisInfoInputs.html">plcopen::core::axis::AxisModel::AxisInfoInputs</a></div><div class="ttdef"><b>Definition</b> <a href="state_8h_source.html#l02071">state.h:2072</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1axis_1_1AxisSnapshot_html"><div class="ttname"><a href="structplcopen_1_1core_1_1axis_1_1AxisSnapshot.html">plcopen::core::axis::AxisSnapshot</a></div><div class="ttdef"><b>Definition</b> <a href="state_8h_source.html#l00351">state.h:352</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1axis_1_1AxisSnapshot_html_a23442cc79eadf46bb5d6c0b2e206f2de"><div class="ttname"><a href="structplcopen_1_1core_1_1axis_1_1AxisSnapshot.html#a23442cc79eadf46bb5d6c0b2e206f2de">plcopen::core::axis::AxisSnapshot::torque_jerk_limit</a></div><div class="ttdeci">double torque_jerk_limit</div><div class="ttdef"><b>Definition</b> <a href="state_8h_source.html#l00366">state.h:366</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1axis_1_1AxisSnapshot_html_a3af6e64c6adb418e5c5b89ec716aa3cb"><div class="ttname"><a href="structplcopen_1_1core_1_1axis_1_1AxisSnapshot.html#a3af6e64c6adb418e5c5b89ec716aa3cb">plcopen::core::axis::AxisSnapshot::command_velocity</a></div><div class="ttdeci">double command_velocity</div><div class="ttdef"><b>Definition</b> <a href="state_8h_source.html#l00355">state.h:355</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1axis_1_1AxisSnapshot_html_a5188cc3a8889ebc18ab1848fdad83a2b"><div class="ttname"><a href="structplcopen_1_1core_1_1axis_1_1AxisSnapshot.html#a5188cc3a8889ebc18ab1848fdad83a2b">plcopen::core::axis::AxisSnapshot::torque_mode</a></div><div class="ttdeci">bool torque_mode</div><div class="ttdef"><b>Definition</b> <a href="state_8h_source.html#l00368">state.h:368</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1axis_1_1AxisSnapshot_html_a597df12fd17d13c98213e99b98bee14d"><div class="ttname"><a href="structplcopen_1_1core_1_1axis_1_1AxisSnapshot.html#a597df12fd17d13c98213e99b98bee14d">plcopen::core::axis::AxisSnapshot::torque_deceleration_limit</a></div><div class="ttdeci">double torque_deceleration_limit</div><div class="ttdef"><b>Definition</b> <a href="state_8h_source.html#l00365">state.h:365</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1axis_1_1AxisSnapshot_html_a6759afa7b6d019981a019e4d0e4a96c9"><div class="ttname"><a href="structplcopen_1_1core_1_1axis_1_1AxisSnapshot.html#a6759afa7b6d019981a019e4d0e4a96c9">plcopen::core::axis::AxisSnapshot::command_acceleration</a></div><div class="ttdeci">double command_acceleration</div><div class="ttdef"><b>Definition</b> <a href="state_8h_source.html#l00356">state.h:356</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1axis_1_1AxisSnapshot_html_a6f5960bd5652cac510871a27f589b792"><div class="ttname"><a href="structplcopen_1_1core_1_1axis_1_1AxisSnapshot.html#a6f5960bd5652cac510871a27f589b792">plcopen::core::axis::AxisSnapshot::torque_acceleration_limit</a></div><div class="ttdeci">double torque_acceleration_limit</div><div class="ttdef"><b>Definition</b> <a href="state_8h_source.html#l00364">state.h:364</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1axis_1_1AxisSnapshot_html_a9405bc3d8fc8a5581847b743e3138481"><div class="ttname"><a href="structplcopen_1_1core_1_1axis_1_1AxisSnapshot.html#a9405bc3d8fc8a5581847b743e3138481">plcopen::core::axis::AxisSnapshot::command_torque</a></div><div class="ttdeci">double command_torque</div><div class="ttdef"><b>Definition</b> <a href="state_8h_source.html#l00360">state.h:360</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1axis_1_1AxisSnapshot_html_a9620d9401f24313f50215daa49291f37"><div class="ttname"><a href="structplcopen_1_1core_1_1axis_1_1AxisSnapshot.html#a9620d9401f24313f50215daa49291f37">plcopen::core::axis::AxisSnapshot::command_position</a></div><div class="ttdeci">double command_position</div><div class="ttdef"><b>Definition</b> <a href="state_8h_source.html#l00354">state.h:354</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1axis_1_1AxisSnapshot_html_aac5c47bdebcb8b4e490993371da8b444"><div class="ttname"><a href="structplcopen_1_1core_1_1axis_1_1AxisSnapshot.html#aac5c47bdebcb8b4e490993371da8b444">plcopen::core::axis::AxisSnapshot::command_torque_limit</a></div><div class="ttdeci">double command_torque_limit</div><div class="ttdef"><b>Definition</b> <a href="state_8h_source.html#l00362">state.h:362</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1axis_1_1AxisSnapshot_html_ab4fc87b529a6ad9f5de9b2b56cb4b50c"><div class="ttname"><a href="structplcopen_1_1core_1_1axis_1_1AxisSnapshot.html#ab4fc87b529a6ad9f5de9b2b56cb4b50c">plcopen::core::axis::AxisSnapshot::torque_direction</a></div><div class="ttdeci">Direction torque_direction</div><div class="ttdef"><b>Definition</b> <a href="state_8h_source.html#l00367">state.h:367</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1axis_1_1AxisSnapshot_html_ad70c7f3c994a009f74021f5676385075"><div class="ttname"><a href="structplcopen_1_1core_1_1axis_1_1AxisSnapshot.html#ad70c7f3c994a009f74021f5676385075">plcopen::core::axis::AxisSnapshot::torque_velocity_limit</a></div><div class="ttdeci">double torque_velocity_limit</div><div class="ttdef"><b>Definition</b> <a href="state_8h_source.html#l00363">state.h:363</a></div></div>
+</div><!-- fragment --></div><!-- contents -->
+<!-- start footer part -->
+<hr class="footer"/><address class="footer"><small>
+制作者&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.8
+</small></address>
+</body>
+</html>

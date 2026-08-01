@@ -1,0 +1,18 @@
+<map id="plcopen::core::fb::FbSyncGroupToAxis" name="plcopen::core::fb::FbSyncGroupToAxis">
+<area shape="rect" id="Node000001" title=" " alt="" coords="901,99,1052,139"/>
+<area shape="rect" id="Node000002" href="$classplcopen_1_1core_1_1axis_1_1AxisModel.html" title=" " alt="" coords="633,5,777,45"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="784,47,878,79,925,96,923,101,876,84,782,52"/>
+<area shape="rect" id="Node000003" href="$classplcopen_1_1core_1_1axis_1_1AxisGroup.html" title=" " alt="" coords="369,131,513,171"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="527,145,777,133,901,123,901,129,778,139,528,151"/>
+<area shape="rect" id="Node000004" href="$structplcopen_1_1core_1_1axis_1_1GroupPosition.html" title=" " alt="" coords="17,80,161,120"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="174,110,196,113,369,138,369,143,196,119,174,115"/>
+<area shape="rect" id="Node000007" href="$structplcopen_1_1core_1_1fb_1_1PathWaypoint.html" title=" " alt="" coords="372,67,511,107"/>
+<area shape="poly" id="edge7_Node000007_Node000004" title=" " alt="" coords="174,94,372,87,372,92,174,99"/>
+<area shape="rect" id="Node000005" href="$structplcopen_1_1core_1_1axis_1_1JogCommandOptions.html" title=" " alt="" coords="5,157,172,197"/>
+<area shape="poly" id="edge4_Node000003_Node000005" title=" " alt="" coords="186,180,264,180,345,173,373,168,374,173,346,179,264,185,186,185"/>
+<area shape="rect" id="Node000006" href="$structplcopen_1_1core_1_1fb_1_1PathTable.html" title=" " alt="" coords="636,69,775,109"/>
+<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="789,96,901,108,901,113,788,101"/>
+<area shape="poly" id="edge6_Node000006_Node000007" title=" " alt="" coords="524,85,636,86,636,91,524,90"/>
+<area shape="rect" id="Node000008" href="$structplcopen_1_1core_1_1fb_1_1MotionOutputs.html" title=" " alt="" coords="636,196,775,236"/>
+<area shape="poly" id="edge8_Node000001_Node000008" title=" " alt="" coords="788,203,832,193,876,179,915,159,948,137,951,141,918,164,878,184,834,198,789,208"/>
+</map>

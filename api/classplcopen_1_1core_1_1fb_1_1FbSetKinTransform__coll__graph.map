@@ -1,0 +1,19 @@
+<map id="plcopen::core::fb::FbSetKinTransform" name="plcopen::core::fb::FbSetKinTransform">
+<area shape="rect" id="Node000001" title=" " alt="" coords="927,133,1072,173"/>
+<area shape="rect" id="Node000002" href="$classplcopen_1_1core_1_1fb_1_1GroupExecuteFb.html" title=" " alt="" coords="641,101,780,141"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="794,128,927,143,926,148,793,133"/>
+<area shape="rect" id="Node000003" href="$classplcopen_1_1core_1_1axis_1_1AxisGroup.html" title=" " alt="" coords="369,37,513,77"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="527,75,642,102,640,108,526,80"/>
+<area shape="rect" id="Node000004" href="$structplcopen_1_1core_1_1axis_1_1GroupPosition.html" title=" " alt="" coords="17,5,161,45"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="175,30,370,48,369,54,174,36"/>
+<area shape="rect" id="Node000005" href="$structplcopen_1_1core_1_1axis_1_1JogCommandOptions.html" title=" " alt="" coords="5,69,172,109"/>
+<area shape="poly" id="edge4_Node000003_Node000005" title=" " alt="" coords="186,79,345,65,369,63,369,68,346,71,186,85"/>
+<area shape="rect" id="Node000006" href="$structplcopen_1_1core_1_1fb_1_1MotionOutputs.html" title=" " alt="" coords="372,101,511,141"/>
+<area shape="poly" id="edge5_Node000002_Node000006" title=" " alt="" coords="524,119,641,119,641,124,524,124"/>
+<area shape="rect" id="Node000007" href="$structplcopen_1_1core_1_1axis_1_1KinTransformRef.html" title=" " alt="" coords="639,165,783,205"/>
+<area shape="poly" id="edge6_Node000001_Node000007" title=" " alt="" coords="796,173,926,159,927,164,797,179"/>
+<area shape="rect" id="Node000008" href="$classplcopen_1_1core_1_1kin_1_1Kinematics.html" title=" " alt="" coords="373,165,510,205"/>
+<area shape="poly" id="edge7_Node000007_Node000008" title=" " alt="" coords="524,183,639,183,639,188,524,188"/>
+<area shape="rect" id="Node000009" href="$classplcopen_1_1core_1_1kin_1_1PoseKinematics.html" title=" " alt="" coords="373,229,510,269"/>
+<area shape="poly" id="edge8_Node000007_Node000009" title=" " alt="" coords="523,227,638,200,639,205,524,233"/>
+</map>

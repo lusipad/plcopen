@@ -1,0 +1,181 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh">
+<head>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=11"/>
+<meta name="generator" content="Doxygen 1.9.8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>plcopen: core/rt/error_diag.h 源文件</title>
+<link href="tabs.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="jquery.js"></script>
+<script type="text/javascript" src="dynsections.js"></script>
+<link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<link href="doxygen.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+<div id="top"><!-- do not remove this div, it is closed by doxygen! -->
+<div id="titlearea">
+<table cellspacing="0" cellpadding="0">
+ <tbody>
+ <tr id="projectrow">
+  <td id="projectalign">
+   <div id="projectname">plcopen<span id="projectnumber">&#160;0.21.0</span>
+   </div>
+  </td>
+ </tr>
+ </tbody>
+</table>
+</div>
+<!-- end header part -->
+<!-- 制作者 Doxygen 1.9.8 -->
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+var searchBox = new SearchBox("searchBox", "search/",'.html');
+/* @license-end */
+</script>
+<script type="text/javascript" src="menudata.js"></script>
+<script type="text/javascript" src="menu.js"></script>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+$(function() {
+  initMenu('',true,false,'search.php','搜索');
+  $(document).ready(function() { init_search(); });
+});
+/* @license-end */
+</script>
+<div id="main-nav"></div>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+$(document).ready(function() { init_codefold(0); });
+/* @license-end */
+</script>
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<div id="MSearchResults">
+<div class="SRPage">
+<div id="SRIndex">
+<div id="SRResults"></div>
+<div class="SRStatus" id="Loading">载入中...</div>
+<div class="SRStatus" id="Searching">搜索中...</div>
+<div class="SRStatus" id="NoMatches">未找到</div>
+</div>
+</div>
+</div>
+</div>
+
+<div id="nav-path" class="navpath">
+  <ul>
+<li class="navelem"><a class="el" href="dir_4270bfced15e0e73154b13468c7c9ad9.html">core</a></li><li class="navelem"><a class="el" href="dir_050a4a3933e0974a9901c53971ffad68.html">rt</a></li>  </ul>
+</div>
+</div><!-- top -->
+<div class="header">
+  <div class="headertitle"><div class="title">error_diag.h</div></div>
+</div><!--header-->
+<div class="contents">
+<a href="error__diag_8h.html">浏览该文件的文档.</a><div class="fragment"><div class="line"><a id="l00001" name="l00001"></a><span class="lineno">    1</span><span class="preprocessor">#pragma once</span></div>
+<div class="line"><a id="l00002" name="l00002"></a><span class="lineno">    2</span> </div>
+<div class="line"><a id="l00003" name="l00003"></a><span class="lineno">    3</span><span class="preprocessor">#include &quot;<a class="code" href="error_8h.html">rt/error.h</a>&quot;</span></div>
+<div class="line"><a id="l00004" name="l00004"></a><span class="lineno">    4</span> </div>
+<div class="line"><a id="l00005" name="l00005"></a><span class="lineno">    5</span><span class="keyword">namespace </span><a class="code hl_namespace" href="namespaceplcopen_1_1core_1_1rt.html">plcopen::core::rt</a></div>
+<div class="line"><a id="l00006" name="l00006"></a><span class="lineno">    6</span>{</div>
+<div class="line"><a id="l00007" name="l00007"></a><span class="lineno">    7</span> </div>
+<div class="foldopen" id="foldopen00008" data-start="{" data-end="};">
+<div class="line"><a id="l00008" name="l00008"></a><span class="lineno"><a class="line" href="structplcopen_1_1core_1_1rt_1_1ErrorDiagnostic.html">    8</a></span><span class="keyword">struct </span><a class="code hl_struct" href="structplcopen_1_1core_1_1rt_1_1ErrorDiagnostic.html">ErrorDiagnostic</a></div>
+<div class="line"><a id="l00009" name="l00009"></a><span class="lineno">    9</span>{</div>
+<div class="line"><a id="l00010" name="l00010"></a><span class="lineno"><a class="line" href="structplcopen_1_1core_1_1rt_1_1ErrorDiagnostic.html#aa6072dddbab1d1f00578e91ca1e7a80e">   10</a></span>    <a class="code hl_enumeration" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8">ErrorCode</a> <a class="code hl_variable" href="structplcopen_1_1core_1_1rt_1_1ErrorDiagnostic.html#aa6072dddbab1d1f00578e91ca1e7a80e">code</a> = <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8ae55d43eabeefe5a8271b4a3c898bd18f">ErrorCode::invalid_argument</a>;</div>
+<div class="line"><a id="l00011" name="l00011"></a><span class="lineno"><a class="line" href="structplcopen_1_1core_1_1rt_1_1ErrorDiagnostic.html#af71a0a366e347bf14914154ed2f4c2f7">   11</a></span>    <span class="keyword">const</span> <span class="keywordtype">char</span> *<a class="code hl_variable" href="structplcopen_1_1core_1_1rt_1_1ErrorDiagnostic.html#af71a0a366e347bf14914154ed2f4c2f7">name</a> = <span class="stringliteral">&quot;unknown_error&quot;</span>;</div>
+<div class="line"><a id="l00012" name="l00012"></a><span class="lineno"><a class="line" href="structplcopen_1_1core_1_1rt_1_1ErrorDiagnostic.html#ab6c369d832cf4983c4f4e4f0be3f52a1">   12</a></span>    <span class="keyword">const</span> <span class="keywordtype">char</span> *<a class="code hl_variable" href="structplcopen_1_1core_1_1rt_1_1ErrorDiagnostic.html#ab6c369d832cf4983c4f4e4f0be3f52a1">summary</a> = <span class="stringliteral">&quot;unknown error code&quot;</span>;</div>
+<div class="line"><a id="l00013" name="l00013"></a><span class="lineno"><a class="line" href="structplcopen_1_1core_1_1rt_1_1ErrorDiagnostic.html#a4f5f2f22e39cf739e8b7971a3a3b52f1">   13</a></span>    <span class="keyword">const</span> <span class="keywordtype">char</span> *<a class="code hl_variable" href="structplcopen_1_1core_1_1rt_1_1ErrorDiagnostic.html#a4f5f2f22e39cf739e8b7971a3a3b52f1">hint</a> =</div>
+<div class="line"><a id="l00014" name="l00014"></a><span class="lineno">   14</span>        <span class="stringliteral">&quot;upgrade the producer/consumer pair or inspect the raw error value before retrying&quot;</span>;</div>
+<div class="line"><a id="l00015" name="l00015"></a><span class="lineno">   15</span>};</div>
+</div>
+<div class="line"><a id="l00016" name="l00016"></a><span class="lineno">   16</span> </div>
+<div class="foldopen" id="foldopen00017" data-start="{" data-end="}">
+<div class="line"><a id="l00017" name="l00017"></a><span class="lineno"><a class="line" href="namespaceplcopen_1_1core_1_1rt.html#aea84f768eb048b4c3271d6570790e028">   17</a></span><span class="keyword">constexpr</span> <a class="code hl_struct" href="structplcopen_1_1core_1_1rt_1_1ErrorDiagnostic.html">ErrorDiagnostic</a> <a class="code hl_function" href="namespaceplcopen_1_1core_1_1rt.html#aea84f768eb048b4c3271d6570790e028">diagnose</a>(<a class="code hl_enumeration" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8">ErrorCode</a> code)</div>
+<div class="line"><a id="l00018" name="l00018"></a><span class="lineno">   18</span>{</div>
+<div class="line"><a id="l00019" name="l00019"></a><span class="lineno">   19</span>    <span class="keywordflow">switch</span> (code)</div>
+<div class="line"><a id="l00020" name="l00020"></a><span class="lineno">   20</span>    {</div>
+<div class="line"><a id="l00021" name="l00021"></a><span class="lineno">   21</span>    <span class="keywordflow">case</span> <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8a444bcb3a3fcf8389296c49467f27e1d6">ErrorCode::ok</a>:</div>
+<div class="line"><a id="l00022" name="l00022"></a><span class="lineno">   22</span>        <span class="keywordflow">return</span> {code, <span class="stringliteral">&quot;ok&quot;</span>, <span class="stringliteral">&quot;operation completed successfully&quot;</span>,</div>
+<div class="line"><a id="l00023" name="l00023"></a><span class="lineno">   23</span>                <span class="stringliteral">&quot;continue with the next command; no recovery action is required&quot;</span>};</div>
+<div class="line"><a id="l00024" name="l00024"></a><span class="lineno">   24</span>    <span class="keywordflow">case</span> <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8ae55d43eabeefe5a8271b4a3c898bd18f">ErrorCode::invalid_argument</a>:</div>
+<div class="line"><a id="l00025" name="l00025"></a><span class="lineno">   25</span>        <span class="keywordflow">return</span> {code, <span class="stringliteral">&quot;invalid_argument&quot;</span>, <span class="stringliteral">&quot;a parameter value is out of its valid domain&quot;</span>,</div>
+<div class="line"><a id="l00026" name="l00026"></a><span class="lineno">   26</span>                <span class="stringliteral">&quot;check references, NaN/Inf inputs, and dynamics or buffer-mode combinations&quot;</span>};</div>
+<div class="line"><a id="l00027" name="l00027"></a><span class="lineno">   27</span>    <span class="keywordflow">case</span> <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8a4fb901c70a0fdc05b55d95985f3300b0">ErrorCode::out_of_range</a>:</div>
+<div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span>        <span class="keywordflow">return</span> {code, <span class="stringliteral">&quot;out_of_range&quot;</span>, <span class="stringliteral">&quot;a value exceeded a fixed bound or configured motion window&quot;</span>,</div>
+<div class="line"><a id="l00029" name="l00029"></a><span class="lineno">   29</span>                <span class="stringliteral">&quot;inspect indices, limits, target positions, and table sizes before retrying&quot;</span>};</div>
+<div class="line"><a id="l00030" name="l00030"></a><span class="lineno">   30</span>    <span class="keywordflow">case</span> <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8ab7d48952407b207a3ac43119390ca8d2">ErrorCode::capacity_exceeded</a>:</div>
+<div class="line"><a id="l00031" name="l00031"></a><span class="lineno">   31</span>        <span class="keywordflow">return</span> {</div>
+<div class="line"><a id="l00032" name="l00032"></a><span class="lineno">   32</span>            code, <span class="stringliteral">&quot;capacity_exceeded&quot;</span>, <span class="stringliteral">&quot;a fixed-size container or queue is full&quot;</span>,</div>
+<div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span>            <span class="stringliteral">&quot;wait for the queue to drain or reduce window depth instead of increasing RT storage&quot;</span>};</div>
+<div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span>    <span class="keywordflow">case</span> <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8afc988471d247479f88a57e29916bbf82">ErrorCode::infeasible</a>:</div>
+<div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span>        <span class="keywordflow">return</span> {code, <span class="stringliteral">&quot;infeasible&quot;</span>, <span class="stringliteral">&quot;the requested motion or solve has no feasible solution&quot;</span>,</div>
+<div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span>                <span class="stringliteral">&quot;relax legal dynamics, extend the allowed time, or change the target path&quot;</span>};</div>
+<div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span>    <span class="keywordflow">case</span> <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8a21f518858f05ad9436d04f274f2de0ab">ErrorCode::not_converged</a>:</div>
+<div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span>        <span class="keywordflow">return</span> {code, <span class="stringliteral">&quot;not_converged&quot;</span>,</div>
+<div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span>                <span class="stringliteral">&quot;the bounded numerical solve did not meet its convergence gates&quot;</span>,</div>
+<div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span>                <span class="stringliteral">&quot;start from a seed closer to the target or use the explicit best-effort result &quot;</span></div>
+<div class="line"><a id="l00041" name="l00041"></a><span class="lineno">   41</span>                <span class="stringliteral">&quot;for diagnostics&quot;</span>};</div>
+<div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span>    <span class="keywordflow">case</span> <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8a13a300d70657b8118d3afaf5ac320e86">ErrorCode::singular_region</a>:</div>
+<div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span>        <span class="keywordflow">return</span> {code, <span class="stringliteral">&quot;singular_region&quot;</span>,</div>
+<div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span>                <span class="stringliteral">&quot;the numerical solve remains ill-conditioned at maximum damping&quot;</span>,</div>
+<div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span>                <span class="stringliteral">&quot;change the target or seed to move away from the singular configuration&quot;</span>};</div>
+<div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span>    <span class="keywordflow">case</span> <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8ae26c43ed03073eb7884a223409dcde42">ErrorCode::limit_infeasible</a>:</div>
+<div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span>        <span class="keywordflow">return</span> {code, <span class="stringliteral">&quot;limit_infeasible&quot;</span>,</div>
+<div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span>                <span class="stringliteral">&quot;hard limits prevent the numerical solve from reaching its target&quot;</span>,</div>
+<div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span>                <span class="stringliteral">&quot;inspect the joint limits or choose a target reachable inside them&quot;</span>};</div>
+<div class="line"><a id="l00050" name="l00050"></a><span class="lineno">   50</span>    <span class="keywordflow">case</span> <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8ad5e2d03b04c477f5160c02ce10fba258">ErrorCode::precondition_failed</a>:</div>
+<div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span>        <span class="keywordflow">return</span> {code, <span class="stringliteral">&quot;precondition_failed&quot;</span>, <span class="stringliteral">&quot;the object is not in the required lifecycle state&quot;</span>,</div>
+<div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span>                <span class="stringliteral">&quot;read the latest axis/group status and satisfy ownership, power, or standby &quot;</span></div>
+<div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span>                <span class="stringliteral">&quot;preconditions first&quot;</span>};</div>
+<div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span>    <span class="keywordflow">case</span> <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8a723c25877a86786664edc4b643c08a6f">ErrorCode::unsupported</a>:</div>
+<div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span>        <span class="keywordflow">return</span> {code, <span class="stringliteral">&quot;unsupported&quot;</span>, <span class="stringliteral">&quot;the requested operation is not implemented&quot;</span>,</div>
+<div class="line"><a id="l00056" name="l00056"></a><span class="lineno">   56</span>                <span class="stringliteral">&quot;switch to a declared-supported path instead of retrying the same request&quot;</span>};</div>
+<div class="line"><a id="l00057" name="l00057"></a><span class="lineno">   57</span>    <span class="keywordflow">case</span> <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8adb88cc7ac23889ac4c45843a93fd3916">ErrorCode::bytecode_version_mismatch</a>:</div>
+<div class="line"><a id="l00058" name="l00058"></a><span class="lineno">   58</span>        <span class="keywordflow">return</span> {code, <span class="stringliteral">&quot;bytecode_version_mismatch&quot;</span>,</div>
+<div class="line"><a id="l00059" name="l00059"></a><span class="lineno">   59</span>                <span class="stringliteral">&quot;the compiled ST bytecode version does not match the runtime&quot;</span>,</div>
+<div class="line"><a id="l00060" name="l00060"></a><span class="lineno">   60</span>                <span class="stringliteral">&quot;recompile the ST program with the current toolchain or upgrade the runtime &quot;</span></div>
+<div class="line"><a id="l00061" name="l00061"></a><span class="lineno">   61</span>                <span class="stringliteral">&quot;together with the artifact&quot;</span>};</div>
+<div class="line"><a id="l00062" name="l00062"></a><span class="lineno">   62</span>    }</div>
+<div class="line"><a id="l00063" name="l00063"></a><span class="lineno">   63</span>    <span class="keywordflow">return</span> {code, <span class="stringliteral">&quot;unknown_error&quot;</span>, <span class="stringliteral">&quot;unknown error code&quot;</span>,</div>
+<div class="line"><a id="l00064" name="l00064"></a><span class="lineno">   64</span>            <span class="stringliteral">&quot;upgrade the producer/consumer pair or inspect the raw error value before retrying&quot;</span>};</div>
+<div class="line"><a id="l00065" name="l00065"></a><span class="lineno">   65</span>}</div>
+</div>
+<div class="line"><a id="l00066" name="l00066"></a><span class="lineno">   66</span> </div>
+<div class="line"><a id="l00067" name="l00067"></a><span class="lineno">   67</span>} <span class="comment">// namespace plcopen::core::rt</span></div>
+<div class="ttc" id="aerror_8h_html"><div class="ttname"><a href="error_8h.html">error.h</a></div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1rt_html"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1rt.html">plcopen::core::rt</a></div><div class="ttdef"><b>Definition</b> <a href="cycle_8h_source.html#l00005">cycle.h:6</a></div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1rt_html_acb478bbb9e8dc7611816f04327d9fce8"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8">plcopen::core::rt::ErrorCode</a></div><div class="ttdeci">ErrorCode</div><div class="ttdef"><b>Definition</b> <a href="error_8h_source.html#l00006">error.h:7</a></div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1rt_html_acb478bbb9e8dc7611816f04327d9fce8a13a300d70657b8118d3afaf5ac320e86"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8a13a300d70657b8118d3afaf5ac320e86">plcopen::core::rt::ErrorCode::singular_region</a></div><div class="ttdeci">@ singular_region</div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1rt_html_acb478bbb9e8dc7611816f04327d9fce8a21f518858f05ad9436d04f274f2de0ab"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8a21f518858f05ad9436d04f274f2de0ab">plcopen::core::rt::ErrorCode::not_converged</a></div><div class="ttdeci">@ not_converged</div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1rt_html_acb478bbb9e8dc7611816f04327d9fce8a444bcb3a3fcf8389296c49467f27e1d6"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8a444bcb3a3fcf8389296c49467f27e1d6">plcopen::core::rt::ErrorCode::ok</a></div><div class="ttdeci">@ ok</div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1rt_html_acb478bbb9e8dc7611816f04327d9fce8a4fb901c70a0fdc05b55d95985f3300b0"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8a4fb901c70a0fdc05b55d95985f3300b0">plcopen::core::rt::ErrorCode::out_of_range</a></div><div class="ttdeci">@ out_of_range</div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1rt_html_acb478bbb9e8dc7611816f04327d9fce8a723c25877a86786664edc4b643c08a6f"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8a723c25877a86786664edc4b643c08a6f">plcopen::core::rt::ErrorCode::unsupported</a></div><div class="ttdeci">@ unsupported</div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1rt_html_acb478bbb9e8dc7611816f04327d9fce8ab7d48952407b207a3ac43119390ca8d2"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8ab7d48952407b207a3ac43119390ca8d2">plcopen::core::rt::ErrorCode::capacity_exceeded</a></div><div class="ttdeci">@ capacity_exceeded</div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1rt_html_acb478bbb9e8dc7611816f04327d9fce8ad5e2d03b04c477f5160c02ce10fba258"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8ad5e2d03b04c477f5160c02ce10fba258">plcopen::core::rt::ErrorCode::precondition_failed</a></div><div class="ttdeci">@ precondition_failed</div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1rt_html_acb478bbb9e8dc7611816f04327d9fce8adb88cc7ac23889ac4c45843a93fd3916"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8adb88cc7ac23889ac4c45843a93fd3916">plcopen::core::rt::ErrorCode::bytecode_version_mismatch</a></div><div class="ttdeci">@ bytecode_version_mismatch</div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1rt_html_acb478bbb9e8dc7611816f04327d9fce8ae26c43ed03073eb7884a223409dcde42"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8ae26c43ed03073eb7884a223409dcde42">plcopen::core::rt::ErrorCode::limit_infeasible</a></div><div class="ttdeci">@ limit_infeasible</div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1rt_html_acb478bbb9e8dc7611816f04327d9fce8ae55d43eabeefe5a8271b4a3c898bd18f"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8ae55d43eabeefe5a8271b4a3c898bd18f">plcopen::core::rt::ErrorCode::invalid_argument</a></div><div class="ttdeci">@ invalid_argument</div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1rt_html_acb478bbb9e8dc7611816f04327d9fce8afc988471d247479f88a57e29916bbf82"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8afc988471d247479f88a57e29916bbf82">plcopen::core::rt::ErrorCode::infeasible</a></div><div class="ttdeci">@ infeasible</div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1rt_html_aea84f768eb048b4c3271d6570790e028"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1rt.html#aea84f768eb048b4c3271d6570790e028">plcopen::core::rt::diagnose</a></div><div class="ttdeci">constexpr ErrorDiagnostic diagnose(ErrorCode code)</div><div class="ttdef"><b>Definition</b> <a href="error__diag_8h_source.html#l00017">error_diag.h:17</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1rt_1_1ErrorDiagnostic_html"><div class="ttname"><a href="structplcopen_1_1core_1_1rt_1_1ErrorDiagnostic.html">plcopen::core::rt::ErrorDiagnostic</a></div><div class="ttdef"><b>Definition</b> <a href="error__diag_8h_source.html#l00008">error_diag.h:9</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1rt_1_1ErrorDiagnostic_html_a4f5f2f22e39cf739e8b7971a3a3b52f1"><div class="ttname"><a href="structplcopen_1_1core_1_1rt_1_1ErrorDiagnostic.html#a4f5f2f22e39cf739e8b7971a3a3b52f1">plcopen::core::rt::ErrorDiagnostic::hint</a></div><div class="ttdeci">const char * hint</div><div class="ttdef"><b>Definition</b> <a href="error__diag_8h_source.html#l00013">error_diag.h:13</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1rt_1_1ErrorDiagnostic_html_aa6072dddbab1d1f00578e91ca1e7a80e"><div class="ttname"><a href="structplcopen_1_1core_1_1rt_1_1ErrorDiagnostic.html#aa6072dddbab1d1f00578e91ca1e7a80e">plcopen::core::rt::ErrorDiagnostic::code</a></div><div class="ttdeci">ErrorCode code</div><div class="ttdef"><b>Definition</b> <a href="error__diag_8h_source.html#l00010">error_diag.h:10</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1rt_1_1ErrorDiagnostic_html_ab6c369d832cf4983c4f4e4f0be3f52a1"><div class="ttname"><a href="structplcopen_1_1core_1_1rt_1_1ErrorDiagnostic.html#ab6c369d832cf4983c4f4e4f0be3f52a1">plcopen::core::rt::ErrorDiagnostic::summary</a></div><div class="ttdeci">const char * summary</div><div class="ttdef"><b>Definition</b> <a href="error__diag_8h_source.html#l00012">error_diag.h:12</a></div></div>
+<div class="ttc" id="astructplcopen_1_1core_1_1rt_1_1ErrorDiagnostic_html_af71a0a366e347bf14914154ed2f4c2f7"><div class="ttname"><a href="structplcopen_1_1core_1_1rt_1_1ErrorDiagnostic.html#af71a0a366e347bf14914154ed2f4c2f7">plcopen::core::rt::ErrorDiagnostic::name</a></div><div class="ttdeci">const char * name</div><div class="ttdef"><b>Definition</b> <a href="error__diag_8h_source.html#l00011">error_diag.h:11</a></div></div>
+</div><!-- fragment --></div><!-- contents -->
+<!-- start footer part -->
+<hr class="footer"/><address class="footer"><small>
+制作者&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.8
+</small></address>
+</body>
+</html>

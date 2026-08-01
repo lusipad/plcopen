@@ -1,0 +1,291 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh">
+<head>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=11"/>
+<meta name="generator" content="Doxygen 1.9.8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>plcopen: plcopen::core::fb::FbTouchProbe类 参考</title>
+<link href="tabs.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="jquery.js"></script>
+<script type="text/javascript" src="dynsections.js"></script>
+<link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<link href="doxygen.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+<div id="top"><!-- do not remove this div, it is closed by doxygen! -->
+<div id="titlearea">
+<table cellspacing="0" cellpadding="0">
+ <tbody>
+ <tr id="projectrow">
+  <td id="projectalign">
+   <div id="projectname">plcopen<span id="projectnumber">&#160;0.21.0</span>
+   </div>
+  </td>
+ </tr>
+ </tbody>
+</table>
+</div>
+<!-- end header part -->
+<!-- 制作者 Doxygen 1.9.8 -->
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+var searchBox = new SearchBox("searchBox", "search/",'.html');
+/* @license-end */
+</script>
+<script type="text/javascript" src="menudata.js"></script>
+<script type="text/javascript" src="menu.js"></script>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+$(function() {
+  initMenu('',true,false,'search.php','搜索');
+  $(document).ready(function() { init_search(); });
+});
+/* @license-end */
+</script>
+<div id="main-nav"></div>
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<div id="MSearchResults">
+<div class="SRPage">
+<div id="SRIndex">
+<div id="SRResults"></div>
+<div class="SRStatus" id="Loading">载入中...</div>
+<div class="SRStatus" id="Searching">搜索中...</div>
+<div class="SRStatus" id="NoMatches">未找到</div>
+</div>
+</div>
+</div>
+</div>
+
+<div id="nav-path" class="navpath">
+  <ul>
+<li class="navelem"><a class="el" href="namespaceplcopen.html">plcopen</a></li><li class="navelem"><a class="el" href="namespaceplcopen_1_1core.html">core</a></li><li class="navelem"><a class="el" href="namespaceplcopen_1_1core_1_1fb.html">fb</a></li><li class="navelem"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbTouchProbe.html">FbTouchProbe</a></li>  </ul>
+</div>
+</div><!-- top -->
+<div class="header">
+  <div class="summary">
+<a href="#pub-methods">Public 成员函数</a> &#124;
+<a href="#pub-attribs">Public 属性</a> &#124;
+<a href="classplcopen_1_1core_1_1fb_1_1FbTouchProbe-members.html">所有成员列表</a>  </div>
+  <div class="headertitle"><div class="title">plcopen::core::fb::FbTouchProbe类 参考</div></div>
+</div><!--header-->
+<div class="contents">
+
+<p><code>#include &lt;<a class="el" href="probe_8h_source.html">probe.h</a>&gt;</code></p>
+<div class="dynheader">
+plcopen::core::fb::FbTouchProbe 的协作图:</div>
+<div class="dyncontent">
+<div class="center"><img src="classplcopen_1_1core_1_1fb_1_1FbTouchProbe__coll__graph.png" border="0" usemap="#aplcopen_1_1core_1_1fb_1_1FbTouchProbe_coll__map" alt="Collaboration graph"/></div>
+<map name="aplcopen_1_1core_1_1fb_1_1FbTouchProbe_coll__map" id="aplcopen_1_1core_1_1fb_1_1FbTouchProbe_coll__map">
+<area shape="rect" title=" " alt="" coords="91,108,229,148"/>
+<area shape="rect" href="classplcopen_1_1core_1_1axis_1_1AxisModel.html" title=" " alt="" coords="5,5,149,45"/>
+<area shape="poly" title=" " alt="" coords="104,54,147,106,142,110,99,58"/>
+<area shape="rect" href="structplcopen_1_1core_1_1fb_1_1MotionOutputs.html" title=" " alt="" coords="173,5,312,45"/>
+<area shape="poly" title=" " alt="" coords="221,58,178,110,173,106,216,54"/>
+</map>
+<center><span class="legend">[<a href="graph_legend.html">图例</a>]</span></center></div>
+<table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
+Public 成员函数</h2></td></tr>
+<tr class="memitem:a17d30fa99a59e88e46e784405c8de50e" id="r_a17d30fa99a59e88e46e784405c8de50e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbTouchProbe.html#a17d30fa99a59e88e46e784405c8de50e">call</a> ()</td></tr>
+<tr class="separator:a17d30fa99a59e88e46e784405c8de50e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
+Public 属性</h2></td></tr>
+<tr class="memitem:aca7adaaa1bb02d9e56a2d6746caefc57" id="r_aca7adaaa1bb02d9e56a2d6746caefc57"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classplcopen_1_1core_1_1axis_1_1AxisModel.html">axis::AxisModel</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbTouchProbe.html#aca7adaaa1bb02d9e56a2d6746caefc57">axis_ref</a> = nullptr</td></tr>
+<tr class="separator:aca7adaaa1bb02d9e56a2d6746caefc57"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a02fca6f5ec2ae38c7fa387034869b0d6" id="r_a02fca6f5ec2ae38c7fa387034869b0d6"><td class="memItemLeft" align="right" valign="top">std::size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbTouchProbe.html#a02fca6f5ec2ae38c7fa387034869b0d6">trigger_input</a> = 0</td></tr>
+<tr class="separator:a02fca6f5ec2ae38c7fa387034869b0d6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8c9172a29f65f0f7a291f21e87360920" id="r_a8c9172a29f65f0f7a291f21e87360920"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbTouchProbe.html#a8c9172a29f65f0f7a291f21e87360920">window_only</a> = false</td></tr>
+<tr class="separator:a8c9172a29f65f0f7a291f21e87360920"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abc06f34ae2a6345269c06fdea19e8285" id="r_abc06f34ae2a6345269c06fdea19e8285"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbTouchProbe.html#abc06f34ae2a6345269c06fdea19e8285">first_position</a> = 0.0</td></tr>
+<tr class="separator:abc06f34ae2a6345269c06fdea19e8285"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a560aaaa87ea96c9548ea044c746b88dc" id="r_a560aaaa87ea96c9548ea044c746b88dc"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbTouchProbe.html#a560aaaa87ea96c9548ea044c746b88dc">last_position</a> = 0.0</td></tr>
+<tr class="separator:a560aaaa87ea96c9548ea044c746b88dc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af46d7d5ce812768c6618c49db53cfc35" id="r_af46d7d5ce812768c6618c49db53cfc35"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbTouchProbe.html#af46d7d5ce812768c6618c49db53cfc35">execute</a> = false</td></tr>
+<tr class="separator:af46d7d5ce812768c6618c49db53cfc35"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a03b80d17421d3b54a3bf55dd0f038db3" id="r_a03b80d17421d3b54a3bf55dd0f038db3"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structplcopen_1_1core_1_1fb_1_1MotionOutputs.html">MotionOutputs</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbTouchProbe.html#a03b80d17421d3b54a3bf55dd0f038db3">outputs</a> {}</td></tr>
+<tr class="separator:a03b80d17421d3b54a3bf55dd0f038db3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abb82ba1da98fb8100942eb99e310b227" id="r_abb82ba1da98fb8100942eb99e310b227"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbTouchProbe.html#abb82ba1da98fb8100942eb99e310b227">recorded_position</a> = 0.0</td></tr>
+<tr class="separator:abb82ba1da98fb8100942eb99e310b227"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table>
+<a name="details" id="details"></a><h2 class="groupheader">详细描述</h2>
+<div class="textblock">
+<p class="definition">在文件 <a class="el" href="probe_8h_source.html">probe.h</a> 第 <a class="el" href="probe_8h_source.html#l00016">16</a> 行定义.</p>
+</div><h2 class="groupheader">成员函数说明</h2>
+<a id="a17d30fa99a59e88e46e784405c8de50e" name="a17d30fa99a59e88e46e784405c8de50e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a17d30fa99a59e88e46e784405c8de50e">&#9670;&#160;</a></span>call()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void plcopen::core::fb::FbTouchProbe::call </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="probe_8h_source.html">probe.h</a> 第 <a class="el" href="probe_8h_source.html#l00028">28</a> 行定义.</p>
+
+</div>
+</div>
+<h2 class="groupheader">类成员变量说明</h2>
+<a id="aca7adaaa1bb02d9e56a2d6746caefc57" name="aca7adaaa1bb02d9e56a2d6746caefc57"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aca7adaaa1bb02d9e56a2d6746caefc57">&#9670;&#160;</a></span>axis_ref</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classplcopen_1_1core_1_1axis_1_1AxisModel.html">axis::AxisModel</a>* plcopen::core::fb::FbTouchProbe::axis_ref = nullptr</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="probe_8h_source.html">probe.h</a> 第 <a class="el" href="probe_8h_source.html#l00019">19</a> 行定义.</p>
+
+</div>
+</div>
+<a id="af46d7d5ce812768c6618c49db53cfc35" name="af46d7d5ce812768c6618c49db53cfc35"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af46d7d5ce812768c6618c49db53cfc35">&#9670;&#160;</a></span>execute</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool plcopen::core::fb::FbTouchProbe::execute = false</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="probe_8h_source.html">probe.h</a> 第 <a class="el" href="probe_8h_source.html#l00024">24</a> 行定义.</p>
+
+</div>
+</div>
+<a id="abc06f34ae2a6345269c06fdea19e8285" name="abc06f34ae2a6345269c06fdea19e8285"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abc06f34ae2a6345269c06fdea19e8285">&#9670;&#160;</a></span>first_position</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">double plcopen::core::fb::FbTouchProbe::first_position = 0.0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="probe_8h_source.html">probe.h</a> 第 <a class="el" href="probe_8h_source.html#l00022">22</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a560aaaa87ea96c9548ea044c746b88dc" name="a560aaaa87ea96c9548ea044c746b88dc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a560aaaa87ea96c9548ea044c746b88dc">&#9670;&#160;</a></span>last_position</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">double plcopen::core::fb::FbTouchProbe::last_position = 0.0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="probe_8h_source.html">probe.h</a> 第 <a class="el" href="probe_8h_source.html#l00023">23</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a03b80d17421d3b54a3bf55dd0f038db3" name="a03b80d17421d3b54a3bf55dd0f038db3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a03b80d17421d3b54a3bf55dd0f038db3">&#9670;&#160;</a></span>outputs</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="structplcopen_1_1core_1_1fb_1_1MotionOutputs.html">MotionOutputs</a> plcopen::core::fb::FbTouchProbe::outputs {}</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="probe_8h_source.html">probe.h</a> 第 <a class="el" href="probe_8h_source.html#l00025">25</a> 行定义.</p>
+
+</div>
+</div>
+<a id="abb82ba1da98fb8100942eb99e310b227" name="abb82ba1da98fb8100942eb99e310b227"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abb82ba1da98fb8100942eb99e310b227">&#9670;&#160;</a></span>recorded_position</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">double plcopen::core::fb::FbTouchProbe::recorded_position = 0.0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="probe_8h_source.html">probe.h</a> 第 <a class="el" href="probe_8h_source.html#l00026">26</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a02fca6f5ec2ae38c7fa387034869b0d6" name="a02fca6f5ec2ae38c7fa387034869b0d6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a02fca6f5ec2ae38c7fa387034869b0d6">&#9670;&#160;</a></span>trigger_input</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::size_t plcopen::core::fb::FbTouchProbe::trigger_input = 0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="probe_8h_source.html">probe.h</a> 第 <a class="el" href="probe_8h_source.html#l00020">20</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a8c9172a29f65f0f7a291f21e87360920" name="a8c9172a29f65f0f7a291f21e87360920"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8c9172a29f65f0f7a291f21e87360920">&#9670;&#160;</a></span>window_only</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool plcopen::core::fb::FbTouchProbe::window_only = false</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="probe_8h_source.html">probe.h</a> 第 <a class="el" href="probe_8h_source.html#l00021">21</a> 行定义.</p>
+
+</div>
+</div>
+<hr/>该类的文档由以下文件生成:<ul>
+<li>core/fb/<a class="el" href="probe_8h_source.html">probe.h</a></li>
+</ul>
+</div><!-- contents -->
+<!-- start footer part -->
+<hr class="footer"/><address class="footer"><small>
+制作者&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.8
+</small></address>
+</body>
+</html>

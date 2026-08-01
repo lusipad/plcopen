@@ -1,0 +1,100 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh">
+<head>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=11"/>
+<meta name="generator" content="Doxygen 1.9.8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>plcopen: kin —— 支撑库（依赖 geom/rt，被 L5 消费）</title>
+<link href="tabs.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="jquery.js"></script>
+<script type="text/javascript" src="dynsections.js"></script>
+<link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<link href="doxygen.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+<div id="top"><!-- do not remove this div, it is closed by doxygen! -->
+<div id="titlearea">
+<table cellspacing="0" cellpadding="0">
+ <tbody>
+ <tr id="projectrow">
+  <td id="projectalign">
+   <div id="projectname">plcopen<span id="projectnumber">&#160;0.21.0</span>
+   </div>
+  </td>
+ </tr>
+ </tbody>
+</table>
+</div>
+<!-- end header part -->
+<!-- 制作者 Doxygen 1.9.8 -->
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+var searchBox = new SearchBox("searchBox", "search/",'.html');
+/* @license-end */
+</script>
+<script type="text/javascript" src="menudata.js"></script>
+<script type="text/javascript" src="menu.js"></script>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+$(function() {
+  initMenu('',true,false,'search.php','搜索');
+  $(document).ready(function() { init_search(); });
+});
+/* @license-end */
+</script>
+<div id="main-nav"></div>
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<div id="MSearchResults">
+<div class="SRPage">
+<div id="SRIndex">
+<div id="SRResults"></div>
+<div class="SRStatus" id="Loading">载入中...</div>
+<div class="SRStatus" id="Searching">搜索中...</div>
+<div class="SRStatus" id="NoMatches">未找到</div>
+</div>
+</div>
+</div>
+</div>
+
+</div><!-- top -->
+<div><div class="header">
+  <div class="headertitle"><div class="title">kin —— 支撑库（依赖 geom/rt，被 L5 消费）</div></div>
+</div><!--header-->
+<div class="contents">
+<div class="textblock"><p><a class="anchor" id="autotoc_md25"></a> kin 是阶梯旁支撑库：仅依赖 geom/rt、被 L5 axis 消费，不碰语义层（阶梯全貌 见 <a class="el" href="md_core_2README.html">core/README.md</a>）。</p>
+<p><code>core/kin</code> owns the B2 kinematics plugin contract and the analytic reference mechanisms (approved matrix: <code>doc/compliance/kinematics-plugin-semantics.md</code>). It has no PLCopen semantics; the group integration lives in L5.</p>
+<p>v1 scope (BS3.2-BS3.4):</p>
+<ul>
+<li><code>Kinematics</code> header-file ABI (<code><a class="el" href="kinematics_8h.html">kinematics.h</a></code>): forward / inverse / singularity_margin; seed-branch inverse semantics (no implicit branch flips); RT-safe contract — no allocation, no exceptions, bounded iteration, out-of-budget reports <code>infeasible</code>;</li>
+<li>reference mechanisms: <code>CartesianGantry</code> (per-axis linear map, singularity-free) and <code>Scara</code> (planar 2R + optional Z, closed-form inverse, elbow branch from the seed, revolute continuity against the atan2 branch cut, angular singularity margin);</li>
+<li>conformance harness (<code><a class="el" href="verify_8h.html">verify.h</a></code>): round-trip fuzz (inverse(forward(q), seed=q) == q), seed-branch stability along continuous walks, deterministic LCG — every plugin, reference or third-party, runs the same harness.</li>
+</ul>
+<p>BS3.5 (<code><a class="el" href="wrist6r_8h.html">wrist6r.h</a></code>): the spherical-wrist 6R analytic inverse ships in pre-integration form — full 6-DOF poses do not fit the v1 ABI (2/3 translational coordinates), so <code>SphericalWrist6R</code> carries its own Pose6 interface under the same contract discipline (eight-branch enumeration with seed-closest selection, a max-joint-step no-branch-flip gate, wrist/elbow/ shoulder singularity margins, allocation- and exception-free). Verified by 20k-case round-trip fuzz, perturbed-seed recovery, and branch-gate rejections.</p>
+<p>Orientation batch (KB-042, approved matrix <code>doc/compliance/orientation-semantics.md</code>): <code><a class="el" href="pose_8h.html">pose.h</a></code> carries the <code>Pose6</code> type and the <code>PoseKinematics</code> plugin contract (parallel to the v1 translational ABI, mutually exclusive on a group); <code>SphericalWrist6R</code> implements it, and the L5 group wiring (<code>AxisGroup::set_pose_kinematics</code>) lands RPY pose targets through the workpiece frame and the flange-to-TCP tool transform onto 6 ACS joint targets at submit. In-segment interpolation stays joint-space (declared).</p>
+<p>BS3.6: <code>AxisGroup::set_cartesian_velocity_limit</code> — conservative dual-space limiting: at submit the joint-space chord is sampled through the forward solution and the command velocity scales down so the worst sampled Cartesian speed stays under the limit (linear segments, kinematics-configured groups).</p>
+<p>H2 (<code><a class="el" href="serial__chain_8h.html">serial_chain.h</a></code>, KB-089): <code>SerialChain</code> is the deterministic numerical fallback beside the analytic plugins. It models one to eight revolute joints with a fixed-capacity standard-DH or modified-DH table, implements base-to-flange FK, and solves pose IK with a numerical Jacobian, SO(3) log residual, adaptive DLS, hard joint-limit projection, and a fixed 32-iteration cap. Strict <code>inverse</code>/<code>solve</code> write output only after both residual gates pass; <code>solve_best_effort</code> is the explicit opt-in surface for a failed code plus the best point and residuals. A 7-DOF preferred-joint target is applied only inside the converged primary-task gates, at most once, and consumes the same 32-iteration budget. Workspace-outside targets use the observable termination cause (<code>not_converged</code>, <code>singular_region</code>, or <code>limit_infeasible</code>); the inherited seed-step gate remains <code>infeasible</code>. The existing L5 pose seam remains six-axis, so 7-DOF is currently a core/offline capability rather than an AxisGroup claim. Spherical-wrist 6R remains analytic-first.</p>
+<p>v1 declared boundaries:</p>
+<ul>
+<li>joint count == Cartesian count (2 or 3) == group axis count; the 6R batch (BS3.5) lifts this together with orientation support;</li>
+<li>by default the inverse solves endpoints and aux points at submit only and in-segment interpolation stays joint-space; the Cartesian-interpolation batch (KB-044) lifts this per command via <code>interpolation_space = cartesian</code> (per-cycle inverse in the cycle path, measured ~2.4 us for the 6R); the wrist-singularity band (KB-045) resolves the ZYZ indeterminacy by seed-locking q4 inside |sin q5| &lt; 1e-8, so Cartesian sweeps cross the wrist singularity without errorstop;</li>
+<li>analytic-plugin singularity handling remains the entry-ban pre-check (margin threshold at submit); H2 numerical chains instead use adaptive damping plus convergence/error classification and return a large positive entry margin. </li>
+</ul>
+</div></div><!-- contents -->
+</div><!-- PageDoc -->
+<!-- start footer part -->
+<hr class="footer"/><address class="footer"><small>
+制作者&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.8
+</small></address>
+</body>
+</html>

@@ -1,0 +1,11 @@
+<map id="类继承关系图" name="类继承关系图">
+<area shape="rect" id="Node000000" href="$classplcopen_1_1core_1_1fb_1_1TimerBase.html" title=" " alt="" coords="5,73,144,113"/>
+<area shape="rect" id="Node000001" href="$structplcopen_1_1core_1_1fb_1_1RTC.html" title=" " alt="" coords="194,5,357,31"/>
+<area shape="poly" id="edge99_Node000000_Node000001" title=" " alt="" coords="130,65,191,39,226,28,228,33,193,45,132,70"/>
+<area shape="rect" id="Node000002" href="$structplcopen_1_1core_1_1fb_1_1TOF.html" title=" " alt="" coords="193,55,357,80"/>
+<area shape="poly" id="edge100_Node000000_Node000002" title=" " alt="" coords="157,80,193,75,193,80,158,85"/>
+<area shape="rect" id="Node000003" href="$structplcopen_1_1core_1_1fb_1_1TON.html" title=" " alt="" coords="192,104,359,129"/>
+<area shape="poly" id="edge101_Node000000_Node000003" title=" " alt="" coords="158,100,192,104,191,109,157,105"/>
+<area shape="rect" id="Node000004" href="$structplcopen_1_1core_1_1fb_1_1TP.html" title=" " alt="" coords="198,153,353,179"/>
+<area shape="poly" id="edge102_Node000000_Node000004" title=" " alt="" coords="135,116,193,138,231,151,229,156,191,143,133,120"/>
+</map>

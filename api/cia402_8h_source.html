@@ -1,0 +1,292 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh">
+<head>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=11"/>
+<meta name="generator" content="Doxygen 1.9.8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>plcopen: core/adapters/cia402.h 源文件</title>
+<link href="tabs.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="jquery.js"></script>
+<script type="text/javascript" src="dynsections.js"></script>
+<link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<link href="doxygen.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+<div id="top"><!-- do not remove this div, it is closed by doxygen! -->
+<div id="titlearea">
+<table cellspacing="0" cellpadding="0">
+ <tbody>
+ <tr id="projectrow">
+  <td id="projectalign">
+   <div id="projectname">plcopen<span id="projectnumber">&#160;0.21.0</span>
+   </div>
+  </td>
+ </tr>
+ </tbody>
+</table>
+</div>
+<!-- end header part -->
+<!-- 制作者 Doxygen 1.9.8 -->
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+var searchBox = new SearchBox("searchBox", "search/",'.html');
+/* @license-end */
+</script>
+<script type="text/javascript" src="menudata.js"></script>
+<script type="text/javascript" src="menu.js"></script>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+$(function() {
+  initMenu('',true,false,'search.php','搜索');
+  $(document).ready(function() { init_search(); });
+});
+/* @license-end */
+</script>
+<div id="main-nav"></div>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+$(document).ready(function() { init_codefold(0); });
+/* @license-end */
+</script>
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<div id="MSearchResults">
+<div class="SRPage">
+<div id="SRIndex">
+<div id="SRResults"></div>
+<div class="SRStatus" id="Loading">载入中...</div>
+<div class="SRStatus" id="Searching">搜索中...</div>
+<div class="SRStatus" id="NoMatches">未找到</div>
+</div>
+</div>
+</div>
+</div>
+
+<div id="nav-path" class="navpath">
+  <ul>
+<li class="navelem"><a class="el" href="dir_4270bfced15e0e73154b13468c7c9ad9.html">core</a></li><li class="navelem"><a class="el" href="dir_2de2c6b291aafe16d0a7cd4acdaee2ee.html">adapters</a></li>  </ul>
+</div>
+</div><!-- top -->
+<div class="header">
+  <div class="headertitle"><div class="title">cia402.h</div></div>
+</div><!--header-->
+<div class="contents">
+<a href="cia402_8h.html">浏览该文件的文档.</a><div class="fragment"><div class="line"><a id="l00001" name="l00001"></a><span class="lineno">    1</span><span class="preprocessor">#pragma once</span></div>
+<div class="line"><a id="l00002" name="l00002"></a><span class="lineno">    2</span> </div>
+<div class="line"><a id="l00003" name="l00003"></a><span class="lineno">    3</span><span class="comment">// BS6.2: CiA 402 (IEC 61800-7-201) drive state machine — pure software, no</span></div>
+<div class="line"><a id="l00004" name="l00004"></a><span class="lineno">    4</span><span class="comment">// bus I/O. plcopen-fieldbus (B5) reuses this against real slaves; here a</span></div>
+<div class="line"><a id="l00005" name="l00005"></a><span class="lineno">    5</span><span class="comment">// mock slave exercises every transition. Command and state names follow the</span></div>
+<div class="line"><a id="l00006" name="l00006"></a><span class="lineno">    6</span><span class="comment">// standard&#39;s power state machine; the fault reaction path is modeled as an</span></div>
+<div class="line"><a id="l00007" name="l00007"></a><span class="lineno">    7</span><span class="comment">// explicit state so the full ladder is test-coverable.</span></div>
+<div class="line"><a id="l00008" name="l00008"></a><span class="lineno">    8</span><span class="comment">//</span></div>
+<div class="line"><a id="l00009" name="l00009"></a><span class="lineno">    9</span><span class="comment">// Contract: no allocation, no exceptions; transition() is a pure function of</span></div>
+<div class="line"><a id="l00010" name="l00010"></a><span class="lineno">   10</span><span class="comment">// (state, command/event).</span></div>
+<div class="line"><a id="l00011" name="l00011"></a><span class="lineno">   11</span> </div>
+<div class="line"><a id="l00012" name="l00012"></a><span class="lineno">   12</span><span class="preprocessor">#include &lt;cstdint&gt;</span></div>
+<div class="line"><a id="l00013" name="l00013"></a><span class="lineno">   13</span> </div>
+<div class="foldopen" id="foldopen00014" data-start="{" data-end="}">
+<div class="line"><a id="l00014" name="l00014"></a><span class="lineno"><a class="line" href="namespaceplcopen.html">   14</a></span><span class="keyword">namespace </span><a class="code hl_namespace" href="namespaceplcopen_1_1core_1_1adapters.html">plcopen::core::adapters</a></div>
+<div class="line"><a id="l00015" name="l00015"></a><span class="lineno">   15</span>{</div>
+<div class="line"><a id="l00016" name="l00016"></a><span class="lineno">   16</span> </div>
+<div class="foldopen" id="foldopen00017" data-start="{" data-end="};">
+<div class="line"><a id="l00017" name="l00017"></a><span class="lineno"><a class="line" href="namespaceplcopen_1_1core_1_1adapters.html#a77c507f9b563602d5ef9d20ee05c2074">   17</a></span><span class="keyword">enum class</span> <a class="code hl_enumeration" href="namespaceplcopen_1_1core_1_1adapters.html#a77c507f9b563602d5ef9d20ee05c2074">Cia402State</a> : std::uint8_t</div>
+<div class="line"><a id="l00018" name="l00018"></a><span class="lineno">   18</span>{</div>
+<div class="line"><a id="l00019" name="l00019"></a><span class="lineno">   19</span>    <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1adapters.html#a77c507f9b563602d5ef9d20ee05c2074a3b5249baaa5a0d5bbb763453dd5de2a9">not_ready_to_switch_on</a>,</div>
+<div class="line"><a id="l00020" name="l00020"></a><span class="lineno">   20</span>    <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1adapters.html#a77c507f9b563602d5ef9d20ee05c2074a0c082a93419e70e91662f4db4724c58f">switch_on_disabled</a>,</div>
+<div class="line"><a id="l00021" name="l00021"></a><span class="lineno">   21</span>    <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1adapters.html#a77c507f9b563602d5ef9d20ee05c2074a53c8805272763c8c6ddfe6161904bcf2">ready_to_switch_on</a>,</div>
+<div class="line"><a id="l00022" name="l00022"></a><span class="lineno">   22</span>    <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1adapters.html#a77c507f9b563602d5ef9d20ee05c2074a799030c0926f84527ba803d2b9cace15">switched_on</a>,</div>
+<div class="line"><a id="l00023" name="l00023"></a><span class="lineno">   23</span>    <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1adapters.html#a77c507f9b563602d5ef9d20ee05c2074aaa3faf605667def333f9d919cf3b998d">operation_enabled</a>,</div>
+<div class="line"><a id="l00024" name="l00024"></a><span class="lineno">   24</span>    <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1adapters.html#a77c507f9b563602d5ef9d20ee05c2074aa0cb3f8e1403f14cb8c7caa027d3d4de">quick_stop_active</a>,</div>
+<div class="line"><a id="l00025" name="l00025"></a><span class="lineno">   25</span>    <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1adapters.html#a77c507f9b563602d5ef9d20ee05c2074a04a7bfe44b7945ef1a8257cb4be0f64d">fault_reaction_active</a>,</div>
+<div class="line"><a id="l00026" name="l00026"></a><span class="lineno">   26</span>    <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1adapters.html#a77c507f9b563602d5ef9d20ee05c2074a3881bfd1571f85c6562ddfac94ea80ba">fault</a>,</div>
+<div class="line"><a id="l00027" name="l00027"></a><span class="lineno">   27</span>};</div>
+</div>
+<div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span> </div>
+<div class="line"><a id="l00029" name="l00029"></a><span class="lineno">   29</span><span class="comment">// Controlword commands (bit patterns abstracted to their standard names).</span></div>
+<div class="foldopen" id="foldopen00030" data-start="{" data-end="};">
+<div class="line"><a id="l00030" name="l00030"></a><span class="lineno"><a class="line" href="namespaceplcopen_1_1core_1_1adapters.html#afe607609ac86372a82e5ef68c8754d76">   30</a></span><span class="keyword">enum class</span> <a class="code hl_enumeration" href="namespaceplcopen_1_1core_1_1adapters.html#afe607609ac86372a82e5ef68c8754d76">Cia402Command</a> : std::uint8_t</div>
+<div class="line"><a id="l00031" name="l00031"></a><span class="lineno">   31</span>{</div>
+<div class="line"><a id="l00032" name="l00032"></a><span class="lineno">   32</span>    <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1adapters.html#afe607609ac86372a82e5ef68c8754d76a5924f03a95ee6f7277e5bdd1e81b8fdc">shutdown</a>,         <span class="comment">// -&gt; ready to switch on</span></div>
+<div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span>    <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1adapters.html#afe607609ac86372a82e5ef68c8754d76a8736091ce9008de3ff37dd5f8259c09c">switch_on</a>,        <span class="comment">// -&gt; switched on</span></div>
+<div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span>    <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1adapters.html#afe607609ac86372a82e5ef68c8754d76aad5eac902161594913260d56bc76e460">enable_operation</a>, <span class="comment">// -&gt; operation enabled</span></div>
+<div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span>    <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1adapters.html#afe607609ac86372a82e5ef68c8754d76a5efc66475d5c5973edce756ef280a73d">disable_voltage</a>,  <span class="comment">// -&gt; switch on disabled</span></div>
+<div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span>    <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1adapters.html#afe607609ac86372a82e5ef68c8754d76a427891de0a93a4e9308599fba0e9b54f">quick_stop</a>,       <span class="comment">// -&gt; quick stop active</span></div>
+<div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span>    <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1adapters.html#afe607609ac86372a82e5ef68c8754d76a5b0388c7163b882aacf27b8f80640d06">disable_operation</a>, <span class="comment">// -&gt; switched on</span></div>
+<div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span>    <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1adapters.html#afe607609ac86372a82e5ef68c8754d76ae50cefab96c31b452dd893652405dfc0">fault_reset</a>,      <span class="comment">// fault -&gt; switch on disabled</span></div>
+<div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span>};</div>
+</div>
+<div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span> </div>
+<div class="foldopen" id="foldopen00041" data-start="{" data-end="};">
+<div class="line"><a id="l00041" name="l00041"></a><span class="lineno"><a class="line" href="classplcopen_1_1core_1_1adapters_1_1Cia402Machine.html">   41</a></span><span class="keyword">class </span><a class="code hl_class" href="classplcopen_1_1core_1_1adapters_1_1Cia402Machine.html">Cia402Machine</a></div>
+<div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span>{</div>
+<div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span><span class="keyword">public</span>:</div>
+<div class="foldopen" id="foldopen00044" data-start="{" data-end="}">
+<div class="line"><a id="l00044" name="l00044"></a><span class="lineno"><a class="line" href="classplcopen_1_1core_1_1adapters_1_1Cia402Machine.html#a9431cc8d03873d044c0a1b2a172232b0">   44</a></span>    <a class="code hl_enumeration" href="namespaceplcopen_1_1core_1_1adapters.html#a77c507f9b563602d5ef9d20ee05c2074">Cia402State</a> <a class="code hl_function" href="classplcopen_1_1core_1_1adapters_1_1Cia402Machine.html#a9431cc8d03873d044c0a1b2a172232b0">state</a>()<span class="keyword"> const</span></div>
+<div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span><span class="keyword">    </span>{</div>
+<div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span>        <span class="keywordflow">return</span> state_;</div>
+<div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span>    }</div>
+</div>
+<div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span> </div>
+<div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span>    <span class="comment">// Boot-up: the drive reports readiness after initialization.</span></div>
+<div class="foldopen" id="foldopen00050" data-start="{" data-end="}">
+<div class="line"><a id="l00050" name="l00050"></a><span class="lineno"><a class="line" href="classplcopen_1_1core_1_1adapters_1_1Cia402Machine.html#a261513c745ca25215e8b807d853e0d55">   50</a></span>    <span class="keywordtype">void</span> <a class="code hl_function" href="classplcopen_1_1core_1_1adapters_1_1Cia402Machine.html#a261513c745ca25215e8b807d853e0d55">initialize</a>()</div>
+<div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span>    {</div>
+<div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span>        <span class="keywordflow">if</span>(state_ == <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1adapters.html#a77c507f9b563602d5ef9d20ee05c2074a3b5249baaa5a0d5bbb763453dd5de2a9">Cia402State::not_ready_to_switch_on</a>) {</div>
+<div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span>            state_ = <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1adapters.html#a77c507f9b563602d5ef9d20ee05c2074a0c082a93419e70e91662f4db4724c58f">Cia402State::switch_on_disabled</a>;</div>
+<div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span>        }</div>
+<div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span>    }</div>
+</div>
+<div class="line"><a id="l00056" name="l00056"></a><span class="lineno">   56</span> </div>
+<div class="line"><a id="l00057" name="l00057"></a><span class="lineno">   57</span>    <span class="comment">// Drive-side fault event (any state except the fault ladder itself).</span></div>
+<div class="foldopen" id="foldopen00058" data-start="{" data-end="}">
+<div class="line"><a id="l00058" name="l00058"></a><span class="lineno"><a class="line" href="classplcopen_1_1core_1_1adapters_1_1Cia402Machine.html#a40a1120c39425a5f0263a3c487c93e65">   58</a></span>    <span class="keywordtype">void</span> <a class="code hl_function" href="classplcopen_1_1core_1_1adapters_1_1Cia402Machine.html#a40a1120c39425a5f0263a3c487c93e65">fault_event</a>()</div>
+<div class="line"><a id="l00059" name="l00059"></a><span class="lineno">   59</span>    {</div>
+<div class="line"><a id="l00060" name="l00060"></a><span class="lineno">   60</span>        <span class="keywordflow">if</span>(state_ != <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1adapters.html#a77c507f9b563602d5ef9d20ee05c2074a3881bfd1571f85c6562ddfac94ea80ba">Cia402State::fault</a> &amp;&amp; state_ != <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1adapters.html#a77c507f9b563602d5ef9d20ee05c2074a04a7bfe44b7945ef1a8257cb4be0f64d">Cia402State::fault_reaction_active</a>) {</div>
+<div class="line"><a id="l00061" name="l00061"></a><span class="lineno">   61</span>            state_ = <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1adapters.html#a77c507f9b563602d5ef9d20ee05c2074a04a7bfe44b7945ef1a8257cb4be0f64d">Cia402State::fault_reaction_active</a>;</div>
+<div class="line"><a id="l00062" name="l00062"></a><span class="lineno">   62</span>        }</div>
+<div class="line"><a id="l00063" name="l00063"></a><span class="lineno">   63</span>    }</div>
+</div>
+<div class="line"><a id="l00064" name="l00064"></a><span class="lineno">   64</span> </div>
+<div class="line"><a id="l00065" name="l00065"></a><span class="lineno">   65</span>    <span class="comment">// Fault reaction completed (controlled stop done inside the drive).</span></div>
+<div class="foldopen" id="foldopen00066" data-start="{" data-end="}">
+<div class="line"><a id="l00066" name="l00066"></a><span class="lineno"><a class="line" href="classplcopen_1_1core_1_1adapters_1_1Cia402Machine.html#a9cc23245ee1b974f9db859075af80c7f">   66</a></span>    <span class="keywordtype">void</span> <a class="code hl_function" href="classplcopen_1_1core_1_1adapters_1_1Cia402Machine.html#a9cc23245ee1b974f9db859075af80c7f">fault_reaction_complete</a>()</div>
+<div class="line"><a id="l00067" name="l00067"></a><span class="lineno">   67</span>    {</div>
+<div class="line"><a id="l00068" name="l00068"></a><span class="lineno">   68</span>        <span class="keywordflow">if</span>(state_ == <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1adapters.html#a77c507f9b563602d5ef9d20ee05c2074a04a7bfe44b7945ef1a8257cb4be0f64d">Cia402State::fault_reaction_active</a>) {</div>
+<div class="line"><a id="l00069" name="l00069"></a><span class="lineno">   69</span>            state_ = <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1adapters.html#a77c507f9b563602d5ef9d20ee05c2074a3881bfd1571f85c6562ddfac94ea80ba">Cia402State::fault</a>;</div>
+<div class="line"><a id="l00070" name="l00070"></a><span class="lineno">   70</span>        }</div>
+<div class="line"><a id="l00071" name="l00071"></a><span class="lineno">   71</span>    }</div>
+</div>
+<div class="line"><a id="l00072" name="l00072"></a><span class="lineno">   72</span> </div>
+<div class="line"><a id="l00073" name="l00073"></a><span class="lineno">   73</span>    <span class="comment">// Quick stop ramp completed: per 605Ah option code 1-4 the drive lands</span></div>
+<div class="line"><a id="l00074" name="l00074"></a><span class="lineno">   74</span>    <span class="comment">// in switch on disabled (the modeled default).</span></div>
+<div class="foldopen" id="foldopen00075" data-start="{" data-end="}">
+<div class="line"><a id="l00075" name="l00075"></a><span class="lineno"><a class="line" href="classplcopen_1_1core_1_1adapters_1_1Cia402Machine.html#a7ef8631bd97cb936528e9deb3b4c1526">   75</a></span>    <span class="keywordtype">void</span> <a class="code hl_function" href="classplcopen_1_1core_1_1adapters_1_1Cia402Machine.html#a7ef8631bd97cb936528e9deb3b4c1526">quick_stop_complete</a>()</div>
+<div class="line"><a id="l00076" name="l00076"></a><span class="lineno">   76</span>    {</div>
+<div class="line"><a id="l00077" name="l00077"></a><span class="lineno">   77</span>        <span class="keywordflow">if</span>(state_ == <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1adapters.html#a77c507f9b563602d5ef9d20ee05c2074aa0cb3f8e1403f14cb8c7caa027d3d4de">Cia402State::quick_stop_active</a>) {</div>
+<div class="line"><a id="l00078" name="l00078"></a><span class="lineno">   78</span>            state_ = <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1adapters.html#a77c507f9b563602d5ef9d20ee05c2074a0c082a93419e70e91662f4db4724c58f">Cia402State::switch_on_disabled</a>;</div>
+<div class="line"><a id="l00079" name="l00079"></a><span class="lineno">   79</span>        }</div>
+<div class="line"><a id="l00080" name="l00080"></a><span class="lineno">   80</span>    }</div>
+</div>
+<div class="line"><a id="l00081" name="l00081"></a><span class="lineno">   81</span> </div>
+<div class="line"><a id="l00082" name="l00082"></a><span class="lineno">   82</span>    <span class="comment">// Host command; returns false when the transition is not defined by the</span></div>
+<div class="line"><a id="l00083" name="l00083"></a><span class="lineno">   83</span>    <span class="comment">// standard&#39;s table (the state does not change).</span></div>
+<div class="foldopen" id="foldopen00084" data-start="{" data-end="}">
+<div class="line"><a id="l00084" name="l00084"></a><span class="lineno"><a class="line" href="classplcopen_1_1core_1_1adapters_1_1Cia402Machine.html#a6ccf7473e7013b1f9b8b588c41e9672c">   84</a></span>    <span class="keywordtype">bool</span> <a class="code hl_function" href="classplcopen_1_1core_1_1adapters_1_1Cia402Machine.html#a6ccf7473e7013b1f9b8b588c41e9672c">command</a>(<a class="code hl_enumeration" href="namespaceplcopen_1_1core_1_1adapters.html#afe607609ac86372a82e5ef68c8754d76">Cia402Command</a> <a class="code hl_function" href="classplcopen_1_1core_1_1adapters_1_1Cia402Machine.html#a6ccf7473e7013b1f9b8b588c41e9672c">command</a>)</div>
+<div class="line"><a id="l00085" name="l00085"></a><span class="lineno">   85</span>    {</div>
+<div class="line"><a id="l00086" name="l00086"></a><span class="lineno">   86</span>        <span class="keywordflow">switch</span>(<a class="code hl_function" href="classplcopen_1_1core_1_1adapters_1_1Cia402Machine.html#a6ccf7473e7013b1f9b8b588c41e9672c">command</a>) {</div>
+<div class="line"><a id="l00087" name="l00087"></a><span class="lineno">   87</span>        <span class="keywordflow">case</span> <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1adapters.html#afe607609ac86372a82e5ef68c8754d76a5924f03a95ee6f7277e5bdd1e81b8fdc">Cia402Command::shutdown</a>:</div>
+<div class="line"><a id="l00088" name="l00088"></a><span class="lineno">   88</span>            <span class="keywordflow">if</span>(state_ == <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1adapters.html#a77c507f9b563602d5ef9d20ee05c2074a0c082a93419e70e91662f4db4724c58f">Cia402State::switch_on_disabled</a> ||</div>
+<div class="line"><a id="l00089" name="l00089"></a><span class="lineno">   89</span>               state_ == <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1adapters.html#a77c507f9b563602d5ef9d20ee05c2074a799030c0926f84527ba803d2b9cace15">Cia402State::switched_on</a> ||</div>
+<div class="line"><a id="l00090" name="l00090"></a><span class="lineno">   90</span>               state_ == <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1adapters.html#a77c507f9b563602d5ef9d20ee05c2074aaa3faf605667def333f9d919cf3b998d">Cia402State::operation_enabled</a>) {</div>
+<div class="line"><a id="l00091" name="l00091"></a><span class="lineno">   91</span>                state_ = <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1adapters.html#a77c507f9b563602d5ef9d20ee05c2074a53c8805272763c8c6ddfe6161904bcf2">Cia402State::ready_to_switch_on</a>;</div>
+<div class="line"><a id="l00092" name="l00092"></a><span class="lineno">   92</span>                <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
+<div class="line"><a id="l00093" name="l00093"></a><span class="lineno">   93</span>            }</div>
+<div class="line"><a id="l00094" name="l00094"></a><span class="lineno">   94</span>            <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00095" name="l00095"></a><span class="lineno">   95</span>        <span class="keywordflow">case</span> <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1adapters.html#afe607609ac86372a82e5ef68c8754d76a8736091ce9008de3ff37dd5f8259c09c">Cia402Command::switch_on</a>:</div>
+<div class="line"><a id="l00096" name="l00096"></a><span class="lineno">   96</span>            <span class="keywordflow">if</span>(state_ == <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1adapters.html#a77c507f9b563602d5ef9d20ee05c2074a53c8805272763c8c6ddfe6161904bcf2">Cia402State::ready_to_switch_on</a>) {</div>
+<div class="line"><a id="l00097" name="l00097"></a><span class="lineno">   97</span>                state_ = <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1adapters.html#a77c507f9b563602d5ef9d20ee05c2074a799030c0926f84527ba803d2b9cace15">Cia402State::switched_on</a>;</div>
+<div class="line"><a id="l00098" name="l00098"></a><span class="lineno">   98</span>                <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
+<div class="line"><a id="l00099" name="l00099"></a><span class="lineno">   99</span>            }</div>
+<div class="line"><a id="l00100" name="l00100"></a><span class="lineno">  100</span>            <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00101" name="l00101"></a><span class="lineno">  101</span>        <span class="keywordflow">case</span> <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1adapters.html#afe607609ac86372a82e5ef68c8754d76aad5eac902161594913260d56bc76e460">Cia402Command::enable_operation</a>:</div>
+<div class="line"><a id="l00102" name="l00102"></a><span class="lineno">  102</span>            <span class="keywordflow">if</span>(state_ == <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1adapters.html#a77c507f9b563602d5ef9d20ee05c2074a799030c0926f84527ba803d2b9cace15">Cia402State::switched_on</a> ||</div>
+<div class="line"><a id="l00103" name="l00103"></a><span class="lineno">  103</span>               state_ == <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1adapters.html#a77c507f9b563602d5ef9d20ee05c2074aa0cb3f8e1403f14cb8c7caa027d3d4de">Cia402State::quick_stop_active</a>) {</div>
+<div class="line"><a id="l00104" name="l00104"></a><span class="lineno">  104</span>                state_ = <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1adapters.html#a77c507f9b563602d5ef9d20ee05c2074aaa3faf605667def333f9d919cf3b998d">Cia402State::operation_enabled</a>;</div>
+<div class="line"><a id="l00105" name="l00105"></a><span class="lineno">  105</span>                <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
+<div class="line"><a id="l00106" name="l00106"></a><span class="lineno">  106</span>            }</div>
+<div class="line"><a id="l00107" name="l00107"></a><span class="lineno">  107</span>            <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00108" name="l00108"></a><span class="lineno">  108</span>        <span class="keywordflow">case</span> <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1adapters.html#afe607609ac86372a82e5ef68c8754d76a5efc66475d5c5973edce756ef280a73d">Cia402Command::disable_voltage</a>:</div>
+<div class="line"><a id="l00109" name="l00109"></a><span class="lineno">  109</span>            <span class="keywordflow">if</span>(state_ == <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1adapters.html#a77c507f9b563602d5ef9d20ee05c2074a53c8805272763c8c6ddfe6161904bcf2">Cia402State::ready_to_switch_on</a> ||</div>
+<div class="line"><a id="l00110" name="l00110"></a><span class="lineno">  110</span>               state_ == <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1adapters.html#a77c507f9b563602d5ef9d20ee05c2074a799030c0926f84527ba803d2b9cace15">Cia402State::switched_on</a> ||</div>
+<div class="line"><a id="l00111" name="l00111"></a><span class="lineno">  111</span>               state_ == <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1adapters.html#a77c507f9b563602d5ef9d20ee05c2074aaa3faf605667def333f9d919cf3b998d">Cia402State::operation_enabled</a> ||</div>
+<div class="line"><a id="l00112" name="l00112"></a><span class="lineno">  112</span>               state_ == <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1adapters.html#a77c507f9b563602d5ef9d20ee05c2074aa0cb3f8e1403f14cb8c7caa027d3d4de">Cia402State::quick_stop_active</a>) {</div>
+<div class="line"><a id="l00113" name="l00113"></a><span class="lineno">  113</span>                state_ = <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1adapters.html#a77c507f9b563602d5ef9d20ee05c2074a0c082a93419e70e91662f4db4724c58f">Cia402State::switch_on_disabled</a>;</div>
+<div class="line"><a id="l00114" name="l00114"></a><span class="lineno">  114</span>                <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
+<div class="line"><a id="l00115" name="l00115"></a><span class="lineno">  115</span>            }</div>
+<div class="line"><a id="l00116" name="l00116"></a><span class="lineno">  116</span>            <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00117" name="l00117"></a><span class="lineno">  117</span>        <span class="keywordflow">case</span> <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1adapters.html#afe607609ac86372a82e5ef68c8754d76a427891de0a93a4e9308599fba0e9b54f">Cia402Command::quick_stop</a>:</div>
+<div class="line"><a id="l00118" name="l00118"></a><span class="lineno">  118</span>            <span class="keywordflow">if</span>(state_ == <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1adapters.html#a77c507f9b563602d5ef9d20ee05c2074aaa3faf605667def333f9d919cf3b998d">Cia402State::operation_enabled</a>) {</div>
+<div class="line"><a id="l00119" name="l00119"></a><span class="lineno">  119</span>                state_ = <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1adapters.html#a77c507f9b563602d5ef9d20ee05c2074aa0cb3f8e1403f14cb8c7caa027d3d4de">Cia402State::quick_stop_active</a>;</div>
+<div class="line"><a id="l00120" name="l00120"></a><span class="lineno">  120</span>                <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
+<div class="line"><a id="l00121" name="l00121"></a><span class="lineno">  121</span>            }</div>
+<div class="line"><a id="l00122" name="l00122"></a><span class="lineno">  122</span>            <span class="keywordflow">if</span>(state_ == <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1adapters.html#a77c507f9b563602d5ef9d20ee05c2074a53c8805272763c8c6ddfe6161904bcf2">Cia402State::ready_to_switch_on</a> ||</div>
+<div class="line"><a id="l00123" name="l00123"></a><span class="lineno">  123</span>               state_ == <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1adapters.html#a77c507f9b563602d5ef9d20ee05c2074a799030c0926f84527ba803d2b9cace15">Cia402State::switched_on</a>) {</div>
+<div class="line"><a id="l00124" name="l00124"></a><span class="lineno">  124</span>                <span class="comment">// Below operation enabled, quick stop acts as disable voltage.</span></div>
+<div class="line"><a id="l00125" name="l00125"></a><span class="lineno">  125</span>                state_ = <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1adapters.html#a77c507f9b563602d5ef9d20ee05c2074a0c082a93419e70e91662f4db4724c58f">Cia402State::switch_on_disabled</a>;</div>
+<div class="line"><a id="l00126" name="l00126"></a><span class="lineno">  126</span>                <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
+<div class="line"><a id="l00127" name="l00127"></a><span class="lineno">  127</span>            }</div>
+<div class="line"><a id="l00128" name="l00128"></a><span class="lineno">  128</span>            <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00129" name="l00129"></a><span class="lineno">  129</span>        <span class="keywordflow">case</span> <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1adapters.html#afe607609ac86372a82e5ef68c8754d76a5b0388c7163b882aacf27b8f80640d06">Cia402Command::disable_operation</a>:</div>
+<div class="line"><a id="l00130" name="l00130"></a><span class="lineno">  130</span>            <span class="keywordflow">if</span>(state_ == <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1adapters.html#a77c507f9b563602d5ef9d20ee05c2074aaa3faf605667def333f9d919cf3b998d">Cia402State::operation_enabled</a>) {</div>
+<div class="line"><a id="l00131" name="l00131"></a><span class="lineno">  131</span>                state_ = <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1adapters.html#a77c507f9b563602d5ef9d20ee05c2074a799030c0926f84527ba803d2b9cace15">Cia402State::switched_on</a>;</div>
+<div class="line"><a id="l00132" name="l00132"></a><span class="lineno">  132</span>                <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
+<div class="line"><a id="l00133" name="l00133"></a><span class="lineno">  133</span>            }</div>
+<div class="line"><a id="l00134" name="l00134"></a><span class="lineno">  134</span>            <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00135" name="l00135"></a><span class="lineno">  135</span>        <span class="keywordflow">case</span> <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1adapters.html#afe607609ac86372a82e5ef68c8754d76ae50cefab96c31b452dd893652405dfc0">Cia402Command::fault_reset</a>:</div>
+<div class="line"><a id="l00136" name="l00136"></a><span class="lineno">  136</span>            <span class="keywordflow">if</span>(state_ == <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1adapters.html#a77c507f9b563602d5ef9d20ee05c2074a3881bfd1571f85c6562ddfac94ea80ba">Cia402State::fault</a>) {</div>
+<div class="line"><a id="l00137" name="l00137"></a><span class="lineno">  137</span>                state_ = <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1adapters.html#a77c507f9b563602d5ef9d20ee05c2074a0c082a93419e70e91662f4db4724c58f">Cia402State::switch_on_disabled</a>;</div>
+<div class="line"><a id="l00138" name="l00138"></a><span class="lineno">  138</span>                <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
+<div class="line"><a id="l00139" name="l00139"></a><span class="lineno">  139</span>            }</div>
+<div class="line"><a id="l00140" name="l00140"></a><span class="lineno">  140</span>            <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00141" name="l00141"></a><span class="lineno">  141</span>        }</div>
+<div class="line"><a id="l00142" name="l00142"></a><span class="lineno">  142</span>        <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00143" name="l00143"></a><span class="lineno">  143</span>    }</div>
+</div>
+<div class="line"><a id="l00144" name="l00144"></a><span class="lineno">  144</span> </div>
+<div class="foldopen" id="foldopen00145" data-start="{" data-end="}">
+<div class="line"><a id="l00145" name="l00145"></a><span class="lineno"><a class="line" href="classplcopen_1_1core_1_1adapters_1_1Cia402Machine.html#ab06997f26851bb9974b8bf2e47969a9a">  145</a></span>    <span class="keywordtype">bool</span> <a class="code hl_function" href="classplcopen_1_1core_1_1adapters_1_1Cia402Machine.html#ab06997f26851bb9974b8bf2e47969a9a">operational</a>()<span class="keyword"> const</span></div>
+<div class="line"><a id="l00146" name="l00146"></a><span class="lineno">  146</span><span class="keyword">    </span>{</div>
+<div class="line"><a id="l00147" name="l00147"></a><span class="lineno">  147</span>        <span class="keywordflow">return</span> state_ == <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1adapters.html#a77c507f9b563602d5ef9d20ee05c2074aaa3faf605667def333f9d919cf3b998d">Cia402State::operation_enabled</a>;</div>
+<div class="line"><a id="l00148" name="l00148"></a><span class="lineno">  148</span>    }</div>
+</div>
+<div class="line"><a id="l00149" name="l00149"></a><span class="lineno">  149</span> </div>
+<div class="line"><a id="l00150" name="l00150"></a><span class="lineno">  150</span><span class="keyword">private</span>:</div>
+<div class="line"><a id="l00151" name="l00151"></a><span class="lineno">  151</span>    <a class="code hl_enumeration" href="namespaceplcopen_1_1core_1_1adapters.html#a77c507f9b563602d5ef9d20ee05c2074">Cia402State</a> state_ = <a class="code hl_enumvalue" href="namespaceplcopen_1_1core_1_1adapters.html#a77c507f9b563602d5ef9d20ee05c2074a3b5249baaa5a0d5bbb763453dd5de2a9">Cia402State::not_ready_to_switch_on</a>;</div>
+<div class="line"><a id="l00152" name="l00152"></a><span class="lineno">  152</span>};</div>
+</div>
+<div class="line"><a id="l00153" name="l00153"></a><span class="lineno">  153</span> </div>
+<div class="line"><a id="l00154" name="l00154"></a><span class="lineno">  154</span>} <span class="comment">// namespace plcopen::core::adapters</span></div>
+</div>
+<div class="ttc" id="aclassplcopen_1_1core_1_1adapters_1_1Cia402Machine_html"><div class="ttname"><a href="classplcopen_1_1core_1_1adapters_1_1Cia402Machine.html">plcopen::core::adapters::Cia402Machine</a></div><div class="ttdef"><b>Definition</b> <a href="cia402_8h_source.html#l00041">cia402.h:42</a></div></div>
+<div class="ttc" id="aclassplcopen_1_1core_1_1adapters_1_1Cia402Machine_html_a261513c745ca25215e8b807d853e0d55"><div class="ttname"><a href="classplcopen_1_1core_1_1adapters_1_1Cia402Machine.html#a261513c745ca25215e8b807d853e0d55">plcopen::core::adapters::Cia402Machine::initialize</a></div><div class="ttdeci">void initialize()</div><div class="ttdef"><b>Definition</b> <a href="cia402_8h_source.html#l00050">cia402.h:50</a></div></div>
+<div class="ttc" id="aclassplcopen_1_1core_1_1adapters_1_1Cia402Machine_html_a40a1120c39425a5f0263a3c487c93e65"><div class="ttname"><a href="classplcopen_1_1core_1_1adapters_1_1Cia402Machine.html#a40a1120c39425a5f0263a3c487c93e65">plcopen::core::adapters::Cia402Machine::fault_event</a></div><div class="ttdeci">void fault_event()</div><div class="ttdef"><b>Definition</b> <a href="cia402_8h_source.html#l00058">cia402.h:58</a></div></div>
+<div class="ttc" id="aclassplcopen_1_1core_1_1adapters_1_1Cia402Machine_html_a6ccf7473e7013b1f9b8b588c41e9672c"><div class="ttname"><a href="classplcopen_1_1core_1_1adapters_1_1Cia402Machine.html#a6ccf7473e7013b1f9b8b588c41e9672c">plcopen::core::adapters::Cia402Machine::command</a></div><div class="ttdeci">bool command(Cia402Command command)</div><div class="ttdef"><b>Definition</b> <a href="cia402_8h_source.html#l00084">cia402.h:84</a></div></div>
+<div class="ttc" id="aclassplcopen_1_1core_1_1adapters_1_1Cia402Machine_html_a7ef8631bd97cb936528e9deb3b4c1526"><div class="ttname"><a href="classplcopen_1_1core_1_1adapters_1_1Cia402Machine.html#a7ef8631bd97cb936528e9deb3b4c1526">plcopen::core::adapters::Cia402Machine::quick_stop_complete</a></div><div class="ttdeci">void quick_stop_complete()</div><div class="ttdef"><b>Definition</b> <a href="cia402_8h_source.html#l00075">cia402.h:75</a></div></div>
+<div class="ttc" id="aclassplcopen_1_1core_1_1adapters_1_1Cia402Machine_html_a9431cc8d03873d044c0a1b2a172232b0"><div class="ttname"><a href="classplcopen_1_1core_1_1adapters_1_1Cia402Machine.html#a9431cc8d03873d044c0a1b2a172232b0">plcopen::core::adapters::Cia402Machine::state</a></div><div class="ttdeci">Cia402State state() const</div><div class="ttdef"><b>Definition</b> <a href="cia402_8h_source.html#l00044">cia402.h:44</a></div></div>
+<div class="ttc" id="aclassplcopen_1_1core_1_1adapters_1_1Cia402Machine_html_a9cc23245ee1b974f9db859075af80c7f"><div class="ttname"><a href="classplcopen_1_1core_1_1adapters_1_1Cia402Machine.html#a9cc23245ee1b974f9db859075af80c7f">plcopen::core::adapters::Cia402Machine::fault_reaction_complete</a></div><div class="ttdeci">void fault_reaction_complete()</div><div class="ttdef"><b>Definition</b> <a href="cia402_8h_source.html#l00066">cia402.h:66</a></div></div>
+<div class="ttc" id="aclassplcopen_1_1core_1_1adapters_1_1Cia402Machine_html_ab06997f26851bb9974b8bf2e47969a9a"><div class="ttname"><a href="classplcopen_1_1core_1_1adapters_1_1Cia402Machine.html#ab06997f26851bb9974b8bf2e47969a9a">plcopen::core::adapters::Cia402Machine::operational</a></div><div class="ttdeci">bool operational() const</div><div class="ttdef"><b>Definition</b> <a href="cia402_8h_source.html#l00145">cia402.h:145</a></div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1adapters_html"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1adapters.html">plcopen::core::adapters</a></div><div class="ttdef"><b>Definition</b> <a href="cia402_8h_source.html#l00014">cia402.h:15</a></div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1adapters_html_a77c507f9b563602d5ef9d20ee05c2074"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1adapters.html#a77c507f9b563602d5ef9d20ee05c2074">plcopen::core::adapters::Cia402State</a></div><div class="ttdeci">Cia402State</div><div class="ttdef"><b>Definition</b> <a href="cia402_8h_source.html#l00017">cia402.h:18</a></div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1adapters_html_a77c507f9b563602d5ef9d20ee05c2074a04a7bfe44b7945ef1a8257cb4be0f64d"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1adapters.html#a77c507f9b563602d5ef9d20ee05c2074a04a7bfe44b7945ef1a8257cb4be0f64d">plcopen::core::adapters::Cia402State::fault_reaction_active</a></div><div class="ttdeci">@ fault_reaction_active</div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1adapters_html_a77c507f9b563602d5ef9d20ee05c2074a0c082a93419e70e91662f4db4724c58f"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1adapters.html#a77c507f9b563602d5ef9d20ee05c2074a0c082a93419e70e91662f4db4724c58f">plcopen::core::adapters::Cia402State::switch_on_disabled</a></div><div class="ttdeci">@ switch_on_disabled</div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1adapters_html_a77c507f9b563602d5ef9d20ee05c2074a3881bfd1571f85c6562ddfac94ea80ba"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1adapters.html#a77c507f9b563602d5ef9d20ee05c2074a3881bfd1571f85c6562ddfac94ea80ba">plcopen::core::adapters::Cia402State::fault</a></div><div class="ttdeci">@ fault</div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1adapters_html_a77c507f9b563602d5ef9d20ee05c2074a3b5249baaa5a0d5bbb763453dd5de2a9"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1adapters.html#a77c507f9b563602d5ef9d20ee05c2074a3b5249baaa5a0d5bbb763453dd5de2a9">plcopen::core::adapters::Cia402State::not_ready_to_switch_on</a></div><div class="ttdeci">@ not_ready_to_switch_on</div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1adapters_html_a77c507f9b563602d5ef9d20ee05c2074a53c8805272763c8c6ddfe6161904bcf2"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1adapters.html#a77c507f9b563602d5ef9d20ee05c2074a53c8805272763c8c6ddfe6161904bcf2">plcopen::core::adapters::Cia402State::ready_to_switch_on</a></div><div class="ttdeci">@ ready_to_switch_on</div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1adapters_html_a77c507f9b563602d5ef9d20ee05c2074a799030c0926f84527ba803d2b9cace15"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1adapters.html#a77c507f9b563602d5ef9d20ee05c2074a799030c0926f84527ba803d2b9cace15">plcopen::core::adapters::Cia402State::switched_on</a></div><div class="ttdeci">@ switched_on</div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1adapters_html_a77c507f9b563602d5ef9d20ee05c2074aa0cb3f8e1403f14cb8c7caa027d3d4de"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1adapters.html#a77c507f9b563602d5ef9d20ee05c2074aa0cb3f8e1403f14cb8c7caa027d3d4de">plcopen::core::adapters::Cia402State::quick_stop_active</a></div><div class="ttdeci">@ quick_stop_active</div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1adapters_html_a77c507f9b563602d5ef9d20ee05c2074aaa3faf605667def333f9d919cf3b998d"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1adapters.html#a77c507f9b563602d5ef9d20ee05c2074aaa3faf605667def333f9d919cf3b998d">plcopen::core::adapters::Cia402State::operation_enabled</a></div><div class="ttdeci">@ operation_enabled</div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1adapters_html_afe607609ac86372a82e5ef68c8754d76"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1adapters.html#afe607609ac86372a82e5ef68c8754d76">plcopen::core::adapters::Cia402Command</a></div><div class="ttdeci">Cia402Command</div><div class="ttdef"><b>Definition</b> <a href="cia402_8h_source.html#l00030">cia402.h:31</a></div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1adapters_html_afe607609ac86372a82e5ef68c8754d76a427891de0a93a4e9308599fba0e9b54f"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1adapters.html#afe607609ac86372a82e5ef68c8754d76a427891de0a93a4e9308599fba0e9b54f">plcopen::core::adapters::Cia402Command::quick_stop</a></div><div class="ttdeci">@ quick_stop</div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1adapters_html_afe607609ac86372a82e5ef68c8754d76a5924f03a95ee6f7277e5bdd1e81b8fdc"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1adapters.html#afe607609ac86372a82e5ef68c8754d76a5924f03a95ee6f7277e5bdd1e81b8fdc">plcopen::core::adapters::Cia402Command::shutdown</a></div><div class="ttdeci">@ shutdown</div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1adapters_html_afe607609ac86372a82e5ef68c8754d76a5b0388c7163b882aacf27b8f80640d06"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1adapters.html#afe607609ac86372a82e5ef68c8754d76a5b0388c7163b882aacf27b8f80640d06">plcopen::core::adapters::Cia402Command::disable_operation</a></div><div class="ttdeci">@ disable_operation</div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1adapters_html_afe607609ac86372a82e5ef68c8754d76a5efc66475d5c5973edce756ef280a73d"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1adapters.html#afe607609ac86372a82e5ef68c8754d76a5efc66475d5c5973edce756ef280a73d">plcopen::core::adapters::Cia402Command::disable_voltage</a></div><div class="ttdeci">@ disable_voltage</div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1adapters_html_afe607609ac86372a82e5ef68c8754d76a8736091ce9008de3ff37dd5f8259c09c"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1adapters.html#afe607609ac86372a82e5ef68c8754d76a8736091ce9008de3ff37dd5f8259c09c">plcopen::core::adapters::Cia402Command::switch_on</a></div><div class="ttdeci">@ switch_on</div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1adapters_html_afe607609ac86372a82e5ef68c8754d76aad5eac902161594913260d56bc76e460"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1adapters.html#afe607609ac86372a82e5ef68c8754d76aad5eac902161594913260d56bc76e460">plcopen::core::adapters::Cia402Command::enable_operation</a></div><div class="ttdeci">@ enable_operation</div></div>
+<div class="ttc" id="anamespaceplcopen_1_1core_1_1adapters_html_afe607609ac86372a82e5ef68c8754d76ae50cefab96c31b452dd893652405dfc0"><div class="ttname"><a href="namespaceplcopen_1_1core_1_1adapters.html#afe607609ac86372a82e5ef68c8754d76ae50cefab96c31b452dd893652405dfc0">plcopen::core::adapters::Cia402Command::fault_reset</a></div><div class="ttdeci">@ fault_reset</div></div>
+</div><!-- fragment --></div><!-- contents -->
+<!-- start footer part -->
+<hr class="footer"/><address class="footer"><small>
+制作者&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.8
+</small></address>
+</body>
+</html>

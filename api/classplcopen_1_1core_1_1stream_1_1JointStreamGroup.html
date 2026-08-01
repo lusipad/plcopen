@@ -1,0 +1,631 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh">
+<head>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=11"/>
+<meta name="generator" content="Doxygen 1.9.8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>plcopen: plcopen::core::stream::JointStreamGroup类 参考</title>
+<link href="tabs.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="jquery.js"></script>
+<script type="text/javascript" src="dynsections.js"></script>
+<link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<link href="doxygen.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+<div id="top"><!-- do not remove this div, it is closed by doxygen! -->
+<div id="titlearea">
+<table cellspacing="0" cellpadding="0">
+ <tbody>
+ <tr id="projectrow">
+  <td id="projectalign">
+   <div id="projectname">plcopen<span id="projectnumber">&#160;0.21.0</span>
+   </div>
+  </td>
+ </tr>
+ </tbody>
+</table>
+</div>
+<!-- end header part -->
+<!-- 制作者 Doxygen 1.9.8 -->
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+var searchBox = new SearchBox("searchBox", "search/",'.html');
+/* @license-end */
+</script>
+<script type="text/javascript" src="menudata.js"></script>
+<script type="text/javascript" src="menu.js"></script>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+$(function() {
+  initMenu('',true,false,'search.php','搜索');
+  $(document).ready(function() { init_search(); });
+});
+/* @license-end */
+</script>
+<div id="main-nav"></div>
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<div id="MSearchResults">
+<div class="SRPage">
+<div id="SRIndex">
+<div id="SRResults"></div>
+<div class="SRStatus" id="Loading">载入中...</div>
+<div class="SRStatus" id="Searching">搜索中...</div>
+<div class="SRStatus" id="NoMatches">未找到</div>
+</div>
+</div>
+</div>
+</div>
+
+<div id="nav-path" class="navpath">
+  <ul>
+<li class="navelem"><a class="el" href="namespaceplcopen.html">plcopen</a></li><li class="navelem"><a class="el" href="namespaceplcopen_1_1core.html">core</a></li><li class="navelem"><a class="el" href="namespaceplcopen_1_1core_1_1stream.html">stream</a></li><li class="navelem"><a class="el" href="classplcopen_1_1core_1_1stream_1_1JointStreamGroup.html">JointStreamGroup</a></li>  </ul>
+</div>
+</div><!-- top -->
+<div class="header">
+  <div class="summary">
+<a href="#nested-classes">类</a> &#124;
+<a href="#pub-methods">Public 成员函数</a> &#124;
+<a href="#pub-static-attribs">静态 Public 属性</a> &#124;
+<a href="classplcopen_1_1core_1_1stream_1_1JointStreamGroup-members.html">所有成员列表</a>  </div>
+  <div class="headertitle"><div class="title">plcopen::core::stream::JointStreamGroup类 参考</div></div>
+</div><!--header-->
+<div class="contents">
+
+<p><code>#include &lt;<a class="el" href="joint__group_8h_source.html">joint_group.h</a>&gt;</code></p>
+<table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
+Public 成员函数</h2></td></tr>
+<tr class="memitem:a23cf3ca5dc0205b2439240dc9c34ffa9" id="r_a23cf3ca5dc0205b2439240dc9c34ffa9"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8">rt::ErrorCode</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1stream_1_1JointStreamGroup.html#a23cf3ca5dc0205b2439240dc9c34ffa9">configure</a> (std::size_t <a class="el" href="classplcopen_1_1core_1_1stream_1_1JointStreamGroup.html#aba34b8197ea9959c1f2b01e2c6041228">joint_count</a>, const <a class="el" href="structplcopen_1_1core_1_1stream_1_1StreamFilterConfig.html">StreamFilterConfig</a> &amp;config)</td></tr>
+<tr class="separator:a23cf3ca5dc0205b2439240dc9c34ffa9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a94483007a93523a17ee7ba0c761d4f85" id="r_a94483007a93523a17ee7ba0c761d4f85"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8">rt::ErrorCode</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1stream_1_1JointStreamGroup.html#a94483007a93523a17ee7ba0c761d4f85">configure_frame</a> (const <a class="el" href="structplcopen_1_1core_1_1stream_1_1JointStreamGroupConfig.html">JointStreamGroupConfig</a> &amp;config)</td></tr>
+<tr class="separator:a94483007a93523a17ee7ba0c761d4f85"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a345e03460cd0b208384f656e79fec096" id="r_a345e03460cd0b208384f656e79fec096"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1stream_1_1JointStreamGroup.html#a345e03460cd0b208384f656e79fec096">end_session</a> ()</td></tr>
+<tr class="separator:a345e03460cd0b208384f656e79fec096"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3e749be85774f16532d29d0f0cce3a8a" id="r_a3e749be85774f16532d29d0f0cce3a8a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8">rt::ErrorCode</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1stream_1_1JointStreamGroup.html#a3e749be85774f16532d29d0f0cce3a8a">reset</a> (std::size_t <a class="el" href="classplcopen_1_1core_1_1stream_1_1JointStreamGroup.html#a6babe198340c098260d9866b9fc29725">joint</a>, <a class="el" href="structplcopen_1_1core_1_1otg_1_1State1D.html">otg::State1D</a> <a class="el" href="classplcopen_1_1core_1_1stream_1_1JointStreamGroup.html#aea70c67aeefff45d4775c1fe980911fd">state</a>)</td></tr>
+<tr class="separator:a3e749be85774f16532d29d0f0cce3a8a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afc85d6e42e94684325075848a29ec471" id="r_afc85d6e42e94684325075848a29ec471"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8">rt::ErrorCode</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1stream_1_1JointStreamGroup.html#afc85d6e42e94684325075848a29ec471">push_target</a> (std::size_t <a class="el" href="classplcopen_1_1core_1_1stream_1_1JointStreamGroup.html#a6babe198340c098260d9866b9fc29725">joint</a>, const <a class="el" href="structplcopen_1_1core_1_1stream_1_1StreamTarget.html">StreamTarget</a> &amp;target)</td></tr>
+<tr class="separator:afc85d6e42e94684325075848a29ec471"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac554ecf96acf7a1ea2c9c37b81816966" id="r_ac554ecf96acf7a1ea2c9c37b81816966"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8">rt::ErrorCode</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1stream_1_1JointStreamGroup.html#ac554ecf96acf7a1ea2c9c37b81816966">push_frame</a> (const <a class="el" href="structplcopen_1_1core_1_1stream_1_1JointCommandFrame.html">JointCommandFrame</a> &amp;frame)</td></tr>
+<tr class="separator:ac554ecf96acf7a1ea2c9c37b81816966"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2672cf11b4f81ed3a2828b4b32660eaa" id="r_a2672cf11b4f81ed3a2828b4b32660eaa"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1stream_1_1JointStreamGroup.html#a2672cf11b4f81ed3a2828b4b32660eaa">cycle</a> ()</td></tr>
+<tr class="separator:a2672cf11b4f81ed3a2828b4b32660eaa"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aea70c67aeefff45d4775c1fe980911fd" id="r_aea70c67aeefff45d4775c1fe980911fd"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structplcopen_1_1core_1_1otg_1_1State1D.html">otg::State1D</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1stream_1_1JointStreamGroup.html#aea70c67aeefff45d4775c1fe980911fd">state</a> (std::size_t <a class="el" href="classplcopen_1_1core_1_1stream_1_1JointStreamGroup.html#a6babe198340c098260d9866b9fc29725">joint</a>) const</td></tr>
+<tr class="separator:aea70c67aeefff45d4775c1fe980911fd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6babe198340c098260d9866b9fc29725" id="r_a6babe198340c098260d9866b9fc29725"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="classplcopen_1_1core_1_1stream_1_1StreamFilter1D.html">StreamFilter1D</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1stream_1_1JointStreamGroup.html#a6babe198340c098260d9866b9fc29725">joint</a> (std::size_t index) const</td></tr>
+<tr class="separator:a6babe198340c098260d9866b9fc29725"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aba34b8197ea9959c1f2b01e2c6041228" id="r_aba34b8197ea9959c1f2b01e2c6041228"><td class="memItemLeft" align="right" valign="top">std::size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1stream_1_1JointStreamGroup.html#aba34b8197ea9959c1f2b01e2c6041228">joint_count</a> () const</td></tr>
+<tr class="separator:aba34b8197ea9959c1f2b01e2c6041228"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad9ff45852b898e32e61e87106aa7fe40" id="r_ad9ff45852b898e32e61e87106aa7fe40"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="structplcopen_1_1core_1_1stream_1_1JointSetpointFrame.html">JointSetpointFrame</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1stream_1_1JointStreamGroup.html#ad9ff45852b898e32e61e87106aa7fe40">read_setpoint_frame</a> () const</td></tr>
+<tr class="separator:ad9ff45852b898e32e61e87106aa7fe40"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a18adb8cb43e5265251a8bc493c259e93" id="r_a18adb8cb43e5265251a8bc493c259e93"><td class="memItemLeft" align="right" valign="top">std::uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1stream_1_1JointStreamGroup.html#a18adb8cb43e5265251a8bc493c259e93">rejected_frames</a> () const</td></tr>
+<tr class="separator:a18adb8cb43e5265251a8bc493c259e93"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a814d38c9a6f422993a0c7167515190f2" id="r_a814d38c9a6f422993a0c7167515190f2"><td class="memItemLeft" align="right" valign="top">std::uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1stream_1_1JointStreamGroup.html#a814d38c9a6f422993a0c7167515190f2">dropout_count</a> () const</td></tr>
+<tr class="separator:a814d38c9a6f422993a0c7167515190f2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3c2bbc0be6972c52986eb73d5815e0e7" id="r_a3c2bbc0be6972c52986eb73d5815e0e7"><td class="memItemLeft" align="right" valign="top">std::size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1stream_1_1JointStreamGroup.html#a3c2bbc0be6972c52986eb73d5815e0e7">pending_replans</a> () const</td></tr>
+<tr class="separator:a3c2bbc0be6972c52986eb73d5815e0e7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a303f2d35fa9c1a9dd2421258f8b08c85" id="r_a303f2d35fa9c1a9dd2421258f8b08c85"><td class="memItemLeft" align="right" valign="top">std::uint64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1stream_1_1JointStreamGroup.html#a303f2d35fa9c1a9dd2421258f8b08c85">deferred_replans</a> () const</td></tr>
+<tr class="separator:a303f2d35fa9c1a9dd2421258f8b08c85"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-static-attribs" name="pub-static-attribs"></a>
+静态 Public 属性</h2></td></tr>
+<tr class="memitem:ac43ea2280e1d5fc83a26c9654283fc29" id="r_ac43ea2280e1d5fc83a26c9654283fc29"><td class="memItemLeft" align="right" valign="top">static constexpr std::size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1stream_1_1JointStreamGroup.html#ac43ea2280e1d5fc83a26c9654283fc29">MaxJoints</a> = <a class="el" href="namespaceplcopen_1_1core_1_1stream.html#a5c9faea23615191b23d041ab405e8c11">JointStreamMaxJoints</a></td></tr>
+<tr class="separator:ac43ea2280e1d5fc83a26c9654283fc29"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9a98ed5de29379fd0652f32813d47cea" id="r_a9a98ed5de29379fd0652f32813d47cea"><td class="memItemLeft" align="right" valign="top">static constexpr std::size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1stream_1_1JointStreamGroup.html#a9a98ed5de29379fd0652f32813d47cea">SlowReplansPerCycle</a> = 10</td></tr>
+<tr class="separator:a9a98ed5de29379fd0652f32813d47cea"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table>
+<a name="details" id="details"></a><h2 class="groupheader">详细描述</h2>
+<div class="textblock">
+<p class="definition">在文件 <a class="el" href="joint__group_8h_source.html">joint_group.h</a> 第 <a class="el" href="joint__group_8h_source.html#l00097">97</a> 行定义.</p>
+</div><h2 class="groupheader">成员函数说明</h2>
+<a id="a23cf3ca5dc0205b2439240dc9c34ffa9" name="a23cf3ca5dc0205b2439240dc9c34ffa9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a23cf3ca5dc0205b2439240dc9c34ffa9">&#9670;&#160;</a></span>configure()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8">rt::ErrorCode</a> plcopen::core::stream::JointStreamGroup::configure </td>
+          <td>(</td>
+          <td class="paramtype">std::size_t&#160;</td>
+          <td class="paramname"><em>joint_count</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="structplcopen_1_1core_1_1stream_1_1StreamFilterConfig.html">StreamFilterConfig</a> &amp;&#160;</td>
+          <td class="paramname"><em>config</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="joint__group_8h_source.html">joint_group.h</a> 第 <a class="el" href="joint__group_8h_source.html#l00104">104</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a94483007a93523a17ee7ba0c761d4f85" name="a94483007a93523a17ee7ba0c761d4f85"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a94483007a93523a17ee7ba0c761d4f85">&#9670;&#160;</a></span>configure_frame()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8">rt::ErrorCode</a> plcopen::core::stream::JointStreamGroup::configure_frame </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="structplcopen_1_1core_1_1stream_1_1JointStreamGroupConfig.html">JointStreamGroupConfig</a> &amp;&#160;</td>
+          <td class="paramname"><em>config</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="joint__group_8h_source.html">joint_group.h</a> 第 <a class="el" href="joint__group_8h_source.html#l00127">127</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a2672cf11b4f81ed3a2828b4b32660eaa" name="a2672cf11b4f81ed3a2828b4b32660eaa"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2672cf11b4f81ed3a2828b4b32660eaa">&#9670;&#160;</a></span>cycle()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void plcopen::core::stream::JointStreamGroup::cycle </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="joint__group_8h_source.html">joint_group.h</a> 第 <a class="el" href="joint__group_8h_source.html#l00232">232</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a303f2d35fa9c1a9dd2421258f8b08c85" name="a303f2d35fa9c1a9dd2421258f8b08c85"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a303f2d35fa9c1a9dd2421258f8b08c85">&#9670;&#160;</a></span>deferred_replans()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::uint64_t plcopen::core::stream::JointStreamGroup::deferred_replans </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="joint__group_8h_source.html">joint_group.h</a> 第 <a class="el" href="joint__group_8h_source.html#l00311">311</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a814d38c9a6f422993a0c7167515190f2" name="a814d38c9a6f422993a0c7167515190f2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a814d38c9a6f422993a0c7167515190f2">&#9670;&#160;</a></span>dropout_count()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::uint32_t plcopen::core::stream::JointStreamGroup::dropout_count </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="joint__group_8h_source.html">joint_group.h</a> 第 <a class="el" href="joint__group_8h_source.html#l00295">295</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a345e03460cd0b208384f656e79fec096" name="a345e03460cd0b208384f656e79fec096"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a345e03460cd0b208384f656e79fec096">&#9670;&#160;</a></span>end_session()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void plcopen::core::stream::JointStreamGroup::end_session </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="joint__group_8h_source.html">joint_group.h</a> 第 <a class="el" href="joint__group_8h_source.html#l00162">162</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a6babe198340c098260d9866b9fc29725" name="a6babe198340c098260d9866b9fc29725"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6babe198340c098260d9866b9fc29725">&#9670;&#160;</a></span>joint()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">const <a class="el" href="classplcopen_1_1core_1_1stream_1_1StreamFilter1D.html">StreamFilter1D</a> &amp; plcopen::core::stream::JointStreamGroup::joint </td>
+          <td>(</td>
+          <td class="paramtype">std::size_t&#160;</td>
+          <td class="paramname"><em>index</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="joint__group_8h_source.html">joint_group.h</a> 第 <a class="el" href="joint__group_8h_source.html#l00284">284</a> 行定义.</p>
+
+</div>
+</div>
+<a id="aba34b8197ea9959c1f2b01e2c6041228" name="aba34b8197ea9959c1f2b01e2c6041228"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aba34b8197ea9959c1f2b01e2c6041228">&#9670;&#160;</a></span>joint_count()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::size_t plcopen::core::stream::JointStreamGroup::joint_count </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="joint__group_8h_source.html">joint_group.h</a> 第 <a class="el" href="joint__group_8h_source.html#l00286">286</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a3c2bbc0be6972c52986eb73d5815e0e7" name="a3c2bbc0be6972c52986eb73d5815e0e7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3c2bbc0be6972c52986eb73d5815e0e7">&#9670;&#160;</a></span>pending_replans()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::size_t plcopen::core::stream::JointStreamGroup::pending_replans </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="joint__group_8h_source.html">joint_group.h</a> 第 <a class="el" href="joint__group_8h_source.html#l00297">297</a> 行定义.</p>
+
+</div>
+</div>
+<a id="ac554ecf96acf7a1ea2c9c37b81816966" name="ac554ecf96acf7a1ea2c9c37b81816966"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac554ecf96acf7a1ea2c9c37b81816966">&#9670;&#160;</a></span>push_frame()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8">rt::ErrorCode</a> plcopen::core::stream::JointStreamGroup::push_frame </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="structplcopen_1_1core_1_1stream_1_1JointCommandFrame.html">JointCommandFrame</a> &amp;&#160;</td>
+          <td class="paramname"><em>frame</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="joint__group_8h_source.html">joint_group.h</a> 第 <a class="el" href="joint__group_8h_source.html#l00211">211</a> 行定义.</p>
+
+</div>
+</div>
+<a id="afc85d6e42e94684325075848a29ec471" name="afc85d6e42e94684325075848a29ec471"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afc85d6e42e94684325075848a29ec471">&#9670;&#160;</a></span>push_target()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8">rt::ErrorCode</a> plcopen::core::stream::JointStreamGroup::push_target </td>
+          <td>(</td>
+          <td class="paramtype">std::size_t&#160;</td>
+          <td class="paramname"><em>joint</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="structplcopen_1_1core_1_1stream_1_1StreamTarget.html">StreamTarget</a> &amp;&#160;</td>
+          <td class="paramname"><em>target</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="joint__group_8h_source.html">joint_group.h</a> 第 <a class="el" href="joint__group_8h_source.html#l00198">198</a> 行定义.</p>
+
+</div>
+</div>
+<a id="ad9ff45852b898e32e61e87106aa7fe40" name="ad9ff45852b898e32e61e87106aa7fe40"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad9ff45852b898e32e61e87106aa7fe40">&#9670;&#160;</a></span>read_setpoint_frame()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">const <a class="el" href="structplcopen_1_1core_1_1stream_1_1JointSetpointFrame.html">JointSetpointFrame</a> &amp; plcopen::core::stream::JointStreamGroup::read_setpoint_frame </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="joint__group_8h_source.html">joint_group.h</a> 第 <a class="el" href="joint__group_8h_source.html#l00291">291</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a18adb8cb43e5265251a8bc493c259e93" name="a18adb8cb43e5265251a8bc493c259e93"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a18adb8cb43e5265251a8bc493c259e93">&#9670;&#160;</a></span>rejected_frames()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::uint32_t plcopen::core::stream::JointStreamGroup::rejected_frames </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="joint__group_8h_source.html">joint_group.h</a> 第 <a class="el" href="joint__group_8h_source.html#l00293">293</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a3e749be85774f16532d29d0f0cce3a8a" name="a3e749be85774f16532d29d0f0cce3a8a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3e749be85774f16532d29d0f0cce3a8a">&#9670;&#160;</a></span>reset()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8">rt::ErrorCode</a> plcopen::core::stream::JointStreamGroup::reset </td>
+          <td>(</td>
+          <td class="paramtype">std::size_t&#160;</td>
+          <td class="paramname"><em>joint</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="structplcopen_1_1core_1_1otg_1_1State1D.html">otg::State1D</a>&#160;</td>
+          <td class="paramname"><em>state</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="joint__group_8h_source.html">joint_group.h</a> 第 <a class="el" href="joint__group_8h_source.html#l00171">171</a> 行定义.</p>
+
+</div>
+</div>
+<a id="aea70c67aeefff45d4775c1fe980911fd" name="aea70c67aeefff45d4775c1fe980911fd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aea70c67aeefff45d4775c1fe980911fd">&#9670;&#160;</a></span>state()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="structplcopen_1_1core_1_1otg_1_1State1D.html">otg::State1D</a> plcopen::core::stream::JointStreamGroup::state </td>
+          <td>(</td>
+          <td class="paramtype">std::size_t&#160;</td>
+          <td class="paramname"><em>joint</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="joint__group_8h_source.html">joint_group.h</a> 第 <a class="el" href="joint__group_8h_source.html#l00272">272</a> 行定义.</p>
+
+</div>
+</div>
+<h2 class="groupheader">类成员变量说明</h2>
+<a id="ac43ea2280e1d5fc83a26c9654283fc29" name="ac43ea2280e1d5fc83a26c9654283fc29"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac43ea2280e1d5fc83a26c9654283fc29">&#9670;&#160;</a></span>MaxJoints</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">constexpr std::size_t plcopen::core::stream::JointStreamGroup::MaxJoints = <a class="el" href="namespaceplcopen_1_1core_1_1stream.html#a5c9faea23615191b23d041ab405e8c11">JointStreamMaxJoints</a></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span><span class="mlabel">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="joint__group_8h_source.html">joint_group.h</a> 第 <a class="el" href="joint__group_8h_source.html#l00100">100</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a9a98ed5de29379fd0652f32813d47cea" name="a9a98ed5de29379fd0652f32813d47cea"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9a98ed5de29379fd0652f32813d47cea">&#9670;&#160;</a></span>SlowReplansPerCycle</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">constexpr std::size_t plcopen::core::stream::JointStreamGroup::SlowReplansPerCycle = 10</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span><span class="mlabel">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="joint__group_8h_source.html">joint_group.h</a> 第 <a class="el" href="joint__group_8h_source.html#l00101">101</a> 行定义.</p>
+
+</div>
+</div>
+<hr/>该类的文档由以下文件生成:<ul>
+<li>core/stream/<a class="el" href="joint__group_8h_source.html">joint_group.h</a></li>
+</ul>
+</div><!-- contents -->
+<!-- start footer part -->
+<hr class="footer"/><address class="footer"><small>
+制作者&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.8
+</small></address>
+</body>
+</html>

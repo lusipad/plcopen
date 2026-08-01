@@ -1,0 +1,5 @@
+<map id="plcopen::core::geom::RigidTransform" name="plcopen::core::geom::RigidTransform">
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,108,160,148"/>
+<area shape="rect" id="Node000002" href="$structplcopen_1_1core_1_1geom_1_1Vec3.html" title=" " alt="" coords="5,5,160,45"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="85,59,85,108,80,108,80,59"/>
+</map>

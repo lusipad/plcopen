@@ -1,0 +1,354 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh">
+<head>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=11"/>
+<meta name="generator" content="Doxygen 1.9.8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>plcopen: plcopen::core::fb::FbDigitalCamSwitch类 参考</title>
+<link href="tabs.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="jquery.js"></script>
+<script type="text/javascript" src="dynsections.js"></script>
+<link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<link href="doxygen.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+<div id="top"><!-- do not remove this div, it is closed by doxygen! -->
+<div id="titlearea">
+<table cellspacing="0" cellpadding="0">
+ <tbody>
+ <tr id="projectrow">
+  <td id="projectalign">
+   <div id="projectname">plcopen<span id="projectnumber">&#160;0.21.0</span>
+   </div>
+  </td>
+ </tr>
+ </tbody>
+</table>
+</div>
+<!-- end header part -->
+<!-- 制作者 Doxygen 1.9.8 -->
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+var searchBox = new SearchBox("searchBox", "search/",'.html');
+/* @license-end */
+</script>
+<script type="text/javascript" src="menudata.js"></script>
+<script type="text/javascript" src="menu.js"></script>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+$(function() {
+  initMenu('',true,false,'search.php','搜索');
+  $(document).ready(function() { init_search(); });
+});
+/* @license-end */
+</script>
+<div id="main-nav"></div>
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<div id="MSearchResults">
+<div class="SRPage">
+<div id="SRIndex">
+<div id="SRResults"></div>
+<div class="SRStatus" id="Loading">载入中...</div>
+<div class="SRStatus" id="Searching">搜索中...</div>
+<div class="SRStatus" id="NoMatches">未找到</div>
+</div>
+</div>
+</div>
+</div>
+
+<div id="nav-path" class="navpath">
+  <ul>
+<li class="navelem"><a class="el" href="namespaceplcopen.html">plcopen</a></li><li class="navelem"><a class="el" href="namespaceplcopen_1_1core.html">core</a></li><li class="navelem"><a class="el" href="namespaceplcopen_1_1core_1_1fb.html">fb</a></li><li class="navelem"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbDigitalCamSwitch.html">FbDigitalCamSwitch</a></li>  </ul>
+</div>
+</div><!-- top -->
+<div class="header">
+  <div class="summary">
+<a href="#pub-methods">Public 成员函数</a> &#124;
+<a href="#pub-attribs">Public 属性</a> &#124;
+<a href="classplcopen_1_1core_1_1fb_1_1FbDigitalCamSwitch-members.html">所有成员列表</a>  </div>
+  <div class="headertitle"><div class="title">plcopen::core::fb::FbDigitalCamSwitch类 参考</div></div>
+</div><!--header-->
+<div class="contents">
+
+<p><code>#include &lt;<a class="el" href="io_8h_source.html">io.h</a>&gt;</code></p>
+<div class="dynheader">
+plcopen::core::fb::FbDigitalCamSwitch 的协作图:</div>
+<div class="dyncontent">
+<div class="center"><img src="classplcopen_1_1core_1_1fb_1_1FbDigitalCamSwitch__coll__graph.png" border="0" usemap="#aplcopen_1_1core_1_1fb_1_1FbDigitalCamSwitch_coll__map" alt="Collaboration graph"/></div>
+<map name="aplcopen_1_1core_1_1fb_1_1FbDigitalCamSwitch_coll__map" id="aplcopen_1_1core_1_1fb_1_1FbDigitalCamSwitch_coll__map">
+<area shape="rect" title=" " alt="" coords="545,101,700,141"/>
+<area shape="rect" href="classplcopen_1_1core_1_1axis_1_1AxisModel.html" title=" " alt="" coords="243,5,387,45"/>
+<area shape="poly" title=" " alt="" coords="401,44,522,80,573,99,571,104,520,85,399,49"/>
+<area shape="rect" href="structplcopen_1_1core_1_1fb_1_1CamSwitchTableView.html" title=" " alt="" coords="234,69,395,109"/>
+<area shape="poly" title=" " alt="" coords="410,96,545,111,545,116,409,102"/>
+<area shape="rect" href="structplcopen_1_1core_1_1fb_1_1CamSwitchAction.html" title=" " alt="" coords="5,69,144,109"/>
+<area shape="poly" title=" " alt="" coords="157,87,234,87,234,92,157,92"/>
+<area shape="rect" href="structplcopen_1_1core_1_1fb_1_1CamSwitchOutputsView.html" title=" " alt="" coords="225,133,404,173"/>
+<area shape="poly" title=" " alt="" coords="417,140,545,127,545,132,418,145"/>
+<area shape="rect" href="structplcopen_1_1core_1_1fb_1_1CamTrackOptionsView.html" title=" " alt="" coords="231,197,399,237"/>
+<area shape="poly" title=" " alt="" coords="410,191,520,159,573,139,575,144,522,164,412,196"/>
+<area shape="rect" href="structplcopen_1_1core_1_1fb_1_1CamTrackOption.html" title=" " alt="" coords="5,197,144,237"/>
+<area shape="poly" title=" " alt="" coords="158,215,231,215,231,220,158,220"/>
+</map>
+<center><span class="legend">[<a href="graph_legend.html">图例</a>]</span></center></div>
+<table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
+Public 成员函数</h2></td></tr>
+<tr class="memitem:a3d5d42998170d064b6db3f9d4ce64348" id="r_a3d5d42998170d064b6db3f9d4ce64348"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbDigitalCamSwitch.html#a3d5d42998170d064b6db3f9d4ce64348">call</a> (std::int64_t task_period_ns=1000000)</td></tr>
+<tr class="separator:a3d5d42998170d064b6db3f9d4ce64348"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
+Public 属性</h2></td></tr>
+<tr class="memitem:ac7ffc713d66fb9f0821a5bf56285e8e9" id="r_ac7ffc713d66fb9f0821a5bf56285e8e9"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classplcopen_1_1core_1_1axis_1_1AxisModel.html">axis::AxisModel</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbDigitalCamSwitch.html#ac7ffc713d66fb9f0821a5bf56285e8e9">axis_ref</a> = nullptr</td></tr>
+<tr class="separator:ac7ffc713d66fb9f0821a5bf56285e8e9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7ad2f04e34e18c430a5837d166368118" id="r_a7ad2f04e34e18c430a5837d166368118"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structplcopen_1_1core_1_1fb_1_1CamSwitchTableView.html">CamSwitchTableView</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbDigitalCamSwitch.html#a7ad2f04e34e18c430a5837d166368118">switches</a> {}</td></tr>
+<tr class="separator:a7ad2f04e34e18c430a5837d166368118"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a062df26e5459629a00cc0ac124c3f3a4" id="r_a062df26e5459629a00cc0ac124c3f3a4"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structplcopen_1_1core_1_1fb_1_1CamSwitchOutputsView.html">CamSwitchOutputsView</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbDigitalCamSwitch.html#a062df26e5459629a00cc0ac124c3f3a4">outputs</a> {}</td></tr>
+<tr class="separator:a062df26e5459629a00cc0ac124c3f3a4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a765d705aaa707275616522c1450914fc" id="r_a765d705aaa707275616522c1450914fc"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structplcopen_1_1core_1_1fb_1_1CamTrackOptionsView.html">CamTrackOptionsView</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbDigitalCamSwitch.html#a765d705aaa707275616522c1450914fc">track_options</a> {}</td></tr>
+<tr class="separator:a765d705aaa707275616522c1450914fc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0b3071f3ef37e7ebc0f0f4b14e1e482a" id="r_a0b3071f3ef37e7ebc0f0f4b14e1e482a"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbDigitalCamSwitch.html#a0b3071f3ef37e7ebc0f0f4b14e1e482a">enable</a> = false</td></tr>
+<tr class="separator:a0b3071f3ef37e7ebc0f0f4b14e1e482a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad661e6877b14415b4e2ff34c79943c22" id="r_ad661e6877b14415b4e2ff34c79943c22"><td class="memItemLeft" align="right" valign="top">std::uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbDigitalCamSwitch.html#ad661e6877b14415b4e2ff34c79943c22">enable_mask</a> = 0xFFFFFFFFU</td></tr>
+<tr class="separator:ad661e6877b14415b4e2ff34c79943c22"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5648e75098029d829e81114d5b6d1752" id="r_a5648e75098029d829e81114d5b6d1752"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceplcopen_1_1core_1_1axis.html#a02f41a86db9596d850d455f6944479cb">axis::MasterValueSource</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbDigitalCamSwitch.html#a5648e75098029d829e81114d5b6d1752">value_source</a> = <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#a02f41a86db9596d850d455f6944479cba1dccadfed7bcbb036c56a4afb97e906f">axis::MasterValueSource::command</a></td></tr>
+<tr class="separator:a5648e75098029d829e81114d5b6d1752"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a18115c07e2613ad6afb77450079379eb" id="r_a18115c07e2613ad6afb77450079379eb"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbDigitalCamSwitch.html#a18115c07e2613ad6afb77450079379eb">in_operation</a> = false</td></tr>
+<tr class="separator:a18115c07e2613ad6afb77450079379eb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a31359da5ea392b0e41e165be72a9dba1" id="r_a31359da5ea392b0e41e165be72a9dba1"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbDigitalCamSwitch.html#a31359da5ea392b0e41e165be72a9dba1">busy</a> = false</td></tr>
+<tr class="separator:a31359da5ea392b0e41e165be72a9dba1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a08344d2395a1798bac4587955d7f6ec4" id="r_a08344d2395a1798bac4587955d7f6ec4"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbDigitalCamSwitch.html#a08344d2395a1798bac4587955d7f6ec4">error</a> = false</td></tr>
+<tr class="separator:a08344d2395a1798bac4587955d7f6ec4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad06b3cde7aa799a5d4e15366588293d8" id="r_ad06b3cde7aa799a5d4e15366588293d8"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8">rt::ErrorCode</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1FbDigitalCamSwitch.html#ad06b3cde7aa799a5d4e15366588293d8">error_id</a> = <a class="el" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8a444bcb3a3fcf8389296c49467f27e1d6">rt::ErrorCode::ok</a></td></tr>
+<tr class="separator:ad06b3cde7aa799a5d4e15366588293d8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table>
+<a name="details" id="details"></a><h2 class="groupheader">详细描述</h2>
+<div class="textblock">
+<p class="definition">在文件 <a class="el" href="io_8h_source.html">io.h</a> 第 <a class="el" href="io_8h_source.html#l00170">170</a> 行定义.</p>
+</div><h2 class="groupheader">成员函数说明</h2>
+<a id="a3d5d42998170d064b6db3f9d4ce64348" name="a3d5d42998170d064b6db3f9d4ce64348"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3d5d42998170d064b6db3f9d4ce64348">&#9670;&#160;</a></span>call()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void plcopen::core::fb::FbDigitalCamSwitch::call </td>
+          <td>(</td>
+          <td class="paramtype">std::int64_t&#160;</td>
+          <td class="paramname"><em>task_period_ns</em> = <code>1000000</code></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="io_8h_source.html">io.h</a> 第 <a class="el" href="io_8h_source.html#l00185">185</a> 行定义.</p>
+
+</div>
+</div>
+<h2 class="groupheader">类成员变量说明</h2>
+<a id="ac7ffc713d66fb9f0821a5bf56285e8e9" name="ac7ffc713d66fb9f0821a5bf56285e8e9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac7ffc713d66fb9f0821a5bf56285e8e9">&#9670;&#160;</a></span>axis_ref</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classplcopen_1_1core_1_1axis_1_1AxisModel.html">axis::AxisModel</a>* plcopen::core::fb::FbDigitalCamSwitch::axis_ref = nullptr</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="io_8h_source.html">io.h</a> 第 <a class="el" href="io_8h_source.html#l00173">173</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a31359da5ea392b0e41e165be72a9dba1" name="a31359da5ea392b0e41e165be72a9dba1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a31359da5ea392b0e41e165be72a9dba1">&#9670;&#160;</a></span>busy</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool plcopen::core::fb::FbDigitalCamSwitch::busy = false</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="io_8h_source.html">io.h</a> 第 <a class="el" href="io_8h_source.html#l00181">181</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a0b3071f3ef37e7ebc0f0f4b14e1e482a" name="a0b3071f3ef37e7ebc0f0f4b14e1e482a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0b3071f3ef37e7ebc0f0f4b14e1e482a">&#9670;&#160;</a></span>enable</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool plcopen::core::fb::FbDigitalCamSwitch::enable = false</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="io_8h_source.html">io.h</a> 第 <a class="el" href="io_8h_source.html#l00177">177</a> 行定义.</p>
+
+</div>
+</div>
+<a id="ad661e6877b14415b4e2ff34c79943c22" name="ad661e6877b14415b4e2ff34c79943c22"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad661e6877b14415b4e2ff34c79943c22">&#9670;&#160;</a></span>enable_mask</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::uint32_t plcopen::core::fb::FbDigitalCamSwitch::enable_mask = 0xFFFFFFFFU</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="io_8h_source.html">io.h</a> 第 <a class="el" href="io_8h_source.html#l00178">178</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a08344d2395a1798bac4587955d7f6ec4" name="a08344d2395a1798bac4587955d7f6ec4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a08344d2395a1798bac4587955d7f6ec4">&#9670;&#160;</a></span>error</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool plcopen::core::fb::FbDigitalCamSwitch::error = false</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="io_8h_source.html">io.h</a> 第 <a class="el" href="io_8h_source.html#l00182">182</a> 行定义.</p>
+
+</div>
+</div>
+<a id="ad06b3cde7aa799a5d4e15366588293d8" name="ad06b3cde7aa799a5d4e15366588293d8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad06b3cde7aa799a5d4e15366588293d8">&#9670;&#160;</a></span>error_id</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8">rt::ErrorCode</a> plcopen::core::fb::FbDigitalCamSwitch::error_id = <a class="el" href="namespaceplcopen_1_1core_1_1rt.html#acb478bbb9e8dc7611816f04327d9fce8a444bcb3a3fcf8389296c49467f27e1d6">rt::ErrorCode::ok</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="io_8h_source.html">io.h</a> 第 <a class="el" href="io_8h_source.html#l00183">183</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a18115c07e2613ad6afb77450079379eb" name="a18115c07e2613ad6afb77450079379eb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a18115c07e2613ad6afb77450079379eb">&#9670;&#160;</a></span>in_operation</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool plcopen::core::fb::FbDigitalCamSwitch::in_operation = false</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="io_8h_source.html">io.h</a> 第 <a class="el" href="io_8h_source.html#l00180">180</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a062df26e5459629a00cc0ac124c3f3a4" name="a062df26e5459629a00cc0ac124c3f3a4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a062df26e5459629a00cc0ac124c3f3a4">&#9670;&#160;</a></span>outputs</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="structplcopen_1_1core_1_1fb_1_1CamSwitchOutputsView.html">CamSwitchOutputsView</a> plcopen::core::fb::FbDigitalCamSwitch::outputs {}</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="io_8h_source.html">io.h</a> 第 <a class="el" href="io_8h_source.html#l00175">175</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a7ad2f04e34e18c430a5837d166368118" name="a7ad2f04e34e18c430a5837d166368118"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7ad2f04e34e18c430a5837d166368118">&#9670;&#160;</a></span>switches</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="structplcopen_1_1core_1_1fb_1_1CamSwitchTableView.html">CamSwitchTableView</a> plcopen::core::fb::FbDigitalCamSwitch::switches {}</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="io_8h_source.html">io.h</a> 第 <a class="el" href="io_8h_source.html#l00174">174</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a765d705aaa707275616522c1450914fc" name="a765d705aaa707275616522c1450914fc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a765d705aaa707275616522c1450914fc">&#9670;&#160;</a></span>track_options</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="structplcopen_1_1core_1_1fb_1_1CamTrackOptionsView.html">CamTrackOptionsView</a> plcopen::core::fb::FbDigitalCamSwitch::track_options {}</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="io_8h_source.html">io.h</a> 第 <a class="el" href="io_8h_source.html#l00176">176</a> 行定义.</p>
+
+</div>
+</div>
+<a id="a5648e75098029d829e81114d5b6d1752" name="a5648e75098029d829e81114d5b6d1752"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5648e75098029d829e81114d5b6d1752">&#9670;&#160;</a></span>value_source</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="namespaceplcopen_1_1core_1_1axis.html#a02f41a86db9596d850d455f6944479cb">axis::MasterValueSource</a> plcopen::core::fb::FbDigitalCamSwitch::value_source = <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#a02f41a86db9596d850d455f6944479cba1dccadfed7bcbb036c56a4afb97e906f">axis::MasterValueSource::command</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">在文件 <a class="el" href="io_8h_source.html">io.h</a> 第 <a class="el" href="io_8h_source.html#l00179">179</a> 行定义.</p>
+
+</div>
+</div>
+<hr/>该类的文档由以下文件生成:<ul>
+<li>core/fb/<a class="el" href="io_8h_source.html">io.h</a></li>
+</ul>
+</div><!-- contents -->
+<!-- start footer part -->
+<hr class="footer"/><address class="footer"><small>
+制作者&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.8
+</small></address>
+</body>
+</html>
