@@ -229,6 +229,11 @@ public:
                                    : static_cast<std::int64_t>(timestamp_delta);
         }
 
+        const bool repeated_rest_target =
+            have_target_ && mode_ == Mode::tracking &&
+            position == latest_position_ && velocity == 0.0 &&
+            latest_velocity_ == 0.0;
+
         latest_position_ = position;
         latest_velocity_ = velocity;
         latest_timestamp_ = target.timestamp_cycles;
@@ -236,11 +241,13 @@ public:
         clamped_ = clamped;
 
         // The pending target is evaluated on the target line at solve time
-        // (see the tracking branch in cycle()); at push it starts at the
-        // stamped point.
-        pending_position_ = position;
-        pending_velocity_ = velocity;
-        pending_dirty_ = true;
+        // (see the tracking branch in cycle()); a repeated stationary frame
+        // refreshes the watchdog without restarting the same trajectory.
+        if(!repeated_rest_target) {
+            pending_position_ = position;
+            pending_velocity_ = velocity;
+            pending_dirty_ = true;
+        }
         mode_ = Mode::tracking;
         return rt::ErrorCode::ok;
     }
@@ -609,23 +616,34 @@ private:
         // A quintic's position extrema require quartic roots. Instead prove
         // monotonicity by checking velocity at all of its extrema (the cubic
         // roots of acceleration); non-monotone candidates fall back.
-        double minimum_velocity = normalized_velocity(coefficients, 0.0);
-        if(!std::isfinite(minimum_velocity)) {
+        double minimum_velocity = segment.start.velocity;
+        if(!std::isfinite(minimum_velocity) ||
+           !std::isfinite(segment.finish.velocity)) {
             return false;
         }
         double maximum_velocity = minimum_velocity;
+        if(segment.finish.velocity < minimum_velocity) {
+            minimum_velocity = segment.finish.velocity;
+        }
+        if(segment.finish.velocity > maximum_velocity) {
+            maximum_velocity = segment.finish.velocity;
+        }
         int count = 0;
         if(!solve_cubic_for_proof(20.0 * coefficients[5], 12.0 * coefficients[4],
                                   6.0 * coefficients[3], 2.0 * coefficients[2],
                                   roots, count)) {
             return false;
         }
-        for(int i = -1; i < count; ++i) {
-            const double sigma = i < 0 ? 1.0 : roots[i];
+        for(int i = 0; i < count; ++i) {
+            const double sigma = roots[i];
             if(sigma < 0.0 || sigma > 1.0) {
                 continue;
             }
-            const double velocity = normalized_velocity(coefficients, sigma);
+            const double velocity =
+                sigma == 0.0 ? segment.start.velocity
+                             : (sigma == 1.0
+                                    ? segment.finish.velocity
+                                    : normalized_velocity(coefficients, sigma));
             if(!std::isfinite(velocity)) {
                 return false;
             }
@@ -684,6 +702,45 @@ private:
             otg::detail::ramp_between(state_.velocity, 0.0, config_.limits).distance;
         pending_velocity_ = 0.0;
         pending_dirty_ = true;
+    }
+
+    rt::Result<otg::Profile1D> plan_controlled_stop(otg::State1D from) const
+    {
+        otg::Profile1D profile{};
+        otg::State1D state = from;
+        if(state.acceleration != 0.0) {
+            const double cycles =
+                std::ceil(std::fabs(state.acceleration) /
+                          config_.limits.max_jerk);
+            const double finish_velocity =
+                state.velocity + 0.5 * state.acceleration * cycles;
+            const rt::ErrorCode zeroed = otg::detail::push_cubic_phase(
+                profile, state, -state.acceleration / cycles, cycles, true,
+                finish_velocity, 0.0);
+            if(zeroed != rt::ErrorCode::ok) {
+                return rt::Result<otg::Profile1D>::failure(zeroed);
+            }
+        }
+        if(state.velocity != 0.0) {
+            const rt::ErrorCode stopped = otg::detail::push_ramp(
+                profile, state, 0.0, config_.limits,
+                otg::detail::RampRounding::exact, true);
+            if(stopped != rt::ErrorCode::ok) {
+                return rt::Result<otg::Profile1D>::failure(stopped);
+            }
+        }
+        if(profile.segment_count() == 0 || state.velocity != 0.0 ||
+           state.acceleration != 0.0) {
+            return rt::Result<otg::Profile1D>::failure(
+                rt::ErrorCode::infeasible);
+        }
+        for(std::size_t i = 0; i < profile.segment_count(); ++i) {
+            if(!otg::within_limits(profile.segment(i), config_.limits)) {
+                return rt::Result<otg::Profile1D>::failure(
+                    rt::ErrorCode::infeasible);
+            }
+        }
+        return rt::Result<otg::Profile1D>::success(profile);
     }
 
     ReplanResult replan(bool allow_slow_replan)
@@ -826,8 +883,10 @@ private:
 
         rt::Result<otg::Profile1D> planned =
             rendezvous_cycles > 0
-                ? otg::solve_fixed_time(from, to, config_.limits, rendezvous_cycles)
-                : rt::Result<otg::Profile1D>::failure(rt::ErrorCode::infeasible);
+                ? otg::solve_fixed_time(from, to, config_.limits,
+                                        rendezvous_cycles)
+                : rt::Result<otg::Profile1D>::failure(
+                      rt::ErrorCode::infeasible);
         if(planned && !profile_in_envelope(planned.value())) {
             planned = rt::Result<otg::Profile1D>::failure(rt::ErrorCode::infeasible);
         }
@@ -852,6 +911,14 @@ private:
             planned = otg::plan(from, to, config_.limits);
             if(planned && !profile_in_envelope(planned.value())) {
                 planned = rt::Result<otg::Profile1D>::failure(rt::ErrorCode::infeasible);
+            }
+        }
+        if(!planned && mode_ == Mode::stopping) {
+            planned = plan_controlled_stop(from);
+            if(planned && !profile_in_envelope(planned.value())) {
+                planned =
+                    rt::Result<otg::Profile1D>::failure(
+                        rt::ErrorCode::infeasible);
             }
         }
         if(!planned) {

@@ -90,7 +90,10 @@ inline double ramp_chain_distance(double v0, double vc, double vt, const Limits1
 inline rt::ErrorCode push_cubic_phase(Profile1D &profile,
                                       State1D &state,
                                       double jerk,
-                                      double continuous_duration)
+                                      double continuous_duration,
+                                      bool force_finish_derivatives = false,
+                                      double finish_velocity = 0.0,
+                                      double finish_acceleration = 0.0)
 {
     const std::int64_t cycles = static_cast<std::int64_t>(std::floor(continuous_duration));
     if(cycles < 1) {
@@ -112,6 +115,24 @@ inline rt::ErrorCode push_cubic_phase(Profile1D &profile,
         segment.c1 + 2.0 * segment.c2 * x + 3.0 * segment.c3 * x * x,
         state.acceleration + jerk * x,
     };
+    if(force_finish_derivatives) {
+        const double velocity_tolerance =
+            1e-12 * (1.0 + std::fabs(finish_velocity));
+        const double acceleration_tolerance =
+            1e-12 * (1.0 + std::fabs(finish_acceleration));
+        if(!std::isfinite(finish_velocity) ||
+           !std::isfinite(finish_acceleration) ||
+           std::fabs(segment.finish.velocity - finish_velocity) >
+               velocity_tolerance ||
+           std::fabs(segment.finish.acceleration - finish_acceleration) >
+               acceleration_tolerance) {
+            return rt::ErrorCode::infeasible;
+        }
+        // Exact phase algebra can retain a final floating-point residue.
+        // Normalize only a derivative already equal within the proof bound.
+        segment.finish.velocity = finish_velocity;
+        segment.finish.acceleration = finish_acceleration;
+    }
 
     const rt::ErrorCode pushed = profile.add_segment(segment);
     if(pushed != rt::ErrorCode::ok) {
@@ -139,9 +160,11 @@ inline rt::ErrorCode push_ramp(Profile1D &profile,
                                State1D &state,
                                double vb,
                                const Limits1D &limits,
-                               RampRounding rounding)
+                               RampRounding rounding,
+                               bool force_finish_derivatives = false)
 {
     const double va = state.velocity;
+    const double target_acceleration = state.acceleration;
     const double delta = vb - va;
     if(delta == 0.0) {
         return rt::ErrorCode::ok;
@@ -192,7 +215,9 @@ inline rt::ErrorCode push_ramp(Profile1D &profile,
             return pushed;
         }
     }
-    return push_cubic_phase(profile, state, -adjusted_jerk, static_cast<double>(n1));
+    return push_cubic_phase(
+        profile, state, -adjusted_jerk, static_cast<double>(n1),
+        force_finish_derivatives, vb, target_acceleration);
 }
 
 inline rt::ErrorCode push_ramp_with_crossing(Profile1D &profile,

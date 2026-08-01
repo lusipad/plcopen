@@ -36,6 +36,7 @@ ctest --test-dir build --build-config Release --output-on-failure
 | `PLCOPEN_BUILD_DEMOS` | ON | `core/demo/`（单轴 FB、组直线、轨迹流、组路径） |
 | `PLCOPEN_BUILD_PYTHON_BINDINGS` | OFF | pyplcopen（pybind11 FetchContent；smoke：`ctest -R pyplcopen_smoke`） |
 | `PLCOPEN_BUILD_DOCS` | OFF | Doxygen `docs` target（未装 Doxygen 时优雅降级） |
+| `PLCOPEN_BUILD_SO101_TOOLS` | OFF | Linux/WSL2 SO-ARM101 只读发现与 command-only 离线 A/B 工具 |
 | `PLCOPEN_BUILD_LEGACY` | OFF | 冻结的 v0.x `src/` 线（回放/迁移基线；DoD §5.3 对照工具需要） |
 
 ## Python 绑定（pyplcopen）
