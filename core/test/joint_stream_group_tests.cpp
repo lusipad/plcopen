@@ -467,6 +467,65 @@ int check_upsample_group_dropout_and_recovery()
     return 0;
 }
 
+int check_upsample_repeated_rest_target_dropout_stop()
+{
+    constexpr std::size_t JointCount = 6;
+    constexpr double PoseA[JointCount] = {
+        0.18, -0.14, 0.12, -0.10, 0.08, 0.05};
+    constexpr double PoseB[JointCount] = {
+        -0.12, 0.16, -0.10, 0.14, -0.06, 0.10};
+    stream::JointStreamGroupConfig config =
+        frame_config(stream::JointFrameMode::upsample, JointCount);
+    for(std::size_t joint = 0; joint < JointCount; ++joint) {
+        config.joints[joint].filter.limits = {0.02, 0.002, 0.002, 0.0004};
+        config.joints[joint].filter.min_position = -0.5;
+        config.joints[joint].filter.max_position = 0.5;
+        config.joints[joint].filter.timeout_cycles = 7;
+        config.joints[joint].filter.extrapolation_cycles = 0;
+    }
+
+    stream::JointStreamGroup group;
+    if(group.configure_frame(config) != rt::ErrorCode::ok ||
+       !reset_all(group, JointCount)) {
+        return fail("repeated rest target dropout setup");
+    }
+
+    for(int tick = 0; tick < 300; ++tick) {
+        if(tick % 5 == 0 && tick < 150) {
+            stream::JointCommandFrame frame = command_frame(JointCount, tick + 1);
+            for(std::size_t joint = 0; joint < JointCount; ++joint) {
+                frame.joints[joint].q_des =
+                    tick < 100 ? 0.0 : (tick < 145 ? PoseA[joint] : PoseB[joint]);
+                frame.joints[joint].dq_des = 0.0;
+            }
+            if(group.push_frame(frame) != rt::ErrorCode::ok) {
+                return fail("repeated rest target frame");
+            }
+        }
+        group.cycle();
+    }
+
+    const stream::JointSetpointFrame stopped = group.read_setpoint_frame();
+    if(group.dropout_count() != 1) {
+        return fail("repeated rest target dropout count");
+    }
+    for(std::size_t joint = 0; joint < JointCount; ++joint) {
+        if(group.joint(joint).mode() != stream::StreamFilter1D::Mode::stopped ||
+           !near(stopped.joints[joint].velocity, 0.0, 1e-9) ||
+           !near(stopped.joints[joint].acceleration, 0.0, 1e-9) ||
+           group.joint(joint).filter_faults() != 0) {
+            std::printf("  joint=%zu mode=%d velocity=%.17g acceleration=%.17g "
+                        "faults=%u\n",
+                        joint, static_cast<int>(group.joint(joint).mode()),
+                        stopped.joints[joint].velocity,
+                        stopped.joints[joint].acceleration,
+                        group.joint(joint).filter_faults());
+            return fail("repeated rest target controlled stop");
+        }
+    }
+    return 0;
+}
+
 } // namespace
 
 int main()
@@ -476,7 +535,8 @@ int main()
        check_atomic_rejection_and_keep_latest() != 0 ||
        check_direct_same_cycle_and_local_watchdog() != 0 ||
        check_upsample_fast_and_bounded_slow_replans() != 0 ||
-       check_upsample_group_dropout_and_recovery() != 0) {
+       check_upsample_group_dropout_and_recovery() != 0 ||
+       check_upsample_repeated_rest_target_dropout_stop() != 0) {
         return 1;
     }
     std::printf("PASS H1 synchronized joint stream tests\n");

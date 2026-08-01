@@ -60,7 +60,9 @@ First slice scope (BS1.2-BS1.5):
   proves every candidate profile over the complete segment interior before accepting it; this
   is not per-cycle output clipping;
 - two-stage dropout watchdog: linearly decaying extrapolation, then a
-  jerk-limited controlled stop; fresh targets re-enter tracking continuously;
+  jerk-limited controlled stop; if the ordinary solver chain cannot prove a
+  safe stop, a bounded acceleration-zeroing plus exact ramp-to-zero profile is
+  the final stop-only fallback; fresh targets re-enter tracking continuously;
 - explicit degradation counters (`rejected_targets`, `dropout_count`,
   `filter_faults`); the output stream never breaks.
 
@@ -77,7 +79,8 @@ Tracking law (moving targets):
   steady-state offset (the whole-cycle quantum boundary; the acceptance
   bound is two cycles of line displacement);
 - solves stay event-driven: fresh targets and coast drift re-arm one solve,
-  a locked coast rides the line with no planning at all.
+  a repeated stationary target refreshes the watchdog without restarting the
+  same profile, and a locked coast rides the line with no planning at all.
 
 Semantics notes:
 
