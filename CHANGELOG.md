@@ -8,7 +8,20 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- 新增默认关闭的 Linux/WSL2 SO-ARM101 主机工具：只读发现程序仅以
+  Feetech 协议 `PING` 探测 ID 1～6，不写寄存器、不校准、不发运动命令；
+  离线 A/B 生成器让 naive 直通与 H1 `JointStreamGroup` 消费相同六轴
+  50 Hz 目标，输出明确标记为 command-only 的 wave/dropout CSV 证据。
+
 ### Fixed
+
+- 修复 KB-035 静止目标流与断流停车的两个保守回退缺口：重复静止帧现在
+  只刷新 watchdog 而不重启相同轨迹；反向 quintic 的位置包络证明使用轨迹
+  段精确边界速度，避免把终点浮点消去尘埃误判为反向；常规停止求解链全拒绝
+  时，再以加速度归零段和 exact ramp-to-zero 构造有界停车剖面。H1 六关节
+  反例终态全部精确零速、`filter_faults == 0`，既有黄金回放逐位不变。
 
 - Cold User 的默认英文文档根从 `/plcopen` 修正为 `/plcopen/en`，避免双语站点
   下公开 notebook 路径返回 404；`v0.21.0` 已由 run `30497974380` 复验
