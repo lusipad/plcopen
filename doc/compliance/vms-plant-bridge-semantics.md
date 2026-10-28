@@ -1,9 +1,8 @@
 # V1 VMS Plant 桥接语义
 
-> 状态：**草案 r2，待维护者批准（2026-09-24 起草，同日按评审修订）**。
-> r2 已并入评审意见：整型时间、逐关节限位、故障不恢复、`AxisInfoInputs`
-> 逐字段映射、1 tick 反馈延迟、内置场景；§6 三个开放项按提案收口，
-> 待批准时一并确认。
+> 状态：**已批准（2026-09-24，维护者，按 r2 全范围；§6 三个开放项按提案
+> 收口）**。r2 已并入评审意见：整型时间、逐关节限位、故障不恢复、
+> `AxisInfoInputs` 逐字段映射、1 tick 反馈延迟、内置场景。
 >
 > 本批让 plcopen 作为 **External Controller**，经进程边界驱动维护者自有的
 > Virtual Machine Studio（下称 VMS）Plant 模型。VMS 规格把自身定位为
@@ -39,7 +38,7 @@
 | D09 | 故障不恢复 | 首批**不定义恢复**：故障一旦映射，桥接不回写 `set_power_feedback(true)`、不重新上电、不恢复推帧。单轴在进入 ErrorStop 后、臂在 H1 停车完成（`setpoint_frame()` 六关节速度与加速度全部恰为 0）后，再记录固定 `post_fault_ticks = 100` 个 tick，然后以退出码 1 结束。恢复语义另立矩阵 |
 | D10 | 臂侧双剖面 | VMS 舵机模型自带位置环与速度上限（模拟 Feetech 位置模式），属 Plant 行为。桥接固定 `speedScale = 1.0`、`enabled = true`，其余舵机参数用 VMS 默认值；在记录头注明，不在 plcopen 侧补偿 |
 | D11 | 保真档位 | 单轴默认 `Servo`，臂默认 `Dynamic`；允许 `Kinematic/Dynamic/Servo`。`Logic` 拒绝（它不产生有意义的测量反馈） |
-| D12 | Python seam | 只补既有 core API 的绑定，不新增 core API：① `AxisSim.set_power_feedback(available)`；② `AxisSim.set_axis_info_inputs(...)`（六个布尔关键字参数，与 `AxisInfoInputs` 同名）与对应只读 `axis_info_inputs()`；③ `JointStreamSim` 构造新增可选 `min_positions/max_positions`（长度 = 关节数，逐关节写 `filter.min/max_position`）；`position_limit` 默认值改为 `None`（语义等同现有默认 π，行为逐位不变），以便区分"未给出"；不给逐关节限位时保持现有对称 `±position_limit` 行为；显式给出 `position_limit` 同时又给逐关节限位、只给 min/max 其一、长度不符或任一关节 `min >= max`/非有限，均为 `invalid_argument` |
+| D12 | Python seam | 只补既有 core API 的绑定，不新增 core API：① `AxisSim.set_power_feedback(available)`；② `AxisSim.set_axis_info_inputs(...)`（六个布尔关键字参数，与 `AxisInfoInputs` 同名）与对应只读 `axis_info_inputs()`；③ `JointStreamSim` 构造新增可选 `min_positions/max_positions`（长度 = 关节数，逐关节写 `filter.min/max_position`）；`position_limit` 默认值改为 `None`（语义等同现有默认 π，行为逐位不变），以便区分"未给出"；不给逐关节限位时保持现有对称 `±position_limit` 行为；显式给出 `position_limit` 同时又给逐关节限位、只给 min/max 其一、长度不符或任一关节 `min >= max`/非有限，均为 `invalid_argument`；④ `AxisSim.submit_move_absolute(position, velocity, acceleration, deceleration, jerk)`：只包既有 `AxisModel::submit`，不推进周期、不等待，返回 command id；轴未上电即 `precondition_failed`（不像阻塞版 `move_absolute` 那样隐式上电），core 拒绝原样抛出。④ 为实现期发现（单轴逐 tick 回灌需要非阻塞提交），2026-09-24 维护者追认补入 |
 | D13 | 确定性口径 | 命令域：同输入逐 tick 逐位相等（与 host 无关）。反馈域：只声明"同一 Node 大版本 + 同一平台"下逐位可重复；跨平台不声明 |
 | D14 | CI 与本地 | plcopen CI 只跑仓内 Python **fake plant**（实现同一协议的一阶跟随模型，可配置故意钳位/漂移/毒值/挂起/崩溃），验证协议、拒绝规则与故障映射；真实 VMS 联调是本地可选旅程，需 `--vms-root` 显式给出 |
 | D15 | 内置场景 | 场景固定在桥接内，不接受外部轨迹文件：`axis` = 上电 → MoveAbsolute 0→0.2 m（v/a/j 取 `hello` 限位内固定值，记录头注明）→ 停稳后再保持 200 tick；`so-arm101` = 100 Hz 帧率、2.0 s 六关节正弦关节流（幅值取各关节限位区间中点 ±20% 区间宽）→ upsample 到 1 kHz → 正常结束 |
