@@ -288,6 +288,15 @@ raise SystemExit(0 if result.wasSuccessful() else 1)
               ${CMAKE_CURRENT_SOURCE_DIR}/ci/notebook_smoke.py
               ${CMAKE_CURRENT_SOURCE_DIR}/docs/notebooks/five-minute-digital-twin.ipynb
               $<TARGET_FILE_DIR:pyplcopen>)
+    # V1 VMS Plant bridge (doc/compliance/vms-plant-bridge-semantics.md D12):
+    # binding seams only; no Node/VMS dependency.
+    add_test(
+      NAME pyplcopen_vms_bindings
+      COMMAND ${CMAKE_COMMAND} -E env
+              PLCOPEN_PYPLCOPEN_DIR=$<TARGET_FILE_DIR:pyplcopen>
+              ${Python3_EXECUTABLE} -m unittest tools.test_vms_bindings -v)
+    set_tests_properties(pyplcopen_vms_bindings PROPERTIES
+      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
   endif()
 endif()
 
