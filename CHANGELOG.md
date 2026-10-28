@@ -14,6 +14,12 @@ All notable changes to this project will be documented in this file.
   Feetech 协议 `PING` 探测 ID 1～6，不写寄存器、不校准、不发运动命令；
   离线 A/B 生成器让 naive 直通与 H1 `JointStreamGroup` 消费相同六轴
   50 Hz 目标，输出明确标记为 command-only 的 wave/dropout CSV 证据。
+- 新增可选 V1 VMS Plant 桥接（KB-104）：`tools/vms/vms_plant_bridge.py`
+  以 stdio JSON Lines 锁步协议 `plcopen.plant/v1` 驱动 VMS 单轴或
+  SO-ARM101 Plant，整型 tick 时间、1 tick 反馈延迟、三道限位防线与
+  故障不恢复均有测试；CI 只用仓内 fake plant。`pyplcopen` 同批新增
+  `AxisSim.set_power_feedback`、`set_axis_info_inputs`/`axis_info_inputs`、
+  `submit_move_absolute`，`JointStreamSim` 支持可选逐关节限位，默认行为不变。
 
 ### Fixed
 

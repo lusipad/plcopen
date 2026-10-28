@@ -122,3 +122,46 @@ python tools/vms/vms_plant_bridge.py --fake-plant ...   # CI 用
 2. D14：`plant-host.mjs` 放 VMS 仓库；plcopen 只维护协议文档与 fake
    plant（协议参考实现），不 vendor VMS 代码。
 3. D07/D08：保守映射用于首批，配合 D09"故障不恢复"写死。
+
+## 7. 实现记录（2026-09-24，KB-104）
+
+- 绑定（D12 ①～④）：`python/pyplcopen.cpp`；测试 `tools/test_vms_bindings.py`
+  （CTest `pyplcopen_vms_bindings`，11 项）。`submit_move_absolute` 在未上电时
+  先于 core 准入显式返回 `precondition_failed`（core 准入对未上电给
+  `invalid_argument`，绑定按本矩阵口径收窄）。
+- 桥接：`tools/vms/vms_plant_bridge.py`；协议参考实现
+  `tools/vms/fake_plant.py`（一阶跟随 / `--echo` 精确回显，可配置
+  §3 各类故意违约）。测试 `tools/test_vms_bridge.py`（CTest
+  `pyplcopen_vms_bridge`，25 项），覆盖 §4 全部纯软件指标与 §3 中 13 条
+  桥接侧拒绝规则；第 14 条在绑定测试中。
+- 协议消息（JSON Lines，一行一条，锁步）：
+  `hello{protocol, plant, profile, period_ns[, servo]}` →
+  `hello{protocol, kernel, profile, units, period_ns_supported, joints[{name,min,max}], faults}`；
+  `reset{positions}` → `reset{positions}`；
+  `step{tick, period_ns, command{position[], velocity[]}[, inject]}` →
+  `state{tick, applied{position[], velocity[]}, measured{position[], velocity[]}, fault, encoderStatus, inputs{positiveLimit, negativeLimit, homeSignal, ready[, warning]}}`
+  （`encoderStatus`/`inputs` 仅单轴）；`bye` 无应答。
+- 单轴场景长度由命令域空跑预先确定（与 host 无关，D13），用于校验
+  `--inject` tick 范围。
+- 真实 VMS 联调：**未执行**——VMS 侧 `tools/plant-host.mjs` 尚未存在，
+  §4 末行证据待其落地后回填。
+
+## 7. 实现记录（KB-104）
+
+- 绑定（D12 ①～④）：`python/pyplcopen.cpp`；测试
+  `tools/test_vms_bindings.py`（CTest `pyplcopen_vms_bindings`）。
+- 桥接：`tools/vms/vms_plant_bridge.py`；协议参考实现
+  `tools/vms/fake_plant.py`；验收与拒绝表测试 `tools/test_vms_bridge.py`
+  （CTest `pyplcopen_vms_bridge`）。第 3 节 14 条拒绝规则各有至少一个
+  测试，其中 `JointStreamSim` 非法组合一条在绑定测试中。
+- `plcopen.plant/v1` 消息（JSON Lines，一行一条，锁步）：
+  - `hello` → 应答 `{type, protocol, kernel, profile, units, period_ns_supported, joints[{name,min,max}], faults}`
+  - `reset{positions}` → `{type:"reset"}`
+  - `step{tick, period_ns, command{position[], velocity[]}, inject?}` →
+    `{type:"state", tick, applied{position[], velocity[]}, measured{position[], velocity[]}, fault, encoderStatus?, inputs?}`；
+    单轴必须带 `encoderStatus` 与 `inputs{positiveLimit, negativeLimit, homeSignal, ready, warning?}`
+  - `bye`：桥接结束时发送，host 退出
+- 单轴场景长度由命令域干跑预先确定（与 host 无关，D13），用于 `--inject`
+  tick 越界预检。
+- 真实 VMS 联调：`tools/plant-host.mjs` 尚未在 VMS 仓库落地，第 4 节真实
+  VMS 一行暂无证据，待 host 就绪后回填。
