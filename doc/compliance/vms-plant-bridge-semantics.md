@@ -135,6 +135,11 @@ python tools/vms/vms_plant_bridge.py --fake-plant ...   # CI 用
   随后仍有位置修正；只读 `stopped()` 区分该节点与真实完成态，桥接在
   完成态与零速度/加速度同时成立后才开始 D09 的 100 tick 记录。绑定
   回归同时验证重复查询不推进周期、不改帧或计数；原停车断言保持。
+  中间零态是否出现在某条数值轨迹中依赖平台求解路径，不作为跨平台
+  存在性断言；进程内确定性 stream 替身通过生产 `command/apply` 路径
+  验证零态未完成→再运动→真实完成和完整 100 tick 计数，移除完成态
+  检查的变异必须失败。真实绑定仍验证活动/停车中为假、全关节完成为真
+  与只读性。
 - 桥接：`tools/vms/vms_plant_bridge.py`；协议参考实现
   `tools/vms/fake_plant.py`（一阶跟随 / `--echo` 精确回显，可配置
   §3 各类故意违约）。验收与拒绝表测试 `tools/test_vms_bridge.py`
