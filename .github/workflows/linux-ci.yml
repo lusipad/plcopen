@@ -278,7 +278,9 @@ jobs:
           retention-days: 90
 
   arm64-cross:
-    runs-on: ubuntu-latest
+    # The toolchain uses qemu-aarch64-static from Noble's qemu-user-static.
+    # Keep this job on that package contract instead of a moving runner image.
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout
         uses: actions/checkout@v7
