@@ -88,6 +88,9 @@ test("manifest fixes scope, dependencies, and trust boundary", () => {
   assert.deepEqual(manifest.dependencies, {
     "vscode-languageclient": "10.1.0",
   });
+  assert.deepEqual(manifest.overrides, {
+    "vscode-languageclient": { minimatch: "11.0.1" },
+  });
   assert.deepEqual(manifest.devDependencies, {
     "@vscode/vsce": "3.9.2",
   });

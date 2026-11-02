@@ -3,6 +3,66 @@
 This draft is generated from the locked production dependency tree.
 Development-only packages are not shipped and are intentionally omitted.
 
+## @isaacs/nonrecursive-glob-match 1.0.3 — BlueOak-1.0.0
+
+Integrity: `sha512-SI7kyKHq4XXDRozw+r9GlRZkia1ZkFrpLW98r2IC2Bpr8YkFGE3fvjzmxCG0x78A++69HmDNrDvSMYBZmHGpKA==`
+
+    # Blue Oak Model License
+
+    Version 1.0.0
+
+    ## Purpose
+
+    This license gives everyone as much permission to work with
+    this software as possible, while protecting contributors
+    from liability.
+
+    ## Acceptance
+
+    In order to receive this license, you must agree to its
+    rules.  The rules of this license are both obligations
+    under that agreement and conditions to your license.
+    You must not do anything with this software that triggers
+    a rule that you cannot or will not follow.
+
+    ## Copyright
+
+    Each contributor licenses you to do everything with this
+    software that would otherwise infringe that contributor's
+    copyright in it.
+
+    ## Notices
+
+    You must ensure that everyone who gets a copy of
+    any part of this software from you, with or without
+    changes, also gets the text of this license or a link to
+    <https://blueoakcouncil.org/license/1.0.0>.
+
+    ## Excuse
+
+    If anyone notifies you in writing that you have not
+    complied with [Notices](#notices), you can keep your
+    license by taking all practical steps to comply within 30
+    days after the notice.  If you do not do so, your license
+    ends immediately.
+
+    ## Patent
+
+    Each contributor licenses you to do everything with this
+    software that would otherwise infringe any patent claims
+    they can license or become able to license.
+
+    ## Reliability
+
+    No contributor can revoke this license.
+
+    ## No Liability
+
+    ***As far as the law allows, this software comes as is,
+    without any warranty or condition, and no contributor
+    will be liable to anyone for any damages related to this
+    software or this license, under any kind of legal claim.***
+
 ## balanced-match 4.0.4 — MIT
 
 Integrity: `sha512-BLrgEcRTwX2o6gGxGOCNyMvGSp35YofuYzw9h1IMTRmKqttAZZVU67bdb9Pr2vUHA8+j3i2tJfjO6C6+4myGTA==`
@@ -31,9 +91,9 @@ Integrity: `sha512-BLrgEcRTwX2o6gGxGOCNyMvGSp35YofuYzw9h1IMTRmKqttAZZVU67bdb9Pr2
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 
-## brace-expansion 5.0.8 — MIT
+## brace-expansion 5.0.12 — MIT
 
-Integrity: `sha512-JZyDyq3D4AUifKTPOB7DELf6XsB3WdPuNxCtob1vFXPsSXhdAiHBWJ/tJ8HAc9aH84BK+5JFZLNkJKx3G9kzQg==`
+Integrity: `sha512-YovQ3rzhaLMIrDjNDMkNS01tea93qhEhG5xy8f6+R0l+dw3Ki+5sCoIoI942iuLZTHWogWktgwVDhU09iNEimQ==`
 
     MIT License
 
@@ -59,9 +119,9 @@ Integrity: `sha512-JZyDyq3D4AUifKTPOB7DELf6XsB3WdPuNxCtob1vFXPsSXhdAiHBWJ/tJ8HAc
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 
-## minimatch 10.2.5 — BlueOak-1.0.0
+## minimatch 11.0.1 — BlueOak-1.0.0
 
-Integrity: `sha512-MULkVLfKGYDFYejP07QOurDLLQpcjk7Fw+7jXS2R2czRQzR56yHRveU5NDJEOviH+hETZKSkIk5c+T23GjFUMg==`
+Integrity: `sha512-t+Vn6DX4wPCxS23y03C0uhF7S1jpi1GfqPrnlEipCJaA2ykiNbMkVlDutZtmvLfRcUN6R8AYVlzTsQrT4RZoLQ==`
 
     # Blue Oak Model License
 
