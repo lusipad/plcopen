@@ -87,3 +87,37 @@ Before the `v0.11.0` source-only release:
 - Confirm no license file changes are included.
 - Have a human reviewer approve this draft before treating it as release
   provenance evidence.
+
+## VS Code client compatibility adaptation (2026-11-02)
+
+本条及下述单个新增依赖的许可证例外、生产清单和第三方声明更新，已由维护者
+于 2026-11-02 在本次修复对话中明确批准。批准仅限这次适配与该依赖；
+不变更项目 LICENSE，也不构成对其他 BlueOak 包的概括批准或法律意见。
+
+- Source: https://github.com/microsoft/vscode-languageserver-node
+- Upstream tag `release/client/10.1.0`, commit
+  `20969f3e75cb3cd35c2bb794b1d15cc2dfbe4abb`.
+- Installed artifact: `vscode-languageclient@10.1.0`, pinned by npm lockfile
+  SHA-512; original copyright header and shipped MIT `License.txt` remain intact.
+- Scope: build-time local adaptation of `lib/common/fileOperations.js` and
+  `lib/common/utils/globPattern.js` only. Replace removed `makeRe()` checks with
+  rejection of empty pattern sets, then use minimatch's existing `match()` API.
+- Original/adapted SHA-256 hashes, exact substitutions, artifact URL and rationale:
+  `editors/vscode/client-compatibility.json`. Every changed location carries
+  `[plcopen local adaptation]`; unknown versions or contents fail closed before
+  writes. No upstream code is copied wholesale into project sources; no
+  third-party install scripts are enabled.
+- Dependency: scoped `minimatch@11.0.1`, `brace-expansion@5.0.12`, and new
+  `@isaacs/nonrecursive-glob-match@1.0.3` (BlueOak-1.0.0). The last package is a
+  specifically approved exception in the production license inventory generator.
+  Official artifact:
+  https://registry.npmjs.org/@isaacs/nonrecursive-glob-match/-/nonrecursive-glob-match-1.0.3.tgz
+  (integrity remains in `package-lock.json` and `production-dependencies.json`).
+  License: https://blueoakcouncil.org/license/1.0.0 ; full shipped text retained in
+  `editors/vscode/THIRD_PARTY_NOTICES.md`.
+- Verification: installed-client glob and file-operation tests (only editor host
+  API mocked); idempotence, version/tamper rejection, all-input prevalidation;
+  VSIX source hashes and exact nested production dependency installation paths.
+  This does not claim VS Code UI end-to-end QA.
+- Removal condition: upgrade to an upstream client supporting a non-vulnerable
+  minimatch version, remove the adaptation and rerun the same checks.

@@ -58,14 +58,20 @@
   "scripts": {
     "licenses": "node scripts/generate-production-inventory.cjs",
     "verify:licenses": "node scripts/generate-production-inventory.cjs --check",
-    "test": "node --test test/*.test.cjs",
-    "package": "vsce package --out plcopen-st-language-tools.vsix",
-    "verify:vsix": "python scripts/verify_vsix.py plcopen-st-language-tools.vsix"
+    "test": "npm run prepare:client && node --test test/*.test.cjs",
+    "package": "npm run prepare:client && vsce package --out plcopen-st-language-tools.vsix",
+    "verify:vsix": "python scripts/verify_vsix.py plcopen-st-language-tools.vsix",
+    "prepare:client": "node scripts/prepare-languageclient.cjs"
   },
   "dependencies": {
     "vscode-languageclient": "10.1.0"
   },
   "devDependencies": {
     "@vscode/vsce": "3.9.2"
+  },
+  "overrides": {
+    "vscode-languageclient": {
+      "minimatch": "11.0.1"
+    }
   }
 }

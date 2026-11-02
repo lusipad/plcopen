@@ -80,3 +80,10 @@ excess_cycles(case) = our_duration_cycles − ceil(T*_shoot / cycle)
 Y0 先行 → Y2（钉边界修复）用 excess_cycles 的钉边界域分布做前后
 对照 → T24 快路径的慢路径提速同样以此为尺 → 长期进 KPI（0.7 表
 "oracle 最优性差距"项）。
+
+### 零时长解的测试表示
+
+`oracle_solve` 对相同起止状态返回 `found=true, time=0, idx=-1`：没有
+切换结构可供回代。固定用例分别验证零时长解的相同端点与哨兵；正时长解
+先验证结构索引范围再访问表。`identical_state` 回归用例覆盖此分支，
+不改变生产 OTG 求解或时间最优语义。

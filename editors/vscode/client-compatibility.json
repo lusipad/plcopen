@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "package": "vscode-languageclient",
+  "version": "10.1.0",
+  "minimatchVersion": "11.0.1",
+  "source": "https://registry.npmjs.org/vscode-languageclient/-/vscode-languageclient-10.1.0.tgz",
+  "reason": "Minimatch 11 removed makeRe. Preserve rejection of empty/comment pattern sets; use its nonrecursive matcher directly. Remove this adaptation when upstream supports patched minimatch.",
+  "patches": [
+    {
+      "path": "lib/common/fileOperations.js",
+      "originalSha256": "27021d92f7e2bb0094f0044d9516bfb3d76427e350b9a0945dac00e294f88f01",
+      "adaptedSha256": "afc52c9a7abc591a1883542b2b14fdb6bf547f60a7149fc921a799ec2a09c3b8",
+      "before": "if (!matcher.makeRe()) {",
+      "after": "// [plcopen local adaptation] minimatch 11 matches without compiling a RegExp.\n            if (matcher.set.length === 0) {"
+    },
+    {
+      "path": "lib/common/utils/globPattern.js",
+      "originalSha256": "ec8f8ed49366dc71c63a6908f0de06568086058cef3e59d6665df4c721826129",
+      "adaptedSha256": "b4633056cc2730798f1855583c8626d1f6c562edaf1834109df4cd6a52d495b4",
+      "before": "if (!matcher.makeRe()) {",
+      "after": "// [plcopen local adaptation] minimatch 11 matches without compiling a RegExp.\n    if (matcher.set.length === 0) {"
+    }
+  ]
+}

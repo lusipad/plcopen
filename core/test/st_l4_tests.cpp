@@ -213,6 +213,7 @@ struct Rig
             return {};
         }
         std::vector<std::uint32_t> result;
+        result.reserve(length);
         for(std::uint32_t index = 0; index < length; ++index) {
             result.push_back(read_u32(
                 bytes.data() + 4U +
