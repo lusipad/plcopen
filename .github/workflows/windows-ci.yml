@@ -114,3 +114,11 @@ jobs:
             -DPLCOPEN_BUILD_PYTHON_BINDINGS=ON
           cmake --build build-python --config Release --parallel -- /p:TrackFileAccess=false /nodeReuse:false
           ctest --test-dir build-python -C Release -R pyplcopen_smoke --output-on-failure
+          if ($LASTEXITCODE -ne 0) { throw "Python smoke tests failed" }
+          ctest --test-dir build-python -C Release -R '^pyplcopen_vms_(bindings|protocol)$' --no-tests=error --output-on-failure
+
+      - name: VMS fake-plant process integration (explicit opt-in)
+        run: |
+          cmake -S . -B build-python -DPLCOPEN_ENABLE_PROCESS_INTEGRATION_TESTS=ON
+          if ($LASTEXITCODE -ne 0) { throw "VMS integration configure failed" }
+          ctest --test-dir build-python -C Release -R '^pyplcopen_vms_bridge$' --no-tests=error --output-on-failure

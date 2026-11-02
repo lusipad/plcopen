@@ -131,6 +131,13 @@ jobs:
             -DPLCOPEN_BUILD_PYTHON_BINDINGS=ON
           cmake --build build-python --parallel
           ctest --test-dir build-python -R pyplcopen_smoke --output-on-failure
+          ctest --test-dir build-python -R '^pyplcopen_vms_(bindings|protocol)$' --no-tests=error --output-on-failure
+
+      - name: VMS fake-plant process integration (explicit opt-in)
+        if: matrix.compiler == 'gcc'
+        run: |
+          cmake -S . -B build-python -DPLCOPEN_ENABLE_PROCESS_INTEGRATION_TESTS=ON
+          ctest --test-dir build-python -R '^pyplcopen_vms_bridge$' --no-tests=error --output-on-failure
 
       - name: Install Doxygen
         if: matrix.compiler == 'gcc'

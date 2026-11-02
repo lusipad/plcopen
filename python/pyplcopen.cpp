@@ -316,7 +316,9 @@ public:
                    double jerk_limit,
                    std::int64_t timeout_cycles,
                    std::int64_t extrapolation_cycles,
-                   double position_limit)
+                   const std::optional<double> &position_limit_arg,
+                   const std::optional<std::vector<double>> &min_positions,
+                   const std::optional<std::vector<double>> &max_positions)
         : joint_count_(joint_count)
     {
         using plcopen::core::rt::ErrorCode;
@@ -324,9 +326,29 @@ public:
         using plcopen::core::stream::JointStreamGroup;
         using plcopen::core::stream::JointStreamGroupConfig;
 
+        // V1 VMS bridge D12: per-joint envelope is mutually exclusive with an
+        // explicit symmetric position_limit; omitting both keeps the historic
+        // +/-pi default bit-for-bit.
+        constexpr double default_position_limit = 3.14159265358979323846;
+        const double position_limit = position_limit_arg.value_or(default_position_limit);
+        const bool per_joint = min_positions.has_value() || max_positions.has_value();
         if(joint_count < 1 || joint_count > JointStreamGroup::MaxJoints ||
            !std::isfinite(position_limit) || position_limit <= 0.0) {
             throw_on_error("JointStreamSim", ErrorCode::invalid_argument);
+        }
+        if(per_joint) {
+            if(position_limit_arg.has_value() || !min_positions.has_value() ||
+               !max_positions.has_value() || min_positions->size() != joint_count ||
+               max_positions->size() != joint_count) {
+                throw_on_error("JointStreamSim", ErrorCode::invalid_argument);
+            }
+            for(std::size_t joint = 0; joint < joint_count; ++joint) {
+                const double lo = (*min_positions)[joint];
+                const double hi = (*max_positions)[joint];
+                if(!std::isfinite(lo) || !std::isfinite(hi) || lo >= hi) {
+                    throw_on_error("JointStreamSim", ErrorCode::invalid_argument);
+                }
+            }
         }
 
         JointStreamGroupConfig config{};
@@ -349,8 +371,8 @@ public:
                 jerk_limit,
             };
             member.filter.position_envelope_enabled = true;
-            member.filter.min_position = -position_limit;
-            member.filter.max_position = position_limit;
+            member.filter.min_position = per_joint ? (*min_positions)[joint] : -position_limit;
+            member.filter.max_position = per_joint ? (*max_positions)[joint] : position_limit;
             member.filter.timeout_cycles = timeout_cycles;
             member.filter.extrapolation_cycles = extrapolation_cycles;
             member.max_abs_tau_ff = 0.0;
@@ -429,6 +451,17 @@ public:
     std::uint32_t rejected_frames() const { return group_.rejected_frames(); }
 
     std::uint32_t dropouts() const { return group_.dropout_count(); }
+
+    bool stopped() const
+    {
+        for(std::size_t joint = 0; joint < joint_count_; ++joint) {
+            if(group_.joint(joint).mode() !=
+               plcopen::core::stream::StreamFilter1D::Mode::stopped) {
+                return false;
+            }
+        }
+        return true;
+    }
 
 private:
     bool valid_values(const std::vector<double> &values) const
@@ -580,6 +613,63 @@ public:
     plcopen::core::axis::AxisStatus status() const
     {
         return axis_.status();
+    }
+
+    // V1 VMS bridge D12 (4): non-blocking submit for per-tick feedback loops.
+    // Unlike move_absolute it never powers the axis implicitly and never
+    // advances cycles; core rejections surface unchanged.
+    std::uint32_t submit_move_absolute(double position, double velocity, double acceleration,
+                                       double deceleration, double jerk)
+    {
+        if(!axis_.powered()) {
+            throw_on_error("submit_move_absolute",
+                           plcopen::core::rt::ErrorCode::precondition_failed);
+        }
+        plcopen::core::axis::AxisCommand command{};
+        command.kind = plcopen::core::axis::CommandKind::move_absolute;
+        command.value = position;
+        command.velocity = velocity;
+        command.acceleration = acceleration;
+        command.deceleration = deceleration;
+        command.jerk = jerk;
+        const plcopen::core::rt::Result<std::uint32_t> accepted = axis_.submit(command);
+        if(!accepted) {
+            throw std::runtime_error(make_error_message("submit_move_absolute", accepted.error()));
+        }
+        return accepted.value();
+    }
+
+    // V1 VMS bridge D12: bindings for existing core seams only.
+    void set_power_feedback(bool available)
+    {
+        throw_on_error("set_power_feedback", axis_.set_power_feedback(available));
+    }
+
+    void set_axis_info_inputs(bool communication_ready, bool ready_for_power_on,
+                              bool home_abs_switch, bool limit_switch_pos,
+                              bool limit_switch_neg, bool warning)
+    {
+        plcopen::core::axis::AxisModel::AxisInfoInputs inputs{};
+        inputs.communication_ready = communication_ready;
+        inputs.ready_for_power_on = ready_for_power_on;
+        inputs.home_abs_switch = home_abs_switch;
+        inputs.limit_switch_pos = limit_switch_pos;
+        inputs.limit_switch_neg = limit_switch_neg;
+        inputs.warning = warning;
+        axis_.set_axis_info_inputs(inputs);
+    }
+
+    py::dict axis_info_inputs() const
+    {
+        const auto &inputs = axis_.axis_info_inputs();
+        py::dict result;
+        result["communication_ready"] = inputs.communication_ready;
+        result["ready_for_power_on"] = inputs.ready_for_power_on;
+        result["home_abs_switch"] = inputs.home_abs_switch;
+        result["limit_switch_pos"] = inputs.limit_switch_pos;
+        result["limit_switch_neg"] = inputs.limit_switch_neg;
+        result["warning"] = inputs.warning;
+        return result;
     }
 
     void configure_si(const plcopen::core::rt::CycleConfig &cycle,
@@ -866,12 +956,16 @@ PYBIND11_MODULE(pyplcopen, module)
 
     py::class_<JointStreamSim>(module, "JointStreamSim")
         .def(py::init<std::size_t, const std::string &, double, double, double,
-                      std::int64_t, std::int64_t, double>(),
+                      std::int64_t, std::int64_t, const std::optional<double> &,
+                      const std::optional<std::vector<double>> &,
+                      const std::optional<std::vector<double>> &>(),
              py::arg("joint_count"), py::arg("mode"),
              py::arg("velocity_limit"), py::arg("acceleration_limit"),
              py::arg("jerk_limit"), py::arg("timeout_cycles") = 30,
              py::arg("extrapolation_cycles") = 40,
-             py::arg("position_limit") = 3.14159265358979323846)
+             py::arg("position_limit") = std::nullopt,
+             py::arg("min_positions") = std::nullopt,
+             py::arg("max_positions") = std::nullopt)
         .def("reset", &JointStreamSim::reset, py::arg("positions"))
         .def("push_frame", &JointStreamSim::push_frame,
              py::arg("positions"), py::arg("timestamp_cycles"),
@@ -879,7 +973,8 @@ PYBIND11_MODULE(pyplcopen, module)
         .def("cycle", &JointStreamSim::cycle, py::arg("cycles") = 1)
         .def("setpoint_frame", &JointStreamSim::setpoint_frame)
         .def("rejected_frames", &JointStreamSim::rejected_frames)
-        .def("dropouts", &JointStreamSim::dropouts);
+        .def("dropouts", &JointStreamSim::dropouts)
+        .def("stopped", &JointStreamSim::stopped);
 
     py::class_<AxisSim>(module, "AxisSim")
         .def(py::init<std::int32_t>(), py::arg("domain_id") = 0)
@@ -912,6 +1007,15 @@ PYBIND11_MODULE(pyplcopen, module)
              py::arg("config"))
         .def("si_config", &AxisSim::si_config, py::arg("cycle"))
         .def("status", &AxisSim::status)
+        .def("submit_move_absolute", &AxisSim::submit_move_absolute, py::arg("position"),
+             py::arg("velocity"), py::arg("acceleration"), py::arg("deceleration"),
+             py::arg("jerk"))
+        .def("set_power_feedback", &AxisSim::set_power_feedback, py::arg("available"))
+        .def("set_axis_info_inputs", &AxisSim::set_axis_info_inputs, py::kw_only(),
+             py::arg("communication_ready"), py::arg("ready_for_power_on"),
+             py::arg("home_abs_switch"), py::arg("limit_switch_pos"),
+             py::arg("limit_switch_neg"), py::arg("warning"))
+        .def("axis_info_inputs", &AxisSim::axis_info_inputs)
         .def("stream_engage", &AxisSim::stream_engage, py::arg("velocity_limit"),
              py::arg("acceleration_limit"), py::arg("jerk_limit"),
              py::arg("timeout_cycles") = 50, py::arg("extrapolation_cycles") = 40)
