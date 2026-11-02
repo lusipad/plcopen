@@ -91,3 +91,9 @@ platform/compiler 上的 `observed_*` 校准值，并固定输出
 监控与调试），
 `plcopen_core_st_fuzz`（单 PROGRAM、L2b、L5、L6、L7 的 `fuzz` 标签 CTest
 冒烟各 3k，仅由 Nightly CI 执行；Nightly 另以 ASan/UBSan 各跑 10 万）。
+
+## 引脚索引宽度
+
+生成的引脚元数据使用 16 位计数；语义分析遍历与输入计数保持相同宽度。
+字节码引脚编号仍为 8 位，`0xFF` 保留为未解析参数哨兵，编译期检查
+每个 FB 的引脚数不超过 255，避免未来目录扩展造成静默窄化。
