@@ -3,6 +3,9 @@ if(BUILD_TESTING AND PLCOPEN_BUILD_TESTS)
                  read_only_probe_tests.cpp)
   target_link_libraries(plcopen_so101_read_only_probe_tests
                         PRIVATE plcopen::core)
+  # These tests instantiate the header-only core. Match its RT test contract
+  # so gcovr does not merge incompatible exception-enabled/disabled CFGs.
+  plcopen_core_rt_compile_options(plcopen_so101_read_only_probe_tests)
   target_include_directories(plcopen_so101_read_only_probe_tests
                              PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
   add_test(NAME plcopen_so101_read_only_probe_tests
@@ -13,6 +16,7 @@ if(BUILD_TESTING AND PLCOPEN_BUILD_TESTS)
                  comparison.cpp)
   target_link_libraries(plcopen_so101_comparison_tests
                         PRIVATE plcopen::core)
+  plcopen_core_rt_compile_options(plcopen_so101_comparison_tests)
   target_include_directories(plcopen_so101_comparison_tests
                              PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
   add_test(NAME plcopen_so101_comparison_tests

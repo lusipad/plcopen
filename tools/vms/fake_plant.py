@@ -42,10 +42,11 @@ PLANTS: dict[str, dict[str, Any]] = {
 
 HELLO_MISBEHAVIOURS = {
     "bad_protocol", "bad_units", "bad_kernel", "bad_profile", "bad_joint_count",
-    "bad_joint_names", "bad_period", "bad_limits", "nan_limits",
+    "bad_joint_names", "bad_period", "bad_limits", "nan_limits", "overflow_limits",
 }
 STEP_MISBEHAVIOURS = {
     "clamp", "tick_skip", "tick_repeat", "nan", "missing", "wrong_type", "hang", "crash",
+    "missing_fault", "overflow",
 }
 INPUT_DEFAULTS = {
     "positiveLimit": False,
@@ -113,6 +114,8 @@ class FakePlant:
             joints[0]["min"] = joints[0]["max"]
         elif bad == "nan_limits":
             joints[0]["max"] = math.inf
+        elif bad == "overflow_limits":
+            joints[0]["max"] = 10**400
         return reply
 
     def reset(self, message: dict[str, Any]) -> dict[str, Any]:
@@ -171,6 +174,10 @@ class FakePlant:
                 reply["measured"]["position"][0] = math.nan
             elif bad == "missing":
                 del reply["measured"]
+            elif bad == "missing_fault":
+                del reply["fault"]
+            elif bad == "overflow":
+                reply["measured"]["position"][0] = 10**400
             elif bad == "wrong_type":
                 reply["fault"] = 5
             elif bad == "hang":

@@ -26,6 +26,16 @@ namespace plcopen::core::st
 namespace detail
 {
 
+// Pin operands are bytes; 0xFF is reserved for an unresolved parameter.
+// Metadata counts are wider, so guard narrowing independently of loop types.
+static_assert([]() constexpr {
+    for(const auto &fb : generated::kStBindingFbs) {
+        if(fb.pin_count > 0xFFU) return false;
+    }
+    return true;
+}(), "ST pin ordinals must fit below the unresolved-pin sentinel");
+
+
 // Negatable numeric types (unary minus): signed integers + reals. Unsigned
 // negation is rejected (write 0 - x explicitly; declared L1a record).
 constexpr bool is_numeric(Type type)
@@ -1018,7 +1028,7 @@ private:
     int find_pin(FbType type, const std::string &lower) const
     {
         const PinTable table = pin_table(type);
-        for(std::uint8_t i = 0; i < table.count; ++i) {
+        for(std::uint16_t i = 0; i < table.count; ++i) {
             if(table.pins[i].lower_name == lower) {
                 return i;
             }
@@ -1513,8 +1523,8 @@ private:
         // Non-formal call (L1a 5.4): positional arguments must cover every
         // input pin in declaration order (pin tables list inputs first).
         if(!stmt.params.empty() && stmt.params[0].pin.empty()) {
-            std::uint8_t input_count = 0;
-            for(std::uint8_t i = 0; i < table.count; ++i) {
+            std::uint16_t input_count = 0;
+            for(std::uint16_t i = 0; i < table.count; ++i) {
                 if(table.pins[i].is_input) {
                     ++input_count;
                 }

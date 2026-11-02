@@ -297,17 +297,28 @@ raise SystemExit(0 if result.wasSuccessful() else 1)
               ${Python3_EXECUTABLE} -m unittest tools.test_vms_bindings -v)
     set_tests_properties(pyplcopen_vms_bindings PROPERTIES
       WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-    # Bridge + in-repo fake plant (D14): protocol, rejection table, fault
-    # mapping. Pure Python subprocess; no Node or VMS checkout required.
+    # In-process protocol validation remains in the default test gate.
     add_test(
-      NAME pyplcopen_vms_bridge
+      NAME pyplcopen_vms_protocol
       COMMAND ${CMAKE_COMMAND} -E env
               PLCOPEN_PYPLCOPEN_DIR=$<TARGET_FILE_DIR:pyplcopen>
-              ${Python3_EXECUTABLE} -W error::ResourceWarning
-              -m unittest tools.test_vms_bridge -v)
-    set_tests_properties(pyplcopen_vms_bridge PROPERTIES
-      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-      TIMEOUT 120)
+              ${Python3_EXECUTABLE} -m unittest tools.test_vms_protocol -v)
+    set_tests_properties(pyplcopen_vms_protocol PROPERTIES
+      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+    # Bridge + in-repo fake plant (D14) creates child processes: explicit
+    # integration opt-in only, even though no Node/VMS checkout is needed.
+    if(PLCOPEN_ENABLE_PROCESS_INTEGRATION_TESTS)
+      add_test(
+        NAME pyplcopen_vms_bridge
+        COMMAND ${CMAKE_COMMAND} -E env
+                PLCOPEN_PYPLCOPEN_DIR=$<TARGET_FILE_DIR:pyplcopen>
+                ${Python3_EXECUTABLE} -W error::ResourceWarning
+                -m unittest tools.test_vms_bridge -v)
+      set_tests_properties(pyplcopen_vms_bridge PROPERTIES
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        LABELS "integration"
+        TIMEOUT 120)
+    endif()
   endif()
 endif()
 

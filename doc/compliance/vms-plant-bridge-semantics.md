@@ -3,6 +3,8 @@
 > 状态：**已批准（2026-09-24，维护者，按 r2 全范围；§6 三个开放项按提案
 > 收口）**。r2 已并入评审意见：整型时间、逐关节限位、故障不恢复、
 > `AxisInfoInputs` 逐字段映射、1 tick 反馈延迟、内置场景。
+> **2026-11-02 补充批准**：维护者同意 D12 ⑤ 只读 `stopped()` 绑定，
+> D09 以 core 停车完成态而非瞬时零速判停；不修改 core 运动算法。
 >
 > 本批让 plcopen 作为 **External Controller**，经进程边界驱动维护者自有的
 > Virtual Machine Studio（下称 VMS）Plant 模型。VMS 规格把自身定位为
@@ -35,10 +37,10 @@
 | D06 | 限位与静默钳位 | VMS `setCommand` 会把越限目标静默钳位，与本项目"未定义显式报错"冲突。三道防线：① **core 第一道**：单轴把 `hello` 限位写进 `AxisSiConfig.min/max_position`（`*_enabled = true`），越限命令在提交阶段被 core 拒绝；臂把逐关节 `min/max` 写进 `JointStreamSim` 的逐关节包络（D11）；② **桥接预检**：发送前 setpoint 越出 `hello` 限位整 tick 拒绝、不发送；③ **回显校验**：host 应答回显 applied command，与发送值**逐位相等**（JSON 对 double 无损往返），不等即拒绝。钳位永远不被静默接受 |
 | D07 | 单轴故障与输入映射 | 只用 core 既有 seam，不新增 ErrorCode。故障：VMS `fault != null` 或 `encoderStatus != "Normal"` → 同 tick `set_power_feedback(false)`（已上电轴经 `trigger_error` 进入 ErrorStop）。输入：按下表逐字段写 `set_axis_info_inputs`，仅供 MC_ReadAxisInfo 观测，不引入运动语义。VMS 故障码只进记录，不透传进 core |
 | D08 | SO-ARM101 故障 | `JointStreamSim` 无反馈 seam（T2b 边界不变）。VMS 臂 `fault != null` 时桥接**停止推帧**，但**继续每 tick 调用 `cycle(1)` 并把 H1 输出的 setpoint 照常发给 host**，由既有组级 watchdog 走 KB-035 受控停车；不新增组级故障入口，不冻结在最后一帧 |
-| D09 | 故障不恢复 | 首批**不定义恢复**：故障一旦映射，桥接不回写 `set_power_feedback(true)`、不重新上电、不恢复推帧。单轴在进入 ErrorStop 后、臂在 H1 停车完成（`setpoint_frame()` 六关节速度与加速度全部恰为 0）后，再记录固定 `post_fault_ticks = 100` 个 tick，然后以退出码 1 结束。恢复语义另立矩阵 |
+| D09 | 故障不恢复 | 首批**不定义恢复**：故障一旦映射，桥接不回写 `set_power_feedback(true)`、不重新上电、不恢复推帧。单轴在进入 ErrorStop 后、臂在 H1 停车完成（`JointStreamSim.stopped()` 为 `true`，且 `setpoint_frame()` 六关节速度与加速度全部恰为 0）后，再记录固定 `post_fault_ticks = 100` 个 tick，然后以退出码 1 结束。恢复语义另立矩阵 |
 | D10 | 臂侧双剖面 | VMS 舵机模型自带位置环与速度上限（模拟 Feetech 位置模式），属 Plant 行为。桥接固定 `speedScale = 1.0`、`enabled = true`，其余舵机参数用 VMS 默认值；在记录头注明，不在 plcopen 侧补偿 |
 | D11 | 保真档位 | 单轴默认 `Servo`，臂默认 `Dynamic`；允许 `Kinematic/Dynamic/Servo`。`Logic` 拒绝（它不产生有意义的测量反馈） |
-| D12 | Python seam | 只补既有 core API 的绑定，不新增 core API：① `AxisSim.set_power_feedback(available)`；② `AxisSim.set_axis_info_inputs(...)`（六个布尔关键字参数，与 `AxisInfoInputs` 同名）与对应只读 `axis_info_inputs()`；③ `JointStreamSim` 构造新增可选 `min_positions/max_positions`（长度 = 关节数，逐关节写 `filter.min/max_position`）；`position_limit` 默认值改为 `None`（语义等同现有默认 π，行为逐位不变），以便区分"未给出"；不给逐关节限位时保持现有对称 `±position_limit` 行为；显式给出 `position_limit` 同时又给逐关节限位、只给 min/max 其一、长度不符或任一关节 `min >= max`/非有限，均为 `invalid_argument`；④ `AxisSim.submit_move_absolute(position, velocity, acceleration, deceleration, jerk)`：只包既有 `AxisModel::submit`，不推进周期、不等待，返回 command id；轴未上电即 `precondition_failed`（不像阻塞版 `move_absolute` 那样隐式上电），core 拒绝原样抛出。④ 为实现期发现（单轴逐 tick 回灌需要非阻塞提交），2026-09-24 维护者追认补入 |
+| D12 | Python seam | 只补既有 core API 的绑定，不新增 core API：① `AxisSim.set_power_feedback(available)`；② `AxisSim.set_axis_info_inputs(...)`（六个布尔关键字参数，与 `AxisInfoInputs` 同名）与对应只读 `axis_info_inputs()`；③ `JointStreamSim` 构造新增可选 `min_positions/max_positions`（长度 = 关节数，逐关节写 `filter.min/max_position`）；`position_limit` 默认值改为 `None`（语义等同现有默认 π，行为逐位不变），以便区分"未给出"；不给逐关节限位时保持现有对称 `±position_limit` 行为；显式给出 `position_limit` 同时又给逐关节限位、只给 min/max 其一、长度不符或任一关节 `min >= max`/非有限，均为 `invalid_argument`；④ `AxisSim.submit_move_absolute(position, velocity, acceleration, deceleration, jerk)`：只包既有 `AxisModel::submit`，不推进周期、不等待，返回 command id；轴未上电即 `precondition_failed`（不像阻塞版 `move_absolute` 那样隐式上电），core 拒绝原样抛出。④ 为实现期发现（单轴逐 tick 回灌需要非阻塞提交），2026-09-24 维护者追认补入。⑤ `JointStreamSim.stopped()`：只读、无周期推进，当且仅当所有已配置关节的 `StreamFilter1D::Mode` 均为 `stopped` 返回 `true`；`idle`、跟踪、停车中（即使瞬时速度与加速度为零）均不算完成。只包装既有 `JointStreamGroup::joint(i).mode()`，不改变 core 算法；2026-11-02 维护者明确批准补入 |
 | D13 | 确定性口径 | 命令域：同输入逐 tick 逐位相等（与 host 无关）。反馈域：只声明"同一 Node 大版本 + 同一平台"下逐位可重复；跨平台不声明 |
 | D14 | CI 与本地 | plcopen CI 只跑仓内 Python **fake plant**（实现同一协议的一阶跟随模型，可配置故意钳位/漂移/毒值/挂起/崩溃），验证协议、拒绝规则与故障映射；真实 VMS 联调是本地可选旅程，需 `--vms-root` 显式给出 |
 | D15 | 内置场景 | 场景固定在桥接内，不接受外部轨迹文件：`axis` = 上电 → MoveAbsolute 0→0.2 m（v/a/j 取 `hello` 限位内固定值，记录头注明）→ 停稳后再保持 200 tick；`so-arm101` = 100 Hz 帧率、2.0 s 六关节正弦关节流（幅值取各关节限位区间中点 ±20% 区间宽）→ upsample 到 1 kHz → 正常结束 |
@@ -96,7 +98,7 @@ python tools/vms/vms_plant_bridge.py --fake-plant ...   # CI 用
 | 限位第一道 | 单轴越限 MoveAbsolute 在 core 提交阶段被拒绝；臂越限帧被 H1 包络按逐关节限位处理，不依赖桥接预检 |
 | 故障映射（单轴） | 已上电运动中于 tick k 注入 plant fault，tick k 内 `set_power_feedback(false)` 生效，tick k+1 `status()` 为 ErrorStop；其后不恢复，`post_fault_ticks` 后退出码 1；全程 command 有限 |
 | 输入 seam | fake plant 逐个置 D07 表六个字段，同 tick `axis_info_inputs()` 对应位翻转，其余位不变；command 不变 |
-| 臂断流停车 | 臂 fault 后停止推帧但继续 `cycle`/发送，`dropouts()` 递增，H1 在既有 watchdog 周期内进入受控停车且速度收敛到 0；setpoint 全程在逐关节限位内 |
+| 臂断流停车 | 臂 fault 后停止推帧但继续 `cycle`/发送，`dropouts()` 递增，H1 在既有 watchdog 周期内进入受控停车，全部关节进入 `stopped` 完成态且速度收敛到 0；setpoint 全程在逐关节限位内 |
 | 拒绝表 | 第 3 节 14 条每条至少一个可执行测试，全部在 fake plant 或绑定单测上运行 |
 | 真实 VMS（本地，非 CI，**只记录证据、不卡门禁**） | D15 两个场景各跑通一次（退出码 0），记录末跟随误差与最大跟随误差写入实现记录节；如需设阈值另改矩阵 |
 | 既有面 | 默认 CTest、Python smoke、T2a/T2b 回归、18 份回放零差异；`JointStreamSim` 不给逐关节限位时行为逐位不变；默认 wheel 无新依赖 |
@@ -123,45 +125,36 @@ python tools/vms/vms_plant_bridge.py --fake-plant ...   # CI 用
    plant（协议参考实现），不 vendor VMS 代码。
 3. D07/D08：保守映射用于首批，配合 D09"故障不恢复"写死。
 
-## 7. 实现记录（2026-09-24，KB-104）
+## 7. 实现记录（2026-09-24；2026-11-02 补充，KB-104）
 
-- 绑定（D12 ①～④）：`python/pyplcopen.cpp`；测试 `tools/test_vms_bindings.py`
-  （CTest `pyplcopen_vms_bindings`，11 项）。`submit_move_absolute` 在未上电时
+- 绑定（D12 ①～⑤）：`python/pyplcopen.cpp`；测试 `tools/test_vms_bindings.py`
+  （CTest `pyplcopen_vms_bindings`）。`submit_move_absolute` 在未上电时
   先于 core 准入显式返回 `precondition_failed`（core 准入对未上电给
   `invalid_argument`，绑定按本矩阵口径收窄）。
+- 2026-11-02 停车回归：六关节故障场景在停车中的中间节点可瞬时全零，
+  随后仍有位置修正；只读 `stopped()` 区分该节点与真实完成态，桥接在
+  完成态与零速度/加速度同时成立后才开始 D09 的 100 tick 记录。绑定
+  回归同时验证重复查询不推进周期、不改帧或计数；原停车断言保持。
 - 桥接：`tools/vms/vms_plant_bridge.py`；协议参考实现
   `tools/vms/fake_plant.py`（一阶跟随 / `--echo` 精确回显，可配置
-  §3 各类故意违约）。测试 `tools/test_vms_bridge.py`（CTest
-  `pyplcopen_vms_bridge`，25 项），覆盖 §4 全部纯软件指标与 §3 中 13 条
-  桥接侧拒绝规则；第 14 条在绑定测试中。
-- 协议消息（JSON Lines，一行一条，锁步）：
-  `hello{protocol, plant, profile, period_ns[, servo]}` →
-  `hello{protocol, kernel, profile, units, period_ns_supported, joints[{name,min,max}], faults}`；
-  `reset{positions}` → `reset{positions}`；
-  `step{tick, period_ns, command{position[], velocity[]}[, inject]}` →
-  `state{tick, applied{position[], velocity[]}, measured{position[], velocity[]}, fault, encoderStatus, inputs{positiveLimit, negativeLimit, homeSignal, ready[, warning]}}`
-  （`encoderStatus`/`inputs` 仅单轴）；`bye` 无应答。
-- 单轴场景长度由命令域空跑预先确定（与 host 无关，D13），用于校验
-  `--inject` tick 范围。
-- 真实 VMS 联调：**未执行**——VMS 侧 `tools/plant-host.mjs` 尚未存在，
-  §4 末行证据待其落地后回填。
-
-## 7. 实现记录（KB-104）
-
-- 绑定（D12 ①～④）：`python/pyplcopen.cpp`；测试
-  `tools/test_vms_bindings.py`（CTest `pyplcopen_vms_bindings`）。
-- 桥接：`tools/vms/vms_plant_bridge.py`；协议参考实现
-  `tools/vms/fake_plant.py`；验收与拒绝表测试 `tools/test_vms_bridge.py`
-  （CTest `pyplcopen_vms_bridge`）。第 3 节 14 条拒绝规则各有至少一个
-  测试，其中 `JointStreamSim` 非法组合一条在绑定测试中。
-- `plcopen.plant/v1` 消息（JSON Lines，一行一条，锁步）：
-  - `hello` → 应答 `{type, protocol, kernel, profile, units, period_ns_supported, joints[{name,min,max}], faults}`
-  - `reset{positions}` → `{type:"reset"}`
-  - `step{tick, period_ns, command{position[], velocity[]}, inject?}` →
-    `{type:"state", tick, applied{position[], velocity[]}, measured{position[], velocity[]}, fault, encoderStatus?, inputs?}`；
-    单轴必须带 `encoderStatus` 与 `inputs{positiveLimit, negativeLimit, homeSignal, ready, warning?}`
-  - `bye`：桥接结束时发送，host 退出
+  §3 各类故意违约）。验收与拒绝表测试 `tools/test_vms_bridge.py`
+  （CTest `pyplcopen_vms_bridge`），第 14 条绑定拒绝规则在绑定测试中。
+- 进程内协议校验：`tools/test_vms_protocol.py`（CTest
+  `pyplcopen_vms_protocol`），与绑定测试一起保留在默认门禁。
+  启动 fake plant 子进程的桥接套件仅在显式设置
+  `PLCOPEN_ENABLE_PROCESS_INTEGRATION_TESTS=ON` 时注册；Linux/Windows CI
+  单独启用并执行该集成测试，不要求 Node 或真实 VMS。
+- `plcopen.plant/v1` 消息（JSON Lines，一行一条，锁步；每条均含 `type`）：
+  - `{type:"hello", protocol, plant, profile, period_ns, servo?}` →
+    `{type:"hello", protocol, kernel, profile, units, period_ns_supported, joints[{name,min,max}], faults}`
+  - `{type:"reset", positions}` → `{type:"reset"}`。应答只要求类型确认；
+    fake plant 另回显 `positions`，桥接不要求或消费该附加字段。
+  - `{type:"step", tick, period_ns, command{position[], velocity[]}, inject?}` →
+    `{type:"state", tick, applied{position[], velocity[]}, measured{position[], velocity[]}, fault, encoderStatus?, inputs?}`。
+    `fault` 必须存在，`null` 表示无故障；单轴还必须带 `encoderStatus`
+    与 `inputs{positiveLimit, negativeLimit, homeSignal, ready, warning?}`。
+  - `{type:"bye"}`：桥接结束时发送，无应答，host 退出。
 - 单轴场景长度由命令域干跑预先确定（与 host 无关，D13），用于 `--inject`
   tick 越界预检。
-- 真实 VMS 联调：`tools/plant-host.mjs` 尚未在 VMS 仓库落地，第 4 节真实
-  VMS 一行暂无证据，待 host 就绪后回填。
+- 真实 VMS 联调：**未执行**——VMS 侧 `tools/plant-host.mjs` 尚未存在，
+  第 4 节真实 VMS 一行暂无证据，待 host 就绪后回填。

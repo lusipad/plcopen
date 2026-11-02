@@ -23,6 +23,14 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- VMS 臂故障停车改为读取全关节真实完成态：新增只读
+  `JointStreamSim.stopped()`，避免把停车轨迹的瞬时零速节点误认为完成；
+  不改 core 运动算法或故障不恢复规则（KB-104，2026-11-02 批准）。
+
+- VMS 桥接（KB-104）拒绝缺失 `fault` 与超出浮点范围的数值，保留运行中
+  拒绝前的结果和 CSV；纯协议/绑定测试默认运行，fake plant 子进程测试改为
+  显式集成选项，Linux/Windows CI 主动开启并执行。
+
 - 修复 KB-035 静止目标流与断流停车的两个保守回退缺口：重复静止帧现在
   只刷新 watchdog 而不重启相同轨迹；反向 quintic 的位置包络证明使用轨迹
   段精确边界速度，避免把终点浮点消去尘埃误判为反向；常规停止求解链全拒绝

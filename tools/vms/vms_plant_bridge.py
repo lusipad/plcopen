@@ -127,7 +127,10 @@ class BridgeResult:
 def _number(value: Any, what: str, code: int) -> float:
     if isinstance(value, bool) or not isinstance(value, (int, float)):
         raise BridgeError(code, f"{what}: expected a number, got {value!r}")
-    number = float(value)
+    try:
+        number = float(value)
+    except OverflowError as error:
+        raise BridgeError(code, f"{what}: number outside finite float range") from error
     if not math.isfinite(number):
         raise BridgeError(code, f"{what}: non-finite value {value!r}")
     return number
@@ -204,7 +207,9 @@ def parse_state(reply: Any, tick: int, positions: Sequence[float],
                                     " (silent clamp rejected)")
     measured_position = _vector(measured.get("position"), count, "measured.position", code)
     measured_velocity = _vector(measured.get("velocity"), count, "measured.velocity", code)
-    fault = reply.get("fault")
+    if "fault" not in reply:
+        raise BridgeError(code, f"tick {tick}: missing fault")
+    fault = reply["fault"]
     if fault is not None and not isinstance(fault, str):
         raise BridgeError(code, f"tick {tick}: fault must be null or a string")
     encoder_status = None
@@ -456,7 +461,10 @@ class ArmScenario:
             self.faulted = True  # D08: stop pushing, keep cycling and sending
         if self.faulted:
             if self.stopped_at is None:
-                if (all(float(v) == 0.0 for v in self.frame["velocities"])
+                # A stopping profile can pass through an all-zero intermediate
+                # node. Only the core completion mode makes it safe to count D09.
+                if (self.stream.stopped()
+                        and all(float(v) == 0.0 for v in self.frame["velocities"])
                         and all(float(a) == 0.0 for a in self.frame["accelerations"])):
                     self.stopped_at = tick
             else:

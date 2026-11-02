@@ -61,7 +61,8 @@ class FixedBaseChain
     rt::ErrorCode inverse_dynamics(const double *q, const double *dq, const double *ddq,
                                    const double gravity[3], double *tau_out) const
     {
-        if (!valid_inputs(q, dq, ddq, gravity, tau_out))
+        if (q == nullptr || dq == nullptr || ddq == nullptr || gravity == nullptr ||
+            tau_out == nullptr || !valid_inputs(q, dq, ddq, gravity))
         {
             return rt::ErrorCode::invalid_argument;
         }
@@ -277,10 +278,9 @@ class FixedBaseChain
     }
 
     bool valid_inputs(const double *q, const double *dq, const double *ddq,
-                      const double gravity[3], const double *tau_out) const
+                      const double gravity[3]) const
     {
-        if (!valid_ || q == nullptr || dq == nullptr || ddq == nullptr || gravity == nullptr ||
-            tau_out == nullptr)
+        if (!valid_)
         {
             return false;
         }

@@ -452,6 +452,17 @@ public:
 
     std::uint32_t dropouts() const { return group_.dropout_count(); }
 
+    bool stopped() const
+    {
+        for(std::size_t joint = 0; joint < joint_count_; ++joint) {
+            if(group_.joint(joint).mode() !=
+               plcopen::core::stream::StreamFilter1D::Mode::stopped) {
+                return false;
+            }
+        }
+        return true;
+    }
+
 private:
     bool valid_values(const std::vector<double> &values) const
     {
@@ -962,7 +973,8 @@ PYBIND11_MODULE(pyplcopen, module)
         .def("cycle", &JointStreamSim::cycle, py::arg("cycles") = 1)
         .def("setpoint_frame", &JointStreamSim::setpoint_frame)
         .def("rejected_frames", &JointStreamSim::rejected_frames)
-        .def("dropouts", &JointStreamSim::dropouts);
+        .def("dropouts", &JointStreamSim::dropouts)
+        .def("stopped", &JointStreamSim::stopped);
 
     py::class_<AxisSim>(module, "AxisSim")
         .def(py::init<std::int32_t>(), py::arg("domain_id") = 0)

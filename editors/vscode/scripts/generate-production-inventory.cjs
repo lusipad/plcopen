@@ -19,6 +19,7 @@ const automaticallyApprovedLicenses = new Set([
   "MIT",
 ]);
 const licenseExceptions = {
+  "@isaacs/nonrecursive-glob-match": "BlueOak-1.0.0",
   minimatch: "BlueOak-1.0.0",
   semver: "ISC",
 };

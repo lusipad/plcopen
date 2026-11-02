@@ -8,6 +8,7 @@ checkout is required. The JointStreamSim binding row lives in
 
 from __future__ import annotations
 
+import csv
 import math
 import os
 from pathlib import Path
@@ -273,6 +274,35 @@ class RejectionTableTest(unittest.TestCase):
                 self.assertEqual(len(result.rows), 20)
                 self.assertTrue(all(math.isfinite(row["actual_written"])
                                     for row in result.rows))
+
+    def test_malformed_state_preserves_partial_result_and_csv(self) -> None:
+        for plant in ("axis", "so-arm101"):
+            for misbehave in ("missing_fault", "overflow"):
+                with self.subTest(plant=plant, misbehave=misbehave), \
+                        tempfile.TemporaryDirectory(prefix="plcopen-vms-") as directory:
+                    output = Path(directory) / "partial.csv"
+                    result = _run(plant, "--misbehave", misbehave, "--at-tick", "7",
+                                  output=output)
+                    self.assertEqual(result.exit_code, bridge.RUNTIME, result.message)
+                    self.assertEqual([row["tick"] for row in result.rows], list(range(7)))
+                    self.assertEqual(result.header["protocol"], bridge.PROTOCOL)
+                    with output.open(encoding="utf-8", newline="") as handle:
+                        rows = list(csv.DictReader(line for line in handle
+                                                   if not line.startswith("# ")))
+                    self.assertEqual([int(row["tick"]) for row in rows], list(range(7)))
+                    self.assertTrue(all(math.isfinite(value) for row in result.rows
+                                        for value in row["measured"]))
+
+    def test_oversized_hello_limit_is_controlled_preflight_failure(self) -> None:
+        for plant in ("axis", "so-arm101"):
+            with self.subTest(plant=plant), \
+                    tempfile.TemporaryDirectory(prefix="plcopen-vms-") as directory:
+                output = Path(directory) / "not-started.csv"
+                result = _run(plant, "--misbehave", "overflow_limits", output=output)
+                self.assertEqual(result.exit_code, bridge.PREFLIGHT, result.message)
+                self.assertEqual(result.rows, [])
+                self.assertEqual(result.header, {})
+                self.assertFalse(output.exists())
 
     def test_host_hang_or_crash(self) -> None:
         hang = _run("axis", "--misbehave", "hang", "--at-tick", "3", host_timeout=0.5)

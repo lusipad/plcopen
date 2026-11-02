@@ -167,5 +167,80 @@ class JointStreamLimitsTest(unittest.TestCase):
                     _stream(**kwargs)
 
 
+class JointStreamStoppedTest(unittest.TestCase):
+    def test_every_configured_joint_must_finish(self) -> None:
+        for moving_joint in (0, 2):
+            with self.subTest(moving_joint=moving_joint):
+                stream = pyplcopen.JointStreamSim(
+                    3, "upsample", velocity_limit=0.01, acceleration_limit=0.001,
+                    jerk_limit=0.0001, timeout_cycles=5, extrapolation_cycles=2)
+                stream.reset([0.0] * 3)
+                positions = [0.0] * 3
+                positions[moving_joint] = 0.2
+                stream.push_frame(positions, 1, [0.0] * 3)
+                moving_after_dropout = False
+                for _ in range(500):
+                    stream.cycle(1)
+                    frame = stream.setpoint_frame()
+                    if stream.dropouts() and any(v != 0.0 for v in frame["velocities"]):
+                        moving_after_dropout = True
+                        self.assertFalse(stream.stopped())
+                self.assertTrue(moving_after_dropout)
+                self.assertTrue(stream.stopped())
+
+    def test_completion_distinguishes_transient_zero_and_is_read_only(self) -> None:
+        # Six-joint dropout reproducer: a stop profile can pass through zero
+        # velocity/acceleration before its final position correction completes.
+        lows = [-1.9, -1.7, -1.6, -1.6, -1.8, -0.17]
+        highs = [1.9, 1.7, 1.6, 1.6, 1.8, 1.75]
+        centers = [(low + high) / 2 for low, high in zip(lows, highs)]
+        amplitudes = [0.2 * (high - low) for low, high in zip(lows, highs)]
+        streams = [pyplcopen.JointStreamSim(
+            6, "upsample", velocity_limit=0.003, acceleration_limit=0.00003,
+            jerk_limit=0.000003, min_positions=lows, max_positions=highs)
+            for _ in range(2)]
+        observed, control = streams
+        for stream in streams:
+            stream.reset(centers)
+        self.assertFalse(observed.stopped())  # idle is not completed stopping
+        transient_position = None
+        moved_after_transient = False
+        stopped_position = None
+        for tick in range(1_200):
+            if tick <= 700 and tick % 10 == 0:
+                phase = 2 * math.pi * tick / 2_000
+                positions = [center + amplitude * math.sin(phase)
+                             for center, amplitude in zip(centers, amplitudes)]
+                velocities = [amplitude * (2 * math.pi / 2_000) * math.cos(phase)
+                              for amplitude in amplitudes]
+                for stream in streams:
+                    stream.push_frame(positions, tick + 1, velocities)
+            for stream in streams:
+                stream.cycle(1)
+            before = observed.setpoint_frame()
+            counters = (observed.dropouts(), observed.rejected_frames())
+            stopped = observed.stopped()
+            self.assertIs(type(stopped), bool)
+            self.assertEqual(observed.stopped(), stopped)
+            self.assertEqual(observed.setpoint_frame(), before)
+            self.assertEqual((observed.dropouts(), observed.rejected_frames()), counters)
+            self.assertEqual(before, control.setpoint_frame())
+            zero = all(v == 0.0 for v in before["velocities"] + before["accelerations"])
+            if observed.dropouts() and zero and not stopped:
+                transient_position = before["positions"]
+            if transient_position is not None and before["positions"] != transient_position:
+                moved_after_transient = True
+            if stopped:
+                self.assertTrue(zero)
+                if stopped_position is None:
+                    stopped_position = before["positions"]
+                self.assertEqual(before["positions"], stopped_position)
+            elif stopped_position is not None:
+                self.fail("completed stop resumed without another frame")
+        self.assertIsNotNone(transient_position)
+        self.assertTrue(moved_after_transient)
+        self.assertIsNotNone(stopped_position)
+
+
 if __name__ == "__main__":
     unittest.main()

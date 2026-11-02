@@ -525,9 +525,11 @@ int check_fixed_cases()
         otg::State1D from;
         otg::Target1D to;
         otg::Limits1D lim;
+        bool zero_duration = false;
     };
 
     Case cases[] = {
+        {"identical_state", {2, 0.5, 0.25}, {2, 0.5, 0.25}, {4, 3, 2, 1}, true},
         {"rest_short", {0, 0, 0}, {1, 0, 0}, {10, 10, 10, 1}},
         {"rest_vlim", {0, 0, 0}, {100, 0, 0}, {2, 4, 4, 1}},
         {"same_dir", {0, 1, 0}, {10, 0, 0}, {4, 2, 2, 1}},
@@ -546,6 +548,30 @@ int check_fixed_cases()
         OracleResult res = oracle_solve(c.from, c.to, c.lim, tab);
         if(!res.found) {
             std::printf("  FAIL %s no_solution\n", c.name);
+            ++fail;
+            continue;
+        }
+
+        if(c.zero_duration && (res.time != 0.0 || res.idx != -1)) {
+            std::printf("  FAIL %s expected_zero_solution\n", c.name);
+            ++fail;
+            continue;
+        }
+
+        // A zero-duration solution has no switch structure (idx == -1).
+        // Check its endpoint directly instead of indexing the table.
+        if(res.time == 0.0) {
+            if(res.idx != -1 ||
+               std::fabs(c.from.position - c.to.position) >= 1e-15 ||
+               std::fabs(c.from.velocity - c.to.velocity) >= 1e-15 ||
+               std::fabs(c.from.acceleration - c.to.acceleration) >= 1e-15) {
+                std::printf("  FAIL %s invalid_zero_solution\n", c.name);
+                ++fail;
+            }
+            continue;
+        }
+        if(res.idx < 0 || res.idx >= tab.count) {
+            std::printf("  FAIL %s invalid_structure_index\n", c.name);
             ++fail;
             continue;
         }

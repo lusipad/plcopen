@@ -87,6 +87,10 @@ int check_dh_forward_examples()
     standard.links[0] = {1.0, 0.0, 0.0, 0.0, -Pi, Pi};
     standard.links[1] = {0.5, 0.0, 0.0, 0.0, -Pi, Pi};
     const kin::SerialChain standard_chain(standard);
+    if (standard_chain.joint_count() != 2)
+    {
+        return fail("standard DH joint count");
+    }
     const double q_standard[2] = {Pi * 0.5, -Pi * 0.5};
     kin::Pose6 standard_pose{};
     standard_chain.forward(q_standard, standard_pose);
@@ -102,6 +106,10 @@ int check_dh_forward_examples()
     modified.convention = kin::DhConvention::modified;
     modified.links[0] = {0.4, Pi * 0.5, 0.2, 0.0, -Pi, Pi};
     const kin::SerialChain modified_chain(modified);
+    if (modified_chain.joint_count() != 1)
+    {
+        return fail("modified DH joint count");
+    }
     const double q_modified[1] = {Pi * 0.5};
     kin::Pose6 modified_pose{};
     modified_chain.forward(q_modified, modified_pose);
