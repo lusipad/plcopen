@@ -1,0 +1,14 @@
+<map id="plcopen::core::fb::FbMoveCircularAbsolute" name="plcopen::core::fb::FbMoveCircularAbsolute">
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,357,186,402"/>
+<area shape="rect" id="Node000002" href="$classplcopen_1_1core_1_1fb_1_1GroupExecuteFb.html" title=" " alt="" coords="102,263,239,308"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="145,319,115,358,111,355,141,321"/>
+<area shape="rect" id="Node000003" href="$classplcopen_1_1core_1_1axis_1_1AxisGroup.html" title=" " alt="" coords="98,123,242,168"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="172,181,173,263,168,262,169,185"/>
+<area shape="rect" id="Node000004" href="$structplcopen_1_1core_1_1axis_1_1GroupPosition.html" title=" " alt="" coords="12,5,155,50"/>
+<area shape="poly" id="edge6_Node000001_Node000004" title=" " alt="" coords="84,63,87,174,91,308,96,357,90,356,86,308,82,174,83,68"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="90,62,108,97,134,122,129,124,104,101,90,67"/>
+<area shape="rect" id="Node000005" href="$structplcopen_1_1core_1_1axis_1_1JogCommandOptions.html" title=" " alt="" coords="204,5,371,50"/>
+<area shape="poly" id="edge4_Node000003_Node000005" title=" " alt="" coords="279,62,272,84,260,101,229,124,225,121,256,97,267,81,277,67"/>
+<area shape="rect" id="Node000006" href="$structplcopen_1_1core_1_1fb_1_1MotionOutputs.html" title=" " alt="" coords="266,123,403,168"/>
+<area shape="poly" id="edge5_Node000002_Node000006" title=" " alt="" coords="309,178,280,212,248,241,213,265,210,260,245,237,277,208,305,181"/>
+</map>

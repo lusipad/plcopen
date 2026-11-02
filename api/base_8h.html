@@ -1,0 +1,215 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh">
+<head>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=11"/>
+<meta name="generator" content="Doxygen 1.15.0"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>plcopen: core/fb/base.h 文件参考</title>
+<link href="tabs.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="jquery.js"></script>
+<script type="text/javascript" src="dynsections.js"></script>
+<script type="text/javascript" src="clipboard.js"></script>
+<link href="navtree.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="navtreedata.js"></script>
+<script type="text/javascript" src="navtree.js"></script>
+<script type="text/javascript" src="cookie.js"></script>
+<link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<link href="doxygen.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+<div id="top"><!-- do not remove this div, it is closed by doxygen! -->
+<div id="titlearea">
+<table cellspacing="0" cellpadding="0">
+ <tbody>
+ <tr id="projectrow">
+  <td id="projectalign">
+   <div id="projectname">plcopen<span id="projectnumber">&#160;0.21.0</span>
+   </div>
+  </td>
+ </tr>
+ </tbody>
+</table>
+</div>
+<!-- end header part -->
+<!-- 制作者 Doxygen 1.15.0 -->
+<script type="text/javascript">
+var searchBox = new SearchBox("searchBox", "search/",'.html');
+</script>
+<script type="text/javascript">
+$(function() { codefold.init(); });
+</script>
+<script type="text/javascript" src="menudata.js"></script>
+<script type="text/javascript" src="menu.js"></script>
+<script type="text/javascript">
+$(function() {
+  initMenu('',true,false,'search.php','搜索',true);
+  $(function() { init_search(); });
+});
+</script>
+<div id="main-nav"></div>
+</div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+$(function(){initNavTree('base_8h.html','',''); });
+</script>
+<div id="container">
+<div id="doc-content">
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<div id="MSearchResults">
+<div class="SRPage">
+<div id="SRIndex">
+<div id="SRResults"></div>
+<div class="SRStatus" id="Loading">载入中...</div>
+<div class="SRStatus" id="Searching">搜索中...</div>
+<div class="SRStatus" id="NoMatches">未找到</div>
+</div>
+</div>
+</div>
+</div>
+
+<div class="header">
+  <div class="headertitle"><div class="title">base.h 文件参考</div></div>
+</div><!--header-->
+<div class="contents">
+<div class="textblock"><code>#include &quot;<a class="el" href="error_8h_source.html">rt/error.h</a>&quot;</code><br />
+</div><div class="textblock"><div class="dynheader">
+base.h 的引用(Include)关系图:</div>
+<div class="dyncontent">
+<div class="center"><img src="base_8h__incl.png" border="0" usemap="#acore_2fb_2base_8h" loading="lazy" alt=""/></div>
+<map name="acore_2fb_2base_8h" id="acore_2fb_2base_8h">
+<area shape="rect" title=" " alt="" coords="5,5,119,33"/>
+<area shape="rect" href="error_8h.html" title=" " alt="" coords="23,81,101,109"/>
+<area shape="poly" title=" " alt="" coords="64,31,65,66,59,65,60,36"/>
+</map>
+</div>
+</div><div class="textblock"><div class="dynheader">
+此图展示该文件被哪些文件直接或间接地引用了:</div>
+<div class="dyncontent">
+<div class="center"><img src="base_8h__dep__incl.png" border="0" usemap="#acore_2fb_2base_8hdep" loading="lazy" alt=""/></div>
+<map name="acore_2fb_2base_8hdep" id="acore_2fb_2base_8hdep">
+<area shape="rect" title=" " alt="" coords="446,5,560,33"/>
+<area shape="rect" href="io_8h.html" title=" " alt="" coords="372,81,466,109"/>
+<area shape="poly" title=" " alt="" coords="475,46,436,82,432,79,478,42"/>
+<area shape="rect" href="st__binding__native_8h.html" title=" " alt="" coords="484,157,636,201"/>
+<area shape="poly" title=" " alt="" coords="510,46,531,108,552,157,547,156,526,110,509,51"/>
+<area shape="rect" href="parameter_8h.html" title=" " alt="" coords="540,81,690,109"/>
+<area shape="poly" title=" " alt="" coords="535,39,598,80,592,81,536,44"/>
+<area shape="rect" href="binding__storage_8h.html" title=" " alt="" coords="273,165,458,193"/>
+<area shape="poly" title=" " alt="" coords="404,120,376,166,372,163,401,124"/>
+<area shape="poly" title=" " alt="" coords="454,114,525,155,520,157,455,119"/>
+<area shape="rect" href="bytecode_8h.html" title=" " alt="" coords="295,249,436,277"/>
+<area shape="poly" title=" " alt="" coords="366,206,368,250,363,248,365,211"/>
+<area shape="rect" href="vm_8h.html" title=" " alt="" coords="192,401,294,428"/>
+<area shape="poly" title=" " alt="" coords="285,199,235,218,180,244,129,280,107,302,89,326,84,341,86,354,95,365,109,375,148,392,193,404,189,406,147,397,107,380,91,369,81,356,79,341,84,324,103,298,125,276,177,239,233,213,289,195"/>
+<area shape="rect" href="codegen_8h.html" title=" " alt="" coords="493,401,630,428"/>
+<area shape="poly" title=" " alt="" coords="395,284,547,400,542,401,394,289"/>
+<area shape="rect" href="compile_8h.html" title=" " alt="" coords="459,485,592,512"/>
+<area shape="poly" title=" " alt="" coords="356,289,349,322,343,358,345,394,358,427,378,449,403,465,431,477,461,488,456,488,429,482,401,470,375,453,354,430,340,395,338,357,343,321,353,294"/>
+<area shape="rect" href="process__image_8h.html" title=" " alt="" coords="98,325,278,353"/>
+<area shape="poly" title=" " alt="" coords="318,285,221,327,218,322,322,281"/>
+<area shape="poly" title=" " alt="" coords="347,287,256,402,252,398,344,291"/>
+<area shape="rect" href="sema_8h.html" title=" " alt="" coords="504,325,622,353"/>
+<area shape="poly" title=" " alt="" coords="415,280,530,324,525,325,415,286"/>
+<area shape="rect" href="sfc_8h.html" title=" " alt="" coords="369,401,469,428"/>
+<area shape="poly" title=" " alt="" coords="376,289,417,400,411,400,374,294"/>
+<area shape="rect" href="wcet_8h.html" title=" " alt="" coords="5,401,118,428"/>
+<area shape="poly" title=" " alt="" coords="278,275,167,296,120,310,89,327,76,344,69,363,64,401,59,400,64,362,72,341,85,323,118,305,166,290,281,272"/>
+<area shape="poly" title=" " alt="" coords="552,441,533,486,529,483,548,445"/>
+<area shape="rect" href="language_8h.html" title=" " alt="" coords="491,569,632,597"/>
+<area shape="poly" title=" " alt="" coords="539,525,558,570,553,568,536,529"/>
+<area shape="rect" href="st_8h.html" title=" " alt="" coords="356,645,450,672"/>
+<area shape="poly" title=" " alt="" coords="509,524,415,646,411,642,504,526"/>
+<area shape="poly" title=" " alt="" coords="522,603,432,647,430,642,517,604"/>
+<area shape="poly" title=" " alt="" coords="183,365,177,417,175,477,178,509,185,540,198,569,215,595,246,620,283,637,321,647,358,655,353,655,320,652,281,642,243,624,212,598,193,572,180,542,173,510,169,478,171,416,180,370"/>
+<area shape="poly" title=" " alt="" coords="207,363,236,400,230,400,207,368"/>
+<area shape="poly" title=" " alt="" coords="233,441,224,477,217,517,219,558,225,578,234,595,259,619,291,636,324,646,358,655,353,655,323,652,288,641,256,624,230,598,220,580,214,559,212,517,218,476,230,445"/>
+<area shape="rect" href="configuration__runtime_8h.html" title=" " alt="" coords="243,476,397,521"/>
+<area shape="poly" title=" " alt="" coords="266,437,302,476,297,476,265,442"/>
+<area shape="poly" title=" " alt="" coords="353,530,380,568,396,609,403,646,399,643,390,610,375,570,351,535"/>
+<area shape="rect" href="debug_8h.html" title=" " alt="" coords="244,569,365,597"/>
+<area shape="poly" title=" " alt="" coords="315,534,309,570,305,567,311,538"/>
+<area shape="poly" title=" " alt="" coords="335,604,388,645,383,644,333,609"/>
+<area shape="poly" title=" " alt="" coords="564,366,564,402,559,399,561,371"/>
+<area shape="poly" title=" " alt="" coords="603,358,624,373,640,390,648,409,644,429,629,449,610,465,569,487,567,482,607,461,625,445,639,427,643,409,635,393,620,377,602,363"/>
+<area shape="poly" title=" " alt="" coords="448,435,511,484,506,484,447,441"/>
+<area shape="poly" title=" " alt="" coords="65,441,75,478,88,519,108,560,138,595,176,613,234,629,359,651,353,652,233,634,174,618,135,599,104,563,83,521,70,480,65,446"/>
+<area shape="rect" href="pins_8h.html" title=" " alt="" coords="577,249,685,277"/>
+<area shape="poly" title=" " alt="" coords="589,211,622,249,617,249,588,216"/>
+<area shape="poly" title=" " alt="" coords="610,287,577,327,573,323,606,290"/>
+<area shape="rect" href="bind_8h.html" title=" " alt="" coords="646,325,755,353"/>
+<area shape="poly" title=" " alt="" coords="654,286,691,325,685,324,653,291"/>
+<area shape="rect" href="binding__manifest_8h.html" title=" " alt="" coords="755,485,949,512"/>
+<area shape="poly" title=" " alt="" coords="695,280,734,298,769,323,801,364,826,409,842,452,851,486,847,483,837,454,821,412,797,367,765,327,731,303,695,285"/>
+<area shape="poly" title=" " alt="" coords="629,355,295,408,293,403,632,351"/>
+<area shape="rect" href="binding__registry_8h.html" title=" " alt="" coords="656,569,840,597"/>
+<area shape="poly" title=" " alt="" coords="708,366,748,569,743,568,704,370"/>
+<area shape="poly" title=" " alt="" coords="674,600,451,650,450,645,669,601"/>
+<area shape="poly" title=" " alt="" coords="793,517,609,571,607,566,788,518"/>
+<area shape="poly" title=" " alt="" coords="863,526,867,563,864,582,854,598,826,619,783,634,730,645,671,653,550,660,450,661,450,656,550,655,671,648,729,640,781,629,823,614,850,595,859,580,862,563,859,530"/>
+<area shape="poly" title=" " alt="" coords="826,522,766,571,764,566,821,524"/>
+<area shape="poly" title=" " alt="" coords="599,120,577,158,573,154,596,124"/>
+</map>
+</div>
+</div>
+<p><a href="base_8h_source.html">浏览该文件的源代码.</a></p>
+<table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 id="header-nested-classes" class="groupheader"><a id="nested-classes" name="nested-classes"></a>
+类</h2></td></tr>
+<tr class="memitem:plcopen_3A_3Acore_3A_3Afb_3A_3AExecuteLatch" id="r_plcopen_3A_3Acore_3A_3Afb_3A_3AExecuteLatch"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1ExecuteLatch.html">plcopen::core::fb::ExecuteLatch</a></td></tr>
+<tr class="memitem:plcopen_3A_3Acore_3A_3Afb_3A_3AReadInfoLatch" id="r_plcopen_3A_3Acore_3A_3Afb_3A_3AReadInfoLatch"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1ReadInfoLatch.html">plcopen::core::fb::ReadInfoLatch</a></td></tr>
+<tr class="memitem:plcopen_3A_3Acore_3A_3Afb_3A_3AEnableReadFb" id="r_plcopen_3A_3Acore_3A_3Afb_3A_3AEnableReadFb"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1EnableReadFb.html">plcopen::core::fb::EnableReadFb</a></td></tr>
+<tr class="memitem:plcopen_3A_3Acore_3A_3Afb_3A_3AStartSyncPulse" id="r_plcopen_3A_3Acore_3A_3Afb_3A_3AStartSyncPulse"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1fb_1_1StartSyncPulse.html">plcopen::core::fb::StartSyncPulse</a></td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 id="header-namespaces" class="groupheader"><a id="namespaces" name="namespaces"></a>
+命名空间</h2></td></tr>
+<tr class="memitem:plcopen" id="r_plcopen"><td class="memItemLeft" align="right" valign="top">namespace &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen.html">plcopen</a></td></tr>
+<tr class="memitem:plcopen_3A_3Acore" id="r_plcopen_3A_3Acore"><td class="memItemLeft" align="right" valign="top">namespace &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core.html">plcopen::core</a></td></tr>
+<tr class="memitem:plcopen_3A_3Acore_3A_3Afb" id="r_plcopen_3A_3Acore_3A_3Afb"><td class="memItemLeft" align="right" valign="top">namespace &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1fb.html">plcopen::core::fb</a></td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 id="header-enum-members" class="groupheader"><a id="enum-members" name="enum-members"></a>
+枚举</h2></td></tr>
+<tr class="memitem:a9987504ab741614c7f341e5827889070" id="r_a9987504ab741614c7f341e5827889070"><td class="memItemLeft" align="right" valign="top">enum class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1fb.html#a9987504ab741614c7f341e5827889070">plcopen::core::fb::ExecuteStep</a> { <a class="el" href="namespaceplcopen_1_1core_1_1fb.html#a9987504ab741614c7f341e5827889070a8bc1b2f84252c3df4edd53e4aad097a7">plcopen::core::fb::busy</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1fb.html#a9987504ab741614c7f341e5827889070a6b2ded51d81a4403d8a4bd25fa1e57ee">plcopen::core::fb::done</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1fb.html#a9987504ab741614c7f341e5827889070adfb7069bfc6e0064a6c667626eca07b4">plcopen::core::fb::aborted</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1fb.html#a9987504ab741614c7f341e5827889070acb5e100e5a9a3e7f6d1fd97512215282">plcopen::core::fb::error</a>
+ }</td></tr>
+</table>
+</div><!-- contents -->
+</div><!-- doc-content -->
+<div id="page-nav" class="page-nav-panel">
+<div id="page-nav-resize-handle"></div>
+<div id="page-nav-tree">
+<div id="page-nav-contents">
+</div><!-- page-nav-contents -->
+</div><!-- page-nav-tree -->
+</div><!-- page-nav -->
+</div><!-- container -->
+<!-- start footer part -->
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+  <ul>
+    <li class="navelem"><a href="dir_4270bfced15e0e73154b13468c7c9ad9.html">core</a></li><li class="navelem"><a href="dir_8cd0741eebc4dd2e90328fddd7ceca47.html">fb</a></li><li class="navelem"><a href="base_8h.html">base.h</a></li>
+    <li class="footer">制作者 <a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.15.0 </li>
+  </ul>
+</div>
+</body>
+</html>

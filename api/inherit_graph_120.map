@@ -1,0 +1,39 @@
+<map id="类继承关系图" name="类继承关系图">
+<area shape="rect" id="Node000000" href="$classplcopen_1_1core_1_1fb_1_1GroupExecuteFb.html" title=" " alt="" coords="5,525,143,570"/>
+<area shape="rect" id="Node000001" href="$classplcopen_1_1core_1_1fb_1_1FbGroupContinue.html" title=" " alt="" coords="219,5,356,50"/>
+<area shape="poly" id="edge62_Node000000_Node000001" title=" " alt="" coords="77,510,91,407,115,273,147,146,167,96,189,61,220,40,217,45,193,64,172,98,152,147,120,274,96,407,82,511"/>
+<area shape="rect" id="Node000002" href="$classplcopen_1_1core_1_1fb_1_1FbGroupDisable.html" title=" " alt="" coords="219,75,356,119"/>
+<area shape="poly" id="edge63_Node000000_Node000002" title=" " alt="" coords="72,510,77,432,93,331,108,277,128,224,155,174,189,130,220,110,217,114,193,134,159,177,133,226,113,279,98,332,82,433,78,510"/>
+<area shape="rect" id="Node000003" href="$classplcopen_1_1core_1_1fb_1_1FbGroupEnable.html" title=" " alt="" coords="219,144,356,189"/>
+<area shape="poly" id="edge64_Node000000_Node000003" title=" " alt="" coords="75,509,83,443,102,361,117,317,136,275,160,235,189,199,220,180,218,184,192,203,164,238,140,277,122,319,107,362,88,444,80,510"/>
+<area shape="rect" id="Node000004" href="$classplcopen_1_1core_1_1fb_1_1FbGroupHalt.html" title=" " alt="" coords="219,213,356,258"/>
+<area shape="poly" id="edge65_Node000000_Node000004" title=" " alt="" coords="78,510,90,456,111,392,143,326,164,296,189,268,220,250,217,254,192,272,169,299,148,329,116,394,96,458,84,511"/>
+<area shape="rect" id="Node000005" href="$classplcopen_1_1core_1_1fb_1_1FbGroupHome.html" title=" " alt="" coords="219,283,356,327"/>
+<area shape="poly" id="edge66_Node000000_Node000005" title=" " alt="" coords="84,510,100,470,122,424,152,378,189,338,220,320,217,325,192,342,156,381,127,426,105,472,89,511"/>
+<area shape="rect" id="Node000006" href="$classplcopen_1_1core_1_1fb_1_1FbGroupInterrupt.html" title=" " alt="" coords="219,352,356,397"/>
+<area shape="poly" id="edge67_Node000000_Node000006" title=" " alt="" coords="95,511,135,457,161,430,189,407,220,392,217,396,192,411,164,434,139,461,100,513"/>
+<area shape="rect" id="Node000007" href="$classplcopen_1_1core_1_1fb_1_1FbGroupStop.html" title=" " alt="" coords="219,421,356,466"/>
+<area shape="poly" id="edge68_Node000000_Node000007" title=" " alt="" coords="120,515,189,476,221,464,217,468,192,481,124,519"/>
+<area shape="rect" id="Node000008" href="$classplcopen_1_1core_1_1fb_1_1FbGroupWaitTime.html" title=" " alt="" coords="219,491,357,535"/>
+<area shape="poly" id="edge69_Node000000_Node000008" title=" " alt="" coords="157,532,220,522,216,526,160,536"/>
+<area shape="rect" id="Node000009" href="$classplcopen_1_1core_1_1fb_1_1FbMoveCircularAbsolute.html" title=" " alt="" coords="198,560,378,605"/>
+<area shape="poly" id="edge70_Node000000_Node000009" title=" " alt="" coords="157,559,199,566,195,569,159,564"/>
+<area shape="rect" id="Node000011" href="$classplcopen_1_1core_1_1fb_1_1FbMoveDirectAbsolute.html" title=" " alt="" coords="203,629,372,674"/>
+<area shape="poly" id="edge72_Node000000_Node000011" title=" " alt="" coords="121,576,192,615,221,628,216,630,189,619,123,581"/>
+<area shape="rect" id="Node000012" href="$classplcopen_1_1core_1_1fb_1_1FbMoveDirectRelative.html" title=" " alt="" coords="205,699,371,743"/>
+<area shape="poly" id="edge73_Node000000_Node000012" title=" " alt="" coords="97,581,139,634,164,661,192,684,213,697,208,699,189,689,161,665,135,638,97,586"/>
+<area shape="rect" id="Node000013" href="$classplcopen_1_1core_1_1fb_1_1FbMoveLinearAbsolute.html" title=" " alt="" coords="203,768,373,813"/>
+<area shape="poly" id="edge74_Node000000_Node000013" title=" " alt="" coords="87,582,105,623,127,669,156,714,192,754,211,767,205,768,189,758,152,718,122,672,100,626,87,588"/>
+<area shape="rect" id="Node000015" href="$classplcopen_1_1core_1_1fb_1_1FbMovePath.html" title=" " alt="" coords="219,837,356,882"/>
+<area shape="poly" id="edge76_Node000000_Node000015" title=" " alt="" coords="81,583,96,638,116,701,148,767,169,796,192,823,222,843,216,844,189,827,164,800,143,769,111,703,90,639,81,588"/>
+<area shape="rect" id="Node000016" href="$classplcopen_1_1core_1_1fb_1_1FbSetCartesianTransform.html" title=" " alt="" coords="195,907,380,951"/>
+<area shape="poly" id="edge77_Node000000_Node000016" title=" " alt="" coords="78,583,88,651,107,733,122,776,140,818,164,857,193,892,208,906,203,906,189,896,160,861,136,821,117,778,102,735,83,652,77,589"/>
+<area shape="rect" id="Node000017" href="$classplcopen_1_1core_1_1fb_1_1FbSetCoordinateTransform.html" title=" " alt="" coords="191,976,385,1021"/>
+<area shape="poly" id="edge78_Node000000_Node000017" title=" " alt="" coords="75,583,82,663,98,763,113,817,133,869,159,918,193,962,208,976,202,976,189,966,155,921,128,871,108,818,93,764,77,663,75,588"/>
+<area shape="rect" id="Node000018" href="$classplcopen_1_1core_1_1fb_1_1FbSetKinTransform.html" title=" " alt="" coords="216,1045,360,1090"/>
+<area shape="poly" id="edge79_Node000000_Node000018" title=" " alt="" coords="80,582,96,688,120,821,152,948,172,997,193,1031,218,1052,213,1051,189,1035,167,1000,147,950,115,822,91,689,79,588"/>
+<area shape="rect" id="Node000010" href="$classplcopen_1_1core_1_1fb_1_1FbMoveCircularRelative.html" title=" " alt="" coords="433,560,610,605"/>
+<area shape="poly" id="edge71_Node000009_Node000010" title=" " alt="" coords="393,580,435,581,430,584,395,585"/>
+<area shape="rect" id="Node000014" href="$classplcopen_1_1core_1_1fb_1_1FbMoveLinearRelative.html" title=" " alt="" coords="438,768,605,813"/>
+<area shape="poly" id="edge75_Node000013_Node000014" title=" " alt="" coords="387,788,440,789,435,791,389,793"/>
+</map>

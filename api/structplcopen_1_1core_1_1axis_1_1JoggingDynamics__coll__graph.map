@@ -1,0 +1,5 @@
+<map id="plcopen::core::axis::JoggingDynamics" name="plcopen::core::axis::JoggingDynamics">
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,123,149,168"/>
+<area shape="rect" id="Node000002" href="$structplcopen_1_1core_1_1axis_1_1PathDynamics.html" title=" " alt="" coords="5,5,149,50"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="79,64,80,123,74,122,75,68"/>
+</map>

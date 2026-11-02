@@ -1,0 +1,5 @@
+var structplcopen_1_1core_1_1st_1_1generated_1_1StBindingNativePinAccessor_3_01StBindingFbType_1_1mc__touch__probe_00_015U_01_4 =
+[
+    [ "fb_type", "structplcopen_1_1core_1_1st_1_1generated_1_1StBindingNativePinAccessor_3_01StBindingFbType_1_1mc__touch__probe_00_015U_01_4.html#aef6c4c5833f871ea21a565c1c600f6d1", null ],
+    [ "value_type", "structplcopen_1_1core_1_1st_1_1generated_1_1StBindingNativePinAccessor_3_01StBindingFbType_1_1mc__touch__probe_00_015U_01_4.html#aee5bd9ab7561791f6275e493c5f57415", null ]
+];

@@ -1,0 +1,5 @@
+<map id="plcopen::core::fb::FbGroupReadPosition" name="plcopen::core::fb::FbGroupReadPosition">
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,98,167,143"/>
+<area shape="rect" id="Node000002" href="$classplcopen_1_1core_1_1fb_1_1GroupPositionReadFb.html" title=" " alt="" coords="5,5,167,50"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="88,64,89,99,83,97,84,68"/>
+</map>

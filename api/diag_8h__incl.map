@@ -1,0 +1,9 @@
+<map id="core/st/diag.h" name="core/st/diag.h">
+<area shape="rect" id="Node000001" title=" " alt="" coords="69,5,178,33"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="5,81,71,109"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="111,33,66,73,63,69,106,35"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="94,81,152,109"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="125,32,126,66,121,64,122,36"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="176,81,238,109"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="139,31,184,70,178,71,137,36"/>
+</map>

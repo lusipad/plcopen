@@ -1,0 +1,18 @@
+<map id="plcopen::core::fb::FbSyncGroupToAxis" name="plcopen::core::fb::FbSyncGroupToAxis">
+<area shape="rect" id="Node000001" title=" " alt="" coords="908,111,1058,155"/>
+<area shape="rect" id="Node000002" href="$classplcopen_1_1core_1_1axis_1_1AxisModel.html" title=" " alt="" coords="638,5,781,50"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="797,47,885,77,947,110,942,110,883,82,796,52"/>
+<area shape="rect" id="Node000003" href="$classplcopen_1_1core_1_1axis_1_1AxisGroup.html" title=" " alt="" coords="372,147,515,191"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="530,165,649,161,781,154,911,143,905,143,782,159,649,167,530,170"/>
+<area shape="rect" id="Node000004" href="$structplcopen_1_1core_1_1axis_1_1GroupPosition.html" title=" " alt="" coords="17,96,160,141"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="175,136,196,139,373,162,369,165,195,145,176,141"/>
+<area shape="rect" id="Node000007" href="$structplcopen_1_1core_1_1fb_1_1PathWaypoint.html" title=" " alt="" coords="375,75,512,119"/>
+<area shape="poly" id="edge7_Node000007_Node000004" title=" " alt="" coords="175,111,376,99,373,103,176,116"/>
+<area shape="rect" id="Node000005" href="$structplcopen_1_1core_1_1axis_1_1JogCommandOptions.html" title=" " alt="" coords="5,187,172,231"/>
+<area shape="poly" id="edge4_Node000003_Node000005" title=" " alt="" coords="186,214,266,214,347,205,393,193,398,191,348,210,266,219,187,220"/>
+<area shape="rect" id="Node000006" href="$structplcopen_1_1core_1_1fb_1_1PathTable.html" title=" " alt="" coords="641,75,778,119"/>
+<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="794,105,911,123,905,123,794,111"/>
+<area shape="poly" id="edge6_Node000006_Node000007" title=" " alt="" coords="527,94,643,96,638,98,528,100"/>
+<area shape="rect" id="Node000008" href="$structplcopen_1_1core_1_1fb_1_1MotionOutputs.html" title=" " alt="" coords="641,217,778,262"/>
+<area shape="poly" id="edge8_Node000001_Node000008" title=" " alt="" coords="794,233,839,225,883,210,925,184,958,157,963,155,929,188,885,215,840,230,794,238"/>
+</map>

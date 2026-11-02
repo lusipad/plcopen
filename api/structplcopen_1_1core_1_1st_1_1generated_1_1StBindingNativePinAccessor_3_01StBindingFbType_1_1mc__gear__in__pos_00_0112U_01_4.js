@@ -1,0 +1,5 @@
+var structplcopen_1_1core_1_1st_1_1generated_1_1StBindingNativePinAccessor_3_01StBindingFbType_1_1mc__gear__in__pos_00_0112U_01_4 =
+[
+    [ "fb_type", "structplcopen_1_1core_1_1st_1_1generated_1_1StBindingNativePinAccessor_3_01StBindingFbType_1_1mc__gear__in__pos_00_0112U_01_4.html#a656c00c9f3066ff9f699dfe6085da210", null ],
+    [ "value_type", "structplcopen_1_1core_1_1st_1_1generated_1_1StBindingNativePinAccessor_3_01StBindingFbType_1_1mc__gear__in__pos_00_0112U_01_4.html#a4e350fc69f531edaf860a12f03fbbeb2", null ]
+];

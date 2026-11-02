@@ -1,0 +1,7 @@
+<map id="plcopen::core::fb::GroupDerivativeReadFb" name="plcopen::core::fb::GroupDerivativeReadFb">
+<area shape="rect" id="Node000001" title=" " alt="" coords="112,5,289,50"/>
+<area shape="rect" id="Node000002" href="$classplcopen_1_1core_1_1fb_1_1FbGroupReadAcceleration.html" title=" " alt="" coords="5,98,196,143"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="168,60,126,100,123,95,163,62"/>
+<area shape="rect" id="Node000003" href="$classplcopen_1_1core_1_1fb_1_1FbGroupReadVelocity.html" title=" " alt="" coords="220,98,381,143"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="237,58,279,98,274,97,235,63"/>
+</map>

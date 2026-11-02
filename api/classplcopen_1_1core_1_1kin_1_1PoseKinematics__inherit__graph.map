@@ -1,0 +1,7 @@
+<map id="plcopen::core::kin::PoseKinematics" name="plcopen::core::kin::PoseKinematics">
+<area shape="rect" id="Node000001" title=" " alt="" coords="87,5,223,50"/>
+<area shape="rect" id="Node000002" href="$classplcopen_1_1core_1_1kin_1_1SerialChain.html" title=" " alt="" coords="5,98,142,143"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="128,60,94,100,91,96,123,63"/>
+<area shape="rect" id="Node000003" href="$classplcopen_1_1core_1_1kin_1_1SphericalWrist6R.html" title=" " alt="" coords="166,98,306,143"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="185,59,220,98,214,98,183,64"/>
+</map>

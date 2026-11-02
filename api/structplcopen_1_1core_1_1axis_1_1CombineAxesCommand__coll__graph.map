@@ -1,0 +1,5 @@
+<map id="plcopen::core::axis::CombineAxesCommand" name="plcopen::core::axis::CombineAxesCommand">
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,145,191,190"/>
+<area shape="rect" id="Node000002" href="$classplcopen_1_1core_1_1axis_1_1AxisModel.html" title=" " alt="" coords="26,5,170,50"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="100,64,101,146,95,144,96,67"/>
+</map>

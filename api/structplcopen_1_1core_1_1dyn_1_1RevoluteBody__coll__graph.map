@@ -1,0 +1,8 @@
+<map id="plcopen::core::dyn::RevoluteBody" name="plcopen::core::dyn::RevoluteBody">
+<area shape="rect" id="Node000001" title=" " alt="" coords="54,243,195,288"/>
+<area shape="rect" id="Node000002" href="$structplcopen_1_1core_1_1geom_1_1RigidTransform.html" title=" " alt="" coords="196,124,349,169"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="236,178,153,245,151,241,231,180"/>
+<area shape="rect" id="Node000003" href="$structplcopen_1_1core_1_1geom_1_1Vec3.html" title=" " alt="" coords="5,5,159,50"/>
+<area shape="poly" id="edge3_Node000001_Node000003" title=" " alt="" coords="75,63,71,116,72,143,76,170,92,209,112,243,106,243,87,211,71,171,67,144,66,116,73,68"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="130,56,240,123,235,125,130,61"/>
+</map>

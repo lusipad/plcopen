@@ -1,0 +1,489 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh">
+<head>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=11"/>
+<meta name="generator" content="Doxygen 1.15.0"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>plcopen: core/axis/state.h 文件参考</title>
+<link href="tabs.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="jquery.js"></script>
+<script type="text/javascript" src="dynsections.js"></script>
+<script type="text/javascript" src="clipboard.js"></script>
+<link href="navtree.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="navtreedata.js"></script>
+<script type="text/javascript" src="navtree.js"></script>
+<script type="text/javascript" src="cookie.js"></script>
+<link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<link href="doxygen.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+<div id="top"><!-- do not remove this div, it is closed by doxygen! -->
+<div id="titlearea">
+<table cellspacing="0" cellpadding="0">
+ <tbody>
+ <tr id="projectrow">
+  <td id="projectalign">
+   <div id="projectname">plcopen<span id="projectnumber">&#160;0.21.0</span>
+   </div>
+  </td>
+ </tr>
+ </tbody>
+</table>
+</div>
+<!-- end header part -->
+<!-- 制作者 Doxygen 1.15.0 -->
+<script type="text/javascript">
+var searchBox = new SearchBox("searchBox", "search/",'.html');
+</script>
+<script type="text/javascript">
+$(function() { codefold.init(); });
+</script>
+<script type="text/javascript" src="menudata.js"></script>
+<script type="text/javascript" src="menu.js"></script>
+<script type="text/javascript">
+$(function() {
+  initMenu('',true,false,'search.php','搜索',true);
+  $(function() { init_search(); });
+});
+</script>
+<div id="main-nav"></div>
+</div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+$(function(){initNavTree('state_8h.html','',''); });
+</script>
+<div id="container">
+<div id="doc-content">
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<div id="MSearchResults">
+<div class="SRPage">
+<div id="SRIndex">
+<div id="SRResults"></div>
+<div class="SRStatus" id="Loading">载入中...</div>
+<div class="SRStatus" id="Searching">搜索中...</div>
+<div class="SRStatus" id="NoMatches">未找到</div>
+</div>
+</div>
+</div>
+</div>
+
+<div class="header">
+  <div class="headertitle"><div class="title">state.h 文件参考</div></div>
+</div><!--header-->
+<div class="contents">
+<div class="textblock"><code>#include &lt;array&gt;</code><br />
+<code>#include &lt;cmath&gt;</code><br />
+<code>#include &lt;cstddef&gt;</code><br />
+<code>#include &lt;cstdint&gt;</code><br />
+<code>#include &quot;<a class="el" href="exec_2sync_8h_source.html">exec/sync.h</a>&quot;</code><br />
+<code>#include &quot;<a class="el" href="profile1d_8h_source.html">otg/profile1d.h</a>&quot;</code><br />
+<code>#include &quot;<a class="el" href="time__optimal_8h_source.html">otg/time_optimal.h</a>&quot;</code><br />
+<code>#include &quot;<a class="el" href="error_8h_source.html">rt/error.h</a>&quot;</code><br />
+<code>#include &quot;<a class="el" href="static__vector_8h_source.html">rt/static_vector.h</a>&quot;</code><br />
+<code>#include &quot;<a class="el" href="units_8h_source.html">rt/units.h</a>&quot;</code><br />
+<code>#include &quot;<a class="el" href="filter_8h_source.html">stream/filter.h</a>&quot;</code><br />
+</div><div class="textblock"><div class="dynheader">
+state.h 的引用(Include)关系图:</div>
+<div class="dyncontent">
+<div class="center"><img src="state_8h__incl.png" border="0" usemap="#acore_2axis_2state_8h" loading="lazy" alt=""/></div>
+<map name="acore_2axis_2state_8h" id="acore_2axis_2state_8h">
+<area shape="rect" title=" " alt="" coords="506,5,635,33"/>
+<area shape="rect" title=" " alt="" coords="10,401,65,428"/>
+<area shape="poly" title=" " alt="" coords="504,27,301,48,199,64,126,84,81,100,43,116,28,126,18,139,10,156,8,178,8,264,16,330,30,386,25,386,10,331,3,265,3,178,5,154,13,136,25,122,40,111,79,95,125,78,197,59,300,43,508,23"/>
+<area shape="rect" title=" " alt="" coords="717,325,779,353"/>
+<area shape="poly" title=" " alt="" coords="579,31,736,311,731,311,576,35"/>
+<area shape="rect" title=" " alt="" coords="105,401,175,428"/>
+<area shape="poly" title=" " alt="" coords="503,28,377,46,229,75,163,95,108,119,87,133,72,147,62,162,59,178,59,264,64,300,79,334,99,364,119,389,114,389,94,367,74,336,59,302,53,265,53,177,57,160,68,143,84,128,105,115,161,90,228,70,376,41,508,25"/>
+<area shape="rect" title=" " alt="" coords="1206,401,1271,428"/>
+<area shape="poly" title=" " alt="" coords="635,23,842,43,1102,75,1224,96,1325,120,1364,133,1395,147,1414,161,1421,177,1421,265,1418,290,1408,313,1393,333,1374,351,1330,380,1287,400,1285,395,1328,375,1371,347,1389,330,1403,310,1413,288,1416,264,1416,178,1410,165,1392,151,1362,138,1324,125,1223,102,1101,81,842,48,636,28"/>
+<area shape="rect" href="exec_2sync_8h.html" title=" " alt="" coords="318,165,415,193"/>
+<area shape="poly" title=" " alt="" coords="556,32,397,157,394,153,551,35"/>
+<area shape="rect" href="error_8h.html" title=" " alt="" coords="507,401,584,428"/>
+<area shape="poly" title=" " alt="" coords="565,32,539,95,527,136,523,178,523,264,529,329,540,387,535,384,523,330,517,265,517,178,522,135,534,94,562,35"/>
+<area shape="rect" href="static__vector_8h.html" title=" " alt="" coords="195,325,325,353"/>
+<area shape="poly" title=" " alt="" coords="534,35,430,84,368,118,308,159,258,198,240,219,225,250,223,266,225,282,241,313,236,312,220,283,217,266,220,249,236,216,254,194,305,155,365,114,428,79,538,32"/>
+<area shape="rect" href="profile1d_8h.html" title=" " alt="" coords="962,249,1078,277"/>
+<area shape="poly" title=" " alt="" coords="635,23,797,43,874,58,905,68,928,79,948,94,964,112,990,153,1007,196,1017,235,1012,232,1002,198,985,156,960,115,944,98,925,83,903,73,873,64,796,48,636,28"/>
+<area shape="rect" href="time__optimal_8h.html" title=" " alt="" coords="1235,165,1381,193"/>
+<area shape="poly" title=" " alt="" coords="635,22,819,40,929,56,1039,78,1163,116,1267,159,1262,159,1162,121,1038,84,928,61,818,45,636,27"/>
+<area shape="rect" href="units_8h.html" title=" " alt="" coords="1456,81,1536,109"/>
+<area shape="poly" title=" " alt="" coords="635,19,979,35,1207,52,1438,78,1443,81,1438,82,1437,84,1207,57,979,40,636,25"/>
+<area shape="rect" href="filter_8h.html" title=" " alt="" coords="802,81,915,109"/>
+<area shape="poly" title=" " alt="" coords="622,31,795,76,790,77,622,36"/>
+<area shape="poly" title=" " alt="" coords="399,191,705,318,700,320,398,196"/>
+<area shape="poly" title=" " alt="" coords="326,195,278,219,224,251,187,284,161,326,150,356,145,387,140,384,145,355,156,324,183,281,221,247,275,214,331,192"/>
+<area shape="rect" href="geometry_8h.html" title=" " alt="" coords="246,249,381,277"/>
+<area shape="poly" title=" " alt="" coords="360,192,332,238,328,235,356,195"/>
+<area shape="poly" title=" " alt="" coords="378,191,529,388,524,389,375,195"/>
+<area shape="poly" title=" " alt="" coords="315,193,272,215,252,231,236,251,231,265,232,280,244,313,239,311,226,282,226,264,231,248,248,227,270,211,320,191"/>
+<area shape="poly" title=" " alt="" coords="381,270,526,289,704,324,699,325,525,295,382,275"/>
+<area shape="poly" title=" " alt="" coords="264,279,224,299,185,327,164,356,150,388,146,384,159,353,181,323,222,294,269,276"/>
+<area shape="rect" title=" " alt="" coords="608,325,693,353"/>
+<area shape="poly" title=" " alt="" coords="374,275,596,324,591,326,374,280"/>
+<area shape="poly" title=" " alt="" coords="324,275,357,312,402,350,447,376,495,397,489,396,445,380,398,355,353,316,322,280"/>
+<area shape="poly" title=" " alt="" coords="306,276,280,314,277,310,302,279"/>
+<area shape="poly" title=" " alt="" coords="221,356,81,402,79,397,219,351"/>
+<area shape="poly" title=" " alt="" coords="241,353,175,395,173,390,236,354"/>
+<area shape="poly" title=" " alt="" coords="311,351,494,399,489,400,311,356"/>
+<area shape="rect" title=" " alt="" coords="214,401,306,428"/>
+<area shape="poly" title=" " alt="" coords="262,351,262,386,258,384,258,355"/>
+<area shape="poly" title=" " alt="" coords="974,277,795,328,793,323,969,278"/>
+<area shape="poly" title=" " alt="" coords="1038,275,1143,350,1207,393,1201,392,1140,355,1036,280"/>
+<area shape="poly" title=" " alt="" coords="1005,277,945,317,907,338,868,355,797,377,724,393,600,411,599,406,723,388,795,372,866,350,905,333,942,313,1000,278"/>
+<area shape="poly" title=" " alt="" coords="962,273,341,332,341,327,962,267"/>
+<area shape="rect" href="cycle_8h.html" title=" " alt="" coords="1198,325,1279,353"/>
+<area shape="poly" title=" " alt="" coords="1059,275,1188,320,1183,320,1059,280"/>
+<area shape="poly" title=" " alt="" coords="1241,351,1241,387,1237,383,1237,355"/>
+<area shape="poly" title=" " alt="" coords="1286,193,1200,237,1146,260,1090,280,1010,300,929,316,795,335,795,330,928,311,1009,295,1089,274,1144,255,1198,232,1281,194"/>
+<area shape="poly" title=" " alt="" coords="1317,191,1332,223,1345,264,1350,310,1347,332,1338,354,1316,380,1286,399,1285,394,1312,376,1334,351,1342,331,1345,309,1340,265,1327,224,1314,196"/>
+<area shape="poly" title=" " alt="" coords="1313,191,1321,226,1324,269,1317,315,1308,336,1294,355,1279,364,1256,372,1187,385,1095,395,989,403,770,412,600,415,600,410,770,407,989,397,1094,390,1186,380,1254,366,1277,359,1290,351,1303,333,1312,313,1319,269,1316,226,1310,196"/>
+<area shape="poly" title=" " alt="" coords="1264,193,1081,247,1080,242,1259,194"/>
+<area shape="poly" title=" " alt="" coords="1305,192,1252,313,1249,309,1300,195"/>
+<area shape="poly" title=" " alt="" coords="1499,107,1501,154,1496,220,1489,256,1478,291,1461,325,1439,355,1405,381,1365,399,1324,409,1287,414,1287,409,1323,404,1364,394,1402,377,1435,351,1457,322,1473,289,1484,254,1491,219,1496,154,1495,111"/>
+<area shape="poly" title=" " alt="" coords="832,108,801,131,776,158,759,196,750,237,747,277,747,311,743,308,742,276,745,237,754,195,771,155,797,127,827,110"/>
+<area shape="poly" title=" " alt="" coords="891,107,936,128,983,154,1040,198,1091,247,1220,389,1214,388,1087,251,1036,202,980,159,933,132,890,112"/>
+<area shape="poly" title=" " alt="" coords="827,108,788,131,753,159,722,196,696,237,662,312,658,308,692,235,717,193,749,155,786,127,822,110"/>
+<area shape="poly" title=" " alt="" coords="804,110,759,130,712,159,684,185,658,214,614,278,580,339,558,388,554,384,575,337,609,275,654,211,680,181,709,155,756,126,809,108"/>
+<area shape="poly" title=" " alt="" coords="882,107,914,128,946,155,980,195,1007,237,1002,235,976,199,942,159,911,132,881,112"/>
+<area shape="poly" title=" " alt="" coords="915,98,1056,117,1122,133,1148,143,1167,155,1198,190,1218,232,1231,274,1238,311,1233,308,1226,275,1213,234,1193,193,1164,159,1146,148,1121,139,1055,123,915,104"/>
+<area shape="poly" title=" " alt="" coords="915,102,1053,124,1217,154,1241,161,1236,161,1215,159,1052,130,915,107"/>
+<area shape="rect" href="quintic__fast__path_8h.html" title=" " alt="" coords="785,157,932,201"/>
+<area shape="poly" title=" " alt="" coords="860,107,861,142,856,139,857,111"/>
+<area shape="poly" title=" " alt="" coords="846,201,794,279,768,315,765,310,790,275,842,203"/>
+<area shape="poly" title=" " alt="" coords="876,199,910,237,952,275,1014,315,1079,348,1194,398,1189,397,1076,353,1011,319,949,279,907,241,875,204"/>
+<area shape="poly" title=" " alt="" coords="833,201,681,318,678,313,828,203"/>
+<area shape="poly" title=" " alt="" coords="858,200,853,236,841,277,822,319,792,355,747,384,696,402,645,412,600,416,599,411,645,407,695,397,745,379,789,351,817,316,836,275,848,235,855,204"/>
+<area shape="poly" title=" " alt="" coords="902,199,983,242,978,242,901,205"/>
+</map>
+</div>
+</div><div class="textblock"><div class="dynheader">
+此图展示该文件被哪些文件直接或间接地引用了:</div>
+<div class="dyncontent">
+<div class="center"><img src="state_8h__dep__incl.png" border="0" usemap="#acore_2axis_2state_8hdep" loading="lazy" alt=""/></div>
+<map name="acore_2axis_2state_8hdep" id="acore_2axis_2state_8hdep">
+<area shape="rect" title=" " alt="" coords="918,5,1047,33"/>
+<area shape="rect" href="servo_8h.html" title=" " alt="" coords="297,81,460,109"/>
+<area shape="poly" title=" " alt="" coords="900,32,461,86,459,81,904,28"/>
+<area shape="rect" href="axis_2group_8h.html" title=" " alt="" coords="1020,81,1153,109"/>
+<area shape="poly" title=" " alt="" coords="1013,39,1071,80,1065,81,1013,45"/>
+<area shape="rect" href="fb_2group_8h.html" title=" " alt="" coords="607,249,726,277"/>
+<area shape="poly" title=" " alt="" coords="952,44,751,203,686,251,683,247,747,199,957,41"/>
+<area shape="rect" href="management_8h.html" title=" " alt="" coords="1271,249,1440,277"/>
+<area shape="poly" title=" " alt="" coords="1062,30,1128,49,1162,62,1193,79,1246,120,1292,168,1327,214,1350,250,1345,248,1323,217,1288,172,1243,124,1190,83,1160,67,1127,54,1063,35"/>
+<area shape="rect" href="motion_8h.html" title=" " alt="" coords="920,165,1048,193"/>
+<area shape="poly" title=" " alt="" coords="984,46,986,166,981,164,981,51"/>
+<area shape="rect" href="homing_8h.html" title=" " alt="" coords="161,249,292,277"/>
+<area shape="poly" title=" " alt="" coords="900,37,832,57,761,83,702,116,650,159,629,183,620,193,605,204,563,223,526,234,491,241,459,243,390,244,304,252,294,253,291,249,303,247,390,239,459,238,491,235,524,229,561,218,602,199,616,189,625,179,646,155,699,112,759,79,831,52,904,34"/>
+<area shape="rect" href="io_8h.html" title=" " alt="" coords="1639,249,1734,277"/>
+<area shape="poly" title=" " alt="" coords="1062,30,1166,49,1276,78,1392,121,1503,168,1664,249,1659,249,1501,173,1390,126,1275,84,1164,55,1063,35"/>
+<area shape="rect" href="binding__storage_8h.html" title=" " alt="" coords="1594,334,1779,361"/>
+<area shape="poly" title=" " alt="" coords="1062,28,1239,57,1345,78,1454,103,1557,132,1649,166,1722,205,1749,226,1769,248,1774,261,1774,274,1760,298,1737,319,1712,335,1710,330,1734,315,1756,295,1769,273,1769,262,1764,251,1745,230,1719,209,1647,171,1556,137,1452,108,1344,83,1238,62,1062,34"/>
+<area shape="rect" href="parameter_8h.html" title=" " alt="" coords="750,249,900,277"/>
+<area shape="poly" title=" " alt="" coords="968,44,836,251,831,247,964,48"/>
+<area shape="rect" href="path__table_8h.html" title=" " alt="" coords="1464,249,1615,277"/>
+<area shape="poly" title=" " alt="" coords="1062,32,1144,51,1229,79,1318,121,1403,168,1524,249,1519,249,1400,173,1316,125,1227,83,1142,56,1063,37"/>
+<area shape="rect" href="probe_8h.html" title=" " alt="" coords="316,249,435,277"/>
+<area shape="poly" title=" " alt="" coords="921,40,870,60,816,83,755,117,700,159,676,183,665,193,649,204,563,226,437,252,435,248,562,221,647,199,662,189,672,179,697,155,753,113,813,79,868,55,925,37"/>
+<area shape="rect" href="profile_8h.html" title=" " alt="" coords="459,249,583,277"/>
+<area shape="poly" title=" " alt="" coords="940,42,868,83,808,119,751,159,726,182,700,204,638,232,579,251,576,246,636,227,697,199,723,178,747,155,805,114,865,79,945,39"/>
+<area shape="rect" href="fb_2sync_8h.html" title=" " alt="" coords="1134,249,1246,277"/>
+<area shape="poly" title=" " alt="" coords="1062,25,1119,43,1145,59,1167,79,1181,100,1190,123,1199,171,1199,216,1195,251,1190,248,1194,216,1194,172,1185,125,1176,102,1163,83,1142,63,1117,48,1063,30"/>
+<area shape="rect" href="feetech_8h.html" title=" " alt="" coords="181,165,357,193"/>
+<area shape="poly" title=" " alt="" coords="347,120,289,166,284,163,350,116"/>
+<area shape="rect" href="ipc__transport_8h.html" title=" " alt="" coords="381,165,592,193"/>
+<area shape="poly" title=" " alt="" coords="407,116,472,164,466,165,408,121"/>
+<area shape="rect" href="mode__manager_8h.html" title=" " alt="" coords="5,157,157,201"/>
+<area shape="poly" title=" " alt="" coords="315,115,159,159,155,155,318,111"/>
+<area shape="poly" title=" " alt="" coords="1028,115,909,159,789,209,696,251,693,246,787,204,907,154,1032,113"/>
+<area shape="poly" title=" " alt="" coords="1121,114,1337,249,1332,249,1120,120"/>
+<area shape="poly" title=" " alt="" coords="1060,117,1002,167,999,162,1056,120"/>
+<area shape="poly" title=" " alt="" coords="1168,100,1316,117,1490,145,1574,165,1648,188,1708,216,1730,231,1747,248,1753,259,1754,272,1744,296,1726,318,1705,335,1703,331,1722,314,1740,293,1749,271,1748,261,1743,251,1727,235,1705,220,1646,193,1573,170,1489,151,1315,122,1169,105"/>
+<area shape="poly" title=" " alt="" coords="1136,112,1506,248,1501,249,1136,117"/>
+<area shape="poly" title=" " alt="" coords="1103,119,1185,249,1180,248,1102,124"/>
+<area shape="rect" href="tracking_8h.html" title=" " alt="" coords="975,249,1110,277"/>
+<area shape="poly" title=" " alt="" coords="1081,121,1062,202,1048,250,1044,247,1057,201,1078,126"/>
+<area shape="rect" href="st__binding__native_8h.html" title=" " alt="" coords="944,325,1095,370"/>
+<area shape="poly" title=" " alt="" coords="738,278,946,328,941,329,738,284"/>
+<area shape="rect" href="pins_8h.html" title=" " alt="" coords="990,418,1098,445"/>
+<area shape="poly" title=" " alt="" coords="1031,382,1042,418,1037,416,1029,387"/>
+<area shape="rect" href="bind_8h.html" title=" " alt="" coords="1072,493,1181,521"/>
+<area shape="poly" title=" " alt="" coords="1070,453,1114,493,1109,492,1069,458"/>
+<area shape="rect" href="binding__manifest_8h.html" title=" " alt="" coords="922,653,1117,681"/>
+<area shape="poly" title=" " alt="" coords="1043,459,1023,654,1019,651,1039,462"/>
+<area shape="rect" href="sema_8h.html" title=" " alt="" coords="1205,493,1322,521"/>
+<area shape="poly" title=" " alt="" coords="1097,448,1227,493,1222,493,1097,453"/>
+<area shape="rect" href="binding__registry_8h.html" title=" " alt="" coords="1062,737,1246,765"/>
+<area shape="poly" title=" " alt="" coords="1131,535,1155,738,1150,735,1128,538"/>
+<area shape="rect" href="vm_8h.html" title=" " alt="" coords="1710,569,1812,597"/>
+<area shape="poly" title=" " alt="" coords="1196,519,1338,535,1448,542,1558,550,1697,566,1712,571,1707,571,1697,572,1558,555,1448,547,1337,540,1197,524"/>
+<area shape="rect" href="st_8h.html" title=" " alt="" coords="1462,813,1556,841"/>
+<area shape="poly" title=" " alt="" coords="1233,766,1465,816,1459,816,1233,771"/>
+<area shape="poly" title=" " alt="" coords="1767,610,1769,647,1767,688,1756,730,1746,749,1733,767,1704,785,1658,801,1557,821,1556,816,1656,795,1701,781,1730,763,1742,747,1751,728,1761,687,1764,647,1763,614"/>
+<area shape="rect" href="configuration__runtime_8h.html" title=" " alt="" coords="1569,645,1724,689"/>
+<area shape="poly" title=" " alt="" coords="1733,605,1678,646,1676,642,1728,607"/>
+<area shape="poly" title=" " alt="" coords="1620,700,1522,815,1519,810,1615,702"/>
+<area shape="rect" href="debug_8h.html" title=" " alt="" coords="1598,737,1719,765"/>
+<area shape="poly" title=" " alt="" coords="1653,703,1659,738,1654,735,1650,707"/>
+<area shape="poly" title=" " alt="" coords="1621,772,1536,815,1535,810,1615,773"/>
+<area shape="poly" title=" " alt="" coords="1055,687,1135,737,1130,736,1053,692"/>
+<area shape="poly" title=" " alt="" coords="1022,694,1031,732,1040,749,1052,763,1082,780,1127,794,1181,804,1240,812,1363,820,1465,826,1459,825,1362,826,1240,817,1180,809,1125,799,1080,785,1049,767,1035,752,1026,734,1019,699"/>
+<area shape="rect" href="language_8h.html" title=" " alt="" coords="1280,737,1421,765"/>
+<area shape="poly" title=" " alt="" coords="1088,682,1300,737,1295,737,1087,688"/>
+<area shape="poly" title=" " alt="" coords="1393,769,1484,813,1478,812,1392,774"/>
+<area shape="rect" href="codegen_8h.html" title=" " alt="" coords="1237,569,1373,597"/>
+<area shape="poly" title=" " alt="" coords="1280,532,1300,570,1295,568,1277,537"/>
+<area shape="rect" href="compile_8h.html" title=" " alt="" coords="1312,653,1445,681"/>
+<area shape="poly" title=" " alt="" coords="1243,531,1225,565,1222,580,1227,595,1244,615,1265,630,1314,653,1309,653,1262,635,1240,619,1223,598,1217,581,1220,563,1238,534"/>
+<area shape="poly" title=" " alt="" coords="1328,606,1369,654,1364,652,1326,611"/>
+<area shape="poly" title=" " alt="" coords="1400,690,1501,813,1496,812,1397,695"/>
+<area shape="poly" title=" " alt="" coords="1371,694,1356,739,1353,735,1367,697"/>
+<area shape="poly" title=" " alt="" coords="1284,282,1096,330,1095,325,1289,280"/>
+<area shape="poly" title=" " alt="" coords="916,199,718,251,716,246,920,196"/>
+<area shape="poly" title=" " alt="" coords="972,204,963,241,961,259,965,276,979,301,998,325,992,324,974,304,960,278,956,259,957,240,968,209"/>
+<area shape="poly" title=" " alt="" coords="1058,194,1299,248,1293,249,1058,199"/>
+<area shape="poly" title=" " alt="" coords="902,188,638,214,304,252,294,253,291,249,303,247,637,209,906,185"/>
+<area shape="poly" title=" " alt="" coords="1063,184,1316,207,1472,225,1628,247,1642,251,1636,252,1627,252,1471,230,1315,212,1064,189"/>
+<area shape="poly" title=" " alt="" coords="942,202,852,251,849,246,947,199"/>
+<area shape="poly" title=" " alt="" coords="1063,189,1466,250,1461,252,1063,195"/>
+<area shape="poly" title=" " alt="" coords="902,191,698,217,448,252,437,253,434,249,447,247,697,212,907,188"/>
+<area shape="poly" title=" " alt="" coords="902,196,584,253,582,248,906,193"/>
+<area shape="poly" title=" " alt="" coords="1031,196,1160,248,1155,249,1031,202"/>
+<area shape="poly" title=" " alt="" coords="1002,203,1036,249,1030,249,1001,208"/>
+<area shape="poly" title=" " alt="" coords="307,275,668,314,946,339,941,341,667,319,308,280"/>
+<area shape="poly" title=" " alt="" coords="1622,278,1328,319,1096,342,1095,337,1328,314,1627,277"/>
+<area shape="poly" title=" " alt="" coords="1688,291,1689,335,1684,332,1685,295"/>
+<area shape="poly" title=" " alt="" coords="1688,374,1694,444,1701,482,1714,520,1730,546,1749,569,1744,568,1726,549,1709,522,1696,484,1688,444,1684,378"/>
+<area shape="rect" href="bytecode_8h.html" title=" " alt="" coords="1468,418,1609,445"/>
+<area shape="poly" title=" " alt="" coords="1652,368,1563,420,1561,415,1647,370"/>
+<area shape="poly" title=" " alt="" coords="1570,452,1669,519,1743,569,1738,568,1666,523,1569,457"/>
+<area shape="poly" title=" " alt="" coords="1472,450,1313,495,1312,490,1477,449"/>
+<area shape="poly" title=" " alt="" coords="1483,450,1437,471,1393,496,1349,534,1316,571,1314,566,1345,530,1390,491,1434,467,1478,452"/>
+<area shape="poly" title=" " alt="" coords="1521,456,1438,570,1387,655,1384,651,1433,568,1516,459"/>
+<area shape="rect" href="process__image_8h.html" title=" " alt="" coords="1723,493,1903,521"/>
+<area shape="poly" title=" " alt="" coords="1602,447,1767,493,1761,493,1602,452"/>
+<area shape="rect" href="sfc_8h.html" title=" " alt="" coords="1448,569,1548,597"/>
+<area shape="poly" title=" " alt="" coords="1533,459,1504,570,1500,567,1529,462"/>
+<area shape="rect" href="wcet_8h.html" title=" " alt="" coords="1573,569,1685,597"/>
+<area shape="poly" title=" " alt="" coords="1555,456,1624,569,1619,568,1553,461"/>
+<area shape="poly" title=" " alt="" coords="1822,534,1828,565,1826,597,1811,691,1794,729,1760,767,1737,784,1712,798,1657,816,1603,826,1556,829,1556,824,1603,821,1656,811,1710,793,1734,780,1757,763,1790,726,1806,690,1821,596,1822,565,1819,538"/>
+<area shape="poly" title=" " alt="" coords="1797,532,1772,571,1769,566,1793,535"/>
+<area shape="poly" title=" " alt="" coords="1469,605,1399,655,1397,650,1464,607"/>
+<area shape="poly" title=" " alt="" coords="1598,605,1576,625,1559,646,1538,691,1524,738,1512,815,1508,811,1518,737,1533,689,1555,643,1573,621,1593,607"/>
+<area shape="poly" title=" " alt="" coords="870,281,971,324,965,325,870,286"/>
+<area shape="poly" title=" " alt="" coords="1446,280,1096,337,1095,332,1451,278"/>
+<area shape="poly" title=" " alt="" coords="1577,282,1665,333,1660,333,1576,288"/>
+<area shape="poly" title=" " alt="" coords="450,275,727,311,946,337,941,339,726,316,451,280"/>
+<area shape="poly" title=" " alt="" coords="598,275,946,333,941,335,598,280"/>
+<area shape="poly" title=" " alt="" coords="1147,285,1066,327,1064,322,1152,283"/>
+<area shape="poly" title=" " alt="" coords="1036,290,1028,326,1024,323,1033,294"/>
+</map>
+</div>
+</div>
+<p><a href="state_8h_source.html">浏览该文件的源代码.</a></p>
+<table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 id="header-nested-classes" class="groupheader"><a id="nested-classes" name="nested-classes"></a>
+类</h2></td></tr>
+<tr class="memitem:plcopen_3A_3Acore_3A_3Aaxis_3A_3AReferenceSignalRef" id="r_plcopen_3A_3Acore_3A_3Aaxis_3A_3AReferenceSignalRef"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1axis_1_1ReferenceSignalRef.html">plcopen::core::axis::ReferenceSignalRef</a></td></tr>
+<tr class="memitem:plcopen_3A_3Acore_3A_3Aaxis_3A_3AMotionLimits" id="r_plcopen_3A_3Acore_3A_3Aaxis_3A_3AMotionLimits"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1axis_1_1MotionLimits.html">plcopen::core::axis::MotionLimits</a></td></tr>
+<tr class="memitem:plcopen_3A_3Acore_3A_3Aaxis_3A_3AAxisSiConfig" id="r_plcopen_3A_3Acore_3A_3Aaxis_3A_3AAxisSiConfig"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1axis_1_1AxisSiConfig.html">plcopen::core::axis::AxisSiConfig</a></td></tr>
+<tr class="memitem:plcopen_3A_3Acore_3A_3Aaxis_3A_3AAxisManagementCommand" id="r_plcopen_3A_3Acore_3A_3Aaxis_3A_3AAxisManagementCommand"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1axis_1_1AxisManagementCommand.html">plcopen::core::axis::AxisManagementCommand</a></td></tr>
+<tr class="memitem:plcopen_3A_3Acore_3A_3Aaxis_3A_3AAxisCommand" id="r_plcopen_3A_3Acore_3A_3Aaxis_3A_3AAxisCommand"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1axis_1_1AxisCommand.html">plcopen::core::axis::AxisCommand</a></td></tr>
+<tr class="memitem:plcopen_3A_3Acore_3A_3Aaxis_3A_3AProfileSegment" id="r_plcopen_3A_3Acore_3A_3Aaxis_3A_3AProfileSegment"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1axis_1_1ProfileSegment.html">plcopen::core::axis::ProfileSegment</a></td></tr>
+<tr class="memitem:plcopen_3A_3Acore_3A_3Aaxis_3A_3AGearInCommand" id="r_plcopen_3A_3Acore_3A_3Aaxis_3A_3AGearInCommand"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1axis_1_1GearInCommand.html">plcopen::core::axis::GearInCommand</a></td></tr>
+<tr class="memitem:plcopen_3A_3Acore_3A_3Aaxis_3A_3APhasingCommand" id="r_plcopen_3A_3Acore_3A_3Aaxis_3A_3APhasingCommand"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1axis_1_1PhasingCommand.html">plcopen::core::axis::PhasingCommand</a></td></tr>
+<tr class="memitem:plcopen_3A_3Acore_3A_3Aaxis_3A_3APhasingCommandResult" id="r_plcopen_3A_3Acore_3A_3Aaxis_3A_3APhasingCommandResult"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1axis_1_1PhasingCommandResult.html">plcopen::core::axis::PhasingCommandResult</a></td></tr>
+<tr class="memitem:plcopen_3A_3Acore_3A_3Aaxis_3A_3ACamInCommand" id="r_plcopen_3A_3Acore_3A_3Aaxis_3A_3ACamInCommand"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1axis_1_1CamInCommand.html">plcopen::core::axis::CamInCommand</a></td></tr>
+<tr class="memitem:plcopen_3A_3Acore_3A_3Aaxis_3A_3ACamTableSelection" id="r_plcopen_3A_3Acore_3A_3Aaxis_3A_3ACamTableSelection"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1axis_1_1CamTableSelection.html">plcopen::core::axis::CamTableSelection</a></td></tr>
+<tr class="memitem:plcopen_3A_3Acore_3A_3Aaxis_3A_3ACombineAxesCommand" id="r_plcopen_3A_3Acore_3A_3Aaxis_3A_3ACombineAxesCommand"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1axis_1_1CombineAxesCommand.html">plcopen::core::axis::CombineAxesCommand</a></td></tr>
+<tr class="memitem:plcopen_3A_3Acore_3A_3Aaxis_3A_3AAxisSnapshot" id="r_plcopen_3A_3Acore_3A_3Aaxis_3A_3AAxisSnapshot"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1axis_1_1AxisSnapshot.html">plcopen::core::axis::AxisSnapshot</a></td></tr>
+<tr class="memitem:plcopen_3A_3Acore_3A_3Aaxis_3A_3AAxisModel" id="r_plcopen_3A_3Acore_3A_3Aaxis_3A_3AAxisModel"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1axis_1_1AxisModel.html">plcopen::core::axis::AxisModel</a></td></tr>
+<tr class="memitem:plcopen_3A_3Acore_3A_3Aaxis_3A_3AAxisModel_3A_3AAxisInfoInputs" id="r_plcopen_3A_3Acore_3A_3Aaxis_3A_3AAxisModel_3A_3AAxisInfoInputs"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1axis_1_1AxisModel_1_1AxisInfoInputs.html">plcopen::core::axis::AxisModel::AxisInfoInputs</a></td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 id="header-namespaces" class="groupheader"><a id="namespaces" name="namespaces"></a>
+命名空间</h2></td></tr>
+<tr class="memitem:plcopen" id="r_plcopen"><td class="memItemLeft" align="right" valign="top">namespace &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen.html">plcopen</a></td></tr>
+<tr class="memitem:plcopen_3A_3Acore" id="r_plcopen_3A_3Acore"><td class="memItemLeft" align="right" valign="top">namespace &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core.html">plcopen::core</a></td></tr>
+<tr class="memitem:plcopen_3A_3Acore_3A_3Aaxis" id="r_plcopen_3A_3Acore_3A_3Aaxis"><td class="memItemLeft" align="right" valign="top">namespace &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1axis.html">plcopen::core::axis</a></td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 id="header-enum-members" class="groupheader"><a id="enum-members" name="enum-members"></a>
+枚举</h2></td></tr>
+<tr class="memitem:affb5ee68a238b1e9413f4266c509dc82" id="r_affb5ee68a238b1e9413f4266c509dc82"><td class="memItemLeft" align="right" valign="top">enum class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1axis.html#affb5ee68a238b1e9413f4266c509dc82">plcopen::core::axis::AxisStatus</a> { <br />
+&#160;&#160;<a class="el" href="namespaceplcopen_1_1core_1_1axis.html#affb5ee68a238b1e9413f4266c509dc82a075ae3d2fc31640504f814f60e5ef713">plcopen::core::axis::disabled</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#affb5ee68a238b1e9413f4266c509dc82ad6680be150a5f07d0fcb6770a8a00145">plcopen::core::axis::standstill</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#affb5ee68a238b1e9413f4266c509dc82af397d57b9c38aaa6087013638218150f">plcopen::core::axis::homing</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#affb5ee68a238b1e9413f4266c509dc82afa9efbeebb98cc3dfcac4ec303e04c10">plcopen::core::axis::discrete_motion</a>
+, <br />
+&#160;&#160;<a class="el" href="namespaceplcopen_1_1core_1_1axis.html#affb5ee68a238b1e9413f4266c509dc82a0dbd55c6dfb1dba3b2c8bbba6463133f">plcopen::core::axis::continuous_motion</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#affb5ee68a238b1e9413f4266c509dc82a7c7e34875ff373a8be3ee71009216b0f">plcopen::core::axis::synchronized_motion</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#affb5ee68a238b1e9413f4266c509dc82a3b2a3c8ed19fc3647432e72885d633e7">plcopen::core::axis::stopping</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#affb5ee68a238b1e9413f4266c509dc82a5f4ab7a456431f4e0f5cc36e9d8ca528">plcopen::core::axis::errorstop</a>
+<br />
+ }</td></tr>
+<tr class="memitem:a966fa036a6fa99116c97b1c08427bd4a" id="r_a966fa036a6fa99116c97b1c08427bd4a"><td class="memItemLeft" align="right" valign="top">enum class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1axis.html#a966fa036a6fa99116c97b1c08427bd4a">plcopen::core::axis::GroupStatus</a> { <br />
+&#160;&#160;<a class="el" href="namespaceplcopen_1_1core_1_1axis.html#a966fa036a6fa99116c97b1c08427bd4aa075ae3d2fc31640504f814f60e5ef713">plcopen::core::axis::disabled</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#a966fa036a6fa99116c97b1c08427bd4aaa7b13e050d2c0d1c57dfaf194e917221">plcopen::core::axis::standby</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#a966fa036a6fa99116c97b1c08427bd4aa7b3ef1b118f53a58660b8530d1aa4683">plcopen::core::axis::moving</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#a966fa036a6fa99116c97b1c08427bd4aa3b2a3c8ed19fc3647432e72885d633e7">plcopen::core::axis::stopping</a>
+, <br />
+&#160;&#160;<a class="el" href="namespaceplcopen_1_1core_1_1axis.html#a966fa036a6fa99116c97b1c08427bd4aa5f4ab7a456431f4e0f5cc36e9d8ca528">plcopen::core::axis::errorstop</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#a966fa036a6fa99116c97b1c08427bd4aafadb76763385627e57ec386c9b6038f0">plcopen::core::axis::interrupted</a>
+<br />
+ }</td></tr>
+<tr class="memitem:ac37c626dcb946b45368197dcafa1eb34" id="r_ac37c626dcb946b45368197dcafa1eb34"><td class="memItemLeft" align="right" valign="top">enum class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1axis.html#ac37c626dcb946b45368197dcafa1eb34">plcopen::core::axis::BufferMode</a> { <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#ac37c626dcb946b45368197dcafa1eb34af3376270ea6836eac66441a6ef3c55c3">plcopen::core::axis::aborting</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#ac37c626dcb946b45368197dcafa1eb34a8b365ffbd5d92a1b9c20f227a4b6fcec">plcopen::core::axis::buffered</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#ac37c626dcb946b45368197dcafa1eb34abb9bc0462e39b4fb3f335b8fadd70bed">plcopen::core::axis::blending_low</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#ac37c626dcb946b45368197dcafa1eb34ab67eff7d1cb07512fe93b3f98e5bd886">plcopen::core::axis::blending_high</a>
+ }</td></tr>
+<tr class="memitem:a2f7767a26ea965f2994c90641f9dbd4b" id="r_a2f7767a26ea965f2994c90641f9dbd4b"><td class="memItemLeft" align="right" valign="top">enum class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1axis.html#a2f7767a26ea965f2994c90641f9dbd4b">plcopen::core::axis::CommandKind</a> { <br />
+&#160;&#160;<a class="el" href="namespaceplcopen_1_1core_1_1axis.html#a2f7767a26ea965f2994c90641f9dbd4bac9a127f06b023a4c3da6deea2904483d">plcopen::core::axis::move_absolute</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#a2f7767a26ea965f2994c90641f9dbd4ba660c02cc8384954af5f976e6d0353411">plcopen::core::axis::move_relative</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#a2f7767a26ea965f2994c90641f9dbd4ba4715055e7d80b15d568ec7bd99ffa72f">plcopen::core::axis::move_additive</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#a2f7767a26ea965f2994c90641f9dbd4baf69a796c9764d6ddec48a704084f8043">plcopen::core::axis::move_velocity</a>
+, <br />
+&#160;&#160;<a class="el" href="namespaceplcopen_1_1core_1_1axis.html#a2f7767a26ea965f2994c90641f9dbd4badd00af31dedd46b34d4d96ad223ecc7b">plcopen::core::axis::move_continuous_absolute</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#a2f7767a26ea965f2994c90641f9dbd4ba30fd2801785a843bb2ddcf06f8cd1be7">plcopen::core::axis::move_continuous_relative</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#a2f7767a26ea965f2994c90641f9dbd4ba106a6c241b8797f52e1e77317b96a201">plcopen::core::axis::home</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#a2f7767a26ea965f2994c90641f9dbd4ba4a1bde0ea8bcda2a591f42646813c477">plcopen::core::axis::halt</a>
+, <br />
+&#160;&#160;<a class="el" href="namespaceplcopen_1_1core_1_1axis.html#a2f7767a26ea965f2994c90641f9dbd4baef399b2d446bb37b7c32ad2cc1b6045b">plcopen::core::axis::stop</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#a2f7767a26ea965f2994c90641f9dbd4bae9ee2651c12f09e358eb1da8545952a7">plcopen::core::axis::torque</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#a2f7767a26ea965f2994c90641f9dbd4ba1e67e5a206ee01fa888987ca13342148">plcopen::core::axis::acceleration_profile</a>
+<br />
+ }</td></tr>
+<tr class="memitem:a6ee6be14ad50e9555ccbb523438084c5" id="r_a6ee6be14ad50e9555ccbb523438084c5"><td class="memItemLeft" align="right" valign="top">enum class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1axis.html#a6ee6be14ad50e9555ccbb523438084c5">plcopen::core::axis::Direction</a> { <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#a6ee6be14ad50e9555ccbb523438084c5a43b5c9175984c071f30b873fdce0a000">plcopen::core::axis::current</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#a6ee6be14ad50e9555ccbb523438084c5a82082716189f80fd070b89ac716570ba">plcopen::core::axis::positive</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#a6ee6be14ad50e9555ccbb523438084c5a228d6a97a9838dc800e58b3c74ba7b11">plcopen::core::axis::negative</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#a6ee6be14ad50e9555ccbb523438084c5afdfc5ae34c4dbe6c69a2c7235bac4fd9">plcopen::core::axis::shortest_way</a>
+ }</td></tr>
+<tr class="memitem:a962aac05022b5bdc210266cd4e40b6c2" id="r_a962aac05022b5bdc210266cd4e40b6c2"><td class="memItemLeft" align="right" valign="top">enum class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1axis.html#a962aac05022b5bdc210266cd4e40b6c2">plcopen::core::axis::HomeDirection</a> { <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#a962aac05022b5bdc210266cd4e40b6c2a82082716189f80fd070b89ac716570ba">plcopen::core::axis::positive</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#a962aac05022b5bdc210266cd4e40b6c2a228d6a97a9838dc800e58b3c74ba7b11">plcopen::core::axis::negative</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#a962aac05022b5bdc210266cd4e40b6c2a67283a6402fb8191a5261e30693105e6">plcopen::core::axis::switch_positive</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#a962aac05022b5bdc210266cd4e40b6c2a23ecf24f8a375186c99f5863cf7c7dac">plcopen::core::axis::switch_negative</a>
+ }</td></tr>
+<tr class="memitem:a0dd513aa34264f9fab1247c00b246487" id="r_a0dd513aa34264f9fab1247c00b246487"><td class="memItemLeft" align="right" valign="top">enum class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1axis.html#a0dd513aa34264f9fab1247c00b246487">plcopen::core::axis::SwitchMode</a> { <br />
+&#160;&#160;<a class="el" href="namespaceplcopen_1_1core_1_1axis.html#a0dd513aa34264f9fab1247c00b246487aed2b5c0139cec8ad2873829dc1117d50">plcopen::core::axis::on</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#a0dd513aa34264f9fab1247c00b246487a3262d48df5d75e3452f0f16b313b7808">plcopen::core::axis::off</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#a0dd513aa34264f9fab1247c00b246487abb8a7affe04ffd41aaaa88b7d7dfcc4f">plcopen::core::axis::rising_edge</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#a0dd513aa34264f9fab1247c00b246487a155bdd215978f042cf28a656bd878b74">plcopen::core::axis::falling_edge</a>
+, <br />
+&#160;&#160;<a class="el" href="namespaceplcopen_1_1core_1_1axis.html#a0dd513aa34264f9fab1247c00b246487a3b8314e2d74f6048796fbb96907c0d7c">plcopen::core::axis::edge_positive</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#a0dd513aa34264f9fab1247c00b246487af864b279e8a281571cef76ee6e4232fc">plcopen::core::axis::edge_negative</a>
+<br />
+ }</td></tr>
+<tr class="memitem:ab3d8d8377e021d9a28af2a9f076b56c3" id="r_ab3d8d8377e021d9a28af2a9f076b56c3"><td class="memItemLeft" align="right" valign="top">enum class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1axis.html#ab3d8d8377e021d9a28af2a9f076b56c3">plcopen::core::axis::AxisParameter</a> { <br />
+&#160;&#160;<a class="el" href="namespaceplcopen_1_1core_1_1axis.html#ab3d8d8377e021d9a28af2a9f076b56c3ad13fcc53b8e063868ddfdd7afe13159d">plcopen::core::axis::commanded_position</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#ab3d8d8377e021d9a28af2a9f076b56c3a62800489d79c921d833c6b56446bc613">plcopen::core::axis::sw_limit_pos</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#ab3d8d8377e021d9a28af2a9f076b56c3ada28636903f0dc981bb614c7aeba2b8e">plcopen::core::axis::sw_limit_neg</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#ab3d8d8377e021d9a28af2a9f076b56c3acd5a8579d74e661787573395ca3a906b">plcopen::core::axis::enable_limit_pos</a>
+, <br />
+&#160;&#160;<a class="el" href="namespaceplcopen_1_1core_1_1axis.html#ab3d8d8377e021d9a28af2a9f076b56c3abf52ca1edf045d5115ccc4327e7b4e00">plcopen::core::axis::enable_limit_neg</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#ab3d8d8377e021d9a28af2a9f076b56c3a0fb7b4a9e768a4f37fc0c782a8b9350a">plcopen::core::axis::enable_pos_lag_monitoring</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#ab3d8d8377e021d9a28af2a9f076b56c3a8ba4062446ec4a84df69b450e6f1f429">plcopen::core::axis::max_position_lag</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#ab3d8d8377e021d9a28af2a9f076b56c3a548f77accfb82f81c79bfc42ba82d094">plcopen::core::axis::max_velocity_system</a>
+, <br />
+&#160;&#160;<a class="el" href="namespaceplcopen_1_1core_1_1axis.html#ab3d8d8377e021d9a28af2a9f076b56c3a53bb144856fb0c17bdb5181480548c53">plcopen::core::axis::max_velocity_appl</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#ab3d8d8377e021d9a28af2a9f076b56c3a337d964fc35f5bab0357ac0582abc33c">plcopen::core::axis::actual_velocity</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#ab3d8d8377e021d9a28af2a9f076b56c3a3c586a8ada0ab8d0a11f9164c1089c3e">plcopen::core::axis::commanded_velocity</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#ab3d8d8377e021d9a28af2a9f076b56c3a5ee48986473c64f38b69dd40fab10c10">plcopen::core::axis::max_acceleration_system</a>
+, <br />
+&#160;&#160;<a class="el" href="namespaceplcopen_1_1core_1_1axis.html#ab3d8d8377e021d9a28af2a9f076b56c3a7f566db12bd6797e199e407114672547">plcopen::core::axis::max_acceleration_appl</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#ab3d8d8377e021d9a28af2a9f076b56c3a4f773d7549c14a8bf77dee67f58ae200">plcopen::core::axis::max_deceleration_system</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#ab3d8d8377e021d9a28af2a9f076b56c3ad2197a970821b62da4c97aa1f9170ba2">plcopen::core::axis::max_deceleration_appl</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#ab3d8d8377e021d9a28af2a9f076b56c3a1c9e58715fd6cfd442b5efa93eaab990">plcopen::core::axis::max_jerk_system</a>
+, <br />
+&#160;&#160;<a class="el" href="namespaceplcopen_1_1core_1_1axis.html#ab3d8d8377e021d9a28af2a9f076b56c3aedc2d4d67a9bc9a64eda7fdf797f9bfb">plcopen::core::axis::max_jerk_appl</a>
+<br />
+ }</td></tr>
+<tr class="memitem:a8d8418d65c7de1c5552add57d1e98a5f" id="r_a8d8418d65c7de1c5552add57d1e98a5f"><td class="memItemLeft" align="right" valign="top">enum class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1axis.html#a8d8418d65c7de1c5552add57d1e98a5f">plcopen::core::axis::AxisManagementKind</a> { <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#a8d8418d65c7de1c5552add57d1e98a5fa5f439899de6c7c739cb5aef5e0c2a90f">plcopen::core::axis::set_position</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#a8d8418d65c7de1c5552add57d1e98a5faa6e8e3ac57cbe9373857a5857952b2b0">plcopen::core::axis::write_parameter</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#a8d8418d65c7de1c5552add57d1e98a5fa42e95f5ed7f01f2120e38f261a4d00c1">plcopen::core::axis::write_bool_parameter</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#a8d8418d65c7de1c5552add57d1e98a5fa342b83b37318404d701d5157cc19517c">plcopen::core::axis::write_digital_output</a>
+ }</td></tr>
+<tr class="memitem:a02f41a86db9596d850d455f6944479cb" id="r_a02f41a86db9596d850d455f6944479cb"><td class="memItemLeft" align="right" valign="top">enum class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1axis.html#a02f41a86db9596d850d455f6944479cb">plcopen::core::axis::MasterValueSource</a> { <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#a02f41a86db9596d850d455f6944479cba1dccadfed7bcbb036c56a4afb97e906f">plcopen::core::axis::command</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#a02f41a86db9596d850d455f6944479cba5157e3c765af93679ea07052f30f0a6e">plcopen::core::axis::actual</a>
+ }</td></tr>
+<tr class="memitem:ae27b7c80b5bb69ac3ff87780bddb1eeb" id="r_ae27b7c80b5bb69ac3ff87780bddb1eeb"><td class="memItemLeft" align="right" valign="top">enum class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1axis.html#ae27b7c80b5bb69ac3ff87780bddb1eeb">plcopen::core::axis::CamStartMode</a> { <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#ae27b7c80b5bb69ac3ff87780bddb1eebadc4d53aa0d117d8b189b36d161af4e96">plcopen::core::axis::absolute</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#ae27b7c80b5bb69ac3ff87780bddb1eeba99c483e1d11b1a279a2a1a3960528487">plcopen::core::axis::relative</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#ae27b7c80b5bb69ac3ff87780bddb1eebabbea479732fa053eb1bd7151cd550219">plcopen::core::axis::ramp_in</a>
+ }</td></tr>
+<tr class="memitem:a449a0349ab61c0f9211eccd4ad0cedf8" id="r_a449a0349ab61c0f9211eccd4ad0cedf8"><td class="memItemLeft" align="right" valign="top">enum class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1axis.html#a449a0349ab61c0f9211eccd4ad0cedf8">plcopen::core::axis::SyncKind</a> { <br />
+&#160;&#160;<a class="el" href="namespaceplcopen_1_1core_1_1axis.html#a449a0349ab61c0f9211eccd4ad0cedf8a334c4a4c42fdb79d7ebc3e73b517e6f8">plcopen::core::axis::none</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#a449a0349ab61c0f9211eccd4ad0cedf8afae005cf393a8ec646f3fe040339fd9d">plcopen::core::axis::gear</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#a449a0349ab61c0f9211eccd4ad0cedf8aad017e9d6654bd0ccd978958fa1b6da6">plcopen::core::axis::cam</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#a449a0349ab61c0f9211eccd4ad0cedf8ac3eef34d092ed60c3b2791814511903a">plcopen::core::axis::combine</a>
+, <br />
+&#160;&#160;<a class="el" href="namespaceplcopen_1_1core_1_1axis.html#a449a0349ab61c0f9211eccd4ad0cedf8aff2b79fdd0d9de42fbfcb4fbe4903685">plcopen::core::axis::group_path</a>
+<br />
+ }</td></tr>
+<tr class="memitem:a455d216d158ccbe4d6672d83879e2ad6" id="r_a455d216d158ccbe4d6672d83879e2ad6"><td class="memItemLeft" align="right" valign="top">enum class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1axis.html#a455d216d158ccbe4d6672d83879e2ad6">plcopen::core::axis::SyncPhase</a> { <br />
+&#160;&#160;<a class="el" href="namespaceplcopen_1_1core_1_1axis.html#a455d216d158ccbe4d6672d83879e2ad6aec2f993aec2c27fc750119ab17b16cdb">plcopen::core::axis::idle</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#a455d216d158ccbe4d6672d83879e2ad6a84fbe0280a6e0c725f00f8847aa6be49">plcopen::core::axis::queued</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#a455d216d158ccbe4d6672d83879e2ad6ae9cc981c7e460c8f7870cacf0d39ce88">plcopen::core::axis::waiting_window</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#a455d216d158ccbe4d6672d83879e2ad6a36d7951385fec5d197e8f8dc28ca8f78">plcopen::core::axis::approaching</a>
+, <br />
+&#160;&#160;<a class="el" href="namespaceplcopen_1_1core_1_1axis.html#a455d216d158ccbe4d6672d83879e2ad6a842e77fefc15c4f24aaf4ec4cc737233">plcopen::core::axis::engaged</a>
+<br />
+ }</td></tr>
+<tr class="memitem:ac656e044ddcff7d38ead854ca7df3148" id="r_ac656e044ddcff7d38ead854ca7df3148"><td class="memItemLeft" align="right" valign="top">enum class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1axis.html#ac656e044ddcff7d38ead854ca7df3148">plcopen::core::axis::SyncMode</a> { <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#ac656e044ddcff7d38ead854ca7df3148acfb50e0c020de3d014cb6f975530a73b">plcopen::core::axis::shortest</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#ac656e044ddcff7d38ead854ca7df3148a6363fef30a1f05d58e903e4ae5506511">plcopen::core::axis::catch_up</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#ac656e044ddcff7d38ead854ca7df3148a5a439578513520e7a5c859a7bef3daf6">plcopen::core::axis::slow_down</a>
+ }</td></tr>
+<tr class="memitem:aee103d324a503b589f587d46d9f2a85b" id="r_aee103d324a503b589f587d46d9f2a85b"><td class="memItemLeft" align="right" valign="top">enum class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1axis.html#aee103d324a503b589f587d46d9f2a85b">plcopen::core::axis::CombineMode</a> { <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#aee103d324a503b589f587d46d9f2a85ba7803e18da65a87c6bb706aadbbe60263">plcopen::core::axis::add_axes</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#aee103d324a503b589f587d46d9f2a85ba7ccbb431bfe7d83cbe1d71ab9c7c60d1">plcopen::core::axis::sub_axes</a>
+ }</td></tr>
+<tr class="memitem:a7ee36acf95baf1dee04c3920813eb59d" id="r_a7ee36acf95baf1dee04c3920813eb59d"><td class="memItemLeft" align="right" valign="top">enum class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1axis.html#a7ee36acf95baf1dee04c3920813eb59d">plcopen::core::axis::PhasingCommandState</a> { <br />
+&#160;&#160;<a class="el" href="namespaceplcopen_1_1core_1_1axis.html#a7ee36acf95baf1dee04c3920813eb59daad921d60486366258809553a3db49a4a">plcopen::core::axis::unknown</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#a7ee36acf95baf1dee04c3920813eb59da84fbe0280a6e0c725f00f8847aa6be49">plcopen::core::axis::queued</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#a7ee36acf95baf1dee04c3920813eb59dac76a5e84e4bdee527e274ea30c680d79">plcopen::core::axis::active</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1axis.html#a7ee36acf95baf1dee04c3920813eb59daaa8fb77e57d1ca18d593e909729871fe">plcopen::core::axis::completed</a>
+, <br />
+&#160;&#160;<a class="el" href="namespaceplcopen_1_1core_1_1axis.html#a7ee36acf95baf1dee04c3920813eb59dadfb7069bfc6e0064a6c667626eca07b4">plcopen::core::axis::aborted</a>
+<br />
+ }</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 id="header-func-members" class="groupheader"><a id="func-members" name="func-members"></a>
+函数</h2></td></tr>
+<tr class="memitem:aa870486661c586af5d64e4bbe725af38" id="r_aa870486661c586af5d64e4bbe725af38"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1axis.html#aa870486661c586af5d64e4bbe725af38">plcopen::core::axis::is_finite_command</a> (const <a class="el" href="structplcopen_1_1core_1_1axis_1_1AxisCommand.html">AxisCommand</a> &amp;command)</td></tr>
+<tr class="memitem:a5c9d194d29685fd202153bdb83ecd992" id="r_a5c9d194d29685fd202153bdb83ecd992"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1axis.html#a5c9d194d29685fd202153bdb83ecd992">plcopen::core::axis::is_valid_direction</a> (<a class="el" href="namespaceplcopen_1_1core_1_1axis.html#a6ee6be14ad50e9555ccbb523438084c5">Direction</a> direction)</td></tr>
+<tr class="memitem:a172f015324cdba8f3d5e9d2e70b41aae" id="r_a172f015324cdba8f3d5e9d2e70b41aae"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1axis.html#a172f015324cdba8f3d5e9d2e70b41aae">plcopen::core::axis::is_valid_buffer_mode</a> (<a class="el" href="namespaceplcopen_1_1core_1_1axis.html#ac37c626dcb946b45368197dcafa1eb34">BufferMode</a> mode)</td></tr>
+<tr class="memitem:a15f1ac7c1dd9f794851a5c88a3c37c0d" id="r_a15f1ac7c1dd9f794851a5c88a3c37c0d"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1axis.html#a15f1ac7c1dd9f794851a5c88a3c37c0d">plcopen::core::axis::is_continuous_kind</a> (<a class="el" href="namespaceplcopen_1_1core_1_1axis.html#a2f7767a26ea965f2994c90641f9dbd4b">CommandKind</a> kind)</td></tr>
+</table>
+</div><!-- contents -->
+</div><!-- doc-content -->
+<div id="page-nav" class="page-nav-panel">
+<div id="page-nav-resize-handle"></div>
+<div id="page-nav-tree">
+<div id="page-nav-contents">
+</div><!-- page-nav-contents -->
+</div><!-- page-nav-tree -->
+</div><!-- page-nav -->
+</div><!-- container -->
+<!-- start footer part -->
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+  <ul>
+    <li class="navelem"><a href="dir_4270bfced15e0e73154b13468c7c9ad9.html">core</a></li><li class="navelem"><a href="dir_5ef4a7025a35d6e4021aa0821854909f.html">axis</a></li><li class="navelem"><a href="state_8h.html">state.h</a></li>
+    <li class="footer">制作者 <a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.15.0 </li>
+  </ul>
+</div>
+</body>
+</html>

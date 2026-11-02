@@ -1,0 +1,14 @@
+<map id="core/st/process_image.h" name="core/st/process_image.h">
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,5,185,33"/>
+<area shape="rect" id="Node000002" href="$st_8h.html" title=" " alt="" coords="80,325,174,353"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="85,45,79,81,79,108,89,172,102,235,126,325,120,325,97,236,83,173,74,109,74,81,84,50"/>
+<area shape="rect" id="Node000003" href="$vm_8h.html" title=" " alt="" coords="88,81,190,109"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="111,44,134,80,129,81,111,49"/>
+<area shape="poly" id="edge7_Node000003_Node000002" title=" " alt="" coords="133,121,130,157,126,253,129,325,124,324,121,253,124,156,131,126"/>
+<area shape="rect" id="Node000004" href="$configuration__runtime_8h.html" title=" " alt="" coords="139,157,294,201"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="162,117,198,156,193,156,162,123"/>
+<area shape="poly" id="edge6_Node000004_Node000002" title=" " alt="" coords="199,214,137,326,132,323,194,215"/>
+<area shape="rect" id="Node000005" href="$debug_8h.html" title=" " alt="" coords="190,249,312,277"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="232,213,248,249,243,248,230,218"/>
+<area shape="poly" id="edge5_Node000005_Node000002" title=" " alt="" coords="218,285,150,327,148,322,213,286"/>
+</map>

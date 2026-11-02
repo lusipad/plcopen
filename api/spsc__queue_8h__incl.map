@@ -1,0 +1,9 @@
+<map id="core/rt/spsc_queue.h" name="core/rt/spsc_queue.h">
+<area shape="rect" id="Node000001" title=" " alt="" coords="41,5,196,33"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="5,81,61,109"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="106,33,61,73,58,69,101,35"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="85,81,152,109"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="120,32,121,66,116,64,117,36"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="176,81,245,109"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="136,31,185,71,180,72,134,36"/>
+</map>

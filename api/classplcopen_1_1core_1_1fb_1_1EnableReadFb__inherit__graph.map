@@ -1,0 +1,31 @@
+<map id="plcopen::core::fb::EnableReadFb" name="plcopen::core::fb::EnableReadFb">
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,283,143,327"/>
+<area shape="rect" id="Node000002" href="$classplcopen_1_1core_1_1fb_1_1FbReadAxisError.html" title=" " alt="" coords="205,5,342,50"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="82,267,96,220,118,166,149,110,189,60,208,48,205,53,193,64,153,113,123,168,101,222,87,268"/>
+<area shape="rect" id="Node000003" href="$classplcopen_1_1core_1_1fb_1_1FbReadAxisInfo.html" title=" " alt="" coords="205,75,342,119"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="89,268,129,198,157,162,189,130,210,118,207,122,192,134,161,165,133,201,94,270"/>
+<area shape="rect" id="Node000004" href="$classplcopen_1_1core_1_1fb_1_1FbReadBoolParameter.html" title=" " alt="" coords="191,144,357,189"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="104,270,143,233,189,199,214,187,210,191,192,203,147,237,109,273"/>
+<area shape="rect" id="Node000005" href="$classplcopen_1_1core_1_1fb_1_1FbReadDigitalInput.html" title=" " alt="" coords="201,213,347,258"/>
+<area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="153,275,209,257,205,261,157,279"/>
+<area shape="rect" id="Node000006" href="$classplcopen_1_1core_1_1fb_1_1FbReadDigitalOutput.html" title=" " alt="" coords="195,283,352,327"/>
+<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="157,303,197,303,193,307,160,307"/>
+<area shape="rect" id="Node000007" href="$classplcopen_1_1core_1_1fb_1_1FbReadMotionState.html" title=" " alt="" coords="199,352,348,397"/>
+<area shape="poly" id="edge6_Node000001_Node000007" title=" " alt="" coords="154,330,209,350,205,353,156,335"/>
+<area shape="rect" id="Node000008" href="$classplcopen_1_1core_1_1fb_1_1FbReadParameter.html" title=" " alt="" coords="205,421,342,466"/>
+<area shape="poly" id="edge7_Node000001_Node000008" title=" " alt="" coords="106,336,147,373,192,407,214,420,209,422,189,411,143,377,107,341"/>
+<area shape="rect" id="Node000009" href="$classplcopen_1_1core_1_1fb_1_1FbReadStatus.html" title=" " alt="" coords="205,491,342,535"/>
+<area shape="poly" id="edge8_Node000001_Node000009" title=" " alt="" coords="92,339,133,409,161,445,192,476,211,490,206,491,189,480,157,448,129,412,92,344"/>
+<area shape="rect" id="Node000010" href="$classplcopen_1_1core_1_1fb_1_1SnapshotValueReadFb.html" title=" " alt="" coords="191,560,357,605"/>
+<area shape="poly" id="edge9_Node000001_Node000010" title=" " alt="" coords="84,340,101,388,123,442,153,497,193,546,209,559,204,560,189,550,149,500,118,444,96,390,84,345"/>
+<area shape="rect" id="Node000011" href="$classplcopen_1_1core_1_1fb_1_1FbReadActualPosition.html" title=" " alt="" coords="418,421,581,466"/>
+<area shape="poly" id="edge10_Node000010_Node000011" title=" " alt="" coords="351,549,355,546,370,529,378,512,387,494,403,476,426,465,421,468,407,480,391,497,383,514,375,532,359,550,354,553"/>
+<area shape="rect" id="Node000012" href="$classplcopen_1_1core_1_1fb_1_1FbReadActualTorque.html" title=" " alt="" coords="422,491,577,535"/>
+<area shape="poly" id="edge11_Node000010_Node000012" title=" " alt="" coords="362,552,427,535,422,537,364,557"/>
+<area shape="rect" id="Node000013" href="$classplcopen_1_1core_1_1fb_1_1FbReadActualVelocity.html" title=" " alt="" coords="418,560,581,605"/>
+<area shape="poly" id="edge12_Node000010_Node000013" title=" " alt="" coords="372,580,420,582,415,583,373,585"/>
+<area shape="rect" id="Node000014" href="$classplcopen_1_1core_1_1fb_1_1FbReadCommandPosition.html" title=" " alt="" coords="405,629,594,674"/>
+<area shape="poly" id="edge13_Node000010_Node000014" title=" " alt="" coords="363,607,427,628,422,629,363,612"/>
+<area shape="rect" id="Node000015" href="$classplcopen_1_1core_1_1fb_1_1FbReadCommandVelocity.html" title=" " alt="" coords="405,699,594,743"/>
+<area shape="poly" id="edge14_Node000010_Node000015" title=" " alt="" coords="311,613,355,650,406,684,432,698,426,698,404,689,352,654,309,618"/>
+</map>

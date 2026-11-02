@@ -1,0 +1,29 @@
+<map id="plcopen::core::axis::GroupCommand" name="plcopen::core::axis::GroupCommand">
+<area shape="rect" id="Node000001" title=" " alt="" coords="1030,319,1173,363"/>
+<area shape="rect" id="Node000002" href="$structplcopen_1_1core_1_1axis_1_1GroupPosition.html" title=" " alt="" coords="698,49,841,94"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="856,70,895,75,934,85,973,101,1007,123,1029,144,1047,169,1074,223,1091,276,1099,319,1095,317,1086,277,1069,225,1042,172,1025,148,1004,127,970,105,933,90,894,81,856,75"/>
+<area shape="rect" id="Node000003" href="$structplcopen_1_1core_1_1geom_1_1ArcSegment.html" title=" " alt="" coords="293,49,446,94"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="461,89,598,122,757,164,904,210,963,233,1007,255,1048,285,1082,319,1076,318,1044,289,1004,259,961,238,902,215,755,169,597,127,462,95"/>
+<area shape="rect" id="Node000005" href="$structplcopen_1_1core_1_1axis_1_1CartesianSegment.html" title=" " alt="" coords="695,223,844,267"/>
+<area shape="poly" id="edge5_Node000005_Node000003" title=" " alt="" coords="445,101,457,112,467,132,468,151,470,169,480,185,697,230,692,232,478,190,465,171,463,152,462,133,453,115,445,106"/>
+<area shape="rect" id="Node000004" href="$structplcopen_1_1core_1_1geom_1_1Vec3.html" title=" " alt="" coords="5,207,159,251"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="109,193,142,160,181,129,236,103,295,86,291,90,238,108,184,134,145,164,113,196"/>
+<area shape="poly" id="edge6_Node000005_Node000004" title=" " alt="" coords="120,196,152,176,189,160,226,155,245,159,262,167,273,180,275,194,278,208,286,219,307,226,345,231,454,239,697,244,692,247,454,244,344,237,306,231,283,223,273,210,270,195,268,182,259,171,243,164,226,161,190,165,155,180,124,199"/>
+<area shape="rect" id="Node000006" href="$structplcopen_1_1core_1_1geom_1_1QuinticBlendSegment.html" title=" " alt="" coords="285,281,455,326"/>
+<area shape="poly" id="edge8_Node000006_Node000004" title=" " alt="" coords="115,260,147,285,184,303,234,313,287,315,282,318,233,319,182,308,145,289,115,265"/>
+<area shape="rect" id="Node000007" href="$structplcopen_1_1core_1_1geom_1_1RigidTransform.html" title=" " alt="" coords="479,339,632,383"/>
+<area shape="poly" id="edge10_Node000007_Node000004" title=" " alt="" coords="102,263,138,309,159,329,184,345,220,360,258,370,337,380,412,380,481,375,476,376,413,385,336,386,257,375,218,365,181,350,156,333,134,312,102,268"/>
+<area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="859,268,1032,320,1027,321,859,274"/>
+<area shape="poly" id="edge7_Node000005_Node000006" title=" " alt="" coords="470,294,632,274,697,263,692,265,633,279,471,299"/>
+<area shape="poly" id="edge9_Node000001_Node000007" title=" " alt="" coords="648,355,1032,343,1027,345,648,360"/>
+<area shape="rect" id="Node000008" href="$structplcopen_1_1core_1_1axis_1_1KinTransformRef.html" title=" " alt="" coords="698,389,841,434"/>
+<area shape="poly" id="edge11_Node000001_Node000008" title=" " alt="" coords="856,406,929,398,1005,382,1055,365,1060,363,1006,387,930,403,857,411"/>
+<area shape="rect" id="Node000009" href="$classplcopen_1_1core_1_1kin_1_1Kinematics.html" title=" " alt="" coords="302,401,438,446"/>
+<area shape="poly" id="edge12_Node000008_Node000009" title=" " alt="" coords="453,421,632,418,700,417,695,418,632,423,453,427"/>
+<area shape="rect" id="Node000010" href="$classplcopen_1_1core_1_1kin_1_1PoseKinematics.html" title=" " alt="" coords="302,471,438,515"/>
+<area shape="poly" id="edge13_Node000008_Node000010" title=" " alt="" coords="453,482,539,469,632,452,656,444,695,434,700,433,657,449,633,457,540,475,454,487"/>
+<area shape="rect" id="Node000011" href="$structplcopen_1_1core_1_1axis_1_1GroupArray.html" title=" " alt="" coords="656,459,883,503"/>
+<area shape="poly" id="edge14_Node000001_Node000011" title=" " alt="" coords="897,467,952,453,1004,432,1027,417,1048,399,1081,365,1086,363,1052,403,1031,421,1007,436,954,458,898,472"/>
+<area shape="rect" id="Node000012" href="$structplcopen_1_1core_1_1axis_1_1ToolData.html" title=" " alt="" coords="698,528,841,573"/>
+<area shape="poly" id="edge15_Node000001_Node000012" title=" " alt="" coords="856,545,932,530,970,516,1004,496,1035,466,1060,430,1078,394,1091,365,1095,362,1083,396,1065,433,1040,469,1007,500,972,521,934,535,857,550"/>
+</map>

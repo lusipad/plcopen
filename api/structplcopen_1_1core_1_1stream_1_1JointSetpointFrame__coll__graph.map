@@ -1,0 +1,5 @@
+<map id="plcopen::core::stream::JointSetpointFrame" name="plcopen::core::stream::JointSetpointFrame">
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,123,168,168"/>
+<area shape="rect" id="Node000002" href="$structplcopen_1_1core_1_1stream_1_1JointSetpoint.html" title=" " alt="" coords="5,5,168,50"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="89,64,89,123,84,122,84,68"/>
+</map>

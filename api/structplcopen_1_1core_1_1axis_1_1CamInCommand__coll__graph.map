@@ -1,0 +1,9 @@
+<map id="plcopen::core::axis::CamInCommand" name="plcopen::core::axis::CamInCommand">
+<area shape="rect" id="Node000001" title=" " alt="" coords="48,241,191,285"/>
+<area shape="rect" id="Node000002" href="$classplcopen_1_1core_1_1axis_1_1AxisModel.html" title=" " alt="" coords="5,123,149,168"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="92,180,114,240,109,240,89,185"/>
+<area shape="rect" id="Node000003" href="$structplcopen_1_1core_1_1exec_1_1CamTableView.html" title=" " alt="" coords="173,123,320,168"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="214,178,145,242,142,238,209,179"/>
+<area shape="rect" id="Node000004" href="$structplcopen_1_1core_1_1exec_1_1CamPoint.html" title=" " alt="" coords="173,5,320,50"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="248,64,249,123,244,122,245,68"/>
+</map>

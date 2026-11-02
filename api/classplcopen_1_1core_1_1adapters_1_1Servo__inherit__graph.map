@@ -1,0 +1,7 @@
+<map id="plcopen::core::adapters::Servo" name="plcopen::core::adapters::Servo">
+<area shape="rect" id="Node000001" title=" " alt="" coords="104,5,277,50"/>
+<area shape="rect" id="Node000002" href="$classplcopen_1_1core_1_1adapters_1_1FeetechServo.html" title=" " alt="" coords="5,98,179,143"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="158,59,117,100,114,95,154,62"/>
+<area shape="rect" id="Node000003" href="$classplcopen_1_1core_1_1adapters_1_1ServoSim.html" title=" " alt="" coords="203,98,376,143"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="226,58,268,98,263,97,224,63"/>
+</map>

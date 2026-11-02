@@ -1,0 +1,200 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh">
+<head>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=11"/>
+<meta name="generator" content="Doxygen 1.15.0"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>plcopen: core/stream/joint_group.h 文件参考</title>
+<link href="tabs.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="jquery.js"></script>
+<script type="text/javascript" src="dynsections.js"></script>
+<script type="text/javascript" src="clipboard.js"></script>
+<link href="navtree.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="navtreedata.js"></script>
+<script type="text/javascript" src="navtree.js"></script>
+<script type="text/javascript" src="cookie.js"></script>
+<link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<link href="doxygen.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+<div id="top"><!-- do not remove this div, it is closed by doxygen! -->
+<div id="titlearea">
+<table cellspacing="0" cellpadding="0">
+ <tbody>
+ <tr id="projectrow">
+  <td id="projectalign">
+   <div id="projectname">plcopen<span id="projectnumber">&#160;0.21.0</span>
+   </div>
+  </td>
+ </tr>
+ </tbody>
+</table>
+</div>
+<!-- end header part -->
+<!-- 制作者 Doxygen 1.15.0 -->
+<script type="text/javascript">
+var searchBox = new SearchBox("searchBox", "search/",'.html');
+</script>
+<script type="text/javascript">
+$(function() { codefold.init(); });
+</script>
+<script type="text/javascript" src="menudata.js"></script>
+<script type="text/javascript" src="menu.js"></script>
+<script type="text/javascript">
+$(function() {
+  initMenu('',true,false,'search.php','搜索',true);
+  $(function() { init_search(); });
+});
+</script>
+<div id="main-nav"></div>
+</div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+$(function(){initNavTree('joint__group_8h.html','',''); });
+</script>
+<div id="container">
+<div id="doc-content">
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<div id="MSearchResults">
+<div class="SRPage">
+<div id="SRIndex">
+<div id="SRResults"></div>
+<div class="SRStatus" id="Loading">载入中...</div>
+<div class="SRStatus" id="Searching">搜索中...</div>
+<div class="SRStatus" id="NoMatches">未找到</div>
+</div>
+</div>
+</div>
+</div>
+
+<div class="header">
+  <div class="headertitle"><div class="title">joint_group.h 文件参考</div></div>
+</div><!--header-->
+<div class="contents">
+<div class="textblock"><code>#include &lt;cmath&gt;</code><br />
+<code>#include &lt;cstddef&gt;</code><br />
+<code>#include &lt;cstdint&gt;</code><br />
+<code>#include &quot;<a class="el" href="error_8h_source.html">rt/error.h</a>&quot;</code><br />
+<code>#include &quot;<a class="el" href="filter_8h_source.html">stream/filter.h</a>&quot;</code><br />
+</div><div class="textblock"><div class="dynheader">
+joint_group.h 的引用(Include)关系图:</div>
+<div class="dyncontent">
+<div class="center"><img src="joint__group_8h__incl.png" border="0" usemap="#acore_2stream_2joint__group_8h" loading="lazy" alt=""/></div>
+<map name="acore_2stream_2joint__group_8h" id="acore_2stream_2joint__group_8h">
+<area shape="rect" title=" " alt="" coords="480,5,669,33"/>
+<area shape="rect" title=" " alt="" coords="606,325,668,353"/>
+<area shape="poly" title=" " alt="" coords="620,31,691,58,732,78,773,103,812,132,846,165,874,204,893,248,897,264,893,278,879,291,858,301,803,317,741,328,685,336,684,330,740,323,802,312,856,296,876,286,888,276,892,264,888,250,870,207,842,169,808,136,770,107,729,83,689,63,620,36"/>
+<area shape="rect" title=" " alt="" coords="9,401,79,428"/>
+<area shape="poly" title=" " alt="" coords="478,29,284,50,192,65,126,84,81,100,43,116,28,126,18,139,10,156,8,178,8,264,11,297,17,330,35,386,30,387,12,331,5,298,3,265,3,178,5,154,13,136,25,122,40,111,79,95,125,78,190,60,283,45,482,25"/>
+<area shape="rect" title=" " alt="" coords="630,401,695,428"/>
+<area shape="poly" title=" " alt="" coords="663,31,774,52,890,83,941,103,982,125,1010,149,1017,163,1020,177,1020,265,1018,288,1011,310,999,329,985,345,947,372,901,391,851,404,800,411,711,417,710,411,799,406,850,398,899,386,944,367,981,341,995,326,1006,308,1012,287,1015,264,1015,178,1012,165,1005,153,979,129,938,108,888,88,773,57,664,36"/>
+<area shape="rect" href="error_8h.html" title=" " alt="" coords="129,401,207,428"/>
+<area shape="poly" title=" " alt="" coords="478,31,351,50,213,80,152,99,103,122,70,149,62,163,59,178,59,264,61,284,66,302,86,337,112,366,139,391,134,391,108,370,82,340,61,304,55,285,53,265,53,177,57,161,66,145,100,118,150,94,211,75,350,45,482,28"/>
+<area shape="rect" href="filter_8h.html" title=" " alt="" coords="518,81,631,109"/>
+<area shape="poly" title=" " alt="" coords="576,31,577,67,572,64,573,36"/>
+<area shape="poly" title=" " alt="" coords="580,107,633,310,628,309,576,111"/>
+<area shape="poly" title=" " alt="" coords="631,95,678,100,731,110,784,128,833,154,858,175,873,195,884,218,893,249,896,280,886,309,866,333,839,354,808,371,774,385,711,405,710,400,772,380,805,366,836,349,862,329,881,306,891,280,888,250,879,220,869,197,854,178,831,159,782,132,730,115,677,105,632,100"/>
+<area shape="poly" title=" " alt="" coords="516,99,470,105,415,115,359,133,307,159,259,194,228,229,205,270,181,326,173,356,170,386,165,384,168,355,176,324,200,268,223,226,255,190,304,154,357,128,414,110,469,100,521,97"/>
+<area shape="rect" title=" " alt="" coords="794,249,878,277"/>
+<area shape="poly" title=" " alt="" coords="631,94,673,99,718,110,763,127,802,155,816,172,826,193,836,235,831,233,821,195,812,175,798,159,760,132,717,115,672,105,632,100"/>
+<area shape="rect" href="profile1d_8h.html" title=" " alt="" coords="350,249,466,277"/>
+<area shape="poly" title=" " alt="" coords="570,107,544,154,505,203,477,225,449,244,446,239,474,221,501,199,540,151,566,111"/>
+<area shape="rect" href="cycle_8h.html" title=" " alt="" coords="399,325,481,353"/>
+<area shape="poly" title=" " alt="" coords="516,104,411,125,364,140,347,149,335,158,317,187,311,215,316,244,332,275,355,301,388,321,382,321,352,305,327,279,311,245,306,215,312,185,331,155,344,144,362,135,410,120,520,101"/>
+<area shape="rect" href="time__optimal_8h.html" title=" " alt="" coords="345,165,490,193"/>
+<area shape="poly" title=" " alt="" coords="547,111,457,160,455,155,552,108"/>
+<area shape="rect" href="quintic__fast__path_8h.html" title=" " alt="" coords="641,157,788,201"/>
+<area shape="poly" title=" " alt="" coords="597,107,667,148,662,148,597,112"/>
+<area shape="poly" title=" " alt="" coords="449,275,594,322,589,323,449,280"/>
+<area shape="poly" title=" " alt="" coords="429,275,552,350,627,393,622,393,549,355,427,280"/>
+<area shape="poly" title=" " alt="" coords="348,276,292,297,262,310,235,327,205,357,183,389,180,385,201,353,232,323,260,305,290,292,352,274"/>
+<area shape="poly" title=" " alt="" coords="415,275,431,312,426,310,412,280"/>
+<area shape="rect" href="static__vector_8h.html" title=" " alt="" coords="246,325,376,353"/>
+<area shape="poly" title=" " alt="" coords="393,276,341,318,338,313,388,279"/>
+<area shape="poly" title=" " alt="" coords="480,351,617,397,612,398,479,356"/>
+<area shape="poly" title=" " alt="" coords="264,356,94,402,93,397,262,351"/>
+<area shape="poly" title=" " alt="" coords="288,353,208,396,206,391,283,354"/>
+<area shape="rect" title=" " alt="" coords="358,401,413,428"/>
+<area shape="poly" title=" " alt="" coords="325,351,364,390,359,389,323,356"/>
+<area shape="rect" title=" " alt="" coords="242,401,334,428"/>
+<area shape="poly" title=" " alt="" coords="309,352,298,388,295,384,304,355"/>
+<area shape="poly" title=" " alt="" coords="438,191,523,247,612,316,607,315,520,252,437,196"/>
+<area shape="poly" title=" " alt="" coords="431,191,596,351,639,391,634,390,593,355,429,195"/>
+<area shape="poly" title=" " alt="" coords="384,195,346,216,296,245,246,282,202,327,185,356,175,388,171,384,181,354,198,323,242,278,293,241,343,211,388,192"/>
+<area shape="poly" title=" " alt="" coords="417,191,413,235,409,232,414,196"/>
+<area shape="poly" title=" " alt="" coords="395,192,371,211,350,231,338,253,337,264,341,276,361,299,388,318,383,318,357,303,336,278,332,265,333,252,346,228,368,207,391,195"/>
+<area shape="poly" title=" " alt="" coords="706,200,652,313,649,309,702,203"/>
+<area shape="poly" title=" " alt="" coords="723,199,732,232,737,270,737,313,726,354,713,375,695,393,693,389,709,372,722,352,731,312,732,271,726,233,720,204"/>
+<area shape="poly" title=" " alt="" coords="719,199,722,235,719,277,707,319,696,338,682,355,665,366,644,376,593,389,532,396,465,399,332,399,276,400,231,403,222,405,221,399,230,398,275,394,332,394,465,394,531,391,592,384,643,371,662,362,678,351,692,335,702,317,714,276,717,235,716,204"/>
+<area shape="poly" title=" " alt="" coords="747,199,807,241,801,240,746,204"/>
+<area shape="poly" title=" " alt="" coords="638,201,473,247,471,242,643,199"/>
+</map>
+</div>
+</div>
+<p><a href="joint__group_8h_source.html">浏览该文件的源代码.</a></p>
+<table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 id="header-nested-classes" class="groupheader"><a id="nested-classes" name="nested-classes"></a>
+类</h2></td></tr>
+<tr class="memitem:plcopen_3A_3Acore_3A_3Astream_3A_3AJointCommand" id="r_plcopen_3A_3Acore_3A_3Astream_3A_3AJointCommand"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1stream_1_1JointCommand.html">plcopen::core::stream::JointCommand</a></td></tr>
+<tr class="memitem:plcopen_3A_3Acore_3A_3Astream_3A_3AJointCommandFrame" id="r_plcopen_3A_3Acore_3A_3Astream_3A_3AJointCommandFrame"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1stream_1_1JointCommandFrame.html">plcopen::core::stream::JointCommandFrame</a></td></tr>
+<tr class="memitem:plcopen_3A_3Acore_3A_3Astream_3A_3AJointSetpoint" id="r_plcopen_3A_3Acore_3A_3Astream_3A_3AJointSetpoint"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1stream_1_1JointSetpoint.html">plcopen::core::stream::JointSetpoint</a></td></tr>
+<tr class="memitem:plcopen_3A_3Acore_3A_3Astream_3A_3AJointSetpointFrame" id="r_plcopen_3A_3Acore_3A_3Astream_3A_3AJointSetpointFrame"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1stream_1_1JointSetpointFrame.html">plcopen::core::stream::JointSetpointFrame</a></td></tr>
+<tr class="memitem:plcopen_3A_3Acore_3A_3Astream_3A_3AJointStreamConfig" id="r_plcopen_3A_3Acore_3A_3Astream_3A_3AJointStreamConfig"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1stream_1_1JointStreamConfig.html">plcopen::core::stream::JointStreamConfig</a></td></tr>
+<tr class="memitem:plcopen_3A_3Acore_3A_3Astream_3A_3AJointStreamGroupConfig" id="r_plcopen_3A_3Acore_3A_3Astream_3A_3AJointStreamGroupConfig"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1stream_1_1JointStreamGroupConfig.html">plcopen::core::stream::JointStreamGroupConfig</a></td></tr>
+<tr class="memitem:plcopen_3A_3Acore_3A_3Astream_3A_3AJointStreamGroup" id="r_plcopen_3A_3Acore_3A_3Astream_3A_3AJointStreamGroup"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1stream_1_1JointStreamGroup.html">plcopen::core::stream::JointStreamGroup</a></td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 id="header-namespaces" class="groupheader"><a id="namespaces" name="namespaces"></a>
+命名空间</h2></td></tr>
+<tr class="memitem:plcopen" id="r_plcopen"><td class="memItemLeft" align="right" valign="top">namespace &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen.html">plcopen</a></td></tr>
+<tr class="memitem:plcopen_3A_3Acore" id="r_plcopen_3A_3Acore"><td class="memItemLeft" align="right" valign="top">namespace &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core.html">plcopen::core</a></td></tr>
+<tr class="memitem:plcopen_3A_3Acore_3A_3Astream" id="r_plcopen_3A_3Acore_3A_3Astream"><td class="memItemLeft" align="right" valign="top">namespace &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1stream.html">plcopen::core::stream</a></td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 id="header-enum-members" class="groupheader"><a id="enum-members" name="enum-members"></a>
+枚举</h2></td></tr>
+<tr class="memitem:a014a9d8e0e8cc4d8ba2e7c845de22074" id="r_a014a9d8e0e8cc4d8ba2e7c845de22074"><td class="memItemLeft" align="right" valign="top">enum class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1stream.html#a014a9d8e0e8cc4d8ba2e7c845de22074">plcopen::core::stream::JointFrameMode</a> { <a class="el" href="namespaceplcopen_1_1core_1_1stream.html#a014a9d8e0e8cc4d8ba2e7c845de22074a9ef597740ab098c2a61e5ec6e53eee4b">plcopen::core::stream::upsample</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1stream.html#a014a9d8e0e8cc4d8ba2e7c845de22074a7caa701b2bd5a182b80c72b9bdf88e2d">plcopen::core::stream::direct</a>
+ }</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 id="header-var-members" class="groupheader"><a id="var-members" name="var-members"></a>
+变量</h2></td></tr>
+<tr class="memitem:a5c9faea23615191b23d041ab405e8c11" id="r_a5c9faea23615191b23d041ab405e8c11"><td class="memItemLeft" align="right" valign="top">constexpr std::size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1stream.html#a5c9faea23615191b23d041ab405e8c11">plcopen::core::stream::JointStreamMaxJoints</a> = 48</td></tr>
+</table>
+</div><!-- contents -->
+</div><!-- doc-content -->
+<div id="page-nav" class="page-nav-panel">
+<div id="page-nav-resize-handle"></div>
+<div id="page-nav-tree">
+<div id="page-nav-contents">
+</div><!-- page-nav-contents -->
+</div><!-- page-nav-tree -->
+</div><!-- page-nav -->
+</div><!-- container -->
+<!-- start footer part -->
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+  <ul>
+    <li class="navelem"><a href="dir_4270bfced15e0e73154b13468c7c9ad9.html">core</a></li><li class="navelem"><a href="dir_970c3e38a8f01d1f791870e7f41bfac6.html">stream</a></li><li class="navelem"><a href="joint__group_8h.html">joint_group.h</a></li>
+    <li class="footer">制作者 <a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.15.0 </li>
+  </ul>
+</div>
+</body>
+</html>

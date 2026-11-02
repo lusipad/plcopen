@@ -1,0 +1,26 @@
+var structplcopen_1_1core_1_1axis_1_1AxisSnapshot =
+[
+    [ "active_command_id", "structplcopen_1_1core_1_1axis_1_1AxisSnapshot.html#a4045889ada2e7e7493db6126e8f673f8", null ],
+    [ "active_command_reached_target", "structplcopen_1_1core_1_1axis_1_1AxisSnapshot.html#a153c90a4e0bd2d1ffa9c06385001d6b9", null ],
+    [ "actual_acceleration", "structplcopen_1_1core_1_1axis_1_1AxisSnapshot.html#a577e0a225f2339dc2aa13c37e3e5df5e", null ],
+    [ "actual_position", "structplcopen_1_1core_1_1axis_1_1AxisSnapshot.html#a5a35544b3e2a4332bbaa701de194e429", null ],
+    [ "actual_torque", "structplcopen_1_1core_1_1axis_1_1AxisSnapshot.html#aed3635b098c2d5f536eb908e33a81195", null ],
+    [ "actual_velocity", "structplcopen_1_1core_1_1axis_1_1AxisSnapshot.html#a70c8495a0955f92e3cf90e599415e5cd", null ],
+    [ "command_acceleration", "structplcopen_1_1core_1_1axis_1_1AxisSnapshot.html#a6759afa7b6d019981a019e4d0e4a96c9", null ],
+    [ "command_position", "structplcopen_1_1core_1_1axis_1_1AxisSnapshot.html#a9620d9401f24313f50215daa49291f37", null ],
+    [ "command_torque", "structplcopen_1_1core_1_1axis_1_1AxisSnapshot.html#a9405bc3d8fc8a5581847b743e3138481", null ],
+    [ "command_torque_limit", "structplcopen_1_1core_1_1axis_1_1AxisSnapshot.html#aac5c47bdebcb8b4e490993371da8b444", null ],
+    [ "command_velocity", "structplcopen_1_1core_1_1axis_1_1AxisSnapshot.html#a3af6e64c6adb418e5c5b89ec716aa3cb", null ],
+    [ "error", "structplcopen_1_1core_1_1axis_1_1AxisSnapshot.html#ae80effae8aa45bec6d6b70500a512bf0", null ],
+    [ "error_id", "structplcopen_1_1core_1_1axis_1_1AxisSnapshot.html#afa421b95f24dc3dd47336abc47a3e270", null ],
+    [ "homed", "structplcopen_1_1core_1_1axis_1_1AxisSnapshot.html#a6e672321cbf207faf5a244b85204a5e4", null ],
+    [ "last_completed_command_id", "structplcopen_1_1core_1_1axis_1_1AxisSnapshot.html#a3b3c2e1835ecd6dfb54544f69f92cf9e", null ],
+    [ "powered", "structplcopen_1_1core_1_1axis_1_1AxisSnapshot.html#a01b8f841f61e6965bf22994e5a83f577", null ],
+    [ "status", "structplcopen_1_1core_1_1axis_1_1AxisSnapshot.html#a737c899e43015573f06e0651b45c384d", null ],
+    [ "torque_acceleration_limit", "structplcopen_1_1core_1_1axis_1_1AxisSnapshot.html#a6f5960bd5652cac510871a27f589b792", null ],
+    [ "torque_deceleration_limit", "structplcopen_1_1core_1_1axis_1_1AxisSnapshot.html#a597df12fd17d13c98213e99b98bee14d", null ],
+    [ "torque_direction", "structplcopen_1_1core_1_1axis_1_1AxisSnapshot.html#ab4fc87b529a6ad9f5de9b2b56cb4b50c", null ],
+    [ "torque_jerk_limit", "structplcopen_1_1core_1_1axis_1_1AxisSnapshot.html#a23442cc79eadf46bb5d6c0b2e206f2de", null ],
+    [ "torque_mode", "structplcopen_1_1core_1_1axis_1_1AxisSnapshot.html#a5188cc3a8889ebc18ab1848fdad83a2b", null ],
+    [ "torque_velocity_limit", "structplcopen_1_1core_1_1axis_1_1AxisSnapshot.html#ad70c7f3c994a009f74021f5676385075", null ]
+];

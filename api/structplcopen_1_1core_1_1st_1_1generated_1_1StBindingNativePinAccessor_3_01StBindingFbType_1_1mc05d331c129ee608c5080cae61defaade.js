@@ -1,0 +1,5 @@
+var structplcopen_1_1core_1_1st_1_1generated_1_1StBindingNativePinAccessor_3_01StBindingFbType_1_1mc05d331c129ee608c5080cae61defaade =
+[
+    [ "fb_type", "structplcopen_1_1core_1_1st_1_1generated_1_1StBindingNativePinAccessor_3_01StBindingFbType_1_1mc05d331c129ee608c5080cae61defaade.html#ae3c1069f59b02703c57a495bbba3ffce", null ],
+    [ "value_type", "structplcopen_1_1core_1_1st_1_1generated_1_1StBindingNativePinAccessor_3_01StBindingFbType_1_1mc05d331c129ee608c5080cae61defaade.html#ace2abcedfccfcb08d05e50856cd2ccdb", null ]
+];

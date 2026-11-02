@@ -1,0 +1,5 @@
+var structplcopen_1_1core_1_1st_1_1generated_1_1StBindingNativePinAccessor_3_01StBindingFbType_1_1mc__torque__control_00_0113U_01_4 =
+[
+    [ "fb_type", "structplcopen_1_1core_1_1st_1_1generated_1_1StBindingNativePinAccessor_3_01StBindingFbType_1_1mc__torque__control_00_0113U_01_4.html#ab3ad0113c455c895f2507fb1ebfa6712", null ],
+    [ "value_type", "structplcopen_1_1core_1_1st_1_1generated_1_1StBindingNativePinAccessor_3_01StBindingFbType_1_1mc__torque__control_00_0113U_01_4.html#a5f0155548b843ea3eb9ca2be57a7743d", null ]
+];

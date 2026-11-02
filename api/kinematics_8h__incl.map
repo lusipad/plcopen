@@ -1,0 +1,23 @@
+<map id="core/kin/kinematics.h" name="core/kin/kinematics.h">
+<area shape="rect" id="Node000001" title=" " alt="" coords="194,5,355,33"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="5,232,75,260"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="225,35,182,53,131,79,84,114,63,134,46,158,37,187,37,217,32,216,32,186,42,155,59,131,80,110,129,74,180,49,229,32"/>
+<area shape="rect" id="Node000003" href="$geometry_8h.html" title=" " alt="" coords="207,81,342,109"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="276,31,277,66,272,64,273,36"/>
+<area shape="rect" id="Node000006" href="$error_8h.html" title=" " alt="" coords="401,232,479,260"/>
+<area shape="poly" id="edge12_Node000001_Node000006" title=" " alt="" coords="303,31,339,50,379,78,416,113,444,156,451,187,448,219,444,216,445,188,439,158,412,116,375,82,336,55,303,36"/>
+<area shape="poly" id="edge5_Node000003_Node000002" title=" " alt="" coords="204,101,171,108,134,119,98,135,67,159,57,171,51,186,44,218,39,216,46,185,53,169,63,155,95,130,132,114,170,103,209,98"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="232,157,317,184"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="276,107,277,142,272,140,273,111"/>
+<area shape="rect" id="Node000005" title=" " alt="" coords="341,157,403,184"/>
+<area shape="poly" id="edge4_Node000003_Node000005" title=" " alt="" coords="293,107,346,147,340,147,291,112"/>
+<area shape="poly" id="edge6_Node000003_Node000006" title=" " alt="" coords="334,107,378,125,399,138,417,155,433,185,440,218,436,216,428,187,413,158,396,143,376,130,334,112"/>
+<area shape="rect" id="Node000007" href="$static__vector_8h.html" title=" " alt="" coords="78,157,208,184"/>
+<area shape="poly" id="edge7_Node000003_Node000007" title=" " alt="" coords="249,111,181,151,178,147,253,108"/>
+<area shape="poly" id="edge9_Node000007_Node000002" title=" " alt="" coords="127,184,72,225,69,221,122,186"/>
+<area shape="poly" id="edge11_Node000007_Node000006" title=" " alt="" coords="197,182,388,230,384,233,196,188"/>
+<area shape="rect" id="Node000008" title=" " alt="" coords="107,232,162,260"/>
+<area shape="poly" id="edge8_Node000007_Node000008" title=" " alt="" coords="143,183,140,218,135,215,139,187"/>
+<area shape="rect" id="Node000009" title=" " alt="" coords="186,232,278,260"/>
+<area shape="poly" id="edge10_Node000007_Node000009" title=" " alt="" coords="160,182,207,222,202,222,158,187"/>
+</map>

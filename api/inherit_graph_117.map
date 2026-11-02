@@ -1,0 +1,25 @@
+<map id="类继承关系图" name="类继承关系图">
+<area shape="rect" id="Node000000" href="$classplcopen_1_1core_1_1fb_1_1GroupConfigReadFb.html" title=" " alt="" coords="5,283,156,327"/>
+<area shape="rect" id="Node000001" href="$classplcopen_1_1core_1_1fb_1_1FbGroupReadJoggingDynamics.html" title=" " alt="" coords="209,5,432,50"/>
+<area shape="poly" id="edge38_Node000000_Node000001" title=" " alt="" coords="88,267,103,220,126,164,159,108,179,83,202,60,223,49,219,53,205,64,183,86,163,111,131,166,108,221,93,268"/>
+<area shape="rect" id="Node000002" href="$classplcopen_1_1core_1_1fb_1_1FbGroupReadParameter.html" title=" " alt="" coords="232,75,408,119"/>
+<area shape="poly" id="edge39_Node000000_Node000002" title=" " alt="" coords="96,268,138,197,167,161,202,129,233,114,230,118,205,134,171,164,142,200,101,270"/>
+<area shape="rect" id="Node000003" href="$classplcopen_1_1core_1_1fb_1_1FbGroupReadPayload.html" title=" " alt="" coords="240,144,400,189"/>
+<area shape="poly" id="edge40_Node000000_Node000003" title=" " alt="" coords="111,270,153,233,202,199,242,183,238,187,205,203,156,237,115,273"/>
+<area shape="rect" id="Node000004" href="$classplcopen_1_1core_1_1fb_1_1FbGroupReadPayloadData.html" title=" " alt="" coords="225,213,416,258"/>
+<area shape="poly" id="edge41_Node000000_Node000004" title=" " alt="" coords="169,277,242,257,238,261,172,281"/>
+<area shape="rect" id="Node000005" href="$classplcopen_1_1core_1_1fb_1_1FbGroupReadRigidBodyDynamic.html" title=" " alt="" coords="204,283,437,327"/>
+<area shape="poly" id="edge42_Node000000_Node000005" title=" " alt="" coords="170,303,205,304,201,306,172,307"/>
+<area shape="rect" id="Node000006" href="$classplcopen_1_1core_1_1fb_1_1FbGroupReadSWLimits.html" title=" " alt="" coords="235,352,406,397"/>
+<area shape="poly" id="edge43_Node000000_Node000006" title=" " alt="" coords="170,328,243,350,238,353,172,334"/>
+<area shape="rect" id="Node000007" href="$classplcopen_1_1core_1_1fb_1_1FbGroupReadTool.html" title=" " alt="" coords="252,421,389,466"/>
+<area shape="poly" id="edge44_Node000000_Node000007" title=" " alt="" coords="113,336,156,373,205,407,254,428,249,429,202,411,153,377,113,341"/>
+<area shape="rect" id="Node000008" href="$classplcopen_1_1core_1_1fb_1_1FbGroupReadToolData.html" title=" " alt="" coords="237,491,404,535"/>
+<area shape="poly" id="edge45_Node000000_Node000008" title=" " alt="" coords="99,339,142,410,171,446,205,476,240,495,234,496,202,481,167,449,138,413,98,344"/>
+<area shape="rect" id="Node000009" href="$classplcopen_1_1core_1_1fb_1_1GroupPathDynamicsReadFb.html" title=" " alt="" coords="219,560,422,605"/>
+<area shape="poly" id="edge46_Node000000_Node000009" title=" " alt="" coords="91,340,108,389,131,444,163,499,183,524,205,546,224,559,218,559,202,550,179,527,159,502,126,446,103,390,90,345"/>
+<area shape="rect" id="Node000010" href="$classplcopen_1_1core_1_1fb_1_1FbGroupReadDefaultDynamics.html" title=" " alt="" coords="494,525,716,570"/>
+<area shape="poly" id="edge47_Node000009_Node000010" title=" " alt="" coords="436,566,496,561,491,562,437,571"/>
+<area shape="rect" id="Node000011" href="$classplcopen_1_1core_1_1fb_1_1FbGroupReadReferenceDynamics.html" title=" " alt="" coords="485,595,725,639"/>
+<area shape="poly" id="edge48_Node000009_Node000011" title=" " alt="" coords="437,594,487,602,482,602,437,599"/>
+</map>

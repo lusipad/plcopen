@@ -1,0 +1,7 @@
+<map id="类继承关系图" name="类继承关系图">
+<area shape="rect" id="Node000000" href="$classplcopen_1_1core_1_1kin_1_1PoseKinematics.html" title=" " alt="" coords="5,40,142,85"/>
+<area shape="rect" id="Node000001" href="$classplcopen_1_1core_1_1kin_1_1SerialChain.html" title=" " alt="" coords="192,5,328,50"/>
+<area shape="poly" id="edge108_Node000000_Node000001" title=" " alt="" coords="156,44,194,39,189,41,158,49"/>
+<area shape="rect" id="Node000002" href="$classplcopen_1_1core_1_1kin_1_1SphericalWrist6R.html" title=" " alt="" coords="190,75,330,119"/>
+<area shape="poly" id="edge109_Node000000_Node000002" title=" " alt="" coords="157,75,192,84,187,84,157,81"/>
+</map>

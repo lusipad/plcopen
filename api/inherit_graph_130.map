@@ -1,0 +1,11 @@
+<map id="类继承关系图" name="类继承关系图">
+<area shape="rect" id="Node000000" href="$classplcopen_1_1core_1_1fb_1_1ProfileFbBase.html" title=" " alt="" coords="5,75,143,119"/>
+<area shape="rect" id="Node000001" href="$classplcopen_1_1core_1_1fb_1_1FbAccelerationProfile.html" title=" " alt="" coords="192,5,352,50"/>
+<area shape="poly" id="edge90_Node000000_Node000001" title=" " alt="" coords="153,67,208,49,204,52,155,71"/>
+<area shape="rect" id="Node000002" href="$classplcopen_1_1core_1_1fb_1_1FbPositionProfile.html" title=" " alt="" coords="203,75,340,119"/>
+<area shape="poly" id="edge91_Node000000_Node000002" title=" " alt="" coords="158,94,205,96,200,98,159,100"/>
+<area shape="rect" id="Node000003" href="$classplcopen_1_1core_1_1fb_1_1VelocityProfileFbBase.html" title=" " alt="" coords="191,144,353,189"/>
+<area shape="poly" id="edge92_Node000000_Node000003" title=" " alt="" coords="154,122,208,143,203,144,154,128"/>
+<area shape="rect" id="Node000004" href="$classplcopen_1_1core_1_1fb_1_1FbVelocityProfile.html" title=" " alt="" coords="401,144,538,189"/>
+<area shape="poly" id="edge93_Node000003_Node000004" title=" " alt="" coords="368,164,403,166,398,166,368,169"/>
+</map>

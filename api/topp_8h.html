@@ -1,0 +1,184 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh">
+<head>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=11"/>
+<meta name="generator" content="Doxygen 1.15.0"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>plcopen: core/plan/topp.h 文件参考</title>
+<link href="tabs.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="jquery.js"></script>
+<script type="text/javascript" src="dynsections.js"></script>
+<script type="text/javascript" src="clipboard.js"></script>
+<link href="navtree.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="navtreedata.js"></script>
+<script type="text/javascript" src="navtree.js"></script>
+<script type="text/javascript" src="cookie.js"></script>
+<link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<link href="doxygen.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+<div id="top"><!-- do not remove this div, it is closed by doxygen! -->
+<div id="titlearea">
+<table cellspacing="0" cellpadding="0">
+ <tbody>
+ <tr id="projectrow">
+  <td id="projectalign">
+   <div id="projectname">plcopen<span id="projectnumber">&#160;0.21.0</span>
+   </div>
+  </td>
+ </tr>
+ </tbody>
+</table>
+</div>
+<!-- end header part -->
+<!-- 制作者 Doxygen 1.15.0 -->
+<script type="text/javascript">
+var searchBox = new SearchBox("searchBox", "search/",'.html');
+</script>
+<script type="text/javascript">
+$(function() { codefold.init(); });
+</script>
+<script type="text/javascript" src="menudata.js"></script>
+<script type="text/javascript" src="menu.js"></script>
+<script type="text/javascript">
+$(function() {
+  initMenu('',true,false,'search.php','搜索',true);
+  $(function() { init_search(); });
+});
+</script>
+<div id="main-nav"></div>
+</div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+$(function(){initNavTree('topp_8h.html','',''); });
+</script>
+<div id="container">
+<div id="doc-content">
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<div id="MSearchResults">
+<div class="SRPage">
+<div id="SRIndex">
+<div id="SRResults"></div>
+<div class="SRStatus" id="Loading">载入中...</div>
+<div class="SRStatus" id="Searching">搜索中...</div>
+<div class="SRStatus" id="NoMatches">未找到</div>
+</div>
+</div>
+</div>
+</div>
+
+<div class="header">
+  <div class="headertitle"><div class="title">topp.h 文件参考</div></div>
+</div><!--header-->
+<div class="contents">
+<div class="textblock"><code>#include &lt;algorithm&gt;</code><br />
+<code>#include &lt;cmath&gt;</code><br />
+<code>#include &lt;cstddef&gt;</code><br />
+<code>#include &quot;<a class="el" href="geometry_8h_source.html">geom/geometry.h</a>&quot;</code><br />
+<code>#include &quot;<a class="el" href="error_8h_source.html">rt/error.h</a>&quot;</code><br />
+</div><div class="textblock"><div class="dynheader">
+topp.h 的引用(Include)关系图:</div>
+<div class="dyncontent">
+<div class="center"><img src="topp_8h__incl.png" border="0" usemap="#acore_2plan_2topp_8h" loading="lazy" alt=""/></div>
+<map name="acore_2plan_2topp_8h" id="acore_2plan_2topp_8h">
+<area shape="rect" title=" " alt="" coords="150,5,276,33"/>
+<area shape="rect" title=" " alt="" coords="5,157,90,184"/>
+<area shape="poly" title=" " alt="" coords="200,36,75,148,71,144,198,31"/>
+<area shape="rect" title=" " alt="" coords="114,157,176,184"/>
+<area shape="poly" title=" " alt="" coords="209,32,159,144,155,141,205,35"/>
+<area shape="rect" title=" " alt="" coords="185,232,254,260"/>
+<area shape="poly" title=" " alt="" coords="216,32,221,217,216,216,211,35"/>
+<area shape="rect" href="geometry_8h.html" title=" " alt="" coords="250,81,386,109"/>
+<area shape="poly" title=" " alt="" coords="232,31,290,72,285,73,231,36"/>
+<area shape="rect" href="error_8h.html" title=" " alt="" coords="473,232,550,260"/>
+<area shape="poly" title=" " alt="" coords="276,31,338,50,400,79,444,111,478,155,495,186,506,219,501,217,490,189,473,158,440,115,397,83,336,55,277,36"/>
+<area shape="poly" title=" " alt="" coords="269,112,106,156,104,151,270,107"/>
+<area shape="poly" title=" " alt="" coords="285,111,190,153,188,148,289,108"/>
+<area shape="poly" title=" " alt="" coords="312,108,239,221,235,217,307,110"/>
+<area shape="poly" title=" " alt="" coords="357,107,401,127,445,155,476,186,499,220,494,218,471,189,442,159,399,131,356,112"/>
+<area shape="rect" href="static__vector_8h.html" title=" " alt="" coords="301,157,431,184"/>
+<area shape="poly" title=" " alt="" coords="328,107,352,144,347,143,326,112"/>
+<area shape="poly" title=" " alt="" coords="343,184,260,228,258,223,337,185"/>
+<area shape="poly" title=" " alt="" coords="393,182,475,225,469,225,392,187"/>
+<area shape="rect" title=" " alt="" coords="278,232,334,260"/>
+<area shape="poly" title=" " alt="" coords="358,184,328,222,325,218,353,186"/>
+<area shape="rect" title=" " alt="" coords="358,232,449,260"/>
+<area shape="poly" title=" " alt="" coords="374,183,393,220,388,218,371,187"/>
+</map>
+</div>
+</div><div class="textblock"><div class="dynheader">
+此图展示该文件被哪些文件直接或间接地引用了:</div>
+<div class="dyncontent">
+<div class="center"><img src="topp_8h__dep__incl.png" border="0" usemap="#acore_2plan_2topp_8hdep" loading="lazy" alt=""/></div>
+<map name="acore_2plan_2topp_8hdep" id="acore_2plan_2topp_8hdep">
+<area shape="rect" title=" " alt="" coords="36,5,163,33"/>
+<area shape="rect" href="topp__executor_8h.html" title=" " alt="" coords="5,157,194,184"/>
+<area shape="poly" title=" " alt="" coords="83,44,70,82,68,95,70,108,80,133,93,156,87,156,75,136,65,109,63,95,65,80,81,49"/>
+<area shape="rect" href="topp__jerk_8h.html" title=" " alt="" coords="79,81,237,109"/>
+<area shape="poly" title=" " alt="" coords="120,43,150,80,145,81,119,48"/>
+<area shape="poly" title=" " alt="" coords="141,120,112,158,108,154,136,122"/>
+</map>
+</div>
+</div>
+<p><a href="topp_8h_source.html">浏览该文件的源代码.</a></p>
+<table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 id="header-nested-classes" class="groupheader"><a id="nested-classes" name="nested-classes"></a>
+类</h2></td></tr>
+<tr class="memitem:plcopen_3A_3Acore_3A_3Aplan_3A_3AToppAxisLimits" id="r_plcopen_3A_3Acore_3A_3Aplan_3A_3AToppAxisLimits"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1plan_1_1ToppAxisLimits.html">plcopen::core::plan::ToppAxisLimits</a></td></tr>
+<tr class="memitem:plcopen_3A_3Acore_3A_3Aplan_3A_3AToppResult" id="r_plcopen_3A_3Acore_3A_3Aplan_3A_3AToppResult"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1plan_1_1ToppResult.html">plcopen::core::plan::ToppResult</a></td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 id="header-namespaces" class="groupheader"><a id="namespaces" name="namespaces"></a>
+命名空间</h2></td></tr>
+<tr class="memitem:plcopen" id="r_plcopen"><td class="memItemLeft" align="right" valign="top">namespace &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen.html">plcopen</a></td></tr>
+<tr class="memitem:plcopen_3A_3Acore" id="r_plcopen_3A_3Acore"><td class="memItemLeft" align="right" valign="top">namespace &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core.html">plcopen::core</a></td></tr>
+<tr class="memitem:plcopen_3A_3Acore_3A_3Aplan" id="r_plcopen_3A_3Acore_3A_3Aplan"><td class="memItemLeft" align="right" valign="top">namespace &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1plan.html">plcopen::core::plan</a></td></tr>
+<tr class="memitem:plcopen_3A_3Acore_3A_3Aplan_3A_3Atopp_5Fdetail" id="r_plcopen_3A_3Acore_3A_3Aplan_3A_3Atopp_5Fdetail"><td class="memItemLeft" align="right" valign="top">namespace &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1plan_1_1topp__detail.html">plcopen::core::plan::topp_detail</a></td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 id="header-func-members" class="groupheader"><a id="func-members" name="func-members"></a>
+函数</h2></td></tr>
+<tr class="memitem:ad580c7f23d96fb99a410a4c5d37e65bd" id="r_ad580c7f23d96fb99a410a4c5d37e65bd"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1plan_1_1topp__detail.html#ad580c7f23d96fb99a410a4c5d37e65bd">plcopen::core::plan::topp_detail::velocity_limit_squared</a> (<a class="el" href="structplcopen_1_1core_1_1geom_1_1Vec3.html">geom::Vec3</a> q_s, const <a class="el" href="structplcopen_1_1core_1_1plan_1_1ToppAxisLimits.html">ToppAxisLimits</a> limits[3])</td></tr>
+<tr class="memitem:a2a70bfb2297e9780ab5bfc44531457b9" id="r_a2a70bfb2297e9780ab5bfc44531457b9"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1plan_1_1topp__detail.html#a2a70bfb2297e9780ab5bfc44531457b9">plcopen::core::plan::topp_detail::acceleration_velocity_limit</a> (double q_s_i, double q_ss_i, double a_max_i)</td></tr>
+<tr class="memitem:afef5ee5966e9465eb851dc0f768f7e6a" id="r_afef5ee5966e9465eb851dc0f768f7e6a"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1plan_1_1topp__detail.html#afef5ee5966e9465eb851dc0f768f7e6a">plcopen::core::plan::topp_detail::cross_axis_velocity_limit</a> (const double q_s[3], const double q_ss[3], const <a class="el" href="structplcopen_1_1core_1_1plan_1_1ToppAxisLimits.html">ToppAxisLimits</a> limits[3])</td></tr>
+<tr class="memitem:a1556a41e6c1c98fff0497620aeff1aed" id="r_a1556a41e6c1c98fff0497620aeff1aed"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1plan_1_1topp__detail.html#a1556a41e6c1c98fff0497620aeff1aed">plcopen::core::plan::topp_detail::axis_backward_reach</a> (double q_s_i, double q_ss_i, double a_max_i, double x_next, double ds)</td></tr>
+<tr class="memitem:a4ddc567d2606fce52a6375146e963131" id="r_a4ddc567d2606fce52a6375146e963131"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1plan_1_1topp__detail.html#a4ddc567d2606fce52a6375146e963131">plcopen::core::plan::topp_detail::axis_forward_reach</a> (double q_s_i, double q_ss_i, double a_max_i, double x_k, double ds)</td></tr>
+<tr class="memitem:a73a27b9f713ffe6e8d8bd729ea3d74a7" id="r_a73a27b9f713ffe6e8d8bd729ea3d74a7"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classplcopen_1_1core_1_1rt_1_1Result.html">rt::Result</a>&lt; <a class="el" href="structplcopen_1_1core_1_1plan_1_1ToppResult.html">ToppResult</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1plan.html#a73a27b9f713ffe6e8d8bd729ea3d74a7">plcopen::core::plan::solve_topp_ra</a> (const <a class="el" href="structplcopen_1_1core_1_1geom_1_1PathSegment.html">geom::PathSegment</a> &amp;path, const <a class="el" href="structplcopen_1_1core_1_1plan_1_1ToppAxisLimits.html">ToppAxisLimits</a> limits[3], int grid_size)</td></tr>
+</table>
+</div><!-- contents -->
+</div><!-- doc-content -->
+<div id="page-nav" class="page-nav-panel">
+<div id="page-nav-resize-handle"></div>
+<div id="page-nav-tree">
+<div id="page-nav-contents">
+</div><!-- page-nav-contents -->
+</div><!-- page-nav-tree -->
+</div><!-- page-nav -->
+</div><!-- container -->
+<!-- start footer part -->
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+  <ul>
+    <li class="navelem"><a href="dir_4270bfced15e0e73154b13468c7c9ad9.html">core</a></li><li class="navelem"><a href="dir_bfb3738b0bd9198ff839e79843aee70d.html">plan</a></li><li class="navelem"><a href="topp_8h.html">topp.h</a></li>
+    <li class="footer">制作者 <a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.15.0 </li>
+  </ul>
+</div>
+</body>
+</html>

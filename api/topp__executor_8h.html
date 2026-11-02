@@ -1,0 +1,207 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh">
+<head>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=11"/>
+<meta name="generator" content="Doxygen 1.15.0"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>plcopen: core/plan/topp_executor.h 文件参考</title>
+<link href="tabs.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="jquery.js"></script>
+<script type="text/javascript" src="dynsections.js"></script>
+<script type="text/javascript" src="clipboard.js"></script>
+<link href="navtree.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="navtreedata.js"></script>
+<script type="text/javascript" src="navtree.js"></script>
+<script type="text/javascript" src="cookie.js"></script>
+<link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<link href="doxygen.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+<div id="top"><!-- do not remove this div, it is closed by doxygen! -->
+<div id="titlearea">
+<table cellspacing="0" cellpadding="0">
+ <tbody>
+ <tr id="projectrow">
+  <td id="projectalign">
+   <div id="projectname">plcopen<span id="projectnumber">&#160;0.21.0</span>
+   </div>
+  </td>
+ </tr>
+ </tbody>
+</table>
+</div>
+<!-- end header part -->
+<!-- 制作者 Doxygen 1.15.0 -->
+<script type="text/javascript">
+var searchBox = new SearchBox("searchBox", "search/",'.html');
+</script>
+<script type="text/javascript">
+$(function() { codefold.init(); });
+</script>
+<script type="text/javascript" src="menudata.js"></script>
+<script type="text/javascript" src="menu.js"></script>
+<script type="text/javascript">
+$(function() {
+  initMenu('',true,false,'search.php','搜索',true);
+  $(function() { init_search(); });
+});
+</script>
+<div id="main-nav"></div>
+</div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+$(function(){initNavTree('topp__executor_8h.html','',''); });
+</script>
+<div id="container">
+<div id="doc-content">
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<div id="MSearchResults">
+<div class="SRPage">
+<div id="SRIndex">
+<div id="SRResults"></div>
+<div class="SRStatus" id="Loading">载入中...</div>
+<div class="SRStatus" id="Searching">搜索中...</div>
+<div class="SRStatus" id="NoMatches">未找到</div>
+</div>
+</div>
+</div>
+</div>
+
+<div class="header">
+  <div class="headertitle"><div class="title">topp_executor.h 文件参考</div></div>
+</div><!--header-->
+<div class="contents">
+<div class="textblock"><code>#include &lt;algorithm&gt;</code><br />
+<code>#include &lt;cmath&gt;</code><br />
+<code>#include &lt;cstdint&gt;</code><br />
+<code>#include &quot;<a class="el" href="geometry_8h_source.html">geom/geometry.h</a>&quot;</code><br />
+<code>#include &quot;<a class="el" href="profile1d_8h_source.html">otg/profile1d.h</a>&quot;</code><br />
+<code>#include &quot;<a class="el" href="time__optimal_8h_source.html">otg/time_optimal.h</a>&quot;</code><br />
+<code>#include &quot;<a class="el" href="topp_8h_source.html">plan/topp.h</a>&quot;</code><br />
+<code>#include &quot;<a class="el" href="topp__jerk_8h_source.html">plan/topp_jerk.h</a>&quot;</code><br />
+<code>#include &quot;<a class="el" href="error_8h_source.html">rt/error.h</a>&quot;</code><br />
+</div><div class="textblock"><div class="dynheader">
+topp_executor.h 的引用(Include)关系图:</div>
+<div class="dyncontent">
+<div class="center"><img src="topp__executor_8h__incl.png" border="0" usemap="#acore_2plan_2topp__executor_8h" loading="lazy" alt=""/></div>
+<map name="acore_2plan_2topp__executor_8h" id="acore_2plan_2topp__executor_8h">
+<area shape="rect" title=" " alt="" coords="491,5,680,33"/>
+<area shape="rect" title=" " alt="" coords="21,308,105,336"/>
+<area shape="poly" title=" " alt="" coords="489,26,366,45,298,61,233,83,177,110,136,139,105,177,79,233,70,263,67,293,61,292,65,262,74,231,101,175,132,135,174,106,231,79,297,56,365,40,493,24"/>
+<area shape="rect" title=" " alt="" coords="537,308,599,336"/>
+<area shape="poly" title=" " alt="" coords="587,32,572,293,567,291,583,35"/>
+<area shape="rect" title=" " alt="" coords="929,384,994,411"/>
+<area shape="poly" title=" " alt="" coords="680,29,796,47,918,75,971,94,1015,115,1044,140,1052,154,1055,169,1055,248,1048,285,1032,320,1011,350,988,375,986,370,1007,347,1027,317,1043,284,1050,247,1050,169,1047,156,1040,143,1012,120,969,99,917,81,795,52,680,34"/>
+<area shape="rect" href="geometry_8h.html" title=" " alt="" coords="261,232,396,260"/>
+<area shape="poly" title=" " alt="" coords="573,33,356,224,353,220,568,34"/>
+<area shape="rect" href="error_8h.html" title=" " alt="" coords="462,384,539,411"/>
+<area shape="poly" title=" " alt="" coords="594,31,623,90,634,129,639,169,639,248,636,296,628,315,613,337,586,362,554,380,552,375,583,358,609,334,623,313,631,294,634,247,634,169,629,130,618,92,592,36"/>
+<area shape="rect" href="profile1d_8h.html" title=" " alt="" coords="724,232,839,260"/>
+<area shape="poly" title=" " alt="" coords="603,31,657,79,719,153,767,220,762,219,715,156,653,83,602,36"/>
+<area shape="rect" href="time__optimal_8h.html" title=" " alt="" coords="765,157,910,184"/>
+<area shape="poly" title=" " alt="" coords="622,31,674,51,727,79,775,112,815,147,810,146,771,116,724,83,671,56,623,36"/>
+<area shape="rect" href="topp_8h.html" title=" " alt="" coords="182,157,277,184"/>
+<area shape="poly" title=" " alt="" coords="489,28,423,37,354,48,295,63,273,72,257,83,247,96,240,110,233,142,228,140,234,109,242,93,253,79,270,68,293,58,353,43,423,32,494,26"/>
+<area shape="rect" href="topp__jerk_8h.html" title=" " alt="" coords="266,81,393,109"/>
+<area shape="poly" title=" " alt="" coords="538,35,391,79,389,74,542,32"/>
+<area shape="poly" title=" " alt="" coords="280,263,121,307,119,302,282,258"/>
+<area shape="poly" title=" " alt="" coords="371,258,525,306,519,307,371,263"/>
+<area shape="rect" title=" " alt="" coords="132,384,202,411"/>
+<area shape="poly" title=" " alt="" coords="292,262,258,282,221,310,197,340,180,372,176,368,193,337,217,306,255,278,297,259"/>
+<area shape="poly" title=" " alt="" coords="351,258,419,306,453,338,483,373,477,371,450,342,416,310,350,263"/>
+<area shape="rect" href="static__vector_8h.html" title=" " alt="" coords="231,308,361,336"/>
+<area shape="poly" title=" " alt="" coords="325,259,310,296,306,292,321,262"/>
+<area shape="poly" title=" " alt="" coords="276,336,204,378,202,373,271,337"/>
+<area shape="poly" title=" " alt="" coords="333,334,452,378,447,378,332,339"/>
+<area shape="rect" title=" " alt="" coords="353,384,408,411"/>
+<area shape="poly" title=" " alt="" coords="312,334,357,374,351,373,310,339"/>
+<area shape="rect" title=" " alt="" coords="237,384,329,411"/>
+<area shape="poly" title=" " alt="" coords="296,334,290,370,286,367,292,338"/>
+<area shape="poly" title=" " alt="" coords="746,260,615,307,614,302,741,261"/>
+<area shape="poly" title=" " alt="" coords="794,258,829,294,873,334,929,376,924,374,869,338,825,297,792,263"/>
+<area shape="poly" title=" " alt="" coords="768,260,719,299,656,338,605,362,554,381,553,376,603,357,654,333,716,294,763,261"/>
+<area shape="poly" title=" " alt="" coords="721,258,377,311,376,306,726,255"/>
+<area shape="rect" href="cycle_8h.html" title=" " alt="" coords="882,308,964,336"/>
+<area shape="poly" title=" " alt="" coords="807,258,887,301,882,300,806,263"/>
+<area shape="poly" title=" " alt="" coords="931,334,950,371,945,369,928,339"/>
+<area shape="poly" title=" " alt="" coords="811,184,714,235,602,302,600,297,711,230,806,186"/>
+<area shape="poly" title=" " alt="" coords="861,182,892,202,926,230,957,266,979,307,982,339,975,371,971,367,976,339,974,309,953,269,922,234,889,207,860,187"/>
+<area shape="poly" title=" " alt="" coords="846,183,859,220,860,241,853,261,825,296,791,325,752,347,710,365,627,387,555,397,554,391,626,382,709,360,750,343,788,320,821,293,849,259,855,241,854,221,843,187"/>
+<area shape="poly" title=" " alt="" coords="830,183,802,222,799,218,825,186"/>
+<area shape="poly" title=" " alt="" coords="854,182,877,204,897,231,911,262,920,294,915,292,906,264,893,234,873,208,853,187"/>
+<area shape="poly" title=" " alt="" coords="197,187,163,207,126,234,99,265,79,296,74,293,95,262,122,230,160,203,201,183"/>
+<area shape="poly" title=" " alt="" coords="275,182,340,203,409,230,478,264,537,300,532,300,475,269,407,235,338,208,276,188"/>
+<area shape="poly" title=" " alt="" coords="248,182,301,223,296,223,247,188"/>
+<area shape="poly" title=" " alt="" coords="225,182,207,233,187,306,174,370,169,367,182,305,202,231,222,187"/>
+<area shape="poly" title=" " alt="" coords="230,182,234,221,240,241,250,258,264,272,278,280,306,288,338,293,375,306,473,374,468,374,372,310,337,298,305,293,276,285,261,276,246,262,235,243,229,222,228,187"/>
+<area shape="poly" title=" " alt="" coords="278,111,227,131,172,159,129,191,97,234,82,264,72,294,67,292,77,262,93,231,126,187,170,154,225,126,282,108"/>
+<area shape="poly" title=" " alt="" coords="393,102,452,121,480,135,505,155,530,187,548,224,560,260,567,294,562,291,555,262,543,226,526,190,501,159,477,140,450,126,394,108"/>
+<area shape="poly" title=" " alt="" coords="331,107,331,217,326,216,328,111"/>
+<area shape="poly" title=" " alt="" coords="264,107,198,126,162,140,130,159,85,191,54,222,31,258,11,309,8,325,13,339,23,351,38,362,76,377,119,389,114,391,74,382,35,366,19,355,8,342,3,326,6,307,27,256,50,218,82,187,127,154,160,136,196,121,268,103"/>
+<area shape="poly" title=" " alt="" coords="338,107,411,231,453,307,488,371,483,369,449,309,406,234,336,112"/>
+<area shape="poly" title=" " alt="" coords="310,111,261,149,258,145,314,107"/>
+</map>
+</div>
+</div>
+<p><a href="topp__executor_8h_source.html">浏览该文件的源代码.</a></p>
+<table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 id="header-nested-classes" class="groupheader"><a id="nested-classes" name="nested-classes"></a>
+类</h2></td></tr>
+<tr class="memitem:plcopen_3A_3Acore_3A_3Aplan_3A_3AToppVelocityProfile" id="r_plcopen_3A_3Acore_3A_3Aplan_3A_3AToppVelocityProfile"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1plan_1_1ToppVelocityProfile.html">plcopen::core::plan::ToppVelocityProfile</a></td></tr>
+<tr class="memitem:plcopen_3A_3Acore_3A_3Aplan_3A_3AToppProfileResult" id="r_plcopen_3A_3Acore_3A_3Aplan_3A_3AToppProfileResult"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1plan_1_1ToppProfileResult.html">plcopen::core::plan::ToppProfileResult</a></td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 id="header-namespaces" class="groupheader"><a id="namespaces" name="namespaces"></a>
+命名空间</h2></td></tr>
+<tr class="memitem:plcopen" id="r_plcopen"><td class="memItemLeft" align="right" valign="top">namespace &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen.html">plcopen</a></td></tr>
+<tr class="memitem:plcopen_3A_3Acore" id="r_plcopen_3A_3Acore"><td class="memItemLeft" align="right" valign="top">namespace &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core.html">plcopen::core</a></td></tr>
+<tr class="memitem:plcopen_3A_3Acore_3A_3Aplan" id="r_plcopen_3A_3Acore_3A_3Aplan"><td class="memItemLeft" align="right" valign="top">namespace &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1plan.html">plcopen::core::plan</a></td></tr>
+<tr class="memitem:plcopen_3A_3Acore_3A_3Aplan_3A_3Atopp_5Fexecutor_5Fdetail" id="r_plcopen_3A_3Acore_3A_3Aplan_3A_3Atopp_5Fexecutor_5Fdetail"><td class="memItemLeft" align="right" valign="top">namespace &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1plan_1_1topp__executor__detail.html">plcopen::core::plan::topp_executor_detail</a></td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 id="header-func-members" class="groupheader"><a id="func-members" name="func-members"></a>
+函数</h2></td></tr>
+<tr class="memitem:a06b9dbecade6bf8c196970b82a6f7cb6" id="r_a06b9dbecade6bf8c196970b82a6f7cb6"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classplcopen_1_1core_1_1rt_1_1Result.html">rt::Result</a>&lt; <a class="el" href="structplcopen_1_1core_1_1plan_1_1ToppVelocityProfile.html">ToppVelocityProfile</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1plan_1_1topp__executor__detail.html#a06b9dbecade6bf8c196970b82a6f7cb6">plcopen::core::plan::topp_executor_detail::solve_topp_profile_l1</a> (const <a class="el" href="structplcopen_1_1core_1_1geom_1_1PathSegment.html">geom::PathSegment</a> &amp;path, const <a class="el" href="structplcopen_1_1core_1_1plan_1_1ToppAxisLimits.html">ToppAxisLimits</a> limits[3], int grid_size)</td></tr>
+<tr class="memitem:ad0e9210f2df37061a468c8e71936d028" id="r_ad0e9210f2df37061a468c8e71936d028"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structplcopen_1_1core_1_1otg_1_1Limits1D.html">otg::Limits1D</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1plan.html#ad0e9210f2df37061a468c8e71936d028">plcopen::core::plan::effective_scalar_limits</a> (const <a class="el" href="structplcopen_1_1core_1_1geom_1_1PathSegment.html">geom::PathSegment</a> &amp;path, const <a class="el" href="structplcopen_1_1core_1_1plan_1_1ToppAxisLimits.html">ToppAxisLimits</a> limits[3])</td></tr>
+<tr class="memitem:a7173689cb9ce5b1023495ebcfb28d4db" id="r_a7173689cb9ce5b1023495ebcfb28d4db"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structplcopen_1_1core_1_1otg_1_1Limits1D.html">otg::Limits1D</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1plan.html#a7173689cb9ce5b1023495ebcfb28d4db">plcopen::core::plan::effective_scalar_limits</a> (const <a class="el" href="structplcopen_1_1core_1_1geom_1_1PathSegment.html">geom::PathSegment</a> &amp;path, const <a class="el" href="structplcopen_1_1core_1_1plan_1_1ToppJerkAxisLimits.html">ToppJerkAxisLimits</a> limits[3])</td></tr>
+<tr class="memitem:a9a6264eba4e3065c85d9c0af38ba777a" id="r_a9a6264eba4e3065c85d9c0af38ba777a"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1plan.html#a9a6264eba4e3065c85d9c0af38ba777a">plcopen::core::plan::verify_joint_limits</a> (const <a class="el" href="classplcopen_1_1core_1_1otg_1_1Profile1D.html">otg::Profile1D</a> &amp;profile, const <a class="el" href="structplcopen_1_1core_1_1geom_1_1PathSegment.html">geom::PathSegment</a> &amp;path, const <a class="el" href="structplcopen_1_1core_1_1plan_1_1ToppAxisLimits.html">ToppAxisLimits</a> limits[3], int num_samples=64, double tolerance=1.01)</td></tr>
+<tr class="memitem:ab4862f9270328db7bf67bc7a08b7121d" id="r_ab4862f9270328db7bf67bc7a08b7121d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classplcopen_1_1core_1_1rt_1_1Result.html">rt::Result</a>&lt; <a class="el" href="structplcopen_1_1core_1_1plan_1_1ToppProfileResult.html">ToppProfileResult</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1plan.html#ab4862f9270328db7bf67bc7a08b7121d">plcopen::core::plan::plan_topp_profiled</a> (const <a class="el" href="structplcopen_1_1core_1_1geom_1_1PathSegment.html">geom::PathSegment</a> &amp;path, const <a class="el" href="structplcopen_1_1core_1_1plan_1_1ToppAxisLimits.html">ToppAxisLimits</a> limits[3], int grid_size=128)</td></tr>
+<tr class="memitem:a5b41a42b3568fc6818c40f88b9e11aba" id="r_a5b41a42b3568fc6818c40f88b9e11aba"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classplcopen_1_1core_1_1rt_1_1Result.html">rt::Result</a>&lt; <a class="el" href="structplcopen_1_1core_1_1plan_1_1ToppProfileResult.html">ToppProfileResult</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1plan.html#a5b41a42b3568fc6818c40f88b9e11aba">plcopen::core::plan::plan_topp_profiled_jerk</a> (const <a class="el" href="structplcopen_1_1core_1_1geom_1_1PathSegment.html">geom::PathSegment</a> &amp;path, const <a class="el" href="structplcopen_1_1core_1_1plan_1_1ToppJerkAxisLimits.html">ToppJerkAxisLimits</a> limits[3], int grid_size=128)</td></tr>
+</table>
+</div><!-- contents -->
+</div><!-- doc-content -->
+<div id="page-nav" class="page-nav-panel">
+<div id="page-nav-resize-handle"></div>
+<div id="page-nav-tree">
+<div id="page-nav-contents">
+</div><!-- page-nav-contents -->
+</div><!-- page-nav-tree -->
+</div><!-- page-nav -->
+</div><!-- container -->
+<!-- start footer part -->
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+  <ul>
+    <li class="navelem"><a href="dir_4270bfced15e0e73154b13468c7c9ad9.html">core</a></li><li class="navelem"><a href="dir_bfb3738b0bd9198ff839e79843aee70d.html">plan</a></li><li class="navelem"><a href="topp__executor_8h.html">topp_executor.h</a></li>
+    <li class="footer">制作者 <a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.15.0 </li>
+  </ul>
+</div>
+</body>
+</html>

@@ -1,0 +1,7 @@
+<map id="类继承关系图" name="类继承关系图">
+<area shape="rect" id="Node000000" href="$classplcopen_1_1core_1_1kin_1_1Kinematics.html" title=" " alt="" coords="5,40,142,85"/>
+<area shape="rect" id="Node000001" href="$classplcopen_1_1core_1_1kin_1_1CartesianGantry.html" title=" " alt="" coords="190,5,326,50"/>
+<area shape="poly" id="edge106_Node000000_Node000001" title=" " alt="" coords="156,44,192,40,187,41,158,49"/>
+<area shape="rect" id="Node000002" href="$classplcopen_1_1core_1_1kin_1_1Scara.html" title=" " alt="" coords="190,75,326,119"/>
+<area shape="poly" id="edge107_Node000000_Node000002" title=" " alt="" coords="157,75,192,84,186,84,157,81"/>
+</map>

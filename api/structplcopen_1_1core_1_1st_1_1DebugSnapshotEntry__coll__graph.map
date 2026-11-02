@@ -1,0 +1,5 @@
+<map id="plcopen::core::st::DebugSnapshotEntry" name="plcopen::core::st::DebugSnapshotEntry">
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,123,163,168"/>
+<area shape="rect" id="Node000002" href="$structplcopen_1_1core_1_1st_1_1SymbolId.html" title=" " alt="" coords="16,5,152,50"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="86,64,87,123,81,122,82,68"/>
+</map>

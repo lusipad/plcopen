@@ -1,0 +1,7 @@
+<map id="plcopen::core::fb::FbMoveSuperimposed" name="plcopen::core::fb::FbMoveSuperimposed">
+<area shape="rect" id="Node000001" title=" " alt="" coords="75,123,242,168"/>
+<area shape="rect" id="Node000002" href="$classplcopen_1_1core_1_1axis_1_1AxisModel.html" title=" " alt="" coords="5,5,149,50"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="102,61,146,122,140,123,100,65"/>
+<area shape="rect" id="Node000003" href="$structplcopen_1_1core_1_1fb_1_1MotionOutputs.html" title=" " alt="" coords="172,5,310,50"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="219,62,176,124,172,121,214,64"/>
+</map>

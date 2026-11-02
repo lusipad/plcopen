@@ -1,0 +1,16 @@
+<map id="plcopen::core::fb::FbGroupSetPosition" name="plcopen::core::fb::FbGroupSetPosition">
+<area shape="rect" id="Node000001" title=" " alt="" coords="820,20,969,65"/>
+<area shape="rect" id="Node000002" href="$classplcopen_1_1core_1_1fb_1_1GroupAdminFb.html" title=" " alt="" coords="633,87,770,131"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="782,79,825,66,830,65,783,84"/>
+<area shape="rect" id="Node000003" href="$classplcopen_1_1core_1_1axis_1_1AxisGroup.html" title=" " alt="" coords="372,49,515,94"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="530,82,635,99,630,99,530,87"/>
+<area shape="rect" id="Node000004" href="$structplcopen_1_1core_1_1axis_1_1GroupPosition.html" title=" " alt="" coords="17,5,160,50"/>
+<area shape="poly" id="edge7_Node000001_Node000004" title=" " alt="" coords="175,26,348,28,821,38,818,43,348,33,176,31"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="175,49,196,53,287,63,374,70,369,71,287,69,195,58,176,54"/>
+<area shape="rect" id="Node000005" href="$structplcopen_1_1core_1_1axis_1_1JogCommandOptions.html" title=" " alt="" coords="5,91,172,135"/>
+<area shape="poly" id="edge4_Node000003_Node000005" title=" " alt="" coords="186,119,266,118,347,109,400,94,395,95,348,114,266,124,187,124"/>
+<area shape="rect" id="Node000006" href="$classplcopen_1_1core_1_1axis_1_1AxisModel.html" title=" " alt="" coords="372,119,515,163"/>
+<area shape="poly" id="edge5_Node000002_Node000006" title=" " alt="" coords="530,137,609,130,630,129,635,128,609,135,531,143"/>
+<area shape="rect" id="Node000007" href="$structplcopen_1_1core_1_1fb_1_1MotionOutputs.html" title=" " alt="" coords="375,188,512,233"/>
+<area shape="poly" id="edge6_Node000002_Node000007" title=" " alt="" coords="527,193,568,182,608,168,641,150,669,133,674,131,644,154,610,172,569,187,528,199"/>
+</map>

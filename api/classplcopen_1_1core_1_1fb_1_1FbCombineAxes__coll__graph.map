@@ -1,0 +1,10 @@
+<map id="plcopen::core::fb::FbCombineAxes" name="plcopen::core::fb::FbCombineAxes">
+<area shape="rect" id="Node000001" title=" " alt="" coords="54,242,191,287"/>
+<area shape="rect" id="Node000002" href="$classplcopen_1_1core_1_1fb_1_1SyncExecuteFb.html" title=" " alt="" coords="180,147,318,191"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="210,200,153,244,150,239,205,202"/>
+<area shape="rect" id="Node000003" href="$classplcopen_1_1core_1_1axis_1_1AxisModel.html" title=" " alt="" coords="5,5,149,50"/>
+<area shape="poly" id="edge4_Node000001_Node000003" title=" " alt="" coords="74,63,75,125,78,159,85,192,95,217,109,242,104,241,90,220,79,193,73,160,69,126,72,68"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="104,60,134,90,166,119,206,145,201,147,163,123,130,94,104,65"/>
+<area shape="rect" id="Node000004" href="$structplcopen_1_1core_1_1fb_1_1MotionOutputs.html" title=" " alt="" coords="180,5,318,50"/>
+<area shape="poly" id="edge3_Node000002_Node000004" title=" " alt="" coords="251,64,252,147,246,145,247,68"/>
+</map>

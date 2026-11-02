@@ -1,0 +1,19 @@
+<map id="plcopen::core::geom::PathSegment" name="plcopen::core::geom::PathSegment">
+<area shape="rect" id="Node000001" title=" " alt="" coords="547,250,700,295"/>
+<area shape="rect" id="Node000002" href="$structplcopen_1_1core_1_1geom_1_1LineSegment.html" title=" " alt="" coords="277,45,430,89"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="401,96,525,186,599,250,594,250,521,191,400,101"/>
+<area shape="rect" id="Node000003" href="$structplcopen_1_1core_1_1geom_1_1Vec3.html" title=" " alt="" coords="5,250,159,295"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="87,234,98,193,116,147,143,103,161,84,181,68,204,57,228,51,278,50,274,53,228,56,205,62,184,72,164,87,147,106,121,149,103,195,92,236"/>
+<area shape="rect" id="Node000004" href="$structplcopen_1_1core_1_1geom_1_1ArcSegment.html" title=" " alt="" coords="277,154,430,199"/>
+<area shape="poly" id="edge4_Node000004_Node000003" title=" " alt="" coords="107,236,140,203,160,188,182,177,229,165,279,165,274,168,229,170,184,182,163,193,143,207,111,239"/>
+<area shape="rect" id="Node000005" href="$structplcopen_1_1core_1_1geom_1_1CubicBezierSegment.html" title=" " alt="" coords="271,250,436,295"/>
+<area shape="poly" id="edge6_Node000005_Node000003" title=" " alt="" coords="173,270,273,271,269,274,175,275"/>
+<area shape="rect" id="Node000006" href="$structplcopen_1_1core_1_1geom_1_1QuadraticBlendSegment.html" title=" " alt="" coords="260,339,447,384"/>
+<area shape="poly" id="edge8_Node000006_Node000003" title=" " alt="" coords="116,302,149,326,184,345,221,355,262,363,257,364,220,361,182,350,146,331,117,308"/>
+<area shape="rect" id="Node000007" href="$structplcopen_1_1core_1_1geom_1_1QuinticBlendSegment.html" title=" " alt="" coords="268,458,438,503"/>
+<area shape="poly" id="edge10_Node000007_Node000003" title=" " alt="" coords="88,308,99,356,116,409,144,460,162,482,184,500,212,512,242,514,273,509,299,504,305,503,274,515,242,519,210,517,181,505,158,486,139,463,111,411,94,358,86,313"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="433,202,561,249,556,250,433,207"/>
+<area shape="poly" id="edge5_Node000001_Node000005" title=" " alt="" coords="451,270,549,272,544,273,452,275"/>
+<area shape="poly" id="edge7_Node000001_Node000006" title=" " alt="" coords="437,332,556,294,551,296,439,337"/>
+<area shape="poly" id="edge9_Node000001_Node000007" title=" " alt="" coords="396,447,521,351,592,297,597,294,525,356,399,451"/>
+</map>

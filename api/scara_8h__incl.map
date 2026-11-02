@@ -1,0 +1,27 @@
+<map id="core/kin/scara.h" name="core/kin/scara.h">
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,5,130,33"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="36,232,99,260"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="70,32,70,217,65,216,65,34"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="101,308,170,336"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="59,36,41,75,19,133,13,165,11,198,15,229,27,259,39,274,54,286,89,305,84,308,51,291,35,277,23,261,10,231,5,198,7,164,14,132,36,73,60,31"/>
+<area shape="rect" id="Node000004" href="$kinematics_8h.html" title=" " alt="" coords="164,81,294,109"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="96,31,189,73,184,76,97,36"/>
+<area shape="poly" id="edge4_Node000004_Node000003" title=" " alt="" coords="219,107,203,132,187,158,160,230,143,294,139,292,155,228,182,155,198,129,216,111"/>
+<area shape="rect" id="Node000005" href="$geometry_8h.html" title=" " alt="" coords="197,157,332,184"/>
+<area shape="poly" id="edge5_Node000004_Node000005" title=" " alt="" coords="236,107,254,143,249,142,235,112"/>
+<area shape="rect" id="Node000007" href="$error_8h.html" title=" " alt="" coords="389,308,466,336"/>
+<area shape="poly" id="edge15_Node000004_Node000007" title=" " alt="" coords="293,103,354,117,419,142,450,159,480,179,506,203,528,231,533,242,533,253,523,273,503,290,478,304,476,299,500,285,519,270,528,252,528,243,524,234,502,206,477,183,448,163,416,147,352,122,294,108"/>
+<area shape="poly" id="edge7_Node000005_Node000002" title=" " alt="" coords="228,187,115,230,112,225,231,183"/>
+<area shape="poly" id="edge8_Node000005_Node000003" title=" " alt="" coords="256,183,214,234,158,298,154,294,209,231,251,186"/>
+<area shape="rect" id="Node000006" title=" " alt="" coords="429,232,514,260"/>
+<area shape="poly" id="edge6_Node000005_Node000006" title=" " alt="" coords="302,182,423,226,417,227,301,188"/>
+<area shape="poly" id="edge9_Node000005_Node000007" title=" " alt="" coords="294,182,331,203,368,230,395,262,416,296,411,294,391,265,364,234,328,207,293,188"/>
+<area shape="rect" id="Node000008" href="$static__vector_8h.html" title=" " alt="" coords="224,232,354,260"/>
+<area shape="poly" id="edge10_Node000005_Node000008" title=" " alt="" coords="270,183,282,218,277,217,268,187"/>
+<area shape="poly" id="edge12_Node000008_Node000003" title=" " alt="" coords="264,260,177,304,175,299,259,261"/>
+<area shape="poly" id="edge14_Node000008_Node000007" title=" " alt="" coords="314,258,392,301,387,300,313,263"/>
+<area shape="rect" id="Node000009" title=" " alt="" coords="309,308,364,336"/>
+<area shape="poly" id="edge11_Node000008_Node000009" title=" " alt="" coords="299,258,323,296,318,294,296,263"/>
+<area shape="rect" id="Node000010" title=" " alt="" coords="194,308,285,336"/>
+<area shape="poly" id="edge13_Node000008_Node000010" title=" " alt="" coords="282,259,258,297,255,293,278,262"/>
+</map>

@@ -1,0 +1,5 @@
+<map id="plcopen::core::kin::SerialChain" name="plcopen::core::kin::SerialChain">
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,98,142,143"/>
+<area shape="rect" id="Node000002" href="$classplcopen_1_1core_1_1kin_1_1PoseKinematics.html" title=" " alt="" coords="5,5,142,50"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="75,64,76,99,71,97,72,68"/>
+</map>

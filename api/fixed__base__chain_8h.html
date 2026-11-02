@@ -1,0 +1,180 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh">
+<head>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=11"/>
+<meta name="generator" content="Doxygen 1.15.0"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>plcopen: core/dyn/fixed_base_chain.h 文件参考</title>
+<link href="tabs.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="jquery.js"></script>
+<script type="text/javascript" src="dynsections.js"></script>
+<script type="text/javascript" src="clipboard.js"></script>
+<link href="navtree.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="navtreedata.js"></script>
+<script type="text/javascript" src="navtree.js"></script>
+<script type="text/javascript" src="cookie.js"></script>
+<link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<link href="doxygen.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+<div id="top"><!-- do not remove this div, it is closed by doxygen! -->
+<div id="titlearea">
+<table cellspacing="0" cellpadding="0">
+ <tbody>
+ <tr id="projectrow">
+  <td id="projectalign">
+   <div id="projectname">plcopen<span id="projectnumber">&#160;0.21.0</span>
+   </div>
+  </td>
+ </tr>
+ </tbody>
+</table>
+</div>
+<!-- end header part -->
+<!-- 制作者 Doxygen 1.15.0 -->
+<script type="text/javascript">
+var searchBox = new SearchBox("searchBox", "search/",'.html');
+</script>
+<script type="text/javascript">
+$(function() { codefold.init(); });
+</script>
+<script type="text/javascript" src="menudata.js"></script>
+<script type="text/javascript" src="menu.js"></script>
+<script type="text/javascript">
+$(function() {
+  initMenu('',true,false,'search.php','搜索',true);
+  $(function() { init_search(); });
+});
+</script>
+<div id="main-nav"></div>
+</div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+$(function(){initNavTree('fixed__base__chain_8h.html','',''); });
+</script>
+<div id="container">
+<div id="doc-content">
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<div id="MSearchResults">
+<div class="SRPage">
+<div id="SRIndex">
+<div id="SRResults"></div>
+<div class="SRStatus" id="Loading">载入中...</div>
+<div class="SRStatus" id="Searching">搜索中...</div>
+<div class="SRStatus" id="NoMatches">未找到</div>
+</div>
+</div>
+</div>
+</div>
+
+<div class="header">
+  <div class="headertitle"><div class="title">fixed_base_chain.h 文件参考</div></div>
+</div><!--header-->
+<div class="contents">
+<div class="textblock"><code>#include &lt;array&gt;</code><br />
+<code>#include &lt;cmath&gt;</code><br />
+<code>#include &lt;cstddef&gt;</code><br />
+<code>#include &quot;<a class="el" href="frame_8h_source.html">geom/frame.h</a>&quot;</code><br />
+<code>#include &quot;<a class="el" href="error_8h_source.html">rt/error.h</a>&quot;</code><br />
+</div><div class="textblock"><div class="dynheader">
+fixed_base_chain.h 的引用(Include)关系图:</div>
+<div class="dyncontent">
+<div class="center"><img src="fixed__base__chain_8h__incl.png" border="0" usemap="#acore_2dyn_2fixed__base__chain_8h" loading="lazy" alt=""/></div>
+<map name="acore_2dyn_2fixed__base__chain_8h" id="acore_2dyn_2fixed__base__chain_8h">
+<area shape="rect" title=" " alt="" coords="42,5,193,50"/>
+<area shape="rect" title=" " alt="" coords="75,325,131,353"/>
+<area shape="poly" title=" " alt="" coords="75,53,53,73,33,99,14,147,8,187,14,228,33,276,48,297,68,315,63,317,44,300,29,278,9,229,3,187,9,145,29,97,49,69,78,48"/>
+<area shape="rect" title=" " alt="" coords="86,249,149,277"/>
+<area shape="poly" title=" " alt="" coords="120,49,120,234,115,234,115,52"/>
+<area shape="rect" title=" " alt="" coords="259,325,328,353"/>
+<area shape="poly" title=" " alt="" coords="103,53,83,97,62,156,57,187,56,219,63,248,77,275,103,293,146,308,246,330,241,332,144,313,100,298,73,279,58,250,51,219,51,187,57,155,78,95,105,48"/>
+<area shape="rect" href="frame_8h.html" title=" " alt="" coords="192,98,305,126"/>
+<area shape="poly" title=" " alt="" coords="152,48,217,88,212,90,152,53"/>
+<area shape="rect" href="error_8h.html" title=" " alt="" coords="490,325,567,353"/>
+<area shape="poly" title=" " alt="" coords="193,48,254,69,321,96,390,130,454,171,501,204,518,221,533,248,540,280,537,312,533,309,534,280,528,250,514,224,497,208,451,176,387,135,319,101,252,74,194,53"/>
+<area shape="poly" title=" " alt="" coords="240,125,141,239,137,236,235,127"/>
+<area shape="rect" href="geometry_8h.html" title=" " alt="" coords="222,174,357,201"/>
+<area shape="poly" title=" " alt="" coords="256,124,277,160,272,160,255,129"/>
+<area shape="poly" title=" " alt="" coords="299,124,350,141,406,167,461,202,486,223,508,248,523,278,529,311,525,308,518,280,503,251,482,227,458,206,404,171,348,146,299,129"/>
+<area shape="poly" title=" " alt="" coords="257,203,163,245,161,241,261,200"/>
+<area shape="poly" title=" " alt="" coords="292,200,295,310,290,308,288,203"/>
+<area shape="rect" title=" " alt="" coords="173,249,257,277"/>
+<area shape="poly" title=" " alt="" coords="279,200,241,240,237,236,274,203"/>
+<area shape="poly" title=" " alt="" coords="358,196,419,215,449,229,477,247,503,277,521,312,516,310,499,280,473,251,446,234,417,220,358,202"/>
+<area shape="rect" href="static__vector_8h.html" title=" " alt="" coords="332,249,463,277"/>
+<area shape="poly" title=" " alt="" coords="309,199,369,240,363,240,308,204"/>
+<area shape="poly" title=" " alt="" coords="345,280,146,329,145,324,344,275"/>
+<area shape="poly" title=" " alt="" coords="382,277,325,318,323,314,376,278"/>
+<area shape="poly" title=" " alt="" coords="422,275,495,317,489,317,420,280"/>
+<area shape="rect" title=" " alt="" coords="352,325,443,353"/>
+<area shape="poly" title=" " alt="" coords="399,276,400,311,395,308,396,279"/>
+</map>
+</div>
+</div><div class="textblock"><div class="dynheader">
+此图展示该文件被哪些文件直接或间接地引用了:</div>
+<div class="dyncontent">
+<div class="center"><img src="fixed__base__chain_8h__dep__incl.png" border="0" usemap="#acore_2dyn_2fixed__base__chain_8hdep" loading="lazy" alt=""/></div>
+<map name="acore_2dyn_2fixed__base__chain_8hdep" id="acore_2dyn_2fixed__base__chain_8hdep">
+<area shape="rect" title=" " alt="" coords="31,5,181,50"/>
+<area shape="rect" href="dynamics__fixture_8h.html" title=" " alt="" coords="5,98,207,143"/>
+<area shape="poly" title=" " alt="" coords="108,64,108,99,104,97,104,68"/>
+</map>
+</div>
+</div>
+<p><a href="fixed__base__chain_8h_source.html">浏览该文件的源代码.</a></p>
+<table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 id="header-nested-classes" class="groupheader"><a id="nested-classes" name="nested-classes"></a>
+类</h2></td></tr>
+<tr class="memitem:plcopen_3A_3Acore_3A_3Adyn_3A_3ARevoluteBody" id="r_plcopen_3A_3Acore_3A_3Adyn_3A_3ARevoluteBody"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1dyn_1_1RevoluteBody.html">plcopen::core::dyn::RevoluteBody</a></td></tr>
+<tr class="memitem:plcopen_3A_3Acore_3A_3Adyn_3A_3AFixedBaseChainSpec" id="r_plcopen_3A_3Acore_3A_3Adyn_3A_3AFixedBaseChainSpec"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1dyn_1_1FixedBaseChainSpec.html">plcopen::core::dyn::FixedBaseChainSpec</a></td></tr>
+<tr class="memitem:plcopen_3A_3Acore_3A_3Adyn_3A_3AFixedBaseChain" id="r_plcopen_3A_3Acore_3A_3Adyn_3A_3AFixedBaseChain"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classplcopen_1_1core_1_1dyn_1_1FixedBaseChain.html">plcopen::core::dyn::FixedBaseChain</a></td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 id="header-namespaces" class="groupheader"><a id="namespaces" name="namespaces"></a>
+命名空间</h2></td></tr>
+<tr class="memitem:plcopen" id="r_plcopen"><td class="memItemLeft" align="right" valign="top">namespace &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen.html">plcopen</a></td></tr>
+<tr class="memitem:plcopen_3A_3Acore" id="r_plcopen_3A_3Acore"><td class="memItemLeft" align="right" valign="top">namespace &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core.html">plcopen::core</a></td></tr>
+<tr class="memitem:plcopen_3A_3Acore_3A_3Adyn" id="r_plcopen_3A_3Acore_3A_3Adyn"><td class="memItemLeft" align="right" valign="top">namespace &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1dyn.html">plcopen::core::dyn</a></td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 id="header-var-members" class="groupheader"><a id="var-members" name="var-members"></a>
+变量</h2></td></tr>
+<tr class="memitem:a99ed89c4896e1197f2e0c9d95804737f" id="r_a99ed89c4896e1197f2e0c9d95804737f"><td class="memItemLeft" align="right" valign="top">constexpr std::size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1dyn.html#a99ed89c4896e1197f2e0c9d95804737f">plcopen::core::dyn::FixedBaseChainMaxJoints</a> = 8</td></tr>
+</table>
+</div><!-- contents -->
+</div><!-- doc-content -->
+<div id="page-nav" class="page-nav-panel">
+<div id="page-nav-resize-handle"></div>
+<div id="page-nav-tree">
+<div id="page-nav-contents">
+</div><!-- page-nav-contents -->
+</div><!-- page-nav-tree -->
+</div><!-- page-nav -->
+</div><!-- container -->
+<!-- start footer part -->
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+  <ul>
+    <li class="navelem"><a href="dir_4270bfced15e0e73154b13468c7c9ad9.html">core</a></li><li class="navelem"><a href="dir_80cf244c358e89eccb9faa66f042bc4b.html">dyn</a></li><li class="navelem"><a href="fixed__base__chain_8h.html">fixed_base_chain.h</a></li>
+    <li class="footer">制作者 <a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.15.0 </li>
+  </ul>
+</div>
+</body>
+</html>

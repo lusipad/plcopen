@@ -1,0 +1,17 @@
+<map id="plcopen::core::fb::FbTrackConveyorBelt" name="plcopen::core::fb::FbTrackConveyorBelt">
+<area shape="rect" id="Node000001" title=" " alt="" coords="975,147,1135,191"/>
+<area shape="rect" id="Node000002" href="$classplcopen_1_1core_1_1fb_1_1TrackingExecuteFb.html" title=" " alt="" coords="634,77,776,122"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="791,108,870,120,952,136,984,146,979,146,951,141,869,125,791,113"/>
+<area shape="rect" id="Node000003" href="$classplcopen_1_1core_1_1axis_1_1AxisGroup.html" title=" " alt="" coords="372,40,515,85"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="530,72,636,89,631,90,530,77"/>
+<area shape="rect" id="Node000004" href="$structplcopen_1_1core_1_1axis_1_1GroupPosition.html" title=" " alt="" coords="17,5,160,50"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="176,33,373,53,369,57,176,39"/>
+<area shape="rect" id="Node000005" href="$structplcopen_1_1core_1_1axis_1_1JogCommandOptions.html" title=" " alt="" coords="5,75,172,119"/>
+<area shape="poly" id="edge4_Node000003_Node000005" title=" " alt="" coords="187,93,266,89,347,81,374,79,369,80,348,86,266,94,188,98"/>
+<area shape="rect" id="Node000006" href="$structplcopen_1_1core_1_1fb_1_1MotionOutputs.html" title=" " alt="" coords="375,109,512,154"/>
+<area shape="poly" id="edge5_Node000002_Node000006" title=" " alt="" coords="527,128,609,121,636,118,630,119,609,126,528,133"/>
+<area shape="rect" id="Node000007" href="$classplcopen_1_1core_1_1axis_1_1AxisModel.html" title=" " alt="" coords="633,147,776,191"/>
+<area shape="poly" id="edge6_Node000001_Node000007" title=" " alt="" coords="792,166,978,169,972,169,792,172"/>
+<area shape="rect" id="Node000008" href="$structplcopen_1_1core_1_1axis_1_1ToolData.html" title=" " alt="" coords="633,225,776,270"/>
+<area shape="poly" id="edge7_Node000001_Node000008" title=" " alt="" coords="791,244,870,236,951,219,985,206,1015,193,1020,191,987,211,952,224,870,241,792,249"/>
+</map>

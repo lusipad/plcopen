@@ -1,0 +1,18 @@
+<map id="plcopen::core::fb::FbMovePath" name="plcopen::core::fb::FbMovePath">
+<area shape="rect" id="Node000001" title=" " alt="" coords="896,44,1034,89"/>
+<area shape="rect" id="Node000002" href="$classplcopen_1_1core_1_1fb_1_1GroupExecuteFb.html" title=" " alt="" coords="638,77,775,122"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="791,86,899,75,893,76,791,91"/>
+<area shape="rect" id="Node000003" href="$classplcopen_1_1core_1_1axis_1_1AxisGroup.html" title=" " alt="" coords="372,77,515,122"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="530,97,640,99,635,100,531,102"/>
+<area shape="rect" id="Node000004" href="$structplcopen_1_1core_1_1axis_1_1GroupPosition.html" title=" " alt="" coords="17,29,160,74"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="175,69,196,73,287,85,374,94,368,96,287,90,195,78,176,74"/>
+<area shape="rect" id="Node000008" href="$structplcopen_1_1core_1_1fb_1_1PathWaypoint.html" title=" " alt="" coords="375,8,512,53"/>
+<area shape="poly" id="edge8_Node000008_Node000004" title=" " alt="" coords="175,44,376,32,373,37,176,49"/>
+<area shape="rect" id="Node000005" href="$structplcopen_1_1core_1_1axis_1_1JogCommandOptions.html" title=" " alt="" coords="5,120,172,165"/>
+<area shape="poly" id="edge4_Node000003_Node000005" title=" " alt="" coords="187,148,266,148,347,138,397,123,402,122,348,143,266,153,187,154"/>
+<area shape="rect" id="Node000006" href="$structplcopen_1_1core_1_1fb_1_1MotionOutputs.html" title=" " alt="" coords="375,147,512,191"/>
+<area shape="poly" id="edge5_Node000002_Node000006" title=" " alt="" coords="527,149,613,127,636,123,641,122,615,133,528,154"/>
+<area shape="rect" id="Node000007" href="$structplcopen_1_1core_1_1fb_1_1PathTable.html" title=" " alt="" coords="638,8,775,53"/>
+<area shape="poly" id="edge6_Node000001_Node000007" title=" " alt="" coords="791,39,899,57,893,57,791,45"/>
+<area shape="poly" id="edge7_Node000007_Node000008" title=" " alt="" coords="527,28,640,30,635,31,528,33"/>
+</map>

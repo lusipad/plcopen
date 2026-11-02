@@ -1,0 +1,25 @@
+<map id="plcopen::core::fb::GroupConfigWriteFb" name="plcopen::core::fb::GroupConfigWriteFb">
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,283,158,327"/>
+<area shape="rect" id="Node000002" href="$classplcopen_1_1core_1_1fb_1_1FbGroupSelectPayload.html" title=" " alt="" coords="240,5,407,50"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="89,267,104,220,127,164,160,108,181,83,204,60,241,41,238,45,207,64,185,86,165,111,132,166,109,221,94,268"/>
+<area shape="rect" id="Node000003" href="$classplcopen_1_1core_1_1fb_1_1FbGroupSelectTool.html" title=" " alt="" coords="252,75,394,119"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="97,268,139,197,169,161,204,130,227,116,254,108,250,112,229,121,207,134,173,164,144,200,102,270"/>
+<area shape="rect" id="Node000004" href="$classplcopen_1_1core_1_1fb_1_1FbGroupWriteJoggingDynamics.html" title=" " alt="" coords="211,144,436,189"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="112,270,154,233,204,199,233,187,230,191,207,203,158,237,117,273"/>
+<area shape="rect" id="Node000005" href="$classplcopen_1_1core_1_1fb_1_1FbGroupWriteParameter.html" title=" " alt="" coords="234,213,412,258"/>
+<area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="171,277,245,257,241,261,174,281"/>
+<area shape="rect" id="Node000006" href="$classplcopen_1_1core_1_1fb_1_1FbGroupWritePayloadData.html" title=" " alt="" coords="227,283,420,327"/>
+<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="172,303,228,303,224,307,174,307"/>
+<area shape="rect" id="Node000007" href="$classplcopen_1_1core_1_1fb_1_1FbGroupWriteRigidBodyDynamic.html" title=" " alt="" coords="206,352,441,397"/>
+<area shape="poly" id="edge6_Node000001_Node000007" title=" " alt="" coords="171,328,245,350,240,353,173,333"/>
+<area shape="rect" id="Node000008" href="$classplcopen_1_1core_1_1fb_1_1FbGroupWriteSWLimits.html" title=" " alt="" coords="237,421,410,466"/>
+<area shape="poly" id="edge7_Node000001_Node000008" title=" " alt="" coords="114,336,158,373,207,407,240,422,235,424,204,411,154,377,115,341"/>
+<area shape="rect" id="Node000009" href="$classplcopen_1_1core_1_1fb_1_1FbGroupWriteToolData.html" title=" " alt="" coords="239,491,408,535"/>
+<area shape="poly" id="edge8_Node000001_Node000009" title=" " alt="" coords="100,339,144,410,173,446,207,476,241,495,236,496,204,481,169,449,139,413,99,344"/>
+<area shape="rect" id="Node000010" href="$classplcopen_1_1core_1_1fb_1_1GroupPathDynamicsWriteFb.html" title=" " alt="" coords="221,560,426,605"/>
+<area shape="poly" id="edge9_Node000001_Node000010" title=" " alt="" coords="92,340,109,389,132,444,165,499,185,524,207,546,226,559,220,559,204,550,181,527,160,502,127,446,104,390,92,345"/>
+<area shape="rect" id="Node000011" href="$classplcopen_1_1core_1_1fb_1_1FbGroupWriteDefaultDynamics.html" title=" " alt="" coords="498,525,722,570"/>
+<area shape="poly" id="edge10_Node000010_Node000011" title=" " alt="" coords="440,566,500,561,495,562,441,571"/>
+<area shape="rect" id="Node000012" href="$classplcopen_1_1core_1_1fb_1_1FbGroupWriteReferenceDynamics.html" title=" " alt="" coords="489,595,731,639"/>
+<area shape="poly" id="edge11_Node000010_Node000012" title=" " alt="" coords="441,594,491,602,486,602,441,599"/>
+</map>

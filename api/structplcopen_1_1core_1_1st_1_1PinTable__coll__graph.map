@@ -1,0 +1,5 @@
+<map id="plcopen::core::st::PinTable" name="plcopen::core::st::PinTable">
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,123,142,168"/>
+<area shape="rect" id="Node000002" href="$structplcopen_1_1core_1_1st_1_1PinDesc.html" title=" " alt="" coords="5,5,142,50"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="76,64,76,123,71,122,71,68"/>
+</map>

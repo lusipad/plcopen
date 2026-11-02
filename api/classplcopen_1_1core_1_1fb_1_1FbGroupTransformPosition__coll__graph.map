@@ -1,0 +1,10 @@
+<map id="plcopen::core::fb::FbGroupTransformPosition" name="plcopen::core::fb::FbGroupTransformPosition">
+<area shape="rect" id="Node000001" title=" " alt="" coords="19,243,212,288"/>
+<area shape="rect" id="Node000002" href="$classplcopen_1_1core_1_1axis_1_1AxisGroup.html" title=" " alt="" coords="188,124,331,169"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="224,179,144,245,141,241,219,179"/>
+<area shape="rect" id="Node000003" href="$structplcopen_1_1core_1_1axis_1_1GroupPosition.html" title=" " alt="" coords="5,5,149,50"/>
+<area shape="poly" id="edge4_Node000001_Node000003" title=" " alt="" coords="69,62,65,116,65,143,69,170,84,209,103,243,98,243,79,211,64,171,60,143,60,115,68,68"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="88,62,100,81,113,97,140,108,190,124,185,127,138,113,110,101,96,84,88,67"/>
+<area shape="rect" id="Node000004" href="$structplcopen_1_1core_1_1axis_1_1JogCommandOptions.html" title=" " alt="" coords="198,5,364,50"/>
+<area shape="poly" id="edge3_Node000002_Node000004" title=" " alt="" coords="276,63,266,125,261,123,273,67"/>
+</map>

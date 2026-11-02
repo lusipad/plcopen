@@ -1,0 +1,285 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh">
+<head>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=11"/>
+<meta name="generator" content="Doxygen 1.15.0"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>plcopen: core/st/standard_functions.h 文件参考</title>
+<link href="tabs.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="jquery.js"></script>
+<script type="text/javascript" src="dynsections.js"></script>
+<script type="text/javascript" src="clipboard.js"></script>
+<link href="navtree.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="navtreedata.js"></script>
+<script type="text/javascript" src="navtree.js"></script>
+<script type="text/javascript" src="cookie.js"></script>
+<link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<link href="doxygen.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+<div id="top"><!-- do not remove this div, it is closed by doxygen! -->
+<div id="titlearea">
+<table cellspacing="0" cellpadding="0">
+ <tbody>
+ <tr id="projectrow">
+  <td id="projectalign">
+   <div id="projectname">plcopen<span id="projectnumber">&#160;0.21.0</span>
+   </div>
+  </td>
+ </tr>
+ </tbody>
+</table>
+</div>
+<!-- end header part -->
+<!-- 制作者 Doxygen 1.15.0 -->
+<script type="text/javascript">
+var searchBox = new SearchBox("searchBox", "search/",'.html');
+</script>
+<script type="text/javascript">
+$(function() { codefold.init(); });
+</script>
+<script type="text/javascript" src="menudata.js"></script>
+<script type="text/javascript" src="menu.js"></script>
+<script type="text/javascript">
+$(function() {
+  initMenu('',true,false,'search.php','搜索',true);
+  $(function() { init_search(); });
+});
+</script>
+<div id="main-nav"></div>
+</div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+$(function(){initNavTree('standard__functions_8h.html','',''); });
+</script>
+<div id="container">
+<div id="doc-content">
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<div id="MSearchResults">
+<div class="SRPage">
+<div id="SRIndex">
+<div id="SRResults"></div>
+<div class="SRStatus" id="Loading">载入中...</div>
+<div class="SRStatus" id="Searching">搜索中...</div>
+<div class="SRStatus" id="NoMatches">未找到</div>
+</div>
+</div>
+</div>
+</div>
+
+<div class="header">
+  <div class="headertitle"><div class="title">standard_functions.h 文件参考</div></div>
+</div><!--header-->
+<div class="contents">
+<div class="textblock"><code>#include &lt;algorithm&gt;</code><br />
+<code>#include &lt;array&gt;</code><br />
+<code>#include &lt;cstdint&gt;</code><br />
+<code>#include &lt;string&gt;</code><br />
+<code>#include &lt;string_view&gt;</code><br />
+<code>#include &lt;limits&gt;</code><br />
+</div><div class="textblock"><div class="dynheader">
+standard_functions.h 的引用(Include)关系图:</div>
+<div class="dyncontent">
+<div class="center"><img src="standard__functions_8h__incl.png" border="0" usemap="#acore_2st_2standard__functions_8h" loading="lazy" alt=""/></div>
+<map name="acore_2st_2standard__functions_8h" id="acore_2st_2standard__functions_8h">
+<area shape="rect" title=" " alt="" coords="165,5,370,33"/>
+<area shape="rect" title=" " alt="" coords="5,81,90,109"/>
+<area shape="poly" title=" " alt="" coords="229,36,102,78,100,73,227,31"/>
+<area shape="rect" title=" " alt="" coords="113,81,168,109"/>
+<area shape="poly" title=" " alt="" coords="247,33,177,76,175,71,242,34"/>
+<area shape="rect" title=" " alt="" coords="192,81,258,109"/>
+<area shape="poly" title=" " alt="" coords="262,32,242,70,238,66,258,35"/>
+<area shape="rect" title=" " alt="" coords="281,81,339,109"/>
+<area shape="poly" title=" " alt="" coords="276,31,298,68,292,67,274,36"/>
+<area shape="rect" title=" " alt="" coords="363,81,460,109"/>
+<area shape="poly" title=" " alt="" coords="294,31,375,74,370,74,293,36"/>
+<area shape="rect" title=" " alt="" coords="484,81,542,109"/>
+<area shape="poly" title=" " alt="" coords="313,31,471,80,466,81,312,36"/>
+</map>
+</div>
+</div><div class="textblock"><div class="dynheader">
+此图展示该文件被哪些文件直接或间接地引用了:</div>
+<div class="dyncontent">
+<div class="center"><img src="standard__functions_8h__dep__incl.png" border="0" usemap="#acore_2st_2standard__functions_8hdep" loading="lazy" alt=""/></div>
+<map name="acore_2st_2standard__functions_8hdep" id="acore_2st_2standard__functions_8hdep">
+<area shape="rect" title=" " alt="" coords="550,5,755,33"/>
+<area shape="rect" href="bytecode_8h.html" title=" " alt="" coords="319,81,460,109"/>
+<area shape="poly" title=" " alt="" coords="588,39,438,83,435,78,593,36"/>
+<area shape="rect" href="language_8h.html" title=" " alt="" coords="507,401,648,428"/>
+<area shape="poly" title=" " alt="" coords="704,37,735,55,761,79,776,101,784,121,787,169,787,248,782,278,769,305,750,328,727,349,673,381,622,403,620,398,671,377,724,345,747,325,765,302,777,276,782,247,782,169,778,122,771,104,757,83,732,60,704,43"/>
+<area shape="rect" href="st_8h.html" title=" " alt="" coords="323,476,416,504"/>
+<area shape="poly" title=" " alt="" coords="713,36,752,54,787,79,809,99,825,118,834,140,837,169,837,332,834,349,824,364,788,392,735,416,671,437,532,468,417,486,416,480,531,463,669,432,733,411,785,388,820,361,829,347,832,331,832,169,829,141,820,121,805,103,784,83,749,59,713,41"/>
+<area shape="rect" href="sema_8h.html" title=" " alt="" coords="503,157,620,184"/>
+<area shape="poly" title=" " alt="" coords="592,41,569,59,548,82,542,101,544,120,557,157,551,156,538,121,537,100,543,80,565,55,597,38"/>
+<area shape="rect" href="standard__names_8h.html" title=" " alt="" coords="558,81,747,109"/>
+<area shape="poly" title=" " alt="" coords="653,47,655,82,650,79,651,51"/>
+<area shape="rect" href="codegen_8h.html" title=" " alt="" coords="509,232,646,260"/>
+<area shape="poly" title=" " alt="" coords="415,117,492,182,560,232,555,232,489,186,414,122"/>
+<area shape="rect" href="compile_8h.html" title=" " alt="" coords="511,316,644,344"/>
+<area shape="poly" title=" " alt="" coords="378,121,368,154,361,189,361,226,366,243,374,258,402,286,437,305,474,317,513,326,508,326,473,322,434,310,399,290,370,262,361,245,356,227,355,189,363,152,375,125"/>
+<area shape="rect" href="process__image_8h.html" title=" " alt="" coords="82,157,262,184"/>
+<area shape="poly" title=" " alt="" coords="335,116,212,158,210,154,338,112"/>
+<area shape="rect" href="vm_8h.html" title=" " alt="" coords="208,232,310,260"/>
+<area shape="poly" title=" " alt="" coords="364,122,333,158,271,234,267,230,329,155,367,118"/>
+<area shape="poly" title=" " alt="" coords="434,113,534,156,528,157,434,118"/>
+<area shape="rect" href="sfc_8h.html" title=" " alt="" coords="385,232,485,260"/>
+<area shape="poly" title=" " alt="" coords="399,121,433,232,428,231,397,126"/>
+<area shape="rect" href="wcet_8h.html" title=" " alt="" coords="5,232,118,260"/>
+<area shape="poly" title=" " alt="" coords="301,103,236,111,168,122,109,137,88,147,73,158,63,175,59,195,61,232,56,232,54,195,58,174,69,155,85,143,107,132,167,116,236,105,305,100"/>
+<area shape="poly" title=" " alt="" coords="579,274,580,318,575,315,576,278"/>
+<area shape="poly" title=" " alt="" coords="579,358,580,402,575,399,576,362"/>
+<area shape="poly" title=" " alt="" coords="551,353,388,478,385,474,546,354"/>
+<area shape="poly" title=" " alt="" coords="529,433,407,478,406,473,524,434"/>
+<area shape="poly" title=" " alt="" coords="171,198,173,249,181,311,189,343,201,373,217,402,238,426,279,455,325,476,320,476,277,459,234,430,213,405,196,376,184,344,176,312,168,250,169,203"/>
+<area shape="poly" title=" " alt="" coords="199,192,246,231,241,233,199,197"/>
+<area shape="poly" title=" " alt="" coords="319,264,351,281,377,306,395,337,402,364,401,393,395,429,378,478,374,474,390,428,395,393,397,365,390,339,373,310,348,286,319,269"/>
+<area shape="rect" href="configuration__runtime_8h.html" title=" " alt="" coords="208,308,363,353"/>
+<area shape="poly" title=" " alt="" coords="269,273,281,308,276,307,267,278"/>
+<area shape="poly" title=" " alt="" coords="259,363,245,397,244,412,249,427,264,444,282,458,325,479,320,479,279,463,260,448,245,430,239,413,240,396,255,367"/>
+<area shape="rect" href="debug_8h.html" title=" " alt="" coords="260,401,381,428"/>
+<area shape="poly" title=" " alt="" coords="302,364,317,401,312,399,299,369"/>
+<area shape="poly" title=" " alt="" coords="339,439,363,477,358,475,336,444"/>
+<area shape="poly" title=" " alt="" coords="569,197,577,233,572,231,566,202"/>
+<area shape="poly" title=" " alt="" coords="612,189,639,207,660,231,664,244,663,258,650,282,627,302,603,319,601,314,624,298,646,279,658,256,659,245,655,234,636,211,612,194"/>
+<area shape="poly" title=" " alt="" coords="471,266,557,316,552,316,471,271"/>
+<area shape="poly" title=" " alt="" coords="68,272,81,309,98,350,122,391,154,426,194,451,238,468,283,479,325,487,320,487,282,484,237,473,191,456,150,430,118,395,93,353,76,311,68,278"/>
+<area shape="rect" href="l2b_8h.html" title=" " alt="" coords="646,157,747,184"/>
+<area shape="poly" title=" " alt="" coords="669,120,691,157,686,156,667,125"/>
+<area shape="poly" title=" " alt="" coords="698,198,694,231,681,261,666,280,648,295,610,318,607,313,644,291,662,276,677,259,689,230,694,202"/>
+</map>
+</div>
+</div>
+<p><a href="standard__functions_8h_source.html">浏览该文件的源代码.</a></p>
+<table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 id="header-nested-classes" class="groupheader"><a id="nested-classes" name="nested-classes"></a>
+类</h2></td></tr>
+<tr class="memitem:plcopen_3A_3Acore_3A_3Ast_3A_3AStandardFunctionManifestEntry" id="r_plcopen_3A_3Acore_3A_3Ast_3A_3AStandardFunctionManifestEntry"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structplcopen_1_1core_1_1st_1_1StandardFunctionManifestEntry.html">plcopen::core::st::StandardFunctionManifestEntry</a></td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 id="header-namespaces" class="groupheader"><a id="namespaces" name="namespaces"></a>
+命名空间</h2></td></tr>
+<tr class="memitem:plcopen" id="r_plcopen"><td class="memItemLeft" align="right" valign="top">namespace &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen.html">plcopen</a></td></tr>
+<tr class="memitem:plcopen_3A_3Acore" id="r_plcopen_3A_3Acore"><td class="memItemLeft" align="right" valign="top">namespace &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core.html">plcopen::core</a></td></tr>
+<tr class="memitem:plcopen_3A_3Acore_3A_3Ast" id="r_plcopen_3A_3Acore_3A_3Ast"><td class="memItemLeft" align="right" valign="top">namespace &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1st.html">plcopen::core::st</a></td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 id="header-enum-members" class="groupheader"><a id="enum-members" name="enum-members"></a>
+枚举</h2></td></tr>
+<tr class="memitem:a371ce294c808c472fa417458d3be1a23" id="r_a371ce294c808c472fa417458d3be1a23"><td class="memItemLeft" align="right" valign="top">enum class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1st.html#a371ce294c808c472fa417458d3be1a23">plcopen::core::st::StandardFunction</a> : std::uint8_t { <br />
+&#160;&#160;<a class="el" href="namespaceplcopen_1_1core_1_1st.html#a371ce294c808c472fa417458d3be1a23af9ac6b05beccb0fc5837b6a7fef4c1d3">plcopen::core::st::abs</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1st.html#a371ce294c808c472fa417458d3be1a23add1de98e8b0e34d5cf5396e83036f4d5">plcopen::core::st::sqrt</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1st.html#a371ce294c808c472fa417458d3be1a23af8e19f449f17c9d37dcc93dd244ec3bb">plcopen::core::st::ln</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1st.html#a371ce294c808c472fa417458d3be1a23adc1d71bbb5c4d2a5e936db79ef10c19f">plcopen::core::st::log</a>
+, <br />
+&#160;&#160;<a class="el" href="namespaceplcopen_1_1core_1_1st.html#a371ce294c808c472fa417458d3be1a23ab0ab0254bd58eb87eaee3172ba49fefb">plcopen::core::st::exp</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1st.html#a371ce294c808c472fa417458d3be1a23a7d27e4a7ca7533a3bef4fad10a0c19c7">plcopen::core::st::sin</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1st.html#a371ce294c808c472fa417458d3be1a23a4d00d79b6733c9cc066584a02ed03410">plcopen::core::st::cos</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1st.html#a371ce294c808c472fa417458d3be1a23a5b2d4484498235e80d61a233a7c04991">plcopen::core::st::tan</a>
+, <br />
+&#160;&#160;<a class="el" href="namespaceplcopen_1_1core_1_1st.html#a371ce294c808c472fa417458d3be1a23a62130e1b1e81120c6344cc4e661f9e4b">plcopen::core::st::asin</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1st.html#a371ce294c808c472fa417458d3be1a23acbdb2632628e9ed7d677a713d9817b0d">plcopen::core::st::acos</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1st.html#a371ce294c808c472fa417458d3be1a23a6d86bcdc87773d8bb8527c65ed349b97">plcopen::core::st::atan</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1st.html#a371ce294c808c472fa417458d3be1a23a34ec78fcc91ffb1e54cd85e4a0924332">plcopen::core::st::add</a>
+, <br />
+&#160;&#160;<a class="el" href="namespaceplcopen_1_1core_1_1st.html#a371ce294c808c472fa417458d3be1a23a8a68dc3e925eacf92633be230722a140">plcopen::core::st::sub</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1st.html#a371ce294c808c472fa417458d3be1a23a353942263d1bedfbe06b7bfa78226253">plcopen::core::st::mul</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1st.html#a371ce294c808c472fa417458d3be1a23a38696558dc98494c08d951c052900a2a">plcopen::core::st::div</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1st.html#a371ce294c808c472fa417458d3be1a23aad148a3ca8bd0ef3b48c52454c493ec5">plcopen::core::st::mod</a>
+, <br />
+&#160;&#160;<a class="el" href="namespaceplcopen_1_1core_1_1st.html#a371ce294c808c472fa417458d3be1a23a3e5eae632e608648fc2d608750fe6f91">plcopen::core::st::expt</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1st.html#a371ce294c808c472fa417458d3be1a23ad8bd79cc131920d5de426f914d17405a">plcopen::core::st::min</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1st.html#a371ce294c808c472fa417458d3be1a23a2ffe4e77325d9a7152f7086ea7aa5114">plcopen::core::st::max</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1st.html#a371ce294c808c472fa417458d3be1a23aaa9f73eea60a006820d0f8768bc8a3fc">plcopen::core::st::limit</a>
+, <br />
+&#160;&#160;<a class="el" href="namespaceplcopen_1_1core_1_1st.html#a371ce294c808c472fa417458d3be1a23a8be74552df93e31bbdd6b36ed74bdb6a">plcopen::core::st::sel</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1st.html#a371ce294c808c472fa417458d3be1a23af1e492ffa7562aa744240b8b3eb403c5">plcopen::core::st::mux</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1st.html#a371ce294c808c472fa417458d3be1a23a1bfad22f0925978f310a37440bfdff43">plcopen::core::st::gt</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1st.html#a371ce294c808c472fa417458d3be1a23a0ba64a0dea00947916dfb6a66866e1ca">plcopen::core::st::ge</a>
+, <br />
+&#160;&#160;<a class="el" href="namespaceplcopen_1_1core_1_1st.html#a371ce294c808c472fa417458d3be1a23adf22f17124884fc51f1ac69d610096ac">plcopen::core::st::eq</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1st.html#a371ce294c808c472fa417458d3be1a23ad9180594744f870aeefb086982e980bb">plcopen::core::st::le</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1st.html#a371ce294c808c472fa417458d3be1a23ad91af6958918af87d6a057c1cdf5b225">plcopen::core::st::lt</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1st.html#a371ce294c808c472fa417458d3be1a23ad4f917633649a3c47c7ab917fa990146">plcopen::core::st::ne</a>
+, <br />
+&#160;&#160;<a class="el" href="namespaceplcopen_1_1core_1_1st.html#a371ce294c808c472fa417458d3be1a23abc192716b0e1d5c96a67961dd0d3f9da">plcopen::core::st::shl</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1st.html#a371ce294c808c472fa417458d3be1a23a82cfb068052c46d36d9050ce1fcbaf2e">plcopen::core::st::shr</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1st.html#a371ce294c808c472fa417458d3be1a23a875b854107b408d2899cce9dff917e70">plcopen::core::st::rol</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1st.html#a371ce294c808c472fa417458d3be1a23a993a7ae7a863813cf95028b50708e222">plcopen::core::st::ror</a>
+, <br />
+&#160;&#160;<a class="el" href="namespaceplcopen_1_1core_1_1st.html#a371ce294c808c472fa417458d3be1a23af5a8e923f8cd24b56b3bab32358cc58a">plcopen::core::st::len</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1st.html#a371ce294c808c472fa417458d3be1a23a811882fecd5c7618d7099ebbd39ea254">plcopen::core::st::left</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1st.html#a371ce294c808c472fa417458d3be1a23a7c4f29407893c334a6cb7a87bf045c0d">plcopen::core::st::right</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1st.html#a371ce294c808c472fa417458d3be1a23a22384709d743fe3c6fb0a4b35b2e10a6">plcopen::core::st::mid</a>
+, <br />
+&#160;&#160;<a class="el" href="namespaceplcopen_1_1core_1_1st.html#a371ce294c808c472fa417458d3be1a23a414e7c8ede73a0c2c3d17699134f4080">plcopen::core::st::concat</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1st.html#a371ce294c808c472fa417458d3be1a23ae0df5f3dfd2650ae5be9993434e2b2c0">plcopen::core::st::insert</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1st.html#a371ce294c808c472fa417458d3be1a23a02aaa1f70ced421d7834d2b4581bb296">plcopen::core::st::delete_</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1st.html#a371ce294c808c472fa417458d3be1a23a9dde360102c103867bd2f45872f1129c">plcopen::core::st::replace</a>
+, <br />
+&#160;&#160;<a class="el" href="namespaceplcopen_1_1core_1_1st.html#a371ce294c808c472fa417458d3be1a23aea170e2cafb1337755c8b3d5ae4437f4">plcopen::core::st::find</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1st.html#a371ce294c808c472fa417458d3be1a23a8369c1fe0c52bf83153110937bbd77e5">plcopen::core::st::add_time</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1st.html#a371ce294c808c472fa417458d3be1a23a8642d8a9114e716b48eaf61246cc5e70">plcopen::core::st::add_tod_time</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1st.html#a371ce294c808c472fa417458d3be1a23a6864cfa5cf5ab6f3a4a9b8bf191606ac">plcopen::core::st::add_dt_time</a>
+, <br />
+&#160;&#160;<a class="el" href="namespaceplcopen_1_1core_1_1st.html#a371ce294c808c472fa417458d3be1a23ac2bcc6d51bae26bd9c680b23502b26f1">plcopen::core::st::sub_time</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1st.html#a371ce294c808c472fa417458d3be1a23a2a38cb4486e10ae24bf8350d33b15863">plcopen::core::st::sub_date_date</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1st.html#a371ce294c808c472fa417458d3be1a23aaf5c675070d5cac0ec1741bf29daa15b">plcopen::core::st::sub_tod_time</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1st.html#a371ce294c808c472fa417458d3be1a23a18e7cfacaf4240ea00266ff5172b6412">plcopen::core::st::sub_dt_dt</a>
+, <br />
+&#160;&#160;<a class="el" href="namespaceplcopen_1_1core_1_1st.html#a371ce294c808c472fa417458d3be1a23ab5129fb74f9c6c358d150ab213ec39a9">plcopen::core::st::multime</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1st.html#a371ce294c808c472fa417458d3be1a23a384a26a4c117a8917fc3b4658a98e6af">plcopen::core::st::divtime</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1st.html#a371ce294c808c472fa417458d3be1a23aec294aa3d448df5fc7ac4452bc714177">plcopen::core::st::concat_date_tod</a>
+, <a class="el" href="namespaceplcopen_1_1core_1_1st.html#a371ce294c808c472fa417458d3be1a23ae2942a04780e223b215eb8b663cf5353">plcopen::core::st::count</a>
+<br />
+ }</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 id="header-func-members" class="groupheader"><a id="func-members" name="func-members"></a>
+函数</h2></td></tr>
+<tr class="memitem:a44d719bd69cf1f8811abfd8dd82e9799" id="r_a44d719bd69cf1f8811abfd8dd82e9799"><td class="memItemLeft" align="right" valign="top">constexpr const auto &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1st.html#a44d719bd69cf1f8811abfd8dd82e9799">plcopen::core::st::standard_function_manifest</a> ()</td></tr>
+<tr class="memitem:ac1dc803f533b2b344ffd8a57e852e811" id="r_ac1dc803f533b2b344ffd8a57e852e811"><td class="memItemLeft" align="right" valign="top">std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1st.html#ac1dc803f533b2b344ffd8a57e852e811">plcopen::core::st::standard_function_manifest_dump</a> ()</td></tr>
+<tr class="memitem:a8d389378db9c3c4ac7675aedce472fed" id="r_a8d389378db9c3c4ac7675aedce472fed"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1st.html#a8d389378db9c3c4ac7675aedce472fed">plcopen::core::st::resolve_standard_function</a> (std::string_view lower, <a class="el" href="namespaceplcopen_1_1core_1_1st.html#a371ce294c808c472fa417458d3be1a23">StandardFunction</a> &amp;function)</td></tr>
+<tr class="memitem:a3b6932ae8a5ae66f03e179557ba01dbb" id="r_a3b6932ae8a5ae66f03e179557ba01dbb"><td class="memItemLeft" align="right" valign="top">constexpr std::uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1st.html#a3b6932ae8a5ae66f03e179557ba01dbb">plcopen::core::st::saturating_cost_add</a> (std::uint32_t left, std::uint32_t right)</td></tr>
+<tr class="memitem:a1ce5acdb006d7d31b7da0b483bda51eb" id="r_a1ce5acdb006d7d31b7da0b483bda51eb"><td class="memItemLeft" align="right" valign="top">constexpr std::uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1st.html#a1ce5acdb006d7d31b7da0b483bda51eb">plcopen::core::st::saturating_cost_mul</a> (std::uint32_t left, std::uint32_t right)</td></tr>
+<tr class="memitem:adcb01532348f454e62400096af1bd1e6" id="r_adcb01532348f454e62400096af1bd1e6"><td class="memItemLeft" align="right" valign="top">constexpr std::uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1st.html#adcb01532348f454e62400096af1bd1e6">plcopen::core::st::standard_string_cost</a> (<a class="el" href="namespaceplcopen_1_1core_1_1st.html#a371ce294c808c472fa417458d3be1a23">StandardFunction</a> function, const std::uint32_t *capacities, std::uint8_t count, std::uint32_t destination_capacity)</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 id="header-var-members" class="groupheader"><a id="var-members" name="var-members"></a>
+变量</h2></td></tr>
+<tr class="memitem:a25073ef054d93a0ecd55c85e2a394d59" id="r_a25073ef054d93a0ecd55c85e2a394d59"><td class="memItemLeft" align="right" valign="top">constexpr std::array&lt; <a class="el" href="structplcopen_1_1core_1_1st_1_1StandardFunctionManifestEntry.html">StandardFunctionManifestEntry</a>, 51 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceplcopen_1_1core_1_1st.html#a25073ef054d93a0ecd55c85e2a394d59">plcopen::core::st::kStandardFunctionManifest</a></td></tr>
+</table>
+</div><!-- contents -->
+</div><!-- doc-content -->
+<div id="page-nav" class="page-nav-panel">
+<div id="page-nav-resize-handle"></div>
+<div id="page-nav-tree">
+<div id="page-nav-contents">
+</div><!-- page-nav-contents -->
+</div><!-- page-nav-tree -->
+</div><!-- page-nav -->
+</div><!-- container -->
+<!-- start footer part -->
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+  <ul>
+    <li class="navelem"><a href="dir_4270bfced15e0e73154b13468c7c9ad9.html">core</a></li><li class="navelem"><a href="dir_58fdb30801db36767d5a9420a346ac9a.html">st</a></li><li class="navelem"><a href="standard__functions_8h.html">standard_functions.h</a></li>
+    <li class="footer">制作者 <a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.15.0 </li>
+  </ul>
+</div>
+</body>
+</html>

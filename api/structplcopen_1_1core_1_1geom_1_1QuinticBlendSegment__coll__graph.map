@@ -1,0 +1,5 @@
+<map id="plcopen::core::geom::QuinticBlendSegment" name="plcopen::core::geom::QuinticBlendSegment">
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,235,176,279"/>
+<area shape="rect" id="Node000002" href="$structplcopen_1_1core_1_1geom_1_1Vec3.html" title=" " alt="" coords="14,5,167,50"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="93,65,93,235,88,234,88,66"/>
+</map>

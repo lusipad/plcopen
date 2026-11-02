@@ -1,0 +1,15 @@
+<map id="plcopen::core::fb::FbReadKinTransform" name="plcopen::core::fb::FbReadKinTransform">
+<area shape="rect" id="Node000001" title=" " alt="" coords="662,109,818,154"/>
+<area shape="rect" id="Node000002" href="$classplcopen_1_1core_1_1axis_1_1AxisGroup.html" title=" " alt="" coords="372,75,515,119"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="530,104,664,122,659,123,530,110"/>
+<area shape="rect" id="Node000003" href="$structplcopen_1_1core_1_1axis_1_1GroupPosition.html" title=" " alt="" coords="17,5,160,50"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="175,34,260,46,348,64,379,74,374,75,347,69,259,52,176,40"/>
+<area shape="rect" id="Node000004" href="$structplcopen_1_1core_1_1axis_1_1JogCommandOptions.html" title=" " alt="" coords="5,75,172,119"/>
+<area shape="poly" id="edge3_Node000002_Node000004" title=" " alt="" coords="187,94,373,95,369,99,188,100"/>
+<area shape="rect" id="Node000005" href="$structplcopen_1_1core_1_1axis_1_1KinTransformRef.html" title=" " alt="" coords="372,144,515,189"/>
+<area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="530,158,638,147,665,146,659,147,638,153,531,163"/>
+<area shape="rect" id="Node000006" href="$classplcopen_1_1core_1_1kin_1_1Kinematics.html" title=" " alt="" coords="20,144,157,189"/>
+<area shape="poly" id="edge5_Node000005_Node000006" title=" " alt="" coords="172,164,373,164,370,169,173,169"/>
+<area shape="rect" id="Node000007" href="$classplcopen_1_1core_1_1kin_1_1PoseKinematics.html" title=" " alt="" coords="20,213,157,258"/>
+<area shape="poly" id="edge6_Node000005_Node000007" title=" " alt="" coords="171,224,257,212,347,194,373,190,378,189,348,199,257,217,172,229"/>
+</map>

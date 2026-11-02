@@ -1,0 +1,13 @@
+<map id="plcopen::core::st::CompileResult" name="plcopen::core::st::CompileResult">
+<area shape="rect" id="Node000001" title=" " alt="" coords="561,109,697,154"/>
+<area shape="rect" id="Node000002" href="$structplcopen_1_1core_1_1st_1_1Program.html" title=" " alt="" coords="314,109,450,154"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="465,129,563,131,558,132,466,134"/>
+<area shape="rect" id="Node000003" href="$structplcopen_1_1core_1_1st_1_1ProcessImageInfo.html" title=" " alt="" coords="14,5,151,50"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="166,40,228,55,291,76,349,108,344,109,289,81,227,60,167,45"/>
+<area shape="rect" id="Node000004" href="$classplcopen_1_1core_1_1st_1_1TypeTable.html" title=" " alt="" coords="14,75,151,119"/>
+<area shape="poly" id="edge3_Node000002_Node000004" title=" " alt="" coords="166,104,316,122,311,126,166,109"/>
+<area shape="rect" id="Node000005" href="$structplcopen_1_1core_1_1st_1_1SourceMap.html" title=" " alt="" coords="14,144,151,189"/>
+<area shape="poly" id="edge4_Node000002_Node000005" title=" " alt="" coords="166,160,289,149,316,147,311,148,290,154,167,166"/>
+<area shape="rect" id="Node000006" href="$structplcopen_1_1core_1_1st_1_1DebugArtifactReport.html" title=" " alt="" coords="5,213,160,258"/>
+<area shape="poly" id="edge5_Node000002_Node000006" title=" " alt="" coords="174,221,232,208,289,189,321,172,349,156,354,153,324,176,291,194,233,213,176,226"/>
+</map>

@@ -1,0 +1,5 @@
+<map id="plcopen::core::fb::FbGroupReadAcceleration" name="plcopen::core::fb::FbGroupReadAcceleration">
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,98,196,143"/>
+<area shape="rect" id="Node000002" href="$classplcopen_1_1core_1_1fb_1_1GroupDerivativeReadFb.html" title=" " alt="" coords="12,5,189,50"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="102,64,103,99,98,97,99,68"/>
+</map>

@@ -1,0 +1,5 @@
+<map id="plcopen::core::geom::ArcSegment" name="plcopen::core::geom::ArcSegment">
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,190,159,235"/>
+<area shape="rect" id="Node000002" href="$structplcopen_1_1core_1_1geom_1_1Vec3.html" title=" " alt="" coords="5,5,159,50"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="84,65,85,190,79,189,80,67"/>
+</map>

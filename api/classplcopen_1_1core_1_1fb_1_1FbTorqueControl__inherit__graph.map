@@ -1,0 +1,5 @@
+<map id="plcopen::core::fb::FbTorqueControl" name="plcopen::core::fb::FbTorqueControl">
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,98,143,143"/>
+<area shape="rect" id="Node000002" href="$classplcopen_1_1core_1_1fb_1_1AxisExecuteFb.html" title=" " alt="" coords="5,5,143,50"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="76,64,77,99,71,97,72,68"/>
+</map>

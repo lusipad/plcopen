@@ -1,0 +1,5 @@
+<map id="plcopen::core::fb::FbGroupWaitTime" name="plcopen::core::fb::FbGroupWaitTime">
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,98,144,143"/>
+<area shape="rect" id="Node000002" href="$classplcopen_1_1core_1_1fb_1_1GroupExecuteFb.html" title=" " alt="" coords="6,5,143,50"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="76,64,77,99,72,97,73,68"/>
+</map>

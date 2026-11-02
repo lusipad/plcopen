@@ -1,0 +1,28 @@
+var structplcopen_1_1core_1_1st_1_1SfcNetworkInfo =
+[
+    [ "action_blocks", "structplcopen_1_1core_1_1st_1_1SfcNetworkInfo.html#a271e5d1e901f57ffdfca654eddd50c6f", null ],
+    [ "actions", "structplcopen_1_1core_1_1st_1_1SfcNetworkInfo.html#afef9fa639eb7e658feba7b41ea4b24a0", null ],
+    [ "committed_action_offset", "structplcopen_1_1core_1_1st_1_1SfcNetworkInfo.html#a9ab5e84463955c8ec1a628fbfc3642d9", null ],
+    [ "committed_active_offset", "structplcopen_1_1core_1_1st_1_1SfcNetworkInfo.html#a447b2b26a6198d9771bb41b75689b2dd", null ],
+    [ "committed_block_offset", "structplcopen_1_1core_1_1st_1_1SfcNetworkInfo.html#a06ed7a3697f91fe651d20683daca8336", null ],
+    [ "direct_action_offset", "structplcopen_1_1core_1_1st_1_1SfcNetworkInfo.html#acd0d2713278c59f8c8b1927c8d5548bb", null ],
+    [ "firing_offset", "structplcopen_1_1core_1_1st_1_1SfcNetworkInfo.html#a7b17d0e4681f48fddae21efbba21502a", null ],
+    [ "lower", "structplcopen_1_1core_1_1st_1_1SfcNetworkInfo.html#a4f61e6ed025502280d8848c79b24c76a", null ],
+    [ "max_parallel_active_steps", "structplcopen_1_1core_1_1st_1_1SfcNetworkInfo.html#a5ce1f1eac626f71df4d76e7906d91af3", null ],
+    [ "name", "structplcopen_1_1core_1_1st_1_1SfcNetworkInfo.html#ae6817035e76af42eb34fc38ea4ce4765", null ],
+    [ "parallel_regions", "structplcopen_1_1core_1_1st_1_1SfcNetworkInfo.html#a34184a24a37df7f4db76f87016d93826", null ],
+    [ "reachable_step_count", "structplcopen_1_1core_1_1st_1_1SfcNetworkInfo.html#a973b45d1ed8ddca7738c7d390452a8ae", null ],
+    [ "runtime_offset", "structplcopen_1_1core_1_1st_1_1SfcNetworkInfo.html#a80a146d128461400178774c91282447e", null ],
+    [ "shadow_action_offset", "structplcopen_1_1core_1_1st_1_1SfcNetworkInfo.html#a68ee3243b3651f6598f0b9f0c6cb3f20", null ],
+    [ "shadow_active_offset", "structplcopen_1_1core_1_1st_1_1SfcNetworkInfo.html#a170ca556dddb0b9f2f10028972cba759", null ],
+    [ "shadow_block_offset", "structplcopen_1_1core_1_1st_1_1SfcNetworkInfo.html#a2280239bbf301133fe56e48dbf3850fa", null ],
+    [ "staged_action_offset", "structplcopen_1_1core_1_1st_1_1SfcNetworkInfo.html#a4755795e9b44bd2e0d4c294eca92b7be", null ],
+    [ "staged_active_offset", "structplcopen_1_1core_1_1st_1_1SfcNetworkInfo.html#aba116f65614eba9a477aa5b19a5e1a3f", null ],
+    [ "staged_block_offset", "structplcopen_1_1core_1_1st_1_1SfcNetworkInfo.html#a4e616488c9d4dea0155fc555aee21947", null ],
+    [ "static_bytes", "structplcopen_1_1core_1_1st_1_1SfcNetworkInfo.html#a79ccfd384d2761134a5a3e1f5e1ef592", null ],
+    [ "step_count", "structplcopen_1_1core_1_1st_1_1SfcNetworkInfo.html#a6fcf754505b7dd6e3cb8d8ac8330b148", null ],
+    [ "steps", "structplcopen_1_1core_1_1st_1_1SfcNetworkInfo.html#aaadeed6680f9ec6fe14a14b509fcc2c1", null ],
+    [ "transitions", "structplcopen_1_1core_1_1st_1_1SfcNetworkInfo.html#adb24376e2fc07c184f54caa50e5b2bbf", null ],
+    [ "worst_case_action_executions", "structplcopen_1_1core_1_1st_1_1SfcNetworkInfo.html#abd23c1620fd36d29f17e4d99ed1c96a4", null ],
+    [ "worst_case_transition_evaluations", "structplcopen_1_1core_1_1st_1_1SfcNetworkInfo.html#a10c8bd6e549c70244ffdfbcb1e7e9a5c", null ]
+];
